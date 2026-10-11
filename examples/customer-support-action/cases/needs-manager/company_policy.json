@@ -1,0 +1,7 @@
+{
+  "maximum_discount_bps": 1800,
+  "minimum_tenure_months": 12,
+  "plan": "Professional",
+  "policy_id": "loyalty-2026-10",
+  "routine_discount_bps": 1200
+}

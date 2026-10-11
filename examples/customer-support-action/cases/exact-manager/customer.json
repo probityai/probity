@@ -1,0 +1,6 @@
+{
+  "customer_id": "customer-42",
+  "plan": "Professional",
+  "recipient": "customer@example.test",
+  "tenure_months": 18
+}

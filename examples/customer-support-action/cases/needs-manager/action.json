@@ -1,0 +1,8 @@
+{
+  "action_id": "offer-needs-manager",
+  "discount_bps": 1600,
+  "plan": "Professional",
+  "recipient": "customer@example.test",
+  "request_id": "request-42",
+  "schema_version": "support-discount-action/v1"
+}

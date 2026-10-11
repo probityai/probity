@@ -1,0 +1,13 @@
+{
+  "action_id": "offer-exact-manager",
+  "action_sha256": "f4d634eeb39710e1febd245873d48faf05a38ee06d512a4430120b82db4f84d6",
+  "approval_id": "grant-42",
+  "approver_id": "manager-42",
+  "discount_bps": 1600,
+  "draft_sha256": "d53540c5f6f971ad0edbe53c6ea0de241f8a28e0fb1a96869bab7c54f503f4ab",
+  "expires_at": "2026-10-10T21:00:00Z",
+  "not_before": "2026-10-10T19:00:00Z",
+  "plan": "Professional",
+  "recipient": "customer@example.test",
+  "request_id": "request-42"
+}

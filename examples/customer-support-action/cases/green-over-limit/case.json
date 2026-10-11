@@ -1,0 +1,31 @@
+{
+  "artifacts": {
+    "action": {
+      "length": 214,
+      "path": "action.json",
+      "sha256": "8dbc8552f810f35a584fd3ec92d028b753d39b52758b15ca677b6090d42b8373"
+    },
+    "company_policy": {
+      "length": 158,
+      "path": "company_policy.json",
+      "sha256": "6b43de6466361d27bc314a299791f2b762e1c4b376b95e2b7c4c9b8e3a87324d"
+    },
+    "customer": {
+      "length": 124,
+      "path": "customer.json",
+      "sha256": "ce867210938dd40959b2070b84ede76d374fc66c921fa5c4f939e5f875f375a4"
+    },
+    "draft": {
+      "length": 60,
+      "path": "draft.txt",
+      "sha256": "746e40907735845d4bba18827f8399b1cb8aeef5e540ab52b7a4e3b23e5746c9"
+    },
+    "report": {
+      "length": 90,
+      "path": "report.json",
+      "sha256": "e0e27fe5fff2c9fec5d9ac9c9e83e82341a09d6d326ed91d639815fd41009ec0"
+    }
+  },
+  "case_id": "green-over-limit",
+  "schema_version": "customer-support-action-case/v1"
+}

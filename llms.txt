@@ -9,6 +9,8 @@
 - [Checked recipe index](https://raw.githubusercontent.com/probityai/probity-verify/main/docs/recipes.json): exact argument arrays, source-only install unit, expected outcomes, scope and input digests
 - [Running the verifier](https://github.com/probityai/probity-verify/blob/main/docs/running.md): commands, inputs, decisions
 - [Replayable decisions and the index](https://github.com/probityai/probity-verify/blob/main/docs/bundles-and-index.md): bundles, replay, disputes
+- [Select a consumer adapter](https://github.com/probityai/probity-verify/blob/main/docs/adapter-api.md): explicit per-call versions through adjudication and bundles
+- [Check a customer offer](https://github.com/probityai/probity-verify/blob/main/docs/customer-support-action.md): raw records, exact approvals and portable replay
 - [Adapters](https://github.com/probityai/probity-verify/blob/main/docs/adapters.md): operand lineage, authority anchor, event absence
 - [Adapter plan](https://github.com/probityai/probity-verify/blob/main/docs/architecture.md): architecture
 - [Source coverage vectors](https://github.com/probityai/probity-verify/blob/main/vectors-source-coverage/README.md)

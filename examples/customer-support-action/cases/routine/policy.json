@@ -1,0 +1,30 @@
+{
+  "assessments": {
+    "routine": {
+      "bindings": {
+        "action": "87359f8c76cc215f9360b13723321e828a31abfe3995b470dd0cd44980e3ded5",
+        "company_policy": "6b43de6466361d27bc314a299791f2b762e1c4b376b95e2b7c4c9b8e3a87324d",
+        "customer": "ce867210938dd40959b2070b84ede76d374fc66c921fa5c4f939e5f875f375a4",
+        "draft": "887b594bb56947f91ca1747e47643369a99ffcb01d0eaa80a3165edac3fed4bd",
+        "report": "e0e27fe5fff2c9fec5d9ac9c9e83e82341a09d6d326ed91d639815fd41009ec0"
+      },
+      "claim_type": "customer_support_action/v1",
+      "clock": "2026-10-10T20:00:00Z",
+      "manager_approval_id": "grant-42",
+      "manager_ids": [
+        "manager-42"
+      ],
+      "required_checks": [
+        "action_binding",
+        "recipient",
+        "plan",
+        "discount",
+        "tenure",
+        "draft_rendering",
+        "report",
+        "manager_authorization"
+      ]
+    }
+  },
+  "schema_version": "customer-support-action-policy/v1"
+}

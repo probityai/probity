@@ -1,0 +1,41 @@
+{
+  "artifacts": {
+    "action": {
+      "length": 211,
+      "path": "action.json",
+      "sha256": "f4d634eeb39710e1febd245873d48faf05a38ee06d512a4430120b82db4f84d6"
+    },
+    "approval_uses": {
+      "length": 34,
+      "path": "approval_uses.json",
+      "sha256": "3311ac041358eacbb8bb07b4b32bbdd544e354e95519e5d895d1d0ecb3992d69"
+    },
+    "company_policy": {
+      "length": 158,
+      "path": "company_policy.json",
+      "sha256": "6b43de6466361d27bc314a299791f2b762e1c4b376b95e2b7c4c9b8e3a87324d"
+    },
+    "customer": {
+      "length": 124,
+      "path": "customer.json",
+      "sha256": "ce867210938dd40959b2070b84ede76d374fc66c921fa5c4f939e5f875f375a4"
+    },
+    "draft": {
+      "length": 60,
+      "path": "draft.txt",
+      "sha256": "d53540c5f6f971ad0edbe53c6ea0de241f8a28e0fb1a96869bab7c54f503f4ab"
+    },
+    "manager_approval": {
+      "length": 474,
+      "path": "manager_approval.json",
+      "sha256": "4f02f755840474d71a9bac41cc73b338fcabbd72ee59118744d5a09724d9d852"
+    },
+    "report": {
+      "length": 90,
+      "path": "report.json",
+      "sha256": "e0e27fe5fff2c9fec5d9ac9c9e83e82341a09d6d326ed91d639815fd41009ec0"
+    }
+  },
+  "case_id": "exact-manager",
+  "schema_version": "customer-support-action-case/v1"
+}
