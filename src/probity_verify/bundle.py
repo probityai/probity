@@ -14,6 +14,7 @@ import stat
 import sys
 import tempfile
 import zipfile
+from collections.abc import Callable, Mapping
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -26,6 +27,17 @@ _CONTROL_LIMIT = 1024 * 1024
 _BUNDLE_LIMIT = 64 * 1024 * 1024
 _MEMBER_LIMIT = 128
 _CONTROLS = {"case.json", "policy.json", "decision.json"}
+
+
+def _consumer_adapters(
+    adapters: Mapping[str, Callable[[Any, Any, Path], dict]] | None,
+) -> dict[str, Callable[[Any, Any, Path], dict]] | None:
+    """Keep one explicit code selection throughout bundle creation/replay."""
+    if adapters is None:
+        return None
+    if not isinstance(adapters, Mapping):
+        raise CaseError("adapters must be a mapping")
+    return dict(adapters)
 
 
 def _safe_member(name: str, label: str) -> str:
@@ -107,7 +119,8 @@ def _write_bundle(path: Path, entries: dict[str, bytes]) -> None:
 
 
 def create_bundle(
-    case_path: Path, policy_path: Path, output: Path, artifact_root: Path | None = None
+    case_path: Path, policy_path: Path, output: Path, artifact_root: Path | None = None,
+    *, adapters: Mapping[str, Callable[[Any, Any, Path], dict]] | None = None,
 ) -> dict:
     """Write a deterministic bundle for a fully bound case.
 
@@ -119,6 +132,8 @@ def create_bundle(
         New ZIP path. Existing files are never replaced.
     artifact_root : Path | None
         Base directory for case artifact paths. Defaults to the case directory.
+    adapters : Mapping | None
+        Explicit consumer adapter selection for both creation and replay.
 
     Returns
     -------
@@ -131,6 +146,7 @@ def create_bundle(
         If a referenced artifact is missing, unbound, unsafe, or the replay
         differs from the decision made before packaging.
     """
+    adapters = _consumer_adapters(adapters)
     if output.exists() or output.is_symlink():
         raise CaseError(f"bundle already exists: {output}")
     case = _load(case_path)
@@ -142,7 +158,7 @@ def create_bundle(
             target = staged / member
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
-        result = adjudicate(case, policy, staged / "artifacts")
+        result = adjudicate(case, policy, staged / "artifacts", adapters=adapters)
     entries = {
         "case.json": canonical_json(case),
         "policy.json": canonical_json(policy),
@@ -153,7 +169,7 @@ def create_bundle(
         temporary = Path(stream.name)
     try:
         _write_bundle(temporary, entries)
-        if replay_bundle(temporary) != result:
+        if replay_bundle(temporary, adapters=adapters) != result:
             raise CaseError("bundled decision differs from replay")
         os.link(temporary, output)
     finally:
@@ -195,13 +211,17 @@ def _parse_json(data: bytes, label: str) -> Any:
         raise CaseError(f"{label}: {exc}") from exc
 
 
-def replay_bundle(path: Path) -> dict:
+def replay_bundle(
+    path: Path, *, adapters: Mapping[str, Callable[[Any, Any, Path], dict]] | None = None,
+) -> dict:
     """Recompute a bundled decision from only the carried policy and bytes.
 
     Parameters
     ----------
     path : Path
         Bundle created by :func:`create_bundle`.
+    adapters : Mapping | None
+        Consumer-selected code. Bundle contents never select or import code.
 
     Returns
     -------
@@ -214,6 +234,7 @@ def replay_bundle(path: Path) -> dict:
         If bundle members are unsafe, incomplete, or disagree with the carried
         decision. Replay does not authenticate the policy or capture source.
     """
+    adapters = _consumer_adapters(adapters)
     entries = _read_bundle(path)
     case = _parse_json(entries["case.json"], "case.json")
     policy = _parse_json(entries["policy.json"], "policy.json")
@@ -230,7 +251,7 @@ def replay_bundle(path: Path) -> dict:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(entries[member])
         _bound_files(case, staged / "artifacts")
-        result = adjudicate(case, policy, staged / "artifacts")
+        result = adjudicate(case, policy, staged / "artifacts", adapters=adapters)
     if entries["decision.json"] != canonical_json(result):
         raise CaseError("bundled decision differs from replay")
     return result

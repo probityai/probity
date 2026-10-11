@@ -7,7 +7,6 @@ import asyncio
 import copy
 import hashlib
 import ipaddress
-import json
 import sys
 from collections import OrderedDict
 from pathlib import Path

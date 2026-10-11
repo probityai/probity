@@ -21,6 +21,7 @@ from a2a.types import Message, Part, Role, SendMessageRequest, Task, TaskState, 
 from a2a.utils.errors import InvalidParamsError
 
 from probity_verify.a2a_client import request
+from probity_verify import a2a_client
 from probity_verify.a2a_server import (
     CASE_MIME, LAB_QUERY_MIME, MAX_CASE_BYTES, MAX_REQUEST_BYTES,
     BoundedTaskStore, VerifyExecutor, create_app, digest, parse_raw,
@@ -29,6 +30,39 @@ from probity_verify.core import CaseError, adjudicate, canonical_json
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "examples/source-coverage"
+
+
+def test_client_command_binds_exact_policy_and_case(monkeypatch, capsys):
+    captured = []
+    answer = b'{"retained":"decision"}\n'
+
+    async def transport(url, raw, mime, pin):
+        captured.append((url, raw, mime, pin))
+        return answer, "retained-task"
+
+    monkeypatch.setattr(a2a_client, "request", transport)
+    assert a2a_client.main(["verify", str(SOURCE / "case.json"), "--policy",
+                            str(SOURCE / "policy-june.json")]) == 0
+    assert capsys.readouterr().out.encode() == answer
+    url, raw, mime, pin = captured[0]
+    assert url == "http://127.0.0.1:41241"
+    assert raw == (SOURCE / "case.json").read_bytes()
+    assert mime == CASE_MIME
+    assert pin == digest(canonical_json(parse_raw((SOURCE / "policy-june.json").read_bytes())))
+    assert a2a_client.main(["lab-record", "record-42", "--register-sha256", "a" * 64]) == 0
+    assert capsys.readouterr().out.encode() == answer
+    assert captured[1][1:] == (canonical_json({"record_id": "record-42"}), LAB_QUERY_MIME, "a" * 64)
+
+
+def test_client_command_connection_failure_has_no_verdict(monkeypatch, capsys):
+    async def failed(*args):
+        raise httpx.ConnectError("selected server is unavailable")
+
+    monkeypatch.setattr(a2a_client, "request", failed)
+    assert a2a_client.main(["lab-record", "record-42", "--register-sha256", "a" * 64]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "selected server is unavailable" in captured.err
 
 
 @contextmanager

@@ -18,6 +18,13 @@ witness provenance separately.
 Malformed input exits 2. A valid decision exits 0. The packet includes the
 policy digest, artifact bindings, checks, reason, and scope.
 
+For a consumer-specific claim, pass the same explicit adapter mapping to
+`create_bundle(..., adapters=selected)` and `replay_bundle(..., adapters=selected)`.
+Creation snapshots that mapping for its decision and self-replay. A bundle
+cannot import or select code from its own records. The generic CLI handles
+built-in claims. See [adapter selection](adapter-api.md) and the
+[customer offer example](customer-support-action.md).
+
 ## Index decisions and disputes
 
 Keep replayable decisions and disputes in a local index:
