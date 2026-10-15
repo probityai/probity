@@ -61,6 +61,11 @@ The release-tool lock selects setuptools 84.0.0. The source backend requires
 setuptools 77.0.3 or later for its SPDX license metadata, so compatible existing
 build environments do not have to use the release toolchain's exact version.
 
+The recipe index binds the package manifest, implementation and fixture bytes.
+After changing a bound input, run `uv run python scripts/build-recipes.py`
+and retain its generated files. The distribution workflow checks this index
+with the installed verifier before it uploads the qualified build artifact.
+
 The build job has read access only. On a push to this repository's main branch,
 a separate job signs build provenance for the same checked wheel and source
 distribution. It checks their hashes after transfer and does not rebuild them.

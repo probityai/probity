@@ -68,6 +68,8 @@ jobs:
           "$RUNNER_TEMP/package-consumer/bin/python" -m pip install --no-deps --force-reinstall rebuilt/*.whl --report sdist-install.json
           cd "$RUNNER_TEMP/package-consumer-cwd"
           "$RUNNER_TEMP/package-consumer/bin/python" "$GITHUB_WORKSPACE/scripts/check-installed.py" > "$GITHUB_WORKSPACE/sdist-consumer.json"
+      - name: Check generated source recipes with the installed verifier
+        run: '"$RUNNER_TEMP/package-consumer/bin/python" scripts/build-recipes.py --check'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: python-distributions
