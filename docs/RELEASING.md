@@ -57,10 +57,26 @@ It rebuilds a wheel from the source distribution and runs both installed
 consumers. Its artifact retains input hashes, the source commit, install reports
 and consumer results. These are build checks, not outside adoption.
 
-The build job has read access only. The separate publish job runs for a
+The release-tool lock selects setuptools 84.0.0. The source backend requires
+setuptools 77.0.3 or later for its SPDX license metadata, so compatible existing
+build environments do not have to use the release toolchain's exact version.
+
+The build job has read access only. On a push to this repository's main branch,
+a separate job signs build provenance for the same checked wheel and source
+distribution. It checks their hashes after transfer and does not rebuild them.
+That job receives only `contents: read`, `id-token: write` and
+`attestations: write`. The signed bundle is retained in the separate
+`python-build-provenance` artifact; the `python-distributions` artifact keeps
+its original files. Verify each distribution with
+[`gh attestation verify`](https://cli.github.com/manual/gh_attestation_verify),
+binding the repository, workflow and exact source commit. A GitHub build
+attestation is separate from a PyPI Publish attestation and registry publication.
+
+The separate publish job runs for a
 non-prerelease GitHub release whose `vX.Y.Z` tag matches `pyproject.toml` and
-belongs to main. It downloads the same checked files. Only that job receives
-`id-token: write`; it has no account token or password fallback.
+belongs to main. It downloads the same checked files and receives
+`contents: read` and `id-token: write`; it has no account token or password
+fallback.
 
 Configure the [PyPI trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
 with owner `probityai`, repository `probity-verify`, workflow
