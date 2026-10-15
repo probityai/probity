@@ -6,7 +6,7 @@ It's for auditors, incident reviewers and relying parties who receive a claim ab
 
 ## Quick start
 
-There is no package release yet, so pin a commit. Python 3.10 or newer and [uv](https://docs.astral.sh/uv/):
+PyPI publishes `probity-verify==0.1.0`. Python 3.10 or newer and [uv](https://docs.astral.sh/uv/) are needed. This source quick start retains its historical code and input snapshot; the [installed-package recipe](https://github.com/probityai/probity-verify/blob/main/docs/install.md) pins the released wheel separately:
 
 ```sh
 git clone https://github.com/probityai/probity-verify && cd probity-verify
@@ -49,7 +49,7 @@ This guard prints `contradicted selected_span_missing_from_record` and exits 1. 
 
 ## Status
 
-Version 0.1.0, unreleased. Six adapters ship: `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
+PyPI version 0.1.0 supplies the current verifier. Source version 0.1.1 adds packaged sample inputs; see [release instructions](https://github.com/probityai/probity-verify/blob/main/docs/RELEASING.md) for checked artifacts. Seven adapters ship: `brokered_file_write/v1`, `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
 
 ## Documentation
 
@@ -65,7 +65,7 @@ Version 0.1.0, unreleased. Six adapters ship: `source_text_coverage/v1`, `operan
 | [Spend reservations](https://github.com/probityai/probity-verify/blob/main/docs/spend-reservation.md) | replay a pinned budget journal, refuse dispatch without an affordable reservation, and keep pending calls charged |
 | [Observation vantage](https://github.com/probityai/probity-verify/blob/main/docs/observation-vantage.md) | select the producer and observation scope, replay bounded absence, and operate a witness with separate keys and retained heads |
 | [Adapter plan](https://github.com/probityai/probity-verify/blob/main/docs/architecture.md) | the architecture and the adapters planned next |
-| [A2A server and client](docs/a2a.md) | send raw case bytes to an operator-configured verifier, or read a pinned Lab record |
+| [A2A server and client](https://github.com/probityai/probity-verify/blob/main/docs/a2a.md) | send raw case bytes to an operator-configured verifier, or read a pinned Lab record |
 | [Source coverage vectors](https://github.com/probityai/probity-verify/blob/main/vectors-source-coverage/README.md) and [operand-lineage vectors](https://github.com/probityai/probity-verify/blob/main/vectors-operand-lineage/README.md) | conformance cases with pinned bytes and expected decisions |
 
 ## License

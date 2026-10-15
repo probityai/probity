@@ -2,6 +2,7 @@
 
 import copy
 import json
+import re
 import runpy
 import shutil
 import sys
@@ -17,6 +18,19 @@ BUILD = GENERATOR["build"]
 @pytest.fixture
 def recipes():
     return json.loads((ROOT / "docs/recipe-source.json").read_text())
+
+
+def test_package_availability_and_fixture_scope_have_distinct_contracts(recipes):
+    result = BUILD(ROOT, recipes)
+    assert result["schema_version"] == "probity-recipes/v1"
+    assert result["distribution"] == {
+        "name": "probity-verify", "status": "published",
+        "installation": "docs/install.md", "python": ">=3.10",
+    }
+    assert result["fixture_scope"] == "source-checkout"
+    assert result["operator"] == "author-run synthetic fixtures"
+    assert result["error_behavior"] == {"exit_code": 2, "verdict": False}
+    assert all(recipe["exit_code"] == 0 for recipe in result["recipes"])
 
 
 def test_changed_expected_decision_refuses(recipes):
@@ -56,6 +70,20 @@ def repository(tmp_path):
         shutil.copytree(ROOT / name, tmp_path / name)
     shutil.copyfile(ROOT / "pyproject.toml", tmp_path / "pyproject.toml")
     return tmp_path
+
+
+def test_published_name_does_not_assert_source_candidate_was_uploaded(repository, recipes):
+    before = BUILD(repository, recipes)
+    metadata = repository / "pyproject.toml"
+    changed, count = re.subn(rb'(?m)^version = "[^"]+"$', b'version = "999.0.0"',
+                             metadata.read_bytes())
+    assert count == 1
+    metadata.write_bytes(changed)
+    after = BUILD(repository, recipes)
+    assert before["package_metadata"] != after["package_metadata"]
+    assert before["distribution"] == after["distribution"]
+    assert before["recipes"] == after["recipes"]
+    assert before["error_behavior"] == after["error_behavior"]
 
 
 def test_missing_case_refuses(recipes):

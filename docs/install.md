@@ -4,27 +4,36 @@ Probity Verify checks a claim against local evidence and a consumer-held policy.
 Use it when you need a decision you can replay from the same bytes.
 Python 3.10 or newer and [uv](https://docs.astral.sh/uv/) are required.
 
-Version 0.1.0 is source-only and unreleased. Install from an exact public commit.
-The sample artifacts come from that same commit; the wheel does not contain them.
-This recipe pins a qualified source snapshot rather than a moving branch.
+Version 0.1.0 is published on [PyPI](https://pypi.org/project/probity-verify/0.1.0/).
+Its wheel modules match the implementation at public source commit
+`2ecdbafc0c6cc0f26461ffe913fe342e7de090a6`; this comparison does not establish
+the original builder's source provenance. Its wheel does not contain sample inputs.
+Source version 0.1.1 adds the same source-coverage inputs as package resources;
+the [release guide](RELEASING.md) gives the installed-resource recipe and artifact checks.
 
-## Install outside the source checkout
+## Install the published package
 
 Run these commands from a new working directory:
 
 ```sh
 git clone https://github.com/probityai/probity-verify.git verify-source
-git -C verify-source checkout --detach 4eb2bac542f784b68c524b99cac9eccb32b0e5cc
+git -C verify-source checkout --detach 2ecdbafc0c6cc0f26461ffe913fe342e7de090a6
 uv venv --python 3.12 verify-env
-uv pip install --python verify-env/bin/python ./verify-source
+uv pip install --python verify-env/bin/python probity-verify==0.1.0
 verify-env/bin/probity-verify verify-source/examples/source-coverage/case.json \
   --policy verify-source/examples/source-coverage/policy-june.json
 ```
 
 Python 3.12 is the recipe's tested runtime. Choose another supported Python
 version with `--python` when you create the environment.
-The install builds a wheel. The command uses that installed package, without
+The registry install uses the released wheel. The command uses that installed package, without
 `uv run`, an editable install or the source checkout's Python path.
+The pinned source supplies this recipe's case, policy and artifact files.
+Keep the package version and input commit together; the seven adapters in this
+source snapshot are supported by the released implementation.
+
+The wheel is `probity_verify-0.1.0-py3-none-any.whl`, with SHA-256
+`18e0f99fb21701cd2d5eb312d99700d7cf800e8cdf9dc8e5d3608bc315cf1453`.
 
 The packet includes:
 
@@ -53,6 +62,47 @@ The April policy returns `not_established`. A June capture cannot establish
 what the source contained in April. The complete report returns `supported`.
 All three valid decisions exit zero. A contradiction is a valid decision,
 so a CI consumer must inspect the `decision` field if it needs a policy gate.
+
+## Use this checkout's recipe index
+
+The [recipe index](recipes.json) binds the case files, policies, artifacts,
+implementation and package metadata in its own source snapshot. From the root
+of that checkout, install its source into a separate environment:
+
+```sh
+git rev-parse HEAD > ../verify-source-commit.txt
+uv venv --python 3.12 ../verify-source-env
+uv pip install --python ../verify-source-env/bin/python .
+../verify-source-env/bin/probity-verify examples/source-coverage/case.json \
+  --policy examples/source-coverage/policy-june.json --json
+```
+
+Start from the exact reviewed source commit that contains the index, and retain
+that commit with the installed artifact. Use the index's argument arrays from
+the checkout root, replacing `probity-verify` with the installed executable's
+path. These instructions build a wheel from the selected source. A source
+candidate can have newer package metadata than the latest registry release.
+The index's `distribution.status` records that the package name has a public
+release; `fixture_scope` separately records that its recipes use checkout files.
+Neither field claims that a source candidate has been uploaded.
+
+## Retained historical source recipe
+
+The earlier installed-source recipe used commit
+`4eb2bac542f784b68c524b99cac9eccb32b0e5cc` with Python 3.12. It built its own
+wheel and replayed the three source-coverage outcomes shown above. That source
+had six adapters and predates `brokered_file_write/v1`; it is not an install pin
+for every recipe in the current index. To replay that historical source, use a
+new directory and keep its code and inputs together:
+
+```sh
+git clone https://github.com/probityai/probity-verify.git historical-source
+git -C historical-source checkout --detach 4eb2bac542f784b68c524b99cac9eccb32b0e5cc
+uv venv --python 3.12 historical-env
+uv pip install --python historical-env/bin/python ./historical-source
+historical-env/bin/probity-verify historical-source/examples/source-coverage/case.json \
+  --policy historical-source/examples/source-coverage/policy-june.json
+```
 
 ## Errors and scope
 

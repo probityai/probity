@@ -1,6 +1,6 @@
 # Choose a claim check
 
-Choose a task, then run its example with an installed [pinned version](install.md).
+Choose a task, then install the same source snapshot as its recipe index in a [separate environment](install.md#use-this-checkouts-recipe-index).
 All examples are authored synthetic records. They do not establish independent operation or live framework execution.
 
 | Task | Claim type | Expected decision | Scope |
@@ -20,10 +20,15 @@ All examples are authored synthetic records. They do not establish independent o
 ## Retrieve a command
 
 The [JSON recipe index](recipes.json) gives complete case and policy paths, argument arrays, expected reasons and digests.
-Every recipe uses the same source-only `probity-verify` distribution and CLI. These local fixtures need no extra framework package.
+Every recipe uses the `probity-verify` distribution and CLI. These source-checkout fixtures need no extra framework package.
 `probity-recipes/v1` is a project convention, not a discovery standard.
 
-Follow the [pinned install recipe](install.md), then use the index's `argv` from the checkout root.
+The JSON `distribution.status` describes package-name availability: `probity-verify` has a public PyPI release.
+It does not assert that the source candidate bound by `package_metadata` has been uploaded.
+The separate `fixture_scope` describes where the indexed case and policy files live.
+
+The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.1.0 with its supported public input snapshot.
+For this index, install its own checkout, then use the index's `argv` from that checkout root.
 Replace its first argument with your installed executable's path when the environment is separate.
 The index binds its inputs, package metadata and implementation to exact bytes.
 Use the index with the source snapshot from which it was generated; a later index may describe newer examples.

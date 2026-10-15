@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-verify"
-version = "0.1.0"
+version = "0.1.1"
 description = "Check claims against pinned evidence offline, with replayable decisions"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -32,5 +32,10 @@ probity-index = "probity_verify.index:main"
 probity-a2a = "probity_verify.a2a_server:main"
 probity-a2a-client = "probity_verify.a2a_client:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+include-package-data = false
+packages = ["probity_verify", "probity_verify.adapters", "probity_verify.samples"]
+package-dir = {"" = "src", "probity_verify.samples" = "examples/source-coverage"}
+
+[tool.setuptools.package-data]
+"probity_verify.samples" = ["*.json", "*.html", "*.txt"]

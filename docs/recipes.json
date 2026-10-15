@@ -4,10 +4,11 @@
   "repository": "https://github.com/probityai/probity-verify",
   "distribution": {
     "name": "probity-verify",
-    "status": "source-only",
+    "status": "published",
     "installation": "docs/install.md",
     "python": ">=3.10"
   },
+  "fixture_scope": "source-checkout",
   "operator": "author-run synthetic fixtures",
   "error_behavior": {
     "exit_code": 2,
@@ -15,8 +16,8 @@
   },
   "package_metadata": {
     "path": "pyproject.toml",
-    "bytes": 1279,
-    "sha256": "666792321bdc2840625791851f953059e9082fdb98ebfee7ffff4881e45e28d2"
+    "bytes": 1536,
+    "sha256": "8e8bec40932cea6ca2761e586b4edf662fa890ec41ba27140689e5a3f60382c0"
   },
   "implementation": [
     {

@@ -6,3 +6,5 @@ __pycache__/
 .local-deps/
 build/
 dist/
+.release-qualification/
+rebuilt/

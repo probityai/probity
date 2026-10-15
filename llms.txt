@@ -4,9 +4,9 @@
 
 ## Docs
 
-- [Install a pinned version](https://github.com/probityai/probity-verify/blob/main/docs/install.md): source-only distribution, separate environment, three sample decisions and error behavior
+- [Install a pinned version](https://github.com/probityai/probity-verify/blob/main/docs/install.md): published package and matching source inputs, separate environment, three sample decisions and error behavior
 - [Choose a claim check](https://github.com/probityai/probity-verify/blob/main/docs/recipes.md): task selector for the registered adapters
-- [Checked recipe index](https://raw.githubusercontent.com/probityai/probity-verify/main/docs/recipes.json): exact argument arrays, source-only install unit, expected outcomes, scope and input digests
+- [Checked recipe index](https://raw.githubusercontent.com/probityai/probity-verify/main/docs/recipes.json): exact argument arrays, source-checkout fixtures, package-name availability, expected outcomes, scope and input digests
 - [Running the verifier](https://github.com/probityai/probity-verify/blob/main/docs/running.md): commands, inputs, decisions
 - [Replayable decisions and the index](https://github.com/probityai/probity-verify/blob/main/docs/bundles-and-index.md): bundles, replay, disputes
 - [Select a consumer adapter](https://github.com/probityai/probity-verify/blob/main/docs/adapter-api.md): explicit per-call versions through adjudication and bundles
