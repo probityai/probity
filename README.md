@@ -28,6 +28,25 @@ Policy SHA-256: dfda1551714f92702169d1411af6b0bfeee54732f934ce71265534af775fa388
 
 A selected passage is in the source capture but missing from the stored report. The packet goes on to list every artifact binding and check. `uv run pytest` runs the test suite.
 
+## Use the decision in a check
+
+All valid decisions exit 0, including `contradicted` and `not_established`. Exit 2 reports invalid input without a verdict. Require support for this claim by reading `decision`:
+
+```sh
+uv run probity-verify examples/source-coverage/case.json \
+  --policy examples/source-coverage/policy-june.json --json > decision.json &&
+uv run python - <<'PY'
+import json
+
+with open("decision.json") as stream:
+    result = json.load(stream)
+print(result["decision"], result["reason"])
+raise SystemExit(0 if result["decision"] == "supported" else 1)
+PY
+```
+
+This guard prints `contradicted selected_span_missing_from_record` and exits 1. `supported` means the stated claim passes the pinned policy's checks. Your application still owns authorization.
+
 ## Status
 
 Version 0.1.0, unreleased. Six adapters ship: `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
