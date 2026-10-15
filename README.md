@@ -49,7 +49,7 @@ This guard prints `contradicted selected_span_missing_from_record` and exits 1. 
 
 ## Status
 
-PyPI version 0.1.0 supplies the current verifier. Source version 0.1.1 adds packaged sample inputs; see [release instructions](https://github.com/probityai/probity-verify/blob/main/docs/RELEASING.md) for checked artifacts. Seven adapters ship: `brokered_file_write/v1`, `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
+PyPI version 0.1.0 contains the verifier. Version 0.1.1 adds packaged sample inputs; see [release instructions](https://github.com/probityai/probity-verify/blob/main/docs/RELEASING.md) for checked artifacts. Seven adapters ship: `brokered_file_write/v1`, `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
 
 ## Documentation
 
