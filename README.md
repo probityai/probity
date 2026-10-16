@@ -11,13 +11,11 @@ Install the released package: `pip install probity-verify==0.1.1`.
 
 ## Quick start
 
-PyPI publishes `probity-verify==0.1.0`. Python 3.10 or newer and [uv](https://docs.astral.sh/uv/) are needed. This source quick start retains its historical code and input snapshot; the [installed-package recipe](https://github.com/probityai/probity-verify/blob/main/docs/install.md) pins the released wheel separately:
+Check a sample claim with the released package. You need Python 3.10 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone, and a cold run takes about seven seconds. Version 0.1.1 ships the sample case and policies inside the wheel:
 
 ```sh
-git clone https://github.com/probityai/probity-verify && cd probity-verify
-git checkout 588db582c50558f3e2a928be89ffc135188afcdb
-uv run probity-verify examples/source-coverage/case.json \
-  --policy examples/source-coverage/policy-june.json
+samples="$(uvx --from probity-verify==0.1.1 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
+uvx probity-verify==0.1.1 "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -31,16 +29,16 @@ Reason: selected_span_missing_from_record
 Policy SHA-256: dfda1551714f92702169d1411af6b0bfeee54732f934ce71265534af775fa388
 ```
 
-A selected passage is in the source capture but missing from the stored report. The packet goes on to list every artifact binding and check. `uv run pytest` runs the test suite.
+A selected passage is in the source capture but missing from the stored report. The packet goes on to list every artifact binding and check. Swap in `policy-april.json` for `not_established`, or `case-complete.json` with `policy-complete.json` for `supported`. To run from a pinned source checkout instead, see [Install a pinned version](https://github.com/probityai/probity-verify/blob/main/docs/install.md#run-the-source-quick-start).
 
 ## Use the decision in a check
 
 All valid decisions exit 0, including `contradicted` and `not_established`. Exit 2 reports invalid input without a verdict. Require support for this claim by reading `decision`:
 
 ```sh
-uv run probity-verify examples/source-coverage/case.json \
-  --policy examples/source-coverage/policy-june.json --json > decision.json &&
-uv run python - <<'PY'
+uvx probity-verify==0.1.1 "$samples/case.json" \
+  --policy "$samples/policy-june.json" --json > decision.json &&
+python3 - <<'PY'
 import json
 
 with open("decision.json") as stream:
@@ -54,7 +52,7 @@ This guard prints `contradicted selected_span_missing_from_record` and exits 1. 
 
 ## Status
 
-PyPI version 0.1.0 contains the verifier. Version 0.1.1 adds packaged sample inputs; see [release instructions](https://github.com/probityai/probity-verify/blob/main/docs/RELEASING.md) for checked artifacts. Seven adapters ship: `brokered_file_write/v1`, `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
+Version 0.1.1 is on PyPI and ships the sample inputs used above; 0.1.0 contains the verifier without them. See [release instructions](https://github.com/probityai/probity-verify/blob/main/docs/RELEASING.md) for checked artifacts. Seven adapters ship: `brokered_file_write/v1`, `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
 
 ## Documentation
 

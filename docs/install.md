@@ -119,3 +119,16 @@ The verifier checks local bytes. It does not fetch URLs or authenticate the
 authority named by a policy. The consumer must choose and pin that authority.
 See [Running the verifier](running.md) for input fields and adapter examples,
 and [Replayable decisions](bundles-and-index.md) to share a checked packet.
+
+## Run the source quick start
+
+This is the README's earlier quick start, kept as written. It retains its historical code and input snapshot:
+
+```sh
+git clone https://github.com/probityai/probity-verify && cd probity-verify
+git checkout 588db582c50558f3e2a928be89ffc135188afcdb
+uv run probity-verify examples/source-coverage/case.json \
+  --policy examples/source-coverage/policy-june.json
+```
+
+It prints the same decision packet as the installed package, with `Decision: contradicted` and `Reason: selected_span_missing_from_record`. `uv run pytest` runs the test suite.
