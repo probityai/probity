@@ -1,0 +1,58 @@
+name: published-vectors
+
+# Replays the source-coverage corpus shipped in the pinned agent-evidence-vectors
+# package from PyPI against this checkout's probity-verify, the way any other
+# verifier author would. The in-tree check in conformance.yml reads the vendored
+# copy; this job reads the published one, so a drift between the two shows up as
+# a red run here. The harness exits nonzero when any vector disagrees or when
+# the verifier answers fewer vectors than the corpus holds.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source-coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: '3.12'
+      - name: install this checkout's verifier into its own environment
+        run: |
+          uv venv --python 3.12 .build/verifier
+          uv pip install --python .build/verifier/bin/python .
+          .build/verifier/bin/probity-verify --help > /dev/null
+      - name: replay the published source-coverage corpus
+        run: >-
+          uv run --no-project --python 3.13
+          --with agent-evidence-vectors==0.18.1
+          agent-evidence-vectors
+          --corpus vectors-source-coverage
+          --verifier "${{ github.workspace }}/.build/verifier/bin/probity-verify"
+          --report .build/source-coverage-report.json
+      - name: the verifier answered every vector and none disagreed
+        run: |
+          python3 - <<'PYCODE'
+          import json
+          report = json.load(open(".build/source-coverage-report.json"))
+          totals = report["totals"]
+          executed = report["verifier"]["vectorsExecuted"]
+          print(f"rail {report['rail']}: {executed} of {totals['vectors']} executed, {totals['fail']} failed")
+          assert report["rail"] == "external", report["rail"]
+          assert executed == totals["vectors"] > 0, (executed, totals)
+          assert totals["fail"] == 0 and totals["suiteRefusals"] == 0, totals
+          PYCODE
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: source-coverage-report
+          if-no-files-found: error
+          path: .build/source-coverage-report.json
