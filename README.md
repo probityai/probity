@@ -58,6 +58,7 @@ Version 0.1.1 is on PyPI and ships the sample inputs used above; 0.1.0 contains 
 
 | page | read it for |
 | --- | --- |
+| [Start a project](https://github.com/new?template_name=evidence-starter&template_owner=probityai) | a template that checks an observer-recorded write with this verifier, pinned and in CI |
 | [Install a pinned version](https://github.com/probityai/probity-verify/blob/main/docs/install.md) | install outside the source checkout and replay three sample decisions |
 | [Choose a claim check](https://github.com/probityai/probity-verify/blob/main/docs/recipes.md) | select a task from checked recipes and retrieve exact commands and input digests |
 | [Select a consumer adapter](https://github.com/probityai/probity-verify/blob/main/docs/adapter-api.md) | supply exact adapter versions through adjudication, bundle creation and replay |
