@@ -1,8 +1,13 @@
 # probity-verify
 
+[![PyPI](https://img.shields.io/pypi/v/probity-verify.svg)](https://pypi.org/project/probity-verify/)
+[![Downloads (PePy)](https://static.pepy.tech/badge/probity-verify)](https://pepy.tech/projects/probity-verify)
+
 An offline verifier that decides whether a claim holds against evidence bytes the consumer pinned, with adapters for source passages, operand lineage, authority captures, bounded absence and spend journals.
 
 It's for auditors, incident reviewers and relying parties who receive a claim about an AI system and need a decision they can replay, not a report they have to trust.
+
+Install the released package: `pip install probity-verify==0.1.1`.
 
 ## Quick start
 
