@@ -7,6 +7,9 @@ import os
 import stat
 import re
 import unicodedata
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -17,6 +20,31 @@ HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 class CaseError(ValueError):
     """The case or consumer policy is malformed; no verdict was reached."""
+
+
+# Bytes a caller already authenticated (a verified DSSE payload), keyed by SHA-256.
+# An artifact whose pinned digest is here is read from these bytes, not from disk;
+# the length and digest bindings still apply. The set records which were read.
+_SUPPLIED: ContextVar[tuple[Mapping[str, bytes], set[str]] | None] = ContextVar(
+    "probity_supplied_artifacts", default=None)
+
+
+@contextmanager
+def supplied_artifacts(payloads: Mapping[str, bytes]) -> Iterator[set[str]]:
+    """Serve the given bytes, by SHA-256, to every artifact read in this block.
+
+    Yields the set of digests that an adapter read, so the caller can refuse
+    supplied bytes that no check used.
+    """
+    for digest, data in payloads.items():
+        if hashlib.sha256(data).hexdigest() != digest:
+            raise CaseError("supplied artifact bytes do not match their digest")
+    used: set[str] = set()
+    token = _SUPPLIED.set((dict(payloads), used))
+    try:
+        yield used
+    finally:
+        _SUPPLIED.reset(token)
 
 
 def _object(value: Any, label: str, required: set[str], optional: set[str] = frozenset()) -> dict:
@@ -146,8 +174,13 @@ def _artifact(root: Path, metadata: Any, label: str) -> tuple[bytes | None, dict
     length = meta["length"]
     if type(length) is not int or not 0 <= length <= MAX_ARTIFACT_BYTES:
         raise CaseError(f"{label}.length: expected integer from 0 to {MAX_ARTIFACT_BYTES}")
+    supplied = _SUPPLIED.get()
     try:
-        data = _read_bound_artifact(root, path, length, label)
+        if supplied is not None and digest in supplied[0]:
+            data = supplied[0][digest]
+            supplied[1].add(digest)
+        else:
+            data = _read_bound_artifact(root, path, length, label)
     except FileNotFoundError:
         return None, {"status": "unavailable", "path": name}
     except OSError as exc:
