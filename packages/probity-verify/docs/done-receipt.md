@@ -31,7 +31,7 @@ Every record is pinned by digest in the consumer policy, exactly as for the othe
 
 **Claims record** (`probity-tool-claims/v1`): the commands the agent says it ran, as `{id, argv}` with an optional claimed `exit`, parsed from its transcript by the harness. It carries `claim_id`, `invocation_id` and `producer`. Claims are the agent's statements, so they have no vantage pin.
 
-The tree, observation and grade records each carry `claim_id`, `invocation_id`, `producer`, `vantage` (`independent` or `self_reported`) and `witness_scope` (`PEER` or `EXTERNAL`). The consumer pins the same producer, vantage and scope for each one, and a record cannot raise its pin. A record is independent only when it and its pin say `independent`, its producer matches the pin, and the producer is not the observed party the assessment names.
+The tree, observation and grade records each carry `claim_id`, `invocation_id`, `producer`, `vantage` (`independent` or `self_reported`) and `witness_scope` (`PEER` or `EXTERNAL`). The consumer pins the same producer and vantage for each one, and a witness scope (see below). A record's own `witness_scope` never sets the verdict's scope. A record is independent only when it and its pin say `independent`, its producer matches the pin, and the producer is not the observed party the assessment names.
 
 ## Vantage and witness scope
 
@@ -42,9 +42,35 @@ Decision: supported (vantage: independent, witness_scope: PEER)
 ```
 
 - `vantage: independent` means every record the verdict rests on met its independence pin. A `not_established` verdict reports `vantage: unestablished` and no scope.
-- `witness_scope` is `EXTERNAL` only when every record the verdict rests on, and its pin, say `EXTERNAL`; otherwise it is `PEER`. `PEER` means the witness key runs under the same operator as the observer.
+- `witness_scope` is `EXTERNAL` only when every record the verdict rests on has a verified witness co-signature from a second operator, under a pin that says `EXTERNAL`; otherwise it is `PEER`. The scope is decided from the witness bundles, never from the record (see [Earning EXTERNAL scope](#earning-external-scope)). `PEER` means no second operator stands behind the record.
 
 By default the verifier accepts `PEER`, so a single developer's run can be `supported`. A consumer that needs a second operator passes `--require-witness-scope EXTERNAL` (or `require_witness_scope="EXTERNAL"` to `adjudicate`). A `supported` verdict that does not rest on EXTERNAL scope then becomes `not_established` with reason `witness_scope_below_required`, and a `witness_scope` check keeps the adapter's own verdict and reason. A `contradicted` verdict stands whatever its scope: a same-host witness reporting failure cannot help an agent fake a pass, and discarding it would lose evidence. Adapters that report no scope cannot meet the requirement.
+
+### Earning EXTERNAL scope
+
+A launcher writes `PEER` into every record it produces, and its own receipt requires each record to say the same, because the host that runs it also holds the sensors. So a record that says `EXTERNAL` is either from another producer or a claim nobody has checked, and the verifier never takes the scope from it. A second operator's witness co-signs the record afterwards; that co-signature is what earns `EXTERNAL`.
+
+A pin that says `EXTERNAL` must carry a `witnessed` pin, or the policy is malformed (exit 2):
+
+```json
+"witnessed": {
+  "bundle": "tree.witness.json",
+  "host": {"public_key": "<hex Ed25519 key>", "operator": "host-operator"},
+  "witness": {"public_key": "<hex Ed25519 key>", "operator": "witness-operator"},
+  "retained_checkpoint": "checkpoint-earlier.json",
+  "consistency": "consistency-proof.json"
+}
+```
+
+`bundle` names the case artifact holding the `probity-witnessed-record/v1` bundle the witness returned for this record. The keys and operator names are the consumer's own statement. `retained_checkpoint` (a checkpoint of the same log the consumer already holds) and `consistency` (the witness's proof between the two) are optional. Only a `PEER` pin may omit `witnessed`, and only an `EXTERNAL` pin may carry it.
+
+The bundle is checked by `verify_witnessed_record` in [agent-evidence-observer](https://github.com/probityai/agent-evidence-observer/blob/main/docs/reference/WITNESS-SERVER.md), the one implementation of the witness formats: signatures from both pinned keys (2-of-2; one is refused, not downgraded), a checkpoint signed by the witness key, the record's inclusion in it, and consistency with the retained checkpoint. The verifier then requires the bundle's signed payload to be the pinned record's exact bytes. The record earns `EXTERNAL` only when all of this holds and the two pins name different operators; one operator for both keys earns `PEER`.
+
+Any other outcome earns `PEER` and is reported in the bound pin's `witnessed.status`: `verified`, `refused` (a check failed), `equivocation` (the witness forked its log or cannot prove the retained checkpoint consistent) or `unavailable` (an artifact is missing, the record is unbound, or the verifier is not installed). A failed co-signature never changes a `contradicted` verdict.
+
+A record that says `EXTERNAL` when no verified bundle earned it is listed in the decision's `unwitnessed_scope_claims`, with the witness, the claimed and earned scope, and the reason. Under `--require-witness-scope EXTERNAL` a `supported` verdict that rests on such a record becomes `not_established` with reason `witness_scope_unwitnessed`, and the `witness_scope` check names each claim. A `done_receipt/v1` verdict carries the claims of the checks it rests on.
+
+The witness verifier is a separate environment, pinned in `requirements-witness.txt` (Python 3.12 or later): `uv venv --python 3.12 && uv pip install -r requirements-witness.txt && uv pip install --no-deps .` in a checkout. It is not a `probity-verify` extra yet: the pinned observer depends on a jcs-admit commit that still published its Python binding as `probityai`, the name of the `probity` command, so the two cannot share one environment. jcs-admit now publishes the binding as `jcs-admit`; when the observer moves to it, the lock becomes a `witness` extra. Without it no record reaches `EXTERNAL`.
 
 ## Protected paths
 

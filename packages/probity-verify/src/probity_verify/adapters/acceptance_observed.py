@@ -100,7 +100,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
 
     def decide(decision: str, reason: str, *pairs: tuple[dict, dict]) -> dict:
         if decision != "not_established":
-            result.update(vantage="independent", witness_scope=records.scope_of(*pairs))
+            result.update(vantage="independent", **records.scope_fields(*pairs))
         return {**result, "decision": decision, "reason": reason}
 
     contract_bytes, contract_pin = bound["contract"]

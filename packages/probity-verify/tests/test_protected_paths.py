@@ -45,20 +45,6 @@ class TestSupported:
         change_tree(records, "tests/sub/__pycache__/x.pyc", "cache")
         assert run(tmp_path, records)["decision"] == "supported"
 
-    def test_external_scope_needs_record_and_pin(self, tmp_path, records):
-        for role in ("observation", "tree"):
-            records[role]["witness_scope"] = "EXTERNAL"
-        assert run(tmp_path, records)["witness_scope"] == "EXTERNAL"
-
-    def test_record_cannot_raise_scope_above_its_pin(self, tmp_path, records):
-        for role in ("observation", "tree"):
-            records[role]["witness_scope"] = "EXTERNAL"
-        files, case, policy = build(records, CLAIM)
-        policy["witnesses"]["tree"]["witness_scope"] = "PEER"
-        for name, raw in files.items():
-            (tmp_path / name).write_bytes(raw)
-        assert adjudicate(case, policy, tmp_path)["witness_scope"] == "PEER"
-
 
 class TestContradicted:
     def test_edit_run_revert_is_caught_by_the_write_event(self, tmp_path, records):

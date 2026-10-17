@@ -46,7 +46,8 @@ def _scope(value: Any, label: str) -> dict:
 
 def _witness(case: dict, policy: dict, witness_id: str, root: Path,
              *, require_vantage: bool = False,
-             require_scope: bool = False) -> tuple[bytes | None, dict]:
+             require_scope: bool = False,
+             allow_witnessed: bool = False) -> tuple[bytes | None, dict]:
     witnesses = policy["witnesses"]
     artifacts = case["artifacts"]
     if witness_id not in witnesses:
@@ -56,7 +57,8 @@ def _witness(case: dict, policy: dict, witness_id: str, root: Path,
         fields |= {"producer", "vantage"}
     if require_scope:
         fields.add("witness_scope")
-    witness = _object(witnesses[witness_id], f"witness.{witness_id}", fields)
+    witness = _object(witnesses[witness_id], f"witness.{witness_id}", fields,
+                      {"witnessed"} if allow_witnessed else set())
     artifact_id = _string(witness["artifact"], f"witness.{witness_id}.artifact")
     if artifact_id not in artifacts:
         raise CaseError(f"unknown artifact: {artifact_id}")
@@ -78,6 +80,8 @@ def _witness(case: dict, policy: dict, witness_id: str, root: Path,
         if witness["witness_scope"] not in ACCEPTED_WITNESS_SCOPES:
             raise CaseError(f"witness.{witness_id}.{witness_scope_error(witness['witness_scope'])}")
         pin["witness_scope"] = witness["witness_scope"]
+    if "witnessed" in witness:
+        pin["witnessed"] = witness["witnessed"]
     return data, pin
 
 

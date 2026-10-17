@@ -107,16 +107,25 @@ def _sub_policy(policy: dict, case_id: str, assessment: dict, adapter, roles,
             "assessments": {case_id: sub}}
 
 
+def _claims(*entries: dict) -> dict:
+    """The unwitnessed EXTERNAL claims of the checks a verdict rests on, once each."""
+    claims = []
+    for entry in entries:
+        claims += [claim for claim in entry.get("unwitnessed_scope_claims", [])
+                   if claim not in claims]
+    return {"unwitnessed_scope_claims": claims} if claims else {}
+
+
 def combine(found: list[dict]) -> dict:
     """The done verdict from the three check results, in check order."""
     for entry in found:
         if entry["decision"] == "contradicted":
             return {"decision": "contradicted", "reason": entry["reason"],
-                    "witness_scope": entry.get("witness_scope", PEER)}
+                    "witness_scope": entry.get("witness_scope", PEER), **_claims(entry)}
     if all(entry["decision"] == "supported" for entry in found):
         external = all(entry.get("witness_scope") == EXTERNAL for entry in found)
         return {"decision": "supported", "reason": "done_checks_supported",
-                "witness_scope": EXTERNAL if external else PEER}
+                "witness_scope": EXTERNAL if external else PEER, **_claims(*found)}
     first = next(entry for entry in found if entry["decision"] == "not_established")
     return {"decision": "not_established", "reason": first["reason"]}
 
@@ -142,9 +151,11 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     }
     checks = result["checks"]
 
-    def decide(decision: str, reason: str, witness_scope: str | None = None) -> dict:
+    def decide(decision: str, reason: str, witness_scope: str | None = None,
+               claims: dict | None = None) -> dict:
         if decision != "not_established":
-            result.update(vantage="independent", witness_scope=witness_scope or PEER)
+            result.update(vantage="independent", witness_scope=witness_scope or PEER,
+                          **(claims or {}))
         return {**result, "decision": decision, "reason": reason}
 
     receipt_bytes, _ = bound["receipt"]
@@ -179,9 +190,9 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     for adapter, check_roles, observed in CHECKS:
         sub = _sub_policy(policy, case_id, assessment, adapter, check_roles, observed)
         decision = adapter.adjudicate(case, sub, artifact_root)
-        found.append({key: decision[key] for key in ("claim_type", "decision", "reason")
-                      if key in decision} | ({"witness_scope": decision["witness_scope"]}
-                                             if "witness_scope" in decision else {}))
+        found.append({key: decision[key] for key in (
+            "claim_type", "decision", "reason", "witness_scope", "unwitnessed_scope_claims")
+            if key in decision})
     derived = combine(found)
     reported = predicate["verdict"]
     agrees = (reported["decision"], reported["reason"]) == (derived["decision"],
@@ -192,7 +203,8 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
                                 "reason": reported["reason"]}})
     if not agrees:
         return decide("contradicted", "receipt_verdict_mismatch")
-    return decide(derived["decision"], derived["reason"], derived.get("witness_scope"))
+    return decide(derived["decision"], derived["reason"], derived.get("witness_scope"),
+                  _claims(derived))
 
 
 def encode_statement(predicate: dict, tree_sha256: str) -> bytes:

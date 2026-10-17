@@ -23,6 +23,9 @@ ACCEPTANCE = (ADAPTERS + "acceptance_observed.py", "tests/test_acceptance_observ
 CLAIMS = (ADAPTERS + "tool_claim_match.py", "tests/test_tool_claim_match.py")
 CORE = ("src/probity_verify/core.py", "tests/test_witness_scope.py")
 RECEIPT = (ADAPTERS + "done_receipt.py", "tests/test_done_receipt.py")
+WITNESSED = ADAPTERS + "witnessed.py"
+BUNDLES = "tests/witness_bundles.py"
+CLAIMED = "tests/test_witnessed_scope.py"
 
 MUTATIONS = [
     ("protected: rename or link target ignored", *PROTECTED,
@@ -39,11 +42,37 @@ MUTATIONS = [
      "            ):"),
     ("protected: supported without a final tree", *PROTECTED,
      '    if tree_check["status"] != "met":', "    if False:"),
-    ("records: scope from the record alone", RECORDS, PROTECTED[1],
-     'record["witness_scope"] == pin["witness_scope"] == EXTERNAL',
-     'record["witness_scope"] == EXTERNAL'),
     ("records: witness scope outside the vocabulary accepted", RECORDS, "tests/test_vocabulary.py",
      '    if record["witness_scope"] not in SCOPES:', "    if False:"),
+    ("records: a record's own EXTERNAL claim earns the scope", RECORDS, CLAIMED,
+     'record is not None and earned_scope(pin) == EXTERNAL',
+     'record is not None and (earned_scope(pin) == EXTERNAL'
+     ' or record["witness_scope"] == EXTERNAL)'),
+    ("records: a PEER record cannot earn EXTERNAL from its bundle", RECORDS, BUNDLES,
+     'record is not None and earned_scope(pin) == EXTERNAL',
+     'record is not None and earned_scope(pin) == record["witness_scope"] == EXTERNAL'),
+    ("records: EXTERNAL pin needs no witness pin", RECORDS, CLAIMED,
+     'if observed and pin["witness_scope"] == EXTERNAL:',
+     'if observed and "witnessed" in pin:'),
+    ("records: PEER pin may name a witness", RECORDS, CLAIMED,
+     '        elif "witnessed" in pin:\n', "        elif False:\n"),
+    ("records: unwitnessed EXTERNAL claim not reported", RECORDS, CLAIMED,
+     'if record is None or record["witness_scope"] != EXTERNAL:', "if True:"),
+    ("witnessed: payload not compared with the pinned record", WITNESSED, BUNDLES,
+     "    if verdict.payload != record:", "    if False:"),
+    ("witnessed: refused co-signature earns EXTERNAL", WITNESSED, BUNDLES,
+     'return _outcome(config, "refused", PEER, str(exc))',
+     'return _outcome(config, "refused", EXTERNAL, str(exc))'),
+    ("witnessed: equivocation earns EXTERNAL", WITNESSED, BUNDLES,
+     'return _outcome(config, "equivocation", PEER, str(exc))',
+     'return _outcome(config, "equivocation", EXTERNAL, str(exc))'),
+    ("witnessed: missing verifier earns EXTERNAL", WITNESSED, CLAIMED,
+     'return _outcome(config, "unavailable", PEER, UNAVAILABLE)',
+     'return _outcome(config, "unavailable", EXTERNAL, UNAVAILABLE)'),
+    ("witnessed: unbound record checked anyway", WITNESSED, BUNDLES,
+     "    if record is None:\n", "    if False:\n"),
+    ("witnessed: one key pinned for host and witness", WITNESSED, CLAIMED,
+     'if host["public_key"] == witness["public_key"]:', "if False:"),
     ("acceptance: grade tree binding skipped", *ACCEPTANCE,
      '"tree": grade["tree_sha256"] == tree["tree_sha256"]}', '"tree": True}'),
     ("acceptance: grade contract binding skipped", *ACCEPTANCE,
@@ -219,6 +248,11 @@ MUTATIONS = [
      ("""return f" ({', '.join(parts)})" if parts else """""), 'return ""'),
     ("core: invalid adapter scope accepted", *CORE,
      'result.get("witness_scope", PEER) not in WITNESS_SCOPES', "False"),
+    ("core: unwitnessed claim reported as a low scope", "src/probity_verify/core.py", CLAIMED,
+     'reason="witness_scope_unwitnessed" if claims', 'reason="witness_scope_unwitnessed" if False'),
+    ("receipt: unwitnessed claims of its checks dropped", RECEIPT[0], CLAIMED,
+     '"witness_scope": EXTERNAL if external else PEER, **_claims(*found)}',
+     '"witness_scope": EXTERNAL if external else PEER}'),
 ]
 
 

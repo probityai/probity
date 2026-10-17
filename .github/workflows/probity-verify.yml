@@ -29,9 +29,33 @@ jobs:
       - run: uv run --frozen python examples/brokered-file-write/generate.py --check
       - run: uv run --frozen python examples/customer-support-action/generate.py --check
       - run: uv run --frozen python examples/done-receipt/generate.py --check
-      - run: uv run --frozen --extra test python scripts/mutation-check-done.py
       - run: uv run --frozen --extra test python vectors-source-coverage/check_vectors.py --verifier 'probity-verify'
       - run: uv run --frozen --extra test python vectors-operand-lineage/check_vectors.py --verifier 'probity-verify'
+
+  # EXTERNAL witness scope is earned only from a witness co-signature, checked by
+  # agent-evidence-observer's witness module. That module needs the jcs-admit
+  # binding, whose distribution name (probityai) is also this workspace's probity
+  # command, so it runs in its own environment pinned by requirements-witness.txt.
+  witness-scope:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: '3.12'
+      - name: build the witness environment from its lock
+        run: |
+          uv venv --python 3.12 .build/witness
+          uv pip install --python .build/witness/bin/python -r requirements-witness.txt
+          uv pip install --python .build/witness/bin/python --no-deps .
+      - name: the lock is the compiled input
+        run: |
+          uv pip compile --quiet --no-header --python-version 3.12 requirements-witness.in -o .build/requirements-witness.txt
+          diff -u requirements-witness.txt .build/requirements-witness.txt
+      - run: .build/witness/bin/python -m pytest -q tests/witness_bundles.py tests/test_witnessed_scope.py
+      - run: .build/witness/bin/python scripts/mutation-check-done.py
 
   a2a-transport:
     runs-on: ubuntu-24.04

@@ -47,14 +47,6 @@ def test_peer_receipt_is_held_under_an_external_requirement(capsys):
         "adapter_reason": "protected_paths_untouched"}
 
 
-def test_external_receipt_meets_the_requirement(tmp_path):
-    records = honest_records()
-    for role in ("observation", "tree"):
-        records[role]["witness_scope"] = "EXTERNAL"
-    result = decide(tmp_path, records, "protected_paths/v1", require_witness_scope="EXTERNAL")
-    assert (result["decision"], result["witness_scope"]) == ("supported", "EXTERNAL")
-
-
 def test_contradiction_from_a_peer_witness_stands(tmp_path):
     records = honest_records()
     records["grade"]["results"][0]["exit"] = 1

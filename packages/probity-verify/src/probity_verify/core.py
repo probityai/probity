@@ -110,6 +110,9 @@ def adjudicate(
     rests on. ``require_witness_scope="EXTERNAL"`` turns a ``supported`` verdict
     that does not rest on EXTERNAL scope into ``not_established`` with reason
     ``witness_scope_below_required``, keeping the adapter's verdict in a check.
+    When a record the verdict rests on claims EXTERNAL scope that no verified
+    witness bundle earned (the adapter's ``unwitnessed_scope_claims``), the
+    reason is ``witness_scope_unwitnessed`` and the check names each claim.
     A ``contradicted`` verdict stands: a witness reporting failure cannot help
     an agent fake a pass.
     """
@@ -149,7 +152,8 @@ def adjudicate(
             not isinstance(result.get("scope"), dict) or
             not isinstance(result.get("checks"), list) or
             result.get("vantage", "independent") not in VANTAGES or
-            result.get("witness_scope", PEER) not in WITNESS_SCOPES):
+            result.get("witness_scope", PEER) not in WITNESS_SCOPES or
+            not isinstance(result.get("unwitnessed_scope_claims", []), list)):
         raise CaseError("adapter returned an invalid decision envelope")
     result["policy_sha256"] = policy_sha256
     if require_witness_scope == EXTERNAL:
@@ -163,11 +167,16 @@ def _require_external(result: dict) -> None:
     scope = result.get("witness_scope")
     if result["decision"] != "supported" or scope == EXTERNAL:
         return
-    result["checks"].append({
-        "id": "witness_scope", "status": "unavailable", "required": EXTERNAL,
-        "observed": scope or "unstated", "adapter_decision": result["decision"],
-        "adapter_reason": result["reason"]})
-    result.update(decision="not_established", reason="witness_scope_below_required")
+    claims = result.get("unwitnessed_scope_claims", [])
+    check = {"id": "witness_scope", "status": "unavailable", "required": EXTERNAL,
+             "observed": scope or "unstated", "adapter_decision": result["decision"],
+             "adapter_reason": result["reason"]}
+    if claims:
+        check["unwitnessed_claims"] = claims
+    result["checks"].append(check)
+    result.update(decision="not_established",
+                  reason="witness_scope_unwitnessed" if claims
+                  else "witness_scope_below_required")
 
 
 def _qualifiers(result: dict) -> str:

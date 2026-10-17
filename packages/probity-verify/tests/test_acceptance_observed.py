@@ -31,12 +31,6 @@ class TestSupported:
         assert next(c for c in result["checks"] if c["id"] == "acceptance")["results"] == [
             {"id": "unit", "exit": 0}, {"id": "heldout-unit", "exit": 0}]
 
-    def test_external_scope_needs_tree_and_grade(self, tmp_path, records):
-        records["grade"]["witness_scope"] = "EXTERNAL"
-        assert run(tmp_path, records)["witness_scope"] == "PEER"
-        records["tree"]["witness_scope"] = "EXTERNAL"
-        assert run(tmp_path, records)["witness_scope"] == "EXTERNAL"
-
 
 class TestContradicted:
     def test_failing_acceptance_in_the_verifier(self, tmp_path, records):
