@@ -1,6 +1,16 @@
 {
   "members": [
     {
+      "bytes": 552,
+      "path": "honest/acceptance.case.json",
+      "sha256": "7c698fa6173034728710b72e72effbc816266657ebf9f425d9ce0e45e54e6456"
+    },
+    {
+      "bytes": 1043,
+      "path": "honest/acceptance.policy.json",
+      "sha256": "6451b9b3dd5da0a3c6cef8ab9a09812e88a29e43a456025e8160c1338161fa35"
+    },
+    {
       "bytes": 273,
       "path": "honest/capability.json",
       "sha256": "11efaeb94b1d47452131ae13d9d9083a3af009a0f89ac3947f05142187b91344"
@@ -9,6 +19,11 @@
       "bytes": 555,
       "path": "honest/contract.json",
       "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
+    },
+    {
+      "bytes": 543,
+      "path": "honest/grade.json",
+      "sha256": "7d535a5f339a4ea590254b5fd918af0e03cf29d780f89526e0e69f70e75338e4"
     },
     {
       "bytes": 896,
@@ -31,6 +46,16 @@
       "sha256": "a6db850e8f507613ae138b0c7b3570c602bccaab76a47430cd0a332ce08d2a40"
     },
     {
+      "bytes": 557,
+      "path": "lost-events/acceptance.case.json",
+      "sha256": "2dae63553687a9932c4fd713a31ed8bf45137bd33fd48765c7036befa8022d9d"
+    },
+    {
+      "bytes": 1048,
+      "path": "lost-events/acceptance.policy.json",
+      "sha256": "e28f9bc123d9d20e3c73bd78f6c070ab900403a0b50e663929579bd21a7e0d9e"
+    },
+    {
       "bytes": 278,
       "path": "lost-events/capability.json",
       "sha256": "e0b97dff40e2b3a71725f0411f1ef972eb99eb70f3f4b7fc5eb556bd51547ad6"
@@ -39,6 +64,11 @@
       "bytes": 555,
       "path": "lost-events/contract.json",
       "sha256": "ce20865a368efd0239a1f4f1dd5b09c072575c529fd135735d704dff5bd55a48"
+    },
+    {
+      "bytes": 548,
+      "path": "lost-events/grade.json",
+      "sha256": "9c51538c96ec68bbb60504ea3b16ff9750bda786d57373581f6e4548899ef8c9"
     },
     {
       "bytes": 480,
@@ -61,6 +91,16 @@
       "sha256": "e0f044127d261b2d8516b44b97a44f93cf5b15102a9ff7d42a4b683d5f745bc2"
     },
     {
+      "bytes": 563,
+      "path": "planted-adversary/acceptance.case.json",
+      "sha256": "285880257407eff8791c960fffd83114633d5ac9ce9868155ca5ecf7e0a63673"
+    },
+    {
+      "bytes": 1054,
+      "path": "planted-adversary/acceptance.policy.json",
+      "sha256": "241276424dfbe276c99edc4fe0d0bea21f7bfc81cf0447e101a1c949e2c2eaa3"
+    },
+    {
       "bytes": 284,
       "path": "planted-adversary/capability.json",
       "sha256": "ad413357368e8a1126f0f7143dea52d8f15d3e40a44bf5df0a6719f3aa66cb1d"
@@ -69,6 +109,11 @@
       "bytes": 555,
       "path": "planted-adversary/contract.json",
       "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
+    },
+    {
+      "bytes": 554,
+      "path": "planted-adversary/grade.json",
+      "sha256": "8d0cceb9b960e22fff12e6efbda86e28920b2d6b6660312858c95f69f9b7a3fe"
     },
     {
       "bytes": 684,

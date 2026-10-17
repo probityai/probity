@@ -125,6 +125,33 @@
       "documentation": "docs/done-receipt.md",
       "expected_decision": "not_established",
       "scope": "Synthetic observer records with unknown coverage."
+    },
+    {
+      "task": "Check acceptance graded outside the agent on its final tree",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/honest/acceptance.case.json",
+      "policy": "examples/done-receipt/honest/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic grade and tree records; PEER scope."
+    },
+    {
+      "task": "Detect acceptance that fails when the verifier reruns it",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/planted-adversary/acceptance.case.json",
+      "policy": "examples/done-receipt/planted-adversary/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic grade and tree records; PEER scope."
+    },
+    {
+      "task": "Refuse support from a contract that killed no mutant",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/lost-events/acceptance.case.json",
+      "policy": "examples/done-receipt/lost-events/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic contract with zero mutation adequacy."
     }
   ]
 }

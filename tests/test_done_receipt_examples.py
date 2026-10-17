@@ -15,6 +15,9 @@ EXPECTED = {
     ("planted-adversary", "protected-paths"): ("contradicted", "protected_path_mutated"),
     ("lost-events", "protected-paths"): ("not_established",
                                          "observation_coverage_unestablished"),
+    ("honest", "acceptance"): ("supported", "acceptance_passed_in_verifier"),
+    ("planted-adversary", "acceptance"): ("contradicted", "acceptance_failed_in_verifier"),
+    ("lost-events", "acceptance"): ("not_established", "contract_adequacy_zero"),
 }
 
 

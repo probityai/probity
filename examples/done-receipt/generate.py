@@ -16,6 +16,7 @@ MUTATIONS = ["chmod", "create", "exec", "link", "rename", "truncate", "unlink", 
 CHECKS = {
     "protected-paths": ("protected_paths/v1",
                         ("contract", "capability", "observation", "tree")),
+    "acceptance": ("acceptance_observed/v1", ("contract", "tree", "grade")),
 }
 OBSERVED = {"observation", "tree", "grade"}
 

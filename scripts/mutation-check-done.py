@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ADAPTERS = "src/probity_verify/adapters/"
 RECORDS = ADAPTERS + "done_records.py"
 PROTECTED = (ADAPTERS + "protected_paths.py", "tests/test_protected_paths.py")
+ACCEPTANCE = (ADAPTERS + "acceptance_observed.py", "tests/test_acceptance_observed.py")
 
 MUTATIONS = [
     ("protected: rename or link target ignored", *PROTECTED,
@@ -38,6 +39,21 @@ MUTATIONS = [
     ("records: scope from the record alone", RECORDS, PROTECTED[1],
      'record["witness_scope"] == pin["witness_scope"] == "EXTERNAL"',
      'record["witness_scope"] == "EXTERNAL"'),
+    ("acceptance: grade tree binding skipped", *ACCEPTANCE,
+     '"tree": grade["tree_sha256"] == tree["tree_sha256"]}', '"tree": True}'),
+    ("acceptance: grade contract binding skipped", *ACCEPTANCE,
+     'grade["contract_sha256"] == contract_pin["consumer_pinned_sha256"]', "True"),
+    ("acceptance: grade vantage skipped", *ACCEPTANCE,
+     "grade_ok = records.independent(grade, grade_pin, observed_party)", "grade_ok = True"),
+    ("acceptance: nonzero exit passes", *ACCEPTANCE,
+     'if item["exit"] != 0]', 'if item["exit"] > 1]'),
+    ("acceptance: zero adequacy supports", *ACCEPTANCE,
+     'adequate = adequacy["killed"] > 0', "adequate = True"),
+    ("acceptance: missing result ignored", *ACCEPTANCE,
+     '            return "acceptance_result_missing", outcomes',
+     "            continue"),
+    ("records: tree digest not recomputed", RECORDS, ACCEPTANCE[1],
+     'raise CaseError("tree.tree_sha256: does not match the listed files")', "pass"),
 ]
 
 

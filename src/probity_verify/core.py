@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from .adapters import (
+    acceptance_observed,
     authority_anchor,
     brokered_file_write,
     event_absence,
@@ -35,6 +36,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "event_absence/v2": event_absence.adjudicate_v2,
     "spend_reservation/v1": spend_reservation.adjudicate,
     "protected_paths/v1": protected_paths.adjudicate,
+    "acceptance_observed/v1": acceptance_observed.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

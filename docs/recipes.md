@@ -19,6 +19,9 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check that an agent left its protected tests alone](done-receipt.md) | `protected_paths/v1` | `supported` | Synthetic observer records; PEER scope; recorded paths only. |
 | [Detect a planted conftest.py in a protected test directory](done-receipt.md) | `protected_paths/v1` | `contradicted` | Synthetic observer records; PEER scope; recorded paths only. |
 | [Keep protected-path absence open when observer events were lost](done-receipt.md) | `protected_paths/v1` | `not_established` | Synthetic observer records with unknown coverage. |
+| [Check acceptance graded outside the agent on its final tree](done-receipt.md) | `acceptance_observed/v1` | `supported` | Synthetic grade and tree records; PEER scope. |
+| [Detect acceptance that fails when the verifier reruns it](done-receipt.md) | `acceptance_observed/v1` | `contradicted` | Synthetic grade and tree records; PEER scope. |
+| [Refuse support from a contract that killed no mutant](done-receipt.md) | `acceptance_observed/v1` | `not_established` | Synthetic contract with zero mutation adequacy. |
 
 ## Retrieve a command
 
