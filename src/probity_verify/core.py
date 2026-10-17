@@ -43,6 +43,8 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
 DECISIONS = {"supported", "contradicted", "not_established"}
+VANTAGES = {"independent", "unestablished"}
+WITNESS_SCOPES = ("PEER", "EXTERNAL")
 
 
 def canonical_json(value: Any) -> bytes:
@@ -84,6 +86,7 @@ def adjudicate(
     artifact_root: Path,
     *,
     adapters: Mapping[str, Callable[[Any, Any, Path], dict]] | None = None,
+    require_witness_scope: str = "PEER",
 ) -> dict:
     """Check one claim using built-in and explicitly selected adapters.
 
@@ -99,9 +102,16 @@ def adjudicate(
     Existing callers can continue to use the three positional arguments and
     the legacy ``ADAPTERS`` registry. Adapter callbacks are trusted Python code;
     the registry provides selection and isolation, not a code sandbox.
+
+    An adapter may report the ``vantage`` and ``witness_scope`` its verdict
+    rests on. ``require_witness_scope="EXTERNAL"`` turns any verdict that does
+    not rest on EXTERNAL scope into ``not_established`` with reason
+    ``witness_scope_below_required``, keeping the adapter's verdict in a check.
     """
     if not isinstance(case, dict) or not isinstance(policy, dict):
         raise CaseError("case and policy must be JSON objects")
+    if require_witness_scope not in WITNESS_SCOPES:
+        raise CaseError("require_witness_scope must be PEER or EXTERNAL")
     registry = _adapter_registry(adapters)
     case, policy = deepcopy(case), deepcopy(policy)
     control_bytes = _control_bytes(case, policy)
@@ -131,10 +141,35 @@ def adjudicate(
             result.get("case_id") != case_id or
             result.get("claim_type") != claim_type or
             not isinstance(result.get("scope"), dict) or
-            not isinstance(result.get("checks"), list)):
+            not isinstance(result.get("checks"), list) or
+            result.get("vantage", "independent") not in VANTAGES or
+            result.get("witness_scope", "PEER") not in WITNESS_SCOPES):
         raise CaseError("adapter returned an invalid decision envelope")
     result["policy_sha256"] = policy_sha256
+    if require_witness_scope == "EXTERNAL":
+        _require_external(result)
     return result
+
+
+def _require_external(result: dict) -> None:
+    """Hold a verdict that does not rest on EXTERNAL witness scope as unestablished."""
+    result["required_witness_scope"] = "EXTERNAL"
+    scope = result.get("witness_scope")
+    if result["decision"] == "not_established" or scope == "EXTERNAL":
+        return
+    result["checks"].append({
+        "id": "witness_scope", "status": "unavailable", "required": "EXTERNAL",
+        "observed": scope or "unstated", "adapter_decision": result["decision"],
+        "adapter_reason": result["reason"]})
+    result.update(decision="not_established", reason="witness_scope_below_required")
+
+
+def _qualifiers(result: dict) -> str:
+    """The vantage and witness scope a verdict rests on, when the adapter reports them."""
+    parts = [f"{key}: {result[key]}" for key in ("vantage", "witness_scope") if key in result]
+    if "required_witness_scope" in result:
+        parts.append(f"required: {result['required_witness_scope']}")
+    return f" ({', '.join(parts)})" if parts else ""
 
 
 def render_packet(result: dict) -> str:
@@ -143,7 +178,7 @@ def render_packet(result: dict) -> str:
         "Probity decision packet v1",
         f"Case: {json.dumps(result['case_id'], ensure_ascii=True)}",
         f"Claim: {result['claim_type']}",
-        f"Decision: {result['decision']}",
+        f"Decision: {result['decision']}{_qualifiers(result)}",
         f"Reason: {result['reason']}",
         f"Policy SHA-256: {result['policy_sha256']}",
         "Scope and evidence:",
