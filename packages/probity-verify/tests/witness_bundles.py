@@ -13,13 +13,12 @@ from __future__ import annotations
 import json
 
 import pytest
-from probityai import dsse
+from done_run import honest_records
 from probity_observer.witness.checkpoint import signer
 from probity_observer.witness.server import WitnessLog, init_witness
-
-from done_run import honest_records
 from probity_verify import adjudicate
 from probity_verify.cli import main
+from probityai import dsse
 from test_done_receipt import build as build_receipt
 from witness_run import HOST_OPERATOR, external, pin, written
 
@@ -133,7 +132,7 @@ def test_bundle_from_a_foreign_witness_key_is_peer(tmp_path, make_log):
 
 
 def test_pin_naming_a_foreign_host_key_is_peer(tmp_path, make_log):
-    files, case, policy = setup(tmp_path, make_log())
+    _files, case, policy = setup(tmp_path, make_log())
     bundle = json.loads((tmp_path / "tree.witness.json").read_bytes())
     pin(tmp_path, case, policy, "tree", encode(bundle), FOREIGN.public_key.hex(), WITNESS_KEY)
     refused = held(tmp_path, case, policy)

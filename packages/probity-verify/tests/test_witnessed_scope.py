@@ -7,7 +7,6 @@ witness_bundles.py, which runs in the witness environment.
 """
 
 import pytest
-
 from done_run import decide, honest_records
 from probity_verify import CaseError, adjudicate
 from probity_verify.adapters import witnessed
@@ -29,7 +28,7 @@ def test_self_declared_external_scope_is_refused(tmp_path):
 
 def peer_pinned(tmp_path, records, claim=CLAIM):
     """A case whose pins all say PEER, whatever the records claim."""
-    files, case, policy = written(tmp_path, records, claim)
+    _files, case, policy = written(tmp_path, records, claim)
     for witness in policy["witnesses"].values():
         if "witness_scope" in witness:
             witness["witness_scope"] = "PEER"
@@ -97,14 +96,14 @@ def test_done_receipt_carries_unwitnessed_claims_from_its_checks(tmp_path):
 
 
 def test_peer_pin_cannot_name_a_witness(tmp_path):
-    files, case, policy = written(tmp_path, honest_records(), CLAIM)
+    _files, case, policy = written(tmp_path, honest_records(), CLAIM)
     pin(tmp_path, case, policy, "tree", b"{}", HOST_KEY, WITNESS_KEY, scope="PEER")
     with pytest.raises(CaseError, match="only an EXTERNAL scope pin names a witness"):
         adjudicate(case, policy, tmp_path)
 
 
 def configured(tmp_path, change):
-    files, case, policy = written(tmp_path, honest_records(), CLAIM)
+    _files, case, policy = written(tmp_path, honest_records(), CLAIM)
     for role in ("observation", "tree"):
         pin(tmp_path, case, policy, role, b"{}", HOST_KEY, WITNESS_KEY)
     change(policy["witnesses"]["tree"]["witnessed"])
