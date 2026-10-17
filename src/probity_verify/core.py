@@ -24,6 +24,7 @@ from .adapters import (
     protected_paths,
     source_coverage,
     spend_reservation,
+    tool_claim_match,
 )
 from .common import CaseError
 
@@ -37,6 +38,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "spend_reservation/v1": spend_reservation.adjudicate,
     "protected_paths/v1": protected_paths.adjudicate,
     "acceptance_observed/v1": acceptance_observed.adjudicate,
+    "tool_claim_match/v1": tool_claim_match.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

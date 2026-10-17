@@ -57,8 +57,8 @@
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 13618,
-      "sha256": "ee99030952feac00cef7e515f9817da84d144555d5aaf98fc2b74b60f92e2756"
+      "bytes": 14597,
+      "sha256": "0d65b885e4f8f513a37be8baa7adc2e0b251d9843615467cf9fb0cd7baf0e5ac"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
@@ -86,6 +86,11 @@
       "sha256": "c7763c9aa8220ca46a230a9d1a052f5dbf53f1b2e1a38e60f9c6a6786fa57a8b"
     },
     {
+      "path": "src/probity_verify/adapters/tool_claim_match.py",
+      "bytes": 6478,
+      "sha256": "bab72d0c02960a4ac36f33058317dbafaeb2d5dda491ab68bd9fc4e247eb880c"
+    },
+    {
       "path": "src/probity_verify/broker_records.py",
       "bytes": 21386,
       "sha256": "1dbc1e72cb300e022be6ba68d27bd19bd2a27024e7481ef11ec5259ba4b9399c"
@@ -107,8 +112,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 6447,
-      "sha256": "ca861163ac64eab92b519ecb8e3ba922ab24ce8815e005944a30394a1897d8e3"
+      "bytes": 6525,
+      "sha256": "621e2e77dbeea3505fbca3b7ea616f79818e3925c100d16e1c4adaba675110c7"
     },
     {
       "path": "src/probity_verify/index.py",
@@ -881,6 +886,144 @@
           "path": "examples/done-receipt/lost-events/tree.json",
           "bytes": 467,
           "sha256": "e0f044127d261b2d8516b44b97a44f93cf5b15102a9ff7d42a4b683d5f745bc2"
+        }
+      ]
+    },
+    {
+      "task": "Match a claimed test run to an observed exec after the last edit",
+      "claim_type": "tool_claim_match/v1",
+      "case": "examples/done-receipt/honest/tool-claims.case.json",
+      "policy": "examples/done-receipt/honest/tool-claims.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic observer records; exact argv; PEER scope.",
+      "case_id": "honest",
+      "expected_reason": "tool_claims_matched",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/tool-claims.case.json",
+        "--policy",
+        "examples/done-receipt/honest/tool-claims.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/tool-claims.case.json",
+          "bytes": 572,
+          "sha256": "4698235c8c989e64b636c41420fb12dd9f6966c850068d051cb920c0903a6bb7"
+        },
+        {
+          "path": "examples/done-receipt/honest/tool-claims.policy.json",
+          "bytes": 1107,
+          "sha256": "22dda6f0d86ca943274f5ce0c68e8656a3ea06d840ef6c30f112e3faaf9996d1"
+        },
+        {
+          "path": "examples/done-receipt/honest/capability.json",
+          "bytes": 273,
+          "sha256": "11efaeb94b1d47452131ae13d9d9083a3af009a0f89ac3947f05142187b91344"
+        },
+        {
+          "path": "examples/done-receipt/honest/claims.json",
+          "bytes": 307,
+          "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+        },
+        {
+          "path": "examples/done-receipt/honest/observation.json",
+          "bytes": 896,
+          "sha256": "c18b2a4d2b874174a382ef23491db3ef4161a844852c5a6f819b8f6f6b4f2552"
+        }
+      ]
+    },
+    {
+      "task": "Detect a claimed test run that never executed",
+      "claim_type": "tool_claim_match/v1",
+      "case": "examples/done-receipt/planted-adversary/tool-claims.case.json",
+      "policy": "examples/done-receipt/planted-adversary/tool-claims.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic observer records; exact argv; PEER scope.",
+      "case_id": "planted-adversary",
+      "expected_reason": "tool_claim_unmatched",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/tool-claims.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/tool-claims.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/tool-claims.case.json",
+          "bytes": 583,
+          "sha256": "6c29981ae7340eac4bb25c432a02edc6bffe5fa1b41245ed605d08dfa80676c7"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/tool-claims.policy.json",
+          "bytes": 1118,
+          "sha256": "ce8faf11551b2347792c361fc53ddb9bd4ab1f03146564d7666ee795e563697e"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/capability.json",
+          "bytes": 284,
+          "sha256": "ad413357368e8a1126f0f7143dea52d8f15d3e40a44bf5df0a6719f3aa66cb1d"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/claims.json",
+          "bytes": 318,
+          "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/observation.json",
+          "bytes": 684,
+          "sha256": "584dafc2de907d89b8dca22aa12439bf0651e4c4fccb5da5d2b800fd14e84ce6"
+        }
+      ]
+    },
+    {
+      "task": "Keep a claimed run open when observer events were lost",
+      "claim_type": "tool_claim_match/v1",
+      "case": "examples/done-receipt/lost-events/tool-claims.case.json",
+      "policy": "examples/done-receipt/lost-events/tool-claims.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic observer records with unknown coverage.",
+      "case_id": "lost-events",
+      "expected_reason": "observation_coverage_unestablished",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/lost-events/tool-claims.case.json",
+        "--policy",
+        "examples/done-receipt/lost-events/tool-claims.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/lost-events/tool-claims.case.json",
+          "bytes": 577,
+          "sha256": "4fff72d9a197b7d823ac84219e24452359d5a890f99a89f4d45d77db6cc89fd9"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/tool-claims.policy.json",
+          "bytes": 1112,
+          "sha256": "4ea7f9699fe5367f1b227f9e205a36022a51958e12f0520aef0e2db58f870821"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/capability.json",
+          "bytes": 278,
+          "sha256": "e0b97dff40e2b3a71725f0411f1ef972eb99eb70f3f4b7fc5eb556bd51547ad6"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/claims.json",
+          "bytes": 312,
+          "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/observation.json",
+          "bytes": 480,
+          "sha256": "96e00a8bb19c09cc637cbdebcc97ef8ffee098306284a9b7e5eacc035370feae"
         }
       ]
     }

@@ -16,6 +16,11 @@
       "sha256": "11efaeb94b1d47452131ae13d9d9083a3af009a0f89ac3947f05142187b91344"
     },
     {
+      "bytes": 307,
+      "path": "honest/claims.json",
+      "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+    },
+    {
       "bytes": 555,
       "path": "honest/contract.json",
       "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
@@ -41,6 +46,16 @@
       "sha256": "a7f4d8d1134313d260c8b04b0ec6051c3f7469c453593076a9d7b18ba853e55e"
     },
     {
+      "bytes": 572,
+      "path": "honest/tool-claims.case.json",
+      "sha256": "4698235c8c989e64b636c41420fb12dd9f6966c850068d051cb920c0903a6bb7"
+    },
+    {
+      "bytes": 1107,
+      "path": "honest/tool-claims.policy.json",
+      "sha256": "22dda6f0d86ca943274f5ce0c68e8656a3ea06d840ef6c30f112e3faaf9996d1"
+    },
+    {
       "bytes": 462,
       "path": "honest/tree.json",
       "sha256": "a6db850e8f507613ae138b0c7b3570c602bccaab76a47430cd0a332ce08d2a40"
@@ -59,6 +74,11 @@
       "bytes": 278,
       "path": "lost-events/capability.json",
       "sha256": "e0b97dff40e2b3a71725f0411f1ef972eb99eb70f3f4b7fc5eb556bd51547ad6"
+    },
+    {
+      "bytes": 312,
+      "path": "lost-events/claims.json",
+      "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
     },
     {
       "bytes": 555,
@@ -86,6 +106,16 @@
       "sha256": "f468f4c2bed1a2abc5a28fbfa2210576163684aecc05d18350f63b0f1bda4e9f"
     },
     {
+      "bytes": 577,
+      "path": "lost-events/tool-claims.case.json",
+      "sha256": "4fff72d9a197b7d823ac84219e24452359d5a890f99a89f4d45d77db6cc89fd9"
+    },
+    {
+      "bytes": 1112,
+      "path": "lost-events/tool-claims.policy.json",
+      "sha256": "4ea7f9699fe5367f1b227f9e205a36022a51958e12f0520aef0e2db58f870821"
+    },
+    {
       "bytes": 467,
       "path": "lost-events/tree.json",
       "sha256": "e0f044127d261b2d8516b44b97a44f93cf5b15102a9ff7d42a4b683d5f745bc2"
@@ -104,6 +134,11 @@
       "bytes": 284,
       "path": "planted-adversary/capability.json",
       "sha256": "ad413357368e8a1126f0f7143dea52d8f15d3e40a44bf5df0a6719f3aa66cb1d"
+    },
+    {
+      "bytes": 318,
+      "path": "planted-adversary/claims.json",
+      "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
     },
     {
       "bytes": 555,
@@ -129,6 +164,16 @@
       "bytes": 1423,
       "path": "planted-adversary/protected-paths.policy.json",
       "sha256": "f01d82a8545291446583ce8ac921f97dfbc5b811a39112f5851424011365de82"
+    },
+    {
+      "bytes": 583,
+      "path": "planted-adversary/tool-claims.case.json",
+      "sha256": "6c29981ae7340eac4bb25c432a02edc6bffe5fa1b41245ed605d08dfa80676c7"
+    },
+    {
+      "bytes": 1118,
+      "path": "planted-adversary/tool-claims.policy.json",
+      "sha256": "ce8faf11551b2347792c361fc53ddb9bd4ab1f03146564d7666ee795e563697e"
     },
     {
       "bytes": 566,

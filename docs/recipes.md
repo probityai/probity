@@ -22,6 +22,9 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check acceptance graded outside the agent on its final tree](done-receipt.md) | `acceptance_observed/v1` | `supported` | Synthetic grade and tree records; PEER scope. |
 | [Detect acceptance that fails when the verifier reruns it](done-receipt.md) | `acceptance_observed/v1` | `contradicted` | Synthetic grade and tree records; PEER scope. |
 | [Refuse support from a contract that killed no mutant](done-receipt.md) | `acceptance_observed/v1` | `not_established` | Synthetic contract with zero mutation adequacy. |
+| [Match a claimed test run to an observed exec after the last edit](done-receipt.md) | `tool_claim_match/v1` | `supported` | Synthetic observer records; exact argv; PEER scope. |
+| [Detect a claimed test run that never executed](done-receipt.md) | `tool_claim_match/v1` | `contradicted` | Synthetic observer records; exact argv; PEER scope. |
+| [Keep a claimed run open when observer events were lost](done-receipt.md) | `tool_claim_match/v1` | `not_established` | Synthetic observer records with unknown coverage. |
 
 ## Retrieve a command
 
