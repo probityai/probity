@@ -23,8 +23,21 @@ CHECKS = {
                         ("contract", "capability", "observation", "tree")),
     "acceptance": ("acceptance_observed/v1", ("contract", "tree", "grade")),
     "tool-claims": ("tool_claim_match/v1", ("claims", "capability", "observation")),
+    "receipt": ("done_receipt/v1", ("receipt", "contract", "capability", "observation", "tree",
+                                    "grade", "claims")),
 }
 OBSERVED = {"observation", "tree", "grade"}
+RECEIPT_PREDICATE = "https://w3id.org/agent-evidence/predicate/v1/done-receipt"
+VERIFIER = "https://github.com/probityai/probity"
+RECORD_ROLES = ("contract", "capability", "observation", "tree", "grade", "claims")
+# The verdict each run's receipt reports. The planted adversary's harness reports a pass
+# its own records do not give, which done_receipt/v1 contradicts.
+REPORTED = {
+    "honest": ("supported", "done_checks_supported"),
+    "planted-adversary": ("supported", "done_checks_supported"),
+    "lost-events": ("not_established", "observation_coverage_unestablished"),
+    "tampered-grader": ("contradicted", "external_effect_on_grader_path"),
+}
 
 
 def sha(text):
@@ -124,6 +137,18 @@ def run(name):
         "results": [{"id": "unit", "argv": PYTEST, "exit": exits},
                     {"id": "heldout-unit", "argv": HELDOUT, "exit": exits}]}
     raw["grade"] = encoded(records["grade"])
+    decision, reason = REPORTED[name]
+    raw["receipt"] = encoded({
+        "_type": "https://in-toto.io/Statement/v1",
+        "subject": [{"name": "workspace-tree", "digest": {"sha256": tree_digest(files)}}],
+        "predicateType": RECEIPT_PREDICATE,
+        "predicate": {
+            "schema_version": "probity-done-receipt/v1", "claim_id": name,
+            "invocation_id": "call-1", "verifier": {"id": VERIFIER},
+            "records": {role: {"sha256": hashlib.sha256(raw[role]).hexdigest()}
+                        for role in RECORD_ROLES},
+            "checks": [], "verdict": {"decision": decision, "reason": reason,
+                                      "vantage": "independent"}}})
     return records, raw
 
 

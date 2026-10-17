@@ -33,6 +33,11 @@ LOADER_ENV = frozenset({
 GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt"})
 GRADER_SEGMENTS = frozenset({"site-packages", "dist-packages", "verifier"})
 EQUIVALENCES = ("python_ast",)
+STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
+PREDICATE_BASE = "https://w3id.org/agent-evidence/predicate/v1/"
+DONE_CONTRACT_PREDICATE = PREDICATE_BASE + "done-contract"
+DONE_RECEIPT_PREDICATE = PREDICATE_BASE + "done-receipt"
+RATCHET_ADMISSION_PREDICATE = PREDICATE_BASE + "ratchet-admission"
 
 
 def path(value: Any, label: str) -> str:

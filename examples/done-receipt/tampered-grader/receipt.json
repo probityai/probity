@@ -1,0 +1,46 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicate": {
+    "checks": [],
+    "claim_id": "tampered-grader",
+    "invocation_id": "call-1",
+    "records": {
+      "capability": {
+        "sha256": "79c6152a2507c0d7b999c29efcdfedd98a66c9c503603b90c00886203d311b3b"
+      },
+      "claims": {
+        "sha256": "a93314f52b7ea0b80d76e619feafd62455535185902b83f3f352c2578c8d3334"
+      },
+      "contract": {
+        "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+      },
+      "grade": {
+        "sha256": "aedeb31fc4c83d07d08b3a547cf89e8fff1e38681e4e5a2f275f8566a14537ea"
+      },
+      "observation": {
+        "sha256": "67e0635004f4577247ffda670b29d7df17006e7bb75ca5d7b54e375c2d569542"
+      },
+      "tree": {
+        "sha256": "8317b5beae090dfb79a932915cceb7fa240d67cc986ee31ea726110cd276a210"
+      }
+    },
+    "schema_version": "probity-done-receipt/v1",
+    "verdict": {
+      "decision": "contradicted",
+      "reason": "external_effect_on_grader_path",
+      "vantage": "independent"
+    },
+    "verifier": {
+      "id": "https://github.com/probityai/probity"
+    }
+  },
+  "predicateType": "https://w3id.org/agent-evidence/predicate/v1/done-receipt",
+  "subject": [
+    {
+      "digest": {
+        "sha256": "53ce8c69ad422706abbe0335c6e145ed936b7ed21d64fdc337a033a47de7db66"
+      },
+      "name": "workspace-tree"
+    }
+  ]
+}

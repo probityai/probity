@@ -61,7 +61,7 @@ does not establish arbitrary effects or independent custody.
 
 ## Done-receipt checks
 
-[`protected_paths/v1`, `acceptance_observed/v1` and `tool_claim_match/v1`](done-receipt.md)
+[`protected_paths/v1`, `acceptance_observed/v1`, `tool_claim_match/v1` and `done_receipt/v1`](done-receipt.md)
 check a coding agent's completion claim against a sealed contract and records made
 outside the agent. `protected_paths/v1` is the event-absence rule above, applied to
 file mutation.

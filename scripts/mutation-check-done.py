@@ -22,6 +22,7 @@ PROTECTED = (ADAPTERS + "protected_paths.py", "tests/test_protected_paths.py")
 ACCEPTANCE = (ADAPTERS + "acceptance_observed.py", "tests/test_acceptance_observed.py")
 CLAIMS = (ADAPTERS + "tool_claim_match.py", "tests/test_tool_claim_match.py")
 CORE = ("src/probity_verify/core.py", "tests/test_witness_scope.py")
+RECEIPT = (ADAPTERS + "done_receipt.py", "tests/test_done_receipt.py")
 
 MUTATIONS = [
     ("protected: rename or link target ignored", *PROTECTED,
@@ -180,6 +181,30 @@ MUTATIONS = [
      'if hunk["mutants"] and not hunk["killed"]]', "if False]"),
     ("acceptance: collection count ignored", *ACCEPTANCE,
      'if "ids_sealed" in item and item.get("collected") != item["ids_sealed"]]', "if False]"),
+    ("receipt: missing verifier id accepted", *RECEIPT,
+     '        raise CaseError("receipt.predicate.verifier.id: required")', "        pass"),
+    ("receipt: verifier id not a URI accepted", *RECEIPT,
+     'if not isinstance(verifier["id"], str) or not URI.fullmatch(verifier["id"]):',
+     "if False:"),
+    ("receipt: legacy predicate type read", *RECEIPT,
+     'if value["predicateType"] != records.DONE_RECEIPT_PREDICATE:', "if False:"),
+    ("receipt: verifier pin ignored", *RECEIPT,
+     'pinned = accepted is None or result["verifier_id"] in accepted', "pinned = True"),
+    ("receipt: record digests unbound", *RECEIPT,
+     '                     != bound[role][1]["consumer_pinned_sha256"])', "                     and False)"),
+    ("receipt: subject not bound to the final tree", *RECEIPT,
+     "        if not named:\n", "        if False:\n"),
+    ("receipt: reported verdict trusted", *RECEIPT,
+     "    if not agrees:\n", "    if False:\n"),
+    ("receipt: reason not compared", *RECEIPT,
+     'agrees = (reported["decision"], reported["reason"]) == (derived["decision"],\n'
+     '                                                             derived["reason"])',
+     'agrees = reported["decision"] == derived["decision"]'),
+    ("receipt: a later contradiction names the verdict", *RECEIPT,
+     '    for entry in found:\n        if entry["decision"] == "contradicted":',
+     '    for entry in reversed(found):\n        if entry["decision"] == "contradicted":'),
+    ("receipt: verifier id not reported", *RECEIPT,
+     'result["verifier_id"] = predicate["verifier"]["id"]', "pass"),
     ("core: witness scope requirement ignored", *CORE,
      '    if require_witness_scope == "EXTERNAL":\n        _require_external(result)\n',
      ""),

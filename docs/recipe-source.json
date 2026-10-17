@@ -179,6 +179,24 @@
       "documentation": "docs/done-receipt.md",
       "expected_decision": "not_established",
       "scope": "Synthetic observer records with unknown coverage."
+    },
+    {
+      "task": "Derive a done receipt's verdict again from the records it names",
+      "claim_type": "done_receipt/v1",
+      "case": "examples/done-receipt/honest/receipt.case.json",
+      "policy": "examples/done-receipt/honest/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope."
+    },
+    {
+      "task": "Detect a done receipt that reports a pass its records do not give",
+      "claim_type": "done_receipt/v1",
+      "case": "examples/done-receipt/planted-adversary/receipt.case.json",
+      "policy": "examples/done-receipt/planted-adversary/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope."
     }
   ]
 }

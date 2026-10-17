@@ -46,6 +46,21 @@
       "sha256": "7a97ba0839bfb0779385ed2914617e58277a2b96f20a7905cb51e122b393a412"
     },
     {
+      "bytes": 1198,
+      "path": "honest/receipt.case.json",
+      "sha256": "f16c27ddcab1d6aa8a955453b6d616ea19d167b1ed321e86d007cea21cca6828"
+    },
+    {
+      "bytes": 1355,
+      "path": "honest/receipt.json",
+      "sha256": "0208c770a448c0e4763a84cb3faa433da77b1ac8832546bbe8f09b72400a1e89"
+    },
+    {
+      "bytes": 2134,
+      "path": "honest/receipt.policy.json",
+      "sha256": "645ff875cbbf9c940bda7632813a1015c205218b8a45892d11fc1aeaa9fc2f99"
+    },
+    {
       "bytes": 573,
       "path": "honest/tool-claims.case.json",
       "sha256": "63c403c408d9a857a058b15f30131d2ba3301e45985ed8d847dc57d78c6b158c"
@@ -104,6 +119,21 @@
       "bytes": 1417,
       "path": "lost-events/protected-paths.policy.json",
       "sha256": "4d9279801aac1d90a9d44e46882b34db460004346fe1d2789cda3c8c62afe4b4"
+    },
+    {
+      "bytes": 1202,
+      "path": "lost-events/receipt.case.json",
+      "sha256": "64569dd2d4434a9015c6c9d3641c191c2f0ac7af41645761b4733f3574149f16"
+    },
+    {
+      "bytes": 1379,
+      "path": "lost-events/receipt.json",
+      "sha256": "234d569ce3841cd758273f8ce5f9fbf5899593de6cb41e3a311c9beafb835286"
+    },
+    {
+      "bytes": 2139,
+      "path": "lost-events/receipt.policy.json",
+      "sha256": "8a15b707d81f8e92f4b2a369f31ce36773e528025b9156325307530e87851e25"
     },
     {
       "bytes": 577,
@@ -166,6 +196,21 @@
       "sha256": "ad429525bc786e0877904f51e003e2f031ce65370643d9d4df79ee6ae0b64726"
     },
     {
+      "bytes": 1208,
+      "path": "planted-adversary/receipt.case.json",
+      "sha256": "08ee73295adebf3e1d68a4c4c8a1e926fe0075fe8ff418d9aaaf0d70caf6ea77"
+    },
+    {
+      "bytes": 1366,
+      "path": "planted-adversary/receipt.json",
+      "sha256": "2e1a6de23f2f1f02ad422a2fda8251220bf1df063cbd5eea68335154105a5203"
+    },
+    {
+      "bytes": 2145,
+      "path": "planted-adversary/receipt.policy.json",
+      "sha256": "bd3e2805d5c57e57c2aa25e769cb0bde716d4226c1126894dcf2f7adc09ca771"
+    },
+    {
       "bytes": 583,
       "path": "planted-adversary/tool-claims.case.json",
       "sha256": "b82e674bfc46c3e5cc2341217b5798a4dcd841f9c759b44b1ca74aed54895eec"
@@ -224,6 +269,21 @@
       "bytes": 1421,
       "path": "tampered-grader/protected-paths.policy.json",
       "sha256": "9b23e4e0d9abab4aff089ad76f26a8b1539b1c4c8fc10dbdd4fd630adaa87ea3"
+    },
+    {
+      "bytes": 1207,
+      "path": "tampered-grader/receipt.case.json",
+      "sha256": "c7b224fcc22f59916ffc8b2281775523ea6ae78780f15f82384c0fe569c96905"
+    },
+    {
+      "bytes": 1376,
+      "path": "tampered-grader/receipt.json",
+      "sha256": "0f2e9e4fb3e36f64d980f4ab5f275f6e89e226d1793e0e55619823e0ea698b64"
+    },
+    {
+      "bytes": 2143,
+      "path": "tampered-grader/receipt.policy.json",
+      "sha256": "ea8b3b11f20b00cdba7135438b581cb0fe70b11c0f492eaa990c77cf7a01a1cc"
     },
     {
       "bytes": 582,
