@@ -7,6 +7,7 @@ import sys
 import types
 from importlib.metadata import EntryPoint, entry_points
 from importlib.resources import files
+from pathlib import Path
 
 import pytest
 
@@ -144,3 +145,19 @@ def test_probity_verify_errors_carry_the_subcommand_program_name(tmp_path, capsy
     status = main(["verify", str(tmp_path / "missing.json"), "--policy", str(tmp_path / "missing.json")])
     assert status == 2
     assert capsys.readouterr().err.startswith("probity verify: ")
+
+
+_DONE = Path(__file__).resolve().parents[2] / "probity-verify/examples/done-receipt"
+
+
+@pytest.mark.parametrize("example, decision, reason", [
+    ("honest", "supported", "done_checks_supported"),
+    ("tampered-grader", "contradicted", "external_effect_on_grader_path"),
+])
+def test_probity_verify_checks_a_done_receipt(capsys, example, decision, reason):
+    case = _DONE / example
+    status = main(["verify", str(case / "receipt.case.json"), "--policy", str(case / "receipt.policy.json"), "--json"])
+    assert status == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["claim_type"] == "done_receipt/v1"
+    assert (result["decision"], result["reason"]) == (decision, reason)
