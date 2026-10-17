@@ -75,8 +75,14 @@ def test_supported_from_a_peer_witness_is_held(tmp_path):
     assert result["checks"][-1]["adapter_decision"] == "supported"
 
 
-def test_adapter_that_states_no_scope_cannot_meet_external(capsys):
+def test_contradiction_from_an_adapter_stating_no_scope_stands(capsys):
     assert main([str(SOURCE / "case.json"), "--policy", str(SOURCE / "policy-june.json"),
+                 "--require-witness-scope", "EXTERNAL", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["decision"] == "contradicted"
+
+
+def test_adapter_that_states_no_scope_cannot_meet_external(capsys):
+    assert main([str(SOURCE / "case-complete.json"), "--policy", str(SOURCE / "policy-complete.json"),
                  "--require-witness-scope", "EXTERNAL", "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["decision"] == "not_established"
