@@ -53,10 +53,9 @@ def test_a_directory_prefix_is_not_a_member_match(root):
     assert workspace.changed(["packages/library/x.py"], root)["base-lib"] is False
 
 
-def test_release_tag_resolves_member_and_environment(root):
+def test_release_tag_resolves_the_member(root):
     assert workspace.release_target("base-lib-v1.2.3", root) == {
-        "distribution": "base-lib", "directory": "packages/lib", "version": "1.2.3",
-        "environment": "pypi-base-lib"}
+        "distribution": "base-lib", "directory": "packages/lib", "version": "1.2.3"}
 
 
 @pytest.mark.parametrize("tag, message", [
@@ -88,3 +87,13 @@ def test_requires_lists_workspace_dependencies_before_the_member(root):
     assert workspace.requires("base-lib", root) == ["packages/lib"]
     with pytest.raises(SystemExit, match="not a workspace member"):
         workspace.requires("nope", root)
+
+
+def test_every_member_has_its_own_publish_job_in_environment_pypi():
+    release = (Path(__file__).parents[1] / ".github/workflows/release.yml").read_text()
+    for name in workspace.members():
+        job = release.split(f"  publish-{name}:\n", 1)
+        assert len(job) == 2, f"release.yml has no publish-{name} job"
+        body = job[1].split("\n  publish-", 1)[0]
+        assert f"needs.resolve.outputs.distribution == '{name}'" in body
+        assert "name: pypi\n" in body and f"name: python-distributions-{name}\n" in body

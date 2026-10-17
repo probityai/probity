@@ -71,7 +71,7 @@ Each member is released on its own, by a non-prerelease GitHub release whose tag
 `<distribution>-v<version>`, for example `probity-verify-v0.2.0`. `release.yml` resolves the tag with
 `scripts/workspace.py release-target`, refuses a tag that names no member, does not match the member's
 version or is not on main, builds and checks with `python-build.yml`, and publishes those files with a
-GitHub build attestation and PyPI attestations. Existing tags (`v0.1.0`, `v0.1.1`) stay.
+GitHub build attestation and PyPI attestations, from the publish job of that distribution in the `pypi` environment. Existing tags (`v0.1.0`, `v0.1.1`) stay.
 
 The tag prefix is the distribution name, not the directory name, so the prefix stays right if a
 directory moves. The vectors tag is therefore `agent-evidence-vectors-vX.Y.Z`, and its Go tag is
@@ -80,19 +80,16 @@ when their release job is added in the import step.
 
 ### PyPI trusted publishers to enter
 
-One publisher per distribution, each with owner `probityai`, repository `probity`, workflow
-`release.yml`, and its own GitHub environment. A separate environment per distribution lets each one
-carry a deployment rule that admits only its own tags.
+Every PyPI project released from this repository has the same publisher: owner `probityai`, repository
+`probity`, workflow `release.yml`, environment `pypi`. That covers `probity-verify`, `probityai`,
+`agent-evidence-observer` and `probity-ratchet` now, and `agent-evidence-admission`,
+`agent-evidence-vocabulary` and `agent-evidence-vectors` when they move in.
 
-| PyPI project | Environment | Environment tag rule |
-| --- | --- | --- |
-| probity-verify | `pypi-probity-verify` | `probity-verify-v*` |
-| probityai | `pypi-probityai` | `probityai-v*` |
-| agent-evidence-observer | `pypi-agent-evidence-observer` | `agent-evidence-observer-v*` |
-| agent-evidence-admission | `pypi-agent-evidence-admission` | `agent-evidence-admission-v*` |
-| agent-evidence-vocabulary | `pypi-agent-evidence-vocabulary` | `agent-evidence-vocabulary-v*` |
-| agent-evidence-vectors | `pypi-agent-evidence-vectors` | `agent-evidence-vectors-v*` |
-| probity-ratchet | `pypi-probity-ratchet` | `probity-ratchet-v*` |
+`release.yml` has one publish job per distribution, and each runs only when the resolved tag names that
+distribution, so the job that receives the publishing token for one project never runs for another. PyPI
+trusted publishing does not accept a reusable workflow, so each publish job carries its steps itself. The
+`pypi` environment takes a deployment rule that admits only release tags (`*-v*`), and a test in `tests/`
+fails when a member has no publish job.
 
 The `probity-verify` publisher used for 0.1.1 names repository `probity-verify`, workflow
 `python-distribution.yml` and environment `pypi`; the row above replaces it.

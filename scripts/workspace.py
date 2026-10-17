@@ -1,7 +1,7 @@
 """Read the workspace members, and map changes and release tags onto them.
 
     python3 scripts/workspace.py changes <base> <head>   # JSON {member: true|false}
-    python3 scripts/workspace.py release-target <tag>    # JSON {distribution, directory, version, environment}
+    python3 scripts/workspace.py release-target <tag>    # JSON {distribution, directory, version}
     python3 scripts/workspace.py requires <distribution> # member directories it needs, itself last
 
 Members are the directories under packages/ that hold a pyproject.toml. A member
@@ -78,7 +78,7 @@ def release_target(tag: str, root: Path = ROOT) -> dict[str, str]:
     if member.version != match["version"]:
         raise SystemExit(f"release tag {tag!r} does not match {member.directory} version {member.version}")
     return {"distribution": member.distribution, "directory": member.directory,
-            "version": member.version, "environment": f"pypi-{member.distribution}"}
+            "version": member.version}
 
 
 def requires(distribution: str, root: Path = ROOT) -> list[str]:

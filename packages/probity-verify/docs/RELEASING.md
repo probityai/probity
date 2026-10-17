@@ -70,7 +70,7 @@ A release is a non-prerelease GitHub release tagged `probity-verify-vX.Y.Z` on a
 with `X.Y.Z` equal to this `pyproject.toml` version. `release.yml` publishes the files that run built
 and checked, with a GitHub build attestation and PyPI attestations, through the PyPI trusted publisher
 with owner `probityai`, repository `probity`, workflow `release.yml` and environment
-`pypi-probity-verify`. Releases 0.1.0 and 0.1.1 used tags `v0.1.0` and `v0.1.1`, which stay as they are.
+`pypi`. Releases 0.1.0 and 0.1.1 used tags `v0.1.0` and `v0.1.1`, which stay as they are.
 
 The root release-tool lock is regenerated from the repository root with:
 
