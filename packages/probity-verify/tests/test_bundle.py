@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
-
 from probity_verify.bundle import create_bundle, main, replay_bundle
 from probity_verify.common import CaseError
 from probity_verify.core import canonical_json

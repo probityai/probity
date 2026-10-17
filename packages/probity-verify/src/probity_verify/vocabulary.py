@@ -18,7 +18,7 @@ import yaml
 def _registry() -> dict:
     text = files("agent_evidence_vocabulary").joinpath("vocabulary.yaml").read_text("utf-8")
     loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
-    return yaml.load(text, Loader=loader)  # noqa: S506 - a safe loader, C build when present
+    return yaml.load(text, Loader=loader)
 
 
 def version() -> str:
@@ -30,7 +30,7 @@ def terms(section: str, dimension: str) -> tuple[str, ...]:
     """Every value the registry defines for one dimension."""
     entry = _registry().get(section, {}).get(dimension)
     if not isinstance(entry, dict) or not isinstance(entry.get("values"), list):
-        raise LookupError(f"vocabulary has no dimension {section}.{dimension}")
+        raise LookupError(f"vocabulary has no dimension {section}.{dimension}")  # noqa: TRY004 - a missing dimension is a lookup failure, not a type error
     return tuple(str(value) for value in entry["values"])
 
 

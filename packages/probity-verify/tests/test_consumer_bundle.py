@@ -8,7 +8,6 @@ import zipfile
 from pathlib import Path
 
 import pytest
-
 from probity_verify.bundle import create_bundle, replay_bundle
 from probity_verify.common import CaseError
 

@@ -10,7 +10,6 @@ from importlib.resources import files
 from pathlib import Path
 
 import pytest
-
 from probityai import GROUP, main, register_leaf
 
 

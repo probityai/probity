@@ -7,7 +7,14 @@ from pathlib import Path
 from typing import Any
 
 from .. import broker_records as records
-from ..common import CaseError, MAX_ARTIFACT_BYTES, _artifact, _digest, _instant, _object
+from ..common import (
+    MAX_ARTIFACT_BYTES,
+    CaseError,
+    _artifact,
+    _digest,
+    _instant,
+    _object,
+)
 from ..vocabulary import PEER
 
 

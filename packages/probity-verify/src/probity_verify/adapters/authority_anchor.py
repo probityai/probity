@@ -19,7 +19,7 @@ def _https_url(value: Any, label: str) -> str:
         if (parsed.scheme != "https" or not parsed.hostname or parsed.username or
                 parsed.password or parsed.fragment):
             raise ValueError()
-        parsed.port
+        _ = parsed.port
     except ValueError as exc:
         raise CaseError(f"{label}: expected HTTPS URL without credentials or fragment") from exc
     return url

@@ -26,10 +26,10 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _digest, _object, _string
+from ..vocabulary import EXTERNAL, PEER
 from . import acceptance_observed, protected_paths, tool_claim_match
 from . import done_records as records
 from .event_absence import _record, _scope
-from ..vocabulary import EXTERNAL, PEER
 
 CLAIM_TYPE = "done_receipt/v1"
 RECORD_ROLES = ("contract", "capability", "observation", "tree", "grade", "claims")

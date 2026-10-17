@@ -1,10 +1,9 @@
 """protected_paths/v1: bounded absence of protected-path mutation, plus the final tree."""
 
 import pytest
-
 from done_run import build, decide, exec_event, honest_records, retree, sha
-from probity_verify.adapters.done_records import tree_digest
 from probity_verify import CaseError, adjudicate
+from probity_verify.adapters.done_records import tree_digest
 
 CLAIM = "protected_paths/v1"
 

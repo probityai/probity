@@ -7,7 +7,16 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-from ..common import CaseError, _artifact, _digest, _instant, _normalized, _object, _string
+from ..common import (
+    CaseError,
+    _artifact,
+    _digest,
+    _instant,
+    _normalized,
+    _object,
+    _string,
+)
+
 
 class SourceSelectionUnavailable(CaseError):
     """The pinned source cannot be read under the selected extraction rule."""

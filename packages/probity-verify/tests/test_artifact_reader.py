@@ -9,8 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
-
-from probity_verify.common import CaseError, MAX_ARTIFACT_BYTES, _artifact
+from probity_verify.common import MAX_ARTIFACT_BYTES, CaseError, _artifact
 
 
 def metadata(data=b"retained evidence", path="evidence.bin"):
@@ -214,7 +213,7 @@ def test_actual_cli_refuses_with_exit2_and_no_verdict(tmp_path, unsafe):
         result = subprocess.run([sys.executable, "-m", "probity_verify.cli",
                                  str(tmp_path / "case.json"), "--policy",
                                  str(tmp_path / "policy-june.json"), "--json"],
-                                capture_output=True, timeout=5)
+                                capture_output=True, timeout=5, check=False)
         assert result.returncode == 2
         assert result.stdout == b""
         assert result.stderr.startswith(b"probity-verify:")

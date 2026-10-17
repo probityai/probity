@@ -254,25 +254,24 @@ def _append(
     path: Path, event: dict[str, Any], *, bundle: bytes | None = None
 ) -> str:
     event = _validate_shape(event)
-    with closing(_open(path, create=bundle is not None)) as connection:
-        with connection:
-            connection.execute("BEGIN IMMEDIATE")
-            existing = _verify_all(connection)
-            seen = {item["id"]: item for item in existing}
-            if event["kind"] != "decision":
-                _verify_reference(event, seen)
-            if bundle is not None:
-                connection.execute(
-                    "INSERT OR IGNORE INTO bundles (digest, content) VALUES (?, ?)",
-                    (_digest(bundle), bundle),
-                )
-            event_id = _entry_id(event)
-            if event_id in seen:
-                raise CaseError("index event already exists")
+    with closing(_open(path, create=bundle is not None)) as connection, connection:
+        connection.execute("BEGIN IMMEDIATE")
+        existing = _verify_all(connection)
+        seen = {item["id"]: item for item in existing}
+        if event["kind"] != "decision":
+            _verify_reference(event, seen)
+        if bundle is not None:
             connection.execute(
-                "INSERT INTO events (id, payload) VALUES (?, ?)",
-                (event_id, canonical_json(event)),
+                "INSERT OR IGNORE INTO bundles (digest, content) VALUES (?, ?)",
+                (_digest(bundle), bundle),
             )
+        event_id = _entry_id(event)
+        if event_id in seen:
+            raise CaseError("index event already exists")
+        connection.execute(
+            "INSERT INTO events (id, payload) VALUES (?, ?)",
+            (event_id, canonical_json(event)),
+        )
     return event_id
 
 

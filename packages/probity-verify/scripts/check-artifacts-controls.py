@@ -6,11 +6,11 @@ import copy
 import csv
 import hashlib
 import io
-from pathlib import Path
 import subprocess
 import sys
 import tarfile
 import tempfile
+from pathlib import Path
 from zipfile import ZipFile
 
 
@@ -22,8 +22,7 @@ def run(wheel, sdist, source_root):
     metadata = next(name for name in entries if name.endswith(".dist-info/METADATA"))
     info = metadata.rsplit("/", 1)[0]
     record = info + "/RECORD"
-    resource = next(name for name in entries if name.endswith("vocabulary.yaml") or
-                    name.endswith("samples/source.html") or name == "probity_observer/cli.py")
+    resource = next(name for name in entries if name.endswith(("vocabulary.yaml", "samples/source.html")) or name == "probity_observer/cli.py")
     license_file = next(name for name in entries if name.startswith(info + "/licenses/"))
     points = info + "/entry_points.txt"
     point_bytes = entries[points][1].replace(b":main", b":wrong", 1) if points in entries else b"[console_scripts]\nunowned = unowned:main\n"
@@ -74,7 +73,7 @@ def run(wheel, sdist, source_root):
         root = Path(directory)
         for optimized in [False, True]:
             command = [sys.executable, *( ["-O"] if optimized else []), str(checker)]
-            def expect(label, candidate_wheel, candidate_source, accepted=False):
+            def expect(label, candidate_wheel, candidate_source, accepted=False, command=command, optimized=optimized):
                 argv = command + [str(candidate_wheel), str(candidate_source)]
                 if source_root is not None:
                     argv += ["--source-root", str(source_root)]

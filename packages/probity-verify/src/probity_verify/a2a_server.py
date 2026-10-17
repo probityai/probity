@@ -18,8 +18,14 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import (
-    AgentCapabilities, AgentCard, AgentInterface, AgentSkill, Part,
-    Task, TaskState, TaskStatus,
+    AgentCapabilities,
+    AgentCard,
+    AgentInterface,
+    AgentSkill,
+    Part,
+    Task,
+    TaskState,
+    TaskStatus,
 )
 from a2a.utils.errors import InvalidParamsError, UnsupportedOperationError
 from google.protobuf.json_format import MessageToDict
@@ -28,8 +34,8 @@ from starlette.responses import JSONResponse, PlainTextResponse
 from starlette.routing import Route
 
 from .common import _read_input
-from .json_input import parse_json
 from .core import CaseError, adjudicate, canonical_json, render_packet
+from .json_input import parse_json
 
 CASE_MIME = "application/vnd.probity.case+json"
 DECISION_MIME = "application/vnd.probity.decision+json"

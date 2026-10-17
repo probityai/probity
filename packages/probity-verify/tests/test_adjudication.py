@@ -3,7 +3,6 @@ import hashlib
 from pathlib import Path
 
 import pytest
-
 from probity_verify import CaseError, adjudicate
 from probity_verify.cli import _load
 
