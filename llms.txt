@@ -1,0 +1,12 @@
+# Probity
+
+> Open tools that check claims about AI agents against consumer-pinned evidence bytes, in one uv and Cargo workspace.
+
+## Members
+
+- [probity-verify](https://github.com/probityai/probity/blob/main/packages/probity-verify/llms.txt): offline verifier that decides supported, contradicted or not_established
+- [probityai](https://github.com/probityai/probity/blob/main/packages/probityai/README.md): the `probity` command and its subcommand seam
+
+## Repository
+
+- [Repository layout](https://github.com/probityai/probity/blob/main/docs/architecture/MONOREPO.md): workspace, CI, releases and tag prefixes
