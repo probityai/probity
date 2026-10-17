@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .core import CaseError, adjudicate, canonical_json, render_packet
 from .common import MAX_ARTIFACT_BYTES, _read_input
+from .dsse import IN_TOTO_PAYLOAD_TYPE, adjudicate_envelope, is_envelope, load_key
 from .json_input import parse_json
 
 
@@ -18,11 +19,13 @@ def _load(path: Path) -> object:
 
 
 SUMMARY = "decide whether a claim holds against pinned evidence bytes, offline"
+INPUT_HELP = ("a probity case, or a DSSE envelope whose payload is one of the case's "
+              "artifacts (the type is detected from the JSON members)")
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     """Declare the verifier's arguments on ``parser``."""
-    parser.add_argument("case", type=Path)
+    parser.add_argument("input", type=Path, metavar="INPUT", help=INPUT_HELP)
     parser.add_argument("--policy", type=Path, required=True,
                         help="consumer-held witness pins and claim requirements")
     parser.add_argument("--artifact-root", type=Path,
@@ -31,15 +34,37 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--json", action="store_true", help="print JSON instead of a short text decision")
     parser.add_argument("--require-witness-scope", choices=("PEER", "EXTERNAL"), default="PEER",
                         help="hold supported verdicts that do not rest on this witness scope as not_established; contradicted verdicts stand")
+    envelope = parser.add_argument_group("DSSE envelope input")
+    envelope.add_argument("--case", type=Path, dest="envelope_case",
+                          help="the case the envelope's payload belongs to (required for an envelope)")
+    envelope.add_argument("--key", type=Path, action="append", default=[],
+                          help="a trusted Ed25519 public key, raw 32 bytes or PEM; repeat for a keyring")
+    envelope.add_argument("--payload-type", default=IN_TOTO_PAYLOAD_TYPE,
+                          help=f"the payloadType the envelope must carry (default: {IN_TOTO_PAYLOAD_TYPE})")
+
+
+def _decide(args: argparse.Namespace) -> dict:
+    value = _load(args.input)
+    policy = _load(args.policy)
+    if not is_envelope(value):
+        if args.envelope_case or args.key:
+            raise CaseError("--case and --key apply only to a DSSE envelope input")
+        return adjudicate(value, policy, args.artifact_root or args.input.parent,
+                          require_witness_scope=args.require_witness_scope)
+    if args.envelope_case is None:
+        raise CaseError("a DSSE envelope input needs --case")
+    keys = [load_key(_read_input(path, 64 * 1024, "key"), f"key {path.name}")
+            for path in args.key]
+    return adjudicate_envelope(value, _load(args.envelope_case), policy,
+                               args.artifact_root or args.envelope_case.parent, keys,
+                               payload_type=args.payload_type,
+                               require_witness_scope=args.require_witness_scope)
 
 
 def run(args: argparse.Namespace, prog: str) -> int:
     """Adjudicate the parsed arguments; exit 0 with a decision, 2 for invalid input."""
     try:
-        case = _load(args.case)
-        policy = _load(args.policy)
-        result = adjudicate(case, policy, args.artifact_root or args.case.parent,
-                            require_witness_scope=args.require_witness_scope)
+        result = _decide(args)
         if args.packet:
             args.packet.write_text(render_packet(result), encoding="utf-8")
     except (OSError, json.JSONDecodeError, CaseError) as exc:
