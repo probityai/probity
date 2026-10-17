@@ -176,9 +176,14 @@ def _protected_entry(item: Any, label: str) -> dict:
 
 
 def _acceptance_entry(item: Any, label: str) -> dict:
-    entry = _object(item, label, {"id", "argv"}, {"ids", "run_writes"})
+    entry = _object(item, label, {"id", "argv"}, {"ids", "run_writes", "cwd", "exe"})
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
+    if ("cwd" in entry) != ("exe" in entry):
+        raise CaseError(f"{label}: cwd and exe are sealed together")
+    if "cwd" in entry:
+        absolute(entry["cwd"], f"{label}.cwd")
+        absolute(entry["exe"], f"{label}.exe")
     if "ids" in entry:
         ids = entry["ids"]
         if (not isinstance(ids, list) or not ids or len(set(map(str, ids))) != len(ids)
@@ -220,7 +225,8 @@ def contract(data: bytes) -> dict:
     record = _record(data, "contract",
                      {"schema_version", "contract_id", "protected_paths", "acceptance",
                       "adequacy"},
-                     {"task", "heldout_split_sha256", "mutant_set_sha256", "authority_sha256"})
+                     {"task", "heldout_split_sha256", "mutant_set_sha256", "authority_sha256",
+                      "module_under_test"})
     if record["schema_version"] != "probity-done-contract/v1":
         raise CaseError("unsupported contract schema_version")
     _string(record["contract_id"], "contract.contract_id")
@@ -248,6 +254,10 @@ def contract(data: bytes) -> dict:
             raise CaseError("contract.acceptance: duplicate id")
         ids.add(command_id)
     _adequacy(record["adequacy"])
+    if "module_under_test" in record:
+        modules = _distinct_paths(record["module_under_test"], "contract.module_under_test")
+        if not modules:
+            raise CaseError("contract.module_under_test: expected a nonempty list")
     return record
 
 
