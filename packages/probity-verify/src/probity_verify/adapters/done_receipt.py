@@ -29,6 +29,7 @@ from ..common import CaseError, _digest, _object, _string
 from . import acceptance_observed, protected_paths, tool_claim_match
 from . import done_records as records
 from .event_absence import _record, _scope
+from ..vocabulary import EXTERNAL, PEER
 
 CLAIM_TYPE = "done_receipt/v1"
 RECORD_ROLES = ("contract", "capability", "observation", "tree", "grade", "claims")
@@ -111,11 +112,11 @@ def combine(found: list[dict]) -> dict:
     for entry in found:
         if entry["decision"] == "contradicted":
             return {"decision": "contradicted", "reason": entry["reason"],
-                    "witness_scope": entry.get("witness_scope", "PEER")}
+                    "witness_scope": entry.get("witness_scope", PEER)}
     if all(entry["decision"] == "supported" for entry in found):
-        external = all(entry.get("witness_scope") == "EXTERNAL" for entry in found)
+        external = all(entry.get("witness_scope") == EXTERNAL for entry in found)
         return {"decision": "supported", "reason": "done_checks_supported",
-                "witness_scope": "EXTERNAL" if external else "PEER"}
+                "witness_scope": EXTERNAL if external else PEER}
     first = next(entry for entry in found if entry["decision"] == "not_established")
     return {"decision": "not_established", "reason": first["reason"]}
 
@@ -143,7 +144,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
 
     def decide(decision: str, reason: str, witness_scope: str | None = None) -> dict:
         if decision != "not_established":
-            result.update(vantage="independent", witness_scope=witness_scope or "PEER")
+            result.update(vantage="independent", witness_scope=witness_scope or PEER)
         return {**result, "decision": decision, "reason": reason}
 
     receipt_bytes, _ = bound["receipt"]

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _artifact, _digest, _instant, _object, _string
+from ..vocabulary import ACCEPTED_WITNESS_SCOPES, witness_scope_error
 
 CLAIM_TYPE = "event_absence/v1"
 
@@ -74,10 +75,8 @@ def _witness(case: dict, policy: dict, witness_id: str, root: Path,
             raise CaseError(f"witness.{witness_id}.vantage: unsupported value")
         pin["vantage"] = witness["vantage"]
     if require_scope:
-        if not isinstance(witness["witness_scope"], str) or witness["witness_scope"] not in {
-            "PEER", "EXTERNAL"
-        }:
-            raise CaseError(f"witness.{witness_id}.witness_scope: unsupported value")
+        if witness["witness_scope"] not in ACCEPTED_WITNESS_SCOPES:
+            raise CaseError(f"witness.{witness_id}.{witness_scope_error(witness['witness_scope'])}")
         pin["witness_scope"] = witness["witness_scope"]
     return data, pin
 

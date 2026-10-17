@@ -8,6 +8,7 @@ from typing import Any
 
 from .. import broker_records as records
 from ..common import CaseError, MAX_ARTIFACT_BYTES, _artifact, _digest, _instant, _object
+from ..vocabulary import PEER
 
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
@@ -36,7 +37,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
                       {"observer_key", "witness_key", "witness_scope", "record"})
     observer = _digest(witness["observer_key"], "observer_key")
     witness_key = _digest(witness["witness_key"], "witness_key")
-    records.require(observer != witness_key and witness["witness_scope"] == "PEER", "invalid witness boundary")
+    records.require(observer != witness_key and witness["witness_scope"] == PEER, "invalid witness boundary")
     evidence = witness["record"]
     records.require(type(evidence) is dict and type(evidence.get("state")) is str, "missing typed evidence state")
     if evidence["state"] == "sealed":
@@ -102,7 +103,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
         prior = records.commitment(begin["commitment"], observer, authority)
         records.events(entries, prior, context["authority_scope"], sealed=False)
 
-    scope = {"witness_scope": "PEER", "observer_key": observer, "witness_key": witness_key,
+    scope = {"witness_scope": PEER, "observer_key": observer, "witness_key": witness_key,
              "evidence_state": evidence["state"], "consumer_context": context,
              "report_assertion": report, "artifact_bindings": bindings,
              "does_not_establish": ["arbitrary effects", "workflow success", "issuer permission",

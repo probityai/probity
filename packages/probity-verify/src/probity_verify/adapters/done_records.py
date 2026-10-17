@@ -15,12 +15,13 @@ from typing import Any
 
 from ..common import CaseError, _artifact, _digest, _instant, _object, _string
 from .event_absence import _record, _scope, _witness
+from ..vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
 
 MUTATION_TYPES = frozenset(
     {"write", "create", "rename", "link", "unlink", "truncate", "chmod"})
 EXEC_TYPE = "exec"
 CONNECT_TYPE = "connect"
-SCOPES = ("PEER", "EXTERNAL")
+SCOPES = ACCEPTED_WITNESS_SCOPES
 VANTAGES = ("independent", "self_reported")
 GAP_CAUSES = ("agent", "host", "sensor", "unknown")
 LOCATIONS = ("grader_path", "outside_workspace")
@@ -253,7 +254,8 @@ def _origin_fields(record: dict, label: str) -> None:
     _string(record["invocation_id"], f"{label}.invocation_id")
     _string(record["producer"], f"{label}.producer")
     _choice(record["vantage"], f"{label}.vantage", VANTAGES)
-    _choice(record["witness_scope"], f"{label}.witness_scope", SCOPES)
+    if record["witness_scope"] not in SCOPES:
+        raise CaseError(f"{label}.{witness_scope_error(record['witness_scope'])}")
 
 
 ORIGIN = {"claim_id", "invocation_id", "producer", "vantage", "witness_scope"}
@@ -609,6 +611,6 @@ def independent(record: dict, pin: dict, observed_party: str) -> bool:
 
 def scope_of(*pairs: tuple[dict, dict]) -> str:
     """EXTERNAL only when every record and its consumer pin both say EXTERNAL."""
-    external = all(record["witness_scope"] == pin["witness_scope"] == "EXTERNAL"
+    external = all(record["witness_scope"] == pin["witness_scope"] == EXTERNAL
                    for record, pin in pairs)
-    return "EXTERNAL" if external else "PEER"
+    return EXTERNAL if external else PEER

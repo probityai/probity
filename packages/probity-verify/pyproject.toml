@@ -9,7 +9,7 @@ description = "Check claims against pinned evidence offline, with replayable dec
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
-dependencies = ["cryptography>=50.0.2,<51"]
+dependencies = ["cryptography>=50.0.2,<51", "agent-evidence-vocabulary==0.5.0", "pyyaml>=6.0.2,<7"]
 keywords = ["ai-agents", "evidence-verification", "provenance", "offline", "audit"]
 
 [project.urls]
