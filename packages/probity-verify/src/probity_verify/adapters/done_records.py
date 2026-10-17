@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import itertools
 import posixpath
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from ..common import CaseError, _artifact, _digest, _instant, _object, _string
-from .event_absence import _record, _scope, _witness
 from ..vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
+from .event_absence import _record, _scope, _witness
 
 MUTATION_TYPES = frozenset(
     {"write", "create", "rename", "link", "unlink", "truncate", "chmod"})
@@ -281,7 +282,7 @@ def tree(data: bytes) -> dict:
     if len(set(names)) != len(names):
         raise CaseError("tree: a path is listed under two kinds")
     ordered = sorted(names, key=lambda item: item.encode("utf-8"))
-    if any(under(later, earlier) for earlier, later in zip(ordered, ordered[1:])):
+    if any(under(later, earlier) for earlier, later in itertools.pairwise(ordered)):
         raise CaseError("tree: an entry lies under another non-directory entry")
     executable = record["executable"]
     if (not isinstance(executable, list) or executable != sorted(set(executable))

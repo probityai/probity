@@ -3,7 +3,6 @@
 import hashlib
 
 import pytest
-
 from done_run import PYTEST, build, decide, honest_records, sha
 from probity_verify import CaseError, adjudicate
 from probity_verify.adapters.done_records import tree_digest

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-from importlib import resources
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from importlib import resources
+from pathlib import Path
 
 import probity_verify
 from probity_verify import adjudicate

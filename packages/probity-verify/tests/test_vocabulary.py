@@ -4,7 +4,6 @@ from importlib.resources import files
 
 import pytest
 import yaml
-
 from done_run import build, decide, honest_records
 from probity_verify import CaseError, adjudicate, core, vocabulary
 

@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from probity_verify import CaseError, adjudicate
 from probity_verify.broker_records import parse_record
 from probity_verify.bundle import create_bundle, replay_bundle
@@ -261,7 +260,7 @@ def test_actual_cli_refuses_cleanly(tmp_path, fault):
     (tmp_path / "case.json").write_bytes(case_raw)
     (tmp_path / "policy.json").write_bytes(ENCODE(policy))
     result = subprocess.run([sys.executable, "-m", "probity_verify.cli", str(tmp_path / "case.json"),
-                             "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, timeout=5)
+                             "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, timeout=5, check=False)
     assert result.returncode == 2
     assert result.stdout == b""
     assert result.stderr.startswith(b"probity-verify:")
@@ -347,7 +346,7 @@ def test_actual_cli_refuses_unsafe_control_file(tmp_path, kind):
         os.mkfifo(selected)
     (tmp_path / "policy.json").write_bytes(ENCODE(policy))
     result = subprocess.run([sys.executable, "-m", "probity_verify.cli", str(selected),
-                             "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, timeout=5)
+                             "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, timeout=5, check=False)
     assert result.returncode == 2 and result.stdout == b""
     assert b"Traceback" not in result.stderr
 
@@ -417,7 +416,7 @@ def test_actual_cli_refuses_other_report_wire_encodings(tmp_path, encoding):
     (tmp_path / "case.json").write_bytes(ENCODE(case))
     (tmp_path / "policy.json").write_bytes(ENCODE(policy))
     result = subprocess.run([sys.executable, "-m", "probity_verify.cli", str(tmp_path / "case.json"),
-                             "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, timeout=5)
+                             "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, timeout=5, check=False)
     assert result.returncode == 2 and result.stdout == b""
     assert b"Traceback" not in result.stderr
 
@@ -435,5 +434,5 @@ def test_generic_control_json_keeps_utf8_without_encoding_inference(encoding):
     raw = '{"control":"unchanged"}'.encode(encoding)
     with pytest.raises(CaseError):
         parse_json(raw, max_bytes=1024, max_depth=8, max_nodes=64)
-    assert parse_json('{"control":"café"}'.encode("utf-8"), max_bytes=1024,
+    assert parse_json('{"control":"café"}'.encode(), max_bytes=1024,
                       max_depth=8, max_nodes=64) == {"control": "café"}

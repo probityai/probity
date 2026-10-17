@@ -1,0 +1,1 @@
+Ruff 0.17.0 widens its default rule set and reports 59 findings on main. This clears them so the dependabot bump of ruff can pass lint. The tree is clean under ruff 0.15.0 and 0.17.0, and the 800 tests pass.

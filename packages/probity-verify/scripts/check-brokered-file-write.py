@@ -10,7 +10,7 @@ import json
 import subprocess
 import time
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
 ORIGINAL_SHA = "2b4f04dcc0c0d5e7c1a4a68288fd92457676db50da3da631a348ba0d4940605e"
@@ -65,7 +65,7 @@ def select(root, public, *, completion, sealed):
               "observer_key": public["observer_key"], "witness_key": public["witness_key"],
               "witness_scope": "PEER", "record": record}}, "assessments": {label: {
               "claim_type": "brokered_file_write/v1", "report": selector("report"), "broker_witness": "broker",
-              "context": context, "retained_target": {**selector("target"), "captured_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+              "context": context, "retained_target": {**selector("target"), "captured_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
               if "target" in roles else None}}}
     (root / (label + ".case.json")).write_bytes(encode(case))
     (root / (label + ".policy.json")).write_bytes(encode(policy))

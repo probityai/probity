@@ -17,14 +17,28 @@ import httpx
 import uvicorn
 from a2a.client import A2ACardResolver, ClientConfig, ClientFactory
 from a2a.server.context import ServerCallContext
-from a2a.types import Message, Part, Role, SendMessageRequest, Task, TaskState, TaskStatus
+from a2a.types import (
+    Message,
+    Part,
+    Role,
+    SendMessageRequest,
+    Task,
+    TaskState,
+    TaskStatus,
+)
 from a2a.utils.errors import InvalidParamsError
-
-from probity_verify.a2a_client import request
 from probity_verify import a2a_client
+from probity_verify.a2a_client import request
 from probity_verify.a2a_server import (
-    CASE_MIME, LAB_QUERY_MIME, MAX_CASE_BYTES, MAX_REQUEST_BYTES,
-    BoundedTaskStore, VerifyExecutor, create_app, digest, parse_raw,
+    CASE_MIME,
+    LAB_QUERY_MIME,
+    MAX_CASE_BYTES,
+    MAX_REQUEST_BYTES,
+    BoundedTaskStore,
+    VerifyExecutor,
+    create_app,
+    digest,
+    parse_raw,
 )
 from probity_verify.core import CaseError, adjudicate, canonical_json
 

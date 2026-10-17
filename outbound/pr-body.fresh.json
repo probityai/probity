@@ -1,0 +1,44 @@
+{
+  "checked_at": "2026-10-17T20:21:56.504896Z",
+  "body": "pr-body.md",
+  "target": "github.com/probityai/probity",
+  "target_kind": "github-repo",
+  "thread_state_at_draft": {
+    "last_comment_id": "",
+    "last_comment_at": "",
+    "last_author": ""
+  },
+  "live": {
+    "last_comment_id": "25",
+    "last_comment_at": "2026-10-17T19:58:59Z",
+    "last_author": "astrogilda",
+    "state": "open"
+  },
+  "new_comments": [],
+  "declared_title": "Clear the findings ruff 0.17 reports",
+  "verdict": "UNCHANGED",
+  "read_error": "",
+  "repository": {
+    "full_name": "probityai/probity",
+    "has_issues": true,
+    "archived": false,
+    "disabled": false,
+    "default_branch": "main",
+    "open_issues_count": 2,
+    "files": [],
+    "blank_issues_enabled": true,
+    "config_path": "",
+    "read_at_ref": "main",
+    "template_required": false,
+    "opens": "pull request",
+    "declared_pull_request_template": "",
+    "duplicate_scan_control": {
+      "items_read": 2,
+      "open_issues_count": 2,
+      "self_match": "#25: Check witness scope against the released vocabulary",
+      "verdict": "passed",
+      "note": "an open item's own title is found by the same matcher, so a duplicate in this list would be reported"
+    },
+    "reason": "probityai/probity takes pull requests, 0 pull request template(s) read at main, and none of 2 open item(s) carries this title"
+  }
+}

@@ -79,9 +79,10 @@ def vectors():
 def expected(name, run, key, status):
     """The ``probity verify --json`` stdout, or the stderr line for a refusal."""
     sys.path.insert(0, str(HERE.parents[1] / "src"))
-    from probity_verify.cli import main  # noqa: PLC0415 - after the source path is set
     import contextlib
     import io
+
+    from probity_verify.cli import main
 
     err = io.StringIO()
     argv = [str(HERE / f"{name}.dsse.json"), "--case", str(DONE / run / "receipt.case.json"),

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import os
-import stat
 import re
+import stat
 import unicodedata
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -71,7 +71,7 @@ def _instant(value: Any, label: str) -> datetime:
     ):
         raise CaseError(f"{label}: expected UTC RFC 3339 seconds (ending Z)")
     try:
-        instant = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        instant = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
     except ValueError as exc:
         raise CaseError(f"{label}: invalid UTC instant") from exc
     return instant

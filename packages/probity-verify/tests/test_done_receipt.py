@@ -4,7 +4,6 @@ import copy
 import hashlib
 
 import pytest
-
 from done_run import SCOPE, encode, honest_records
 from probity_verify import CaseError, adjudicate
 from probity_verify.adapters import done_receipt

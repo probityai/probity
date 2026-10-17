@@ -23,3 +23,8 @@ addopts = ["--strict-markers"]
 [tool.ruff]
 target-version = "py311"
 extend-exclude = ["packages/*/vectors-*/cases"]
+
+[tool.ruff.lint.per-file-ignores]
+# A resource directory read with importlib.resources, not an importable module;
+# its hyphenated name is part of the published layout.
+"packages/probity-verify/examples/source-coverage/__init__.py" = ["N999"]

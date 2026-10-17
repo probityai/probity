@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from done_run import decide, honest_records
 from probity_verify import CaseError, adjudicate
 from probity_verify.cli import main

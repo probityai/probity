@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-
 from probity_verify.common import CaseError
 from probity_verify.core import adjudicate
 

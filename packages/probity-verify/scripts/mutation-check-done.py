@@ -134,8 +134,8 @@ MUTATIONS = [
     ("records: class counts need not sum", RECORDS, ACCEPTANCE[1],
      'if totals != [mutants, adequacy["killed"]]:', "if False:"),
     ("claims: outside mutations never edits", *CLAIMS,
-     '    steps += [entry["step"] for entry in record["external_mutations"]\n'
-     '              if entry.get("origin") not in own]\n', ""),
+     ('    steps += [entry["step"] for entry in record["external_mutations"]\n'
+     '              if entry.get("origin") not in own]\n'), ""),
     ("claims: a run's own outside writes are edits", *CLAIMS,
      '              if entry.get("origin") not in own]', "              ]"),
     ("claims: shadowed runs match", *CLAIMS,
@@ -199,8 +199,8 @@ MUTATIONS = [
     ("receipt: reported verdict trusted", *RECEIPT,
      "    if not agrees:\n", "    if False:\n"),
     ("receipt: reason not compared", *RECEIPT,
-     'agrees = (reported["decision"], reported["reason"]) == (derived["decision"],\n'
-     '                                                             derived["reason"])',
+     ('agrees = (reported["decision"], reported["reason"]) == (derived["decision"],\n'
+     '                                                             derived["reason"])'),
      'agrees = reported["decision"] == derived["decision"]'),
     ("receipt: a later contradiction names the verdict", *RECEIPT,
      '    for entry in found:\n        if entry["decision"] == "contradicted":',
@@ -216,7 +216,7 @@ MUTATIONS = [
     ("core: unstated scope meets EXTERNAL", *CORE,
      'or scope == EXTERNAL:', 'or scope in (EXTERNAL, None):'),
     ("core: decision line qualifiers dropped", *CORE,
-     """return f" ({', '.join(parts)})" if parts else """"", 'return ""'),
+     ("""return f" ({', '.join(parts)})" if parts else """""), 'return ""'),
     ("core: invalid adapter scope accepted", *CORE,
      'result.get("witness_scope", PEER) not in WITNESS_SCOPES', "False"),
 ]

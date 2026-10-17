@@ -8,7 +8,8 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from adapter import CLAIM_TYPE, adjudicate as check_action
+from adapter import CLAIM_TYPE
+from adapter import adjudicate as check_action
 from probity_verify import adjudicate
 from probity_verify.bundle import create_bundle, replay_bundle
 from probity_verify.common import CaseError, _read_input

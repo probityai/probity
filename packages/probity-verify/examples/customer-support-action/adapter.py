@@ -10,7 +10,14 @@ import math
 from pathlib import Path
 from typing import Any
 
-from probity_verify.common import CaseError, _artifact, _digest, _instant, _object, _string
+from probity_verify.common import (
+    CaseError,
+    _artifact,
+    _digest,
+    _instant,
+    _object,
+    _string,
+)
 from probity_verify.json_input import parse_json
 
 CLAIM_TYPE = "customer_support_action/v1"
