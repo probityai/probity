@@ -50,6 +50,33 @@ scripts, styles, and templates. It does not evaluate CSS or infer what a
 browser displayed. Text matching does not establish that the selected
 passages are material or that the report is otherwise complete.
 
+## Signed bundles
+
+`probity verify` reads its first argument as a probity case or as a DSSE
+envelope. It decides the type from the JSON members. For an envelope, give the
+case the payload belongs to and one or more trusted Ed25519 public keys (raw
+32 bytes or PEM):
+
+```sh
+uv run probity verify examples/dsse-bundle/valid.dsse.json \
+  --case examples/done-receipt/honest/receipt.case.json \
+  --policy examples/done-receipt/honest/receipt.policy.json \
+  --key examples/dsse-bundle/signer.pub
+```
+
+The verifier computes `PAE(payloadType, payload)` and tries every signature
+under every key. It never reads `keyid`. It refuses non-canonical base64, an
+empty `payloadType` and an envelope with no signatures (exit 2). If no supplied
+key accepts a signature, the decision is `not_established` with reason
+`dsse_signature_unverified`. If the payload type is not the expected one
+(`--payload-type`, default `application/vnd.in-toto+json`), the reason is
+`dsse_payload_type_unexpected`. Otherwise the verified payload replaces the
+case artifact pinned to its SHA-256, and the claim adapter decides as for the
+bare case. The first check, `dsse_envelope`, names the payload digest and the
+SHA-256 of each accepting key. A payload that the claim does not read refuses
+with exit 2. The vectors and their byte-exact outputs are in
+`examples/dsse-bundle/` (`generate.py --check`).
+
 ## Artifact read boundary
 
 Verify opens artifact paths relative to directory descriptors. Each directory
