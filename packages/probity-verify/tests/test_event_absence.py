@@ -3,7 +3,6 @@ import hashlib
 import json
 
 import pytest
-
 from probity_verify import CaseError, adjudicate
 
 

@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-
 from probity_verify import dsse
 from probity_verify.cli import main
 from probity_verify.common import CaseError
@@ -216,6 +215,5 @@ def test_one_key_supplied_twice_is_one_accepting_key():
 def test_supplied_bytes_must_match_their_digest():
     from probity_verify.common import supplied_artifacts
 
-    with pytest.raises(CaseError, match="do not match their digest"):
-        with supplied_artifacts({"0" * 64: b"x"}):
-            pass
+    with pytest.raises(CaseError, match="do not match their digest"), supplied_artifacts({"0" * 64: b"x"}):
+        pass

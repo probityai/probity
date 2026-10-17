@@ -1,10 +1,10 @@
 """Static checks for declared wheel metadata and setuptools source archives."""
 
+import tarfile
 from collections import Counter
 from configparser import ConfigParser
 from email.parser import BytesParser
 from pathlib import Path, PurePosixPath
-import tarfile
 
 from packaging.markers import Marker
 from packaging.requirements import Requirement

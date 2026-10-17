@@ -12,15 +12,26 @@ from uuid import uuid4
 import httpx
 from a2a.client import A2ACardResolver, ClientConfig, ClientFactory
 from a2a.types import (
-    GetTaskRequest, Message, Part, Role, SendMessageConfiguration,
-    SendMessageRequest, TaskState,
+    GetTaskRequest,
+    Message,
+    Part,
+    Role,
+    SendMessageConfiguration,
+    SendMessageRequest,
+    TaskState,
 )
 from a2a.utils.errors import A2AError
 from google.protobuf.json_format import MessageToDict
 
 from .a2a_server import (
-    CASE_MIME, DECISION_MIME, LAB_QUERY_MIME, LAB_RECORD_MIME, MAX_CASE_BYTES,
-    digest, parse_raw, read_bounded,
+    CASE_MIME,
+    DECISION_MIME,
+    LAB_QUERY_MIME,
+    LAB_RECORD_MIME,
+    MAX_CASE_BYTES,
+    digest,
+    parse_raw,
+    read_bounded,
 )
 from .core import CaseError, canonical_json
 

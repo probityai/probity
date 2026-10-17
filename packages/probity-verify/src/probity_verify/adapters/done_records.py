@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import itertools
 import posixpath
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -279,7 +280,7 @@ def tree(data: bytes) -> dict:
     if len(set(names)) != len(names):
         raise CaseError("tree: a path is listed under two kinds")
     ordered = sorted(names, key=lambda item: item.encode("utf-8"))
-    if any(under(later, earlier) for earlier, later in zip(ordered, ordered[1:])):
+    if any(under(later, earlier) for earlier, later in itertools.pairwise(ordered)):
         raise CaseError("tree: an entry lies under another non-directory entry")
     executable = record["executable"]
     if (not isinstance(executable, list) or executable != sorted(set(executable))

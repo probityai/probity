@@ -12,7 +12,6 @@ import zipfile
 from pathlib import Path
 
 import pytest
-
 from probity_verify import adjudicate
 from probity_verify.bundle import create_bundle, replay_bundle
 from probity_verify.common import CaseError
@@ -142,7 +141,7 @@ def test_malformed_artifact_refuses_instead_of_becoming_a_verdict(tmp_path, raw)
     (tmp_path / "case.json").write_bytes(canonical_json(case))
     (tmp_path / "policy.json").write_bytes(canonical_json(policy))
     run = subprocess.run([sys.executable, str(EXAMPLE / "consumer.py"), str(tmp_path / "case.json"),
-                          "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True)
+                          "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, check=False)
     assert run.returncode == 2
     assert run.stdout == b""
     assert b"customer-support-action:" in run.stderr

@@ -7,8 +7,8 @@ import json
 import sys
 from pathlib import Path
 
-from .core import CaseError, adjudicate, canonical_json, render_packet
 from .common import MAX_ARTIFACT_BYTES, _read_input
+from .core import CaseError, adjudicate, canonical_json, render_packet
 from .dsse import IN_TOTO_PAYLOAD_TYPE, adjudicate_envelope, is_envelope, load_key
 from .json_input import parse_json
 
@@ -86,7 +86,9 @@ def main(argv: list[str] | None = None) -> int:
 
 def register(subparsers) -> None:
     """Add ``verify`` to the ``probity`` command line (entry point ``probityai.cli_subcommands``)."""
-    from probityai.cli import register_leaf  # only the probity launcher calls this, so it is installed
+    from probityai.cli import (
+        register_leaf,  # only the probity launcher calls this, so it is installed
+    )
 
     parser = subparsers.add_parser("verify", help=SUMMARY, description=SUMMARY)
     add_arguments(parser)
