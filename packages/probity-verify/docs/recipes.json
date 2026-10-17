@@ -6,7 +6,7 @@
     "name": "probity-verify",
     "status": "published",
     "installation": "docs/install.md",
-    "python": ">=3.10"
+    "python": ">=3.11"
   },
   "fixture_scope": "source-checkout",
   "operator": "author-run synthetic fixtures",
@@ -17,7 +17,7 @@
   "package_metadata": {
     "path": "pyproject.toml",
     "bytes": 1737,
-    "sha256": "b2dc88adf8081a54ad0a30104836d409e2fca606ad041573c0f239ad30e3b1bc"
+    "sha256": "5fe0f8cd514e676bffc64634e25cec1fc4aa70837484729762e47fbc3098f1e6"
   },
   "implementation": [
     {
