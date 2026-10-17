@@ -1,0 +1,1168 @@
+{
+  "schema_version": "probity-recipes/v1",
+  "schema_scope": "Project recipe convention; not a discovery standard.",
+  "repository": "https://github.com/probityai/probity/tree/main/packages/probity-verify",
+  "distribution": {
+    "name": "probity-verify",
+    "status": "published",
+    "installation": "docs/install.md",
+    "python": ">=3.10"
+  },
+  "fixture_scope": "source-checkout",
+  "operator": "author-run synthetic fixtures",
+  "error_behavior": {
+    "exit_code": 2,
+    "verdict": false
+  },
+  "package_metadata": {
+    "path": "pyproject.toml",
+    "bytes": 1681,
+    "sha256": "70f4857115ee4f28e291aeed76c1190666f9b264d414e332cc018d3e8690daaa"
+  },
+  "implementation": [
+    {
+      "path": "src/probity_verify/__init__.py",
+      "bytes": 163,
+      "sha256": "1894f94526dfd5a6701945c5deadcc68af6146cdcffdd59487fc21e602ac91b4"
+    },
+    {
+      "path": "src/probity_verify/a2a_client.py",
+      "bytes": 5312,
+      "sha256": "57c807b0b16f612fce2d49ca59ba1fe30d7923ced5c1c2e24ccadfee6dc6a03b"
+    },
+    {
+      "path": "src/probity_verify/a2a_server.py",
+      "bytes": 14469,
+      "sha256": "0ca64cb8cd7b99ea751add7b3b8645d578733190a0361460920e04712b1cfce2"
+    },
+    {
+      "path": "src/probity_verify/adapters/__init__.py",
+      "bytes": 75,
+      "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
+    },
+    {
+      "path": "src/probity_verify/adapters/acceptance_observed.py",
+      "bytes": 7953,
+      "sha256": "94923a73f53198afa22022888b5ad8239fc7e24e4f39b593cf2653184238217c"
+    },
+    {
+      "path": "src/probity_verify/adapters/authority_anchor.py",
+      "bytes": 7520,
+      "sha256": "bb5b7b34cba370a5255be4dcc9f4d6decde98ebe35d2711d432efd2824db445e"
+    },
+    {
+      "path": "src/probity_verify/adapters/brokered_file_write.py",
+      "bytes": 11043,
+      "sha256": "3edaf56335feaff57afa2f8f5bbe9632991a45b04626724b45b467406e20792a"
+    },
+    {
+      "path": "src/probity_verify/adapters/done_receipt.py",
+      "bytes": 11280,
+      "sha256": "042008427ac96c89af214604c668919338ff48242722ecceab81ed8a1d6d75ea"
+    },
+    {
+      "path": "src/probity_verify/adapters/done_records.py",
+      "bytes": 28667,
+      "sha256": "8a453443b8a804037e66d7f6a7b6524307a0cb8eae15ba22ffddeb8aa431ccae"
+    },
+    {
+      "path": "src/probity_verify/adapters/event_absence.py",
+      "bytes": 13573,
+      "sha256": "d999b400882260e244401c7dbd2515bf4b3d36b1a4263de84d3275cea655e305"
+    },
+    {
+      "path": "src/probity_verify/adapters/operand_lineage.py",
+      "bytes": 12072,
+      "sha256": "a24ae4f5e3b0517a1a9030c8a698128061be65bd0aa8d0880d9b4c99a74fa83b"
+    },
+    {
+      "path": "src/probity_verify/adapters/protected_paths.py",
+      "bytes": 7404,
+      "sha256": "d70fe033454c41ef91975310193030983f8dc8950e5d2910b5f880e1e9426623"
+    },
+    {
+      "path": "src/probity_verify/adapters/source_coverage.py",
+      "bytes": 9068,
+      "sha256": "81d0fd601c71333284fc24295ce34f46f3b39fbb5fffdd25a8ca8031dc1fba5f"
+    },
+    {
+      "path": "src/probity_verify/adapters/spend_reservation.py",
+      "bytes": 17222,
+      "sha256": "c7763c9aa8220ca46a230a9d1a052f5dbf53f1b2e1a38e60f9c6a6786fa57a8b"
+    },
+    {
+      "path": "src/probity_verify/adapters/tool_claim_match.py",
+      "bytes": 13793,
+      "sha256": "a7a7bbcc034b96f1919e278d8c4f1888678148b50cbe19c7f877a9e207fc1f4f"
+    },
+    {
+      "path": "src/probity_verify/broker_records.py",
+      "bytes": 21386,
+      "sha256": "1dbc1e72cb300e022be6ba68d27bd19bd2a27024e7481ef11ec5259ba4b9399c"
+    },
+    {
+      "path": "src/probity_verify/bundle.py",
+      "bytes": 10907,
+      "sha256": "3dc82954e54823348e311e2d7534604ec02af49d593d51e132d516683a052d8b"
+    },
+    {
+      "path": "src/probity_verify/cli.py",
+      "bytes": 3018,
+      "sha256": "b82eed2e04250bec9688d15b0dbcf7e493246d81db63bc2913fd91a011698f95"
+    },
+    {
+      "path": "src/probity_verify/common.py",
+      "bytes": 7470,
+      "sha256": "f88b1ad6655deceb20a53fada139a23a031a24dbb0c4acad30b21cb611ea06fd"
+    },
+    {
+      "path": "src/probity_verify/core.py",
+      "bytes": 8557,
+      "sha256": "71eb8ed5fc83a64b605bff7aa8990212848ab81f81cee814ae00fcc13661ee0b"
+    },
+    {
+      "path": "src/probity_verify/index.py",
+      "bytes": 12438,
+      "sha256": "cbb4c7a1d8be1b580ab84919d778763dc76657a01ca46aced4d750148c905ece"
+    },
+    {
+      "path": "src/probity_verify/json_input.py",
+      "bytes": 2114,
+      "sha256": "ccb4c6fd7c0041cd567c6c65af317d77d02c747e74e9b7468271ee0a011c653c"
+    }
+  ],
+  "recipes": [
+    {
+      "task": "Check a selected passage against a retained report",
+      "claim_type": "source_text_coverage/v1",
+      "case": "examples/source-coverage/case.json",
+      "policy": "examples/source-coverage/policy-june.json",
+      "documentation": "docs/running.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic source and report; local bytes only.",
+      "case_id": "source-coverage-demo",
+      "expected_reason": "selected_span_missing_from_record",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/source-coverage/case.json",
+        "--policy",
+        "examples/source-coverage/policy-june.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/source-coverage/case.json",
+          "bytes": 411,
+          "sha256": "a92695345b39df930eadcd896903791881555fd2e4f8733ed541747d704a2687"
+        },
+        {
+          "path": "examples/source-coverage/policy-june.json",
+          "bytes": 1099,
+          "sha256": "a6169e6c1b36e4a11fdba8ed2e73bb20851eea99d18a6f65509000fd853ed59c"
+        },
+        {
+          "path": "examples/source-coverage/source.html",
+          "bytes": 314,
+          "sha256": "af2147326bfd924725729eae53d74c26ccf5a6883c2b60a4750d9c500679f489"
+        },
+        {
+          "path": "examples/source-coverage/report.txt",
+          "bytes": 72,
+          "sha256": "58cca1af1e4bcd521c4d708ceb0cc84a5ae761ef9ab1dff1f612931251460c35"
+        }
+      ]
+    },
+    {
+      "task": "Find missing evidence for an earlier source date",
+      "claim_type": "source_text_coverage/v1",
+      "case": "examples/source-coverage/case.json",
+      "policy": "examples/source-coverage/policy-april.json",
+      "documentation": "docs/running.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic June capture; April policy remains unresolved.",
+      "case_id": "source-coverage-demo",
+      "expected_reason": "witness_outside_source_window",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/source-coverage/case.json",
+        "--policy",
+        "examples/source-coverage/policy-april.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/source-coverage/case.json",
+          "bytes": 411,
+          "sha256": "a92695345b39df930eadcd896903791881555fd2e4f8733ed541747d704a2687"
+        },
+        {
+          "path": "examples/source-coverage/policy-april.json",
+          "bytes": 1099,
+          "sha256": "d25b0bdc178ef351be6566ca2d88d90013b2c266adddeaa11f90bc358f9838dd"
+        },
+        {
+          "path": "examples/source-coverage/source.html",
+          "bytes": 314,
+          "sha256": "af2147326bfd924725729eae53d74c26ccf5a6883c2b60a4750d9c500679f489"
+        },
+        {
+          "path": "examples/source-coverage/report.txt",
+          "bytes": 72,
+          "sha256": "58cca1af1e4bcd521c4d708ceb0cc84a5ae761ef9ab1dff1f612931251460c35"
+        }
+      ]
+    },
+    {
+      "task": "Check a complete retained report",
+      "claim_type": "source_text_coverage/v1",
+      "case": "examples/source-coverage/case-complete.json",
+      "policy": "examples/source-coverage/policy-complete.json",
+      "documentation": "docs/running.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic complete report; selected passages only.",
+      "case_id": "source-coverage-complete-demo",
+      "expected_reason": "all_selected_spans_present",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/source-coverage/case-complete.json",
+        "--policy",
+        "examples/source-coverage/policy-complete.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/source-coverage/case-complete.json",
+          "bytes": 430,
+          "sha256": "f2ba9f17ad93f67f942b434cc6e2db36bfdcf6bc6fe826d6eeed357c517f7713"
+        },
+        {
+          "path": "examples/source-coverage/policy-complete.json",
+          "bytes": 1110,
+          "sha256": "177a1057eb91d6f90e617db713f127bbe3be894a341a6c1d14743407a5fb1c60"
+        },
+        {
+          "path": "examples/source-coverage/source.html",
+          "bytes": 314,
+          "sha256": "af2147326bfd924725729eae53d74c26ccf5a6883c2b60a4750d9c500679f489"
+        },
+        {
+          "path": "examples/source-coverage/report-complete.txt",
+          "bytes": 120,
+          "sha256": "efeccad743e71375bfcf4dbf6e6000d4b736c8910aaa8107594d26c84c7cbbbf"
+        }
+      ]
+    },
+    {
+      "task": "Check an output against the operands used",
+      "claim_type": "operand_lineage/v1",
+      "case": "examples/operand-lineage/case.json",
+      "policy": "examples/operand-lineage/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic local execution record; declared operands only.",
+      "case_id": "example-lineage",
+      "expected_reason": "lineage_recomputed",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/operand-lineage/case.json",
+        "--policy",
+        "examples/operand-lineage/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/operand-lineage/case.json",
+          "bytes": 412,
+          "sha256": "8ff9bd807379929e319aaacb614a82d47079488d5cfa93ab4d7b716d12ce8e1f"
+        },
+        {
+          "path": "examples/operand-lineage/policy.json",
+          "bytes": 707,
+          "sha256": "ab612f8b1e350d2ba4de0a8e9b412923eac66cf8a965f12b66f4b45d32051c8f"
+        },
+        {
+          "path": "examples/operand-lineage/source.json",
+          "bytes": 67,
+          "sha256": "25cb81c3facf2ade2697af826e9abd91cd4e295e9e7ca4af4c65fff51cf5c2c7"
+        },
+        {
+          "path": "examples/operand-lineage/execution.json",
+          "bytes": 692,
+          "sha256": "9804c939c5262266acd1dba102f73d9e141dfa246a593201adbf59fc3d92f8a2"
+        }
+      ]
+    },
+    {
+      "task": "Check a claim against a captured authority",
+      "claim_type": "authority_anchor/v1",
+      "case": "examples/authority-anchor/case.json",
+      "policy": "examples/authority-anchor/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic authority capture; no source authentication or live fetch.",
+      "case_id": "authority-anchor-synthetic",
+      "expected_reason": "anchor_matches",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/authority-anchor/case.json",
+        "--policy",
+        "examples/authority-anchor/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/authority-anchor/case.json",
+          "bytes": 264,
+          "sha256": "50d84d67cf8a4a16d20c876623ab8596103bbc3d11c0f049e4ea18ce4bebe514"
+        },
+        {
+          "path": "examples/authority-anchor/policy.json",
+          "bytes": 670,
+          "sha256": "b8f51a789a3f33973b0e434fcd96883b74ac43d3858d8980a2f1d53e8849b08b"
+        },
+        {
+          "path": "examples/authority-anchor/capture.json",
+          "bytes": 238,
+          "sha256": "0370fcbfb4513d50a1d93367919e5ce605b622874f56f927ff82b6d9f6187957"
+        }
+      ]
+    },
+    {
+      "task": "Check bounded absence in a declared interval",
+      "claim_type": "event_absence/v1",
+      "case": "examples/event-absence/case.json",
+      "policy": "examples/event-absence/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic observation; consumer-selected interval and producer.",
+      "case_id": "case-1",
+      "expected_reason": "absence_within_covered_scope",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/event-absence/case.json",
+        "--policy",
+        "examples/event-absence/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/event-absence/case.json",
+          "bytes": 416,
+          "sha256": "c1ebab4353c2d0338aaf1eab976153ff7070d2074212bc679759bf9e50c43304"
+        },
+        {
+          "path": "examples/event-absence/policy.json",
+          "bytes": 796,
+          "sha256": "0d719417766c537629fed5e88c98ce1eeec3bc30eb8b0e12010ef22ffadd822d"
+        },
+        {
+          "path": "examples/event-absence/capability.json",
+          "bytes": 177,
+          "sha256": "b0b256fa54ee29474bc287aa20524cea0b707add690c5bebe7a21e8511f2f586"
+        },
+        {
+          "path": "examples/event-absence/observation.json",
+          "bytes": 286,
+          "sha256": "498bf85c0e45405614654a046c3767c4bfbc2d9f3145f17add156de52d41e4bc"
+        }
+      ]
+    },
+    {
+      "task": "Check absence within a selected observation vantage",
+      "claim_type": "event_absence/v2",
+      "case": "examples/event-absence-v2/covered/case.json",
+      "policy": "examples/event-absence-v2/covered/policy.json",
+      "documentation": "docs/observation-vantage.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic selected scope; outside effects remain uncovered.",
+      "case_id": "covered",
+      "expected_reason": "absence_within_covered_scope",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/event-absence-v2/covered/case.json",
+        "--policy",
+        "examples/event-absence-v2/covered/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/event-absence-v2/covered/case.json",
+          "bytes": 417,
+          "sha256": "a7dd6f5fe2d359988526c5af10072e93d2d2743a24074f2c53328a230f67e3a6"
+        },
+        {
+          "path": "examples/event-absence-v2/covered/policy.json",
+          "bytes": 893,
+          "sha256": "dd1bbaae6df76da4cb7c366fcecc2aef3c0d4f8c263640a2599584b52c3c9506"
+        },
+        {
+          "path": "examples/event-absence-v2/covered/capability.json",
+          "bytes": 177,
+          "sha256": "fe6a8122a0831a4404c938a75d293a76d7a8e8bdd1a61c003d02bba46759d3ad"
+        },
+        {
+          "path": "examples/event-absence-v2/covered/observation.json",
+          "bytes": 310,
+          "sha256": "a7c6c32e9a77192de4658dd7d55766241a26a2f07bbbeed458d10ba2cc4bacdc"
+        }
+      ]
+    },
+    {
+      "task": "Detect an observed write that contradicts absence",
+      "claim_type": "event_absence/v2",
+      "case": "examples/event-absence-v2/observed-write/case.json",
+      "policy": "examples/event-absence-v2/observed-write/policy.json",
+      "documentation": "docs/observation-vantage.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic target observation; selected write only.",
+      "case_id": "observed-write",
+      "expected_reason": "event_observed",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/event-absence-v2/observed-write/case.json",
+        "--policy",
+        "examples/event-absence-v2/observed-write/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/event-absence-v2/observed-write/case.json",
+          "bytes": 424,
+          "sha256": "a73896956d53d88930ae533a22d62604b55deb8f6df4339cd5b35759170c593c"
+        },
+        {
+          "path": "examples/event-absence-v2/observed-write/policy.json",
+          "bytes": 900,
+          "sha256": "9607fa644c1e268c1e9b6ffc2d08b84acff9a4d6091406203b01441f020a5f01"
+        },
+        {
+          "path": "examples/event-absence-v2/observed-write/capability.json",
+          "bytes": 184,
+          "sha256": "6b7a86d855fdd5ff468ee12e70b3cb7ec5875265fdefa0efc20e6aa8b2c08e18"
+        },
+        {
+          "path": "examples/event-absence-v2/observed-write/observation.json",
+          "bytes": 521,
+          "sha256": "1bf8c216d57bdbe36f292401bc77cd4585ec5df3e2c61cb1eb4634f0870fc7d1"
+        }
+      ]
+    },
+    {
+      "task": "Keep a self-reported write separate from observation",
+      "claim_type": "event_absence/v2",
+      "case": "examples/event-absence-v2/self-reported-write/case.json",
+      "policy": "examples/event-absence-v2/self-reported-write/policy.json",
+      "documentation": "docs/observation-vantage.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic self-report; no separately observed target effect.",
+      "case_id": "self-reported-write",
+      "expected_reason": "observation_vantage_unestablished",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/event-absence-v2/self-reported-write/case.json",
+        "--policy",
+        "examples/event-absence-v2/self-reported-write/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/event-absence-v2/self-reported-write/case.json",
+          "bytes": 429,
+          "sha256": "e03ac083cfdde60bd13e9251c5593abc8d1b8711cb40012b2df696ccc98b7d68"
+        },
+        {
+          "path": "examples/event-absence-v2/self-reported-write/policy.json",
+          "bytes": 903,
+          "sha256": "8808b1195d317dee5e19693308a49681f4bf5a0676720f96f910eefd7dc1e424"
+        },
+        {
+          "path": "examples/event-absence-v2/self-reported-write/capability.json",
+          "bytes": 185,
+          "sha256": "85b7ad08cb6005c68746409eca378ffb28f0e12c1370b0acba3790151bac69e5"
+        },
+        {
+          "path": "examples/event-absence-v2/self-reported-write/observation.json",
+          "bytes": 418,
+          "sha256": "2cbb6602528e8f7ad8943262a13f0b12dba1109f2454b91b7db3197451eabd68"
+        }
+      ]
+    },
+    {
+      "task": "Replay a budget reservation journal",
+      "claim_type": "spend_reservation/v1",
+      "case": "examples/spend-reservation/accepted/case.json",
+      "policy": "examples/spend-reservation/accepted/policy.json",
+      "documentation": "docs/spend-reservation.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic prices and journal; no provider billing execution.",
+      "case_id": "accepted",
+      "expected_reason": "spend_reservations_match_consumer_policy",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/spend-reservation/accepted/case.json",
+        "--policy",
+        "examples/spend-reservation/accepted/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/spend-reservation/accepted/case.json",
+          "bytes": 555,
+          "sha256": "1c85143f39c2bd52042bb3fd67bd43234120015a24d8e3a23122982dc64f5739"
+        },
+        {
+          "path": "examples/spend-reservation/accepted/policy.json",
+          "bytes": 873,
+          "sha256": "171e319e654c361f106fb6e8016d6a82f3a144966e11cb712c4e281ba396a422"
+        },
+        {
+          "path": "examples/spend-reservation/accepted/budget.json",
+          "bytes": 250,
+          "sha256": "9a9a42f4b497c819e043ea1ca16ad285ef4ba9e57179d9858654f0f6a826d0b3"
+        },
+        {
+          "path": "examples/spend-reservation/accepted/prices.json",
+          "bytes": 221,
+          "sha256": "25ed7caacd1143c7d35592b378dd6c21740c28291c7dd38e474ce0ea3c07b7fb"
+        },
+        {
+          "path": "examples/spend-reservation/accepted/trace.json",
+          "bytes": 1922,
+          "sha256": "5aff80b288a7d25d90eb1b9b218a1428929740be219d5e61fc8e1fb3e801e836"
+        }
+      ]
+    },
+    {
+      "task": "Check broker-recorded file completion",
+      "claim_type": "brokered_file_write/v1",
+      "case": "examples/brokered-file-write/recorded/case.json",
+      "policy": "examples/brokered-file-write/recorded/policy.json",
+      "documentation": "docs/brokered-file-write.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic signed broker records; public fixture keys; PEER scope only.",
+      "case_id": "broker-fixture",
+      "expected_reason": "assertion_matches_authenticated_history",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/brokered-file-write/recorded/case.json",
+        "--policy",
+        "examples/brokered-file-write/recorded/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/brokered-file-write/recorded/case.json",
+          "bytes": 805,
+          "sha256": "09b4c0508ee8e2d95dceb22fe3814ebc989432c7dafdc7535ca8439307fa80b2"
+        },
+        {
+          "path": "examples/brokered-file-write/recorded/policy.json",
+          "bytes": 1276,
+          "sha256": "ec074935878022796d5b25b481ef8f15af6c701cb7b54f242a209d3bcbc1e683"
+        },
+        {
+          "path": "examples/brokered-file-write/recorded/head.json",
+          "bytes": 305,
+          "sha256": "c3bda1f0f75e534618b2c31b9bf2e30426dd86392346980df4db51a10f45d93c"
+        },
+        {
+          "path": "examples/brokered-file-write/recorded/history.jsonl",
+          "bytes": 1964,
+          "sha256": "2560eb2e3f4717c0c5f989a03b33d6727d338a2cd8d7e8786f37f0d095f28a1f"
+        },
+        {
+          "path": "examples/brokered-file-write/recorded/ledger.jsonl",
+          "bytes": 1675,
+          "sha256": "64308ea91afacb92c90867a709cc355fcfc8f79a3453695f636078f86c66c66d"
+        },
+        {
+          "path": "examples/brokered-file-write/recorded/packet.json",
+          "bytes": 4037,
+          "sha256": "1184aa56f3a0857916999fbee33f1681bf9c6f58c07a40acb18eb5dafa673fb8"
+        },
+        {
+          "path": "examples/brokered-file-write/recorded/report.json",
+          "bytes": 243,
+          "sha256": "5656a0aa1a1704886bb17711193037d5c1e595040fd9b290d481b94b5aa8fdf0"
+        },
+        {
+          "path": "examples/brokered-file-write/recorded/result.txt",
+          "bytes": 16,
+          "sha256": "59db8a97176724229b8b3e931ae3d97a297e480d5916eca8726c70d4290c76cc"
+        }
+      ]
+    },
+    {
+      "task": "Check that an agent left its protected tests alone",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/honest/protected-paths.case.json",
+      "policy": "examples/done-receipt/honest/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic observer records; PEER scope; recorded paths only.",
+      "case_id": "honest",
+      "expected_reason": "protected_paths_untouched",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/protected-paths.case.json",
+        "--policy",
+        "examples/done-receipt/honest/protected-paths.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/protected-paths.case.json",
+          "bytes": 729,
+          "sha256": "1c27fea0fd0ac63204dea6f547bfb66cb0f497c2c050f8494d1ce7eb221f58f8"
+        },
+        {
+          "path": "examples/done-receipt/honest/protected-paths.policy.json",
+          "bytes": 1412,
+          "sha256": "7a97ba0839bfb0779385ed2914617e58277a2b96f20a7905cb51e122b393a412"
+        },
+        {
+          "path": "examples/done-receipt/honest/capability.json",
+          "bytes": 300,
+          "sha256": "e28a780d2dbacd4ff582d0310065af6e016418eb3d48c69265e15a316ede1182"
+        },
+        {
+          "path": "examples/done-receipt/honest/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/honest/observation.json",
+          "bytes": 1125,
+          "sha256": "b14cecac43d3713029297494f40d8a103b38e60bfdc67be2d53a6d31d96cf9c3"
+        },
+        {
+          "path": "examples/done-receipt/honest/tree.json",
+          "bytes": 517,
+          "sha256": "4ea98504bc8d69faa6e2878e4bcfe39aa9f525ebd493d07fc458147eca12448e"
+        }
+      ]
+    },
+    {
+      "task": "Detect a planted conftest.py in a protected test directory",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/planted-adversary/protected-paths.case.json",
+      "policy": "examples/done-receipt/planted-adversary/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic observer records; PEER scope; recorded paths only.",
+      "case_id": "planted-adversary",
+      "expected_reason": "protected_path_mutated",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/protected-paths.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/protected-paths.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/protected-paths.case.json",
+          "bytes": 739,
+          "sha256": "17c2e899abe97f01c43ee30fe0af56e76874f64f171a00f309667d41be2feba7"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/protected-paths.policy.json",
+          "bytes": 1423,
+          "sha256": "ad429525bc786e0877904f51e003e2f031ce65370643d9d4df79ee6ae0b64726"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/capability.json",
+          "bytes": 311,
+          "sha256": "8fdc0ad09ced2e25ee151e63492b1626d049df46539a4573acd5270a43830a39"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/observation.json",
+          "bytes": 907,
+          "sha256": "b55951efe8ce2500e8ac8ed989aad67e2558aae3cb01352e34f3b34157b1033d"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/tree.json",
+          "bytes": 621,
+          "sha256": "993e48c126e6d94747e4548e9ccce6bf8eb3b24fe6b078401ee8e7ed05b171ab"
+        }
+      ]
+    },
+    {
+      "task": "Keep protected-path absence open when observer events were lost",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/lost-events/protected-paths.case.json",
+      "policy": "examples/done-receipt/lost-events/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic observer records with unknown coverage.",
+      "case_id": "lost-events",
+      "expected_reason": "observation_coverage_unestablished",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/lost-events/protected-paths.case.json",
+        "--policy",
+        "examples/done-receipt/lost-events/protected-paths.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/lost-events/protected-paths.case.json",
+          "bytes": 733,
+          "sha256": "1fb5ff9499f1671dd82487dc62226253ab6f11293fe8bb5f04b300cab84c6c56"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/protected-paths.policy.json",
+          "bytes": 1417,
+          "sha256": "4d9279801aac1d90a9d44e46882b34db460004346fe1d2789cda3c8c62afe4b4"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/capability.json",
+          "bytes": 305,
+          "sha256": "d5139edc665c6bd65d3a57eb785f99721e01cf8db1206f73225089dd2ae70337"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/contract.json",
+          "bytes": 797,
+          "sha256": "d043feaf4d82b0d4363ee08a37a9f33fc7e1bf15c95ed2377afe487259d8757a"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/observation.json",
+          "bytes": 542,
+          "sha256": "0cac6088ea16eef90bcfe49b0a66806dc02a03f190dfbc6432721a7ad4319e05"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/tree.json",
+          "bytes": 522,
+          "sha256": "c002399122dc57825b79fad11b158493b0b65f909fe72b6b0badf598eebf114e"
+        }
+      ]
+    },
+    {
+      "task": "Check acceptance graded outside the agent on its final tree",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/honest/acceptance.case.json",
+      "policy": "examples/done-receipt/honest/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic grade and tree records; PEER scope.",
+      "case_id": "honest",
+      "expected_reason": "acceptance_passed_in_verifier",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/acceptance.case.json",
+        "--policy",
+        "examples/done-receipt/honest/acceptance.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/acceptance.case.json",
+          "bytes": 552,
+          "sha256": "7eef11b5ba16ab7e80d8387708618dace7a4a33315890211e4f21eb91e92d984"
+        },
+        {
+          "path": "examples/done-receipt/honest/acceptance.policy.json",
+          "bytes": 1043,
+          "sha256": "f19beb9e4da3d7f42e2e84db4d4cecd7719db0415205e27fff392f2c990c72ed"
+        },
+        {
+          "path": "examples/done-receipt/honest/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/honest/grade.json",
+          "bytes": 708,
+          "sha256": "cba51bfa89a9b0048883ad3ea179aecd1c65d2e76feb3a27b92be424b55e40a6"
+        },
+        {
+          "path": "examples/done-receipt/honest/tree.json",
+          "bytes": 517,
+          "sha256": "4ea98504bc8d69faa6e2878e4bcfe39aa9f525ebd493d07fc458147eca12448e"
+        }
+      ]
+    },
+    {
+      "task": "Detect acceptance that fails when the verifier reruns it",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/planted-adversary/acceptance.case.json",
+      "policy": "examples/done-receipt/planted-adversary/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic grade and tree records; PEER scope.",
+      "case_id": "planted-adversary",
+      "expected_reason": "acceptance_failed_in_verifier",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/acceptance.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/acceptance.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/acceptance.case.json",
+          "bytes": 563,
+          "sha256": "1fcb98b216ed698568c327b364b00db3366c58aa5c48f2caf2da5585cd715d22"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/acceptance.policy.json",
+          "bytes": 1054,
+          "sha256": "19205e311b0676c865b2f119c215128a044e96a49ddc0b49cb0a0d59c1333f35"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/grade.json",
+          "bytes": 719,
+          "sha256": "81f3bb3191c4d4cb25b18daaa2a6817436a587718c6b7524d3170da8b284c61f"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/tree.json",
+          "bytes": 621,
+          "sha256": "993e48c126e6d94747e4548e9ccce6bf8eb3b24fe6b078401ee8e7ed05b171ab"
+        }
+      ]
+    },
+    {
+      "task": "Refuse support from a contract that killed no mutant",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/lost-events/acceptance.case.json",
+      "policy": "examples/done-receipt/lost-events/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic contract with zero mutation adequacy.",
+      "case_id": "lost-events",
+      "expected_reason": "contract_adequacy_zero",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/lost-events/acceptance.case.json",
+        "--policy",
+        "examples/done-receipt/lost-events/acceptance.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/lost-events/acceptance.case.json",
+          "bytes": 557,
+          "sha256": "301cd2067c1536d599f9c05bf808eb18c8e950c2f0ac3046c8b45e32b11e8191"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/acceptance.policy.json",
+          "bytes": 1048,
+          "sha256": "e9f88957f7e05ba417bf883dfb046e324d37d5fc44e49bd568d172212f6b1b7f"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/contract.json",
+          "bytes": 797,
+          "sha256": "d043feaf4d82b0d4363ee08a37a9f33fc7e1bf15c95ed2377afe487259d8757a"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/grade.json",
+          "bytes": 713,
+          "sha256": "7b603d1af90b4477470fa41958e3c025d9deb2aa04b95055165c7af43750f519"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/tree.json",
+          "bytes": 522,
+          "sha256": "c002399122dc57825b79fad11b158493b0b65f909fe72b6b0badf598eebf114e"
+        }
+      ]
+    },
+    {
+      "task": "Match a claimed test run to an observed exec after the last edit",
+      "claim_type": "tool_claim_match/v1",
+      "case": "examples/done-receipt/honest/tool-claims.case.json",
+      "policy": "examples/done-receipt/honest/tool-claims.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic observer records; exact argv; PEER scope.",
+      "case_id": "honest",
+      "expected_reason": "tool_claims_matched",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/tool-claims.case.json",
+        "--policy",
+        "examples/done-receipt/honest/tool-claims.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/tool-claims.case.json",
+          "bytes": 573,
+          "sha256": "63c403c408d9a857a058b15f30131d2ba3301e45985ed8d847dc57d78c6b158c"
+        },
+        {
+          "path": "examples/done-receipt/honest/tool-claims.policy.json",
+          "bytes": 1107,
+          "sha256": "996f0e8b1317fa897391f9200a73b1cf7f9d1558625b216d025276c620026479"
+        },
+        {
+          "path": "examples/done-receipt/honest/capability.json",
+          "bytes": 300,
+          "sha256": "e28a780d2dbacd4ff582d0310065af6e016418eb3d48c69265e15a316ede1182"
+        },
+        {
+          "path": "examples/done-receipt/honest/claims.json",
+          "bytes": 307,
+          "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+        },
+        {
+          "path": "examples/done-receipt/honest/observation.json",
+          "bytes": 1125,
+          "sha256": "b14cecac43d3713029297494f40d8a103b38e60bfdc67be2d53a6d31d96cf9c3"
+        }
+      ]
+    },
+    {
+      "task": "Detect a claimed test run that never executed",
+      "claim_type": "tool_claim_match/v1",
+      "case": "examples/done-receipt/planted-adversary/tool-claims.case.json",
+      "policy": "examples/done-receipt/planted-adversary/tool-claims.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic observer records; exact argv; PEER scope.",
+      "case_id": "planted-adversary",
+      "expected_reason": "tool_claim_unmatched",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/tool-claims.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/tool-claims.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/tool-claims.case.json",
+          "bytes": 583,
+          "sha256": "b82e674bfc46c3e5cc2341217b5798a4dcd841f9c759b44b1ca74aed54895eec"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/tool-claims.policy.json",
+          "bytes": 1118,
+          "sha256": "ca6be137370ee6ed450c4f593bee0490388ee2bf158add46df8e58d72a65d5a0"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/capability.json",
+          "bytes": 311,
+          "sha256": "8fdc0ad09ced2e25ee151e63492b1626d049df46539a4573acd5270a43830a39"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/claims.json",
+          "bytes": 318,
+          "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/observation.json",
+          "bytes": 907,
+          "sha256": "b55951efe8ce2500e8ac8ed989aad67e2558aae3cb01352e34f3b34157b1033d"
+        }
+      ]
+    },
+    {
+      "task": "Keep a claimed run open when observer events were lost",
+      "claim_type": "tool_claim_match/v1",
+      "case": "examples/done-receipt/lost-events/tool-claims.case.json",
+      "policy": "examples/done-receipt/lost-events/tool-claims.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic observer records with unknown coverage.",
+      "case_id": "lost-events",
+      "expected_reason": "observation_coverage_unestablished",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/lost-events/tool-claims.case.json",
+        "--policy",
+        "examples/done-receipt/lost-events/tool-claims.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/lost-events/tool-claims.case.json",
+          "bytes": 577,
+          "sha256": "5506b3fa05b3c0826d7216c91af558002c3f03a97b8d1ddb7289033a0574467e"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/tool-claims.policy.json",
+          "bytes": 1112,
+          "sha256": "754937ed4e967d2392f91603f7104b300870141092d99546661ddd13ab8d8471"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/capability.json",
+          "bytes": 305,
+          "sha256": "d5139edc665c6bd65d3a57eb785f99721e01cf8db1206f73225089dd2ae70337"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/claims.json",
+          "bytes": 312,
+          "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/observation.json",
+          "bytes": 542,
+          "sha256": "0cac6088ea16eef90bcfe49b0a66806dc02a03f190dfbc6432721a7ad4319e05"
+        }
+      ]
+    },
+    {
+      "task": "Derive a done receipt's verdict again from the records it names",
+      "claim_type": "done_receipt/v1",
+      "case": "examples/done-receipt/honest/receipt.case.json",
+      "policy": "examples/done-receipt/honest/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope.",
+      "case_id": "honest",
+      "expected_reason": "done_checks_supported",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/receipt.case.json",
+        "--policy",
+        "examples/done-receipt/honest/receipt.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/receipt.case.json",
+          "bytes": 1198,
+          "sha256": "f16c27ddcab1d6aa8a955453b6d616ea19d167b1ed321e86d007cea21cca6828"
+        },
+        {
+          "path": "examples/done-receipt/honest/receipt.policy.json",
+          "bytes": 2134,
+          "sha256": "645ff875cbbf9c940bda7632813a1015c205218b8a45892d11fc1aeaa9fc2f99"
+        },
+        {
+          "path": "examples/done-receipt/honest/capability.json",
+          "bytes": 300,
+          "sha256": "e28a780d2dbacd4ff582d0310065af6e016418eb3d48c69265e15a316ede1182"
+        },
+        {
+          "path": "examples/done-receipt/honest/claims.json",
+          "bytes": 307,
+          "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+        },
+        {
+          "path": "examples/done-receipt/honest/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/honest/grade.json",
+          "bytes": 708,
+          "sha256": "cba51bfa89a9b0048883ad3ea179aecd1c65d2e76feb3a27b92be424b55e40a6"
+        },
+        {
+          "path": "examples/done-receipt/honest/observation.json",
+          "bytes": 1125,
+          "sha256": "b14cecac43d3713029297494f40d8a103b38e60bfdc67be2d53a6d31d96cf9c3"
+        },
+        {
+          "path": "examples/done-receipt/honest/receipt.json",
+          "bytes": 1355,
+          "sha256": "0208c770a448c0e4763a84cb3faa433da77b1ac8832546bbe8f09b72400a1e89"
+        },
+        {
+          "path": "examples/done-receipt/honest/tree.json",
+          "bytes": 517,
+          "sha256": "4ea98504bc8d69faa6e2878e4bcfe39aa9f525ebd493d07fc458147eca12448e"
+        }
+      ]
+    },
+    {
+      "task": "Detect a done receipt that reports a pass its records do not give",
+      "claim_type": "done_receipt/v1",
+      "case": "examples/done-receipt/planted-adversary/receipt.case.json",
+      "policy": "examples/done-receipt/planted-adversary/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope.",
+      "case_id": "planted-adversary",
+      "expected_reason": "receipt_verdict_mismatch",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/receipt.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/receipt.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/receipt.case.json",
+          "bytes": 1208,
+          "sha256": "08ee73295adebf3e1d68a4c4c8a1e926fe0075fe8ff418d9aaaf0d70caf6ea77"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/receipt.policy.json",
+          "bytes": 2145,
+          "sha256": "bd3e2805d5c57e57c2aa25e769cb0bde716d4226c1126894dcf2f7adc09ca771"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/capability.json",
+          "bytes": 311,
+          "sha256": "8fdc0ad09ced2e25ee151e63492b1626d049df46539a4573acd5270a43830a39"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/claims.json",
+          "bytes": 318,
+          "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/grade.json",
+          "bytes": 719,
+          "sha256": "81f3bb3191c4d4cb25b18daaa2a6817436a587718c6b7524d3170da8b284c61f"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/observation.json",
+          "bytes": 907,
+          "sha256": "b55951efe8ce2500e8ac8ed989aad67e2558aae3cb01352e34f3b34157b1033d"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/receipt.json",
+          "bytes": 1366,
+          "sha256": "2e1a6de23f2f1f02ad422a2fda8251220bf1df063cbd5eea68335154105a5203"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/tree.json",
+          "bytes": 621,
+          "sha256": "993e48c126e6d94747e4548e9ccce6bf8eb3b24fe6b078401ee8e7ed05b171ab"
+        }
+      ]
+    }
+  ]
+}

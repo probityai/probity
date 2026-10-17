@@ -1,0 +1,23 @@
+# Cargo workspace for the Rust crates. Each crate keeps its own crates.io name,
+# version and licence. The change that imports the first crate sets members to
+# ["crates/*"]: Cargo refuses a glob that matches no directory, so the list is
+# empty until then. `cargo metadata` reads the empty workspace and CI's rust job
+# reports zero members.
+
+[workspace]
+resolver = "3"
+members = []
+
+[workspace.package]
+edition = "2024"
+repository = "https://github.com/probityai/probity"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+undocumented_unsafe_blocks = "deny"
+await_holding_lock = "deny"

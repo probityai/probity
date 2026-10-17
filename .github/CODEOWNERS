@@ -1,0 +1,6 @@
+# One line per workspace member, so a member can get its own reviewers without
+# touching the others. The last matching line wins.
+*                         @astrogilda
+/packages/probity-verify/ @astrogilda
+/packages/probityai/      @astrogilda
+/.github/                 @astrogilda

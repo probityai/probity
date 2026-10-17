@@ -1,18 +1,12 @@
-# probity-verify
+# Probity
 
-> Offline verifier that decides supported, contradicted or not_established for a claim against consumer-pinned evidence bytes.
+> Open tools that check claims about AI agents against consumer-pinned evidence bytes, in one uv and Cargo workspace.
 
-## Docs
+## Members
 
-- [Install a pinned version](https://github.com/probityai/probity-verify/blob/main/docs/install.md): published package and matching source inputs, separate environment, three sample decisions and error behavior
-- [Choose a claim check](https://github.com/probityai/probity-verify/blob/main/docs/recipes.md): task selector for the registered adapters
-- [Checked recipe index](https://raw.githubusercontent.com/probityai/probity-verify/main/docs/recipes.json): exact argument arrays, source-checkout fixtures, package-name availability, expected outcomes, scope and input digests
-- [Running the verifier](https://github.com/probityai/probity-verify/blob/main/docs/running.md): commands, inputs, decisions
-- [Replayable decisions and the index](https://github.com/probityai/probity-verify/blob/main/docs/bundles-and-index.md): bundles, replay, disputes
-- [Select a consumer adapter](https://github.com/probityai/probity-verify/blob/main/docs/adapter-api.md): explicit per-call versions through adjudication and bundles
-- [Check a customer offer](https://github.com/probityai/probity-verify/blob/main/docs/customer-support-action.md): raw records, exact approvals and portable replay
-- [Adapters](https://github.com/probityai/probity-verify/blob/main/docs/adapters.md): operand lineage, authority anchor, event absence
-- [Done-receipt checks](https://github.com/probityai/probity-verify/blob/main/docs/done-receipt.md): protected paths, outside acceptance grade, claimed command runs, witness scope
-- [Adapter plan](https://github.com/probityai/probity-verify/blob/main/docs/architecture.md): architecture
-- [Source coverage vectors](https://github.com/probityai/probity-verify/blob/main/vectors-source-coverage/README.md)
-- [Operand-lineage vectors](https://github.com/probityai/probity-verify/blob/main/vectors-operand-lineage/README.md)
+- [probity-verify](https://github.com/probityai/probity/blob/main/packages/probity-verify/llms.txt): offline verifier that decides supported, contradicted or not_established
+- [probityai](https://github.com/probityai/probity/blob/main/packages/probityai/README.md): the `probity` command and its subcommand seam
+
+## Repository
+
+- [Repository layout](https://github.com/probityai/probity/blob/main/docs/architecture/MONOREPO.md): workspace, CI, releases and tag prefixes

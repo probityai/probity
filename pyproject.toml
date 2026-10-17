@@ -1,41 +1,25 @@
-[build-system]
-requires = ["setuptools>=77.0.3"]
-build-backend = "setuptools.build_meta"
+# Workspace root. It is not a package: each member under packages/ declares its
+# own distribution, version, licence and release tag. uv resolves every member
+# together into the one uv.lock beside this file.
 
-[project]
-name = "probity-verify"
-version = "0.1.1"
-description = "Check claims against pinned evidence offline, with replayable decisions"
-readme = "README.md"
-requires-python = ">=3.10"
-license = "Apache-2.0"
-dependencies = ["cryptography>=50.0.2,<51"]
-keywords = ["ai-agents", "evidence-verification", "provenance", "offline", "audit"]
+[tool.uv.workspace]
+members = ["packages/*"]
 
-[project.urls]
-Documentation = "https://github.com/probityai/probity-verify/blob/main/docs/install.md"
-Source = "https://github.com/probityai/probity-verify"
-Issues = "https://github.com/probityai/probity-verify/issues"
-"Agent guide" = "https://github.com/probityai/probity-verify/blob/main/llms.txt"
+[tool.uv]
+package = false
 
-[project.optional-dependencies]
-test = ["pytest>=8,<10", "hypothesis>=6,<7"]
-a2a = ["a2a-sdk[http-server]==1.2.1", "uvicorn==0.54.0"]
+[dependency-groups]
+dev = ["pytest>=8,<10", "hypothesis>=6,<7", "ruff==0.15.0"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "vectors-source-coverage/tests", "vectors-operand-lineage/tests"]
+# `uv run python -m pytest` from the root runs every member's tests. Test file
+# basenames are unique across the workspace; pytest refuses a duplicate at
+# collection, so a clash fails loudly instead of hiding a module.
+testpaths = ["tests", "packages"]
+addopts = ["--strict-markers"]
 
-[project.scripts]
-probity-verify = "probity_verify.cli:main"
-probity-bundle = "probity_verify.bundle:main"
-probity-index = "probity_verify.index:main"
-probity-a2a = "probity_verify.a2a_server:main"
-probity-a2a-client = "probity_verify.a2a_client:main"
-
-[tool.setuptools]
-include-package-data = false
-packages = ["probity_verify", "probity_verify.adapters", "probity_verify.samples"]
-package-dir = {"" = "src", "probity_verify.samples" = "examples/source-coverage"}
-
-[tool.setuptools.package-data]
-"probity_verify.samples" = ["*.json", "*.html", "*.txt"]
+# One lint configuration for every member. Ruff's default rule set for now;
+# widening it is one change here that applies to the whole workspace.
+[tool.ruff]
+target-version = "py310"
+extend-exclude = ["packages/*/vectors-*/cases"]
