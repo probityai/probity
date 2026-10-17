@@ -46,8 +46,8 @@ MUTATIONS = [
      '    if record["witness_scope"] not in SCOPES:', "    if False:"),
     ("records: a record's own EXTERNAL claim earns the scope", RECORDS, CLAIMED,
      'record is not None and earned_scope(pin) == EXTERNAL',
-     'record is not None and (earned_scope(pin) == EXTERNAL'
-     ' or record["witness_scope"] == EXTERNAL)'),
+     ('record is not None and (earned_scope(pin) == EXTERNAL'
+      ' or record["witness_scope"] == EXTERNAL)')),
     ("records: a PEER record cannot earn EXTERNAL from its bundle", RECORDS, BUNDLES,
      'record is not None and earned_scope(pin) == EXTERNAL',
      'record is not None and earned_scope(pin) == record["witness_scope"] == EXTERNAL'),
