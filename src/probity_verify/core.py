@@ -20,6 +20,7 @@ from .adapters import (
     brokered_file_write,
     event_absence,
     operand_lineage,
+    protected_paths,
     source_coverage,
     spend_reservation,
 )
@@ -33,6 +34,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "event_absence/v1": event_absence.adjudicate,
     "event_absence/v2": event_absence.adjudicate_v2,
     "spend_reservation/v1": spend_reservation.adjudicate,
+    "protected_paths/v1": protected_paths.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

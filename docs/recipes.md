@@ -16,6 +16,9 @@ All examples are authored synthetic records. They do not establish independent o
 | [Keep a self-reported write separate from observation](observation-vantage.md) | `event_absence/v2` | `not_established` | Synthetic self-report; no separately observed target effect. |
 | [Replay a budget reservation journal](spend-reservation.md) | `spend_reservation/v1` | `supported` | Synthetic prices and journal; no provider billing execution. |
 | [Check broker-recorded file completion](brokered-file-write.md) | `brokered_file_write/v1` | `supported` | Synthetic signed broker records; public fixture keys; PEER scope only. |
+| [Check that an agent left its protected tests alone](done-receipt.md) | `protected_paths/v1` | `supported` | Synthetic observer records; PEER scope; recorded paths only. |
+| [Detect a planted conftest.py in a protected test directory](done-receipt.md) | `protected_paths/v1` | `contradicted` | Synthetic observer records; PEER scope; recorded paths only. |
+| [Keep protected-path absence open when observer events were lost](done-receipt.md) | `protected_paths/v1` | `not_established` | Synthetic observer records with unknown coverage. |
 
 ## Retrieve a command
 

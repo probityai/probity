@@ -98,6 +98,33 @@
       "documentation": "docs/brokered-file-write.md",
       "expected_decision": "supported",
       "scope": "Synthetic signed broker records; public fixture keys; PEER scope only."
+    },
+    {
+      "task": "Check that an agent left its protected tests alone",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/honest/protected-paths.case.json",
+      "policy": "examples/done-receipt/honest/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic observer records; PEER scope; recorded paths only."
+    },
+    {
+      "task": "Detect a planted conftest.py in a protected test directory",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/planted-adversary/protected-paths.case.json",
+      "policy": "examples/done-receipt/planted-adversary/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic observer records; PEER scope; recorded paths only."
+    },
+    {
+      "task": "Keep protected-path absence open when observer events were lost",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/lost-events/protected-paths.case.json",
+      "policy": "examples/done-receipt/lost-events/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic observer records with unknown coverage."
     }
   ]
 }

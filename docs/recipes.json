@@ -51,14 +51,24 @@
       "sha256": "3edaf56335feaff57afa2f8f5bbe9632991a45b04626724b45b467406e20792a"
     },
     {
+      "path": "src/probity_verify/adapters/done_records.py",
+      "bytes": 12592,
+      "sha256": "88bda44721381288c58863ef479d738ff18d0838ababa7dad0df84252997e60a"
+    },
+    {
       "path": "src/probity_verify/adapters/event_absence.py",
-      "bytes": 13173,
-      "sha256": "a3ba7712034440b9492930a98e46898d72563fe5c243e832ad9b22decfdc6aef"
+      "bytes": 13573,
+      "sha256": "d999b400882260e244401c7dbd2515bf4b3d36b1a4263de84d3275cea655e305"
     },
     {
       "path": "src/probity_verify/adapters/operand_lineage.py",
       "bytes": 12072,
       "sha256": "a24ae4f5e3b0517a1a9030c8a698128061be65bd0aa8d0880d9b4c99a74fa83b"
+    },
+    {
+      "path": "src/probity_verify/adapters/protected_paths.py",
+      "bytes": 5079,
+      "sha256": "1518472578d705327df84d3f478ff8c18aacbf78f64c3c4e093b8dab514cf5e5"
     },
     {
       "path": "src/probity_verify/adapters/source_coverage.py",
@@ -92,8 +102,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 6285,
-      "sha256": "a963f789a601229420635763b94db4f7aba930ac5913e876e8caf156d76fdcb7"
+      "bytes": 6360,
+      "sha256": "9337af529888c8f9adfff3ca243848b694c575296b0a85d8d01a0da7a920e156"
     },
     {
       "path": "src/probity_verify/index.py",
@@ -575,6 +585,159 @@
           "path": "examples/brokered-file-write/recorded/result.txt",
           "bytes": 16,
           "sha256": "59db8a97176724229b8b3e931ae3d97a297e480d5916eca8726c70d4290c76cc"
+        }
+      ]
+    },
+    {
+      "task": "Check that an agent left its protected tests alone",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/honest/protected-paths.case.json",
+      "policy": "examples/done-receipt/honest/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic observer records; PEER scope; recorded paths only.",
+      "case_id": "honest",
+      "expected_reason": "protected_paths_untouched",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/protected-paths.case.json",
+        "--policy",
+        "examples/done-receipt/honest/protected-paths.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/protected-paths.case.json",
+          "bytes": 728,
+          "sha256": "5e45712aaa97491ec30e8d8d8479a2dcb6df856770b51e292d204daa67496b5c"
+        },
+        {
+          "path": "examples/done-receipt/honest/protected-paths.policy.json",
+          "bytes": 1412,
+          "sha256": "a7f4d8d1134313d260c8b04b0ec6051c3f7469c453593076a9d7b18ba853e55e"
+        },
+        {
+          "path": "examples/done-receipt/honest/capability.json",
+          "bytes": 273,
+          "sha256": "11efaeb94b1d47452131ae13d9d9083a3af009a0f89ac3947f05142187b91344"
+        },
+        {
+          "path": "examples/done-receipt/honest/contract.json",
+          "bytes": 555,
+          "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
+        },
+        {
+          "path": "examples/done-receipt/honest/observation.json",
+          "bytes": 896,
+          "sha256": "c18b2a4d2b874174a382ef23491db3ef4161a844852c5a6f819b8f6f6b4f2552"
+        },
+        {
+          "path": "examples/done-receipt/honest/tree.json",
+          "bytes": 462,
+          "sha256": "a6db850e8f507613ae138b0c7b3570c602bccaab76a47430cd0a332ce08d2a40"
+        }
+      ]
+    },
+    {
+      "task": "Detect a planted conftest.py in a protected test directory",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/planted-adversary/protected-paths.case.json",
+      "policy": "examples/done-receipt/planted-adversary/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic observer records; PEER scope; recorded paths only.",
+      "case_id": "planted-adversary",
+      "expected_reason": "protected_path_mutated",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/protected-paths.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/protected-paths.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/protected-paths.case.json",
+          "bytes": 739,
+          "sha256": "68ac47938b3e995b0a4223ee29d5881769ba6df58bf5519cb750d73e46a571eb"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/protected-paths.policy.json",
+          "bytes": 1423,
+          "sha256": "f01d82a8545291446583ce8ac921f97dfbc5b811a39112f5851424011365de82"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/capability.json",
+          "bytes": 284,
+          "sha256": "ad413357368e8a1126f0f7143dea52d8f15d3e40a44bf5df0a6719f3aa66cb1d"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/contract.json",
+          "bytes": 555,
+          "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/observation.json",
+          "bytes": 684,
+          "sha256": "584dafc2de907d89b8dca22aa12439bf0651e4c4fccb5da5d2b800fd14e84ce6"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/tree.json",
+          "bytes": 566,
+          "sha256": "2b022ae4e0742facdb4203c741799f583f759a7d9df0321910668a3ebcbc0eed"
+        }
+      ]
+    },
+    {
+      "task": "Keep protected-path absence open when observer events were lost",
+      "claim_type": "protected_paths/v1",
+      "case": "examples/done-receipt/lost-events/protected-paths.case.json",
+      "policy": "examples/done-receipt/lost-events/protected-paths.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic observer records with unknown coverage.",
+      "case_id": "lost-events",
+      "expected_reason": "observation_coverage_unestablished",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/lost-events/protected-paths.case.json",
+        "--policy",
+        "examples/done-receipt/lost-events/protected-paths.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/lost-events/protected-paths.case.json",
+          "bytes": 733,
+          "sha256": "9e9fc5d65db55e2bacec114ab50603aea4c4fcdb7fc26af851878932eb33d703"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/protected-paths.policy.json",
+          "bytes": 1417,
+          "sha256": "f468f4c2bed1a2abc5a28fbfa2210576163684aecc05d18350f63b0f1bda4e9f"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/capability.json",
+          "bytes": 278,
+          "sha256": "e0b97dff40e2b3a71725f0411f1ef972eb99eb70f3f4b7fc5eb556bd51547ad6"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/contract.json",
+          "bytes": 555,
+          "sha256": "ce20865a368efd0239a1f4f1dd5b09c072575c529fd135735d704dff5bd55a48"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/observation.json",
+          "bytes": 480,
+          "sha256": "96e00a8bb19c09cc637cbdebcc97ef8ffee098306284a9b7e5eacc035370feae"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/tree.json",
+          "bytes": 467,
+          "sha256": "e0f044127d261b2d8516b44b97a44f93cf5b15102a9ff7d42a4b683d5f745bc2"
         }
       ]
     }
