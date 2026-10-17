@@ -1,0 +1,163 @@
+name: probity-verify
+
+# Every check of packages/probity-verify. Called by ci.yml when the member or a
+# shared file changes.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: packages/probity-verify
+
+jobs:
+  conformance:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --frozen --extra test
+      - run: uv run --frozen --extra test pytest
+      - run: uv run --frozen python scripts/build-recipes.py --check
+      - run: uv run --frozen python examples/spend-reservation/generate.py --check
+      - run: uv run --frozen python examples/event-absence-v2/generate.py --check
+      - run: uv run --frozen python examples/brokered-file-write/generate.py --check
+      - run: uv run --frozen python examples/customer-support-action/generate.py --check
+      - run: uv run --frozen python examples/done-receipt/generate.py --check
+      - run: uv run --frozen --extra test python scripts/mutation-check-done.py
+      - run: uv run --frozen --extra test python vectors-source-coverage/check_vectors.py --verifier 'probity-verify'
+      - run: uv run --frozen --extra test python vectors-operand-lineage/check_vectors.py --verifier 'probity-verify'
+
+  a2a-transport:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --frozen --extra test --extra a2a
+      - run: uv run --frozen --extra test --extra a2a pytest
+
+  # Replays the source-coverage corpus shipped in the pinned agent-evidence-vectors
+  # package from PyPI against this checkout's verifier, the way any other verifier
+  # author would. A drift between the vendored and the published corpus is red here.
+  published-vectors:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: '3.12'
+      - name: install this checkout's verifier into its own environment
+        run: |
+          uv venv --python 3.12 .build/verifier
+          uv pip install --python .build/verifier/bin/python .
+          .build/verifier/bin/probity-verify --help > /dev/null
+      - name: replay the published source-coverage corpus
+        run: >-
+          uv run --no-project --python 3.13
+          --with agent-evidence-vectors==0.18.1
+          agent-evidence-vectors
+          --corpus vectors-source-coverage
+          --verifier "$PWD/.build/verifier/bin/probity-verify"
+          --report .build/source-coverage-report.json
+      - name: the verifier answered every vector and none disagreed
+        run: |
+          python3 - <<'PYCODE'
+          import json
+          report = json.load(open(".build/source-coverage-report.json"))
+          totals = report["totals"]
+          executed = report["verifier"]["vectorsExecuted"]
+          print(f"rail {report['rail']}: {executed} of {totals['vectors']} executed, {totals['fail']} failed")
+          assert report["rail"] == "external", report["rail"]
+          assert executed == totals["vectors"] > 0, (executed, totals)
+          assert totals["fail"] == 0 and totals["suiteRefusals"] == 0, totals
+          PYCODE
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: source-coverage-report
+          if-no-files-found: error
+          path: packages/probity-verify/.build/source-coverage-report.json
+
+  brokered-file-write:
+    runs-on: ubuntu-24.04
+    env:
+      B: ${{ github.workspace }}/packages/probity-verify/.build/brokered-file-write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: '3.12'
+      - name: retain the exact public producer package source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$B/producer-source"
+          git -C "$B/producer-source" init
+          git -C "$B/producer-source" remote add origin https://github.com/probityai/agent-evidence-observer.git
+          git -C "$B/producer-source" fetch --depth=1 --filter=blob:none origin 753932b42b00ab8257396112c529f840396f0ce7
+          git -C "$B/producer-source" checkout FETCH_HEAD -- pyproject.toml README.md LICENSE src
+          git -C "$B/producer-source" rev-parse FETCH_HEAD > "$B/producer-revision.txt"
+          git -C "$B/producer-source" ls-tree -r FETCH_HEAD > "$B/producer-tree.txt"
+      - name: build and install separate producer and consumer environments
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv build --wheel --out-dir "$B/wheels"
+          uv venv --python 3.12 "$B/producer"
+          uv venv --python 3.12 "$B/consumer"
+          uv pip install --python "$B/producer/bin/python" "$B/producer-source"
+          uv pip install --python "$B/consumer/bin/python" "$B"/wheels/*.whl
+          uv pip freeze --python "$B/producer/bin/python" > "$B/producer-dependencies.txt"
+          uv pip freeze --python "$B/consumer/bin/python" > "$B/consumer-dependencies.txt"
+          "$B/consumer/bin/python" -I -c 'import importlib.util; assert importlib.util.find_spec("probity_observer") is None'
+      - name: retain real hard exits and installed reader decisions
+        run: >-
+          "$B/consumer/bin/python" -I
+          scripts/check-brokered-file-write.py
+          --producer-python "$B/producer/bin/python"
+          --verifier "$B/consumer/bin/probity-verify"
+          --output "$B/native"
+      - name: bind the bounded public capture
+        if: always()
+        run: python3 scripts/manifest-brokered-file-write.py .build/brokered-file-write
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: brokered-file-write-installed-native
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            ${{ env.B }}/manifest.json
+            ${{ env.B }}/native
+            ${{ env.B }}/wheels
+            ${{ env.B }}/producer-source/pyproject.toml
+            ${{ env.B }}/producer-source/README.md
+            ${{ env.B }}/producer-source/LICENSE
+            ${{ env.B }}/producer-source/src
+            ${{ env.B }}/producer-revision.txt
+            ${{ env.B }}/producer-tree.txt
+            ${{ env.B }}/producer-dependencies.txt
+            ${{ env.B }}/consumer-dependencies.txt
+
+  distribution:
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: probity-verify

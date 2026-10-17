@@ -1,0 +1,133 @@
+name: ci
+
+# One entry point for every pull request and every push to main. The changes
+# job asks scripts/workspace.py which members a change touches; each member's
+# checks run only when needed, and the `ci-ok` job is the one required check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      members: ${{ steps.map.outputs.members }}
+      rust: ${{ steps.map.outputs.rust }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: map
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            members="$(python3 scripts/workspace.py changes "$BASE" HEAD)"
+            rust=false
+            if git diff --name-only "$BASE...HEAD" | grep -qE '^(crates/|Cargo\.(toml|lock)$|\.github/)'; then rust=true; fi
+          else
+            # A push to main or a manual run checks everything.
+            members="$(python3 scripts/workspace.py changes HEAD HEAD | python3 -c 'import json,sys; print(json.dumps({k: True for k in json.load(sys.stdin)}))')"
+            rust=true
+          fi
+          echo "members=$members" >> "$GITHUB_OUTPUT"
+          echo "rust=$rust" >> "$GITHUB_OUTPUT"
+          echo "members: $members, rust: $rust"
+
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: one lint configuration for the whole workspace
+        run: uv run --frozen --only-group dev ruff check .
+      - name: workspace tools
+        run: uv run --frozen --only-group dev python -m pytest tests
+      - name: every README stays one screen and every link in it resolves
+        run: |
+          python3 scripts/readme-lint-test.py
+          for readme in README.md packages/*/README.md; do python3 scripts/readme-lint.py "$readme"; done
+
+  probity-verify:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['probity-verify']
+    uses: ./.github/workflows/probity-verify.yml
+
+  probityai:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['probityai']
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.10', '3.14']
+    defaults:
+      run:
+        working-directory: packages/probityai
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --frozen --extra test
+      - run: uv run --frozen --extra test pytest
+
+  probityai-distribution:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['probityai']
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: probityai
+
+  rust:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: check every crate in the Cargo workspace
+        run: |
+          set -euo pipefail
+          count="$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["workspace_members"]))')"
+          echo "Cargo workspace members: $count"
+          if [ "$count" -gt 0 ]; then
+            cargo fmt --all --check
+            cargo clippy --workspace --all-targets --locked -- -D warnings
+            cargo test --workspace --locked
+          fi
+
+  ci-ok:
+    if: always()
+    needs: [changes, lint, probity-verify, probityai, probityai-distribution, rust]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: every needed job passed or was not needed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          needs = json.loads(os.environ["RESULTS"])
+          bad = {name: job["result"] for name, job in needs.items() if job["result"] not in ("success", "skipped")}
+          for name, job in sorted(needs.items()):
+              print(f"{name}: {job['result']}")
+          raise SystemExit(f"failed: {bad}" if bad else 0)
+          PYCODE

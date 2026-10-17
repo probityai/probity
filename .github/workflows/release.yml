@@ -1,0 +1,74 @@
+name: release
+
+# Publish one workspace member to PyPI from a GitHub release whose tag is
+# <distribution>-v<version>, for example probity-verify-v0.2.0. The tag must name
+# a member, match its pyproject version and point at a commit on main. The files
+# published are the ones python-build.yml built and checked in this run.
+#
+# PyPI trusted publisher, one entry per distribution: owner probityai,
+# repository probity, workflow release.yml, environment pypi-<distribution>.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-24.04
+    outputs:
+      distribution: ${{ steps.target.outputs.distribution }}
+      environment: ${{ steps.target.outputs.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: target
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor HEAD origin/main
+          python3 scripts/workspace.py release-target "$TAG" > target.json
+          cat target.json
+          python3 -c 'import json; t=json.load(open("target.json")); print("distribution=" + t["distribution"]); print("environment=" + t["environment"])' >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: resolve
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: ${{ needs.resolve.outputs.distribution }}
+
+  publish:
+    needs: [resolve, build]
+    runs-on: ubuntu-24.04
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
+      url: https://pypi.org/project/${{ needs.resolve.outputs.distribution }}/
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: python-distributions-${{ needs.resolve.outputs.distribution }}
+          path: release-artifacts
+      - name: the files are the ones built from this commit
+        run: |
+          cd release-artifacts
+          test "$(cat SOURCE-COMMIT)" = "$GITHUB_SHA"
+          sha256sum --check SHA256SUMS
+      - name: attest the checked distributions
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: release-artifacts/dist/*
+      - name: publish with PyPI attestations
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          packages-dir: release-artifacts/dist/
+          attestations: true

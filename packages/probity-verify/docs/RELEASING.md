@@ -12,7 +12,7 @@ From the source root, install the checked artifact into a separate environment:
 
 ```sh
 uv venv verify-env --python 3.12
-uv pip install --python verify-env/bin/python dist/probity_verify-0.1.1-py3-none-any.whl
+uv pip install --python verify-env/bin/python dist/probity_verify-0.2.0-py3-none-any.whl
 ```
 
 Run Python from that environment. The data comes from the installed package:
@@ -50,12 +50,13 @@ no source checkout for its sample data.
 
 ## Build and publish
 
-The `Python distribution` workflow builds on pushes, pull requests and manual
-runs. It installs hash-pinned tools from `requirements-release.lock`, builds a
-wheel and source distribution, and checks their contents against the source.
-It rebuilds a wheel from the source distribution and runs both installed
-consumers. Its artifact retains input hashes, the source commit, install reports
-and consumer results. These are build checks, not outside adoption.
+The workspace's [release process](../../../docs/architecture/MONOREPO.md#releases) builds and
+publishes this package. The shared `python-build.yml` workflow builds it on every pull request that
+touches it, with the hash-pinned tools in the root `requirements-release.lock`. It runs this
+member's `scripts/check-artifacts.py`, `scripts/check-artifacts-controls.py`,
+`scripts/check-installed.py` and `scripts/build-recipes.py --check` against the built files, and
+retains input hashes, the source commit, install reports and consumer results. These are build
+checks, not outside adoption.
 
 The release-tool lock selects setuptools 84.0.0. The source backend requires
 setuptools 77.0.3 or later for its SPDX license metadata, so compatible existing
@@ -63,34 +64,15 @@ build environments do not have to use the release toolchain's exact version.
 
 The recipe index binds the package manifest, implementation and fixture bytes.
 After changing a bound input, run `uv run python scripts/build-recipes.py`
-and retain its generated files. The distribution workflow checks this index
-with the installed verifier before it uploads the qualified build artifact.
+and retain its generated files.
 
-The build job has read access only. On a push to this repository's main branch,
-a separate job signs build provenance for the same checked wheel and source
-distribution. It checks their hashes after transfer and does not rebuild them.
-That job receives only `contents: read`, `id-token: write` and
-`attestations: write`. The signed bundle is retained in the separate
-`python-build-provenance` artifact; the `python-distributions` artifact keeps
-its original files. Verify each distribution with
-[`gh attestation verify`](https://cli.github.com/manual/gh_attestation_verify),
-binding the repository, workflow and exact source commit. A GitHub build
-attestation is separate from a PyPI Publish attestation and registry publication.
+A release is a non-prerelease GitHub release tagged `probity-verify-vX.Y.Z` on a commit of main,
+with `X.Y.Z` equal to this `pyproject.toml` version. `release.yml` publishes the files that run built
+and checked, with a GitHub build attestation and PyPI attestations, through the PyPI trusted publisher
+with owner `probityai`, repository `probity`, workflow `release.yml` and environment
+`pypi-probity-verify`. Releases 0.1.0 and 0.1.1 used tags `v0.1.0` and `v0.1.1`, which stay as they are.
 
-The separate publish job runs for a
-non-prerelease GitHub release whose `vX.Y.Z` tag matches `pyproject.toml` and
-belongs to main. It downloads the same checked files and receives
-`contents: read` and `id-token: write`; it has no account token or password
-fallback.
-
-Configure the [PyPI trusted publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
-with owner `probityai`, repository `probity-verify`, workflow
-`python-distribution.yml`, and environment `pypi`. The pinned PyPA publish action
-uploads [PyPI attestations](https://docs.pypi.org/attestations/producing-attestations/).
-Confirm the registry files and provenance after publication. A prepared workflow
-does not establish that this account binding exists or that an upload ran.
-
-Regenerate the release-tool lock with:
+The root release-tool lock is regenerated from the repository root with:
 
 ```sh
 uv pip compile --python-version 3.12 --generate-hashes --no-header --no-annotate \
