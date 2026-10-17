@@ -1,0 +1,46 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "predicate": {
+    "checks": [],
+    "claim_id": "lost-events",
+    "invocation_id": "call-1",
+    "records": {
+      "capability": {
+        "sha256": "d5139edc665c6bd65d3a57eb785f99721e01cf8db1206f73225089dd2ae70337"
+      },
+      "claims": {
+        "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
+      },
+      "contract": {
+        "sha256": "d043feaf4d82b0d4363ee08a37a9f33fc7e1bf15c95ed2377afe487259d8757a"
+      },
+      "grade": {
+        "sha256": "7b603d1af90b4477470fa41958e3c025d9deb2aa04b95055165c7af43750f519"
+      },
+      "observation": {
+        "sha256": "0cac6088ea16eef90bcfe49b0a66806dc02a03f190dfbc6432721a7ad4319e05"
+      },
+      "tree": {
+        "sha256": "c002399122dc57825b79fad11b158493b0b65f909fe72b6b0badf598eebf114e"
+      }
+    },
+    "schema_version": "probity-done-receipt/v1",
+    "verdict": {
+      "decision": "not_established",
+      "reason": "observation_coverage_unestablished",
+      "vantage": "independent"
+    },
+    "verifier": {
+      "id": "https://github.com/probityai/probity"
+    }
+  },
+  "predicateType": "https://w3id.org/agent-evidence/predicate/v1/done-receipt",
+  "subject": [
+    {
+      "digest": {
+        "sha256": "53ce8c69ad422706abbe0335c6e145ed936b7ed21d64fdc337a033a47de7db66"
+      },
+      "name": "workspace-tree"
+    }
+  ]
+}

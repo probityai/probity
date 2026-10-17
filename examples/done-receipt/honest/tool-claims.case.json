@@ -1,9 +1,9 @@
 {
   "artifacts": {
     "capability": {
-      "length": 273,
+      "length": 300,
       "path": "capability.json",
-      "sha256": "11efaeb94b1d47452131ae13d9d9083a3af009a0f89ac3947f05142187b91344"
+      "sha256": "e28a780d2dbacd4ff582d0310065af6e016418eb3d48c69265e15a316ede1182"
     },
     "claims": {
       "length": 307,
@@ -11,9 +11,9 @@
       "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
     },
     "observation": {
-      "length": 896,
+      "length": 1125,
       "path": "observation.json",
-      "sha256": "c18b2a4d2b874174a382ef23491db3ef4161a844852c5a6f819b8f6f6b4f2552"
+      "sha256": "b14cecac43d3713029297494f40d8a103b38e60bfdc67be2d53a6d31d96cf9c3"
     }
   },
   "case_id": "honest",

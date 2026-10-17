@@ -25,6 +25,8 @@ All examples are authored synthetic records. They do not establish independent o
 | [Match a claimed test run to an observed exec after the last edit](done-receipt.md) | `tool_claim_match/v1` | `supported` | Synthetic observer records; exact argv; PEER scope. |
 | [Detect a claimed test run that never executed](done-receipt.md) | `tool_claim_match/v1` | `contradicted` | Synthetic observer records; exact argv; PEER scope. |
 | [Keep a claimed run open when observer events were lost](done-receipt.md) | `tool_claim_match/v1` | `not_established` | Synthetic observer records with unknown coverage. |
+| [Derive a done receipt's verdict again from the records it names](done-receipt.md) | `done_receipt/v1` | `supported` | Synthetic records and an unsigned receipt Statement; PEER scope. |
+| [Detect a done receipt that reports a pass its records do not give](done-receipt.md) | `done_receipt/v1` | `contradicted` | Synthetic records and an unsigned receipt Statement; PEER scope. |
 
 ## Retrieve a command
 
