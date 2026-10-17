@@ -26,11 +26,14 @@ def main(argv: list[str] | None = None) -> int:
                         help="directory containing the case's relative artifact paths (default: case directory)")
     parser.add_argument("--packet", type=Path, help="write a readable text decision packet")
     parser.add_argument("--json", action="store_true", help="print JSON instead of a short text decision")
+    parser.add_argument("--require-witness-scope", choices=("PEER", "EXTERNAL"), default="PEER",
+                        help="hold verdicts that do not rest on this witness scope as not_established")
     args = parser.parse_args(argv)
     try:
         case = _load(args.case)
         policy = _load(args.policy)
-        result = adjudicate(case, policy, args.artifact_root or args.case.parent)
+        result = adjudicate(case, policy, args.artifact_root or args.case.parent,
+                            require_witness_scope=args.require_witness_scope)
         if args.packet:
             args.packet.write_text(render_packet(result), encoding="utf-8")
     except (OSError, json.JSONDecodeError, CaseError) as exc:

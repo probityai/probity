@@ -32,6 +32,19 @@ Every record is pinned by digest in the consumer policy, exactly as for the othe
 
 The tree, observation and grade records each carry `claim_id`, `invocation_id`, `producer`, `vantage` (`independent` or `self_reported`) and `witness_scope` (`PEER` or `EXTERNAL`). The consumer pins the same producer, vantage and scope for each one, and a record cannot raise its pin. A record is independent only when it and its pin say `independent`, its producer matches the pin, and the producer is not the observed party the assessment names.
 
+## Vantage and witness scope
+
+Each of the three checks reports two fields with a `supported` or `contradicted` verdict, and the decision line prints them:
+
+```text
+Decision: supported (vantage: independent, witness_scope: PEER)
+```
+
+- `vantage: independent` means every record the verdict rests on met its independence pin. A `not_established` verdict reports `vantage: unestablished` and no scope.
+- `witness_scope` is `EXTERNAL` only when every record the verdict rests on, and its pin, say `EXTERNAL`; otherwise it is `PEER`. `PEER` means the witness key runs under the same operator as the observer.
+
+By default the verifier accepts `PEER`, so a single developer's run can be `supported`. A consumer that needs a second operator passes `--require-witness-scope EXTERNAL` (or `require_witness_scope="EXTERNAL"` to `adjudicate`). Any verdict that does not rest on EXTERNAL scope then becomes `not_established` with reason `witness_scope_below_required`, and a `witness_scope` check keeps the adapter's own verdict and reason. Adapters that report no scope cannot meet the requirement.
+
 ## Protected paths
 
 `protected_paths/v1` is the bounded absence rule of `event_absence/v2` applied to file mutation. The assessment names `observed_party`, the invocation, the interval and four witnesses: `contract`, `capability`, `observation` and `tree`.

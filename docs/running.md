@@ -24,6 +24,13 @@ the stored report. Run with `policy-april.json` to get `not_established`:
 the June capture cannot establish an April intake. `case-complete.json`
 with `policy-complete.json` returns `supported`.
 
+Adapters that report what their verdict rests on add it to the decision
+line, for example `Decision: supported (vantage: independent,
+witness_scope: PEER)`. `--require-witness-scope EXTERNAL` holds any verdict
+that does not rest on EXTERNAL witness scope as `not_established` with
+reason `witness_scope_below_required`; see
+[Done-receipt checks](done-receipt.md#vantage-and-witness-scope).
+
 ## Inputs and decisions
 
 The case supplies local artifacts with relative paths, byte lengths, and

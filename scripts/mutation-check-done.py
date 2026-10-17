@@ -21,6 +21,7 @@ RECORDS = ADAPTERS + "done_records.py"
 PROTECTED = (ADAPTERS + "protected_paths.py", "tests/test_protected_paths.py")
 ACCEPTANCE = (ADAPTERS + "acceptance_observed.py", "tests/test_acceptance_observed.py")
 CLAIMS = (ADAPTERS + "tool_claim_match.py", "tests/test_tool_claim_match.py")
+CORE = ("src/probity_verify/core.py", "tests/test_witness_scope.py")
 
 MUTATIONS = [
     ("protected: rename or link target ignored", *PROTECTED,
@@ -75,6 +76,15 @@ MUTATIONS = [
     ("claims: self-reported observation accepted", *CLAIMS,
      "independent = records.independent(record, observation_pin, observed_party)",
      "independent = True"),
+    ("core: witness scope requirement ignored", *CORE,
+     '    if require_witness_scope == "EXTERNAL":\n        _require_external(result)\n',
+     ""),
+    ("core: unstated scope meets EXTERNAL", *CORE,
+     'or scope == "EXTERNAL":', 'or scope in ("EXTERNAL", None):'),
+    ("core: decision line qualifiers dropped", *CORE,
+     """return f" ({', '.join(parts)})" if parts else """"", 'return ""'),
+    ("core: invalid adapter scope accepted", *CORE,
+     'result.get("witness_scope", "PEER") not in WITNESS_SCOPES', "False"),
 ]
 
 
