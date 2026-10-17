@@ -17,6 +17,8 @@ jobs:
       - run: uv run python examples/event-absence-v2/generate.py --check
       - run: uv run python examples/brokered-file-write/generate.py --check
       - run: uv run python examples/customer-support-action/generate.py --check
+      - run: uv run python examples/done-receipt/generate.py --check
+      - run: uv run --extra test python scripts/mutation-check-done.py
       - run: uv run --extra test python vectors-source-coverage/check_vectors.py --verifier 'probity-verify'
       - run: uv run --extra test python vectors-operand-lineage/check_vectors.py --verifier 'probity-verify'
   a2a-transport:

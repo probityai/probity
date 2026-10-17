@@ -44,7 +44,8 @@ def _scope(value: Any, label: str) -> dict:
 
 
 def _witness(case: dict, policy: dict, witness_id: str, root: Path,
-             *, require_vantage: bool = False) -> tuple[bytes | None, dict]:
+             *, require_vantage: bool = False,
+             require_scope: bool = False) -> tuple[bytes | None, dict]:
     witnesses = policy["witnesses"]
     artifacts = case["artifacts"]
     if witness_id not in witnesses:
@@ -52,6 +53,8 @@ def _witness(case: dict, policy: dict, witness_id: str, root: Path,
     fields = {"artifact", "sha256", "authority"}
     if require_vantage:
         fields |= {"producer", "vantage"}
+    if require_scope:
+        fields.add("witness_scope")
     witness = _object(witnesses[witness_id], f"witness.{witness_id}", fields)
     artifact_id = _string(witness["artifact"], f"witness.{witness_id}.artifact")
     if artifact_id not in artifacts:
@@ -70,6 +73,12 @@ def _witness(case: dict, policy: dict, witness_id: str, root: Path,
         }:
             raise CaseError(f"witness.{witness_id}.vantage: unsupported value")
         pin["vantage"] = witness["vantage"]
+    if require_scope:
+        if not isinstance(witness["witness_scope"], str) or witness["witness_scope"] not in {
+            "PEER", "EXTERNAL"
+        }:
+            raise CaseError(f"witness.{witness_id}.witness_scope: unsupported value")
+        pin["witness_scope"] = witness["witness_scope"]
     return data, pin
 
 
