@@ -104,9 +104,11 @@ def adjudicate(
     the registry provides selection and isolation, not a code sandbox.
 
     An adapter may report the ``vantage`` and ``witness_scope`` its verdict
-    rests on. ``require_witness_scope="EXTERNAL"`` turns any verdict that does
-    not rest on EXTERNAL scope into ``not_established`` with reason
+    rests on. ``require_witness_scope="EXTERNAL"`` turns a ``supported`` verdict
+    that does not rest on EXTERNAL scope into ``not_established`` with reason
     ``witness_scope_below_required``, keeping the adapter's verdict in a check.
+    A ``contradicted`` verdict stands: a witness reporting failure cannot help
+    an agent fake a pass.
     """
     if not isinstance(case, dict) or not isinstance(policy, dict):
         raise CaseError("case and policy must be JSON objects")
@@ -152,10 +154,10 @@ def adjudicate(
 
 
 def _require_external(result: dict) -> None:
-    """Hold a verdict that does not rest on EXTERNAL witness scope as unestablished."""
+    """Hold a supported verdict that does not rest on EXTERNAL witness scope as unestablished."""
     result["required_witness_scope"] = "EXTERNAL"
     scope = result.get("witness_scope")
-    if result["decision"] == "not_established" or scope == "EXTERNAL":
+    if result["decision"] != "supported" or scope == "EXTERNAL":
         return
     result["checks"].append({
         "id": "witness_scope", "status": "unavailable", "required": "EXTERNAL",

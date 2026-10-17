@@ -27,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--packet", type=Path, help="write a readable text decision packet")
     parser.add_argument("--json", action="store_true", help="print JSON instead of a short text decision")
     parser.add_argument("--require-witness-scope", choices=("PEER", "EXTERNAL"), default="PEER",
-                        help="hold verdicts that do not rest on this witness scope as not_established")
+                        help="hold supported verdicts that do not rest on this witness scope as not_established; contradicted verdicts stand")
     args = parser.parse_args(argv)
     try:
         case = _load(args.case)

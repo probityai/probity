@@ -43,7 +43,7 @@ Decision: supported (vantage: independent, witness_scope: PEER)
 - `vantage: independent` means every record the verdict rests on met its independence pin. A `not_established` verdict reports `vantage: unestablished` and no scope.
 - `witness_scope` is `EXTERNAL` only when every record the verdict rests on, and its pin, say `EXTERNAL`; otherwise it is `PEER`. `PEER` means the witness key runs under the same operator as the observer.
 
-By default the verifier accepts `PEER`, so a single developer's run can be `supported`. A consumer that needs a second operator passes `--require-witness-scope EXTERNAL` (or `require_witness_scope="EXTERNAL"` to `adjudicate`). Any verdict that does not rest on EXTERNAL scope then becomes `not_established` with reason `witness_scope_below_required`, and a `witness_scope` check keeps the adapter's own verdict and reason. Adapters that report no scope cannot meet the requirement.
+By default the verifier accepts `PEER`, so a single developer's run can be `supported`. A consumer that needs a second operator passes `--require-witness-scope EXTERNAL` (or `require_witness_scope="EXTERNAL"` to `adjudicate`). A `supported` verdict that does not rest on EXTERNAL scope then becomes `not_established` with reason `witness_scope_below_required`, and a `witness_scope` check keeps the adapter's own verdict and reason. A `contradicted` verdict stands whatever its scope: a same-host witness reporting failure cannot help an agent fake a pass, and discarding it would lose evidence. Adapters that report no scope cannot meet the requirement.
 
 ## Protected paths
 
