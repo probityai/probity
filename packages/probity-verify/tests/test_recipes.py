@@ -25,7 +25,7 @@ def test_package_availability_and_fixture_scope_have_distinct_contracts(recipes)
     assert result["schema_version"] == "probity-recipes/v1"
     assert result["distribution"] == {
         "name": "probity-verify", "status": "published",
-        "installation": "docs/install.md", "python": ">=3.10",
+        "installation": "docs/install.md", "python": ">=3.11",
     }
     assert result["fixture_scope"] == "source-checkout"
     assert result["operator"] == "author-run synthetic fixtures"

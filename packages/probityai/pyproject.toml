@@ -7,7 +7,7 @@ name = "probityai"
 version = "0.1.0"
 description = "The probity command: one entry point for the evidence tools"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 dependencies = ["probity-verify>=0.2.0"]
