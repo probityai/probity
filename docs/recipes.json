@@ -52,8 +52,8 @@
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
-      "bytes": 11997,
-      "sha256": "84d59a9a73c2eaffaec043e97742ddece5c79e9fd101f7cb090b7613ce9a163a"
+      "bytes": 13173,
+      "sha256": "a3ba7712034440b9492930a98e46898d72563fe5c243e832ad9b22decfdc6aef"
     },
     {
       "path": "src/probity_verify/adapters/operand_lineage.py",
