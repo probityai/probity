@@ -1,0 +1,51 @@
+{
+  "malformed-no-signatures": {
+    "case": "../done-receipt/honest/receipt.case.json",
+    "exit": 2,
+    "expected": "expected/malformed-no-signatures.err",
+    "key": "signer.pub",
+    "policy": "../done-receipt/honest/receipt.policy.json"
+  },
+  "malformed-unpadded-base64": {
+    "case": "../done-receipt/honest/receipt.case.json",
+    "exit": 2,
+    "expected": "expected/malformed-unpadded-base64.err",
+    "key": "signer.pub",
+    "policy": "../done-receipt/honest/receipt.policy.json"
+  },
+  "tampered-payload": {
+    "case": "../done-receipt/honest/receipt.case.json",
+    "exit": 0,
+    "expected": "expected/tampered-payload.json",
+    "key": "signer.pub",
+    "policy": "../done-receipt/honest/receipt.policy.json"
+  },
+  "tampered-receipt": {
+    "case": "../done-receipt/tampered-grader/receipt.case.json",
+    "exit": 0,
+    "expected": "expected/tampered-receipt.json",
+    "key": "signer.pub",
+    "policy": "../done-receipt/tampered-grader/receipt.policy.json"
+  },
+  "valid": {
+    "case": "../done-receipt/honest/receipt.case.json",
+    "exit": 0,
+    "expected": "expected/valid.json",
+    "key": "signer.pub",
+    "policy": "../done-receipt/honest/receipt.policy.json"
+  },
+  "wrong-key": {
+    "case": "../done-receipt/honest/receipt.case.json",
+    "exit": 0,
+    "expected": "expected/wrong-key.json",
+    "key": "other.pub",
+    "policy": "../done-receipt/honest/receipt.policy.json"
+  },
+  "wrong-payload-type": {
+    "case": "../done-receipt/honest/receipt.case.json",
+    "exit": 0,
+    "expected": "expected/wrong-payload-type.json",
+    "key": "signer.pub",
+    "policy": "../done-receipt/honest/receipt.policy.json"
+  }
+}
