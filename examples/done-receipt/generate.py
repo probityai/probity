@@ -17,6 +17,7 @@ CHECKS = {
     "protected-paths": ("protected_paths/v1",
                         ("contract", "capability", "observation", "tree")),
     "acceptance": ("acceptance_observed/v1", ("contract", "tree", "grade")),
+    "tool-claims": ("tool_claim_match/v1", ("claims", "capability", "observation")),
 }
 OBSERVED = {"observation", "tree", "grade"}
 

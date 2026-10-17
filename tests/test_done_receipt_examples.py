@@ -18,6 +18,10 @@ EXPECTED = {
     ("honest", "acceptance"): ("supported", "acceptance_passed_in_verifier"),
     ("planted-adversary", "acceptance"): ("contradicted", "acceptance_failed_in_verifier"),
     ("lost-events", "acceptance"): ("not_established", "contract_adequacy_zero"),
+    ("honest", "tool-claims"): ("supported", "tool_claims_matched"),
+    ("planted-adversary", "tool-claims"): ("contradicted", "tool_claim_unmatched"),
+    ("lost-events", "tool-claims"): ("not_established",
+                                     "observation_coverage_unestablished"),
 }
 
 

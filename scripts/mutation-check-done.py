@@ -20,6 +20,7 @@ ADAPTERS = "src/probity_verify/adapters/"
 RECORDS = ADAPTERS + "done_records.py"
 PROTECTED = (ADAPTERS + "protected_paths.py", "tests/test_protected_paths.py")
 ACCEPTANCE = (ADAPTERS + "acceptance_observed.py", "tests/test_acceptance_observed.py")
+CLAIMS = (ADAPTERS + "tool_claim_match.py", "tests/test_tool_claim_match.py")
 
 MUTATIONS = [
     ("protected: rename or link target ignored", *PROTECTED,
@@ -54,6 +55,26 @@ MUTATIONS = [
      "            continue"),
     ("records: tree digest not recomputed", RECORDS, ACCEPTANCE[1],
      'raise CaseError("tree.tree_sha256: does not match the listed files")', "pass"),
+    ("claims: stale runs accepted", *CLAIMS,
+     'fresh = [event for event in candidates if event["step"] > last_edit]',
+     "fresh = candidates"),
+    ("claims: every claimed tree excused", *CLAIMS,
+     'and event.get("origin") not in own), default=-1)', "), default=-1)"),
+    ("claims: argv ignored", *CLAIMS,
+     'candidates = [event for event in execs if event["argv"] == claim["argv"]]',
+     "candidates = execs"),
+    ("claims: claimed exit ignored", *CLAIMS,
+     'if event.get("exit") == claim["exit"]]', "]"),
+    ("claims: unseen exit treated as a mismatch", *CLAIMS,
+     '    if any("exit" not in event for event in fresh):', "    if False:"),
+    ("claims: incomplete coverage settles", *CLAIMS,
+     '    complete = record["coverage"] == "complete"', "    complete = True"),
+    ("claims: exec visibility not required", *CLAIMS,
+     "REQUIRED_TYPES = records.MUTATION_TYPES | {records.EXEC_TYPE}",
+     'REQUIRED_TYPES = frozenset({"write"})'),
+    ("claims: self-reported observation accepted", *CLAIMS,
+     "independent = records.independent(record, observation_pin, observed_party)",
+     "independent = True"),
 ]
 
 

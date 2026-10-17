@@ -250,6 +250,30 @@ def grade(data: bytes) -> dict:
     return record
 
 
+def claims(data: bytes) -> dict:
+    record = _record(data, "claims",
+                     {"schema_version", "claim_id", "invocation_id", "producer", "claims"})
+    if record["schema_version"] != "probity-tool-claims/v1":
+        raise CaseError("unsupported claims schema_version")
+    for key in ("claim_id", "invocation_id", "producer"):
+        _string(record[key], f"claims.{key}")
+    items = record["claims"]
+    if not isinstance(items, list):
+        raise CaseError("claims.claims: expected list")
+    ids: set[str] = set()
+    for index, item in enumerate(items):
+        label = f"claims[{index}]"
+        entry = _object(item, label, {"id", "argv"}, {"exit"})
+        claim_id = _string(entry["id"], f"{label}.id")
+        _argv(entry["argv"], f"{label}.argv")
+        if "exit" in entry:
+            _exit(entry["exit"], f"{label}.exit")
+        if claim_id in ids:
+            raise CaseError("claims: duplicate id")
+        ids.add(claim_id)
+    return record
+
+
 def start(case: Any, policy: Any, claim_type: str, fields: set[str]) -> tuple[str, dict]:
     """Validate the case and policy envelopes and return the case's assessment."""
     case = _object(case, "case", {"schema_version", "case_id", "artifacts"})
