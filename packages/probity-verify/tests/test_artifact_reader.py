@@ -58,6 +58,17 @@ def test_declared_binding_mismatch_or_invalid_length_refuses(tmp_path, field, va
         _artifact(tmp_path, meta, "artifacts.evidence")
 
 
+
+def _bind_unix(endpoint, path):
+    """Bind by name from the socket's directory: a long temporary path exceeds the AF_UNIX limit."""
+    previous = os.getcwd()
+    os.chdir(path.parent)
+    try:
+        endpoint.bind(path.name)
+    finally:
+        os.chdir(previous)
+
+
 @pytest.mark.parametrize("kind", ["directory", "fifo", "socket", "symlink", "dangling_symlink"])
 def test_actual_nonregular_files_refuse_before_read(tmp_path, kind):
     target = tmp_path / "evidence.bin"
@@ -68,7 +79,7 @@ def test_actual_nonregular_files_refuse_before_read(tmp_path, kind):
         os.mkfifo(target)
     elif kind == "socket":
         endpoint = socket.socket(socket.AF_UNIX)
-        endpoint.bind(str(target))
+        _bind_unix(endpoint, target)
     else:
         target.symlink_to(tmp_path / ("absent" if kind == "dangling_symlink" else "regular"))
         if kind == "symlink":
@@ -196,7 +207,7 @@ def test_actual_cli_refuses_with_exit2_and_no_verdict(tmp_path, unsafe):
             os.mkfifo(leaf)
         elif unsafe == "socket":
             endpoint = socket.socket(socket.AF_UNIX)
-            endpoint.bind(str(leaf))
+            _bind_unix(endpoint, leaf)
         else:
             leaf.symlink_to(source / "source.html")
     try:
