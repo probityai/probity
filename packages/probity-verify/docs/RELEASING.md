@@ -62,9 +62,13 @@ The release-tool lock selects setuptools 84.0.0. The source backend requires
 setuptools 77.0.3 or later for its SPDX license metadata, so compatible existing
 build environments do not have to use the release toolchain's exact version.
 
-The recipe index binds the package manifest, implementation and fixture bytes.
-After changing a bound input, run `uv run python scripts/build-recipes.py`
-and retain its generated files.
+The recipe index binds the implementation and fixture bytes, and the
+install-relevant keys of the package manifest (build system, name, version,
+Python requirement, runtime dependencies, scripts and setuptools layout).
+A change to an optional extra, such as a dependency-bot bump of the `a2a`
+pin, does not make it stale. After changing a bound input, run
+`uv run --directory packages/probity-verify python scripts/build-recipes.py`
+from the repository root and retain its generated files.
 
 A release is a non-prerelease GitHub release tagged `probity-verify-vX.Y.Z` on a commit of main,
 with `X.Y.Z` equal to this `pyproject.toml` version. `release.yml` publishes the files that run built
