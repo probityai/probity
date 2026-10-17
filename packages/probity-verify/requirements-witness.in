@@ -1,11 +1,16 @@
 # The witness co-signature verifier that lets a record earn EXTERNAL witness
 # scope, and the test tools that check it. Compile with:
 #   uv pip compile --no-header --python-version 3.12 requirements-witness.in -o requirements-witness.txt
-# It is a separate environment, not a probity-verify extra: the verifier's
-# witness module needs the jcs-admit Python binding, whose distribution name
-# (probityai) is also the name of the probity command in this workspace, so the
-# two cannot share one lock or one environment.
+# It is a separate environment, not a probity-verify extra: the pinned observer
+# depends on the jcs-admit Python binding at a commit that still published it as
+# probityai, the name of the probity command in this workspace, so the two
+# cannot share one lock or one environment. jcs-admit now publishes the binding
+# as jcs-admit; once the observer moves to it, this becomes a witness extra.
+# probity-verify itself is installed with --no-deps, so its own dependencies
+# are listed here.
 agent-evidence-observer[witness] @ git+https://github.com/probityai/agent-evidence-observer@1e8fb5bb18dbef58ef3eef110d342c72b15dc2ed
 cryptography==50.0.2
+agent-evidence-vocabulary==0.5.0
+pyyaml==6.0.3
 pytest==9.1.1
 hypothesis==6.170.1
