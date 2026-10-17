@@ -28,8 +28,11 @@ Adapters that report what their verdict rests on add it to the decision
 line, for example `Decision: supported (vantage: independent,
 witness_scope: PEER)`. `--require-witness-scope EXTERNAL` holds a `supported`
 verdict that does not rest on EXTERNAL witness scope as `not_established` with
-reason `witness_scope_below_required`; a `contradicted` verdict stands; see
-[Done-receipt checks](done-receipt.md#vantage-and-witness-scope).
+reason `witness_scope_below_required`, or `witness_scope_unwitnessed` when a
+record claims EXTERNAL scope that no verified witness co-signature earned; a
+`contradicted` verdict stands. The scope comes from the witness bundles, never
+from a record's own field; see
+[Earning EXTERNAL scope](done-receipt.md#earning-external-scope).
 
 ## Inputs and decisions
 
