@@ -41,6 +41,11 @@
       "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
     },
     {
+      "path": "src/probity_verify/adapters/acceptance_observed.py",
+      "bytes": 5294,
+      "sha256": "ae41199919260ca61b0951b957986cce7fad2bc37db0ccc89b10348ab977caee"
+    },
+    {
       "path": "src/probity_verify/adapters/authority_anchor.py",
       "bytes": 7520,
       "sha256": "bb5b7b34cba370a5255be4dcc9f4d6decde98ebe35d2711d432efd2824db445e"
@@ -52,8 +57,8 @@
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 12592,
-      "sha256": "88bda44721381288c58863ef479d738ff18d0838ababa7dad0df84252997e60a"
+      "bytes": 13618,
+      "sha256": "ee99030952feac00cef7e515f9817da84d144555d5aaf98fc2b74b60f92e2756"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
@@ -102,8 +107,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 6360,
-      "sha256": "9337af529888c8f9adfff3ca243848b694c575296b0a85d8d01a0da7a920e156"
+      "bytes": 6447,
+      "sha256": "ca861163ac64eab92b519ecb8e3ba922ab24ce8815e005944a30394a1897d8e3"
     },
     {
       "path": "src/probity_verify/index.py",
@@ -733,6 +738,144 @@
           "path": "examples/done-receipt/lost-events/observation.json",
           "bytes": 480,
           "sha256": "96e00a8bb19c09cc637cbdebcc97ef8ffee098306284a9b7e5eacc035370feae"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/tree.json",
+          "bytes": 467,
+          "sha256": "e0f044127d261b2d8516b44b97a44f93cf5b15102a9ff7d42a4b683d5f745bc2"
+        }
+      ]
+    },
+    {
+      "task": "Check acceptance graded outside the agent on its final tree",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/honest/acceptance.case.json",
+      "policy": "examples/done-receipt/honest/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic grade and tree records; PEER scope.",
+      "case_id": "honest",
+      "expected_reason": "acceptance_passed_in_verifier",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/acceptance.case.json",
+        "--policy",
+        "examples/done-receipt/honest/acceptance.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/acceptance.case.json",
+          "bytes": 552,
+          "sha256": "7c698fa6173034728710b72e72effbc816266657ebf9f425d9ce0e45e54e6456"
+        },
+        {
+          "path": "examples/done-receipt/honest/acceptance.policy.json",
+          "bytes": 1043,
+          "sha256": "6451b9b3dd5da0a3c6cef8ab9a09812e88a29e43a456025e8160c1338161fa35"
+        },
+        {
+          "path": "examples/done-receipt/honest/contract.json",
+          "bytes": 555,
+          "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
+        },
+        {
+          "path": "examples/done-receipt/honest/grade.json",
+          "bytes": 543,
+          "sha256": "7d535a5f339a4ea590254b5fd918af0e03cf29d780f89526e0e69f70e75338e4"
+        },
+        {
+          "path": "examples/done-receipt/honest/tree.json",
+          "bytes": 462,
+          "sha256": "a6db850e8f507613ae138b0c7b3570c602bccaab76a47430cd0a332ce08d2a40"
+        }
+      ]
+    },
+    {
+      "task": "Detect acceptance that fails when the verifier reruns it",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/planted-adversary/acceptance.case.json",
+      "policy": "examples/done-receipt/planted-adversary/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic grade and tree records; PEER scope.",
+      "case_id": "planted-adversary",
+      "expected_reason": "acceptance_failed_in_verifier",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/acceptance.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/acceptance.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/acceptance.case.json",
+          "bytes": 563,
+          "sha256": "285880257407eff8791c960fffd83114633d5ac9ce9868155ca5ecf7e0a63673"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/acceptance.policy.json",
+          "bytes": 1054,
+          "sha256": "241276424dfbe276c99edc4fe0d0bea21f7bfc81cf0447e101a1c949e2c2eaa3"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/contract.json",
+          "bytes": 555,
+          "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/grade.json",
+          "bytes": 554,
+          "sha256": "8d0cceb9b960e22fff12e6efbda86e28920b2d6b6660312858c95f69f9b7a3fe"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/tree.json",
+          "bytes": 566,
+          "sha256": "2b022ae4e0742facdb4203c741799f583f759a7d9df0321910668a3ebcbc0eed"
+        }
+      ]
+    },
+    {
+      "task": "Refuse support from a contract that killed no mutant",
+      "claim_type": "acceptance_observed/v1",
+      "case": "examples/done-receipt/lost-events/acceptance.case.json",
+      "policy": "examples/done-receipt/lost-events/acceptance.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "not_established",
+      "scope": "Synthetic contract with zero mutation adequacy.",
+      "case_id": "lost-events",
+      "expected_reason": "contract_adequacy_zero",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/lost-events/acceptance.case.json",
+        "--policy",
+        "examples/done-receipt/lost-events/acceptance.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/lost-events/acceptance.case.json",
+          "bytes": 557,
+          "sha256": "2dae63553687a9932c4fd713a31ed8bf45137bd33fd48765c7036befa8022d9d"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/acceptance.policy.json",
+          "bytes": 1048,
+          "sha256": "e28f9bc123d9d20e3c73bd78f6c070ab900403a0b50e663929579bd21a7e0d9e"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/contract.json",
+          "bytes": 555,
+          "sha256": "ce20865a368efd0239a1f4f1dd5b09c072575c529fd135735d704dff5bd55a48"
+        },
+        {
+          "path": "examples/done-receipt/lost-events/grade.json",
+          "bytes": 548,
+          "sha256": "9c51538c96ec68bbb60504ea3b16ff9750bda786d57373581f6e4548899ef8c9"
         },
         {
           "path": "examples/done-receipt/lost-events/tree.json",

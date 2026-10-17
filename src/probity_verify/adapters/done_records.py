@@ -226,6 +226,30 @@ def observation(data: bytes) -> dict:
     return record
 
 
+def grade(data: bytes) -> dict:
+    record = _record(data, "grade",
+                     {"schema_version", "contract_sha256", "tree_sha256", "results"} | ORIGIN)
+    if record["schema_version"] != "probity-acceptance-grade/v1":
+        raise CaseError("unsupported grade schema_version")
+    _origin_fields(record, "grade")
+    _digest(record["contract_sha256"], "grade.contract_sha256")
+    _digest(record["tree_sha256"], "grade.tree_sha256")
+    results = record["results"]
+    if not isinstance(results, list):
+        raise CaseError("grade.results: expected list")
+    ids: set[str] = set()
+    for index, item in enumerate(results):
+        label = f"grade.results[{index}]"
+        entry = _object(item, label, {"id", "argv", "exit"})
+        result_id = _string(entry["id"], f"{label}.id")
+        _argv(entry["argv"], f"{label}.argv")
+        _exit(entry["exit"], f"{label}.exit")
+        if result_id in ids:
+            raise CaseError("grade.results: duplicate id")
+        ids.add(result_id)
+    return record
+
+
 def start(case: Any, policy: Any, claim_type: str, fields: set[str]) -> tuple[str, dict]:
     """Validate the case and policy envelopes and return the case's assessment."""
     case = _object(case, "case", {"schema_version", "case_id", "artifacts"})
