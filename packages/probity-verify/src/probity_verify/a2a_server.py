@@ -229,7 +229,7 @@ def create_app(policy: bytes, artifact_root: Path, base_url: str,
                                  output_modes=[LAB_RECORD_MIME]))
     card = AgentCard(name="Probity Verify", version="0.1.0",
                      description="Consumer-policy assessments and pinned Lab record reads.",
-                     documentation_url="https://github.com/probityai/probity-verify/blob/main/docs/a2a.md",
+                     documentation_url="https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/a2a.md",
                      capabilities=AgentCapabilities(streaming=False, push_notifications=False),
                      default_input_modes=[skill.input_modes[0] for skill in skills],
                      default_output_modes=list(dict.fromkeys(mode for skill in skills

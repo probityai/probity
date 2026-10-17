@@ -16,7 +16,7 @@ the [release guide](RELEASING.md) gives the installed-resource recipe and artifa
 Run these commands from a new working directory:
 
 ```sh
-git clone https://github.com/probityai/probity-verify.git verify-source
+git clone https://github.com/probityai/probity.git verify-source
 git -C verify-source checkout --detach 2ecdbafc0c6cc0f26461ffe913fe342e7de090a6
 uv venv --python 3.12 verify-env
 uv pip install --python verify-env/bin/python probity-verify==0.1.0
@@ -96,7 +96,7 @@ for every recipe in the current index. To replay that historical source, use a
 new directory and keep its code and inputs together:
 
 ```sh
-git clone https://github.com/probityai/probity-verify.git historical-source
+git clone https://github.com/probityai/probity.git historical-source
 git -C historical-source checkout --detach 4eb2bac542f784b68c524b99cac9eccb32b0e5cc
 uv venv --python 3.12 historical-env
 uv pip install --python historical-env/bin/python ./historical-source
@@ -125,7 +125,7 @@ and [Replayable decisions](bundles-and-index.md) to share a checked packet.
 This is the README's earlier quick start, kept as written. It retains its historical code and input snapshot:
 
 ```sh
-git clone https://github.com/probityai/probity-verify && cd probity-verify
+git clone https://github.com/probityai/probity && cd probity
 git checkout 588db582c50558f3e2a928be89ffc135188afcdb
 uv run probity-verify examples/source-coverage/case.json \
   --policy examples/source-coverage/policy-june.json

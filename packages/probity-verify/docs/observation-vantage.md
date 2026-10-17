@@ -9,7 +9,7 @@ uv run probity-verify examples/event-absence-v2/covered/case.json \
 uv run python examples/event-absence-v2/generate.py --check
 ```
 
-The retained examples are authored synthetic records from [a489590a](https://github.com/probityai/probity-verify/commit/a489590aa537b46f54caddb552b4f6d1464c2565). The generator reproduces all 12 original JSON files byte for byte; its manifest records their hashes.
+The retained examples are authored synthetic records from [a489590a](https://github.com/probityai/probity/commit/a489590aa537b46f54caddb552b4f6d1464c2565). The generator reproduces all 12 original JSON files byte for byte; its manifest records their hashes.
 
 | example | decision | reason |
 | --- | --- | --- |

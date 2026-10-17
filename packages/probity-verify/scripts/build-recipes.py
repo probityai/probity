@@ -63,7 +63,7 @@ def build(root: Path, source: dict) -> dict:
     return {
         "schema_version": "probity-recipes/v1",
         "schema_scope": "Project recipe convention; not a discovery standard.",
-        "repository": "https://github.com/probityai/probity-verify",
+        "repository": "https://github.com/probityai/probity/tree/main/packages/probity-verify",
         "distribution": {"name": "probity-verify", "status": "published",
                          "installation": "docs/install.md", "python": ">=3.10"},
         "fixture_scope": "source-checkout",

@@ -5,7 +5,7 @@ selected inputs: the budget policy, its price table, and the trace. It checks
 that each dispatch has one affordable reservation for that exact call and
 attempt. Verify imports no Admission code.
 
-Use [this tested source](https://github.com/probityai/probity-verify/tree/49539af7265ae516934123e2f310f7206f520da2)
+Use [this tested source](https://github.com/probityai/probity/tree/49539af7265ae516934123e2f310f7206f520da2)
 for the adapter and generated examples:
 
 ```sh
