@@ -1,0 +1,11 @@
+# The runner was linted with ruff's default rule set before it joined this
+# repository. A nested config replaces the workspace one for this directory, so
+# the import adds no findings and the workspace rules stay as they are.
+target-version = "py311"
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
+
+[lint.per-file-ignores]
+# Imported verbatim; the unused name is part of the file as published.
+"src/checkout_runner/cases.py" = ["F401"]
