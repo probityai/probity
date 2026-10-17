@@ -56,17 +56,33 @@ def test_external_receipt_meets_the_requirement(tmp_path):
     assert (result["decision"], result["witness_scope"]) == ("supported", "EXTERNAL")
 
 
-def test_contradiction_from_a_peer_witness_is_also_held(tmp_path):
+def test_contradiction_from_a_peer_witness_stands(tmp_path):
     records = honest_records()
     records["grade"]["results"][0]["exit"] = 1
     result = decide(tmp_path, records, "acceptance_observed/v1",
                     require_witness_scope="EXTERNAL")
+    assert result["decision"] == "contradicted"
+    assert result["reason"] != "witness_scope_below_required"
+    assert result["required_witness_scope"] == "EXTERNAL"
+    assert all(check["id"] != "witness_scope" for check in result["checks"])
+
+
+def test_supported_from_a_peer_witness_is_held(tmp_path):
+    result = decide(tmp_path, honest_records(), "protected_paths/v1",
+                    require_witness_scope="EXTERNAL")
+    assert result["decision"] == "not_established"
     assert result["reason"] == "witness_scope_below_required"
-    assert result["checks"][-1]["adapter_decision"] == "contradicted"
+    assert result["checks"][-1]["adapter_decision"] == "supported"
+
+
+def test_contradiction_from_an_adapter_stating_no_scope_stands(capsys):
+    assert main([str(SOURCE / "case.json"), "--policy", str(SOURCE / "policy-june.json"),
+                 "--require-witness-scope", "EXTERNAL", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["decision"] == "contradicted"
 
 
 def test_adapter_that_states_no_scope_cannot_meet_external(capsys):
-    assert main([str(SOURCE / "case.json"), "--policy", str(SOURCE / "policy-june.json"),
+    assert main([str(SOURCE / "case-complete.json"), "--policy", str(SOURCE / "policy-complete.json"),
                  "--require-witness-scope", "EXTERNAL", "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["decision"] == "not_established"
