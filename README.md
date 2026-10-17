@@ -8,7 +8,7 @@ Install the released verifier: `pip install probity-verify==0.1.1`.
 
 ## Quick start
 
-Check a sample claim with the released package. You need Python 3.10 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
+Check a sample claim with the released package. You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
 samples="$(uvx --from probity-verify==0.1.1 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"

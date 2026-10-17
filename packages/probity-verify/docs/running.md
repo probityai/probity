@@ -2,7 +2,7 @@
 
 ## Run
 
-Python 3.10 or newer and [uv](https://docs.astral.sh/uv/):
+Python 3.11 or newer and [uv](https://docs.astral.sh/uv/):
 
 ```sh
 uv sync --extra test
