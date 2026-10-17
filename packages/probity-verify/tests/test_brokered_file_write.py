@@ -178,7 +178,8 @@ def test_raw_history_chain_faults_refuse(tmp_path, change):
     elif change == "duplicate":
         data = b"".join(lines + lines[-1:])
     else:
-        first = json.loads(lines[0]); first["sequence"] = True
+        first = json.loads(lines[0])
+        first["sequence"] = True
         data = ENCODE(first) + b"\n" + b"".join(lines[1:])
     replace(tmp_path, case, policy, "history", data)
     with pytest.raises(CaseError):
@@ -249,7 +250,8 @@ def test_actual_cli_refuses_cleanly(tmp_path, fault):
         packet["claimSignature"] = "A" * 86 + "=="
         replace(tmp_path, case, policy, "packet", ENCODE(packet))
     elif fault == "boolean":
-        report = json.loads((tmp_path / "report.json").read_bytes()); report["completion_recorded"] = 1
+        report = json.loads((tmp_path / "report.json").read_bytes())
+        report["completion_recorded"] = 1
         replace(tmp_path, case, policy, "report", ENCODE(report))
     case_raw = ENCODE(case)
     if fault == "deep-case":
@@ -286,14 +288,16 @@ def test_validly_signed_wrong_numeric_types_refuse(tmp_path, value, role, partia
         key(2).public_key().verify(base64.b64decode(point["signature"]), b"probity-checkpoint-v0\0" + ENCODE(payload))
         replace(tmp_path, case, policy, "packet", ENCODE(packet))
     elif role == "head":
-        head = json.loads((tmp_path / "head.json").read_bytes()); head["count"] = value
+        head = json.loads((tmp_path / "head.json").read_bytes())
+        head["count"] = value
         payload = {name: head[name] for name in ("format", "count", "head")}
         head["signature"] = sign(key(2), "probity-witness-ledger-head-v0", payload)
         key(2).public_key().verify(base64.b64decode(head["signature"]), b"probity-witness-ledger-head-v0\0" + ENCODE(payload))
         replace(tmp_path, case, policy, "head", ENCODE(head))
     elif role == "receipt-sequence":
         receipts = [json.loads(line) for line in (tmp_path / "ledger.jsonl").read_bytes().splitlines()]
-        first = receipts[0]; first["sequence"] = value
+        first = receipts[0]
+        first["sequence"] = value
         payload = {name: first[name] for name in ("sequence", "previous", "intervalId", "authorityDigest", "observerKey", "phase", "checkpoint")}
         first["hash"] = digest("probity-witness-receipt-v0", payload)
         first["signature"] = sign(key(2), "probity-witness-receipt-v0", payload)
@@ -301,7 +305,8 @@ def test_validly_signed_wrong_numeric_types_refuse(tmp_path, value, role, partia
         replace(tmp_path, case, policy, "ledger", b"".join(ENCODE(item) + b"\n" for item in receipts))
     else:
         entries = [json.loads(line) for line in (tmp_path / "history.jsonl").read_bytes().splitlines()]
-        first = entries[0]; first["sequence"] = value
+        first = entries[0]
+        first["sequence"] = value
         payload = {name: first[name] for name in ("sequence", "previous", "event")}
         first["hash"] = digest("probity-history-entry-v0", payload)
         replace(tmp_path, case, policy, "history", b"".join(ENCODE(item) + b"\n" for item in entries))
@@ -320,7 +325,8 @@ def test_missing_ledger_cannot_hide_false_empty_signed_head(tmp_path):
     sign, key = GENERATOR["sign"], GENERATOR["key"]
     case, policy = fixture(tmp_path)
     (tmp_path / "ledger.jsonl").unlink()
-    head = json.loads((tmp_path / "head.json").read_bytes()); head["count"] = 0
+    head = json.loads((tmp_path / "head.json").read_bytes())
+    head["count"] = 0
     payload = {name: head[name] for name in ("format", "count", "head")}
     head["signature"] = sign(key(2), "probity-witness-ledger-head-v0", payload)
     replace(tmp_path, case, policy, "head", ENCODE(head))
@@ -332,7 +338,8 @@ def test_missing_ledger_cannot_hide_false_empty_signed_head(tmp_path):
 def test_actual_cli_refuses_unsafe_control_file(tmp_path, kind):
     import os
     case, policy = fixture(tmp_path)
-    safe = tmp_path / "case-original.json"; safe.write_bytes(ENCODE(case))
+    safe = tmp_path / "case-original.json"
+    safe.write_bytes(ENCODE(case))
     selected = tmp_path / "case.json"
     if kind == "symlink":
         selected.symlink_to(safe)
@@ -357,7 +364,8 @@ def test_receipt_inclusion_requires_exact_authenticated_bytes(tmp_path, field, r
     if field == "sequence":
         receipt["sequence"] = True
     else:
-        point = receipt["checkpoint"]; point["count"] = True
+        point = receipt["checkpoint"]
+        point["count"] = True
         if resign:
             payload = {name: point[name] for name in ("count", "head")}
             point["signature"] = GENERATOR["sign"](GENERATOR["key"](2), "probity-checkpoint-v0", payload)
@@ -373,8 +381,10 @@ def test_receipt_inclusion_requires_exact_authenticated_bytes(tmp_path, field, r
 
 def test_public_manifest_excludes_environment_and_binds_real_streams(tmp_path):
     manifest = runpy.run_path(str(ROOT / "scripts/manifest-brokered-file-write.py"))["build"]
-    (tmp_path / "native").mkdir(); (tmp_path / "native/result.stdout").write_bytes(b"real output\n")
-    (tmp_path / "consumer").mkdir(); (tmp_path / "consumer/unselected.txt").write_bytes(b"unselected")
+    (tmp_path / "native").mkdir()
+    (tmp_path / "native/result.stdout").write_bytes(b"real output\n")
+    (tmp_path / "consumer").mkdir()
+    (tmp_path / "consumer/unselected.txt").write_bytes(b"unselected")
     result = manifest(tmp_path)
     assert result["base_directory"] == "."
     assert result["files"] == [{"path": "native/result.stdout", "bytes": 12,
@@ -386,7 +396,8 @@ def test_public_manifest_refuses_nonregular_capture_paths(tmp_path, kind):
     import os
     manifest = runpy.run_path(str(ROOT / "scripts/manifest-brokered-file-write.py"))["build"]
     if kind == "selected-directory-symlink":
-        (tmp_path / "other").mkdir(); (tmp_path / "native").symlink_to(tmp_path / "other", target_is_directory=True)
+        (tmp_path / "other").mkdir()
+        (tmp_path / "native").symlink_to(tmp_path / "other", target_is_directory=True)
     else:
         (tmp_path / "native").mkdir()
         if kind == "fifo":
@@ -403,7 +414,8 @@ def test_actual_cli_refuses_other_report_wire_encodings(tmp_path, encoding):
     case, policy = fixture(tmp_path)
     report = (tmp_path / "report.json").read_bytes().decode("ascii").encode(encoding)
     replace(tmp_path, case, policy, "report", report)
-    (tmp_path / "case.json").write_bytes(ENCODE(case));(tmp_path / "policy.json").write_bytes(ENCODE(policy))
+    (tmp_path / "case.json").write_bytes(ENCODE(case))
+    (tmp_path / "policy.json").write_bytes(ENCODE(policy))
     result = subprocess.run([sys.executable, "-m", "probity_verify.cli", str(tmp_path / "case.json"),
                              "--policy", str(tmp_path / "policy.json"), "--json"], capture_output=True, timeout=5)
     assert result.returncode == 2 and result.stdout == b""

@@ -55,7 +55,10 @@ def bind(files, *, completion=True, report_content=None, intended_content=None, 
         roles["target"] = "result.txt"
     metadata = {role: {"path": name, "length": len(files[name]),
                       "sha256": hashlib.sha256(files[name]).hexdigest()} for role, name in roles.items()}
-    selector = lambda role: {"artifact": role, "sha256": metadata[role]["sha256"]}
+
+    def selector(role):
+        return {"artifact": role, "sha256": metadata[role]["sha256"]}
+
     record = {"state": state, **{role: selector(role) for role in roles if role not in {"report", "target"}}}
     context = {"interval_id": "fixture-interval", "request_id": "write-1", "path": "/work/result.txt",
                "authority_scope": "/work", "intended_content_sha256": intended_content or content}

@@ -52,7 +52,10 @@ def select(root, public, *, completion, sealed):
         roles["target"] = "work/result.txt"
     artifacts = {role: {"path": path, "length": file_binding(root / path)["bytes"],
                         "sha256": file_binding(root / path)["sha256"]} for role, path in roles.items()}
-    selector = lambda role: {"artifact": role, "sha256": artifacts[role]["sha256"]}
+
+    def selector(role):
+        return {"artifact": role, "sha256": artifacts[role]["sha256"]}
+
     case = {"schema_version": "probity-case/v1", "case_id": label, "artifacts": artifacts}
     record = {"state": "sealed" if sealed else "missing_terminal",
               **{role: selector(role) for role in roles if role not in {"report", "target"}}}
