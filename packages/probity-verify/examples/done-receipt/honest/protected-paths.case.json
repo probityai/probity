@@ -1,24 +1,24 @@
 {
   "artifacts": {
     "capability": {
-      "length": 273,
+      "length": 300,
       "path": "capability.json",
-      "sha256": "11efaeb94b1d47452131ae13d9d9083a3af009a0f89ac3947f05142187b91344"
+      "sha256": "e28a780d2dbacd4ff582d0310065af6e016418eb3d48c69265e15a316ede1182"
     },
     "contract": {
-      "length": 555,
+      "length": 797,
       "path": "contract.json",
-      "sha256": "d1d580c3acd0a4515716112d0eea610a402cc6a1059bab6086d81bdba4adf571"
+      "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
     },
     "observation": {
-      "length": 896,
+      "length": 1125,
       "path": "observation.json",
-      "sha256": "c18b2a4d2b874174a382ef23491db3ef4161a844852c5a6f819b8f6f6b4f2552"
+      "sha256": "b14cecac43d3713029297494f40d8a103b38e60bfdc67be2d53a6d31d96cf9c3"
     },
     "tree": {
-      "length": 462,
+      "length": 517,
       "path": "tree.json",
-      "sha256": "a6db850e8f507613ae138b0c7b3570c602bccaab76a47430cd0a332ce08d2a40"
+      "sha256": "4ea98504bc8d69faa6e2878e4bcfe39aa9f525ebd493d07fc458147eca12448e"
     }
   },
   "case_id": "honest",

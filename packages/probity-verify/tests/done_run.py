@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 from probity_verify import adjudicate
-from probity_verify.adapters.done_records import tree_digest
+from probity_verify.adapters.done_records import record_digest, tree_digest
 
 
 def sha(text: str) -> str:
@@ -18,12 +18,31 @@ def sha(text: str) -> str:
 SCOPE = {"id": "run-1", "start": "2026-10-17T00:00:00Z", "end": "2026-10-17T00:10:00Z"}
 TEST_FILE = sha("def test_app(): assert app() == 1\n")
 PYTEST = ["python", "-m", "pytest", "-q", "tests"]
+HELDOUT = ["python", "-m", "pytest", "-q", "/heldout"]
+ROOT = "/workspace"
+ENV = {"PATH": "/usr/local/bin:/usr/bin:/bin", "PYTHONSAFEPATH": "1"}
 ROLES = {
     "protected_paths/v1": ("contract", "capability", "observation", "tree"),
     "acceptance_observed/v1": ("contract", "tree", "grade"),
     "tool_claim_match/v1": ("claims", "capability", "observation"),
 }
 OBSERVED = {"observation", "tree", "grade"}
+
+
+def exec_event(event: dict) -> dict:
+    """Fill the v3 exec members a test leaves out: system executable, workspace cwd."""
+    if event.get("type") == "exec":
+        event.setdefault("exe", "/usr/bin/" + event["argv"][0].rsplit("/", 1)[-1])
+        event.setdefault("cwd", ROOT)
+        event.setdefault("env", dict(ENV))
+    return event
+
+
+def retree(tree: dict) -> dict:
+    """Recompute a tree record's digest after a test changed its entries."""
+    tree["executable"] = sorted(tree["executable"])
+    tree["tree_sha256"] = record_digest(tree)
+    return tree
 
 
 def honest_records() -> dict:
@@ -37,34 +56,38 @@ def honest_records() -> dict:
             {"path": "tests", "kind": "directory", "exclude": ["__pycache__"],
              "sha256": tree_digest({"tests/test_app.py": TEST_FILE})},
         ],
-        "acceptance": [{"id": "unit", "argv": PYTEST}],
+        "acceptance": [{"id": "unit", "argv": PYTEST},
+                       {"id": "heldout-unit", "argv": HELDOUT}],
         "adequacy": {"mutants": 4, "killed": 3},
+        "heldout_split_sha256": sha("heldout split"),
     }
     origin = {"claim_id": "case-1", "invocation_id": "call-1"}
     host = {**origin, "producer": "host-observer", "vantage": "independent",
             "witness_scope": "PEER"}
-    tree = {"schema_version": "probity-tree/v1", **host,
-            "tree_sha256": tree_digest(files), "files": files}
+    tree = retree({"schema_version": "probity-tree/v2", **host, "files": files,
+                   "executable": [], "symlinks": {}, "special": {}})
     observation = {
-        "schema_version": "probity-observation/v2", **host, "scope": SCOPE,
-        "coverage": "complete",
+        "schema_version": "probity-observation/v3", **host, "scope": SCOPE,
+        "coverage": "complete", "workspace_root": ROOT,
         "events": [
             {"id": "w1", "type": "write", "time": "2026-10-17T00:01:00Z", "step": 1,
              "path": "src/app.py"},
-            {"id": "x1", "type": "exec", "time": "2026-10-17T00:02:00Z", "step": 2,
-             "argv": PYTEST, "exit": 0},
+            exec_event({"id": "x1", "type": "exec", "time": "2026-10-17T00:02:00Z", "step": 2,
+                        "argv": PYTEST, "exit": 0}),
             {"id": "w2", "type": "create", "time": "2026-10-17T00:02:01Z", "step": 3,
              "path": "tests/__pycache__/test_app.cpython-312.pyc", "origin": "x1"},
         ],
+        "external_mutations": [],
     }
     capability = {"schema_version": "probity-capabilities/v1", **origin,
                   "producer": "host-observer",
-                  "visible_event_types": ["chmod", "create", "exec", "link", "rename",
-                                          "truncate", "unlink", "write"]}
+                  "visible_event_types": ["chmod", "connect", "create", "exec", "link",
+                                          "read", "rename", "truncate", "unlink", "write"]}
     grade = {"schema_version": "probity-acceptance-grade/v1", **origin,
              "producer": "harness-verifier", "vantage": "independent",
-             "witness_scope": "PEER", "contract_sha256": "", "tree_sha256": tree_digest(files),
-             "results": [{"id": "unit", "argv": PYTEST, "exit": 0}]}
+             "witness_scope": "PEER", "contract_sha256": "", "tree_sha256": tree["tree_sha256"],
+             "results": [{"id": "unit", "argv": PYTEST, "exit": 0},
+                         {"id": "heldout-unit", "argv": HELDOUT, "exit": 0}]}
     claims = {"schema_version": "probity-tool-claims/v1", **origin,
               "producer": "transcript-parser",
               "claims": [{"id": "c1", "argv": PYTEST, "exit": 0}]}
