@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -195,17 +196,39 @@ def _adjudicate(case: Any, policy: Any, artifact_root: Path,
         "checks": [],
     }
 
+    return settle_absence(
+        result, observed, capability, case_id=case_id, invocation=invocation, scope=scope,
+        observation_pin=observation_pin, observed_party=observed_party,
+        required_types=frozenset({event_type}),
+        matches=lambda event: event["type"] == event_type,
+        parse=lambda data: _observation(data, require_vantage=require_vantage))
+
+
+def settle_absence(result: dict, observed: bytes | None, capability: bytes | None, *,
+                   case_id: str, invocation: str, scope: dict, observation_pin: dict,
+                   observed_party: str | None, required_types: frozenset[str],
+                   matches: Callable[[dict], bool],
+                   parse: Callable[[bytes], dict]) -> dict:
+    """Settle a bounded absence claim; every absence profile shares this rule.
+
+    A bound matching event contradicts the claim even under incomplete coverage.
+    An empty record supports it only when the capability record makes every
+    required event type visible and the observation declares complete coverage.
+    When ``observed_party`` is given, the observation must also come from the
+    consumer-pinned independent producer.
+    """
+
     def decide(decision: str, reason: str) -> dict:
         return {**result, "decision": decision, "reason": reason}
 
     if observed is None:
         return decide("not_established", "observation_unavailable_or_unbound")
-    record = _observation(observed, require_vantage=require_vantage)
+    record = parse(observed)
     if (record["claim_id"] != case_id or record["invocation_id"] != invocation or
             record["scope"] != scope):
         return decide("not_established", "observation_context_mismatch")
     manifest = _capabilities(capability) if capability is not None else None
-    if require_vantage:
+    if observed_party is not None:
         independent = (record["vantage"] == observation_pin["vantage"] == "independent"
                        and record["producer"] == observation_pin["producer"]
                        and record["producer"] != observed_party)
@@ -213,8 +236,7 @@ def _adjudicate(case: Any, policy: Any, artifact_root: Path,
                                  "status": "met" if independent else "unavailable"})
         if not independent:
             return decide("not_established", "observation_vantage_unestablished")
-    matching = [event["id"] for event in record.get("events", [])
-                if event["type"] == event_type]
+    matching = [event["id"] for event in record.get("events", []) if matches(event)]
     event_check = {"id": "event", "status": "failed" if matching else "unavailable",
                    "field_present": "events" in record, "observed_ids": matching}
     result["checks"].append(event_check)
@@ -225,7 +247,7 @@ def _adjudicate(case: Any, policy: Any, artifact_root: Path,
     if (manifest["claim_id"] != case_id or manifest["invocation_id"] != invocation or
             manifest["producer"] != record["producer"]):
         return decide("not_established", "capability_context_mismatch")
-    visible = event_type in manifest["visible_event_types"]
+    visible = required_types <= set(manifest["visible_event_types"])
     complete = record["coverage"] == "complete"
     result["checks"].extend([
         {"id": "field_visibility", "status": "met" if visible else "unavailable"},
