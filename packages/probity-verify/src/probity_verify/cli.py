@@ -17,8 +17,11 @@ def _load(path: Path) -> object:
     return parse_json(raw, max_bytes=MAX_ARTIFACT_BYTES, max_depth=32, max_nodes=32768)
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="probity-verify")
+SUMMARY = "decide whether a claim holds against pinned evidence bytes, offline"
+
+
+def add_arguments(parser: argparse.ArgumentParser) -> None:
+    """Declare the verifier's arguments on ``parser``."""
     parser.add_argument("case", type=Path)
     parser.add_argument("--policy", type=Path, required=True,
                         help="consumer-held witness pins and claim requirements")
@@ -28,7 +31,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="print JSON instead of a short text decision")
     parser.add_argument("--require-witness-scope", choices=("PEER", "EXTERNAL"), default="PEER",
                         help="hold supported verdicts that do not rest on this witness scope as not_established; contradicted verdicts stand")
-    args = parser.parse_args(argv)
+
+
+def run(args: argparse.Namespace, prog: str) -> int:
+    """Adjudicate the parsed arguments; exit 0 with a decision, 2 for invalid input."""
     try:
         case = _load(args.case)
         policy = _load(args.policy)
@@ -37,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.packet:
             args.packet.write_text(render_packet(result), encoding="utf-8")
     except (OSError, json.JSONDecodeError, CaseError) as exc:
-        print(f"probity-verify: {exc}", file=sys.stderr)
+        print(f"{prog}: {exc}", file=sys.stderr)
         return 2
     if args.json:
         sys.stdout.buffer.write(canonical_json(result))
@@ -45,6 +51,22 @@ def main(argv: list[str] | None = None) -> int:
         print(render_packet(result), end="")
     return 0
 
+
+def main(argv: list[str] | None = None) -> int:
+    """Entry point of the ``probity-verify`` console script."""
+    parser = argparse.ArgumentParser(prog="probity-verify", description=SUMMARY)
+    add_arguments(parser)
+    return run(parser.parse_args(argv), "probity-verify")
+
+
+def register(subparsers) -> None:
+    """Add ``verify`` to the ``probity`` command line (entry point ``probityai.cli_subcommands``)."""
+    from probityai.cli import register_leaf  # only the probity launcher calls this, so it is installed
+
+    parser = subparsers.add_parser("verify", help=SUMMARY, description=SUMMARY)
+    add_arguments(parser)
+    prog = parser.prog
+    register_leaf(parser, handler=lambda args: run(args, prog))
 
 if __name__ == "__main__":
     raise SystemExit(main())

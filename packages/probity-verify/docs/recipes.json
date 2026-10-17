@@ -1,7 +1,7 @@
 {
   "schema_version": "probity-recipes/v1",
   "schema_scope": "Project recipe convention; not a discovery standard.",
-  "repository": "https://github.com/probityai/probity-verify",
+  "repository": "https://github.com/probityai/probity/tree/main/packages/probity-verify",
   "distribution": {
     "name": "probity-verify",
     "status": "published",
@@ -16,8 +16,8 @@
   },
   "package_metadata": {
     "path": "pyproject.toml",
-    "bytes": 1536,
-    "sha256": "99ad7d4c05f91bd73d4d81b6d037492d05ce3be86c3e8dc54698322e828c3b97"
+    "bytes": 1681,
+    "sha256": "70f4857115ee4f28e291aeed76c1190666f9b264d414e332cc018d3e8690daaa"
   },
   "implementation": [
     {
@@ -32,8 +32,8 @@
     },
     {
       "path": "src/probity_verify/a2a_server.py",
-      "bytes": 14452,
-      "sha256": "c991322943c0f646bd5ffdae67e2880fe0b61c07039f42d90597a82144aab1d8"
+      "bytes": 14469,
+      "sha256": "0ca64cb8cd7b99ea751add7b3b8645d578733190a0361460920e04712b1cfce2"
     },
     {
       "path": "src/probity_verify/adapters/__init__.py",
@@ -102,8 +102,8 @@
     },
     {
       "path": "src/probity_verify/cli.py",
-      "bytes": 2112,
-      "sha256": "ed3014b866c36636dcf301ef1efac8bbf9aaeb2cbb6687d26bdefab43083a85f"
+      "bytes": 3018,
+      "sha256": "b82eed2e04250bec9688d15b0dbcf7e493246d81db63bc2913fd91a011698f95"
     },
     {
       "path": "src/probity_verify/common.py",

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-verify"
-version = "0.1.1"
+version = "0.2.0"
 description = "Check claims against pinned evidence offline, with replayable decisions"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,10 +13,10 @@ dependencies = ["cryptography>=50.0.2,<51"]
 keywords = ["ai-agents", "evidence-verification", "provenance", "offline", "audit"]
 
 [project.urls]
-Documentation = "https://github.com/probityai/probity-verify/blob/main/docs/install.md"
-Source = "https://github.com/probityai/probity-verify"
-Issues = "https://github.com/probityai/probity-verify/issues"
-"Agent guide" = "https://github.com/probityai/probity-verify/blob/main/llms.txt"
+Documentation = "https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/install.md"
+Source = "https://github.com/probityai/probity/tree/main/packages/probity-verify"
+Issues = "https://github.com/probityai/probity/issues"
+"Agent guide" = "https://github.com/probityai/probity/blob/main/packages/probity-verify/llms.txt"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "hypothesis>=6,<7"]
@@ -31,6 +31,9 @@ probity-bundle = "probity_verify.bundle:main"
 probity-index = "probity_verify.index:main"
 probity-a2a = "probity_verify.a2a_server:main"
 probity-a2a-client = "probity_verify.a2a_client:main"
+
+[project.entry-points."probityai.cli_subcommands"]
+verify = "probity_verify.cli:register"
 
 [tool.setuptools]
 include-package-data = false
