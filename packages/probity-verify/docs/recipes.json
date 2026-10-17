@@ -16,8 +16,8 @@
   },
   "package_metadata": {
     "path": "pyproject.toml",
-    "bytes": 1681,
-    "sha256": "70f4857115ee4f28e291aeed76c1190666f9b264d414e332cc018d3e8690daaa"
+    "bytes": 1737,
+    "sha256": "b2dc88adf8081a54ad0a30104836d409e2fca606ad041573c0f239ad30e3b1bc"
   },
   "implementation": [
     {
@@ -52,23 +52,23 @@
     },
     {
       "path": "src/probity_verify/adapters/brokered_file_write.py",
-      "bytes": 11043,
-      "sha256": "3edaf56335feaff57afa2f8f5bbe9632991a45b04626724b45b467406e20792a"
+      "bytes": 11069,
+      "sha256": "b4fe2ff93c112f1e0c87d7e26559713e70ff618b87f45ebc32f160a3531d1394"
     },
     {
       "path": "src/probity_verify/adapters/done_receipt.py",
-      "bytes": 11280,
-      "sha256": "042008427ac96c89af214604c668919338ff48242722ecceab81ed8a1d6d75ea"
+      "bytes": 11310,
+      "sha256": "05fbf0dbbb8f7cc11ac775bc9bd057ab4b54b86593d8a86c9589db9d069efd54"
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 28667,
-      "sha256": "8a453443b8a804037e66d7f6a7b6524307a0cb8eae15ba22ffddeb8aa431ccae"
+      "bytes": 28808,
+      "sha256": "b9da2cc73946bc59c07563360cea14a87b0e928c2f3a9ef1925b2d63a9c75e68"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
-      "bytes": 13573,
-      "sha256": "d999b400882260e244401c7dbd2515bf4b3d36b1a4263de84d3275cea655e305"
+      "bytes": 13590,
+      "sha256": "e6d37df5dc1be54872ebc353d09994bdd4fc0c1f27e17eee1c34e935cdf73a1b"
     },
     {
       "path": "src/probity_verify/adapters/operand_lineage.py",
@@ -97,8 +97,8 @@
     },
     {
       "path": "src/probity_verify/broker_records.py",
-      "bytes": 21386,
-      "sha256": "1dbc1e72cb300e022be6ba68d27bd19bd2a27024e7481ef11ec5259ba4b9399c"
+      "bytes": 21413,
+      "sha256": "26eb2232cb0c29b0c7ad309d8cf97482699b1e879e1e20b383d478e4906582d3"
     },
     {
       "path": "src/probity_verify/bundle.py",
@@ -117,8 +117,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 8557,
-      "sha256": "71eb8ed5fc83a64b605bff7aa8990212848ab81f81cee814ae00fcc13661ee0b"
+      "bytes": 8704,
+      "sha256": "64de0ea00e7a4c4bc6778250127b6f8f1ea596859c58c385f4e000d7e72ebc93"
     },
     {
       "path": "src/probity_verify/index.py",
@@ -129,6 +129,11 @@
       "path": "src/probity_verify/json_input.py",
       "bytes": 2114,
       "sha256": "ccb4c6fd7c0041cd567c6c65af317d77d02c747e74e9b7468271ee0a011c653c"
+    },
+    {
+      "path": "src/probity_verify/vocabulary.py",
+      "bytes": 2446,
+      "sha256": "f2147397a481faf844ceac529b3d1d184502e0760ca5decbb8d3c0ddf3292d25"
     }
   ],
   "recipes": [
