@@ -5,4 +5,3 @@ recursive-include scripts *.py
 recursive-include docs *.md *.json
 recursive-include vectors-source-coverage *.json *.txt *.html *.py *.md
 recursive-include vectors-operand-lineage *.json *.py *.md
-include uv.lock requirements-release.in requirements-release.lock

@@ -1,0 +1,25 @@
+# Workspace root. It is not a package: each member under packages/ declares its
+# own distribution, version, licence and release tag. uv resolves every member
+# together into the one uv.lock beside this file.
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "hypothesis>=6,<7", "ruff==0.15.0"]
+
+[tool.pytest.ini_options]
+# `uv run python -m pytest` from the root runs every member's tests. Test file
+# basenames are unique across the workspace; pytest refuses a duplicate at
+# collection, so a clash fails loudly instead of hiding a module.
+testpaths = ["tests", "packages"]
+addopts = ["--strict-markers"]
+
+# One lint configuration for every member. Ruff's default rule set for now;
+# widening it is one change here that applies to the whole workspace.
+[tool.ruff]
+target-version = "py310"
+extend-exclude = ["packages/*/vectors-*/cases"]

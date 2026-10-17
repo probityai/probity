@@ -57,7 +57,7 @@ def check(wheel: Path, sdist: Path, source_root: Path | None = None) -> None:
                 require(digest == "sha256=" + value and size == str(len(raw)), "RECORD bytes: " + name)
     tracked = subprocess.check_output(["git", "ls-files", "-z", "--", "src", "examples", "tests", "scripts",
         "docs", "vectors-source-coverage", "vectors-operand-lineage", "pyproject.toml", "README.md", "LICENSE",
-        "MANIFEST.in", "uv.lock", "requirements-release.in", "requirements-release.lock"], cwd=root)
+        "MANIFEST.in"], cwd=root)
     expected = {name for name in tracked.decode().split("\0") if name}
     check_source_archive(sdist, root, project, metadata, expected,
                          "src/probity_verify.egg-info", "probity_verify")
