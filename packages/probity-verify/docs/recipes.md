@@ -32,7 +32,7 @@ All examples are authored synthetic records. They do not establish independent o
 
 The [JSON recipe index](recipes.json) gives complete case and policy paths, argument arrays, expected reasons and digests.
 Every recipe uses the `probity-verify` distribution and CLI. These source-checkout fixtures need no extra framework package.
-`probity-recipes/v1` is a project convention, not a discovery standard.
+`probity-recipes/v2` is a project convention, not a discovery standard.
 
 The JSON `distribution.status` describes package-name availability: `probity-verify` has a public PyPI release.
 It does not assert that the source candidate bound by `package_metadata` has been uploaded.
@@ -41,7 +41,9 @@ The separate `fixture_scope` describes where the indexed case and policy files l
 The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.1.0 with its supported public input snapshot.
 For this index, install its own checkout, then use the index's `argv` from that checkout root.
 Replace its first argument with your installed executable's path when the environment is separate.
-The index binds its inputs, package metadata and implementation to exact bytes.
+The index binds its inputs and implementation to exact bytes.
+From the package manifest it binds only the keys that decide the installed command: the build system, name, version, Python requirement, runtime dependencies, scripts and setuptools layout.
+Optional extras, URLs, descriptive text and test or lint settings do not reach a recipe decision and are not bound.
 Use the index with the source snapshot from which it was generated; a later index may describe newer examples.
 
 All valid decisions exit zero. Malformed inputs exit two without a verdict.
@@ -50,8 +52,8 @@ Select your own consumer policy for actual evidence. An example policy is not an
 ## Maintain the index
 
 Edit task text and expected decisions in [recipe-source.json](recipe-source.json).
-Run `uv run python scripts/build-recipes.py` to regenerate both this page and the JSON index.
-CI runs `uv run python scripts/build-recipes.py --check`.
+From the repository root, run `uv run --directory packages/probity-verify python scripts/build-recipes.py` to regenerate both this page and the JSON index.
+CI runs the same script with `--check`. When it fails, it names each changed binding and prints that command.
 
 The generator runs actual registered adapters against pinned artifacts.
 It refuses an unexpected decision, an incorrect claim, an escaped path or a missing adapter recipe.

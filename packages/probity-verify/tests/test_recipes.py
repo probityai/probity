@@ -22,7 +22,7 @@ def recipes():
 
 def test_package_availability_and_fixture_scope_have_distinct_contracts(recipes):
     result = BUILD(ROOT, recipes)
-    assert result["schema_version"] == "probity-recipes/v1"
+    assert result["schema_version"] == "probity-recipes/v2"
     assert result["distribution"] == {
         "name": "probity-verify", "status": "published",
         "installation": "docs/install.md", "python": ">=3.11",
@@ -131,3 +131,78 @@ def test_invalid_recipe_cli_exits_two(repository, monkeypatch, recipes):
     with pytest.raises(SystemExit) as error:
         main()
     assert error.value.code == 2
+
+
+def _check(repository, monkeypatch, capsys):
+    main = GENERATOR["main"]
+    monkeypatch.setitem(main.__globals__, "ROOT", repository)
+    monkeypatch.setattr(sys, "argv", ["build-recipes.py", "--check"])
+    try:
+        code = main()
+    except SystemExit as error:
+        code = error.code
+    return code, capsys.readouterr().err
+
+
+def _generate(repository, monkeypatch):
+    main = GENERATOR["main"]
+    monkeypatch.setitem(main.__globals__, "ROOT", repository)
+    monkeypatch.setattr(sys, "argv", ["build-recipes.py"])
+    assert main() == 0
+
+
+def _edit(path, pattern, replacement):
+    changed, count = re.subn(pattern, replacement, path.read_bytes())
+    assert count == 1
+    path.write_bytes(changed)
+
+
+def test_dependency_bot_bump_of_optional_extra_keeps_index_current(repository, monkeypatch, capsys):
+    _generate(repository, monkeypatch)
+    _edit(repository / "pyproject.toml", rb'"a2a-sdk\[http-server\]==[^"]+"',
+          b'"a2a-sdk[http-server]==99.0.0"')
+    _edit(repository / "pyproject.toml", rb'"pytest>=[^"]+"', b'"pytest>=99,<100"')
+    code, err = _check(repository, monkeypatch, capsys)
+    assert code == 0, err
+
+
+def test_runtime_dependency_change_makes_index_stale(repository, monkeypatch, capsys):
+    _generate(repository, monkeypatch)
+    _edit(repository / "pyproject.toml", rb'"pyyaml>=[^"]+"', b'"pyyaml>=99,<100"')
+    code, err = _check(repository, monkeypatch, capsys)
+    assert code == 1
+    assert "changed: pyproject.toml (install-relevant keys)" in err
+    assert GENERATOR["REGENERATE"] in err
+
+
+def test_version_change_makes_index_stale(repository, monkeypatch, capsys):
+    _generate(repository, monkeypatch)
+    _edit(repository / "pyproject.toml", rb'(?m)^version = "[^"]+"$', b'version = "999.0.0"')
+    code, err = _check(repository, monkeypatch, capsys)
+    assert code == 1
+    assert "pyproject.toml (install-relevant keys)" in err
+
+
+def test_implementation_change_names_the_file_and_the_command(repository, monkeypatch, capsys):
+    _generate(repository, monkeypatch)
+    path = repository / "src/probity_verify/core.py"
+    path.write_bytes(path.read_bytes() + b"\n# changed\n")
+    code, err = _check(repository, monkeypatch, capsys)
+    assert code == 1
+    assert "changed: src/probity_verify/core.py" in err
+    assert f"regenerate from the repository root: {GENERATOR['REGENERATE']}" in err
+
+
+def test_recipe_input_change_names_the_file(repository, monkeypatch, capsys, recipes):
+    _generate(repository, monkeypatch)
+    policy = repository / recipes["recipes"][0]["policy"]
+    policy.write_bytes(policy.read_bytes() + b"\n")
+    code, err = _check(repository, monkeypatch, capsys)
+    assert code == 1
+    assert f"changed: {recipes['recipes'][0]['policy']}" in err
+
+
+def test_manifest_without_bound_key_refuses(repository, recipes):
+    _edit(repository / "pyproject.toml", rb'(?m)^requires-python = "[^"]+"\n', b"")
+    with pytest.raises(ValueError, match="lacks project.requires-python"):
+        BUILD(repository, recipes)

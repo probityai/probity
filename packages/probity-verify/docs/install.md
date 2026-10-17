@@ -66,7 +66,7 @@ so a CI consumer must inspect the `decision` field if it needs a policy gate.
 ## Use this checkout's recipe index
 
 The [recipe index](recipes.json) binds the case files, policies, artifacts,
-implementation and package metadata in its own source snapshot. From the root
+implementation and install-relevant package metadata in its own source snapshot. From the root
 of that checkout, install its source into a separate environment:
 
 ```sh

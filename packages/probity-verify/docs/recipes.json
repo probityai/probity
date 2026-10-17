@@ -1,5 +1,5 @@
 {
-  "schema_version": "probity-recipes/v1",
+  "schema_version": "probity-recipes/v2",
   "schema_scope": "Project recipe convention; not a discovery standard.",
   "repository": "https://github.com/probityai/probity/tree/main/packages/probity-verify",
   "distribution": {
@@ -16,8 +16,50 @@
   },
   "package_metadata": {
     "path": "pyproject.toml",
-    "bytes": 1737,
-    "sha256": "d693a0fb7aa15d426b1cf62a4a5b6d33016f9f2d63579e4c168a6cfbfab5bfa5"
+    "scope": "install-relevant keys",
+    "values": {
+      "build-system": {
+        "requires": [
+          "setuptools>=77.0.3"
+        ],
+        "build-backend": "setuptools.build_meta"
+      },
+      "project.name": "probity-verify",
+      "project.version": "0.2.0",
+      "project.requires-python": ">=3.11",
+      "project.dependencies": [
+        "cryptography>=50.0.2,<51",
+        "agent-evidence-vocabulary==0.5.0",
+        "pyyaml>=6.0.2,<7"
+      ],
+      "project.scripts": {
+        "probity-verify": "probity_verify.cli:main",
+        "probity-bundle": "probity_verify.bundle:main",
+        "probity-index": "probity_verify.index:main",
+        "probity-a2a": "probity_verify.a2a_server:main",
+        "probity-a2a-client": "probity_verify.a2a_client:main"
+      },
+      "tool.setuptools": {
+        "include-package-data": false,
+        "packages": [
+          "probity_verify",
+          "probity_verify.adapters",
+          "probity_verify.samples"
+        ],
+        "package-dir": {
+          "": "src",
+          "probity_verify.samples": "examples/source-coverage"
+        },
+        "package-data": {
+          "probity_verify.samples": [
+            "*.json",
+            "*.html",
+            "*.txt"
+          ]
+        }
+      }
+    },
+    "sha256": "bdbd93fdf0133fd36b3e0d6ff482666665fe2bbf225e88a6f563e915e6de1220"
   },
   "implementation": [
     {
