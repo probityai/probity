@@ -1,9 +1,9 @@
 {
   "artifacts": {
     "capability": {
-      "length": 278,
+      "length": 305,
       "path": "capability.json",
-      "sha256": "e0b97dff40e2b3a71725f0411f1ef972eb99eb70f3f4b7fc5eb556bd51547ad6"
+      "sha256": "d5139edc665c6bd65d3a57eb785f99721e01cf8db1206f73225089dd2ae70337"
     },
     "claims": {
       "length": 312,
@@ -11,9 +11,9 @@
       "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
     },
     "observation": {
-      "length": 480,
+      "length": 542,
       "path": "observation.json",
-      "sha256": "96e00a8bb19c09cc637cbdebcc97ef8ffee098306284a9b7e5eacc035370feae"
+      "sha256": "0cac6088ea16eef90bcfe49b0a66806dc02a03f190dfbc6432721a7ad4319e05"
     }
   },
   "case_id": "lost-events",

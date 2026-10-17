@@ -30,7 +30,7 @@ class TestSupported:
         assert outcome(result) == ("supported", "acceptance_passed_in_verifier")
         assert (result["vantage"], result["witness_scope"]) == ("independent", "PEER")
         assert next(c for c in result["checks"] if c["id"] == "acceptance")["results"] == [
-            {"id": "unit", "exit": 0}]
+            {"id": "unit", "exit": 0}, {"id": "heldout-unit", "exit": 0}]
 
     def test_external_scope_needs_tree_and_grade(self, tmp_path, records):
         records["grade"]["witness_scope"] = "EXTERNAL"
@@ -141,3 +141,151 @@ def test_tree_digest_is_the_sha256sum_listing():
     files = {"b": sha("b"), "a/c": sha("c")}
     listing = f"{files['a/c']}  a/c\n{files['b']}  b\n"
     assert tree_digest(files) == hashlib.sha256(listing.encode()).hexdigest()
+
+
+def run_with(tmp_path, records, **assessment):
+    files, case, policy = build(records, CLAIM)
+    policy["assessments"]["case-1"].update(assessment)
+    for name, raw in files.items():
+        (tmp_path / name).write_bytes(raw)
+    return adjudicate(case, policy, tmp_path)
+
+
+class TestHeldOut:
+    def test_a_failure_only_on_held_out_commands(self, tmp_path, records):
+        records["grade"]["results"][1]["exit"] = 1
+        assert outcome(run(tmp_path, records)) == ("contradicted", "heldout_failed")
+
+    def test_a_visible_failure_is_not_a_held_out_one(self, tmp_path, records):
+        for result in records["grade"]["results"]:
+            result["exit"] = 1
+        assert run(tmp_path, records)["reason"] == "acceptance_failed_in_verifier"
+
+    def test_no_sealed_split_cannot_support(self, tmp_path, records):
+        del records["contract"]["heldout_split_sha256"]
+        result = run(tmp_path, records)
+        assert outcome(result) == ("not_established", "heldout_unavailable")
+        assert run_with(tmp_path, records, allow_no_heldout=True)["decision"] == "supported"
+
+    def test_a_split_digest_without_a_held_out_command(self, tmp_path, records):
+        records["contract"]["acceptance"].pop()
+        records["grade"]["results"].pop()
+        assert run(tmp_path, records)["reason"] == "heldout_unavailable"
+
+    def test_the_allowance_must_be_a_boolean(self, tmp_path, records):
+        with pytest.raises(CaseError, match="allow_no_heldout"):
+            run_with(tmp_path, records, allow_no_heldout="yes")
+
+
+class TestGradeCounts:
+    def test_a_replay_that_never_called_the_candidate(self, tmp_path, records):
+        records["grade"]["results"][0]["replay"] = {"calls_intercepted": 0,
+                                                    "distinct_calls": 0}
+        result = run(tmp_path, records)
+        assert outcome(result) == ("not_established", "no_calls_intercepted")
+        assert next(c for c in result["checks"]
+                    if c["id"] == "calls_intercepted")["silent_ids"] == ["unit"]
+
+    def test_a_replay_with_calls_supports(self, tmp_path, records):
+        records["grade"]["results"][0]["replay"] = {"calls_intercepted": 6,
+                                                    "distinct_calls": 3}
+        assert run(tmp_path, records)["decision"] == "supported"
+
+    def test_a_patched_hunk_no_mutant_of_which_dies(self, tmp_path, records):
+        records["grade"]["hunks"] = [
+            {"path": "src/app.py", "lines": [1, 1], "mutants": 3, "killed": 2},
+            {"path": "src/app.py", "lines": [4, 9], "mutants": 2, "killed": 0},
+            {"path": "src/util.py", "lines": [2, 2], "mutants": 0, "killed": 0}]
+        result = run(tmp_path, records)
+        assert outcome(result) == ("not_established", "patch_not_exercised")
+        assert next(c for c in result["checks"]
+                    if c["id"] == "patch_exercised")["unexercised"] == [
+            {"path": "src/app.py", "lines": [4, 9]}]
+
+    def test_sealed_ids_must_all_be_collected(self, tmp_path, records):
+        records["contract"]["acceptance"][0]["ids"] = ["tests/test_app.py::test_app",
+                                                       "tests/test_app.py::test_b"]
+        records["grade"]["results"][0]["collected"] = 1
+        assert run(tmp_path, records)["reason"] == "acceptance_collection_mismatch"
+        records["grade"]["results"][0]["collected"] = 2
+        assert run(tmp_path, records)["decision"] == "supported"
+
+    def test_sealed_ids_with_no_count_cannot_support(self, tmp_path, records):
+        records["contract"]["acceptance"][0]["ids"] = ["tests/test_app.py::test_app"]
+        assert run(tmp_path, records)["reason"] == "acceptance_collection_mismatch"
+
+
+class TestContractV1Members:
+    def test_class_counts_and_kill_vector_digest_are_read(self, tmp_path, records):
+        records["contract"]["adequacy"].update(
+            by_class={"operator": {"mutants": 3, "killed": 3},
+                      "any-eq": {"mutants": 1, "killed": 0}},
+            kill_vector_sha256=sha("[true,true,true,false]"))
+        records["contract"]["acceptance"][0]["run_writes"] = [".pytest_cache/v"]
+        result = run(tmp_path, records)
+        assert result["decision"] == "supported"
+        adequacy = next(c for c in result["checks"] if c["id"] == "contract_adequacy")
+        assert adequacy["by_class"]["any-eq"] == {"mutants": 1, "killed": 0}
+
+    @pytest.mark.parametrize("change,message", [
+        (lambda c: c["adequacy"].update(by_class={"operator": {"mutants": 3, "killed": 3}}),
+         "sum to the totals"),
+        (lambda c: c["adequacy"].update(by_class={"x": {"mutants": 1, "killed": 2}}),
+         "more mutants killed"),
+        (lambda c: c["adequacy"].update(kill_vector_sha256="x"), "kill_vector_sha256"),
+        (lambda c: c["acceptance"][0].update(run_writes=["/abs"]), "run_writes"),
+        (lambda c: c["acceptance"][0].update(run_writes=["a", "a"]), "distinct"),
+        (lambda c: c["acceptance"][0].update(ids=[]), "ids"),
+    ])
+    def test_malformed_contract_members(self, tmp_path, records, change, message):
+        change(records["contract"])
+        with pytest.raises(CaseError, match=message):
+            run(tmp_path, records)
+
+    @pytest.mark.parametrize("change,message", [
+        (lambda g: g["results"][0].update(replay={"calls_intercepted": 1,
+                                                  "distinct_calls": 2}), "distinct calls"),
+        (lambda g: g["results"][0].update(collected=-1), "collected"),
+        (lambda g: g.update(hunks=[{"path": "a.py", "lines": [3, 2], "mutants": 1,
+                                    "killed": 0}]), "lines"),
+        (lambda g: g.update(hunks=[{"path": "a.py", "lines": [1, 2], "mutants": 1,
+                                    "killed": 2}]), "more mutants killed"),
+    ])
+    def test_malformed_grade_members(self, tmp_path, records, change, message):
+        change(records["grade"])
+        with pytest.raises(CaseError, match=message):
+            run(tmp_path, records)
+
+
+class TestTreeV2Digest:
+    def test_an_execute_bit_is_in_the_digest(self, tmp_path, records):
+        records["tree"]["executable"] = ["src/app.py"]
+        with pytest.raises(CaseError, match="does not match"):
+            run(tmp_path, records)
+
+    def test_a_symlink_target_is_in_the_digest(self, tmp_path, records):
+        from done_run import retree
+        records["tree"]["symlinks"]["docs"] = "v1"
+        retree(records["tree"])
+        records["tree"]["symlinks"]["docs"] = "v2"
+        with pytest.raises(CaseError, match="does not match"):
+            run(tmp_path, records)
+
+    def test_a_special_file_kind_is_in_the_digest(self, tmp_path, records):
+        from done_run import retree
+        records["tree"]["special"]["run/sock"] = "socket"
+        retree(records["tree"])
+        records["tree"]["special"]["run/sock"] = "fifo"
+        with pytest.raises(CaseError, match="does not match"):
+            run(tmp_path, records)
+
+    @pytest.mark.parametrize("change,message", [
+        (lambda t: t["symlinks"].update({"src/app.py": "x"}), "two kinds"),
+        (lambda t: t["files"].update({"src/app.py/x": "0" * 64}), "under another"),
+        (lambda t: t.update(executable=["missing"]), "executable"),
+        (lambda t: t["special"].update({"dev": "door"}), "special"),
+    ])
+    def test_malformed_tree_entries(self, tmp_path, records, change, message):
+        change(records["tree"])
+        with pytest.raises(CaseError, match=message):
+            run(tmp_path, records)

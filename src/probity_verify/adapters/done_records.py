@@ -7,18 +7,32 @@ record through the consumer policy; this module only parses and compares.
 
 from __future__ import annotations
 
+import ast
 import hashlib
+import posixpath
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from ..common import CaseError, _digest, _instant, _object, _string
+from ..common import CaseError, _artifact, _digest, _instant, _object, _string
 from .event_absence import _record, _scope, _witness
 
 MUTATION_TYPES = frozenset(
     {"write", "create", "rename", "link", "unlink", "truncate", "chmod"})
 EXEC_TYPE = "exec"
+CONNECT_TYPE = "connect"
 SCOPES = ("PEER", "EXTERNAL")
 VANTAGES = ("independent", "self_reported")
+GAP_CAUSES = ("agent", "host", "sensor", "unknown")
+LOCATIONS = ("grader_path", "outside_workspace")
+SPECIAL_KINDS = ("fifo", "socket", "char", "block")
+LOADER_ENV = frozenset({
+    "PATH", "LD_PRELOAD", "LD_LIBRARY_PATH", "LD_AUDIT", "PYTHONPATH", "PYTHONHOME",
+    "PYTHONSAFEPATH", "PYTHONSTARTUP", "PYTHONUSERBASE", "PYTHONNOUSERSITE",
+    "PYTHONPYCACHEPREFIX", "PYTHONWARNINGS", "PYTEST_ADDOPTS", "PYTEST_PLUGINS",
+    "NODE_OPTIONS", "NODE_PATH"})
+GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt"})
+GRADER_SEGMENTS = frozenset({"site-packages", "dist-packages", "verifier"})
+EQUIVALENCES = ("python_ast",)
 
 
 def path(value: Any, label: str) -> str:
@@ -31,16 +45,40 @@ def path(value: Any, label: str) -> str:
     return name
 
 
+def absolute(value: Any, label: str) -> str:
+    """A normalized absolute POSIX path, as the observer writes container paths."""
+    name = _string(value, label)
+    if ("\x00" in name or not name.startswith("/") or name.startswith("//")
+            or posixpath.normpath(name) != name):
+        raise CaseError(f"{label}: expected a normalized absolute path")
+    return name
+
+
 def under(name: str, prefix: str) -> bool:
-    return name == prefix or name.startswith(prefix + "/")
+    return name == prefix or name.startswith(prefix.rstrip("/") + "/")
 
 
 def protects(entry: dict, name: str) -> bool:
-    """Whether a protected entry covers a path, after its excluded segment names."""
+    """Whether a protected entry covers a path, after its exclusions.
+
+    An exclusion without ``/`` is a path segment name left out at any depth
+    (``__pycache__``); one with ``/`` is a workspace path under the entry, left
+    out together with everything below it.
+    """
     if not under(name, entry["path"]):
         return False
     below = name[len(entry["path"]) + 1:].split("/") if name != entry["path"] else []
-    return not set(below) & set(entry.get("exclude", ()))
+    for item in entry.get("exclude", ()):
+        if (item in below) if "/" not in item else under(name, item):
+            return False
+    return True
+
+
+def grader_path(name: str) -> bool:
+    """A path where a mutation can change how a grader runs or scores a run."""
+    parts = name.split("/")
+    return (parts[-1] in GRADER_FILES or parts[-1].endswith(".pth")
+            or bool(set(parts[:-1]) & GRADER_SEGMENTS))
 
 
 def tree_digest(files: dict[str, str]) -> str:
@@ -48,6 +86,25 @@ def tree_digest(files: dict[str, str]) -> str:
     lines = "".join(f"{files[name]}  {name}\n"
                     for name in sorted(files, key=lambda item: item.encode("utf-8")))
     return hashlib.sha256(lines.encode("utf-8")).hexdigest()
+
+
+def record_digest(record: dict) -> str:
+    """The ``probity-tree/v2`` digest: one sorted line per entry of the tree.
+
+    ``<sha256>  <path>`` for a plain file, ``x:<sha256>  <path>`` for a file
+    with an execute bit, ``l:<sha256 of the target>  <path>`` for a symbolic
+    link and ``s:<kind>  <path>`` for a special file.
+    """
+    executable = set(record["executable"])
+    lines = {name: ("x:" if name in executable else "") + digest
+             for name, digest in record["files"].items()}
+    for name, target in record["symlinks"].items():
+        lines[name] = "l:" + hashlib.sha256(target.encode("utf-8", "surrogateescape")).hexdigest()
+    for name, kind in record["special"].items():
+        lines[name] = "s:" + kind
+    text = "".join(f"{lines[name]}  {name}\n"
+                   for name in sorted(lines, key=lambda item: item.encode("utf-8")))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _argv(value: Any, label: str) -> list[str]:
@@ -75,6 +132,82 @@ def _choice(value: Any, label: str, allowed: tuple[str, ...]) -> str:
     return value
 
 
+def _distinct_paths(value: Any, label: str) -> list[str]:
+    if (not isinstance(value, list)
+            or len({item for item in value if isinstance(item, str)}) != len(value)):
+        raise CaseError(f"{label}: expected a list of distinct paths")
+    return [path(item, f"{label}[{index}]") for index, item in enumerate(value)]
+
+
+def _exclude(names: Any, entry_path: str, kind: str, label: str) -> None:
+    if (kind != "directory" or not isinstance(names, list) or not names
+            or len({item for item in names if isinstance(item, str)}) != len(names)):
+        raise CaseError(f"{label}.exclude: expected distinct names or paths on a directory")
+    for item in names:
+        if not isinstance(item, str):
+            raise CaseError(f"{label}.exclude: expected strings")
+        if "/" in item:
+            if path(item, f"{label}.exclude") == entry_path or not under(item, entry_path):
+                raise CaseError(f"{label}.exclude: a path must lie under the entry")
+        elif item in ("", ".", "..") or "\x00" in item:
+            raise CaseError(f"{label}.exclude: expected a path segment name")
+
+
+def _protected_entry(item: Any, label: str) -> dict:
+    entry = _object(item, label, {"path", "kind", "sha256"}, {"exclude", "equivalence"})
+    name = path(entry["path"], f"{label}.path")
+    kind = _choice(entry["kind"], f"{label}.kind", ("file", "directory"))
+    _digest(entry["sha256"], f"{label}.sha256")
+    if "exclude" in entry:
+        _exclude(entry["exclude"], name, kind, label)
+    if "equivalence" in entry:
+        _choice(entry["equivalence"], f"{label}.equivalence", EQUIVALENCES)
+        if kind != "file":
+            raise CaseError(f"{label}.equivalence: only a file entry names one")
+    return entry
+
+
+def _acceptance_entry(item: Any, label: str) -> dict:
+    entry = _object(item, label, {"id", "argv"}, {"ids", "run_writes"})
+    _string(entry["id"], f"{label}.id")
+    _argv(entry["argv"], f"{label}.argv")
+    if "ids" in entry:
+        ids = entry["ids"]
+        if (not isinstance(ids, list) or not ids or len(set(map(str, ids))) != len(ids)
+                or any(not isinstance(test, str) or not test for test in ids)):
+            raise CaseError(f"{label}.ids: expected distinct nonempty test ids")
+    if "run_writes" in entry:
+        _distinct_paths(entry["run_writes"], f"{label}.run_writes")
+    return entry
+
+
+def _adequacy(value: Any) -> dict:
+    adequacy = _object(value, "contract.adequacy", {"mutants", "killed"},
+                       {"by_class", "kill_vector_sha256"})
+    mutants = _count(adequacy["mutants"], "contract.adequacy.mutants")
+    if _count(adequacy["killed"], "contract.adequacy.killed") > mutants:
+        raise CaseError("contract.adequacy: more mutants killed than generated")
+    if "kill_vector_sha256" in adequacy:
+        _digest(adequacy["kill_vector_sha256"], "contract.adequacy.kill_vector_sha256")
+    if "by_class" in adequacy:
+        classes = adequacy["by_class"]
+        if not isinstance(classes, dict) or not classes:
+            raise CaseError("contract.adequacy.by_class: expected a nonempty object")
+        totals = [0, 0]
+        for name, counts in classes.items():
+            label = f"contract.adequacy.by_class[{name}]"
+            _string(name, label)
+            counts = _object(counts, label, {"mutants", "killed"})
+            made = _count(counts["mutants"], f"{label}.mutants")
+            dead = _count(counts["killed"], f"{label}.killed")
+            if dead > made:
+                raise CaseError(f"{label}: more mutants killed than generated")
+            totals = [totals[0] + made, totals[1] + dead]
+        if totals != [mutants, adequacy["killed"]]:
+            raise CaseError("contract.adequacy.by_class: counts do not sum to the totals")
+    return adequacy
+
+
 def contract(data: bytes) -> dict:
     record = _record(data, "contract",
                      {"schema_version", "contract_id", "protected_paths", "acceptance",
@@ -93,19 +226,7 @@ def contract(data: bytes) -> dict:
         raise CaseError("contract.protected_paths: expected list")
     seen: set[str] = set()
     for index, item in enumerate(protected):
-        label = f"contract.protected_paths[{index}]"
-        entry = _object(item, label, {"path", "kind", "sha256"}, {"exclude"})
-        name = path(entry["path"], f"{label}.path")
-        kind = _choice(entry["kind"], f"{label}.kind", ("file", "directory"))
-        _digest(entry["sha256"], f"{label}.sha256")
-        if "exclude" in entry:
-            names = entry["exclude"]
-            if (kind != "directory" or not isinstance(names, list) or not names
-                    or len(set(map(str, names))) != len(names)
-                    or any(not isinstance(item, str) or item in ("", ".", "..")
-                           or "/" in item or "\x00" in item for item in names)):
-                raise CaseError(f"{label}.exclude: expected distinct path segment "
-                                "names on a directory")
+        name = _protected_entry(item, f"contract.protected_paths[{index}]")["path"]
         if name in seen:
             raise CaseError("contract.protected_paths: duplicate path")
         seen.add(name)
@@ -114,17 +235,11 @@ def contract(data: bytes) -> dict:
         raise CaseError("contract.acceptance: expected a nonempty list")
     ids: set[str] = set()
     for index, item in enumerate(acceptance):
-        label = f"contract.acceptance[{index}]"
-        entry = _object(item, label, {"id", "argv"})
-        command_id = _string(entry["id"], f"{label}.id")
-        _argv(entry["argv"], f"{label}.argv")
+        command_id = _acceptance_entry(item, f"contract.acceptance[{index}]")["id"]
         if command_id in ids:
             raise CaseError("contract.acceptance: duplicate id")
         ids.add(command_id)
-    adequacy = _object(record["adequacy"], "contract.adequacy", {"mutants", "killed"})
-    mutants = _count(adequacy["mutants"], "contract.adequacy.mutants")
-    if _count(adequacy["killed"], "contract.adequacy.killed") > mutants:
-        raise CaseError("contract.adequacy: more mutants killed than generated")
+    _adequacy(record["adequacy"])
     return record
 
 
@@ -140,39 +255,73 @@ ORIGIN = {"claim_id", "invocation_id", "producer", "vantage", "witness_scope"}
 
 
 def tree(data: bytes) -> dict:
-    record = _record(data, "tree", {"schema_version", "tree_sha256", "files"} | ORIGIN)
-    if record["schema_version"] != "probity-tree/v1":
+    """A ``probity-tree/v2`` record: every non-directory entry of the final workspace."""
+    record = _record(data, "tree", {"schema_version", "tree_sha256", "files", "executable",
+                                    "symlinks", "special"} | ORIGIN)
+    if record["schema_version"] != "probity-tree/v2":
         raise CaseError("unsupported tree schema_version")
     _origin_fields(record, "tree")
-    files = record["files"]
-    if not isinstance(files, dict):
-        raise CaseError("tree.files: expected object")
-    for name, digest in files.items():
-        path(name, "tree.files key")
-        _digest(digest, f"tree.files[{name}]")
-    if tree_digest(files) != _digest(record["tree_sha256"], "tree.tree_sha256"):
-        raise CaseError("tree.tree_sha256: does not match the listed files")
+    names: list[str] = []
+    for member, check in (("files", lambda value, label: _digest(value, label)),
+                          ("symlinks", lambda value, label: _string(value, label)),
+                          ("special", lambda value, label: _choice(value, label, SPECIAL_KINDS))):
+        entries = record[member]
+        if not isinstance(entries, dict):
+            raise CaseError(f"tree.{member}: expected object")
+        for name, value in entries.items():
+            names.append(path(name, f"tree.{member} key"))
+            check(value, f"tree.{member}[{name}]")
+    if len(set(names)) != len(names):
+        raise CaseError("tree: a path is listed under two kinds")
+    ordered = sorted(names, key=lambda item: item.encode("utf-8"))
+    if any(under(later, earlier) for earlier, later in zip(ordered, ordered[1:])):
+        raise CaseError("tree: an entry lies under another non-directory entry")
+    executable = record["executable"]
+    if (not isinstance(executable, list) or executable != sorted(set(executable))
+            or any(name not in record["files"] for name in executable)):
+        raise CaseError("tree.executable: expected sorted distinct paths of listed files")
+    if record_digest(record) != _digest(record["tree_sha256"], "tree.tree_sha256"):
+        raise CaseError("tree.tree_sha256: does not match the listed entries")
     return record
+
+
+def _exec_fields(event: dict, label: str) -> None:
+    _argv(event.get("argv"), f"{label}.argv")
+    absolute(event.get("exe"), f"{label}.exe")
+    absolute(event.get("cwd"), f"{label}.cwd")
+    env = event.get("env")
+    if (not isinstance(env, dict) or set(env) - LOADER_ENV
+            or any(not isinstance(value, str) for value in env.values())):
+        raise CaseError(f"{label}.env: expected loader environment strings")
+    if "exit" in event:
+        _exit(event["exit"], f"{label}.exit")
+    if {"path", "target", "address"} & event.keys():
+        raise CaseError(f"{label}: exec events carry argv, exe, cwd and env, not paths")
+
+
+EXEC_FIELDS = {"argv", "exit", "exe", "cwd", "env"}
 
 
 def _event(item: Any, index: int, exec_ids: set[str]) -> dict:
     label = f"events[{index}]"
     event = _object(item, label, {"id", "type", "time", "step"},
-                    {"path", "target", "argv", "exit", "origin"})
+                    {"path", "target", "origin", "address"} | EXEC_FIELDS)
     _string(event["id"], f"{label}.id")
     kind = _string(event["type"], f"{label}.type")
     _count(event["step"], f"{label}.step")
     if "origin" in event and event["origin"] not in exec_ids:
         raise CaseError(f"{label}.origin: expected an earlier exec event id")
     if kind == EXEC_TYPE:
-        _argv(event.get("argv"), f"{label}.argv")
-        if "exit" in event:
-            _exit(event["exit"], f"{label}.exit")
-        if "path" in event or "target" in event:
-            raise CaseError(f"{label}: exec events carry argv, not paths")
+        _exec_fields(event, label)
         return event
-    if "argv" in event or "exit" in event:
-        raise CaseError(f"{label}: only exec events carry argv and exit")
+    if EXEC_FIELDS & event.keys():
+        raise CaseError(f"{label}: only exec events carry argv, exe, cwd, env and exit")
+    if kind == CONNECT_TYPE:
+        if not isinstance(event.get("address"), str) or {"path", "target"} & event.keys():
+            raise CaseError(f"{label}: a connect event carries an address and no path")
+        return event
+    if "address" in event:
+        raise CaseError(f"{label}.address: only connect events carry an address")
     if kind in MUTATION_TYPES and "path" not in event:
         raise CaseError(f"{label}.path: mutation events require a path")
     if "path" in event:
@@ -184,51 +333,162 @@ def _event(item: Any, index: int, exec_ids: set[str]) -> dict:
     return event
 
 
-def observation(data: bytes) -> dict:
-    record = _record(data, "observation", {"schema_version", "scope", "coverage"} | ORIGIN,
-                     {"events", "gaps"})
-    if record["schema_version"] != "probity-observation/v2":
-        raise CaseError("unsupported observation schema_version")
-    _origin_fields(record, "observation")
-    _scope(record["scope"], "observation.scope")
-    coverage = _choice(record["coverage"], "observation.coverage",
-                       ("complete", "incomplete", "unknown"))
+def _external(item: Any, index: int, exec_ids: set[str], root: str) -> dict:
+    label = f"external_mutations[{index}]"
+    entry = _object(item, label, {"id", "step", "time", "type", "paths", "location"},
+                    {"origin"})
+    _string(entry["id"], f"{label}.id")
+    _count(entry["step"], f"{label}.step")
+    _choice(entry["type"], f"{label}.type", tuple(sorted(MUTATION_TYPES)))
+    _choice(entry["location"], f"{label}.location", LOCATIONS)
+    paths = entry["paths"]
+    if not isinstance(paths, list) or not paths:
+        raise CaseError(f"{label}.paths: expected a nonempty list")
+    for position, name in enumerate(paths):
+        if under(absolute(name, f"{label}.paths[{position}]"), root):
+            raise CaseError(f"{label}.paths: an outside mutation names a workspace path")
+    if "origin" in entry and entry["origin"] not in exec_ids:
+        raise CaseError(f"{label}.origin: expected an earlier exec event id")
+    return entry
+
+
+def _gaps(record: dict, start: Any, end: Any) -> None:
+    coverage = record["coverage"]
     gaps = record.get("gaps", [])
     if coverage == "incomplete":
         if not isinstance(gaps, list) or not gaps:
             raise CaseError("observation.gaps: incomplete coverage requires named gaps")
     elif "gaps" in record:
         raise CaseError("observation.gaps: only incomplete coverage can name gaps")
-    start = _instant(record["scope"]["start"], "observation.scope.start")
-    end = _instant(record["scope"]["end"], "observation.scope.end")
     for index, item in enumerate(gaps):
-        gap = _object(item, f"gaps[{index}]", {"start", "end"})
+        gap = _object(item, f"gaps[{index}]", {"start", "end", "gap_cause"})
+        _choice(gap["gap_cause"], f"gaps[{index}].gap_cause", GAP_CAUSES)
         if not start <= _instant(gap["start"], f"gaps[{index}].start") < _instant(
                 gap["end"], f"gaps[{index}].end") <= end:
             raise CaseError("observation.gaps: gap outside scope or empty")
-    events = record.get("events", [])
-    if not isinstance(events, list):
-        raise CaseError("observation.events: expected list")
+
+
+def observation(data: bytes) -> dict:
+    """A ``probity-observation/v3`` record.
+
+    ``events`` and ``external_mutations`` share one step sequence: steps are
+    unique across both lists and increase within each, and an ``origin`` in
+    either names an ``exec`` event with a smaller step.
+    """
+    record = _record(data, "observation",
+                     {"schema_version", "scope", "coverage", "workspace_root", "events",
+                      "external_mutations"} | ORIGIN, {"gaps"})
+    if record["schema_version"] != "probity-observation/v3":
+        raise CaseError("unsupported observation schema_version")
+    _origin_fields(record, "observation")
+    _scope(record["scope"], "observation.scope")
+    root = absolute(record["workspace_root"], "observation.workspace_root")
+    _choice(record["coverage"], "observation.coverage", ("complete", "incomplete", "unknown"))
+    start = _instant(record["scope"]["start"], "observation.scope.start")
+    end = _instant(record["scope"]["end"], "observation.scope.end")
+    _gaps(record, start, end)
+    events, external = record["events"], record["external_mutations"]
+    if not isinstance(events, list) or not isinstance(external, list):
+        raise CaseError("observation.events and external_mutations: expected lists")
+    rows = [(item, False) for item in events] + [(item, True) for item in external]
+    for item, _ in rows:
+        if not isinstance(item, dict) or type(item.get("step")) is not int:
+            raise CaseError("observation: every event needs an integer step")
     seen: set[str] = set()
+    steps: set[int] = set()
     exec_ids: set[str] = set()
-    previous = -1
-    for index, item in enumerate(events):
-        event = _event(item, index, exec_ids)
-        instant = _instant(event["time"], f"events[{index}].time")
-        if event["id"] in seen or not start <= instant <= end:
-            raise CaseError("observation.events: duplicate or out-of-scope event")
-        if event["step"] <= previous:
-            raise CaseError("observation.events: steps must increase in record order")
-        previous = event["step"]
-        seen.add(event["id"])
-        if event["type"] == EXEC_TYPE:
-            exec_ids.add(event["id"])
+    indexes = {False: 0, True: 0}
+    for item, outside in sorted(rows, key=lambda row: row[0]["step"]):
+        index = indexes[outside]
+        indexes[outside] += 1
+        entry = (_external(item, index, exec_ids, root) if outside
+                 else _event(item, index, exec_ids))
+        instant = _instant(entry["time"], f"events[{index}].time")
+        if entry["step"] in steps or (events if not outside else external)[index] is not item:
+            raise CaseError("observation: steps must increase in record order, unique "
+                            "across events and external_mutations")
+        if entry["id"] in seen or not start <= instant <= end:
+            raise CaseError("observation: duplicate or out-of-scope event")
+        seen.add(entry["id"])
+        steps.add(entry["step"])
+        if not outside and entry["type"] == EXEC_TYPE:
+            exec_ids.add(entry["id"])
     return record
+
+
+def written(record: dict, before: int | None = None) -> set[str]:
+    """Absolute paths the observed run made or changed, optionally before a step.
+
+    Inside the workspace these are the paths and targets of mutation events
+    other than ``unlink``, joined to ``workspace_root``; outside, the paths
+    of ``external_mutations`` other than ``unlink``.
+    """
+    root = record["workspace_root"].rstrip("/")
+    found: set[str] = set()
+    for event in record["events"]:
+        if (event["type"] in MUTATION_TYPES and event["type"] != "unlink"
+                and (before is None or event["step"] < before)):
+            found.update(f"{root}/{event[key]}" for key in ("path", "target") if key in event)
+    for entry in record["external_mutations"]:
+        if entry["type"] != "unlink" and (before is None or entry["step"] < before):
+            found.update(entry["paths"])
+    return found
+
+
+def agent_gap(record: dict) -> str | None:
+    """The contradiction a gap the agent caused gives, or ``None``.
+
+    A gap that runs to the end of the scope means the trace stopped for good
+    (``tracer_terminated_prematurely``); a bounded one means part of the run
+    went unseen (``coverage_sabotaged``).
+    """
+    gaps = [gap for gap in record.get("gaps", []) if gap["gap_cause"] == "agent"]
+    if not gaps:
+        return None
+    if any(gap["end"] == record["scope"]["end"] for gap in gaps):
+        return "tracer_terminated_prematurely"
+    return "coverage_sabotaged"
+
+
+def external_grader_effects(record: dict) -> list[str]:
+    """Ids of outside mutations at a grader path, by the record's label or by the path."""
+    return [entry["id"] for entry in record["external_mutations"]
+            if entry["location"] == "grader_path"
+            or any(grader_path(name) for name in entry["paths"])]
+
+
+def _result(item: Any, label: str) -> dict:
+    entry = _object(item, label, {"id", "argv", "exit"}, {"collected", "replay"})
+    _string(entry["id"], f"{label}.id")
+    _argv(entry["argv"], f"{label}.argv")
+    _exit(entry["exit"], f"{label}.exit")
+    if "collected" in entry:
+        _count(entry["collected"], f"{label}.collected")
+    if "replay" in entry:
+        replay = _object(entry["replay"], f"{label}.replay",
+                         {"calls_intercepted", "distinct_calls"})
+        calls = _count(replay["calls_intercepted"], f"{label}.replay.calls_intercepted")
+        if _count(replay["distinct_calls"], f"{label}.replay.distinct_calls") > calls:
+            raise CaseError(f"{label}.replay: more distinct calls than calls")
+    return entry
+
+
+def _hunk(item: Any, label: str) -> dict:
+    hunk = _object(item, label, {"path", "lines", "mutants", "killed"})
+    path(hunk["path"], f"{label}.path")
+    lines = hunk["lines"]
+    if (not isinstance(lines, list) or len(lines) != 2
+            or any(type(line) is not int or line < 1 for line in lines) or lines[0] > lines[1]):
+        raise CaseError(f"{label}.lines: expected [first, last] line numbers")
+    if _count(hunk["killed"], f"{label}.killed") > _count(hunk["mutants"], f"{label}.mutants"):
+        raise CaseError(f"{label}: more mutants killed than generated")
+    return hunk
 
 
 def grade(data: bytes) -> dict:
     record = _record(data, "grade",
-                     {"schema_version", "contract_sha256", "tree_sha256", "results"} | ORIGIN)
+                     {"schema_version", "contract_sha256", "tree_sha256", "results"} | ORIGIN,
+                     {"hunks"})
     if record["schema_version"] != "probity-acceptance-grade/v1":
         raise CaseError("unsupported grade schema_version")
     _origin_fields(record, "grade")
@@ -239,14 +499,15 @@ def grade(data: bytes) -> dict:
         raise CaseError("grade.results: expected list")
     ids: set[str] = set()
     for index, item in enumerate(results):
-        label = f"grade.results[{index}]"
-        entry = _object(item, label, {"id", "argv", "exit"})
-        result_id = _string(entry["id"], f"{label}.id")
-        _argv(entry["argv"], f"{label}.argv")
-        _exit(entry["exit"], f"{label}.exit")
+        result_id = _result(item, f"grade.results[{index}]")["id"]
         if result_id in ids:
             raise CaseError("grade.results: duplicate id")
         ids.add(result_id)
+    hunks = record.get("hunks", [])
+    if not isinstance(hunks, list):
+        raise CaseError("grade.hunks: expected list")
+    for index, item in enumerate(hunks):
+        _hunk(item, f"grade.hunks[{index}]")
     return record
 
 
@@ -274,7 +535,8 @@ def claims(data: bytes) -> dict:
     return record
 
 
-def start(case: Any, policy: Any, claim_type: str, fields: set[str]) -> tuple[str, dict]:
+def start(case: Any, policy: Any, claim_type: str, fields: set[str],
+          optional: set[str] = frozenset()) -> tuple[str, dict]:
     """Validate the case and policy envelopes and return the case's assessment."""
     case = _object(case, "case", {"schema_version", "case_id", "artifacts"})
     policy = _object(policy, "policy", {"schema_version", "witnesses", "assessments"})
@@ -287,10 +549,36 @@ def start(case: Any, policy: Any, claim_type: str, fields: set[str]) -> tuple[st
     assessments = policy["assessments"]
     if not isinstance(assessments, dict) or case_id not in assessments:
         raise CaseError("case_id has no consumer assessment")
-    assessment = _object(assessments[case_id], "assessment", fields)
+    assessment = _object(assessments[case_id], "assessment", fields, optional)
     if assessment["claim_type"] != claim_type:
         raise CaseError("unsupported claim_type")
     return case_id, assessment
+
+
+def source(case: dict, root: Path, digest: str) -> bytes | None:
+    """The bytes of a file by its SHA-256, from the case artifact ``source:<sha256>``.
+
+    The artifact is bound by its own digest, so no consumer pin is needed: the
+    contract or the pinned tree record already names the digest.
+    """
+    meta = case["artifacts"].get(f"source:{digest}")
+    if meta is None:
+        return None
+    data, binding = _artifact(root, meta, f"artifacts.source:{digest}")
+    return data if binding.get("sha256") == digest else None
+
+
+def same_ast(first: bytes, second: bytes) -> bool:
+    """Whether two Python sources parse to the same syntax tree.
+
+    Comments, blank lines and layout do not reach the tree. Source that does
+    not parse is never equivalent. Parsing runs none of the code.
+    """
+    try:
+        trees = [ast.dump(ast.parse(data), include_attributes=False) for data in (first, second)]
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        return False
+    return trees[0] == trees[1]
 
 
 def witnesses(case: dict, policy: dict, assessment: dict, root: Path,
