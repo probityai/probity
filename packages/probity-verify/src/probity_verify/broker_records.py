@@ -18,6 +18,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from .common import CaseError, _digest, _instant, _object, _string
 from .json_input import parse_json
+from .vocabulary import PEER
 
 MAX_RECORD_BYTES = 1024 * 1024
 MAX_ENTRIES = 512
@@ -305,7 +306,7 @@ def packet(record: Any, entries: list[dict] | None, observer: str, witness: str,
     prior = commitment(value["commitment"], observer, authority)
     claim = _object(value["claim"], "claim", {"format", "intervalId", "authorityDigest", "beforeRoot",
                     "afterRoot", "writes", "coverage", "witnessScope", "doesNotAssert", "sealedAt"})
-    require(claim["format"] == "probity-observer-prototype-v0" and claim["witnessScope"] == "PEER"
+    require(claim["format"] == "probity-observer-prototype-v0" and claim["witnessScope"] == PEER
             and claim["doesNotAssert"] == NONCLAIMS and value["claimKeyid"] == observer,
             "unsupported claim profile or key")
     require(claim["intervalId"] == authority["intervalId"]
