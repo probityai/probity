@@ -16,6 +16,7 @@ from typing import Any
 
 from ..common import CaseError, _artifact, _digest, _instant, _object, _string
 from ..vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
+from . import witnessed
 from .event_absence import _record, _scope, _witness
 
 MUTATION_TYPES = frozenset(
@@ -591,15 +592,31 @@ def same_ast(first: bytes, second: bytes) -> bool:
 
 def witnesses(case: dict, policy: dict, assessment: dict, root: Path,
               roles: dict[str, bool]) -> dict[str, tuple[bytes | None, dict]]:
-    """Bind each named witness role; ``True`` roles need producer, vantage and scope pins."""
+    """Bind each named witness role; ``True`` roles need producer, vantage and scope pins.
+
+    An ``EXTERNAL`` scope pin must also carry a ``witnessed`` pin, which is
+    verified here against the bound record's bytes; its outcome replaces it in
+    the bound pin. Only that outcome can make a record ``EXTERNAL``.
+    """
     ids = {role: _string(assessment[f"{role}_witness"], f"{role}_witness") for role in roles}
     if len(set(ids.values())) != len(ids):
         raise CaseError("each witness role requires a separate witness")
     bound = {role: _witness(case, policy, ids[role], root, require_vantage=observed,
-                            require_scope=observed)
+                            require_scope=observed, allow_witnessed=observed)
              for role, observed in roles.items()}
     if len({pin["artifact"] for _, pin in bound.values()}) != len(bound):
         raise CaseError("each witness role requires a separate artifact")
+    for role, observed in roles.items():
+        data, pin = bound[role]
+        label = f"witness.{ids[role]}.witnessed"
+        if observed and pin["witness_scope"] == EXTERNAL:
+            if "witnessed" not in pin:
+                raise CaseError(f"{label}: an EXTERNAL scope pin must name the witness "
+                                "bundle, keys and operators")
+            config = witnessed.parse(pin["witnessed"], label)
+            pin["witnessed"] = witnessed.earn(case, root, data, config)
+        elif "witnessed" in pin:
+            raise CaseError(f"{label}: only an EXTERNAL scope pin names a witness")
     return bound
 
 
@@ -610,8 +627,44 @@ def independent(record: dict, pin: dict, observed_party: str) -> bool:
             and record["producer"] != observed_party)
 
 
-def scope_of(*pairs: tuple[dict, dict]) -> str:
-    """EXTERNAL only when every record and its consumer pin both say EXTERNAL."""
-    external = all(record["witness_scope"] == pin["witness_scope"] == EXTERNAL
-                   for record, pin in pairs)
+def earned_scope(pin: dict) -> str:
+    """The scope a pin's verified witness bundle earned; ``PEER`` without one."""
+    return pin.get("witnessed", {}).get("witness_scope", PEER)
+
+
+def scope_of(*pairs: tuple[dict | None, dict]) -> str:
+    """EXTERNAL only when every record's verified witness bundle earned EXTERNAL.
+
+    A record's own ``witness_scope`` is never read here: a launcher writes
+    ``PEER`` into every record it produces (its receipt requires the records to
+    match it), and a host that wrote ``EXTERNAL`` would be grading itself. Only
+    ``witnessed.earn`` sets the earned scope, after a 2-of-2 co-signature check
+    under the consumer's key and operator pins. Anything less is PEER.
+    """
+    external = bool(pairs) and all(record is not None and earned_scope(pin) == EXTERNAL
+                                   for record, pin in pairs)
     return EXTERNAL if external else PEER
+
+
+def unwitnessed_claims(*pairs: tuple[dict | None, dict]) -> list[dict]:
+    """Records that claim EXTERNAL scope that no verified witness bundle earned."""
+    claims = []
+    for record, pin in pairs:
+        if record is None or record["witness_scope"] != EXTERNAL:
+            continue
+        if earned_scope(pin) == EXTERNAL:
+            continue
+        outcome = pin.get("witnessed")
+        claims.append({"witness": pin["id"], "claimed": EXTERNAL, "earned": PEER,
+                       "reason": outcome["reason"] if outcome is not None
+                       else "no witness bundle is pinned for this record"})
+    return claims
+
+
+def scope_fields(*pairs: tuple[dict | None, dict]) -> dict:
+    """The decision members that report the witness scope a verdict rests on."""
+    fields: dict[str, Any] = {"witness_scope": scope_of(*pairs)}
+    claims = unwitnessed_claims(*pairs)
+    if claims:
+        fields["unwitnessed_scope_claims"] = claims
+    return fields

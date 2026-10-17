@@ -223,7 +223,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     def decide(decision: str, reason: str) -> dict:
         if decision != "not_established":
             result.update(vantage="independent",
-                          witness_scope=records.scope_of((record, observation_pin)))
+                          **records.scope_fields((record, observation_pin)))
         return {**result, "decision": decision, "reason": reason}
 
     claims_bytes, _ = bound["claims"]

@@ -30,7 +30,12 @@ def receipt_for(raw, records, verdict=("supported", "done_checks_supported")):
 
 
 def build(tmp_path, records, change=None, verdict=("supported", "done_checks_supported"),
-          statement=None, **assessment):
+          statement=None, pins=None, require="PEER", **assessment):
+    """Write a done-receipt case and adjudicate it.
+
+    ``pins`` is called with the raw records, case and policy before the
+    adjudication, to add witness pins; ``require`` is the required witness scope.
+    """
     records = copy.deepcopy(records)
     raw = {role: encode(records[role]) for role in ROLES if role != "grade"}
     records["grade"]["contract_sha256"] = hashlib.sha256(raw["contract"]).hexdigest()
@@ -56,7 +61,9 @@ def build(tmp_path, records, change=None, verdict=("supported", "done_checks_sup
                        witness_scope=records[role]["witness_scope"])
         policy["witnesses"][role] = pin
         fields[f"{role}_witness"] = role
-    return adjudicate(case, policy, tmp_path)
+    if pins is not None:
+        pins(raw, case, policy)
+    return adjudicate(case, policy, tmp_path, require_witness_scope=require)
 
 
 def outcome(result):
