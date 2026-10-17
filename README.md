@@ -52,7 +52,7 @@ This guard prints `contradicted selected_span_missing_from_record` and exits 1. 
 
 ## Status
 
-Version 0.1.1 is on PyPI and ships the sample inputs used above; 0.1.0 contains the verifier without them. See [release instructions](https://github.com/probityai/probity-verify/blob/main/docs/RELEASING.md) for checked artifacts. Seven adapters ship: `brokered_file_write/v1`, `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
+Version 0.1.1 is on PyPI and ships the sample inputs used above; 0.1.0 contains the verifier without them. See [release instructions](https://github.com/probityai/probity-verify/blob/main/docs/RELEASING.md) for checked artifacts. Seven adapters ship in 0.1.1: `brokered_file_write/v1`, `source_text_coverage/v1`, `operand_lineage/v1`, `authority_anchor/v1`, `event_absence/v1`, `event_absence/v2` and `spend_reservation/v1`. The main branch adds three done-receipt checks for coding agents: `protected_paths/v1`, `acceptance_observed/v1` and `tool_claim_match/v1`. Each decision is `supported`, `contradicted` or `not_established`. The verifier checks supplied bytes only: it does not fetch URLs or authenticate the authority a policy names.
 
 ## Documentation
 
@@ -66,6 +66,7 @@ Version 0.1.1 is on PyPI and ships the sample inputs used above; 0.1.0 contains 
 | <a name="run"></a><a name="inputs-and-decisions"></a>[Running the verifier](https://github.com/probityai/probity-verify/blob/main/docs/running.md) | every example command, the case and policy inputs, and what each decision means |
 | <a name="share-a-replayable-decision"></a><a name="index-decisions-and-disputes"></a>[Replayable decisions and the index](https://github.com/probityai/probity-verify/blob/main/docs/bundles-and-index.md) | ZIP bundles, replay, and the local index of decisions, challenges and supersessions |
 | <a name="operand-lineage"></a><a name="authority-anchor"></a><a name="event-absence"></a>[Adapters](https://github.com/probityai/probity-verify/blob/main/docs/adapters.md) | what operand lineage, authority anchor and event absence check, and what they leave to the consumer |
+| [Done-receipt checks](https://github.com/probityai/probity-verify/blob/main/docs/done-receipt.md) | check a coding agent's "done" against protected paths, an outside acceptance grade and its claimed command runs, with vantage and witness scope on every verdict |
 | [Spend reservations](https://github.com/probityai/probity-verify/blob/main/docs/spend-reservation.md) | replay a pinned budget journal, refuse dispatch without an affordable reservation, and keep pending calls charged |
 | [Observation vantage](https://github.com/probityai/probity-verify/blob/main/docs/observation-vantage.md) | select the producer and observation scope, replay bounded absence, and operate a witness with separate keys and retained heads |
 | [Adapter plan](https://github.com/probityai/probity-verify/blob/main/docs/architecture.md) | the architecture and the adapters planned next |

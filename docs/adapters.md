@@ -58,3 +58,10 @@ typed `completion_recorded` assertion against authenticated Observer v0 file
 records. Missing terminal evidence has an explicit state. Process failure,
 recorded completion and later retained file bytes remain separate. The check
 does not establish arbitrary effects or independent custody.
+
+## Done-receipt checks
+
+[`protected_paths/v1`, `acceptance_observed/v1` and `tool_claim_match/v1`](done-receipt.md)
+check a coding agent's completion claim against a sealed contract and records made
+outside the agent. `protected_paths/v1` is the event-absence rule above, applied to
+file mutation.
