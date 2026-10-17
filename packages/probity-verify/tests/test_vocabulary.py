@@ -5,8 +5,8 @@ from importlib.resources import files
 import pytest
 import yaml
 
-from done_run import decide, honest_records
-from probity_verify import CaseError, core, vocabulary
+from done_run import build, decide, honest_records
+from probity_verify import CaseError, adjudicate, core, vocabulary
 
 
 def registry_scopes():
@@ -35,11 +35,24 @@ def test_unknown_dimension_refuses():
 
 
 @pytest.mark.parametrize("role", ["observation", "tree"])
-def test_record_with_a_scope_outside_the_vocabulary_is_rejected(tmp_path, role):
+def test_pin_with_a_scope_outside_the_vocabulary_is_rejected(tmp_path, role):
     records = honest_records()
     records[role]["witness_scope"] = "INTERNAL"
-    with pytest.raises(CaseError, match="witness_scope is not a vocabulary 0.5.0 term"):
+    with pytest.raises(CaseError, match=f"witness.{role}.witness_scope is not a vocabulary"):
         decide(tmp_path, records, "protected_paths/v1")
+
+
+@pytest.mark.parametrize("role", ["observation", "tree"])
+def test_record_with_a_scope_outside_the_vocabulary_is_rejected(tmp_path, role):
+    """The consumer pin says PEER; only the signed record carries the unknown term."""
+    records = honest_records()
+    records[role]["witness_scope"] = "INTERNAL"
+    files, case, policy = build(records, "protected_paths/v1")
+    policy["witnesses"][role]["witness_scope"] = "PEER"
+    for name, raw in files.items():
+        (tmp_path / name).write_bytes(raw)
+    with pytest.raises(CaseError, match=f"{role}.witness_scope is not a vocabulary 0.5.0 term"):
+        adjudicate(case, policy, tmp_path)
 
 
 def test_record_with_the_self_scope_is_rejected_as_refused(tmp_path):
