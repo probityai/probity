@@ -97,3 +97,10 @@ def test_every_member_has_its_own_publish_job_in_environment_pypi():
         body = job[1].split("\n  publish-", 1)[0]
         assert f"needs.resolve.outputs.distribution == '{name}'" in body
         assert "name: pypi\n" in body and f"name: python-distributions-{name}\n" in body
+
+
+def test_a_distribution_whose_name_extends_another_resolves_to_itself(tmp_path):
+    _member(tmp_path, "ratchet", "probity-ratchet", "0.2.0", [])
+    _member(tmp_path, "ratchet-cases", "probity-ratchet-cases", "0.3.0", [])
+    assert workspace.release_target("probity-ratchet-v0.2.0", tmp_path)["directory"] == "packages/ratchet"
+    assert workspace.release_target("probity-ratchet-cases-v0.3.0", tmp_path)["directory"] == "packages/ratchet-cases"

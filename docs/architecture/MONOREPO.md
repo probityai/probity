@@ -82,8 +82,14 @@ when their release job is added in the import step.
 
 Every PyPI project released from this repository has the same publisher: owner `probityai`, repository
 `probity`, workflow `release.yml`, environment `pypi`. That covers `probity-verify`, `probityai`,
-`agent-evidence-observer` and `probity-ratchet` now, and `agent-evidence-admission`,
-`agent-evidence-vocabulary` and `agent-evidence-vectors` when they move in.
+`agent-evidence-observer`, `probity-ratchet` and `probity-ratchet-cases` now, and
+`agent-evidence-admission`, `agent-evidence-vocabulary` and `agent-evidence-vectors` when they move in.
+
+The ratchet code ships two PyPI projects, so it moves in as two members, each with its own tag:
+`probity-ratchet-vX.Y.Z` and `probity-ratchet-cases-vX.Y.Z` (the second is the prefix its cases releases
+already use). Neither has a PyPI upload workflow today; each gets its publish job in `release.yml` in
+the change that imports it. A tag resolves to the member whose whole name precedes `-v<version>`, so
+`probity-ratchet-cases-v0.3.0` never resolves to `probity-ratchet` (a test pins this).
 
 `release.yml` has one publish job per distribution, and each runs only when the resolved tag names that
 distribution, so the job that receives the publishing token for one project never runs for another. PyPI
