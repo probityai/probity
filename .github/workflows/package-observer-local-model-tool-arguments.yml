@@ -76,7 +76,7 @@ jobs:
           PYTHON
       - name: Install the original selected reader and preserve all eight actual quality holds
         run: |
-          python -I -B interop/local-model-tool-arguments-2026-10-03/consume_actual.py . retained-tool-argument-packet interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382-pins.json retained-tool-argument-consumer --reader-contract interop/local-model-tool-arguments-2026-10-03/reader-source-contract.json --reader-contract-sha256 1cf2a5f3527f72db90ad0881c5dd360bb0775f005cd4cc8971e287015fe400d4
+          python -I -B interop/local-model-tool-arguments-2026-10-03/consume_actual.py . retained-tool-argument-packet interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382-pins.json retained-tool-argument-consumer --reader-contract interop/local-model-tool-arguments-2026-10-03/reader-source-contract.json --reader-contract-sha256 edef015af7b63b8921d968e0c28b5f0da03f5cba2d23372e5fc8772bf0e2cecd
           python -I -B - <<'PYTHON'
           import json
           from pathlib import Path
@@ -133,7 +133,7 @@ jobs:
           python -I -B interop/local-model-tool-arguments-2026-10-03/execute_guard.py tool-argument-preparation/run tool-argument-preparation . tool-argument-observer --runtime-python tool-argument-preparation/runtime-environment/bin/python --execution-selection interop/local-model-tool-arguments-2026-10-03/execution-selection.json --execution-selection-sha256 2fc1544ef789303a3c6fe42ac5f4ecc2aded6c0c89255c36412e9122cd994e3a
       - name: Install and verify the actual packet separately (quality holds remain explicit)
         run: |
-          python -I -B interop/local-model-tool-arguments-2026-10-03/consume_actual.py . tool-argument-preparation/run tool-argument-preparation/run/consumer-pins.json actual-tool-argument-consumer --reader-contract interop/local-model-tool-arguments-2026-10-03/reader-source-contract.json --reader-contract-sha256 1cf2a5f3527f72db90ad0881c5dd360bb0775f005cd4cc8971e287015fe400d4
+          python -I -B interop/local-model-tool-arguments-2026-10-03/consume_actual.py . tool-argument-preparation/run tool-argument-preparation/run/consumer-pins.json actual-tool-argument-consumer --reader-contract interop/local-model-tool-arguments-2026-10-03/reader-source-contract.json --reader-contract-sha256 edef015af7b63b8921d968e0c28b5f0da03f5cba2d23372e5fc8772bf0e2cecd
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
