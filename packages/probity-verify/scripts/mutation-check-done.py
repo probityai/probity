@@ -34,8 +34,8 @@ MUTATIONS = [
      "            selecting.append((word,))\n", "            pass\n"),
     ("argv: reporting options kept", *ARGV,
      "        elif word in _REPORTING or word.startswith(_REPORTING_PREFIX):\n            continue\n",
-     "        elif word in _REPORTING or word.startswith(_REPORTING_PREFIX):\n"
-     "            selecting.append((word,))\n"),
+     ("        elif word in _REPORTING or word.startswith(_REPORTING_PREFIX):\n"
+      "            selecting.append((word,))\n")),
     ("argv: targets compared in order", *ARGV,
      "return (tuple(sorted(targets)), tuple(sorted(selecting)))",
      "return (tuple(targets), tuple(selecting))"),

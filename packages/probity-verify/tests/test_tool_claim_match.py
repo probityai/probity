@@ -1,5 +1,7 @@
 """tool_claim_match/v1: each claimed run matches an observed exec after the last edit."""
 
+from typing import ClassVar
+
 import pytest
 from done_run import PYTEST, ROOT, build, decide, exec_event, honest_records
 from probity_verify import CaseError, adjudicate
@@ -581,7 +583,7 @@ class TestOneInvocation:
     """Honest spellings of the sealed run match; a run that chooses other tests does not
     (review 5, R5-1)."""
 
-    SEALED = ["pytest", "-q", "tests"]
+    SEALED: ClassVar[list[str]] = ["pytest", "-q", "tests"]
 
     def seal(self, records, interpreter=True):
         entry = {"id": "unit", "argv": self.SEALED, "cwd": ROOT, "exe": "/usr/local/bin/pytest"}
