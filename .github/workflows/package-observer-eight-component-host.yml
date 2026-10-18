@@ -63,8 +63,8 @@ jobs:
           echo "PROBITY_KIT_INSTALLATION_SHA256=$(cat "$RUNNER_TEMP/kit-host-selection.sha256")" >> "$GITHUB_ENV"
       - name: Verify native boundaries and retained hard-exit recovery mutants
         run: |
-          python -B -m ruff check trust.py prepare_host.py prepare_candidate.py materialize_sources.py native_gate.py target_worker.py run_host.py tests
-          python -B -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' trust.py prepare_host.py prepare_candidate.py materialize_sources.py native_gate.py target_worker.py run_host.py tests
+          python -B -m ruff check --isolated trust.py prepare_host.py prepare_candidate.py materialize_sources.py native_gate.py target_worker.py run_host.py tests
+          python -B -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' trust.py prepare_host.py prepare_candidate.py materialize_sources.py native_gate.py target_worker.py run_host.py tests
           python -B -m pytest -q tests --basetemp "$RUNNER_TEMP/kit-raw/test-cases" --junitxml="$RUNNER_TEMP/kit-raw/test-results.xml"
       - name: Retain a fresh complete selected all-eight-component measurement
         run: |
