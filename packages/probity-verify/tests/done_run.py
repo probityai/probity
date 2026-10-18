@@ -88,9 +88,10 @@ def honest_records() -> dict:
              "witness_scope": "PEER", "contract_sha256": "", "tree_sha256": tree["tree_sha256"],
              "results": [{"id": "unit", "argv": PYTEST, "exit": 0},
                          {"id": "heldout-unit", "argv": HELDOUT, "exit": 0}]}
-    claims = {"schema_version": "probity-tool-claims/v1", **origin,
+    claims = {"schema_version": "probity-tool-claims/v2", **origin,
               "producer": "transcript-parser",
-              "claims": [{"id": "c1", "argv": PYTEST, "exit": 0}]}
+              "claims": [{"id": "c1", "argv": PYTEST, "exit": 0}],
+              "completion": {"asserted": True, "basis": "both"}}
     return {"contract": contract, "tree": tree, "observation": observation,
             "capability": capability, "grade": grade, "claims": claims}
 
