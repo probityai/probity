@@ -23,9 +23,18 @@ A matching run does not count when the agent could have chosen the code it ran
 the agent wrote, a loader path in its environment resolves there, a loader
 option variable is set, or Python put on the import path (``-m``, ``-c`` or a
 script, without ``-P``, ``-I`` or ``PYTHONSAFEPATH``) a directory the agent
-wrote an importable file under, at any depth, other than the contract's module
-under test and its compiled cache. A shadow on a path the agent wrote is a
-contradiction; one that is only possible leaves the claim unestablished.
+made, or a directory the agent wrote an importable file under, at any depth,
+other than the contract's module under test and its compiled cache. What a run
+of the claimed command wrote into a cache directory (``__pycache__``,
+``.pytest_cache``) or under its sealed ``run_writes`` is that run's own and
+never counts here, so a test compiled by the first run does not shadow the
+second; the same file written by any other process does. A shadow on a path
+the agent wrote is a contradiction; one that is only possible leaves the claim
+unestablished. Without a contract nothing says which written module is the
+code under test, so an importable file the agent wrote on the import path is a
+possible shadow, and a certain one only when its top-level name replaces code
+the command loads by itself: the ``-m`` module's package, ``sitecustomize`` or
+``usercustomize``.
 
 An empty claim list establishes nothing. Any unmatched claim contradicts only
 under complete coverage with exec and every mutation type visible, because an
@@ -99,12 +108,10 @@ def _last_edit(record: dict, own: set[str], writes: list[str] | None) -> int:
     return max(steps, default=-1)
 
 
-def _python_path_zero(event: dict) -> str | None:
-    """The directory Python puts first on the import path.
+def _invocation(event: dict) -> tuple[set[str], str | None, str | None] | None:
+    """How Python was started: its single-letter flags before the program, then ``("c",
+    code)``, ``("m", module)`` or ``(None, script)``; ``None`` when no interpreter ran.
 
-    ``-c``, ``-m``, ``-`` and an interactive session put the working directory
-    there; a script puts its own directory. ``-P``, ``-I`` or a nonempty
-    ``PYTHONSAFEPATH`` (ignored under ``-E``) put none, and the result is ``None``.
     The interpreter is named by the executable the kernel ran or by ``argv[0]``.
     """
     argv = event["argv"]
@@ -124,17 +131,49 @@ def _python_path_zero(event: dict) -> str | None:
         letters = option[1:]
         for position, letter in enumerate(letters):
             if letter in "cm":
-                return None if _safe(flags, event) else event["cwd"]
+                value = letters[position + 1:] or (rest[0] if rest else None)
+                return flags, letter, value
             flags.add(letter)
             if letter in "WX":
                 if position == len(letters) - 1 and rest:
                     rest.pop(0)
                 break
+    return flags, None, rest[0] if rest else None
+
+
+def _python_path_zero(event: dict) -> str | None:
+    """The directory Python puts first on the import path.
+
+    ``-c``, ``-m``, ``-`` and an interactive session put the working directory
+    there; a script puts its own directory. ``-P``, ``-I`` or a nonempty
+    ``PYTHONSAFEPATH`` (ignored under ``-E``) put none, and the result is ``None``.
+    """
+    started = _invocation(event)
+    if started is None:
+        return None
+    flags, mode, value = started
     if _safe(flags, event):
         return None
-    if not rest or rest[0] == "-":
+    if mode is not None or value is None or value == "-":
         return event["cwd"]
-    return posixpath.dirname(posixpath.normpath(posixpath.join(event["cwd"], rest[0])))
+    return posixpath.dirname(posixpath.normpath(posixpath.join(event["cwd"], value)))
+
+
+def _replacing(event: dict) -> set[str]:
+    """Top-level names whose module the command loads by itself: the ``-m`` module's
+    package and the site customization hooks."""
+    names = {"sitecustomize", "usercustomize"}
+    started = _invocation(event)
+    if started is not None and started[1] == "m" and started[2]:
+        names.add(started[2].split(".", 1)[0])
+    return names
+
+
+def _top_level(name: str, directory: str) -> str:
+    """The module name a path under an import directory is imported as at the top level."""
+    parts = name[len(directory.rstrip("/")) + 1:].split("/")
+    first = parts[1] if parts[0] == "__pycache__" and len(parts) > 1 else parts[0]
+    return first.split(".", 1)[0]
 
 
 def _safe(flags: set[str], event: dict) -> bool:
@@ -181,17 +220,30 @@ def _links(record: dict, before: int) -> set[str]:
     return found
 
 
-def _importable_write(directory: str, written: set[str], links: set[str],
-                      allowed: list[str]) -> bool:
-    """Whether the agent wrote, at any depth under the directory, a name Python can import."""
-    return any(records.under(name, directory) and (name.endswith(IMPORTABLE) or name in links)
-               and not _excused(name, allowed) for name in written)
+def _importable_writes(directory: str, written: set[str], links: set[str],
+                       allowed: list[str]) -> list[str]:
+    """What the agent wrote, at any depth under the directory, that Python can import."""
+    return sorted(name for name in written
+                  if records.under(name, directory) and (name.endswith(IMPORTABLE)
+                                                         or name in links)
+                  and not _excused(name, allowed))
 
 
-def _shadows(event: dict, record: dict, allowed: list[str]) -> tuple[list[str], bool]:
-    """Why the agent could have chosen the code this exec ran, and whether it surely did."""
+def _own(event: dict, own: set[str], writes: list[str] | None) -> bool:
+    """A mutation a run of the claimed command made in its cache or sealed run writes."""
+    return (event["type"] in records.MUTATION_TYPES and event.get("origin") in own
+            and _exempt(event, writes or []))
+
+
+def _shadows(event: dict, record: dict, allowed: list[str], own: set[str],
+             writes: list[str] | None, bound: bool) -> tuple[list[str], bool]:
+    """Why the agent could have chosen the code this exec ran, and whether it surely did.
+
+    ``bound`` says a contract names the commands and the module under test."""
     root = record["workspace_root"]
-    written = records.written(record, event["step"])
+    written = records.written({**record, "events": [item for item in record["events"]
+                                                    if not _own(item, own, writes)]},
+                              event["step"])
     reasons: list[str] = []
     definite = False
 
@@ -209,11 +261,15 @@ def _shadows(event: dict, record: dict, allowed: list[str]) -> tuple[list[str], 
                 place(f"env.{key}", name)
     reasons.extend(f"env.{key}" for key in OPTION_KEYS if event["env"].get(key))
     directory = _python_path_zero(event)
-    if directory is not None and (
-            any(records.under(directory, item) for item in written)
-            or _importable_write(directory, written, _links(record, event["step"]), allowed)):
-        reasons.append("python_path_zero")
-        definite = True
+    if directory is not None:
+        made = any(records.under(directory, item) and not _excused(item, allowed)
+                   for item in written)
+        found = _importable_writes(directory, written, _links(record, event["step"]), allowed)
+        if made or found:
+            reasons.append("python_path_zero")
+            replaced = _replacing(event)
+            definite = definite or made or bound or any(
+                _top_level(name, directory) in replaced for name in found)
     return sorted(set(reasons)), definite
 
 
@@ -232,7 +288,9 @@ def _status(claim: dict, record: dict, contract: dict | None) -> dict:
         return {**outcome, "status": "precedes_last_edit"}
     allowed = [posixpath.join(record["workspace_root"], name)
                for name in (contract or {}).get("module_under_test", [])]
-    shadows = {event["id"]: _shadows(event, record, allowed) for event in fresh}
+    writes = command.get("run_writes") if command else None
+    shadows = {event["id"]: _shadows(event, record, allowed, own, writes, contract is not None)
+               for event in fresh}
     clear = [event for event in fresh if not shadows[event["id"]][0]]
     if not clear:
         definite = any(found[1] for found in shadows.values())

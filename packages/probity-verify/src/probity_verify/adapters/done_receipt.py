@@ -16,6 +16,12 @@ combines them, and compares the result with the receipt:
 A receipt whose verdict differs from the derived one is contradicted
 (``receipt_verdict_mismatch``): the verifier that wrote it reported a verdict
 its own records do not give.
+
+A receipt may also say whether the agent claimed done (``completion_claimed``):
+true exactly when the claims record holds a claimed run with exit 0. A receipt
+that says otherwise is contradicted (``receipt_completion_mismatch``), so a
+consumer can tell an agent that never claimed done from one whose claim was
+refused.
 """
 
 from __future__ import annotations
@@ -71,7 +77,8 @@ def statement(data: bytes) -> dict:
     predicate = _object(raw, "receipt.predicate",
                         {"schema_version", "claim_id", "invocation_id", "records", "checks",
                          "verdict", "verifier"},
-                        {"external_effects", "policy", "stop_decision", "verifier_isolation"})
+                        {"completion_claimed", "external_effects", "policy", "stop_decision",
+                         "verifier_isolation"})
     if predicate["schema_version"] != "probity-done-receipt/v1":
         raise CaseError("unsupported receipt schema_version")
     _string(predicate["claim_id"], "receipt.predicate.claim_id")
@@ -88,6 +95,8 @@ def statement(data: bytes) -> dict:
                       {"decision", "reason", "vantage"}, {"witness_scope"})
     if verdict["decision"] not in ("supported", "contradicted", "not_established"):
         raise CaseError("receipt.predicate.verdict.decision: unsupported value")
+    if "completion_claimed" in predicate and type(predicate["completion_claimed"]) is not bool:
+        raise CaseError("receipt.predicate.completion_claimed: expected a boolean")
     _string(verdict["reason"], "receipt.predicate.verdict.reason")
     if not isinstance(predicate["checks"], list):
         raise CaseError("receipt.predicate.checks: expected list")
@@ -186,6 +195,16 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
         checks.append({"id": "receipt_subject", "status": "met" if named else "unavailable"})
         if not named:
             return decide("not_established", "receipt_subject_mismatch")
+    if "completion_claimed" in predicate:
+        claims_bytes, _ = bound["claims"]
+        derived_claim = claims_bytes is not None and any(
+            item.get("exit") == 0 for item in records.claims(claims_bytes)["claims"])
+        agrees_claim = predicate["completion_claimed"] is derived_claim
+        checks.append({"id": "completion_claimed", "status": "met" if agrees_claim
+                       else "failed", "derived": derived_claim,
+                       "reported": predicate["completion_claimed"]})
+        if not agrees_claim:
+            return decide("contradicted", "receipt_completion_mismatch")
     found = []
     for adapter, check_roles, observed in CHECKS:
         sub = _sub_policy(policy, case_id, assessment, adapter, check_roles, observed)
