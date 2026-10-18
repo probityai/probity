@@ -2,7 +2,7 @@
   "assessments": {
     "tampered-grader": {
       "capability_witness": "capability",
-      "claim_type": "done_receipt/v1",
+      "claim_type": "done_receipt/v2",
       "claims_witness": "claims",
       "contract_witness": "contract",
       "grade_witness": "grade",
@@ -28,7 +28,7 @@
     "claims": {
       "artifact": "claims",
       "authority": "synthetic fixture",
-      "sha256": "a93314f52b7ea0b80d76e619feafd62455535185902b83f3f352c2578c8d3334"
+      "sha256": "d215a06a9a7ee75cf9ff67970a5483ec8f1424ba77bafc6d3da329f563d51a2e"
     },
     "contract": {
       "artifact": "contract",
@@ -54,7 +54,7 @@
     "receipt": {
       "artifact": "receipt",
       "authority": "synthetic fixture",
-      "sha256": "0f2e9e4fb3e36f64d980f4ab5f275f6e89e226d1793e0e55619823e0ea698b64"
+      "sha256": "9943894294fa91b6eff67086ff8315bbfd8d4a0ed4436df3617815b971110094"
     },
     "tree": {
       "artifact": "tree",

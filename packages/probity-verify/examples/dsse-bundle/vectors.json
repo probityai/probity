@@ -7,11 +7,11 @@
     "policy": "../done-receipt/honest/receipt.policy.json"
   },
   "malformed-unpadded-base64": {
-    "case": "../done-receipt/honest/receipt.case.json",
+    "case": "../done-receipt/tampered-grader/receipt.case.json",
     "exit": 2,
     "expected": "expected/malformed-unpadded-base64.err",
     "key": "signer.pub",
-    "policy": "../done-receipt/honest/receipt.policy.json"
+    "policy": "../done-receipt/tampered-grader/receipt.policy.json"
   },
   "tampered-payload": {
     "case": "../done-receipt/honest/receipt.case.json",

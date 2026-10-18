@@ -19,9 +19,11 @@ from .adapters import (
     acceptance_observed,
     authority_anchor,
     brokered_file_write,
+    completion_claim,
     done_receipt,
     event_absence,
     operand_lineage,
+    probe_observed,
     protected_paths,
     source_coverage,
     spend_reservation,
@@ -40,8 +42,10 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "spend_reservation/v1": spend_reservation.adjudicate,
     "protected_paths/v1": protected_paths.adjudicate,
     "acceptance_observed/v1": acceptance_observed.adjudicate,
+    "probe_observed/v1": probe_observed.adjudicate,
     "tool_claim_match/v1": tool_claim_match.adjudicate,
-    "done_receipt/v1": done_receipt.adjudicate,
+    "completion_claim/v1": completion_claim.adjudicate,
+    "done_receipt/v2": done_receipt.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

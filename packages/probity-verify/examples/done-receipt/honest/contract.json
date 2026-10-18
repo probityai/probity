@@ -19,6 +19,28 @@
         "/heldout"
       ],
       "id": "heldout-unit"
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "probes/det"
+      ],
+      "id": "visible_determinism",
+      "probe": "determinism"
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "/heldout/probes/types"
+      ],
+      "id": "heldout_type_strict",
+      "probe": "type_strict"
     }
   ],
   "adequacy": {

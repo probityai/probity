@@ -1,0 +1,38 @@
+{
+  "assessments": {
+    "forged-receipt": {
+      "capability_witness": "capability",
+      "claim_type": "tool_claim_match/v1",
+      "claims_witness": "claims",
+      "invocation_id": "call-1",
+      "observation_witness": "observation",
+      "observed_party": "agent-1",
+      "scope": {
+        "end": "2026-10-17T00:10:00Z",
+        "id": "run-1",
+        "start": "2026-10-17T00:00:00Z"
+      }
+    }
+  },
+  "schema_version": "probity-policy/v1",
+  "witnesses": {
+    "capability": {
+      "artifact": "capability",
+      "authority": "synthetic fixture",
+      "sha256": "eb049af8b5eb29f408b91bbf6b51d318d3653a4627b30f9ede604f0ae81a0c63"
+    },
+    "claims": {
+      "artifact": "claims",
+      "authority": "synthetic fixture",
+      "sha256": "0a4a31b66e720b3ca2d9f9ce7329cbd88c0be508aa4453a2e8bd0ef74b5a39a0"
+    },
+    "observation": {
+      "artifact": "observation",
+      "authority": "synthetic fixture",
+      "producer": "host-observer",
+      "sha256": "83b510116e29d5da1d8cd82a6895867c67aab99df624ddfff84aeadd6047af6c",
+      "vantage": "independent",
+      "witness_scope": "PEER"
+    }
+  }
+}

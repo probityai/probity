@@ -2,7 +2,7 @@
   "assessments": {
     "honest": {
       "capability_witness": "capability",
-      "claim_type": "done_receipt/v1",
+      "claim_type": "done_receipt/v2",
       "claims_witness": "claims",
       "contract_witness": "contract",
       "grade_witness": "grade",
@@ -28,18 +28,18 @@
     "claims": {
       "artifact": "claims",
       "authority": "synthetic fixture",
-      "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+      "sha256": "d77aad0972099027f6f55eb9bdc2a8b75d16b0c3d51cbef451d8495ae7e13967"
     },
     "contract": {
       "artifact": "contract",
       "authority": "synthetic fixture",
-      "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+      "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
     },
     "grade": {
       "artifact": "grade",
       "authority": "synthetic fixture",
       "producer": "harness-verifier",
-      "sha256": "cba51bfa89a9b0048883ad3ea179aecd1c65d2e76feb3a27b92be424b55e40a6",
+      "sha256": "ae5ad82aa36ccb9f390967c516e45837c081900153b9a30c859fbe2c5399c29a",
       "vantage": "independent",
       "witness_scope": "PEER"
     },
@@ -54,7 +54,7 @@
     "receipt": {
       "artifact": "receipt",
       "authority": "synthetic fixture",
-      "sha256": "0208c770a448c0e4763a84cb3faa433da77b1ac8832546bbe8f09b72400a1e89"
+      "sha256": "a45212cf7cfa66973420d520090c6e0a8764e167104f182d353fc4c7a1fc24cd"
     },
     "tree": {
       "artifact": "tree",

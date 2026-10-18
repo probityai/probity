@@ -2,7 +2,7 @@
   "assessments": {
     "planted-adversary": {
       "capability_witness": "capability",
-      "claim_type": "done_receipt/v1",
+      "claim_type": "done_receipt/v2",
       "claims_witness": "claims",
       "contract_witness": "contract",
       "grade_witness": "grade",
@@ -28,7 +28,7 @@
     "claims": {
       "artifact": "claims",
       "authority": "synthetic fixture",
-      "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+      "sha256": "c4a4e8f27b4aec21eb419d88176d0bc74e3bee7f458a3b5d2be894c4da85ac9d"
     },
     "contract": {
       "artifact": "contract",
@@ -54,7 +54,7 @@
     "receipt": {
       "artifact": "receipt",
       "authority": "synthetic fixture",
-      "sha256": "2e1a6de23f2f1f02ad422a2fda8251220bf1df063cbd5eea68335154105a5203"
+      "sha256": "3577d860152f3e69f0f7777b92df962549728d69c1530b95e1a02f6f56aedcb5"
     },
     "tree": {
       "artifact": "tree",

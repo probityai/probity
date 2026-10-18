@@ -175,15 +175,19 @@ def _protected_entry(item: Any, label: str) -> dict:
     return entry
 
 
+PROBES = ("determinism", "type_strict", "import_side_effects")
 TIERS = ("trusted", "synthesized")
 STRENGTHS = ("gated", "reference_free", "synthesized_spec")
 
 
 def _acceptance_entry(item: Any, label: str) -> dict:
     entry = _object(item, label, {"id", "argv"},
-                    {"ids", "run_writes", "cwd", "exe", "interpreter", "tier"})
+                    {"ids", "run_writes", "cwd", "exe", "interpreter", "tier", "probe"})
     if "tier" in entry:
         _choice(entry["tier"], f"{label}.tier", TIERS)
+    if "probe" in entry:
+        # An oracle-free probe that probe_observed/v1 reads, not a behavioural command.
+        _choice(entry["probe"], f"{label}.probe", PROBES)
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
     if ("cwd" in entry) != ("exe" in entry):
@@ -605,11 +609,24 @@ def grade(data: bytes) -> dict:
     return record
 
 
+COMPLETION_BASES = ("final_text", "tool_claim", "both")
+
+
 def claims(data: bytes) -> dict:
+    """The ``probity-tool-claims/v2`` record: the runs the agent claims and whether it
+    asserted completion (``completion``: ``asserted`` and the ``basis`` the harness read it
+    from, ``final_text``, ``tool_claim`` or ``both``; ``none`` exactly when not asserted)."""
     record = _record(data, "claims",
-                     {"schema_version", "claim_id", "invocation_id", "producer", "claims"})
-    if record["schema_version"] != "probity-tool-claims/v1":
+                     {"schema_version", "claim_id", "invocation_id", "producer", "claims",
+                      "completion"})
+    if record["schema_version"] != "probity-tool-claims/v2":
         raise CaseError("unsupported claims schema_version")
+    completion = _object(record["completion"], "claims.completion", {"asserted", "basis"})
+    if type(completion["asserted"]) is not bool:
+        raise CaseError("claims.completion.asserted: expected a boolean")
+    expected = COMPLETION_BASES if completion["asserted"] else ("none",)
+    if completion["basis"] not in expected:
+        raise CaseError(f"claims.completion.basis: expected one of {list(expected)}")
     for key in ("claim_id", "invocation_id", "producer"):
         _string(record[key], f"claims.{key}")
     items = record["claims"]

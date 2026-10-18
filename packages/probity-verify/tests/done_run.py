@@ -24,7 +24,9 @@ ENV = {"PATH": "/usr/local/bin:/usr/bin:/bin", "PYTHONSAFEPATH": "1"}
 ROLES = {
     "protected_paths/v1": ("contract", "capability", "observation", "tree"),
     "acceptance_observed/v1": ("contract", "tree", "grade"),
+    "probe_observed/v1": ("contract", "tree", "grade"),
     "tool_claim_match/v1": ("claims", "capability", "observation"),
+    "completion_claim/v1": ("claims", "capability", "observation", "contract"),
 }
 OBSERVED = {"observation", "tree", "grade"}
 
@@ -88,11 +90,28 @@ def honest_records() -> dict:
              "witness_scope": "PEER", "contract_sha256": "", "tree_sha256": tree["tree_sha256"],
              "results": [{"id": "unit", "argv": PYTEST, "exit": 0},
                          {"id": "heldout-unit", "argv": HELDOUT, "exit": 0}]}
-    claims = {"schema_version": "probity-tool-claims/v1", **origin,
+    claims = {"schema_version": "probity-tool-claims/v2", **origin,
               "producer": "transcript-parser",
-              "claims": [{"id": "c1", "argv": PYTEST, "exit": 0}]}
+              "claims": [{"id": "c1", "argv": PYTEST, "exit": 0}],
+              "completion": {"asserted": True, "basis": "both"}}
     return {"contract": contract, "tree": tree, "observation": observation,
             "capability": capability, "grade": grade, "claims": claims}
+
+
+PROBE_COMMANDS = (
+    ("visible_determinism", "determinism", ["python", "-m", "pytest", "-q", "probes/det"]),
+    ("visible_type_strict", "type_strict", ["python", "-m", "pytest", "-q", "probes/types"]),
+    ("heldout_determinism", "determinism", ["python", "-m", "pytest", "-q", "/heldout/det"]),
+)
+
+
+def add_probes(records: dict) -> dict:
+    """Seal two visible probes and one held-out probe, each passing in the grade."""
+    for command_id, mode, argv in PROBE_COMMANDS:
+        records["contract"]["acceptance"].append({"id": command_id, "argv": argv,
+                                                  "probe": mode})
+        records["grade"]["results"].append({"id": command_id, "argv": argv, "exit": 0})
+    return records
 
 
 def encode(value: dict) -> bytes:
@@ -112,7 +131,7 @@ def build(records: dict, claim_type: str, case_id: str = "case-1") -> tuple[dict
     case = {"schema_version": "probity-case/v1", "case_id": case_id, "artifacts": {}}
     assessment = {"claim_type": claim_type, "invocation_id": "call-1",
                   "observed_party": "agent-1"}
-    if claim_type != "acceptance_observed/v1":
+    if claim_type not in ("acceptance_observed/v1", "probe_observed/v1"):
         assessment["scope"] = SCOPE
     policy = {"schema_version": "probity-policy/v1", "witnesses": {},
               "assessments": {case_id: assessment}}

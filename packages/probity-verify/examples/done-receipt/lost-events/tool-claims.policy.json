@@ -24,7 +24,7 @@
     "claims": {
       "artifact": "claims",
       "authority": "synthetic fixture",
-      "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
+      "sha256": "0bce38f0ad02d429e5f3abf1e344cb75ba37856a9a18f764f551e2620c12d150"
     },
     "observation": {
       "artifact": "observation",

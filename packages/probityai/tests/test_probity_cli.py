@@ -150,13 +150,14 @@ _DONE = Path(__file__).resolve().parents[2] / "probity-verify/examples/done-rece
 
 
 @pytest.mark.parametrize("example, decision, reason", [
-    ("honest", "supported", "done_checks_supported"),
+    ("honest", "supported", "done_receipt_accepted"),
     ("tampered-grader", "contradicted", "external_effect_on_grader_path"),
+    ("honest-failure", "contradicted", "acceptance_failed_in_verifier"),
 ])
 def test_probity_verify_checks_a_done_receipt(capsys, example, decision, reason):
     case = _DONE / example
     status = main(["verify", str(case / "receipt.case.json"), "--policy", str(case / "receipt.policy.json"), "--json"])
     assert status == 0
     result = json.loads(capsys.readouterr().out)
-    assert result["claim_type"] == "done_receipt/v1"
+    assert result["claim_type"] == "done_receipt/v2"
     assert (result["decision"], result["reason"]) == (decision, reason)

@@ -1,6 +1,6 @@
 {
   "claim_id": "honest",
-  "contract_sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48",
+  "contract_sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b",
   "invocation_id": "call-1",
   "producer": "harness-verifier",
   "results": [
@@ -25,6 +25,28 @@
       ],
       "exit": 0,
       "id": "heldout-unit"
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "probes/det"
+      ],
+      "exit": 0,
+      "id": "visible_determinism"
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "/heldout/probes/types"
+      ],
+      "exit": 0,
+      "id": "heldout_type_strict"
     }
   ],
   "schema_version": "probity-acceptance-grade/v1",
