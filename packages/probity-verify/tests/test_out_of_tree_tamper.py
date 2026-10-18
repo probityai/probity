@@ -266,7 +266,7 @@ class TestR6InProcessTwin:
                                             "exit": twin_exit})
         return records
 
-    @pytest.mark.parametrize("kind", ["assertion", "candidate_exit"])
+    @pytest.mark.parametrize("kind", ["assertion", "candidate_exit", "candidate_raised"])
     def test_a_twin_that_passes_a_trusted_failure_contradicts(self, tmp_path, kind):
         result = decide(tmp_path, self.twinned(kind=kind), self.CLAIM)
         assert outcome(result) == ("contradicted", "in_process_exit_subverted")
@@ -279,6 +279,14 @@ class TestR6InProcessTwin:
     def test_an_honest_divergence_does_not_contradict(self, tmp_path, change):
         assert decide(tmp_path, self.twinned(**change), self.CLAIM)["decision"] != (
             "contradicted")
+
+    def test_the_twin_outranks_a_gaming_detector(self, tmp_path):
+        # Tamper is the worse class, so a refusing detector must not hide a subverted twin.
+        records = self.twinned()
+        records["grade"]["visible_detectors"] = {"status": "ran", "findings": [
+            {"reason": "isolated_branch", "refuses": True, "evidence": {}}]}
+        assert outcome(decide(tmp_path, records, self.CLAIM)) == (
+            "contradicted", "in_process_exit_subverted")
 
     def test_a_passing_trusted_run_never_fires(self, tmp_path):
         records = self.twinned(trusted_exit=0, kind=None)

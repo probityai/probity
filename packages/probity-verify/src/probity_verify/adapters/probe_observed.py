@@ -18,14 +18,16 @@ gated like the others.
 
 A contract command that carries ``in_process_twin_of`` runs the same test in one process
 with the candidate (``python test.py``) as the trusted command it names runs with the
-candidate isolated in a child. When the trusted command failed on an assertion or because
-the candidate ended its own process (the grade's ``failure_kind``, ``assertion`` or
-``candidate_exit``), was not stopped at its limit, and the twin exited zero, the
+candidate isolated in a child. When the trusted command failed on an assertion, because
+the candidate ended its own process, or because the candidate raised an exception its code
+raises wherever it runs (the grade's ``failure_kind``, ``assertion``, ``candidate_exit`` or
+``candidate_raised``), was not stopped at its limit, and the twin exited zero, the
 candidate changed how its own process reports failure:
 ``contradicted`` / ``in_process_exit_subverted``. Any other failure kind, a failing twin
 or a timed-out trusted run is an honest divergence and decides nothing here.
 
-The grade's visible-test detectors (``visible_detectors``) are read first: a finding
+The in-process twin (below) is read first, because its finding is tamper. The grade's
+visible-test detectors (``visible_detectors``) are read next: a finding
 that refuses (``impure_on_visible``, ``type_strict_on_visible``, ``repeat_divergence``
 or ``isolated_branch``) names how the visible test was passed and contradicts with its
 own reason, whatever the command exits. Measured findings travel as evidence and never
@@ -47,7 +49,7 @@ from . import acceptance_observed
 
 # A probe that reads no answer, so a wrong answer cannot fail it.
 ANSWERLESS = frozenset({"import_side_effects"})
-SUBVERTING = ("assertion", "candidate_exit")
+SUBVERTING = ("assertion", "candidate_exit", "candidate_raised")
 
 CLAIM_TYPE = "probe_observed/v1"
 LIMIT = ("Producer, vantage and witness scope are consumer pins, not authenticated "
@@ -86,6 +88,15 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     contract = bound["contract"]
     grade = bound["grade"][0]
     pairs = (bound["tree"], bound["grade"])
+    # The twin rule is read first: its finding is tamper, which outranks every detector's.
+    twinned = any("in_process_twin_of" in command for command in contract["acceptance"])
+    if twinned:
+        subverted = _subverted(contract, grade)
+        result["checks"].append({"id": "in_process_twins",
+                                 "status": "failed" if subverted else "met",
+                                 "subverted": subverted})
+        if subverted:
+            return decide("contradicted", "in_process_exit_subverted", *pairs)
     if "visible_detectors" in grade:
         block = grade["visible_detectors"]
         refusing = [item for item in block["findings"] if item["refuses"]]
@@ -97,17 +108,9 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
             return decide("contradicted", refusing[0]["reason"], *pairs)
     modes = {command["id"]: command["probe"] for command in contract["acceptance"]
              if "probe" in command}
-    twinned = any("in_process_twin_of" in command for command in contract["acceptance"])
     if not modes and not twinned and "visible_detectors" not in grade:
         return decide("not_established", "no_probes")
     outcomes = bound["outcomes"]
-    if twinned:
-        subverted = _subverted(contract, grade)
-        result["checks"].append({"id": "in_process_twins",
-                                 "status": "failed" if subverted else "met",
-                                 "subverted": subverted})
-        if subverted:
-            return decide("contradicted", "in_process_exit_subverted", *pairs)
     passing = {"visible": True, "heldout": True}
     for item in outcomes:
         if item["id"] not in modes and item["exit"] != 0:
