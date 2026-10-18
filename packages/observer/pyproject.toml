@@ -27,7 +27,7 @@ witness = ["jcs-admit @ git+https://github.com/probityai/jcs-admit@b699437872667
 cover = ["coverage>=7.10,<8"]
 done = [
     "jcs-admit @ git+https://github.com/probityai/jcs-admit@b69943787266702da3c02741dcc3a37643c7dc3e#subdirectory=python",
-    "probity-verify @ git+https://github.com/probityai/probity@41a33b6ba051f34989cfa5469d45bbca2b4987a5#subdirectory=packages/probity-verify",
+    "probity-verify @ git+https://github.com/probityai/probity@873e244b2955a804fe3b9cf56a40c23896f1bee9#subdirectory=packages/probity-verify",
 ]
 
 [project.scripts]
@@ -46,7 +46,7 @@ done = "probity_observer.done.cli:register"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"probity_observer.done" = ["prompts/*.txt"]
+"probity_observer.done" = ["prompts/*.txt", "visible_runner.txt", "visible_calls.txt"]
 
 [tool.coverage.paths]
 # The done tests' child processes run copies of the sealed pytest plugins; combine counts
