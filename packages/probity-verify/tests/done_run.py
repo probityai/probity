@@ -25,6 +25,7 @@ ROLES = {
     "protected_paths/v1": ("contract", "capability", "observation", "tree"),
     "acceptance_observed/v1": ("contract", "tree", "grade"),
     "tool_claim_match/v1": ("claims", "capability", "observation"),
+    "completion_claim/v1": ("claims", "capability", "observation", "contract"),
 }
 OBSERVED = {"observation", "tree", "grade"}
 

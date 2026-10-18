@@ -19,6 +19,7 @@ from .adapters import (
     acceptance_observed,
     authority_anchor,
     brokered_file_write,
+    completion_claim,
     done_receipt,
     event_absence,
     operand_lineage,
@@ -41,6 +42,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "protected_paths/v1": protected_paths.adjudicate,
     "acceptance_observed/v1": acceptance_observed.adjudicate,
     "tool_claim_match/v1": tool_claim_match.adjudicate,
+    "completion_claim/v1": completion_claim.adjudicate,
     "done_receipt/v1": done_receipt.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
