@@ -136,9 +136,16 @@ def _serve(codec_source, module, entry, probe_import):
         else:
             try:
                 args, kwargs = unplain(request["args"]), unplain(request["kwargs"])
-                reply = {"ok": plain(function(*copy.deepcopy(args), **copy.deepcopy(kwargs)))}
+                value = function(*copy.deepcopy(args), **copy.deepcopy(kwargs))
             except BaseException as error:
                 reply = {"error": type(error).__name__}
+            else:
+                # A result that is not plain data is the codec's refusal, never the candidate's
+                # own exception: the two read differently on the twin rule.
+                try:
+                    reply = {"ok": plain(value)}
+                except BaseException:
+                    reply = {"error": "unplain"}
         send(reply)
 '''
 
@@ -336,13 +343,27 @@ MODES = ("assert", "determinism", "type_strict", "import_side_effects")
 
 # How the candidate ended its own process: the reply errors a SystemExit or an exit gives.
 EXIT_ERRORS = ("import:SystemExit", "SystemExit", "child-exited")
+# Exceptions whose cause can be the child's isolation rather than the code (a read-only working
+# directory, no network, no HOME, only the module's own file copied, a shallower stack): an
+# honest candidate can raise one here and not in one process with the test.
+ISOLATION_ERRORS = frozenset({
+    "OSError", "IOError", "EnvironmentError", "PermissionError", "FileNotFoundError",
+    "FileExistsError", "IsADirectoryError", "NotADirectoryError", "BlockingIOError",
+    "ConnectionError", "ConnectionRefusedError", "ConnectionResetError",
+    "ConnectionAbortedError", "BrokenPipeError", "TimeoutError", "InterruptedError",
+    "ChildProcessError", "ProcessLookupError", "ImportError", "ModuleNotFoundError",
+    "RecursionError", "MemoryError", "KeyboardInterrupt"})
+# Child errors that are the protocol's, not an exception the candidate raised.
+PROTOCOL_ERRORS = frozenset({"child-timeout", "child-pipes", "child-protocol", "unplain"})
 
 
 def failure_kind(result: dict[str, Any]) -> str | None:
     """How a failed replay failed, for the grade: ``assertion`` (the trusted comparison
     failed on the answers, with no impure or fresh-mismatch key; for the import probe, the
-    module changed ``builtins``), ``candidate_exit`` (the candidate ended its own process)
-    or ``candidate`` (anything else: an exception, a timeout, an unplain value, no report).
+    module changed ``builtins``), ``candidate_exit`` (the candidate ended its own process),
+    ``candidate_raised`` (the candidate raised, at import or in a call, an exception its code
+    raises wherever it runs: not one of :data:`ISOLATION_ERRORS`) or ``candidate`` (anything
+    else: an isolation-dependent exception, a timeout, an unplain value, no report).
 
     probity-verify compares this with the exit of the same test run in one process with the
     candidate (``python test.py``): a trusted ``assertion`` or ``candidate_exit`` failure
@@ -358,8 +379,15 @@ def failure_kind(result: dict[str, Any]) -> str | None:
     if failure.startswith("assertion") and not result.get("impure") and not result.get(
             "fresh_mismatch"):
         return "assertion"
-    if failure.startswith("candidate: ") and failure[len("candidate: "):] in EXIT_ERRORS:
+    error = failure[len("candidate: "):] if failure.startswith("candidate: ") else None
+    if error in EXIT_ERRORS:
         return "candidate_exit"
+    if error is not None and error.startswith("import:"):
+        error = error[len("import:"):]
+    if (error is not None and error.isidentifier() and error not in PROTOCOL_ERRORS
+            and error not in ISOLATION_ERRORS and not result.get("impure")
+            and not result.get("fresh_mismatch")):
+        return "candidate_raised"
     return "candidate"
 
 

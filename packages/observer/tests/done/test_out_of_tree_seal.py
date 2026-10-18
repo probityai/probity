@@ -71,7 +71,7 @@ class TestFailureKind:
         reports, _ = graded(tmp_path, "raise ValueError('half written')\n" + HONEST, local)
         assert reports["import_side_effects"]["passed"] is True
         assert reports["visible"]["failure"] == "candidate: import:ValueError"
-        assert reports["visible"]["failure_kind"] == "candidate"
+        assert reports["visible"]["failure_kind"] == "candidate_raised"
 
     @pytest.mark.parametrize("result, kind", [
         ({"passed": False, "failure": "assertion", "impure": ["k"]}, "candidate"),
@@ -80,6 +80,14 @@ class TestFailureKind:
         ({"passed": False, "failure": "candidate: SystemExit"}, "candidate_exit"),
         ({"passed": False, "failure": "candidate: child-exited"}, "candidate_exit"),
         ({"passed": False, "failure": "candidate: child-timeout"}, "candidate"),
+        ({"passed": False, "failure": "candidate: NameError"}, "candidate_raised"),
+        ({"passed": False, "failure": "candidate: import:NameError"}, "candidate_raised"),
+        ({"passed": False, "failure": "candidate: NameError", "impure": ["k"]}, "candidate"),
+        ({"passed": False, "failure": "candidate: PermissionError"}, "candidate"),
+        ({"passed": False, "failure": "candidate: import:ModuleNotFoundError"}, "candidate"),
+        ({"passed": False, "failure": "candidate: RecursionError"}, "candidate"),
+        ({"passed": False, "failure": "candidate: unplain"}, "candidate"),
+        ({"passed": False, "failure": "candidate: argument is not plain data: x"}, "candidate"),
         ({"passed": False, "failure": "assertion", "timed_out": True}, "candidate"),
         ({"passed": False, "failure": "test raised NameError"}, "candidate"),
         ({"passed": False, "failure": "timeout", "mode": "determinism"}, "candidate"),
@@ -91,6 +99,16 @@ class TestFailureKind:
     ])
     def test_the_kind_table(self, result, kind):
         assert replay.failure_kind(result) == kind
+
+
+class TestUnplainIsTheCodecs:
+    def test_an_unplain_result_is_not_the_candidates_exception(self, tmp_path, local):
+        cand = tmp_path / "cand"
+        cand.mkdir()
+        (cand / "func.py").write_text("def add(a, b):\n    return object()\n")
+        argv, cwd = local.child_argv(cand, replay.child_source("func", "add"))
+        with replay.Child(argv, cwd, 30) as child:
+            assert child.call(replay.plain((1, 1)), replay.plain({})) == {"error": "unplain"}
 
 
 class TestChildKeepsItsHelpersPrivate:
