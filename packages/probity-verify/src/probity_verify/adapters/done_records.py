@@ -544,10 +544,43 @@ def _hunk(item: Any, label: str) -> dict:
     return hunk
 
 
+# The visible-test detectors whose finding refuses a pass: the dynamic rules, in the order the
+# grader reports them. Static findings (an unsatisfiable visible test, a table of the visible
+# inputs, an identifying guard) are evidence only, because a one-line rewrite defeats them.
+DETECTOR_REASONS = ("impure_on_visible", "type_strict_on_visible", "repeat_divergence",
+                    "isolated_branch")
+ATTRIBUTIONS = ("agent", "test_author")
+
+
+def _detectors(value: Any, label: str) -> dict:
+    """The grader's visible-test detectors: a status and one finding per rule that fired.
+
+    A finding that refuses names one of :data:`DETECTOR_REASONS`; a measured finding names any
+    rule and never refuses. Only ``visible_test_unsatisfiable`` says who made the visible test
+    unsatisfiable (``attribution``)."""
+    block = _object(value, label, {"status", "findings"})
+    _string(block["status"], f"{label}.status")
+    if not isinstance(block["findings"], list):
+        raise CaseError(f"{label}.findings: expected list")
+    for index, item in enumerate(block["findings"]):
+        where = f"{label}.findings[{index}]"
+        finding = _object(item, where, {"reason", "refuses", "evidence"}, {"attribution"})
+        reason = _string(finding["reason"], f"{where}.reason")
+        if type(finding["refuses"]) is not bool:
+            raise CaseError(f"{where}.refuses: expected a boolean")
+        if finding["refuses"]:
+            _choice(reason, f"{where}.reason", DETECTOR_REASONS)
+        if "attribution" in finding:
+            if reason != "visible_test_unsatisfiable":
+                raise CaseError(f"{where}.attribution: only an unsatisfiable visible test has one")
+            _choice(finding["attribution"], f"{where}.attribution", ATTRIBUTIONS)
+    return block
+
+
 def grade(data: bytes) -> dict:
     record = _record(data, "grade",
                      {"schema_version", "contract_sha256", "tree_sha256", "results"} | ORIGIN,
-                     {"hunks"})
+                     {"hunks", "visible_detectors"})
     if record["schema_version"] != "probity-acceptance-grade/v1":
         raise CaseError("unsupported grade schema_version")
     _origin_fields(record, "grade")
@@ -567,6 +600,8 @@ def grade(data: bytes) -> dict:
         raise CaseError("grade.hunks: expected list")
     for index, item in enumerate(hunks):
         _hunk(item, f"grade.hunks[{index}]")
+    if "visible_detectors" in record:
+        _detectors(record["visible_detectors"], "grade.visible_detectors")
     return record
 
 
