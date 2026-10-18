@@ -27,7 +27,7 @@ def test_lcb_contract_holds_out_inputs_and_keeps_the_impossible_assertion(tmp_pa
     record = json.loads((sealed.out / "contract.json").read_bytes())
     assert record["acceptance"] == [
         {"id": "visible", "argv": list(heldout.replay_argv(heldout.VISIBLE_NAME, "add"))},
-        {"id": "visible_run", "argv": ["python", "test.py"]},
+        {"id": "visible_run", "argv": ["python", "test.py"], "in_process_twin_of": "visible"},
         {"id": "heldout", "argv": list(heldout.replay_argv(heldout.HELDOUT_NAME, "add"))},
         {"id": "heldout_determinism",
          "argv": list(heldout.replay_argv(heldout.HELDOUT_NAME, "add", "determinism")),
@@ -93,7 +93,8 @@ def test_the_agent_run_and_module_under_test_are_sealed(tmp_path, harness):
     data = (sealed.out / "contract.json").read_bytes()
     record = json.loads(data)
     assert record["acceptance"][1] == {"id": "visible_run", "argv": ["python", "test.py"],
-                                       "cwd": "/workspace", "exe": "/usr/local/bin/python"}
+                                       "cwd": "/workspace", "exe": "/usr/local/bin/python",
+                                       "in_process_twin_of": "visible"}
     assert [item["id"] for item in record["acceptance"] if "exe" in item] == ["visible_run"]
     assert record["module_under_test"] == ["func.py"]
     assert done_records.contract(data)["module_under_test"] == ["func.py"]

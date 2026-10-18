@@ -33,6 +33,12 @@ MUTANTS = [
     (REPLAY, '    if result.get("mode", "assert") != "assert" or result.get("timed_out"):',
      '    if result.get("mode", "assert") != "assert":'),
     (REPLAY, '        result["failure_kind"] = kind\n', '        pass\n'),
+    (REPLAY, '            and error not in ISOLATION_ERRORS and not result.get("impure")',
+     '            and not result.get("impure")'),
+    (REPLAY, '    if (error is not None and error.isidentifier() and error not in PROTOCOL_ERRORS',
+     '    if (error is not None and error.isidentifier()'),
+    (REPLAY, '        error = error[len("import:"):]', '        pass'),
+    (REPLAY, '                    reply = {"error": "unplain"}', '                    reply = {"error": "TypeError"}'),
     # The child loop keeps its helpers out of __main__.
     (REPLAY, 'return (CHILD_LOOP + f"_serve(', 'return ("_proto = None\\n" + CHILD_LOOP + f"_serve('),
     # The sealed surface.
