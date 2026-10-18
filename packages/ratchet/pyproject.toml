@@ -113,6 +113,7 @@ override-dependencies = ["litellm==1.102.1"]
 # `ratchet.bench.toolsandbox` loads: the conflicting pins are relaxed, and polars stays at 0.20.31 because
 # tool-sandbox imports `polars.type_aliases`, which later polars releases removed. pint is unpinned because
 # 0.23 calls `numpy.cumproduct`, which numpy 2 removed.
+# geopy is raised from 2.4.1 to 2.5.0, the first release that fixes the ReDoS in geopy.Point.
 name = "tool-sandbox"
 version = "0.0.1"
 requires-dist = [
@@ -120,7 +121,7 @@ requires-dist = [
     "ccy==1.3.1",
     "decorator==5.1.1",
     "dill==0.3.8",
-    "geopy==2.4.1",
+    "geopy>=2.5.0",
     "holidays==0.51",
     "jsonschema",
     "langchain-core",
