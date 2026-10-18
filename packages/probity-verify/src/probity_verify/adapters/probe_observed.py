@@ -10,8 +10,14 @@ split whose behavioural commands all passed: a visible probe when every visible
 behavioural command exited zero, a held-out probe (``heldout`` id prefix) when every
 held-out one did. An inactive probe's result is the outcome axis's business.
 
-No probe in the contract gives ``not_established`` / ``no_probes``. Otherwise the
-first active probe that failed with an answer, in contract order, gives
+The grade's visible-test detectors (``visible_detectors``) are read first: a finding
+that refuses (``impure_on_visible``, ``type_strict_on_visible``, ``repeat_divergence``
+or ``isolated_branch``) names how the visible test was passed and contradicts with its
+own reason, whatever the command exits. Measured findings travel as evidence and never
+decide.
+
+No probe in the contract and no detector block gives ``not_established`` /
+``no_probes``. Otherwise the first active probe that failed with an answer, in contract order, gives
 ``contradicted`` / ``probe_<mode>_failed``; else an active probe stopped at its limit
 (``timed_out``) gives ``not_established`` / ``probe_timed_out``; else ``supported`` /
 ``probes_passed``.
@@ -40,9 +46,20 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     if "done" in bound:
         return bound["done"]
     contract = bound["contract"]
+    grade = bound["grade"][0]
+    pairs = (bound["tree"], bound["grade"])
+    if "visible_detectors" in grade:
+        block = grade["visible_detectors"]
+        refusing = [item for item in block["findings"] if item["refuses"]]
+        result["checks"].append({"id": "visible_detectors",
+                                 "status": "failed" if refusing else "met",
+                                 "detector_status": block["status"],
+                                 "findings": block["findings"]})
+        if refusing:
+            return decide("contradicted", refusing[0]["reason"], *pairs)
     modes = {command["id"]: command["probe"] for command in contract["acceptance"]
              if "probe" in command}
-    if not modes:
+    if not modes and "visible_detectors" not in grade:
         return decide("not_established", "no_probes")
     outcomes = bound["outcomes"]
     passing = {"visible": True, "heldout": True}
@@ -56,7 +73,6 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     answered = [item for item in failed if not item.get("timed_out")]
     result["checks"].append({"id": "probes", "status": "failed" if answered else (
         "unavailable" if failed else "met"), "active": active, "inactive": inactive})
-    pairs = (bound["tree"], bound["grade"])
     if answered:
         return decide("contradicted", f"probe_{modes[answered[0]['id']]}_failed", *pairs)
     if failed:

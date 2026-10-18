@@ -401,33 +401,13 @@ def finding(reason, refuses=True, **extra):
 
 
 class TestVisibleDetectors:
-    def test_a_refusing_finding_contradicts_with_its_own_reason(self, tmp_path, records):
-        records["grade"]["visible_detectors"] = {"status": "ok", "findings": [
-            finding("visible_test_unsatisfiable", refuses=False, attribution="test_author"),
-            finding("repeat_divergence"), finding("isolated_branch")]}
-        result = run(tmp_path, records)
-        assert outcome(result) == ("contradicted", "repeat_divergence")
-        assert result["vantage"] == "independent"
-        check = next(c for c in result["checks"] if c["id"] == "visible_detectors")
-        assert check["status"] == "failed" and check["findings"][0]["attribution"] == "test_author"
-
-    def test_the_finding_names_the_reason_before_a_failed_command(self, tmp_path, records):
-        records["grade"]["results"][0]["exit"] = 1
+    def test_a_refusing_finding_leaves_the_outcome_to_the_exits(self, tmp_path, records):
+        # probe_observed/v1 reads the findings on the integrity axis.
         records["grade"]["visible_detectors"] = {"status": "ok",
-                                                 "findings": [finding("impure_on_visible")]}
-        assert outcome(run(tmp_path, records)) == ("contradicted", "impure_on_visible")
-
-    def test_measured_findings_alone_leave_the_pass(self, tmp_path, records):
-        records["grade"]["visible_detectors"] = {"status": "ok", "findings": [
-            finding("special_case_branch", refuses=False), finding("singleton_branch", refuses=False)]}
+                                                 "findings": [finding("repeat_divergence")]}
         result = run(tmp_path, records)
         assert outcome(result) == ("supported", "acceptance_passed_in_verifier")
-        assert next(c for c in result["checks"] if c["id"] == "visible_detectors")["status"] == "met"
-
-    def test_no_finding_on_an_unreadable_tree_leaves_the_exits_to_decide(self, tmp_path, records):
-        records["grade"]["visible_detectors"] = {"status": "unparsable", "findings": []}
-        records["grade"]["results"][1]["exit"] = 1
-        assert outcome(run(tmp_path, records)) == ("contradicted", "heldout_failed")
+        assert all(c["id"] != "visible_detectors" for c in result["checks"])
 
     @pytest.mark.parametrize("block,message", [
         ([], "expected fields"),
