@@ -35,6 +35,15 @@ LOADER_ENV = frozenset({
     "NODE_OPTIONS", "NODE_PATH"})
 GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt"})
 GRADER_SEGMENTS = frozenset({"site-packages", "dist-packages", "verifier"})
+# Files pytest reads from the workspace and from every directory above it, with no flag.
+ANCESTOR_CONFIG = frozenset({"conftest.py", "pytest.ini", "pyproject.toml", "tox.ini",
+                             "setup.cfg"})
+# Never a whole execution-surface entry: each holds or is shared with honest scratch space.
+SURFACE_FORBIDDEN = frozenset({"/", "/tmp", "/var/tmp"})
+ALIAS_HOPS = 40
+# How the grader's trusted run of a command failed: an assertion on the answer, the
+# candidate ending its own process, or anything else the candidate raised.
+FAILURE_KINDS = ("assertion", "candidate_exit", "candidate")
 EQUIVALENCES = ("python_ast",)
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PREDICATE_BASE = "https://w3id.org/agent-evidence/predicate/v1/"
@@ -80,6 +89,13 @@ def protects(entry: dict, name: str) -> bool:
         if (item in below) if "/" not in item else under(name, item):
             return False
     return True
+
+
+def ancestor_config(name: str, root: str) -> bool:
+    """A pytest configuration file in the workspace's own parent chain, which pytest
+    reads for a run in the workspace whatever the command line says."""
+    head, base = posixpath.split(name)
+    return base in ANCESTOR_CONFIG and under(root, head)
 
 
 def grader_path(name: str) -> bool:
@@ -182,7 +198,8 @@ STRENGTHS = ("gated", "reference_free", "synthesized_spec")
 
 def _acceptance_entry(item: Any, label: str) -> dict:
     entry = _object(item, label, {"id", "argv"},
-                    {"ids", "run_writes", "cwd", "exe", "interpreter", "tier", "probe"})
+                    {"ids", "run_writes", "cwd", "exe", "interpreter", "tier", "probe",
+                     "in_process_twin_of"})
     if "tier" in entry:
         _choice(entry["tier"], f"{label}.tier", TIERS)
     if "probe" in entry:
@@ -211,6 +228,8 @@ def _acceptance_entry(item: Any, label: str) -> dict:
             raise CaseError(f"{label}.interpreter: expected sorted distinct paths beside exe")
         for index, name in enumerate(found):
             absolute(name, f"{label}.interpreter[{index}]")
+    if "in_process_twin_of" in entry:
+        _string(entry["in_process_twin_of"], f"{label}.in_process_twin_of")
     if "ids" in entry:
         ids = entry["ids"]
         if (not isinstance(ids, list) or not ids or len(set(map(str, ids))) != len(ids)
@@ -259,7 +278,8 @@ def contract(data: bytes) -> dict:
                      {"schema_version", "contract_id", "protected_paths", "acceptance",
                       "adequacy"},
                      {"task", "heldout_split_sha256", "mutant_set_sha256", "authority_sha256",
-                      "module_under_test", "strength", "native_loaded"})
+                      "module_under_test", "strength", "native_loaded", "execution_surface",
+                      "surface_aliases"})
     if "strength" in record:
         _choice(record["strength"], "contract.strength", STRENGTHS)
     if not isinstance(record.get("native_loaded", []), list):
@@ -294,12 +314,78 @@ def contract(data: bytes) -> dict:
         if command_id in ids:
             raise CaseError("contract.acceptance: duplicate id")
         ids.add(command_id)
+    for index, item in enumerate(acceptance):
+        twin = item.get("in_process_twin_of")
+        if twin is not None and (twin == item["id"] or twin not in ids or any(
+                other["id"] == twin and "probe" in other for other in acceptance)):
+            raise CaseError(f"contract.acceptance[{index}].in_process_twin_of: expected "
+                            "the id of another behavioural command")
+    _surface(record)
     _adequacy(record["adequacy"])
     if "module_under_test" in record:
         modules = _distinct_paths(record["module_under_test"], "contract.module_under_test")
         if not modules:
             raise CaseError("contract.module_under_test: expected a nonempty list")
     return record
+
+
+def _surface(record: dict) -> None:
+    """The sealed execution surface: sorted distinct absolute directories, none of them a
+    shared scratch root, and the image links that lead into it."""
+    if "execution_surface" in record:
+        entries = record["execution_surface"]
+        if not isinstance(entries, list) or not entries or entries != sorted(set(entries)):
+            raise CaseError("contract.execution_surface: expected sorted distinct paths")
+        for index, name in enumerate(entries):
+            if absolute(name, f"contract.execution_surface[{index}]") in SURFACE_FORBIDDEN:
+                raise CaseError(f"contract.execution_surface[{index}]: a shared root is "
+                                "never a whole surface entry")
+    if "surface_aliases" in record:
+        aliases = record["surface_aliases"]
+        if not isinstance(aliases, dict) or "execution_surface" not in record:
+            raise CaseError("contract.surface_aliases: expected an object beside "
+                            "execution_surface")
+        for link, target in aliases.items():
+            absolute(link, "contract.surface_aliases key")
+            absolute(target, f"contract.surface_aliases[{link}]")
+
+
+def surface(contract: dict | None, record: dict) -> tuple[list[str], dict[str, str]]:
+    """The contract's execution surface and aliases, checked against the observed run.
+
+    An entry that is the workspace, lies inside it or above it would make honest work in
+    the workspace into a mutation of the surface, so the contract is refused. The
+    observation does not record ``HOME``; the observer that seals the surface from the
+    agent image leaves the agent's ``HOME`` out."""
+    if contract is None or "execution_surface" not in contract:
+        return [], {}
+    root = record["workspace_root"]
+    for name in contract["execution_surface"]:
+        if under(name, root) or under(root, name):
+            raise CaseError(f"contract.execution_surface: {name} covers the workspace")
+    return contract["execution_surface"], contract.get("surface_aliases", {})
+
+
+def resolve(name: str, aliases: dict[str, str]) -> str:
+    """A path with each image link prefix replaced by what it resolves to, longest first."""
+    for _ in range(ALIAS_HOPS):
+        link = max((key for key in aliases if under(name, key)), key=len, default=None)
+        if link is None:
+            return name
+        name = (aliases[link].rstrip("/") + name[len(link):]) or "/"
+    raise CaseError(f"contract.surface_aliases: more than {ALIAS_HOPS} link hops")
+
+
+def on_surface(name: str, entries: list[str], aliases: dict[str, str]) -> bool:
+    """Whether a path, as written or after the image links, lies under a surface entry."""
+    return any(under(candidate, entry) for candidate in {name, resolve(name, aliases)}
+               for entry in entries)
+
+
+def surface_effects(record: dict, entries: list[str], aliases: dict[str, str]) -> list[str]:
+    """Ids of outside mutations of any type, unlink included, on the execution surface."""
+    return [entry["id"] for entry in record["external_mutations"]
+            if any(on_surface(name, entries, aliases) for name in entry["paths"])]
 
 
 def _origin_fields(record: dict, label: str) -> None:
@@ -511,20 +597,28 @@ def agent_gap(record: dict) -> str | None:
 
 
 def external_grader_effects(record: dict) -> list[str]:
-    """Ids of outside mutations at a grader path, by the record's label or by the path."""
+    """Ids of outside mutations at a grader path, by the record's label or by the path,
+    and of pytest configuration written in a directory above the workspace."""
+    root = record["workspace_root"]
     return [entry["id"] for entry in record["external_mutations"]
             if entry["location"] == "grader_path"
-            or any(grader_path(name) for name in entry["paths"])]
+            or any(grader_path(name) or ancestor_config(name, root)
+                   for name in entry["paths"])]
 
 
 def _result(item: Any, label: str) -> dict:
-    entry = _object(item, label, {"id", "argv", "exit"}, {"collected", "replay", "timed_out"})
+    entry = _object(item, label, {"id", "argv", "exit"},
+                    {"collected", "replay", "timed_out", "failure_kind"})
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
     _exit(entry["exit"], f"{label}.exit")
     # The verifier stopped the run at its limit: present only as true, on a failed run.
     if "timed_out" in entry and (entry["timed_out"] is not True or entry["exit"] == 0):
         raise CaseError(f"{label}.timed_out: expected true on a run with a nonzero exit")
+    if "failure_kind" in entry:
+        _choice(entry["failure_kind"], f"{label}.failure_kind", FAILURE_KINDS)
+        if entry["exit"] == 0:
+            raise CaseError(f"{label}.failure_kind: only a failed run has one")
     if "collected" in entry:
         _count(entry["collected"], f"{label}.collected")
     if "replay" in entry:

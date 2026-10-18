@@ -42,11 +42,13 @@ of the claimed command wrote into a cache directory (``__pycache__``,
 never counts here, so a test compiled by the first run does not shadow the
 second; the same file written by any other process does. A shadow on a path
 the agent wrote is a contradiction; one that is only possible leaves the claim
-unestablished. Without a contract nothing says which written module is the
-code under test, so an importable file the agent wrote on the import path is a
-possible shadow, and a certain one only when its top-level name replaces code
-the command loads by itself: the ``-m`` module's package, ``sitecustomize`` or
-``usercustomize``.
+unestablished. When the contract seals ``execution_surface``, any outside
+mutation under it before the run, an unlink included, is a certain shadow
+(``execution_surface``): the run loaded what the agent chose. Without a
+contract nothing says which written module is the code under test, so an
+importable file the agent wrote on the import path is a possible shadow, and a
+certain one only when its top-level name replaces code the command loads by
+itself: the ``-m`` module's package, ``sitecustomize`` or ``usercustomize``.
 
 An empty claim list establishes nothing. Any unmatched claim contradicts only
 under complete coverage with exec and every mutation type visible, because an
@@ -266,10 +268,13 @@ def _own(event: dict, own: set[str], writes: list[str] | None) -> bool:
 
 
 def _shadows(event: dict, record: dict, allowed: list[str], own: set[str],
-             writes: list[str] | None, bound: bool) -> tuple[list[str], bool]:
+             writes: list[str] | None, contract: dict | None) -> tuple[list[str], bool]:
     """Why the agent could have chosen the code this exec ran, and whether it surely did.
 
-    ``bound`` says a contract names the commands and the module under test."""
+    A contract names the commands and the module under test, and may seal the execution
+    surface: an outside mutation of any type under it before the run is a certain
+    shadow."""
+    bound = contract is not None
     root = record["workspace_root"]
     written = records.written({**record, "events": [item for item in record["events"]
                                                     if not _own(item, own, writes)]},
@@ -284,6 +289,12 @@ def _shadows(event: dict, record: dict, allowed: list[str], own: set[str],
             reasons.append(label)
             definite = definite or agent
 
+    entries, aliases = records.surface(contract, record)
+    if any(item["step"] < event["step"]
+           and any(records.on_surface(name, entries, aliases) for name in item["paths"])
+           for item in record["external_mutations"]):
+        reasons.append("execution_surface")
+        definite = True
     place("exe", event["exe"])
     for key in PATH_KEYS:
         if key in event["env"]:
@@ -320,7 +331,7 @@ def _status(claim: dict, record: dict, contract: dict | None) -> dict:
     allowed = [posixpath.join(record["workspace_root"], name)
                for name in (contract or {}).get("module_under_test", [])]
     writes = command.get("run_writes") if command else None
-    shadows = {event["id"]: _shadows(event, record, allowed, own, writes, contract is not None)
+    shadows = {event["id"]: _shadows(event, record, allowed, own, writes, contract)
                for event in pool}
     clear = [event for event in pool if not shadows[event["id"]][0]]
     if not clear:
