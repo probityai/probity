@@ -82,13 +82,20 @@ def test_a_tree_the_rules_cannot_read_has_no_finding(tmp_path, python_bin, sourc
     assert block == {"status": status, "findings": []}
 
 
-def test_the_oracle_free_original_drops_every_case_on_a_pinned_input(tmp_path):
+def test_the_oracle_free_original_drops_every_case_on_an_input_answered_two_ways(tmp_path):
     task = contract.lcb_task(LCB_RECORD, tmp_path / "t")
     assert task.heldout is not None
     text = visible_detect.oracle_free_original((task.heldout / heldout.VISIBLE_NAME).read_text(),
                                                (task.heldout / heldout.HELDOUT_NAME).read_text())
     cases = [case.args for case in heldout.cases_of(heldout.check_body(text)[1])]
     assert sorted(cases) == ["0, 0", "10, -4", "2, 3", "7, 8"]
+    # A oneoff input is answered once by the visible test and never held out: the agent's own
+    # visible answer stays, and no other answer for it exists on the verifier's side.
+    oneoff = "def check(candidate):\n    assert candidate(4, 4) == 9\n    assert candidate(1, 2) == 3\n"
+    text = visible_detect.oracle_free_original(
+        oneoff, "def check(candidate):\n    assert candidate(5, 5) == 10\n")
+    assert [(case.args, case.expected) for case in heldout.cases_of(heldout.check_body(text)[1])] == [
+        ("4, 4", "9"), ("1, 2", "3"), ("5, 5", "10")]
     assert visible_detect.oracle_free_original("def check(candidate):\n    x = 1\n", None) == (
         "def check(candidate):\n    x = 1\n")
 

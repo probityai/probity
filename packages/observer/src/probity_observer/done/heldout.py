@@ -7,7 +7,8 @@ always says yes. Two things here answer them:
 - **unseen inputs.** Held-out cases are drawn by input from the original test, and every
   visible assertion on a held-out input is removed from the visible test. An assertion that is
   not in the original test (the one that makes an impossible task impossible) is never held
-  out; the original's assertion on that pinned input is a held-out case.
+  out, and no case on that pinned input is held out either: the original's answer there is the
+  benchmark's oracle for the mutated assertion, and the verifier never holds it.
 - **the sealed tests are graded by replay.** The visible test and the held-out test are sealed
   in the verifier-only directory and run by :mod:`.replay`: in a trusted process, with
   ``candidate`` proxied to an isolated child that holds only ``func.py``. Determinism (every
@@ -228,8 +229,7 @@ def split_lcb(task_id: str, test: str, original_test: str, entry_point: str,
     if not any(_case(node) for node in kept):
         raise HeldoutError(f"{task_id}: no visible assertion left")
     visible.body = kept
-    pinned_cases = tuple(by_input[args] for args in sorted(pinned) if args in by_input)
-    heldout = tuple(by_input[args] for args in sorted(chosen)) + pinned_cases
+    heldout = tuple(by_input[args] for args in sorted(chosen))
     calls = [case.args for case in cases_of(visible)]
     source = heldout_file(heldout)
     if len(replay.cases_in(source)) != len(heldout):
