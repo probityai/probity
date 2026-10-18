@@ -188,11 +188,9 @@ MUTATIONS = [
      'if totals != [mutants, adequacy["killed"]]:', "if False:"),
     ("claims: outside mutations never edits", *CLAIMS,
      ('    steps += [entry["step"] for entry in record["external_mutations"]\n'
-      '              if writes is not None or entry.get("origin") not in own]\n'), ""),
+      '              if entry.get("origin") not in own]\n'), ""),
     ("claims: a run's own outside writes are edits", *CLAIMS,
-     'or entry.get("origin") not in own]', "or True]"),
-    ("claims: a run's own outside writes exempt under a contract", *CLAIMS,
-     "if writes is not None or entry", "if entry"),
+     '              if entry.get("origin") not in own]', "              ]"),
     ("claims: shadowed runs match", *CLAIMS,
      'clear = [event for event in fresh if not shadows[event["id"]][0]]', "clear = fresh"),
     ("claims: workspace executable not a shadow", *CLAIMS,

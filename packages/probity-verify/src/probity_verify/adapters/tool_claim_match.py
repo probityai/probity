@@ -11,12 +11,15 @@ name equal the command's; the agent's spelling of the program is not
 consulted. The last clear run must agree with the claimed exit, and a claim
 that states no exit settles nothing.
 
-For each claim, an edit is a mutation, inside or outside the workspace, made
-outside the process trees of the matching runs, so a test run's own cache
-writes do not make it stale while any other command's writes do. When the
-contract sealed ``run_writes`` for the command, a mutation is the run's own
-only when a matching run's process tree made it and it lies under those paths
-or a cache directory; every other mutation is an edit.
+For each claim, an edit is a mutation made outside the process trees of the
+matching runs, so a test run's own writes do not make it stale while any other
+command's writes do. Outside the workspace (``external_mutations``) everything a
+matching run wrote is its own: a test's ``tmp_path`` is output, not an edit, and
+what a later run then loads is code the agent's module could run in process
+anyway. Inside the workspace, when the contract sealed ``run_writes`` for the
+command, a mutation is the run's own only when a matching run's process tree
+made it and it lies under those paths or a cache directory; every other
+mutation is an edit.
 
 A matching run does not count when the agent could have chosen the code it ran
 (``tool_claim_shadowed``): its executable lies in the workspace or on a path
@@ -104,7 +107,7 @@ def _last_edit(record: dict, own: set[str], writes: list[str] | None) -> int:
              and not (event.get("origin") in own
                       and (writes is None or _exempt(event, writes)))]
     steps += [entry["step"] for entry in record["external_mutations"]
-              if writes is not None or entry.get("origin") not in own]
+              if entry.get("origin") not in own]
     return max(steps, default=-1)
 
 

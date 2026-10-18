@@ -584,12 +584,24 @@ class TestOwnWritesUnderAContract:
         assert outcome(decide_with_contract(tmp_path, records)) == (
             "contradicted", "tool_claim_precedes_last_edit")
 
-    def test_the_runs_own_outside_writes_are_edits_under_a_contract(self, tmp_path, records):
+    @pytest.mark.parametrize("paths", [["/tmp/pytest-of-root/test_tmp0"],
+                                       ["/usr/lib/python3/site-packages/app_patch.py"]])
+    @pytest.mark.parametrize("run_writes", [[], ["coverage.xml"]])
+    def test_the_runs_own_outside_writes_are_never_edits(self, tmp_path, records, paths,
+                                                         run_writes):
+        """A test's tmp_path under a sealed contract (review 5, R5-3): sealing run_writes
+        says which workspace paths are the run's, and changes nothing outside it."""
+        records["contract"]["acceptance"][0]["run_writes"] = run_writes
+        add_external(records, paths=paths, origin="x1")
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            "supported", "tool_claims_matched")
+
+    def test_another_process_outside_write_after_the_run_is_an_edit(self, tmp_path, records):
         self.seal(records)
-        add_external(records, paths=["/usr/lib/python3/site-packages/app_patch.py"],
-                     origin="x1")
+        add_external(records, paths=["/tmp/pytest-of-root/test_tmp0"])
         assert outcome(decide_with_contract(tmp_path, records)) == (
             "contradicted", "tool_claim_precedes_last_edit")
+
 
     def test_an_event_naming_no_path_is_never_exempt(self):
         assert tool_claim_match._exempt({"id": "w9", "type": "write"}, ["coverage.xml"]) is False
