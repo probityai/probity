@@ -50,7 +50,7 @@ def _version(manifest: Path) -> str:
     source = data.get("tool", {}).get("hatch", {}).get("version", {}).get("path")
     if "version" not in project.get("dynamic", []) or not source:
         raise SystemExit(f"{manifest} declares no version and no hatch version path")
-    found = re.search(r'^__version__ = "([^"]+)"$', (manifest.parent / source).read_text(), re.M)
+    found = re.search(r'^__version__ = "([^"]+)"$', (manifest.parent / source).read_text(), re.MULTILINE)
     if not found:
         raise SystemExit(f"{manifest.parent / source} assigns no __version__")
     return found[1]
