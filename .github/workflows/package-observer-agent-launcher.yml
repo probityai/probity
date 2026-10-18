@@ -25,10 +25,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Install the package and the verifier with the done-receipt checks
-        run: >-
-          python -m pip install -e '.[test]'
-          'probity-verify @ git+https://github.com/probityai/probity-verify@5104564bf40291c31ee1d452cfe7c5f8ffa87908'
+      - name: Install the package with the verifier its done extra pins
+        run: python -m pip install -e '.[test,done]'
       - name: Sensor, join and docker launch tests
         run: pytest -q tests/launch
       - name: Every join mutant fails the tests
