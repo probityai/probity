@@ -103,49 +103,62 @@ def canon(value: Any) -> str:
 
 
 CHILD_LOOP = '''
-import builtins, copy, importlib, json, os, sys
-_proto = os.fdopen(os.dup(1), "w")
-os.dup2(2, 1)
-sys.path.insert(0, os.getcwd())
-def _builtins():
-    return sorted([name, type(value).__name__, id(value)] for name, value in vars(builtins).items())
-if PROBE_IMPORT:
-    _proto.write(json.dumps({"builtins": _builtins()}) + "\\n")
-    _proto.flush()
-try:
-    _entry = getattr(importlib.import_module(MODULE), ENTRY)
-except BaseException as _error:
-    _entry, _failure = None, type(_error).__name__
-if PROBE_IMPORT:
-    _proto.write(json.dumps({"builtins": _builtins()}) + "\\n")
-    _proto.flush()
-for _line in sys.stdin:
-    _request = json.loads(_line)
-    if _entry is None:
-        _reply = {"error": "import:" + _failure}
-    else:
-        try:
-            _args, _kwargs = unplain(_request["args"]), unplain(_request["kwargs"])
-            _reply = {"ok": plain(_entry(*copy.deepcopy(_args), **copy.deepcopy(_kwargs)))}
-        except BaseException as _error:
-            _reply = {"error": type(_error).__name__}
-    _proto.write(json.dumps(_reply) + "\\n")
-    _proto.flush()
+def _serve(codec_source, module, entry, probe_import):
+    # Everything the child needs is local to this call: the module under test finds nothing
+    # of the protocol in __main__ (no writer, no snapshot helper, no codec) to rebind.
+    import builtins, copy, importlib, json, os, sys
+    codec = {}
+    exec(codec_source, codec)
+    plain, unplain = codec["plain"], codec["unplain"]
+    proto = os.fdopen(os.dup(1), "w")
+    os.dup2(2, 1)
+    sys.path.insert(0, os.getcwd())
+    names, kinds, idents, ordered, dumps = vars, type, id, sorted, json.dumps
+    def snapshot():
+        return ordered([name, kinds(value).__name__, idents(value)]
+                       for name, value in names(builtins).items())
+    def send(message):
+        proto.write(dumps(message) + "\\n")
+        proto.flush()
+    if probe_import:
+        send({"builtins": snapshot()})
+    failure = None
+    try:
+        function = getattr(importlib.import_module(module), entry)
+    except BaseException as error:
+        function, failure = None, type(error).__name__
+    if probe_import:
+        send({"builtins": snapshot()})
+    for line in sys.stdin:
+        request = json.loads(line)
+        if function is None:
+            reply = {"error": "import:" + failure}
+        else:
+            try:
+                args, kwargs = unplain(request["args"]), unplain(request["kwargs"])
+                reply = {"ok": plain(function(*copy.deepcopy(args), **copy.deepcopy(kwargs)))}
+            except BaseException as error:
+                reply = {"error": type(error).__name__}
+        send(reply)
 '''
 
 
 def child_source(module: str, entry: str, probe_import: bool = False) -> str:
-    """The child program: the codec, then a loop that answers one call per line.
+    """The child program: a loop that answers one call per line, with the codec kept out of
+    ``__main__``.
 
     With ``probe_import`` the child first writes the names, types and identities in
     ``builtins`` before and after it imports the module, the first line before any of the
-    module's code has run.
+    module's code has run. The helpers that write those lines are local to the child's loop,
+    so the module cannot rebind them through ``__main__``; it can still write to the protocol
+    descriptor itself, which is why the parent compares only what the child reports and an
+    import probe is evidence, never the whole check.
     """
     if not module.isidentifier() or not entry.isidentifier():
         raise ValueError("module and entry must be identifiers")
-    return ("from __future__ import annotations\nimport json\n" + inspect.getsource(plain)
-            + inspect.getsource(unplain) + f"MODULE = {module!r}\nENTRY = {entry!r}\n"
-            + f"PROBE_IMPORT = {probe_import!r}\n" + CHILD_LOOP)
+    codec = ("from __future__ import annotations\nimport json\nfrom typing import Any\n"
+             + inspect.getsource(plain) + inspect.getsource(unplain))
+    return (CHILD_LOOP + f"_serve({codec!r}, {module!r}, {entry!r}, {probe_import!r})\n")
 
 
 class CandidateFailed(AssertionError):
@@ -320,6 +333,34 @@ def _run_test(path: Path, proxy: Proxy) -> str | None:
 
 
 MODES = ("assert", "determinism", "type_strict", "import_side_effects")
+
+# How the candidate ended its own process: the reply errors a SystemExit or an exit gives.
+EXIT_ERRORS = ("import:SystemExit", "SystemExit", "child-exited")
+
+
+def failure_kind(result: dict[str, Any]) -> str | None:
+    """How a failed replay failed, for the grade: ``assertion`` (the trusted comparison
+    failed on the answers, with no impure or fresh-mismatch key; for the import probe, the
+    module changed ``builtins``), ``candidate_exit`` (the candidate ended its own process)
+    or ``candidate`` (anything else: an exception, a timeout, an unplain value, no report).
+
+    probity-verify compares this with the exit of the same test run in one process with the
+    candidate (``python test.py``): a trusted ``assertion`` or ``candidate_exit`` failure
+    whose in-process twin exits 0 means the candidate changed how its process reports
+    failure."""
+    if result["passed"]:
+        return None
+    failure = result.get("failure") or ""
+    if result.get("mode") == "import_side_effects":
+        return "assertion" if failure == "builtins changed on import" else "candidate"
+    if result.get("mode", "assert") != "assert" or result.get("timed_out"):
+        return "candidate"
+    if failure.startswith("assertion") and not result.get("impure") and not result.get(
+            "fresh_mismatch"):
+        return "assertion"
+    if failure.startswith("candidate: ") and failure[len("candidate: "):] in EXIT_ERRORS:
+        return "candidate_exit"
+    return "candidate"
 
 
 def sealed_cases(path: Path) -> list[tuple[Any, Any, Any]]:
@@ -509,6 +550,9 @@ def main(argv: list[str] | None = None) -> int:
     if not result["passed"] and (result.get("failure") == "timeout"
                                  or any(child.timed_out for child in STARTED)):
         result["timed_out"] = True
+    kind = failure_kind(result)
+    if kind is not None:
+        result["failure_kind"] = kind
     Path(request["out"]).write_text(json.dumps(result, sort_keys=True))
     return 0 if result["passed"] else 1
 
