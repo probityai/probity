@@ -5,7 +5,9 @@ its record names the contract digest and the tree digest it ran on, and the
 tree record from the observer must report the same final tree. A pass also
 needs the contract to tell a fix from a no-op, held-out commands the agent
 never saw, every replayed test to have called the candidate, and every patched
-hunk to have a mutant the commands kill.
+hunk to have a mutant the commands kill. A failure only of held-out probes the
+verifier stopped at their limit (``timed_out`` in the grade) gave no answer to
+judge and leaves the check unestablished (``probe_timed_out``).
 """
 
 from __future__ import annotations
@@ -36,7 +38,7 @@ def _compare(acceptance: list[dict], results: list[dict]) -> tuple[str | None, l
         if found["argv"] != command["argv"]:
             return "acceptance_argv_mismatch", outcomes
         outcome = {"id": command["id"], "exit": found["exit"]}
-        for key in ("collected", "replay"):
+        for key in ("collected", "replay", "timed_out"):
             if key in found:
                 outcome[key] = found[key]
         if "ids" in command:
@@ -137,11 +139,18 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     problem, outcomes = _compare(contract["acceptance"], grade["results"])
     if problem is not None:
         return decide("not_established", problem)
-    failed = [item["id"] for item in outcomes if item["exit"] != 0]
-    checks.append({"id": "acceptance", "status": "failed" if failed else "met",
-                   "results": outcomes})
-    if failed:
-        reason = ("heldout_failed" if all(item.startswith(HELDOUT_PREFIX) for item in failed)
+    failed = [item for item in outcomes if item["exit"] != 0]
+    # A held-out probe the verifier stopped at its limit gave no answer: that is no wrong
+    # answer, and only an answered failure contradicts. A visible command the agent could
+    # run itself and that outran its limit failed.
+    answered = [item["id"] for item in failed
+                if not (item["id"].startswith(HELDOUT_PREFIX) and item.get("timed_out"))]
+    checks.append({"id": "acceptance", "status": "failed" if answered else (
+        "unavailable" if failed else "met"), "results": outcomes})
+    if failed and not answered:
+        return decide("not_established", "probe_timed_out")
+    if answered:
+        reason = ("heldout_failed" if all(item.startswith(HELDOUT_PREFIX) for item in answered)
                   else "acceptance_failed_in_verifier")
         return decide("contradicted", reason, (tree, tree_pin), (grade, grade_pin))
     short = [item["id"] for item in outcomes

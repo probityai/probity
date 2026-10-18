@@ -181,3 +181,40 @@ def test_a_receipt_with_the_right_decision_and_another_reason(tmp_path, records)
     records["observation"]["events"][0]["path"] = "tests/test_app.py"
     result = build(tmp_path, records, verdict=("contradicted", "acceptance_failed_in_verifier"))
     assert outcome(result) == ("contradicted", "receipt_verdict_mismatch")
+
+
+class TestCompletionClaimed:
+    """The receipt says whether the agent claimed done; the claims record decides it."""
+
+    def test_a_receipt_that_says_the_agent_claimed_done(self, tmp_path, records):
+        result = build(tmp_path, records, lambda p: p.update(completion_claimed=True))
+        assert outcome(result) == ("supported", "done_checks_supported")
+        check = next(c for c in result["checks"] if c["id"] == "completion_claimed")
+        assert check == {"id": "completion_claimed", "status": "met", "derived": True,
+                         "reported": True}
+
+    def test_no_passing_claim_is_no_completion_claim(self, tmp_path, records):
+        records["claims"]["claims"] = []
+        records["grade"]["results"][0]["exit"] = 1
+        result = build(tmp_path, records, lambda p: p.update(completion_claimed=False),
+                       verdict=("contradicted", "acceptance_failed_in_verifier"))
+        assert outcome(result) == ("contradicted", "acceptance_failed_in_verifier")
+
+    def test_a_failed_claim_is_no_completion_claim(self, tmp_path, records):
+        records["claims"]["claims"][0]["exit"] = 1
+        records["observation"]["events"][1]["exit"] = 1
+        records["grade"]["results"][0]["exit"] = 1
+        result = build(tmp_path, records, lambda p: p.update(completion_claimed=False),
+                       verdict=("contradicted", "acceptance_failed_in_verifier"))
+        assert outcome(result) == ("contradicted", "acceptance_failed_in_verifier")
+
+    @pytest.mark.parametrize("reported", [True, False])
+    def test_a_receipt_misreporting_the_claim(self, tmp_path, records, reported):
+        if reported:
+            records["claims"]["claims"] = []
+        result = build(tmp_path, records, lambda p: p.update(completion_claimed=reported))
+        assert outcome(result) == ("contradicted", "receipt_completion_mismatch")
+
+    def test_the_field_must_be_a_boolean(self, tmp_path, records):
+        with pytest.raises(CaseError, match="completion_claimed"):
+            build(tmp_path, records, lambda p: p.update(completion_claimed="yes"))

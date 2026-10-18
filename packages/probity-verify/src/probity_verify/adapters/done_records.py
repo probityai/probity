@@ -485,10 +485,13 @@ def external_grader_effects(record: dict) -> list[str]:
 
 
 def _result(item: Any, label: str) -> dict:
-    entry = _object(item, label, {"id", "argv", "exit"}, {"collected", "replay"})
+    entry = _object(item, label, {"id", "argv", "exit"}, {"collected", "replay", "timed_out"})
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
     _exit(entry["exit"], f"{label}.exit")
+    # The verifier stopped the run at its limit: present only as true, on a failed run.
+    if "timed_out" in entry and (entry["timed_out"] is not True or entry["exit"] == 0):
+        raise CaseError(f"{label}.timed_out: expected true on a run with a nonzero exit")
     if "collected" in entry:
         _count(entry["collected"], f"{label}.collected")
     if "replay" in entry:

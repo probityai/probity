@@ -282,3 +282,52 @@ class TestTreeV2Digest:
         change(records["tree"])
         with pytest.raises(CaseError, match=message):
             run(tmp_path, records)
+
+
+class TestProbeTimedOut:
+    """A held-out probe the verifier stopped at its limit gave no answer to judge (review 4,
+    R4-13): the grade says so with ``timed_out``, and that is not a wrong answer."""
+
+    def second_probe(self, records):
+        records["contract"]["acceptance"].append(
+            {"id": "heldout-determinism", "argv": ["python", "-m", "pytest", "-q",
+                                                   "/heldout", "-k", "again"]})
+        records["grade"]["results"].append(
+            {"id": "heldout-determinism", "argv": records["contract"]["acceptance"][2]["argv"],
+             "exit": 0})
+
+    def test_a_probe_that_timed_out(self, tmp_path, records):
+        records["grade"]["results"][1].update(exit=124, timed_out=True)
+        assert outcome(run(tmp_path, records)) == ("not_established", "probe_timed_out")
+
+    def test_the_exit_alone_is_not_a_timeout(self, tmp_path, records):
+        records["grade"]["results"][1]["exit"] = 124
+        assert outcome(run(tmp_path, records)) == ("contradicted", "heldout_failed")
+
+    def test_a_wrong_answer_beside_a_timed_out_probe_stands(self, tmp_path, records):
+        self.second_probe(records)
+        records["grade"]["results"][1].update(exit=124, timed_out=True)
+        records["grade"]["results"][2]["exit"] = 1
+        assert outcome(run(tmp_path, records)) == ("contradicted", "heldout_failed")
+
+    def test_a_visible_failure_beside_a_timed_out_probe_stands(self, tmp_path, records):
+        records["grade"]["results"][0]["exit"] = 1
+        records["grade"]["results"][1].update(exit=124, timed_out=True)
+        assert outcome(run(tmp_path, records)) == ("contradicted",
+                                                   "acceptance_failed_in_verifier")
+
+    def test_a_visible_command_that_timed_out_failed(self, tmp_path, records):
+        """The agent can run a visible command itself; one that outran its limit failed."""
+        records["grade"]["results"][0].update(exit=124, timed_out=True)
+        assert outcome(run(tmp_path, records)) == ("contradicted",
+                                                   "acceptance_failed_in_verifier")
+
+    @pytest.mark.parametrize("change,message", [
+        (lambda g: g["results"][1].update(exit=124, timed_out="yes"), "timed_out"),
+        (lambda g: g["results"][1].update(exit=124, timed_out=False), "timed_out"),
+        (lambda g: g["results"][1].update(timed_out=True), "timed_out"),
+    ])
+    def test_malformed_timeouts_refuse(self, tmp_path, records, change, message):
+        change(records["grade"])
+        with pytest.raises(CaseError, match=message):
+            run(tmp_path, records)
