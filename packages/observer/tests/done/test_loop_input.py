@@ -63,3 +63,10 @@ def test_the_loop_clears_feedback_after_a_replan(tmp_path, monkeypatch):
     monkeypatch.setattr(loop.policy, "apply", lambda *args: None)
     loop.run_loop(spec, None)
     assert seen[0] is None and "acceptance_failed_in_verifier" in seen[1] and seen[2] is None
+
+
+def test_an_unclaimed_attempt_is_told_what_still_fails(monkeypatch):
+    monkeypatch.setattr(loop, "contract_record", lambda spec: {})
+    monkeypatch.setattr(loop, "refusal_detail", lambda run, contract: ["visible failed"])
+    text = loop.next_input(attempt("continue", "unclaimed", FAILED), None)
+    assert "- visible failed" in text and "kept" in text

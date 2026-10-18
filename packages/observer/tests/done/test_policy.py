@@ -375,3 +375,32 @@ def test_the_continue_input_asks_for_the_run_and_keeps_the_tree():
     assert "reset" not in text
     assert policy.outcome_supported(record(1))
     assert not policy.outcome_supported(record(1, **FAILED))
+
+
+STUCK = {"outcome": NOT_DONE, "integrity": CLEAN, "completion_claimed": False}
+
+
+def test_an_honest_stuck_agent_continues_and_ends_without_a_claim():
+    """REVIEW4-05: an agent that never said it was done, with clean integrity, is neither a
+    cheater nor a liar; it keeps its tree and runs to the budget."""
+    table = policy.table(attempts=3)
+    chain = [record(index, **STUCK) for index in (1, 2, 3)]
+    assert _actions(table, *chain) == [("continue", "unclaimed"), ("continue", "unclaimed"),
+                                       ("stop", "budget_exhausted_without_claim")]
+
+
+def test_a_claim_of_done_on_failing_work_is_not_unclaimed():
+    claimed = record(1, **{**STUCK, "completion_claimed": True})
+    assert policy.standing(claimed) == ("failed", "acceptance_failed_in_verifier")
+    tampered = record(1, **{**STUCK, **CONTRA})
+    assert policy.standing(tampered)[0] == "contradicted"
+    sabotage = record(1, **{**STUCK, "integrity": OPEN}, attribution="agent")
+    assert policy.standing(sabotage)[0] == "charged"
+    # Integrity that could not be established is not clean: no unclaimed pass for it.
+    unseen = record(1, **{**STUCK, "integrity": OPEN})
+    assert policy.standing(unseen) == ("failed", "acceptance_failed_in_verifier")
+
+
+def test_the_unclaimed_input_keeps_the_tree():
+    text = policy.unclaimed_input(policy.Decision("continue", "unclaimed"), 1, ["visible failed"])
+    assert "kept" in text and "- visible failed" in text and "reset" not in text
