@@ -34,8 +34,20 @@ jobs:
         run: python -m pip install pytest==8.3.3 hypothesis==6.168.3 ruff==0.15.8
       - run: python -B -m pytest interop/local-model-tool-arguments-2026-10-03/tests -q
       - run: python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' interop/local-model-tool-arguments-2026-10-03/*.py
+      # The preregistered controls select Git blobs relative to the repository
+      # root and cannot change, so give them a checkout whose root is the
+      # package tree: a commit with tree HEAD:packages/observer and parent HEAD.
+      - name: Select the package tree as its own source root
+        run: |
+          set -euo pipefail
+          tree="$(git rev-parse HEAD:packages/observer)"
+          date="$(git show -s --format=%cI HEAD)"
+          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/observer tree of $GITHUB_SHA")"
+          git worktree add --detach "$RUNNER_TEMP/observer-root" "$commit"
+          test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse HEAD^{tree})" = "$tree"
       - name: Really install and replay disclosed synthetic consumer controls
-        run: python -I -B interop/local-model-tool-arguments-2026-10-03/verify_installation.py . installed-tool-argument-controls
+        working-directory: ${{ runner.temp }}/observer-root
+        run: python -I -B interop/local-model-tool-arguments-2026-10-03/verify_installation.py . "$GITHUB_WORKSPACE/packages/observer/installed-tool-argument-controls"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
