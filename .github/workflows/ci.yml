@@ -114,9 +114,14 @@ jobs:
             cargo test --workspace --locked
           fi
 
+  package-ratchet:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases']
+    uses: ./.github/workflows/package-ratchet.yml
+
   ci-ok:
     if: always()
-    needs: [changes, lint, probity-verify, probityai, probityai-distribution, rust]
+    needs: [changes, lint, probity-verify, probityai, probityai-distribution, rust, package-ratchet]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed

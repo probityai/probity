@@ -1,16 +1,21 @@
-name: ci
+name: package-ratchet
+
+# Every check of packages/ratchet (probity-ratchet and probity-ratchet-cases),
+# run from the package directory, which is its own uv workspace with its own
+# lock. ci.yml calls this when a change touches either distribution or a
+# shared file. The jobs are the ones probityai/ratchet ran before its import
+# (ci.yml; the build and wheel checks of release-cases.yml are the cases jobs
+# here). Releases go through release.yml.
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_call:
 
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+defaults:
+  run:
+    working-directory: packages/ratchet
 
 env:
   UV_PYTHON: "3.14"
@@ -65,10 +70,12 @@ jobs:
         run: |
           uv venv --no-project --python "${{ matrix.python }}" "$RUNNER_TEMP/cases"
           uv pip install --python "$RUNNER_TEMP/cases/bin/python" dist/probity_ratchet_cases-*.whl pytest==9.1.1
-      - name: selftest and digest from the installed wheel
+      - name: selftest, and the shipped digest equals the one DIGESTS.json records
         run: |
           "$RUNNER_TEMP/cases/bin/ratchet-cases" selftest
-          "$RUNNER_TEMP/cases/bin/ratchet-cases" digest
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' probity-ratchet-cases/src/ratchet_cases/__init__.py)
+          want="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' probity-ratchet-cases/src/ratchet_cases/cases/DIGESTS.json "$version")"
+          test "$("$RUNNER_TEMP/cases/bin/ratchet-cases" digest)" = "$want"
       - name: pytest against the installed wheel
         working-directory: probity-ratchet-cases
         run: '"$RUNNER_TEMP/cases/bin/python" -m pytest -q -W error -p no:cacheprovider'
@@ -167,7 +174,7 @@ jobs:
       - name: image tag matches compose
         run: |
           want=$(sed -n 's/^ *image: *//p' docker/compose.yaml | head -1)
-          have=$(sed -n 's/^ *image: *\(mongodb\/mongodb-atlas-local:[^ ]*\).*$/\1/p' .github/workflows/ci.yml | head -1)
+          have=$(sed -n 's/^ *image: *\(mongodb\/mongodb-atlas-local:[^ ]*\).*$/\1/p' ../../.github/workflows/package-ratchet.yml | head -1)
           echo "compose: $want  workflow: $have"
           test -n "$want" && test "$want" = "$have"
       - name: wait until mongot answers search-index calls

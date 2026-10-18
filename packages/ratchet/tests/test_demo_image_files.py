@@ -27,7 +27,7 @@ def test_the_reviewer_check_waits_for_the_healthcheck_before_running_the_demo() 
 
 
 def test_ci_runs_the_demo_image_on_x86_and_arm() -> None:
-    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    ci = (ROOT.parents[1] / ".github/workflows/package-ratchet.yml").read_text(encoding="utf-8")
     job = ci[ci.index("\n  demo-image:") :]
     assert "arch: amd64" in job and "runner: ubuntu-24.04\n" in job
     assert "arch: arm64" in job and "runner: ubuntu-24.04-arm" in job
