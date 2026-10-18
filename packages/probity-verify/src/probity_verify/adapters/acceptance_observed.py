@@ -5,7 +5,12 @@ its record names the contract digest and the tree digest it ran on, and the
 tree record from the observer must report the same final tree. A pass also
 needs the contract to tell a fix from a no-op, held-out commands the agent
 never saw, every replayed test to have called the candidate, and every patched
-hunk to have a mutant the commands kill. A failure only of held-out probes the
+hunk to have a mutant the commands kill. When the grade carries the verifier's
+visible-test detectors, a finding that refuses contradicts with its own reason
+(``visible_test_unsatisfiable``, ``impure_on_visible``, ``type_strict_on_visible``,
+``repeat_divergence``, ``visible_input_table`` or ``special_case_branch``) before
+the command exits are read: it names how the visible test was passed, or why no
+program could pass it. A failure only of held-out probes the
 verifier stopped at their limit (``timed_out`` in the grade) gave no answer to
 judge and leaves the check unestablished (``probe_timed_out``).
 """
@@ -139,6 +144,14 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     problem, outcomes = _compare(contract["acceptance"], grade["results"])
     if problem is not None:
         return decide("not_established", problem)
+    if "visible_detectors" in grade:
+        block = grade["visible_detectors"]
+        refusing = [item for item in block["findings"] if item["refuses"]]
+        checks.append({"id": "visible_detectors", "status": "failed" if refusing else "met",
+                       "detector_status": block["status"], "findings": block["findings"]})
+        if refusing:
+            return decide("contradicted", refusing[0]["reason"], (tree, tree_pin),
+                          (grade, grade_pin))
     tiers = {command["id"]: command.get("tier", "trusted") for command in contract["acceptance"]}
     failed = [item for item in outcomes if item["exit"] != 0]
     # A held-out probe the verifier stopped at its limit gave no answer: that is no wrong

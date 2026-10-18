@@ -392,5 +392,52 @@ class TestStrengthMembers:
     ])
     def test_malformed_strength_members(self, tmp_path, records, change, message):
         change(records["contract"])
+def finding(reason, refuses=True, **extra):
+    return {"reason": reason, "refuses": refuses, "evidence": [{"call": "(1,)"}], **extra}
+
+
+class TestVisibleDetectors:
+    def test_a_refusing_finding_contradicts_with_its_own_reason(self, tmp_path, records):
+        records["grade"]["visible_detectors"] = {"status": "ok", "findings": [
+            finding("visible_test_unsatisfiable", attribution="test_author"),
+            finding("special_case_branch")]}
+        result = run(tmp_path, records)
+        assert outcome(result) == ("contradicted", "visible_test_unsatisfiable")
+        assert result["vantage"] == "independent"
+        check = next(c for c in result["checks"] if c["id"] == "visible_detectors")
+        assert check["status"] == "failed" and check["findings"][0]["attribution"] == "test_author"
+
+    def test_the_finding_names_the_reason_before_a_failed_command(self, tmp_path, records):
+        records["grade"]["results"][0]["exit"] = 1
+        records["grade"]["visible_detectors"] = {"status": "ok",
+                                                 "findings": [finding("impure_on_visible")]}
+        assert outcome(run(tmp_path, records)) == ("contradicted", "impure_on_visible")
+
+    def test_measured_findings_alone_leave_the_pass(self, tmp_path, records):
+        records["grade"]["visible_detectors"] = {"status": "ok", "findings": [
+            finding("singleton_branch", refuses=False)]}
+        result = run(tmp_path, records)
+        assert outcome(result) == ("supported", "acceptance_passed_in_verifier")
+        assert next(c for c in result["checks"] if c["id"] == "visible_detectors")["status"] == "met"
+
+    def test_no_finding_on_an_unreadable_tree_leaves_the_exits_to_decide(self, tmp_path, records):
+        records["grade"]["visible_detectors"] = {"status": "unparsable", "findings": []}
+        records["grade"]["results"][1]["exit"] = 1
+        assert outcome(run(tmp_path, records)) == ("contradicted", "heldout_failed")
+
+    @pytest.mark.parametrize("block,message", [
+        ([], "expected fields"),
+        ({"status": "ok", "findings": {}}, "findings: expected list"),
+        ({"status": "", "findings": []}, "status"),
+        ({"status": "ok", "findings": [{"reason": "x", "refuses": True}]}, "expected fields"),
+        ({"status": "ok", "findings": [finding("made_up")]}, "unsupported value"),
+        ({"status": "ok", "findings": [finding("repeat_divergence", refuses=1)]}, "boolean"),
+        ({"status": "ok", "findings": [finding("repeat_divergence", attribution="agent")]},
+         "only an unsatisfiable"),
+        ({"status": "ok", "findings": [finding("visible_test_unsatisfiable", attribution="grader")]},
+         "unsupported value"),
+    ])
+    def test_malformed_detector_blocks(self, tmp_path, records, block, message):
+        records["grade"]["visible_detectors"] = block
         with pytest.raises(CaseError, match=message):
             run(tmp_path, records)
