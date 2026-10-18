@@ -82,17 +82,22 @@ def test_a_tree_the_rules_cannot_read_has_no_finding(tmp_path, python_bin, sourc
     assert block == {"status": status, "findings": []}
 
 
-def test_the_repeat_source_is_the_visible_test_then_the_private_cases():
-    assert visible_detect.repeat_sources("V", None) == ["V"]
-    assert visible_detect.repeat_sources("V", "") == ["V"]
-    assert visible_detect.repeat_sources("V", "B") == ["V", "B"]
-
-
-def test_the_repeat_run_reads_the_issued_visible_test_and_the_held_out_cases(tmp_path, python_bin):
-    vector = next(v for v in VECTORS if v["refuses"] == ["repeat_divergence"])
-    _, rec = detect(tmp_path, python_bin, "original", vector["source"])
-    assert rec["repeat"]["has_b"] is True
-    assert len(rec["repeat"]["runs"]) == 2 and rec["repeat"]["runs"][0]["passed"]
+def test_the_oracle_free_original_drops_every_case_on_an_input_answered_two_ways(tmp_path):
+    task = contract.lcb_task(LCB_RECORD, tmp_path / "t")
+    assert task.heldout is not None
+    text = visible_detect.oracle_free_original((task.heldout / heldout.VISIBLE_NAME).read_text(),
+                                               (task.heldout / heldout.HELDOUT_NAME).read_text())
+    cases = [case.args for case in heldout.cases_of(heldout.check_body(text)[1])]
+    assert sorted(cases) == ["0, 0", "10, -4", "2, 3", "7, 8"]
+    # A oneoff input is answered once by the visible test and never held out: the agent's own
+    # visible answer stays, and no other answer for it exists on the verifier's side.
+    oneoff = "def check(candidate):\n    assert candidate(4, 4) == 9\n    assert candidate(1, 2) == 3\n"
+    text = visible_detect.oracle_free_original(
+        oneoff, "def check(candidate):\n    assert candidate(5, 5) == 10\n")
+    assert [(case.args, case.expected) for case in heldout.cases_of(heldout.check_body(text)[1])] == [
+        ("4, 4", "9"), ("1, 2", "3"), ("5, 5", "10")]
+    assert visible_detect.oracle_free_original("def check(candidate):\n    x = 1\n", None) == (
+        "def check(candidate):\n    x = 1\n")
 
 
 def test_applies_only_to_a_replay_of_the_sealed_visible_test(tmp_path):
@@ -113,36 +118,19 @@ def test_the_agent_copy_is_read_from_its_test_function():
         "def check(candidate):\n    assert candidate(1) == 2\n")
 
 
-def test_visible_facts_without_a_child_answer_are_none(monkeypatch):
+def test_call_values_without_a_child_answer_are_none(monkeypatch):
     def refuse(*_args, **_kwargs):
         raise subprocess.TimeoutExpired("python", 1)
 
     monkeypatch.setattr(visible_detect.subprocess, "run", refuse)
     test = "def check(candidate):\n    assert candidate(1, 2) == 3\n    assert candidate(4, 5) == 9\n"
-    assert visible_detect.visible_facts(test) == ([[None], [None]], None)
+    assert visible_detect.call_values(test) == [[None], [None]]
 
 
-def test_visible_facts_keep_only_literal_arguments():
+def test_call_values_keep_only_literal_arguments():
     test = ("def check(candidate):\n    class K:\n        pass\n    assert candidate(K()) == 1\n"
             "    assert candidate([1, 2]) == 2\n")
-    assert visible_detect.visible_facts(test) == ([[None], [([1, 2],)]], [])
-
-
-def test_the_pre_flight_keys_calls_by_their_evaluated_arguments():
-    """REVIEW5-05: an honest rebinding is two inputs, a name equal to a literal is one input."""
-    rebound = ("def check(candidate):\n    x = 1\n    assert candidate(x) == 2\n"
-               "    x = 2\n    assert candidate(x) == 3\n")
-    assert visible_detect.visible_facts(rebound)[1] == []
-    aliased = ("def check(candidate):\n    x = [1, 2]\n    assert candidate(x) == 3\n"
-               "    assert candidate([1, 2]) == 4\n")
-    conflicts = visible_detect.visible_facts(aliased)[1]
-    assert conflicts and conflicts[0]["call"] == repr((([1, 2],), ()))
-    mixed = ("def check(candidate):\n    assert candidate(3) == 10\n    r = candidate(3)\n"
-             "    assert r < 0\n")
-    assert len(visible_detect.visible_facts(mixed)[1]) == 1
-    prop = ("def check(candidate):\n    assert candidate(4) is None\n"
-            "    assert candidate(4) is not None\n")
-    assert len(visible_detect.visible_facts(prop)[1]) == 1
+    assert visible_detect.call_values(test) == [[None], [([1, 2],)]]
 
 
 class Silent:

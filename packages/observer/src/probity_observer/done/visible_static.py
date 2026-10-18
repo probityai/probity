@@ -49,17 +49,7 @@ def _eq(a, b) -> bool:
     return _norm(a) == _norm(b)
 
 
-def _contains(container, w) -> bool:
-    """`w in container` for a string or bytes container, False when the types differ (a str is never in
-    bytes); membership by _eq for any other collection."""
-    if isinstance(container, str):
-        return isinstance(w, str) and w in container
-    if isinstance(container, bytes):
-        return isinstance(w, bytes) and w in container
-    return any(_eq(w, x) for x in container)
-
-
-def _const(node) -> tuple[bool, Any]:
+def _const(node):
     try:
         return True, ast.literal_eval(node)
     except Exception:
@@ -128,6 +118,9 @@ def units(test_src: str) -> tuple[str, list[Unit]]:
     return prelude_src, us
 
 
+# ---------------------------------------------------------------- D1: unsatisfiable visible test
+
+
 @dataclass
 class Pred:
     kind: str  # eq, ne, is_none, is_not_none, is_true, is_false, lt, le, gt, ge, in, not_in, truthy, falsy, opaque
@@ -193,7 +186,9 @@ def _holds(p: Pred, w) -> bool:
         if k == "falsy":
             return not bool(w)
         if k == "in":
-            return _contains(v, w)
+            # A str subject against a bytes constant raises TypeError, which the handler below turns
+            # into False: the frozen rule's behaviour.
+            return (isinstance(w, str) and w in v) if isinstance(v, (str, bytes)) else any(_eq(w, x) for x in v)  # pyright: ignore[reportOperatorIssue]
         if k == "not_in":
             return not _holds(Pred("in", v), w)
         if k in ("lt", "le", "gt", "ge"):
@@ -288,6 +283,9 @@ def visible_test_unsatisfiable(test_src: str) -> list[dict]:
     return out
 
 
+# ---------------------------------------------------------------- docstring constants
+
+
 def docstring_constants(prompt: str) -> tuple[set[int], set[str]]:
     """Int and string literals of the prompt outside its examples: doctest lines (`>>>` and the output
     line after each) and Example/Input/Output/Explanation blocks are removed first."""
@@ -336,7 +334,7 @@ def docstring_constants(prompt: str) -> tuple[set[int], set[str]]:
 @dataclass(frozen=True)
 class Var:
     param: int
-    path: tuple[Any, ...] = ()  # steps: ("iter", fid), ("enum", fid), ("unpack", i), ("idx", k), ("slice", a, b), ("len",), ("method", name)
+    path: tuple = ()  # steps: ("iter", fid), ("enum", fid), ("unpack", i), ("idx", k), ("slice", a, b), ("len",), ("method", name)
 
 
 @dataclass
@@ -408,9 +406,9 @@ class Scope:
 
     def tuple_of(self, expr) -> list[list[Var]] | None:
         if isinstance(expr, ast.Tuple):
-            vs = [self.vars_of(e) for e in expr.elts]
-            got = [v for v in vs if v is not None]
-            return got if len(got) == len(vs) else None
+            found = [self.vars_of(e) for e in expr.elts]
+            vs = [v for v in found if v is not None]
+            return vs if len(vs) == len(found) else None
         if isinstance(expr, ast.Name) and expr.id in self.tuples:
             return self.tuples[expr.id]
         return None
@@ -524,7 +522,8 @@ def _atom_holds(a: Atom, args: tuple, env: dict) -> bool:
         try:
             if a.op == "eq" and _eq(v, a.const):
                 return True
-            if a.op == "in" and _contains(a.const, v):
+            # A str value against a bytes constant raises TypeError, which the handler below skips.
+            if a.op == "in" and ((isinstance(v, str) and v in a.const) if isinstance(a.const, (str, bytes)) else any(_eq(v, x) for x in a.const)):  # pyright: ignore[reportOperatorIssue]
                 return True
             if a.op == "len_eq" and len(v) == a.const:
                 return True
@@ -710,7 +709,7 @@ def normalize(func_src: str) -> str:
     return ast.unparse(ast.parse(func_src)) + "\n"
 
 
-def analyze(func_src: str, entry: str, calls: list[list[tuple]], doc_ints: set[int], doc_strs: set[str]) -> Analysis | None:
+def analyze(func_src: str, entry: str, calls: Sequence[Sequence[tuple | None]], doc_ints: set[int], doc_strs: set[str]) -> Analysis | None:
     """D4 over the normalised source. CALLS: per unit, the evaluated argument tuples."""
     src = normalize(func_src)
     mod = ast.parse(src)
