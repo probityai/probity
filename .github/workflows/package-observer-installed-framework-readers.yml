@@ -61,8 +61,8 @@ jobs:
       - name: Exercise installed commands and semantic refusals
         run: |
           python -m pip install pytest==8.4.2 ruff==0.15.6
-          python -m ruff check interop/framework-consumer-2026-10-02/*.py
-          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' interop/framework-consumer-2026-10-02/*.py
+          python -m ruff check --isolated interop/framework-consumer-2026-10-02/*.py
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' interop/framework-consumer-2026-10-02/*.py
           FRAMEWORK_DURABLE_SELECTED_SOURCE="$GITHUB_WORKSPACE/packages/observer/durable-reader-source/packages/observer" python -m pytest -q interop/framework-consumer-2026-10-02/test_installed_readers.py interop/framework-consumer-2026-10-02/test_durable_installed_reader.py --junitxml=installed-reader-tests.xml
       - name: Retain installation and control results
         if: always()
