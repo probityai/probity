@@ -124,6 +124,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
+      # The preregistration binds the study to commits of the original observer repository, whose
+      # paths start at its old root. The import rewrote those commits, so fetch the original objects
+      # from the archived repository; the frozen scripts and their inputs stay unchanged.
+      - name: Fetch the preregistered source commits from the original observer repository
+        run: git fetch --no-tags --depth=1 https://github.com/probityai/agent-evidence-observer.git 884814fe8cbc2e3b21d267fbaf86726c37892b14 db429775f139396df4028a9f4367e9bdfaa4ba17
       - name: Verify exact prior archive once and install selected runtime entirely offline
         env:
           GH_TOKEN: ${{ github.token }}
