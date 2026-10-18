@@ -6,9 +6,9 @@
       "sha256": "8fdc0ad09ced2e25ee151e63492b1626d049df46539a4573acd5270a43830a39"
     },
     "claims": {
-      "length": 318,
+      "length": 383,
       "path": "claims.json",
-      "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+      "sha256": "c4a4e8f27b4aec21eb419d88176d0bc74e3bee7f458a3b5d2be894c4da85ac9d"
     },
     "contract": {
       "length": 797,
@@ -28,7 +28,7 @@
     "receipt": {
       "length": 1366,
       "path": "receipt.json",
-      "sha256": "2e1a6de23f2f1f02ad422a2fda8251220bf1df063cbd5eea68335154105a5203"
+      "sha256": "974e04a6904d2990abd6f144d794ab1ea398303156754512e2bb41bcae702d82"
     },
     "tree": {
       "length": 621,

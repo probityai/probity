@@ -6,9 +6,9 @@
       "sha256": "79c6152a2507c0d7b999c29efcdfedd98a66c9c503603b90c00886203d311b3b"
     },
     "claims": {
-      "length": 316,
+      "length": 381,
       "path": "claims.json",
-      "sha256": "a93314f52b7ea0b80d76e619feafd62455535185902b83f3f352c2578c8d3334"
+      "sha256": "d215a06a9a7ee75cf9ff67970a5483ec8f1424ba77bafc6d3da329f563d51a2e"
     },
     "observation": {
       "length": 1500,

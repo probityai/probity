@@ -16,9 +16,9 @@
       "sha256": "e28a780d2dbacd4ff582d0310065af6e016418eb3d48c69265e15a316ede1182"
     },
     {
-      "bytes": 307,
+      "bytes": 372,
       "path": "honest/claims.json",
-      "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+      "sha256": "d77aad0972099027f6f55eb9bdc2a8b75d16b0c3d51cbef451d8495ae7e13967"
     },
     {
       "bytes": 797,
@@ -48,27 +48,27 @@
     {
       "bytes": 1198,
       "path": "honest/receipt.case.json",
-      "sha256": "f16c27ddcab1d6aa8a955453b6d616ea19d167b1ed321e86d007cea21cca6828"
+      "sha256": "623a80460c2df631068ab5db0375190d0f02e8247f8afd8d10a3b35b207104c0"
     },
     {
       "bytes": 1355,
       "path": "honest/receipt.json",
-      "sha256": "0208c770a448c0e4763a84cb3faa433da77b1ac8832546bbe8f09b72400a1e89"
+      "sha256": "6d9fac6b2a324d6ba0ffb8a2e9bec495a3ccff1d6607c55cf1450f542c3995cc"
     },
     {
       "bytes": 2134,
       "path": "honest/receipt.policy.json",
-      "sha256": "645ff875cbbf9c940bda7632813a1015c205218b8a45892d11fc1aeaa9fc2f99"
+      "sha256": "046099488fefdfdc32df4add211e15b2204a4b04bdb8de017c77bc342b3d2620"
     },
     {
       "bytes": 573,
       "path": "honest/tool-claims.case.json",
-      "sha256": "63c403c408d9a857a058b15f30131d2ba3301e45985ed8d847dc57d78c6b158c"
+      "sha256": "cd4defedf92f1e47da0414d9a5e25cb5b82a4fa933ddca2564f34c4ee1c00326"
     },
     {
       "bytes": 1107,
       "path": "honest/tool-claims.policy.json",
-      "sha256": "996f0e8b1317fa897391f9200a73b1cf7f9d1558625b216d025276c620026479"
+      "sha256": "9bf483f81fac7c43720be847eb8fc089b90bc3d6de5095ae97c007227b09421a"
     },
     {
       "bytes": 517,
@@ -91,9 +91,9 @@
       "sha256": "d5139edc665c6bd65d3a57eb785f99721e01cf8db1206f73225089dd2ae70337"
     },
     {
-      "bytes": 312,
+      "bytes": 377,
       "path": "lost-events/claims.json",
-      "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
+      "sha256": "0bce38f0ad02d429e5f3abf1e344cb75ba37856a9a18f764f551e2620c12d150"
     },
     {
       "bytes": 797,
@@ -123,27 +123,27 @@
     {
       "bytes": 1202,
       "path": "lost-events/receipt.case.json",
-      "sha256": "64569dd2d4434a9015c6c9d3641c191c2f0ac7af41645761b4733f3574149f16"
+      "sha256": "d2f4b01a2d49c7c8a7805463ac2964ab6d4ab2a61568d1fbd708b0e5c9dd395d"
     },
     {
       "bytes": 1379,
       "path": "lost-events/receipt.json",
-      "sha256": "234d569ce3841cd758273f8ce5f9fbf5899593de6cb41e3a311c9beafb835286"
+      "sha256": "dcf105d079938e1164e5e62e7653f3db001c062782a2651b12d80f2fc3c8fd59"
     },
     {
       "bytes": 2139,
       "path": "lost-events/receipt.policy.json",
-      "sha256": "8a15b707d81f8e92f4b2a369f31ce36773e528025b9156325307530e87851e25"
+      "sha256": "18c4487c5db2ce216f4b601b9e054a76cd0a0158b5d4ea06e8288d07676f487e"
     },
     {
       "bytes": 577,
       "path": "lost-events/tool-claims.case.json",
-      "sha256": "5506b3fa05b3c0826d7216c91af558002c3f03a97b8d1ddb7289033a0574467e"
+      "sha256": "bbac52120c93d3d333759ce77247bb26e6fb603f659310ab4f9d95cea55a3267"
     },
     {
       "bytes": 1112,
       "path": "lost-events/tool-claims.policy.json",
-      "sha256": "754937ed4e967d2392f91603f7104b300870141092d99546661ddd13ab8d8471"
+      "sha256": "121409a4fa2917a1416674f46125e162c9a66c787776a7fb7911fc7338080e29"
     },
     {
       "bytes": 522,
@@ -166,9 +166,9 @@
       "sha256": "8fdc0ad09ced2e25ee151e63492b1626d049df46539a4573acd5270a43830a39"
     },
     {
-      "bytes": 318,
+      "bytes": 383,
       "path": "planted-adversary/claims.json",
-      "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+      "sha256": "c4a4e8f27b4aec21eb419d88176d0bc74e3bee7f458a3b5d2be894c4da85ac9d"
     },
     {
       "bytes": 797,
@@ -198,27 +198,27 @@
     {
       "bytes": 1208,
       "path": "planted-adversary/receipt.case.json",
-      "sha256": "08ee73295adebf3e1d68a4c4c8a1e926fe0075fe8ff418d9aaaf0d70caf6ea77"
+      "sha256": "1fcb3c3e00856b2e98ca72e8df8750cb9474df50b282b83efd043a07f64263dd"
     },
     {
       "bytes": 1366,
       "path": "planted-adversary/receipt.json",
-      "sha256": "2e1a6de23f2f1f02ad422a2fda8251220bf1df063cbd5eea68335154105a5203"
+      "sha256": "974e04a6904d2990abd6f144d794ab1ea398303156754512e2bb41bcae702d82"
     },
     {
       "bytes": 2145,
       "path": "planted-adversary/receipt.policy.json",
-      "sha256": "bd3e2805d5c57e57c2aa25e769cb0bde716d4226c1126894dcf2f7adc09ca771"
+      "sha256": "9eea5ea786a0ba13811f73cd66da083182bf277a6289839394005086b442a656"
     },
     {
       "bytes": 583,
       "path": "planted-adversary/tool-claims.case.json",
-      "sha256": "b82e674bfc46c3e5cc2341217b5798a4dcd841f9c759b44b1ca74aed54895eec"
+      "sha256": "1f56e0dfc89794db43aa7feb126d6e7d13619aafca898ba325f7432272ee555f"
     },
     {
       "bytes": 1118,
       "path": "planted-adversary/tool-claims.policy.json",
-      "sha256": "ca6be137370ee6ed450c4f593bee0490388ee2bf158add46df8e58d72a65d5a0"
+      "sha256": "e377efc60cce28721f356c8b3d59a668c5d545226d00d8e9da180a64ed232de6"
     },
     {
       "bytes": 621,
@@ -241,9 +241,9 @@
       "sha256": "79c6152a2507c0d7b999c29efcdfedd98a66c9c503603b90c00886203d311b3b"
     },
     {
-      "bytes": 316,
+      "bytes": 381,
       "path": "tampered-grader/claims.json",
-      "sha256": "a93314f52b7ea0b80d76e619feafd62455535185902b83f3f352c2578c8d3334"
+      "sha256": "d215a06a9a7ee75cf9ff67970a5483ec8f1424ba77bafc6d3da329f563d51a2e"
     },
     {
       "bytes": 797,
@@ -273,27 +273,27 @@
     {
       "bytes": 1207,
       "path": "tampered-grader/receipt.case.json",
-      "sha256": "c7b224fcc22f59916ffc8b2281775523ea6ae78780f15f82384c0fe569c96905"
+      "sha256": "a751b4345eb78813f458a8ab7f96aa1fd661f5739d30fe1a90dbd5a7a3d626c2"
     },
     {
       "bytes": 1376,
       "path": "tampered-grader/receipt.json",
-      "sha256": "0f2e9e4fb3e36f64d980f4ab5f275f6e89e226d1793e0e55619823e0ea698b64"
+      "sha256": "0619089a6d4e46634e014d81a31e5a1a6dea9d9e2183dfdcf17875d0009bfc6a"
     },
     {
       "bytes": 2143,
       "path": "tampered-grader/receipt.policy.json",
-      "sha256": "ea8b3b11f20b00cdba7135438b581cb0fe70b11c0f492eaa990c77cf7a01a1cc"
+      "sha256": "fb2cc625b88f155014b2ce415b25cfe66dddcee45517c8a0879e82439e55707e"
     },
     {
       "bytes": 582,
       "path": "tampered-grader/tool-claims.case.json",
-      "sha256": "3965bdaa1de709fb35c675d47f7fe82217a29fb448d01105199a3285c0a12b91"
+      "sha256": "fc93dc7d1a53b2c3bc6cb323120423fe4d035b8303f12fc3287556ffce84107a"
     },
     {
       "bytes": 1116,
       "path": "tampered-grader/tool-claims.policy.json",
-      "sha256": "d1cbc86f182a9426f4e635523cdcb104b762107aff171d6ad662d039f345d3e2"
+      "sha256": "6ea914e3787c9bb64024ec35f23b127d281fcb9669f033a7fcabd4f7f7f9671d"
     },
     {
       "bytes": 526,

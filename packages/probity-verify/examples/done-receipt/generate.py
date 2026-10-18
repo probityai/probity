@@ -124,9 +124,10 @@ def run(name):
                         **({"gaps": gaps} if gaps else {})},
         "capability": {"schema_version": "probity-capabilities/v1", **origin,
                        "producer": "host-observer", "visible_event_types": VISIBLE},
-        "claims": {"schema_version": "probity-tool-claims/v1", **origin,
+        "claims": {"schema_version": "probity-tool-claims/v2", **origin,
                    "producer": "transcript-parser",
-                   "claims": [{"id": "c1", "argv": PYTEST, "exit": 0}]},
+                   "claims": [{"id": "c1", "argv": PYTEST, "exit": 0}],
+                   "completion": {"asserted": True, "basis": "both"}},
     }
     raw = {role: encoded(value) for role, value in records.items()}
     records["grade"] = {
