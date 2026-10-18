@@ -179,8 +179,8 @@ MUTATIONS = [
     ("records: grader path taken from the label alone", RECORDS, PROTECTED[1],
      ("            or any(grader_path(name) or ancestor_config(name, root)\n"
       '                   for name in entry["paths"])]'),
-     "            or any(ancestor_config(name, root)\n"
-     '                   for name in entry["paths"])]'),
+     ("            or any(ancestor_config(name, root)\n"
+      '                   for name in entry["paths"])]')),
     ("records: .pth not a grader path", RECORDS, PROTECTED[1],
      'or parts[-1].endswith(".pth")', ""),
     ("records: grader directories not grader paths", RECORDS, PROTECTED[1],
