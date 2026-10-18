@@ -77,7 +77,7 @@ jobs:
           want="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' probity-ratchet-cases/src/ratchet_cases/cases/DIGESTS.json "$version")"
           test "$("$RUNNER_TEMP/cases/bin/ratchet-cases" digest)" = "$want"
       - name: pytest against the installed wheel
-        working-directory: probity-ratchet-cases
+        working-directory: packages/ratchet/probity-ratchet-cases
         run: '"$RUNNER_TEMP/cases/bin/python" -m pytest -q -W error -p no:cacheprovider'
 
   # The AgentDojo benign-twin suite against the AgentDojo release it pins, from the installed wheel and its
@@ -102,7 +102,7 @@ jobs:
           wheel="$(ls dist/probity_ratchet_cases-*.whl)"
           uv pip install --python "$RUNNER_TEMP/twins/bin/python" "${wheel}[agentdojo]" pytest==9.1.1
       - name: pytest the twins against the installed wheel
-        working-directory: probity-ratchet-cases
+        working-directory: packages/ratchet/probity-ratchet-cases
         run: '"$RUNNER_TEMP/twins/bin/python" -m pytest -q -W error -p no:cacheprovider tests_agentdojo'
 
   # retail_faults against tau2-bench itself. tau2-bench is not on PyPI under its own name (the PyPI project
@@ -141,7 +141,7 @@ jobs:
       # utilities at import time. That one warning comes from tau2-bench and is ignored by its exact text;
       # every other warning still fails the job.
       - name: faulted retail tasks, graded on the live databases
-        working-directory: probity-ratchet-cases
+        working-directory: packages/ratchet/probity-ratchet-cases
         run: >-
           "$RUNNER_TEMP/t2/bin/python" -m pytest -q -p no:cacheprovider tests_tau2
           -W error -W "ignore:'audioop' is deprecated and slated for removal in Python 3.13:DeprecationWarning"
