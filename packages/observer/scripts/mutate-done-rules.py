@@ -35,6 +35,12 @@ MUTANTS = [
      '    if outcome["decision"] == "contradicted":\n        return "contradicted", outcome["reason"]'),
     (POLICY, 'axis in (integrity, outcome) if axis["decision"] == "not_established"',
      'axis in (outcome, integrity) if axis["decision"] == "not_established"'),
+    (POLICY, '    if not record["completion_claimed"] and integrity["decision"] == "supported":',
+     '    if not record["completion_claimed"]:'),
+    (POLICY, '    if not record["completion_claimed"] and integrity["decision"] == "supported":',
+     '    if integrity["decision"] == "supported":'),
+    (POLICY, '"budget_exhausted_without_claim" if found == "unclaimed"',
+     '"budget_exhausted_without_claim" if False'),
     # What escalates.
     (POLICY, '    if found == "contradicted" and offences >= policy["escalate_after_integrity"]:',
      '    if found == "contradicted" and offences > policy["escalate_after_integrity"]:'),

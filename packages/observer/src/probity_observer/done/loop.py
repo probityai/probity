@@ -434,6 +434,9 @@ def next_input(current: Attempt, spec: LoopSpec) -> str | None:
     if decision.action == "replan":
         return policy.replan_input(decision, current.number,
                                    refusal_detail(current.run, contract_record(spec)))
+    if decision.action == "continue" and decision.reason == "unclaimed":
+        return policy.unclaimed_input(decision, current.number,
+                                      refusal_detail(current.run, contract_record(spec)))
     if (decision.action == "continue" and decision.reason in policy.PARSER_REASONS
             and policy.outcome_supported(current.record)):
         return policy.continue_input(decision, current.number)
