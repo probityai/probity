@@ -99,8 +99,8 @@
     },
     {
       "path": "src/probity_verify/adapters/completion_claim.py",
-      "bytes": 8079,
-      "sha256": "5d9e9818c488095d74ed74a00bcfeadd0e345bdfb58c7948e7596ae221774acd"
+      "bytes": 8581,
+      "sha256": "b5f8f00f0de83f82ee079beef20084aaccba2a9dc759002f13c994913f28d963"
     },
     {
       "path": "src/probity_verify/adapters/done_argv.py",
