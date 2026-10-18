@@ -331,3 +331,66 @@ class TestProbeTimedOut:
         change(records["grade"])
         with pytest.raises(CaseError, match=message):
             run(tmp_path, records)
+
+
+class TestStrengthMembers:
+    """Command tiers, the contract's strength, its seal gates and the native files it loaded."""
+
+    def test_only_a_synthesized_failure_is_not_a_contradiction(self, tmp_path, records):
+        records["contract"]["acceptance"][1]["tier"] = "synthesized"
+        records["grade"]["results"][1]["exit"] = 1
+        assert outcome(run(tmp_path, records)) == ("not_established", "generated_heldout_failed")
+
+    def test_a_trusted_failure_beside_a_synthesized_one_contradicts(self, tmp_path, records):
+        records["contract"]["acceptance"][1]["tier"] = "synthesized"
+        for result in records["grade"]["results"]:
+            result["exit"] = 1
+        assert outcome(run(tmp_path, records)) == ("contradicted", "acceptance_failed_in_verifier")
+
+    def test_a_trusted_tier_reads_as_no_tier(self, tmp_path, records):
+        records["contract"]["acceptance"][1]["tier"] = "trusted"
+        records["grade"]["results"][1]["exit"] = 1
+        assert outcome(run(tmp_path, records)) == ("contradicted", "heldout_failed")
+
+    def test_a_reference_free_contract_never_supports(self, tmp_path, records):
+        records["contract"]["strength"] = "reference_free"
+        assert outcome(run(tmp_path, records)) == ("not_established", "reference_free_contract")
+        assert run_with(tmp_path, records, allow_no_heldout=True)["reason"] == (
+            "reference_free_contract")
+
+    def test_a_reference_free_contract_still_contradicts(self, tmp_path, records):
+        records["contract"]["strength"] = "reference_free"
+        records["grade"]["results"][0]["exit"] = 1
+        assert run(tmp_path, records)["decision"] == "contradicted"
+
+    def test_a_failed_seal_gate_cannot_support(self, tmp_path, records):
+        records["contract"]["strength"] = "gated"
+        records["contract"]["adequacy"]["gates"] = {
+            "null_patch_survived": {"pass": True},
+            "change_floor_unmet": {"pass": False, "n": 5, "survivors": 3}}
+        result = run(tmp_path, records)
+        assert outcome(result) == ("not_established", "contract_gate_failed")
+        assert next(c for c in result["checks"] if c["id"] == "seal_gates")["failed"] == [
+            "change_floor_unmet"]
+        records["contract"]["adequacy"]["gates"]["change_floor_unmet"]["pass"] = True
+        assert outcome(run(tmp_path, records)) == ("supported", "acceptance_passed_in_verifier")
+
+    def test_native_files_the_contract_sealed_are_read(self, tmp_path, records):
+        records["contract"]["native_loaded"] = [{"path": "pkg/_speed.so", "sha256": sha("so")}]
+        assert run(tmp_path, records)["decision"] == "supported"
+
+    @pytest.mark.parametrize("change,message", [
+        (lambda c: c["acceptance"][0].update(tier="generated"), "tier"),
+        (lambda c: c.update(strength="strong"), "strength"),
+        (lambda c: c["adequacy"].update(gates=[]), "boolean pass"),
+        (lambda c: c["adequacy"].update(gates={"x": {"pass": 1}}), "boolean pass"),
+        (lambda c: c["adequacy"].update(gates={"x": True}), "boolean pass"),
+        (lambda c: c.update(native_loaded=[{"path": "/abs.so", "sha256": sha("so")}]),
+         "native_loaded"),
+        (lambda c: c.update(native_loaded=[{"path": "a.so", "sha256": "x"}]), "native_loaded"),
+        (lambda c: c.update(native_loaded=[{"path": "a.so"}]), "native_loaded"),
+    ])
+    def test_malformed_strength_members(self, tmp_path, records, change, message):
+        change(records["contract"])
+        with pytest.raises(CaseError, match=message):
+            run(tmp_path, records)

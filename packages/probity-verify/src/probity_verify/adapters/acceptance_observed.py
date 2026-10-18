@@ -139,6 +139,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     problem, outcomes = _compare(contract["acceptance"], grade["results"])
     if problem is not None:
         return decide("not_established", problem)
+    tiers = {command["id"]: command.get("tier", "trusted") for command in contract["acceptance"]}
     failed = [item for item in outcomes if item["exit"] != 0]
     # A held-out probe the verifier stopped at its limit gave no answer: that is no wrong
     # answer, and only an answered failure contradicts. A visible command the agent could
@@ -149,9 +150,13 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
         "unavailable" if failed else "met"), "results": outcomes})
     if failed and not answered:
         return decide("not_established", "probe_timed_out")
-    if answered:
-        reason = ("heldout_failed" if all(item.startswith(HELDOUT_PREFIX) for item in answered)
-                  else "acceptance_failed_in_verifier")
+    trusted_failed = [item for item in answered if tiers[item] == "trusted"]
+    if answered and not trusted_failed:
+        # Only model-written held-out tests failed: a disagreement, not a contradiction.
+        return decide("not_established", "generated_heldout_failed")
+    if trusted_failed:
+        heldout = all(item.startswith(HELDOUT_PREFIX) for item in trusted_failed)
+        reason = "heldout_failed" if heldout else "acceptance_failed_in_verifier"
         return decide("contradicted", reason, (tree, tree_pin), (grade, grade_pin))
     short = [item["id"] for item in outcomes
              if "ids_sealed" in item and item.get("collected") != item["ids_sealed"]]
@@ -159,6 +164,15 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
                    "short_ids": short})
     if short:
         return decide("not_established", "acceptance_collection_mismatch")
+    if contract.get("strength") == "reference_free":
+        # No reference measured these commands; no pin may lift this.
+        return decide("not_established", "reference_free_contract")
+    failed_gates = sorted(name for name, gate in contract["adequacy"].get("gates", {}).items()
+                          if not gate["pass"])
+    if failed_gates:
+        # The compiler measured these commands too weak to seal; a pass cannot lift that.
+        checks.append({"id": "seal_gates", "status": "unavailable", "failed": failed_gates})
+        return decide("not_established", "contract_gate_failed")
     passed, reason = _passed_checks(contract, grade, outcomes, allow_no_heldout)
     checks.extend(passed)
     if reason is not None:

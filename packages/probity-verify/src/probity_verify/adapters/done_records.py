@@ -175,8 +175,14 @@ def _protected_entry(item: Any, label: str) -> dict:
     return entry
 
 
+TIERS = ("trusted", "synthesized")
+STRENGTHS = ("gated", "reference_free", "synthesized_spec")
+
+
 def _acceptance_entry(item: Any, label: str) -> dict:
-    entry = _object(item, label, {"id", "argv"}, {"ids", "run_writes", "cwd", "exe"})
+    entry = _object(item, label, {"id", "argv"}, {"ids", "run_writes", "cwd", "exe", "tier"})
+    if "tier" in entry:
+        _choice(entry["tier"], f"{label}.tier", TIERS)
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
     if ("cwd" in entry) != ("exe" in entry):
@@ -204,7 +210,13 @@ def _acceptance_entry(item: Any, label: str) -> dict:
 
 def _adequacy(value: Any) -> dict:
     adequacy = _object(value, "contract.adequacy", {"mutants", "killed"},
-                       {"by_class", "kill_vector_sha256"})
+                       {"by_class", "kill_vector_sha256", "gates"})
+    if "gates" in adequacy:
+        gates = adequacy["gates"]
+        if not isinstance(gates, dict) or any(
+                not isinstance(gate, dict) or type(gate.get("pass")) is not bool
+                for gate in gates.values()):
+            raise CaseError("contract.adequacy.gates: expected objects with a boolean pass")
     mutants = _count(adequacy["mutants"], "contract.adequacy.mutants")
     if _count(adequacy["killed"], "contract.adequacy.killed") > mutants:
         raise CaseError("contract.adequacy: more mutants killed than generated")
@@ -234,7 +246,15 @@ def contract(data: bytes) -> dict:
                      {"schema_version", "contract_id", "protected_paths", "acceptance",
                       "adequacy"},
                      {"task", "heldout_split_sha256", "mutant_set_sha256", "authority_sha256",
-                      "module_under_test"})
+                      "module_under_test", "strength", "native_loaded"})
+    if "strength" in record:
+        _choice(record["strength"], "contract.strength", STRENGTHS)
+    if not isinstance(record.get("native_loaded", []), list):
+        raise CaseError("contract.native_loaded: expected list")
+    for index, item in enumerate(record.get("native_loaded", [])):
+        loaded = _object(item, f"contract.native_loaded[{index}]", {"path", "sha256"})
+        path(loaded["path"], f"contract.native_loaded[{index}].path")
+        _digest(loaded["sha256"], f"contract.native_loaded[{index}].sha256")
     if record["schema_version"] != "probity-done-contract/v1":
         raise CaseError("unsupported contract schema_version")
     _string(record["contract_id"], "contract.contract_id")
