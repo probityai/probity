@@ -1,22 +1,29 @@
 """Match each tool run an agent claims to an exec the observer recorded.
 
-A claimed run matches an ``exec`` event with the same argv whose step follows
-the last edit. When the assessment also pins the done contract and the claim
-names one of its acceptance commands, and the contract sealed the working
-directory and executable the observer saw for that command, a run matches when
-its ``cwd`` equals the sealed one, its ``exe`` is the sealed path or one of the
-sealed paths (a contract may seal every path that names the one executable
-file, such as ``python`` and ``python3``), and its arguments after the program
-name equal the command's; the agent's spelling of the program is not
-consulted. The last clear run must agree with the claimed exit, and a claim
-that states no exit settles nothing.
+A claimed run matches an ``exec`` event that runs the same invocation (the
+program and its canonical arguments, :mod:`.done_argv`: ``pytest tests -q`` and
+``python -m pytest -q tests`` are one invocation, ``pytest -q tests -k x`` is
+another) and whose step follows the last edit. When the assessment also pins
+the done contract and the claim names one of its acceptance commands, and the
+contract sealed the working directory and executable the observer saw for that
+command, a run matches when its ``cwd`` equals the sealed one and either its
+``exe`` is the sealed path or one of the sealed paths (a contract may seal every
+path that names the one executable file, such as ``python`` and ``python3``) and
+its canonical arguments equal the command's, or its ``exe`` is one of the
+sealed ``interpreter`` paths running the command's entry point as ``-m
+<module>``; the agent's spelling of the program is not consulted. The last
+clear run must agree with the claimed exit, and a claim that states no exit
+settles nothing.
 
-For each claim, an edit is a mutation, inside or outside the workspace, made
-outside the process trees of the matching runs, so a test run's own cache
-writes do not make it stale while any other command's writes do. When the
-contract sealed ``run_writes`` for the command, a mutation is the run's own
-only when a matching run's process tree made it and it lies under those paths
-or a cache directory; every other mutation is an edit.
+For each claim, an edit is a mutation made outside the process trees of the
+matching runs, so a test run's own writes do not make it stale while any other
+command's writes do. Outside the workspace (``external_mutations``) everything a
+matching run wrote is its own: a test's ``tmp_path`` is output, not an edit, and
+what a later run then loads is code the agent's module could run in process
+anyway. Inside the workspace, when the contract sealed ``run_writes`` for the
+command, a mutation is the run's own only when a matching run's process tree
+made it and it lies under those paths or a cache directory; every other
+mutation is an edit.
 
 A matching run does not count when the agent could have chosen the code it ran
 (``tool_claim_shadowed``): its executable lies in the workspace or on a path
@@ -50,6 +57,7 @@ from pathlib import Path
 from typing import Any
 
 from ..common import _string
+from . import done_argv
 from . import done_records as records
 from .event_absence import _capabilities, _scope
 
@@ -82,13 +90,27 @@ def _command(claim: dict, contract: dict | None) -> dict | None:
 
 
 def _runs(claim: dict, command: dict | None, execs: list[dict]) -> list[dict]:
-    """The exec events that are runs of the claimed command."""
+    """The exec events that are runs of the claimed command, compared as invocations
+    (:mod:`.done_argv`): the same program and the same canonical arguments. Under a sealed
+    command a run is in its working directory and is either the sealed executable or, for a
+    Python entry point, the sealed interpreter running it as ``-m <module>``."""
     if command is not None and "exe" in command:
         exes = command["exe"] if isinstance(command["exe"], list) else [command["exe"]]
-        return [event for event in execs
-                if event["cwd"] == command["cwd"] and event["exe"] in exes
-                and event["argv"][1:] == command["argv"][1:]]
-    return [event for event in execs if event["argv"] == claim["argv"]]
+        interpreters = command.get("interpreter", [])
+        sealed = done_argv.invocation(command["argv"])
+
+        def runs(event: dict) -> bool:
+            if event["cwd"] != command["cwd"]:
+                return False
+            if event["exe"] in exes:
+                return done_argv.invocation(event["argv"]).args == sealed.args
+            return (event["exe"] in interpreters
+                    and done_argv.invocation(event["argv"], event["exe"]) == sealed)
+
+        return [event for event in execs if runs(event)]
+    claimed = done_argv.invocation(claim["argv"])
+    return [event for event in execs
+            if done_argv.invocation(event["argv"], event["exe"]) == claimed]
 
 
 def _exempt(event: dict, writes: list[str]) -> bool:
@@ -104,7 +126,7 @@ def _last_edit(record: dict, own: set[str], writes: list[str] | None) -> int:
              and not (event.get("origin") in own
                       and (writes is None or _exempt(event, writes)))]
     steps += [entry["step"] for entry in record["external_mutations"]
-              if writes is not None or entry.get("origin") not in own]
+              if entry.get("origin") not in own]
     return max(steps, default=-1)
 
 
