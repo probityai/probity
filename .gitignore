@@ -10,3 +10,6 @@ dist/
 rebuilt/
 .build/
 target/
+# Send packets and run logs from a working session never belong in the tree.
+/outbound/
+/*.log
