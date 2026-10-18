@@ -44,7 +44,7 @@ jobs:
           date="$(git show -s --format=%cI HEAD)"
           commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/observer tree of $GITHUB_SHA")"
           git worktree add --detach "$RUNNER_TEMP/observer-root" "$commit"
-          test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse HEAD^{tree})" = "$tree"
+          test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse "HEAD^{tree}")" = "$tree"
       - name: Really install and replay disclosed synthetic consumer controls
         working-directory: ${{ runner.temp }}/observer-root
         run: python -I -B interop/local-model-tool-arguments-2026-10-03/verify_installation.py . "$GITHUB_WORKSPACE/packages/observer/installed-tool-argument-controls"
