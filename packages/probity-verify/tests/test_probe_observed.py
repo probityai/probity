@@ -209,6 +209,28 @@ class TestVisibleDetectorsOnIntegrity:
         check = next(c for c in result["checks"] if c["id"] == "visible_detectors")
         assert check["status"] == "failed" and check["findings"][0]["attribution"] == "test_author"
 
+    def test_the_task_pre_flight_names_the_task_and_never_refuses(self, tmp_path):
+        records = honest_records()
+        records["grade"]["visible_detectors"] = {"status": "ok", "findings": [
+            finding("invalid_task_spec", refuses=False, attribution="task")]}
+        result = run(tmp_path, records)
+        assert outcome(result) == ("supported", "probes_passed")
+        check = next(c for c in result["checks"] if c["id"] == "visible_detectors")
+        assert check["findings"][0]["attribution"] == "task"
+
+    @pytest.mark.parametrize("item,match", [
+        (finding("invalid_task_spec", refuses=False), "names the task"),
+        (finding("invalid_task_spec", refuses=False, attribution="test_author"), "attribution"),
+        (finding("invalid_task_spec", attribution="task"), "reason"),
+        (finding("visible_test_unsatisfiable", refuses=False, attribution="task"), "attribution"),
+        (finding("special_case_branch", refuses=False, attribution="task"), "only an unsatisfiable"),
+    ])
+    def test_an_attribution_is_held_to_its_reason(self, tmp_path, item, match):
+        records = honest_records()
+        records["grade"]["visible_detectors"] = {"status": "ok", "findings": [item]}
+        with pytest.raises(CaseError, match=match):
+            run(tmp_path, records)
+
     def test_a_finding_outranks_a_failed_command(self, tmp_path):
         records = honest_records()
         records["grade"]["results"][0]["exit"] = 1
