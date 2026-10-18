@@ -552,9 +552,15 @@ def grade(data: bytes) -> dict:
 
 def claims(data: bytes) -> dict:
     record = _record(data, "claims",
-                     {"schema_version", "claim_id", "invocation_id", "producer", "claims"})
+                     {"schema_version", "claim_id", "invocation_id", "producer", "claims"},
+                     {"completion"})
     if record["schema_version"] != "probity-tool-claims/v1":
         raise CaseError("unsupported claims schema_version")
+    if "completion" in record:
+        # Whether the agent's own final text says the task is done (the parser's reading).
+        completion = _object(record["completion"], "claims.completion", {"claimed"}, set())
+        if type(completion["claimed"]) is not bool:
+            raise CaseError("claims.completion.claimed: expected a boolean")
     for key in ("claim_id", "invocation_id", "producer"):
         _string(record[key], f"claims.{key}")
     items = record["claims"]
@@ -572,6 +578,12 @@ def claims(data: bytes) -> dict:
             raise CaseError("claims: duplicate id")
         ids.add(claim_id)
     return record
+
+
+def completion_claimed(record: dict) -> bool:
+    """Whether the agent claimed done: its final text says so, or a kept claim states exit 0."""
+    return (record.get("completion", {}).get("claimed") is True
+            or any(item.get("exit") == 0 for item in record["claims"]))
 
 
 def start(case: Any, policy: Any, claim_type: str, fields: set[str],
