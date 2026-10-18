@@ -37,12 +37,12 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 3a5efd16d242dc9044fc7492278a524c5c08a0cc
+          ref: 5f5bacb3b4474675b028b1d6ad7c1bf166017bcf
           path: packages/observer/historical-model-reader
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 37ec3b29882f7ce82133ee934f7e01889810db06
+          ref: c814f3c449ad8893737c5be7a84d8586633b4ab4
           path: packages/observer/previous-model-reader
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -50,7 +50,7 @@ jobs:
           python-version: '3.13.15'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 4080bcc1425457221fa49d43ccac60ecfa485ab7
+          ref: e0cece4e53c0da4bac7f301ee4a9c371a437d08a
           path: packages/observer/boundary-baseline-model-reader
           persist-credentials: false
       - name: Install hash-selected build tools
@@ -58,18 +58,18 @@ jobs:
           python -m pip install --require-hashes --only-binary=:all: -r interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock
       - name: Build the frozen0.0.1 baseline and install both clean environments
         run: |
-          python historical-model-reader/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/observer/historical-model-reader" "$RUNNER_TEMP/baseline-model-wheels"
+          python historical-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/observer/historical-model-reader/packages/observer" "$RUNNER_TEMP/baseline-model-wheels"
           for environment in baseline-consumer previous-consumer; do
             python -m venv "$RUNNER_TEMP/$environment"
             "$RUNNER_TEMP/$environment/bin/python" -m pip install --no-index --no-deps "$RUNNER_TEMP/baseline-model-wheels/"*.whl
           done
       - name: Build the frozen 0.0.2 wheel and install the next upgrade baseline
         run: |
-          python previous-model-reader/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/observer/previous-model-reader" "$RUNNER_TEMP/previous-model-wheels"
+          python previous-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/observer/previous-model-reader/packages/observer" "$RUNNER_TEMP/previous-model-wheels"
           "$RUNNER_TEMP/previous-consumer/bin/python" -m pip install --no-index --no-deps --upgrade "$RUNNER_TEMP/previous-model-wheels/"*.whl
       - name: Build frozen 0.0.3 and retain the next clean upgrade baseline
         run: |
-          python boundary-baseline-model-reader/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/observer/boundary-baseline-model-reader" "$RUNNER_TEMP/boundary-baseline-wheels"
+          python boundary-baseline-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/observer/boundary-baseline-model-reader/packages/observer" "$RUNNER_TEMP/boundary-baseline-wheels"
           for environment in format-consumer consumer; do
             python -m venv "$RUNNER_TEMP/$environment"
             "$RUNNER_TEMP/$environment/bin/python" -m pip install --no-index --no-deps "$RUNNER_TEMP/boundary-baseline-wheels/"*.whl
