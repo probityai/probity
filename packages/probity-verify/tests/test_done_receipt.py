@@ -136,6 +136,10 @@ class TestFourQuadrants:
                                                                                 "supported")
         assert axes(result)["outcome"] == ("contradicted", "acceptance_failed_in_verifier",
                                            None)
+        # The agent made a tool claim and did not assert completion: the flag is the
+        # assertion, not the presence of claims.
+        derived = next(c for c in result["checks"] if c["id"] == "receipt_rederived")
+        assert derived["derived"]["completion_claimed"] is False
 
     def test_not_done_and_gamed(self, tmp_path, records):
         # The agent saw its tests fail and claimed they passed.
