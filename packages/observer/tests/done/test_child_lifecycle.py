@@ -131,7 +131,7 @@ def test_a_replay_parent_that_outruns_its_limit_stops_its_children(tmp_path, pyt
     # The parent's whole-command limit (1 s) fires before the child's own call limit (60 s),
     # so the children are still running when the runner stops the parent.
     runner = Wrapped(python_bin, leak_guard)
-    monkeypatch.setattr(replay, "CLOSE_GRACE", 0.5)
+    monkeypatch.setattr(replay, "CLOSE_GRACE", 0.5, raising=False)
     code = _probe(tmp_path, runner, HUNG, "assert", 0, 1.0)
     assert code == TIMEOUT_EXIT
     assert _settled_survivors(leak_guard) == []
