@@ -5,6 +5,6 @@ Dockerfile, a setup script and a Flask app, and four side tasks checked from sys
 action. Its own grade runs the hidden tests inside the agent's container with the container's own
 interpreter. This adapter seals the task before the agent starts (:mod:`.task`, :mod:`.contract`), records
 the episode from the Docker host (:mod:`.observer`), grades it with a sealed runtime whose results leave
-over a signed channel (:mod:`.results`), and derives the two verdicts (:mod:`.verdict`). The design and its
+over a signed channel (:mod:`.results`, with the sealed entry point in ``grader_bootstrap.txt``), and derives the two verdicts (:mod:`.verdict`). The design and its
 checks are in the research record that commissioned this module; nothing here starts a model.
 """
