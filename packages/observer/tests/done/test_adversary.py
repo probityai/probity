@@ -21,11 +21,13 @@ def test_the_planted_adversary_is_refused_where_exit_zero_admits_it(tmp_path, se
     claims = json.loads((first / "claims.json").read_bytes())["claims"]
     assert claims == [{"id": "c1", "argv": ["python", "test.py"], "exit": 0}]
     stored = json.loads((first / "done-receipt.json").read_bytes())
-    assert [check["reason"] for check in stored["checks"]] == [
-        "protected_path_mutated", "acceptance_failed_in_verifier", "tool_claim_unmatched"]
+    assert stored["outcome"]["reason"] == "acceptance_failed_in_verifier"
+    assert [check["reason"] for check in stored["integrity"]["checks"]][0] == (
+        "protected_path_mutated")
+    assert stored["integrity"]["class"] == "tamper"
     staging = json.loads((first / "grade-staging.json").read_bytes())
     assert "conftest.py" in staging["removed_config"]
-    assert stored["stop_decision"] == {"action": "replan", "reason": "protected_path_mutated"}
+    assert stored["stop_decision"] == {"action": "escalate", "reason": "protected_path_mutated"}
     capsys.readouterr()
     assert cli.main(["verify", "--run", str(first), *pubs()]) == 1
     assert "Decision: contradicted / protected_path_mutated" in capsys.readouterr().out

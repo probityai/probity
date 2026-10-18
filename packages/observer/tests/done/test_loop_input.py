@@ -6,12 +6,13 @@ from types import SimpleNamespace
 
 from probity_observer.done import loop, policy
 
-PASSED = [{"claim_type": "acceptance_observed/v1", "decision": "supported"}]
-FAILED = [{"claim_type": "acceptance_observed/v1", "decision": "contradicted"}]
+PASSED = {"outcome": {"decision": "supported", "reason": "acceptance_passed_in_verifier"}}
+FAILED = {"outcome": {"decision": "contradicted", "reason": "acceptance_failed_in_verifier"}}
+OPEN = {"outcome": {"decision": "not_established", "reason": "no_calls_intercepted"}}
 
 
-def attempt(action, reason, checks):
-    return loop.Attempt(2, Path("attempt-2"), {}, policy.Decision(action, reason), {}, checks)
+def attempt(action, reason, record):
+    return loop.Attempt(2, Path("attempt-2"), {}, policy.Decision(action, reason), record)
 
 
 def test_a_parser_outcome_with_passing_tests_asks_for_the_run():
@@ -24,7 +25,7 @@ def test_no_feedback_after_any_other_continue():
     assert loop.next_input(attempt("continue", "no_tool_claims", FAILED), None) is None
     assert loop.next_input(attempt("continue", "observation_coverage_unestablished", PASSED),
                            None) is None
-    assert loop.next_input(attempt("continue", "no_tool_claims", None), None) is None
+    assert loop.next_input(attempt("continue", "tool_exit_unobserved", OPEN), None) is None
 
 
 def test_a_replan_carries_the_refusal(monkeypatch):
@@ -51,9 +52,9 @@ def test_the_loop_clears_feedback_after_a_replan(tmp_path, monkeypatch):
         (spec.out / f"attempt-{number}").mkdir()
         (spec.out / f"attempt-{number}" / "launch.json").write_text(
             '{"start_tarball_sha256": "s"}')
-        action, reason, checks = next(decisions)
+        action, reason, record = next(decisions)
         return loop.Attempt(number, tmp_path, {}, policy.Decision(action, reason),
-                            {"attempt": number}, checks)
+                            {"attempt": number, **record})
     monkeypatch.setattr(loop, "attempt", fake_attempt)
     monkeypatch.setattr(loop, "baseline_ids", lambda bundle: [])
     monkeypatch.setattr(loop, "write_loop", lambda *args: None)

@@ -2,8 +2,8 @@
 
 Each attempt launches the unmodified agent with the three sensors (:mod:`..launch`), signs
 the observer's records with the host key, parses the agent's claims, grades its final tree
-in fresh containers (:mod:`.verify_run`), combines the checks into the done verdict
-(:mod:`.receipt`), writes one attempt record, lets :func:`.policy.decide` choose the action
+in fresh containers (:mod:`.verify_run`), derives the receipt's two verdicts, outcome and
+integrity (:mod:`.receipt`), writes one attempt record, lets :func:`.policy.decide` choose the action
 from the chain of attempt records, and signs a receipt carrying the table's digest and the
 decision. ``replan`` resets the workspace from the sealed start tarball and hands only the
 reason code to the next attempt in ``PROBITY_DONE_FEEDBACK``.
@@ -13,7 +13,7 @@ The loop record ``loop.json`` (``probity-done-loop/v1``, signed by the harness k
 commands and every attempt record, so :func:`.policy.replay_chain` recomputes each
 transition. It is written after every attempt, so a run stopped mid-way still ends its chain
 with the last attempt it graded. An attempt the wall-clock budget cut short is graded like any
-other, with ``claimed_done: false``, as is one whose claims hold no passing run.
+other; whether the agent claimed done is the claims record's own ``completion.asserted``.
 """
 
 from __future__ import annotations
@@ -79,7 +79,6 @@ class Attempt:
     verdict: dict[str, Any]
     decision: policy.Decision
     record: dict[str, Any]
-    checks: list[dict[str, Any]] | None = None
 
 
 def parse_claims(transcript: str, kind: str, visible: list[str] | None,
@@ -87,6 +86,13 @@ def parse_claims(transcript: str, kind: str, visible: list[str] | None,
     if kind == "claude-stream":
         return claim_parser.from_claude_stream(transcript, commands)
     return claim_parser.from_text(transcript, visible, commands)
+
+
+def final_text(transcript: str, kind: str) -> str:
+    """The agent's final text block, which says whether it asserted done."""
+    if kind == "claude-stream":
+        return claim_parser.final_text_from_claude_stream(transcript)
+    return claim_parser.final_text(transcript)
 
 
 def agent_commands(contract: dict[str, Any]) -> list[dict[str, Any]] | None:
@@ -142,20 +148,20 @@ def _collection_failed(contract: dict[str, Any], grade: dict[str, Any] | None) -
                for item in grade["results"])
 
 
-def _claims_a_pass(run: Path) -> bool:
-    """Whether the agent claimed a passing run of a sealed command (``claims.json``): an
-    attempt that ended without one did not claim done, whatever its exit."""
-    path = run / "claims.json"
-    if not path.is_file():
-        return False
-    return any(claim.get("exit") == 0 for claim in json.loads(path.read_bytes())["claims"])
+def _completion_claimed(run: Path) -> bool:
+    """The claims record's ``completion.asserted``: whether the agent asserted done."""
+    return bool(json.loads((run / "claims.json").read_bytes())["completion"]["asserted"])
+
+
+def _axis(axis: dict[str, Any]) -> dict[str, Any]:
+    """The part of one receipt verdict the policy reads."""
+    return {key: axis[key] for key in ("decision", "reason", "class") if key in axis}
 
 
 def attempt_record(number: int, run: Path, contract: dict[str, Any], workspace: Path,
-                   verdict: dict[str, Any], grade: dict[str, Any] | None, flagged: bool,
+                   predicate: dict[str, Any], grade: dict[str, Any] | None, flagged: bool,
                    limit_s: float, interrupted_by_budget: bool,
-                   staging_refused: bool,
-                   checks: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+                   staging_refused: bool) -> dict[str, Any]:
     """The attempt's entry in the chain: every input :func:`.policy.decide` reads."""
     observation = json.loads((run / "observation.json").read_bytes())
     launched = json.loads((run / "launch.json").read_bytes())
@@ -167,18 +173,17 @@ def attempt_record(number: int, run: Path, contract: dict[str, Any], workspace: 
         timed_out, elapsed, limit_s, launch_receipt.get("container_exit"),
         _collection_failed(contract, grade), int(launched.get("orphans_killed", 0)),
         staging_refused)
-    if verdict["decision"] == "contradicted":
-        attribution = policy.attribute_refusal(checks or []) or attribution
     events = observation.get("events", [])
     return {
         "attempt": number,
         "contract_sha256": sha256((run / "contract.json").read_bytes()),
         "tree_sha256": tree["tree_sha256"],
         "ast_tree_sha256": drift.ast_tree_sha256(workspace),
-        "verdict": verdict["decision"],
-        "reason": verdict["reason"],
+        "outcome": _axis(predicate["outcome"]),
+        "integrity": _axis(predicate["integrity"]),
+        "accepted": predicate["accepted"],
+        "completion_claimed": _completion_claimed(run),
         "attribution": attribution,
-        "claimed_done": not timed_out and not flagged and _claims_a_pass(run),
         "flagged": flagged,
         "passed_ids": sorted(item["id"] for item in (grade or {}).get("results", [])
                              if item["exit"] == 0),
@@ -221,9 +226,12 @@ def attempt(spec: LoopSpec, keys: Keys, workspace: Path, number: int, table: dic
     contract = json.loads(contract_bytes)
     transcript = (run / "transcript.txt").read_text("utf-8", "replace")
     flagged = FLAG in transcript
+    kept_claims = parse_claims(transcript, spec.transcript, _visible_argv(contract),
+                               agent_commands(contract))
     receipt.write_record(run, "claims", claim_parser.record(
-        parse_claims(transcript, spec.transcript, _visible_argv(contract),
-                     agent_commands(contract)), claim_id, invocation),
+        kept_claims, claim_id, invocation,
+        claim_parser.completion(final_text(transcript, spec.transcript),
+                                kept_claims)),
         keys.harness)
     tree = json.loads((run / "tree.json").read_bytes())
     interrupted = limit < spec.timeout_seconds and bool(
@@ -234,12 +242,13 @@ def attempt(spec: LoopSpec, keys: Keys, workspace: Path, number: int, table: dic
                                   verify_run.DockerRunner(spec.grader_image or spec.image),
                                   keys.grader)
     except verify_run.GradeError as error:
-        verdict = {"decision": "not_established", "reason": "staging_refused",
-                   "vantage": "unestablished"}
-        record = attempt_record(number, run, contract, workspace, verdict, None, flagged,
-                                limit, interrupted, staging_refused=True)
+        refused = {"decision": "not_established", "reason": "staging_refused"}
+        record = attempt_record(number, run, contract, workspace,
+                                {"outcome": refused, "integrity": refused, "accepted": False},
+                                None, flagged, limit, interrupted, staging_refused=True)
         (run / "staging-refused.txt").write_text(f"{error}\n")
-        return _judge(spec, keys, run, table, chain, baseline, record, None, verdict)
+        return _judge(spec, keys, run, table, chain, baseline, record, None,
+                      {**refused, "vantage": "unestablished"})
     (run / "grade.json").write_bytes(graded.grade_bytes)
     (run / "grade.dsse.json").write_bytes(graded.envelope)
     (run / "grade-staging.json").write_bytes(encode(graded.staging))
@@ -247,12 +256,11 @@ def attempt(spec: LoopSpec, keys: Keys, workspace: Path, number: int, table: dic
     if witness is not None:
         witness(run)
     predicate = receipt.assemble(run, keys.pins(spec.observed_party, spec.allow_no_heldout))
-    record = attempt_record(number, run, contract, workspace, predicate["verdict"],
-                            graded.grade, flagged, limit, interrupted, staging_refused=False,
-                            checks=predicate["checks"])
+    record = attempt_record(number, run, contract, workspace, predicate, graded.grade, flagged,
+                            limit, interrupted, staging_refused=False)
     predicate["verifier_isolation"] = graded.isolation
     return _judge(spec, keys, run, table, chain, baseline, record, predicate,
-                  predicate["verdict"])
+                  receipt.summary(predicate))
 
 
 def _judge(spec: LoopSpec, keys: Keys, run: Path, table: dict[str, Any],
@@ -265,8 +273,7 @@ def _judge(spec: LoopSpec, keys: Keys, run: Path, table: dict[str, Any],
         predicate.update(policy={"table_sha256": policy.table_sha256(table)},
                          stop_decision=decision.record())
         receipt.sign_receipt(run, predicate, keys.harness)
-    return Attempt(record["attempt"], run, verdict, decision, record,
-                   predicate["checks"] if predicate is not None else None)
+    return Attempt(record["attempt"], run, verdict, decision, record)
 
 
 def write_loop(spec: LoopSpec, keys: Keys, table: dict[str, Any], baseline: list[str],
@@ -320,7 +327,9 @@ def refusal_detail(run: Path, contract: dict[str, Any]) -> list[str]:
     """What the refusing checks compared, in lines the agent can act on.
 
     For an acceptance failure, each failed visible command by argv with its exit and the
-    count of failed held-out commands (never their argv); for a tool-claim refusal, each
+    count of failed held-out commands (never their argv); for a probe or a visible-test
+    detector, what it found; for a completion assertion, each visible command it did not
+    back; for a tool-claim refusal, each
     claim that did not match beside the runs the observer saw of that command (working
     directory, executable, argv, step, exit) and the step and path of the last edit.
     """
@@ -342,6 +351,24 @@ def refusal_detail(run: Path, contract: dict[str, Any]) -> list[str]:
                 lines.append(f"{len(held)} held-out check(s) you cannot see failed")
                 lines.extend(f"held-out check {_probe(item['id'])}: {why[item['id']]}"
                              for item in held if item["id"] in why)
+    probes = verify / "probes.decision.json"
+    if probes.is_file():
+        for check in json.loads(probes.read_bytes()).get("checks", []):
+            if check.get("id") == "visible_detectors":
+                lines.extend(f"the visible test was passed by {item['reason']}"
+                             for item in check.get("findings", []) if item.get("refuses"))
+            for item in check.get("active", []) if check.get("id") == "probes" else []:
+                if item["exit"] != 0:
+                    lines.append(f"check {_probe(item['id'])} failed"
+                                 + (f": {why[item['id']]}" if item["id"] in why else ""))
+    completion = verify / "completion.decision.json"
+    if completion.is_file():
+        for check in json.loads(completion.read_bytes()).get("checks", []):
+            for item in check.get("commands", []) if check.get("id") == "visible_commands" else []:
+                if item["status"] != "matched" and item["id"] in argv:
+                    lines.append(f"you said the task is done, but `{_shell(argv[item['id']])}`: "
+                                 f"{item['status']} (last edit at step "
+                                 f"{item.get('last_edit_step')})")
     decided = verify / "tool-claims.decision.json"
     if decided.is_file() and (run / "claims.json").is_file():
         observation = json.loads((run / "observation.json").read_bytes())
@@ -401,13 +428,13 @@ def run_loop(spec: LoopSpec, keys: Keys,
 
 def next_input(current: Attempt, spec: LoopSpec) -> str | None:
     """The next attempt's first input: the refusal after ``replan``; after a ``continue`` on a
-    parser outcome whose acceptance commands passed, a request to run the tests and leave
+    parser outcome whose outcome was supported, a request to run the tests and leave
     their output; else nothing, so no earlier refusal's text reaches a later attempt."""
     decision = current.decision
     if decision.action == "replan":
         return policy.replan_input(decision, current.number,
                                    refusal_detail(current.run, contract_record(spec)))
     if (decision.action == "continue" and decision.reason in policy.PARSER_REASONS
-            and policy.acceptance_supported(current.checks)):
+            and policy.outcome_supported(current.record)):
         return policy.continue_input(decision, current.number)
     return None
