@@ -18,3 +18,7 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+  - package-ecosystem: uv
+    directory: /packages/observer
+    schedule:
+      interval: weekly

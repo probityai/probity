@@ -4,6 +4,9 @@
 
 [tool.uv.workspace]
 members = ["packages/*"]
+# packages/observer keeps its own lock: its Python floor (3.12) would bind
+# every member of this workspace. scripts/workspace.py still reads it.
+exclude = ["packages/observer"]
 
 [tool.uv]
 package = false
@@ -22,7 +25,9 @@ addopts = ["--strict-markers"]
 # widening it is one change here that applies to the whole workspace.
 [tool.ruff]
 target-version = "py311"
-extend-exclude = ["packages/*/vectors-*/cases"]
+# packages/observer brings its own checks; its interop experiments are frozen
+# with recorded file digests. Row CONS-ORG-OBSERVER-RUFF holds the rest.
+extend-exclude = ["packages/*/vectors-*/cases", "packages/observer"]
 
 [tool.ruff.lint.per-file-ignores]
 # A resource directory read with importlib.resources, not an importable module;

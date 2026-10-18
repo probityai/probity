@@ -114,9 +114,16 @@ jobs:
             cargo test --workspace --locked
           fi
 
+  observer-distribution:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['agent-evidence-observer']
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: agent-evidence-observer
+
   ci-ok:
     if: always()
-    needs: [changes, lint, probity-verify, probityai, probityai-distribution, rust]
+    needs: [changes, lint, probity-verify, probityai, probityai-distribution, rust, observer-distribution]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed
