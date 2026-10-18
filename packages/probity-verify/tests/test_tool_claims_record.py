@@ -56,6 +56,5 @@ def test_completion_is_required(claims):
 
 def test_the_v1_record_is_refused(claims):
     claims["schema_version"] = "probity-tool-claims/v1"
-    del claims["completion"]
     with pytest.raises(CaseError, match="schema_version"):
         done_records.claims(encode(claims))
