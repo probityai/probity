@@ -17,6 +17,7 @@ import json
 import os
 import posixpath
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -194,15 +195,18 @@ def run_replay(scratch: Path, argv: Sequence[str], child_argv, timeout: float,
                "mode": mode, "run_timeout": timeout, "out": str(scratch / "replay.json")}
     (scratch / "request.json").write_text(json.dumps(request))
     limit = timeout * DETERMINISM_RUNS + 30 if mode == "determinism" else timeout
-    try:
-        done = subprocess.run([sys.executable, "-I", "-m", "probity_observer.done.replay",
+    parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
                                str(scratch / "request.json")], stdin=subprocess.DEVNULL,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                              timeout=limit, check=False)
+                              start_new_session=True)
+    try:
+        parent.wait(timeout=limit)
     except subprocess.TimeoutExpired:
+        stop_replay_parent(parent)
         if stopped is not None:
             stopped.append(True)
         return TIMEOUT_EXIT
+    done = parent
     if (scratch / "replay.json").is_file():
         report = json.loads((scratch / "replay.json").read_text())
         if stopped is not None and report.get("timed_out") is True:
@@ -210,6 +214,30 @@ def run_replay(scratch: Path, argv: Sequence[str], child_argv, timeout: float,
         if results is not None:
             results.append({"argv": list(argv), **report})
     return done.returncode
+
+
+REPLAY_STOP_GRACE = 30.0
+
+
+def stop_replay_parent(parent: subprocess.Popen) -> None:
+    """Stop a replay parent that outran its limit without orphaning its candidate children.
+
+    Each child runs in its own session (:class:`.replay.Child`), out of reach of a signal to the
+    parent's group, so the parent is asked first: SIGTERM makes it close every child it started
+    (its own ``close_all``). Only a parent that does not finish within the grace is killed,
+    with its whole group."""
+    try:
+        os.killpg(parent.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        parent.wait(timeout=REPLAY_STOP_GRACE)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(parent.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        parent.wait()
 
 
 class SubprocessRunner:
