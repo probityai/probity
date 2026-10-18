@@ -129,8 +129,8 @@
     },
     {
       "path": "src/probity_verify/adapters/probe_observed.py",
-      "bytes": 6869,
-      "sha256": "964fd81b9d79978cb4dd204acbed8aa55b0f95a6f0345eecdde7190fdf3fdbd7"
+      "bytes": 7033,
+      "sha256": "7a5387e21256ba7d6714c8b01c7810dc457a7e3997d15af492312d216186113a"
     },
     {
       "path": "src/probity_verify/adapters/protected_paths.py",

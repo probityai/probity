@@ -280,6 +280,14 @@ class TestR6InProcessTwin:
         assert decide(tmp_path, self.twinned(**change), self.CLAIM)["decision"] != (
             "contradicted")
 
+    def test_the_twin_outranks_a_gaming_detector(self, tmp_path):
+        # Tamper is the worse class, so a refusing detector must not hide a subverted twin.
+        records = self.twinned()
+        records["grade"]["visible_detectors"] = {"status": "ran", "findings": [
+            {"reason": "isolated_branch", "refuses": True, "evidence": {}}]}
+        assert outcome(decide(tmp_path, records, self.CLAIM)) == (
+            "contradicted", "in_process_exit_subverted")
+
     def test_a_passing_trusted_run_never_fires(self, tmp_path):
         records = self.twinned(trusted_exit=0, kind=None)
         assert outcome(decide(tmp_path, records, self.CLAIM)) == ("supported",
