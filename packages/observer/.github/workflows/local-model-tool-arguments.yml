@@ -1,0 +1,147 @@
+name: Prospective native tool arguments and abstention
+on:
+  push:
+    paths: [interop/local-model-tool-arguments-2026-10-03/**, .github/workflows/local-model-tool-arguments.yml]
+  pull_request:
+    paths: [interop/local-model-tool-arguments-2026-10-03/**, .github/workflows/local-model-tool-arguments.yml]
+  workflow_dispatch:
+    inputs:
+      reviewed_source_head:
+        description: Exact reviewed source head; explicit inference authorization
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  offline-controls:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Install ordinary CI test tools (separate from native preparation)
+        run: python -m pip install pytest==8.3.3 hypothesis==6.168.3 ruff==0.15.8
+      - run: python -B -m pytest interop/local-model-tool-arguments-2026-10-03/tests -q
+      - run: python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' interop/local-model-tool-arguments-2026-10-03/*.py
+      - name: Really install and replay disclosed synthetic consumer controls
+        run: python -I -B interop/local-model-tool-arguments-2026-10-03/verify_installation.py . installed-tool-argument-controls
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tool-argument-installed-offline-controls-${{ github.sha }}
+          path: installed-tool-argument-controls
+          if-no-files-found: error
+          retention-days: 90
+  retained-native-reader:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Authenticate and extract the retained original packet without executing it
+        run: |
+          python -I -B - <<'PYTHON'
+          import hashlib, stat, zipfile
+          from pathlib import Path, PurePosixPath
+          selected=Path('interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382.zip')
+          raw=selected.read_bytes()
+          assert len(raw)==2639358 and hashlib.sha256(raw).hexdigest()=='67ef1e638e814c71bbf354fe9895ea0faf5d9ef11eae2ff76b10b065bd7a7e54'
+          output=Path('retained-tool-argument-packet');output.mkdir()
+          with zipfile.ZipFile(selected) as archive:
+              members=archive.infolist()
+              assert len(members)==331 and sum(item.file_size for item in members)<=64*1024*1024
+              assert len({item.filename for item in members})==len(members)
+              for item in members:
+                  relative=PurePosixPath(item.filename)
+                  mode=item.external_attr>>16
+                  assert not relative.is_absolute() and '..' not in relative.parts and len(relative.parts)<=32
+                  assert not item.is_dir() and stat.S_IFMT(mode) in (0,stat.S_IFREG)
+                  target=output.joinpath(*relative.parts);target.parent.mkdir(parents=True,exist_ok=True)
+                  with target.open('xb') as handle:handle.write(archive.read(item))
+          PYTHON
+      - name: Install the original selected reader and preserve all eight actual quality holds
+        run: |
+          python -I -B interop/local-model-tool-arguments-2026-10-03/consume_actual.py . retained-tool-argument-packet interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382-pins.json retained-tool-argument-consumer --reader-contract interop/local-model-tool-arguments-2026-10-03/reader-source-contract.json --reader-contract-sha256 1cf2a5f3527f72db90ad0881c5dd360bb0775f005cd4cc8971e287015fe400d4
+          python -I -B - <<'PYTHON'
+          import json
+          from pathlib import Path
+          root=Path('retained-tool-argument-consumer')
+          receipt=json.loads((root/'receipt.json').read_bytes())
+          assert receipt['strictExit']==1 and receipt['evidenceExit']==0
+          assert receipt['modelCalls']==receipt['providerCalls']==0
+          assert receipt['qualityDecision']=='hold-tool-decision-quality'
+          assert receipt['wheel']['sha256']=='1688f8bc9aa035301ce585cd6dc7196eb7a437d50e4ce4ce7e26d7a529c6933d'
+          report=json.loads((root/'strict.stdout').read_bytes())
+          retained=Path('interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382-report.json')
+          assert report==json.loads(retained.read_bytes())
+          assert report['population']=={'planned':128,'started':128,'scored':128,'error':0,'unsupported':0,'incomplete':0,'unknown-start':0}
+          assert len(report['quality'])==8 and all(row['fullyCorrectPairs']==row['correctAbstentions']==0 for row in report['quality'])
+          PYTHON
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tool-argument-installed-retained-native-${{ github.sha }}
+          path: retained-tool-argument-consumer
+          if-no-files-found: error
+          retention-days: 90
+  actual-cpu:
+    if: github.event_name == 'workflow_dispatch' && inputs.reviewed_source_head == github.sha
+    needs: offline-controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Verify exact prior archive once and install selected runtime entirely offline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -I -B - <<'PYTHON'
+          import importlib.util
+          from pathlib import Path
+          root=Path('interop/local-model-tool-arguments-2026-10-03').resolve()
+          spec=importlib.util.spec_from_file_location('selected_tool_entry',root/'task_matrix.py')
+          entry=importlib.util.module_from_spec(spec);exec(compile((root/'task_matrix.py').read_bytes(),str(root/'task_matrix.py'),'exec'),entry.__dict__)
+          protocol=entry.active_protocol()
+          from reusable_runtime import prepare_archive,install_runtime
+          prepared=Path('tool-argument-preparation').resolve()
+          prepare_archive(protocol,prepared)
+          install_runtime(protocol,prepared,prepared/'runtime-environment')
+          PYTHON
+      - name: Execute exactly128 prospective native calls with external whole-child observations
+        run: |
+          python -I -B interop/local-model-tool-arguments-2026-10-03/execute_guard.py tool-argument-preparation/run tool-argument-preparation . tool-argument-observer --runtime-python tool-argument-preparation/runtime-environment/bin/python --execution-selection interop/local-model-tool-arguments-2026-10-03/execution-selection.json --execution-selection-sha256 2fc1544ef789303a3c6fe42ac5f4ecc2aded6c0c89255c36412e9122cd994e3a
+      - name: Install and verify the actual packet separately (quality holds remain explicit)
+        run: |
+          python -I -B interop/local-model-tool-arguments-2026-10-03/consume_actual.py . tool-argument-preparation/run tool-argument-preparation/run/consumer-pins.json actual-tool-argument-consumer --reader-contract interop/local-model-tool-arguments-2026-10-03/reader-source-contract.json --reader-contract-sha256 1cf2a5f3527f72db90ad0881c5dd360bb0775f005cd4cc8971e287015fe400d4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tool-argument-cpu-preparation-${{ github.sha }}
+          path: |
+            tool-argument-preparation
+            tool-argument-observer
+            actual-tool-argument-consumer
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tool-argument-cpu-native-packet-${{ github.sha }}
+          path: tool-argument-preparation/run
+          if-no-files-found: warn
+          retention-days: 90

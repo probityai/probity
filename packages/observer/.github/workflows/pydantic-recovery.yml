@@ -1,0 +1,64 @@
+name: Pydantic native deferred recovery
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'interop/pydantic-recovery-2026-10-03/**'
+      - 'src/probity_observer/**'
+      - 'pyproject.toml'
+      - '.github/workflows/pydantic-recovery.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'interop/pydantic-recovery-2026-10-03/**'
+      - 'src/probity_observer/**'
+      - 'pyproject.toml'
+      - '.github/workflows/pydantic-recovery.yml'
+permissions:
+  contents: read
+jobs:
+  native-installed-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: interop/pydantic-recovery-2026-10-03
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13'
+      - name: Install the selected native profile and exact Observer checkout
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements.lock --report install-report.json
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check native process and semantic refusal controls
+        run: |
+          python -m ruff check recovery_*.py probity_pydantic_recovery tests
+          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' recovery_*.py probity_pydantic_recovery tests
+          timeout --signal=TERM --kill-after=5s 180s python -m pytest -q tests --junitxml=test-results.xml
+      - name: Execute and retain a fresh native original
+        run: timeout --signal=TERM --kill-after=5s 240s python recovery_run.py fresh-run --source-revision "$GITHUB_SHA" > fresh-report.json
+      - name: Install a framework-free reader and check host selection
+        run: bash verify_install.sh "$(command -v python)"
+      - name: Retain native history, SQLite, process originals and host receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: pydantic-deferred-recovery-${{ github.sha }}
+          path: |
+            interop/pydantic-recovery-2026-10-03/fresh-run/
+            interop/pydantic-recovery-2026-10-03/fresh-report.json
+            interop/pydantic-recovery-2026-10-03/host-receipts/
+            interop/pydantic-recovery-2026-10-03/host-repeat/
+            interop/pydantic-recovery-2026-10-03/install-report.json
+            interop/pydantic-recovery-2026-10-03/reader-install-report.json
+            interop/pydantic-recovery-2026-10-03/test-results.xml
+            interop/pydantic-recovery-2026-10-03/wheels-sha256.txt
+            interop/pydantic-recovery-2026-10-03/wheels/*.whl
+          if-no-files-found: error
+          retention-days: 90
