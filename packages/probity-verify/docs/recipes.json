@@ -139,8 +139,8 @@
     },
     {
       "path": "src/probity_verify/adapters/tool_claim_match.py",
-      "bytes": 20577,
-      "sha256": "1d5ce5cb15dca226a23e5800a268956d204ea847f76c027878791451d593f76d"
+      "bytes": 21530,
+      "sha256": "208ae5d1b8a5ee11cdaf7226b32de3cd25f1f3b5f5f6e5cc43e7a4de7468cc35"
     },
     {
       "path": "src/probity_verify/adapters/witnessed.py",
