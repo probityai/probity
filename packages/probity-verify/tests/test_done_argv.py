@@ -1,7 +1,6 @@
 """The shared invocation model: honest spellings of one run match, different runs never do."""
 
 import pytest
-
 from probity_verify.adapters.done_argv import Invocation, invocation, unwrap
 
 SEALED = ["pytest", "-q", "tests"]
@@ -36,6 +35,11 @@ def test_reporting_options_order_and_module_runs_are_one_invocation(argv, exe):
 ])
 def test_options_that_choose_or_change_what_runs_never_match(argv):
     assert invocation(argv) != invocation(SEALED)
+
+
+def test_options_that_choose_what_runs_match_in_any_order():
+    sealed = ["pytest", "-q", "tests", "-k", "fast", "-m", "unit"]
+    assert invocation(["pytest", "-m", "unit", "-k", "fast", "tests"]) == invocation(sealed)
 
 
 def test_a_script_keeps_its_arguments_in_order():
