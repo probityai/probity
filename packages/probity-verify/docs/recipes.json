@@ -109,13 +109,13 @@
     },
     {
       "path": "src/probity_verify/adapters/done_receipt.py",
-      "bytes": 19529,
-      "sha256": "43b71fd419ed336c1e1030ceb33e18071dcf26204a8ae968bbf3d665c6e2b125"
+      "bytes": 19626,
+      "sha256": "4a6fcc9d7300147ba4816a42ac5abdc333cd3dfcefcdb5f4a818d0af9affe919"
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 37070,
-      "sha256": "11010d818a8b85d95c642c74995e928ce283e41bda322a41fdca02f2e4ad4222"
+      "bytes": 42244,
+      "sha256": "e73404b8cbd764a5e423635af15e956218b0fee117ee6e393a9465e18cb78db2"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
@@ -129,13 +129,13 @@
     },
     {
       "path": "src/probity_verify/adapters/probe_observed.py",
-      "bytes": 4029,
-      "sha256": "04d60e2196e4c0351c857ce4ad67d7c33c7a927a62c177f0fe10f5df2fbcac23"
+      "bytes": 6869,
+      "sha256": "964fd81b9d79978cb4dd204acbed8aa55b0f95a6f0345eecdde7190fdf3fdbd7"
     },
     {
       "path": "src/probity_verify/adapters/protected_paths.py",
-      "bytes": 7396,
-      "sha256": "c32f497075ff8e1d72250c27df52b9f95c16a96bf88d5a8c8f2879cc978a4da9"
+      "bytes": 8352,
+      "sha256": "5a6342f1d736579a774009140f0c82fd9ad2bf6e28660ab2410c5cdd2520a46e"
     },
     {
       "path": "src/probity_verify/adapters/source_coverage.py",
@@ -149,8 +149,8 @@
     },
     {
       "path": "src/probity_verify/adapters/tool_claim_match.py",
-      "bytes": 21530,
-      "sha256": "208ae5d1b8a5ee11cdaf7226b32de3cd25f1f3b5f5f6e5cc43e7a4de7468cc35"
+      "bytes": 22170,
+      "sha256": "c2c494d4808c270b537254485fa2104000b52853d7d1f09f9d558b1a6e85a44f"
     },
     {
       "path": "src/probity_verify/adapters/witnessed.py",

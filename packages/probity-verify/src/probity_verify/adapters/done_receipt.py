@@ -89,6 +89,8 @@ REASON_CLASS = {
     "protected_path_mutated": "tamper",
     "protected_path_digest_changed": "tamper",
     "external_effect_on_grader_path": "tamper",
+    "external_effect_on_execution_surface": "tamper",
+    "in_process_exit_subverted": "tamper",
     "tracer_terminated_prematurely": "tamper",
     "coverage_sabotaged": "tamper",
     "tool_claim_shadowed": "tamper",
