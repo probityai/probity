@@ -53,7 +53,19 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
         with:
           version: '0.12.23'
+      # The verifier bundles and archives its repository root and checks the
+      # two agree, so give it a checkout whose root is the package tree: a
+      # commit with tree HEAD:packages/observer and parent HEAD.
+      - name: Select the package tree as its own source root
+        run: |
+          set -euo pipefail
+          tree="$(git rev-parse HEAD:packages/observer)"
+          date="$(git show -s --format=%cI HEAD)"
+          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/observer tree of $GITHUB_SHA")"
+          git worktree add --detach "$RUNNER_TEMP/observer-root" "$commit"
+          test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse "HEAD^{tree}")" = "$tree"
       - name: Run the installed verifier over every public vector
+        working-directory: ${{ runner.temp }}/observer-root
         run: |
           set -euo pipefail
           if [[ "$RUNNER_OS" == "Windows" ]]; then
