@@ -1,0 +1,2389 @@
+{
+  "runs": [
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": 0.0,
+              "admitted_descendants": 0,
+              "clade_rate": 0.888235294117647,
+              "descendants": 10,
+              "evaluated_descendants": 10,
+              "failures": 76,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 604,
+              "rejected_descendants": 10
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 4,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 36,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0004",
+                  "failures": 2,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->62ae67ea3d45:parent_run_1",
+                    "30b96aa50fe4->9612767a9e18:parent_run_1",
+                    "30b96aa50fe4->d688dbb6b607:parent_run_1",
+                    "30b96aa50fe4->8a847b9f3269:parent_run_1"
+                  ],
+                  "passes": 38,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0005",
+                  "failures": 6,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->62ae67ea3d45:parent_run_2",
+                    "30b96aa50fe4->9612767a9e18:parent_run_2",
+                    "30b96aa50fe4->d688dbb6b607:parent_run_2",
+                    "30b96aa50fe4->8a847b9f3269:parent_run_2"
+                  ],
+                  "passes": 34,
+                  "role": "parent_run_2"
+                },
+                {
+                  "eval_id": "eval-0012",
+                  "failures": 2,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->0527ae43faee:parent_run_1",
+                    "30b96aa50fe4->422d44899f04:parent_run_1"
+                  ],
+                  "passes": 38,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0013",
+                  "failures": 4,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->0527ae43faee:parent_run_2",
+                    "30b96aa50fe4->422d44899f04:parent_run_2"
+                  ],
+                  "passes": 36,
+                  "role": "parent_run_2"
+                },
+                {
+                  "eval_id": "eval-0017",
+                  "failures": 4,
+                  "generation": 3,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->9d77cdc8d762:parent_run_1",
+                    "30b96aa50fe4->c9f34cf06e3e:parent_run_1",
+                    "30b96aa50fe4->915972bc7879:parent_run_1",
+                    "30b96aa50fe4->0dfbd438d9a0:parent_run_1"
+                  ],
+                  "passes": 36,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0018",
+                  "failures": 3,
+                  "generation": 3,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->9d77cdc8d762:parent_run_2",
+                    "30b96aa50fe4->c9f34cf06e3e:parent_run_2",
+                    "30b96aa50fe4->915972bc7879:parent_run_2",
+                    "30b96aa50fe4->0dfbd438d9a0:parent_run_2"
+                  ],
+                  "passes": 37,
+                  "role": "parent_run_2"
+                }
+              ],
+              "failures": 25,
+              "invalid": 0,
+              "passes": 255,
+              "rate": 0.9107142857142857
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "30b96aa50fe4"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.825,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 7,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 33,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0006",
+                  "failures": 7,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->62ae67ea3d45:candidate_run"
+                  ],
+                  "passes": 33,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 7,
+              "invalid": 0,
+              "passes": 33,
+              "rate": 0.825
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "62ae67ea3d451308ec72419141f5ca7be999db5bcb4f38437ce28b52d2a83387",
+              "decided_at": "2026-10-11T19:34:36+00:00",
+              "decision_id": "30b96aa50fe4->62ae67ea3d45",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "62ae67ea3d45"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.85,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 6,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 34,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0007",
+                  "failures": 6,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->9612767a9e18:candidate_run"
+                  ],
+                  "passes": 34,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 6,
+              "invalid": 0,
+              "passes": 34,
+              "rate": 0.85
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "9612767a9e187084b8fed99f10c5ad1b3172f4f165ae2780c97f35a2bdaf1355",
+              "decided_at": "2026-10-11T19:34:37+00:00",
+              "decision_id": "30b96aa50fe4->9612767a9e18",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "9612767a9e18"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.85,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 6,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 34,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0008",
+                  "failures": 6,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->d688dbb6b607:candidate_run"
+                  ],
+                  "passes": 34,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 6,
+              "invalid": 0,
+              "passes": 34,
+              "rate": 0.85
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "d688dbb6b60761629fe5660617a136f7ac86a31ed3d8504eb82dbfda034a38e3",
+              "decided_at": "2026-10-11T19:34:38+00:00",
+              "decision_id": "30b96aa50fe4->d688dbb6b607",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "d688dbb6b607"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.925,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 3,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 37,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0009",
+                  "failures": 3,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->8a847b9f3269:candidate_run"
+                  ],
+                  "passes": 37,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 3,
+              "invalid": 0,
+              "passes": 37,
+              "rate": 0.925
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "8a847b9f3269b68a1eff64e0847b048e2937017fdd881f0d4c0ef930c401b37b",
+              "decided_at": "2026-10-11T19:34:38+00:00",
+              "decision_id": "30b96aa50fe4->8a847b9f3269",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "8a847b9f3269"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.7,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 12,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 28,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0014",
+                  "failures": 12,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->0527ae43faee:candidate_run"
+                  ],
+                  "passes": 28,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 12,
+              "invalid": 0,
+              "passes": 28,
+              "rate": 0.7
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "0527ae43faeec1ebfbdcc1d1cea5031dc77b6bd7dff43399f023ae1717b34aeb",
+              "decided_at": "2026-10-11T20:11:21+00:00",
+              "decision_id": "30b96aa50fe4->0527ae43faee",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "0527ae43faee"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.95,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 2,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 38,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0015",
+                  "failures": 2,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->422d44899f04:candidate_run"
+                  ],
+                  "passes": 38,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 2,
+              "invalid": 0,
+              "passes": 38,
+              "rate": 0.95
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "422d44899f0484564e2fcb5818bf262aae68ca1d09c2a74b5c55d0e9588ae0dc",
+              "decided_at": "2026-10-11T20:11:21+00:00",
+              "decision_id": "30b96aa50fe4->422d44899f04",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "422d44899f04"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.775,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 31,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0019",
+                  "failures": 9,
+                  "generation": 3,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->9d77cdc8d762:candidate_run"
+                  ],
+                  "passes": 31,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 31,
+              "rate": 0.775
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "9d77cdc8d762977e15e227258dc8249118f5c7d6dc67e146615482f1a27561b4",
+              "decided_at": "2026-10-11T21:02:43+00:00",
+              "decision_id": "30b96aa50fe4->9d77cdc8d762",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "9d77cdc8d762"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.975,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 1,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 39,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0020",
+                  "failures": 1,
+                  "generation": 3,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->c9f34cf06e3e:candidate_run"
+                  ],
+                  "passes": 39,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 1,
+              "invalid": 0,
+              "passes": 39,
+              "rate": 0.975
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "c9f34cf06e3e3bea96cb9c6b0f862906d244f0bbce1ea71b49f2735e71ca10e8",
+              "decided_at": "2026-10-11T21:02:44+00:00",
+              "decision_id": "30b96aa50fe4->c9f34cf06e3e",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "c9f34cf06e3e"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.95,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 2,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 38,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0021",
+                  "failures": 2,
+                  "generation": 3,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->915972bc7879:candidate_run"
+                  ],
+                  "passes": 38,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 2,
+              "invalid": 0,
+              "passes": 38,
+              "rate": 0.95
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "915972bc78798fcb95704bed5548a41d1348e68ecf932e1b22c37013df3a5fec",
+              "decided_at": "2026-10-11T21:02:44+00:00",
+              "decision_id": "30b96aa50fe4->915972bc7879",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "915972bc7879"
+          },
+          {
+            "attribution_parent": "30b96aa50fe4",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.925,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 3,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 37,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0022",
+                  "failures": 3,
+                  "generation": 3,
+                  "invalid": 0,
+                  "named_by": [
+                    "30b96aa50fe4->0dfbd438d9a0:candidate_run"
+                  ],
+                  "passes": 37,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 3,
+              "invalid": 0,
+              "passes": 37,
+              "rate": 0.925
+            },
+            "gain": null,
+            "parent": "30b96aa50fe4",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "0dfbd438d9a088bdf8343a229a20662814e04b1c97908b5e08fa4d64ce7e95bb",
+              "decided_at": "2026-10-11T21:02:45+00:00",
+              "decision_id": "30b96aa50fe4->0dfbd438d9a0",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "0dfbd438d9a0"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "30b96aa50fe4",
+        "type": "archive"
+      },
+      "name": "agentdojo/banking-evolve-20261011T1446",
+      "selection": {
+        "comparison_parent": "30b96aa50fe4",
+        "reason": {
+          "candidates": [
+            {
+              "admission_yield": 0.0,
+              "admitted_descendants": 0,
+              "clade_rate": 0.888235294117647,
+              "descendants": 10,
+              "failures": 76,
+              "gain_mean": null,
+              "passes": 604,
+              "sample": 0.8899853312534629,
+              "version": "30b96aa50fe4"
+            }
+          ],
+          "formula": "clade-pass-rate/1",
+          "kind": "thompson",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "highest thompson clade score"
+        },
+        "rebase_required": false,
+        "source": "30b96aa50fe4",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.35833333333333334,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 77,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 43,
+              "rejected_descendants": 0
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 25,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 15,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0004",
+                  "failures": 27,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 13,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0005",
+                  "failures": 25,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 15,
+                  "role": "parent_run_2"
+                }
+              ],
+              "failures": 77,
+              "invalid": 0,
+              "passes": 43,
+              "rate": 0.35833333333333334
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "30b96aa50fe4"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "30b96aa50fe4",
+        "type": "archive"
+      },
+      "name": "agentdojo/superseded-banking-lite-evolve-20261011T1524",
+      "selection": {
+        "comparison_parent": "30b96aa50fe4",
+        "reason": {
+          "candidates": [],
+          "formula": "clade-pass-rate/1",
+          "kind": "tip",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "no clade has enough descendants"
+        },
+        "rebase_required": false,
+        "source": "30b96aa50fe4",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": 0.0,
+              "admitted_descendants": 0,
+              "clade_rate": 0.6787878787878788,
+              "descendants": 6,
+              "evaluated_descendants": 6,
+              "failures": 106,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 224,
+              "rejected_descendants": 6
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 9,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 21,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0004",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->fd49312b240c:parent_run_1",
+                    "f79bacb76113->d672a3a82409:parent_run_1",
+                    "f79bacb76113->94d2c42488f3:parent_run_1",
+                    "f79bacb76113->edba0d976a01:parent_run_1",
+                    "f79bacb76113->a257f5d73c21:parent_run_1",
+                    "f79bacb76113->517db050de97:parent_run_1"
+                  ],
+                  "passes": 21,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0005",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->fd49312b240c:parent_run_2",
+                    "f79bacb76113->d672a3a82409:parent_run_2",
+                    "f79bacb76113->94d2c42488f3:parent_run_2",
+                    "f79bacb76113->edba0d976a01:parent_run_2",
+                    "f79bacb76113->a257f5d73c21:parent_run_2",
+                    "f79bacb76113->517db050de97:parent_run_2"
+                  ],
+                  "passes": 21,
+                  "role": "parent_run_2"
+                },
+                {
+                  "eval_id": "eval-0014",
+                  "failures": 9,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 21,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0015",
+                  "failures": 9,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 21,
+                  "role": "parent_run_2"
+                }
+              ],
+              "failures": 45,
+              "invalid": 0,
+              "passes": 105,
+              "rate": 0.7
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "f79bacb76113"
+          },
+          {
+            "attribution_parent": "f79bacb76113",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.7,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 21,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0006",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->fd49312b240c:candidate_run"
+                  ],
+                  "passes": 21,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 21,
+              "rate": 0.7
+            },
+            "gain": null,
+            "parent": "f79bacb76113",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "fd49312b240c3bb9b3b6f614eedf0f7220fd865df00287fa2494590e8e1c549b",
+              "decided_at": "2026-10-11T20:13:24+00:00",
+              "decision_id": "f79bacb76113->fd49312b240c",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": true,
+                "overfit_lint": true,
+                "replay": false
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "fd49312b240c"
+          },
+          {
+            "attribution_parent": "f79bacb76113",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.7,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 21,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0007",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->d672a3a82409:candidate_run"
+                  ],
+                  "passes": 21,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 21,
+              "rate": 0.7
+            },
+            "gain": null,
+            "parent": "f79bacb76113",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "d672a3a824097073553ef1f158f9cc2ac347647eb384e1fc15f6a8d859617069",
+              "decided_at": "2026-10-11T20:13:24+00:00",
+              "decision_id": "f79bacb76113->d672a3a82409",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": true,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "d672a3a82409"
+          },
+          {
+            "attribution_parent": "f79bacb76113",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.7,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 21,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0008",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->94d2c42488f3:candidate_run"
+                  ],
+                  "passes": 21,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 21,
+              "rate": 0.7
+            },
+            "gain": null,
+            "parent": "f79bacb76113",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "94d2c42488f3a4d1e44da84bc9665babbf964f2602622316612c8c1123a226d6",
+              "decided_at": "2026-10-11T20:13:25+00:00",
+              "decision_id": "f79bacb76113->94d2c42488f3",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": true,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "94d2c42488f3"
+          },
+          {
+            "attribution_parent": "f79bacb76113",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.7,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 21,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0009",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->edba0d976a01:candidate_run"
+                  ],
+                  "passes": 21,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 21,
+              "rate": 0.7
+            },
+            "gain": null,
+            "parent": "f79bacb76113",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "edba0d976a01f0f03e6bd7fe101f7f84dcc016def3832395d9392464d3030779",
+              "decided_at": "2026-10-11T20:13:26+00:00",
+              "decision_id": "f79bacb76113->edba0d976a01",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": true,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "edba0d976a01"
+          },
+          {
+            "attribution_parent": "f79bacb76113",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.4666666666666667,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 16,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 14,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0010",
+                  "failures": 16,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->a257f5d73c21:candidate_run"
+                  ],
+                  "passes": 14,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 16,
+              "invalid": 0,
+              "passes": 14,
+              "rate": 0.4666666666666667
+            },
+            "gain": null,
+            "parent": "f79bacb76113",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "a257f5d73c21b053492e0b7fac3301da0454edde628fea5f48aba8358be23f08",
+              "decided_at": "2026-10-11T20:13:26+00:00",
+              "decision_id": "f79bacb76113->a257f5d73c21",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": false
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "a257f5d73c21"
+          },
+          {
+            "attribution_parent": "f79bacb76113",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.7,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 21,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0011",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "f79bacb76113->517db050de97:candidate_run"
+                  ],
+                  "passes": 21,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 21,
+              "rate": 0.7
+            },
+            "gain": null,
+            "parent": "f79bacb76113",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "517db050de975db6f569ce5ed6a0b30d411008ffe904058fdbefa797a10f3f90",
+              "decided_at": "2026-10-11T20:13:27+00:00",
+              "decision_id": "f79bacb76113->517db050de97",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": true,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "517db050de97"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "f79bacb76113",
+        "type": "archive"
+      },
+      "name": "agentdojo/slack-evolve-20261011T1446",
+      "selection": {
+        "comparison_parent": "f79bacb76113",
+        "reason": {
+          "candidates": [
+            {
+              "admission_yield": 0.0,
+              "admitted_descendants": 0,
+              "clade_rate": 0.6787878787878788,
+              "descendants": 6,
+              "failures": 106,
+              "gain_mean": null,
+              "passes": 224,
+              "sample": 0.6802739710270839,
+              "version": "f79bacb76113"
+            }
+          ],
+          "formula": "clade-pass-rate/1",
+          "kind": "thompson",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "highest thompson clade score"
+        },
+        "rebase_required": false,
+        "source": "f79bacb76113",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.3,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 63,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 27,
+              "rejected_descendants": 0
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 21,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 9,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0004",
+                  "failures": 21,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 9,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0005",
+                  "failures": 21,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 9,
+                  "role": "parent_run_2"
+                }
+              ],
+              "failures": 63,
+              "invalid": 0,
+              "passes": 27,
+              "rate": 0.3
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "f79bacb76113"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "f79bacb76113",
+        "type": "archive"
+      },
+      "name": "agentdojo/superseded-slack-lite-evolve-20261011T1524",
+      "selection": {
+        "comparison_parent": "f79bacb76113",
+        "reason": {
+          "candidates": [],
+          "formula": "clade-pass-rate/1",
+          "kind": "tip",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "no clade has enough descendants"
+        },
+        "rebase_required": false,
+        "source": "f79bacb76113",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.8875,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 71,
+              "rejected_descendants": 0
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 3,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 37,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0003",
+                  "failures": 6,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 34,
+                  "role": "parent_rerun"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 71,
+              "rate": 0.8875
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "30b96aa50fe4"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "30b96aa50fe4",
+        "type": "archive"
+      },
+      "name": "agentdojo/superseded-banking-evolve-20261011T1433",
+      "selection": {
+        "comparison_parent": "30b96aa50fe4",
+        "reason": {
+          "candidates": [],
+          "formula": "clade-pass-rate/1",
+          "kind": "tip",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "no clade has enough descendants"
+        },
+        "rebase_required": false,
+        "source": "30b96aa50fe4",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": 0.0,
+              "admitted_descendants": 0,
+              "clade_rate": 0.8018181818181818,
+              "descendants": 6,
+              "evaluated_descendants": 6,
+              "failures": 109,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 441,
+              "rejected_descendants": 6
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 8,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 42,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0004",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->05b1a4551ae7:parent_run_1",
+                    "90796ac85d40->bf9286fef018:parent_run_1",
+                    "90796ac85d40->286241626628:parent_run_1",
+                    "90796ac85d40->7b9b8ba254eb:parent_run_1",
+                    "90796ac85d40->e12469041991:parent_run_1",
+                    "90796ac85d40->d23cd682d166:parent_run_1"
+                  ],
+                  "passes": 41,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0005",
+                  "failures": 7,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->05b1a4551ae7:parent_run_2",
+                    "90796ac85d40->bf9286fef018:parent_run_2",
+                    "90796ac85d40->286241626628:parent_run_2",
+                    "90796ac85d40->7b9b8ba254eb:parent_run_2",
+                    "90796ac85d40->e12469041991:parent_run_2",
+                    "90796ac85d40->d23cd682d166:parent_run_2"
+                  ],
+                  "passes": 43,
+                  "role": "parent_run_2"
+                },
+                {
+                  "eval_id": "eval-0013",
+                  "failures": 7,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 43,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0014",
+                  "failures": 10,
+                  "generation": 2,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 40,
+                  "role": "parent_run_2"
+                }
+              ],
+              "failures": 41,
+              "invalid": 0,
+              "passes": 209,
+              "rate": 0.836
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "90796ac85d40"
+          },
+          {
+            "attribution_parent": "90796ac85d40",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.8,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 10,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 40,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0006",
+                  "failures": 10,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->05b1a4551ae7:candidate_run"
+                  ],
+                  "passes": 40,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 10,
+              "invalid": 0,
+              "passes": 40,
+              "rate": 0.8
+            },
+            "gain": null,
+            "parent": "90796ac85d40",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "05b1a4551ae78e2928c727c61f6f9a47f004ccf98d26ffe59d07e3f949b10266",
+              "decided_at": "2026-10-11T20:51:06+00:00",
+              "decision_id": "90796ac85d40->05b1a4551ae7",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "05b1a4551ae7"
+          },
+          {
+            "attribution_parent": "90796ac85d40",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.86,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 7,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 43,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0007",
+                  "failures": 7,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->bf9286fef018:candidate_run"
+                  ],
+                  "passes": 43,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 7,
+              "invalid": 0,
+              "passes": 43,
+              "rate": 0.86
+            },
+            "gain": null,
+            "parent": "90796ac85d40",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "bf9286fef018e4fc1fb9d29af65eb11ce5f7e38be7bca2e81e6ad001e69189a8",
+              "decided_at": "2026-10-11T20:51:09+00:00",
+              "decision_id": "90796ac85d40->bf9286fef018",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "bf9286fef018"
+          },
+          {
+            "attribution_parent": "90796ac85d40",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.54,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 23,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 27,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0008",
+                  "failures": 23,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->286241626628:candidate_run"
+                  ],
+                  "passes": 27,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 23,
+              "invalid": 0,
+              "passes": 27,
+              "rate": 0.54
+            },
+            "gain": null,
+            "parent": "90796ac85d40",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "286241626628fc4ed263d28a50ef181cd3ce523067bfe1b4332afc11f6c19565",
+              "decided_at": "2026-10-11T20:51:11+00:00",
+              "decision_id": "90796ac85d40->286241626628",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "286241626628"
+          },
+          {
+            "attribution_parent": "90796ac85d40",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.82,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 41,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0009",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->7b9b8ba254eb:candidate_run"
+                  ],
+                  "passes": 41,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 41,
+              "rate": 0.82
+            },
+            "gain": null,
+            "parent": "90796ac85d40",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "7b9b8ba254eb5a381a23c35854776e0643f5daae94b2bdfe525ce3e6ee04d734",
+              "decided_at": "2026-10-11T20:51:14+00:00",
+              "decision_id": "90796ac85d40->7b9b8ba254eb",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "7b9b8ba254eb"
+          },
+          {
+            "attribution_parent": "90796ac85d40",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.82,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 9,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 41,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0010",
+                  "failures": 9,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->e12469041991:candidate_run"
+                  ],
+                  "passes": 41,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 9,
+              "invalid": 0,
+              "passes": 41,
+              "rate": 0.82
+            },
+            "gain": null,
+            "parent": "90796ac85d40",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "e12469041991bfa37a72c23590e7f410cf4600b9c1f1bd377ab777694b2097f4",
+              "decided_at": "2026-10-11T20:51:16+00:00",
+              "decision_id": "90796ac85d40->e12469041991",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "e12469041991"
+          },
+          {
+            "attribution_parent": "90796ac85d40",
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.8,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 10,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 40,
+              "rejected_descendants": 0
+            },
+            "created_by": "improver",
+            "eligible": false,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0011",
+                  "failures": 10,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [
+                    "90796ac85d40->d23cd682d166:candidate_run"
+                  ],
+                  "passes": 40,
+                  "role": "candidate"
+                }
+              ],
+              "failures": 10,
+              "invalid": 0,
+              "passes": 40,
+              "rate": 0.8
+            },
+            "gain": null,
+            "parent": "90796ac85d40",
+            "source": null,
+            "status": "rejected",
+            "stored": false,
+            "verdict": {
+              "admitted": false,
+              "candidate_digest": "d23cd682d1664d2d2c8cd18a1c37bb954a7ef17a974569155efe12e48776bd9f",
+              "decided_at": "2026-10-11T20:51:19+00:00",
+              "decision_id": "90796ac85d40->d23cd682d166",
+              "decisions": 1,
+              "gates": {
+                "authority": true,
+                "benign_twins": true,
+                "cost": true,
+                "heldout": false,
+                "no_regression": false,
+                "overfit_lint": true,
+                "replay": true
+              },
+              "parent_discordance": null,
+              "stable_recoveries": null
+            },
+            "version": "d23cd682d166"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "90796ac85d40",
+        "type": "archive"
+      },
+      "name": "agentdojo/travel-evolve-20261011T1446",
+      "selection": {
+        "comparison_parent": "90796ac85d40",
+        "reason": {
+          "candidates": [
+            {
+              "admission_yield": 0.0,
+              "admitted_descendants": 0,
+              "clade_rate": 0.8018181818181818,
+              "descendants": 6,
+              "failures": 109,
+              "gain_mean": null,
+              "passes": 441,
+              "sample": 0.8037262623504191,
+              "version": "90796ac85d40"
+            }
+          ],
+          "formula": "clade-pass-rate/1",
+          "kind": "thompson",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "highest thompson clade score"
+        },
+        "rebase_required": false,
+        "source": "90796ac85d40",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.32666666666666666,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 101,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 49,
+              "rejected_descendants": 0
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 29,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 21,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0004",
+                  "failures": 29,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 21,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0005",
+                  "failures": 43,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 7,
+                  "role": "parent_run_2"
+                }
+              ],
+              "failures": 101,
+              "invalid": 0,
+              "passes": 49,
+              "rate": 0.32666666666666666
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "90796ac85d40"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "90796ac85d40",
+        "type": "archive"
+      },
+      "name": "agentdojo/superseded-travel-lite-evolve-20261011T1524",
+      "selection": {
+        "comparison_parent": "90796ac85d40",
+        "reason": {
+          "candidates": [],
+          "formula": "clade-pass-rate/1",
+          "kind": "tip",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "no clade has enough descendants"
+        },
+        "rebase_required": false,
+        "source": "90796ac85d40",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.9541666666666667,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 22,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 458,
+              "rejected_descendants": 0
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 1,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 159,
+                  "role": "baseline"
+                },
+                {
+                  "eval_id": "eval-0004",
+                  "failures": 20,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 140,
+                  "role": "parent_run_1"
+                },
+                {
+                  "eval_id": "eval-0005",
+                  "failures": 1,
+                  "generation": 1,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 159,
+                  "role": "parent_run_2"
+                }
+              ],
+              "failures": 22,
+              "invalid": 0,
+              "passes": 458,
+              "rate": 0.9541666666666667
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "a2633162e473"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "a2633162e473",
+        "type": "archive"
+      },
+      "name": "agentdojo/workspace-evolve-20261011T1446",
+      "selection": {
+        "comparison_parent": "a2633162e473",
+        "reason": {
+          "candidates": [],
+          "formula": "clade-pass-rate/1",
+          "kind": "tip",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "no clade has enough descendants"
+        },
+        "rebase_required": false,
+        "source": "a2633162e473",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": 0.0,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 160,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 0,
+              "rejected_descendants": 0
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [
+                {
+                  "eval_id": "eval-0001",
+                  "failures": 160,
+                  "generation": null,
+                  "invalid": 0,
+                  "named_by": [],
+                  "passes": 0,
+                  "role": "baseline"
+                }
+              ],
+              "failures": 160,
+              "invalid": 0,
+              "passes": 0,
+              "rate": 0.0
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "a2633162e473"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "a2633162e473",
+        "type": "archive"
+      },
+      "name": "agentdojo/superseded-workspace-lite-evolve-20261011T1524",
+      "selection": {
+        "comparison_parent": "a2633162e473",
+        "reason": {
+          "candidates": [],
+          "formula": "clade-pass-rate/1",
+          "kind": "tip",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "no clade has enough descendants"
+        },
+        "rebase_required": false,
+        "source": "a2633162e473",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [
+          {
+            "attribution_parent": null,
+            "clade": {
+              "admission_yield": null,
+              "admitted_descendants": 0,
+              "clade_rate": null,
+              "descendants": 0,
+              "evaluated_descendants": 0,
+              "failures": 0,
+              "formula": "clade-pass-rate/1",
+              "gain_mean": null,
+              "gain_n": 0,
+              "gain_sum": null,
+              "passes": 0,
+              "rejected_descendants": 0
+            },
+            "created_by": "seed",
+            "eligible": true,
+            "evidence": {
+              "evals": [],
+              "failures": 0,
+              "invalid": 0,
+              "passes": 0,
+              "rate": null
+            },
+            "gain": null,
+            "parent": null,
+            "source": null,
+            "status": "seed",
+            "stored": true,
+            "verdict": null,
+            "version": "a450ce7bffbd"
+          }
+        ],
+        "notes": [],
+        "split": "heldout",
+        "tip": "a450ce7bffbd",
+        "type": "archive"
+      },
+      "name": "airline/run-1",
+      "selection": {
+        "comparison_parent": "a450ce7bffbd",
+        "reason": {
+          "candidates": [],
+          "formula": "clade-pass-rate/1",
+          "kind": "tip",
+          "min_descendants": 2,
+          "seed": "0",
+          "split": "heldout",
+          "tau": 1.0,
+          "why": "no clade has enough descendants"
+        },
+        "rebase_required": false,
+        "source": "a450ce7bffbd",
+        "type": "archive_parent_choice"
+      }
+    },
+    {
+      "archive": {
+        "formula": "clade-pass-rate/1",
+        "metric": "descendant admission yield",
+        "nodes": [],
+        "notes": [],
+        "split": "heldout",
+        "tip": null,
+        "type": "archive"
+      },
+      "name": "retail/run-1",
+      "selection": null
+    }
+  ],
+  "type": "archive_export"
+}

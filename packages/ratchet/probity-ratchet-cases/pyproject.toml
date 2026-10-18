@@ -1,0 +1,73 @@
+[project]
+name = "probity-ratchet-cases"
+dynamic = ["version"]
+description = "Agent cases graded on final state: a simulated company, deterministic tool faults, exact graders and scripted solvers."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+# The benign-twin suite for AgentDojo (ratchet_cases.agentdojo); pinned to the release it was built on.
+agentdojo = ["agentdojo==0.1.35"]
+
+[project.entry-points."tau2.plugins"]
+ratchet_cases = "ratchet_cases.tau2:register"
+
+[project.urls]
+Source = "https://github.com/probityai/probity/tree/main/packages/ratchet/probity-ratchet-cases"
+Issues = "https://github.com/probityai/probity/issues"
+
+[project.scripts]
+ratchet-cases = "ratchet_cases.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/ratchet_cases/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ratchet_cases"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/ratchet_cases", "tests", "tests_agentdojo", "tests_tau2", "README.md", "CHANGELOG.md", "pyproject.toml"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ratchet_cases"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+
+# AgentDojo ships no py.typed marker; read its annotations rather than treating it as Any.
+[[tool.mypy.overrides]]
+module = ["agentdojo", "agentdojo.*"]
+follow_untyped_imports = true
+
+# tau2-bench ships no py.typed marker either; read its annotations the same way.
+[[tool.mypy.overrides]]
+module = ["tau2", "tau2.*"]
+follow_untyped_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-W error"

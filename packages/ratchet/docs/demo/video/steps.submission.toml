@@ -1,0 +1,131 @@
+# The 1-minute submission video: every command runs for real against the Atlas store.
+# Two outcomes, chosen by docs/demo/derive_ids.py from what Atlas holds (DEMO_OUTCOME in ids.env):
+#   admitted  the main scene is an admission made by the real gates in the demo scenario (scripted agent,
+#             database ratchet_demo); the refusal scene from the live-model runs follows it
+#   refused   no decision is admitted; the refusal scene from the live-model runs is the main scene
+# A step with `outcome` runs only in that outcome; a step with `db` reads that database.
+# outcome = "chart-card": not recorded; the final cut shows these facts as chart cards (private/video/cards).
+# Tune `hold` after the first real take; check.py refuses anything over 60 s.
+# {{NAME}} values are derived by docs/demo/derive_ids.py from Atlas and the stored results; none is typed.
+
+[[step]]
+id = "failure"
+outcome = "admitted"
+cmd = "ratchet show trace {{BAD_TRACE}}"
+hold = 3.5
+captions = [
+  { at = 0.0, text = "Ratchet turns an AI agent's mistakes into tested, signed safety rules. Demo scenario, scripted agent." },
+  { at = 3.0, text = "Demo: a refund goes through, the reply is lost, the agent tries again, and the customer is refunded twice." },
+]
+
+[[step]]
+id = "failure_live"
+outcome = "refused"
+cmd = "ratchet show trace {{BAD_TRACE}}"
+hold = 3.5
+captions = [
+  { at = 0.0, text = "Live models. Passing tests does not show what a patch would block." },
+  { at = 3.0, text = "A refund call times out. The agent checks before retrying, then mails the notice to the wrong address." },
+]
+
+[[step]]
+id = "matrix"
+outcome = "admitted"
+cmd = "ratchet replay {{REJECTED_CAND}} {{CLEARED_CAND}}"
+cmd_45 = "ratchet replay {{REJECTED_CAND}} {{CLEARED_CAND}} --max-columns 2"
+hold = 7.0
+captions = [
+  { at = 0.0, text = "Ratchet writes candidate safety rules and reruns all {{REPLAY_TRACES}} past conversations through them, with no AI calls." },
+  { at = 6.0, text = "One rule stops the double refund but also blocks a refund that should go through. Rejected." },
+]
+
+[[step]]
+id = "matrix_live"
+outcome = "refused"
+cmd = "ratchet replay {{REJECTED_CAND}} {{REFUSED_CAND}}"
+cmd_45 = "ratchet replay {{REJECTED_CAND}} {{REFUSED_CAND}} --max-columns 2"
+hold = 6.0
+captions = [
+  { at = 0.0, text = "Ratchet writes candidate safety rules and reruns all {{REPLAY_TRACES}} past conversations through them, with no AI calls." },
+  { at = 4.0, text = "It shows what each guard would block. A guard that blocks a legitimate run is rejected." },
+]
+
+[[step]]
+id = "admitted"
+outcome = "admitted"
+cmd = "ratchet show decision {{ADMITTED_CAND}}"
+hold = 6.0
+captions = [
+  { at = 0.0, text = "The other rule is then tested on cases the AI improver never saw: it fixes {{STABLE_RECOVERIES}} failing cases (needs {{STABLE_NEEDED}}) and keeps all {{PROTECTED_N}} must-pass cases passing. Admitted." },
+]
+
+[[step]]
+id = "verify"
+outcome = "admitted"
+cmd = "ratchet verify {{ADMITTED_CAND}}"
+hold = 2.5
+captions = [
+  { at = 0.0, text = "Every decision is signed. Anyone can check the signature against our published key." },
+]
+
+[[step]]
+id = "refusal"
+outcome = "refused"
+cmd = "ratchet show decision {{REFUSED_CAND}}"
+db = "{{REFUSED_DB}}"
+hold = 9.0
+captions = [
+  { at = 0.0, text = "Live models: the closest candidate recovered {{REFUSED_RECOVERIES}} held-out cases in {{REFUSED_RECOVERY_RUNS}} and kept {{REFUSED_KEPT}} of {{REFUSED_PROTECTED_N}} protected ones." },
+  { at = 3.0, text = "The gate refused it: {{REFUSED_WHY}}. The refusal is signed and stored." },
+  { at = 5.5, text = "Run twice, the unchanged harness disagreed with itself on {{PARENT_DISCORDANT}} of {{REFUSED_HELDOUT_N}} held-out cases: it fails its own gate." },
+  { at = 7.5, text = "On tau-bench retail the unchanged harness passed {{TAU_SELF_SCORES}} of the same {{TAU_SELF_TOTAL}} held-out tasks (docs/results/tau-retail.md)." },
+]
+
+[[step]]
+id = "refusal_v3"
+outcome = "chart-card"
+cmd = "ratchet show decision b972467a3b9a"
+db = "ratchet_v3_full"
+hold = 9.0
+captions = [
+  { at = 0.0, text = "Now a real AI model, 3,800 test runs: an AI-written change lifts the success rate from 33.4% to 42.1%." },
+  { at = 3.0, text = "But one customer case falls from 21 to 8 passes out of 40. Ratchet refuses the change and signs the refusal." },
+  { at = 6.0, text = "The same agent with no change at all swung from 32 to 23 out of 40. Without a strict gate, luck looks like progress." },
+]
+
+[[step]]
+id = "authority"
+cmd = "ratchet show decision {{AUTHORITY_DECISION}}"
+db = "{{AUTHORITY_DB}}"
+hold = 4.0
+captions = [
+  { at = 0.0, text = "Demo: a change that tries to give the agent a new tool or permission is refused automatically." },
+]
+
+[[step]]
+id = "lineage"
+outcome = "chart-card"
+cmd = "ratchet show lineage"
+hold = 5.0
+captions = [
+  { at = 0.0, text = "Everything lives in MongoDB Atlas: every version and decision, a search over past failures, and test cases the improver is not allowed to read." },
+]
+
+[[step]]
+id = "hooks"
+outcome = "chart-card"
+cmd = "cat docs/results/hooks-replay.md"
+hold = 5.5
+captions = [
+  { at = 0.0, text = "Real data: one safety rule rerun over 629,192 actions from 13,712 real AI coding-agent sessions." },
+  { at = 2.5, text = "It fired 7 times, each a forced overwrite of the main code branch it would have stopped. 0 errors." },
+]
+
+[[step]]
+id = "benchmarks"
+outcome = "chart-card"
+cmd = "cat {{RESULTS_FILE}}"
+hold = 3.5
+captions = [
+  { at = 0.0, text = "Also run on public agent tests: tau-bench (simulated customer service, {{TAU_CASES}} tasks) and AgentDojo (hidden prompt attacks, {{AGENTDOJO_CASES}} cases)." },
+]

@@ -4,6 +4,10 @@
 
 [tool.uv.workspace]
 members = ["packages/*"]
+# packages/ratchet is its own uv workspace with its own lock: its Python floor
+# (3.12) and its benchmark extras (git sources, overrides) would otherwise bind
+# every member. scripts/workspace.py still reads it and its members.
+exclude = ["packages/ratchet"]
 
 [tool.uv]
 package = false
