@@ -213,7 +213,7 @@ MUTATIONS = [
      ('    steps += [entry["step"] for entry in record["external_mutations"]\n'
       '              if entry.get("origin") not in own]\n'), ""),
     ("claims: shadowed runs match", *CLAIMS,
-     'clear = [event for event in fresh if not shadows[event["id"]][0]]', "clear = fresh"),
+     'clear = [event for event in pool if not shadows[event["id"]][0]]', "clear = pool"),
     ("claims: workspace executable not a shadow", *CLAIMS,
      '    place("exe", event["exe"])', "    pass"),
     ("claims: agent-written shadow only possible", *CLAIMS,
