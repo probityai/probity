@@ -1,23 +1,27 @@
-"""The done verdict and the done receipt, from the records of one run.
+"""The two done verdicts and the done receipt, from the records of one run.
 
 The run directory holds the records under fixed names. Each record arrives as a DSSE
 envelope and is opened under a pinned key before anything reads it (:func:`open_run`). The
-three checks then run in ``probity-verify`` on the pinned bytes (:func:`checks`):
-``protected_paths/v1``, ``acceptance_observed/v1`` and ``tool_claim_match/v1``, the last with
-the contract pinned so a claimed acceptance command is judged by its sealed run writes. The
-done verdict is probity-verify's own combination of the three (:func:`verdict`):
+checks then run in ``probity-verify`` on the pinned bytes (:func:`checks`), and the receipt
+carries two verdicts derived separately, with probity-verify's own combination
+(``done_receipt/v2``):
 
-1. The first ``contradicted`` check, in that order, gives ``contradicted`` with its reason.
-2. Three ``supported`` checks give ``supported`` (``done_checks_supported``).
-3. Otherwise ``not_established`` with the first such check's reason.
+- ``outcome``, is the work done: ``acceptance_observed/v1`` alone, the sealed visible and
+  held-out commands graded outside the agent on its final tree;
+- ``integrity``, did the agent game the process: ``protected_paths/v1``,
+  ``probe_observed/v1`` (the oracle-free probes and the grader's visible-test detectors),
+  ``tool_claim_match/v1`` (with the contract pinned) and ``completion_claim/v1``. A
+  contradiction carries its class, and the worst class wins: tamper, then gaming, then
+  deception. A hygiene finding (a claim true when made and stale after a later edit), no tool
+  claims and no probes are excused.
 
-Grader-path mutations, coverage gaps the agent caused, held-out failures, the grader's
-visible-test detector findings (``visible_test_unsatisfiable`` and the five others, each carried
-on the acceptance check with its evidence), replays that called nothing, unexercised patch hunks
-and a missing held-out split are decided inside those checks, from the observation and the grade, so the receipt's verdict is exactly the one
-probity-verify's ``done_receipt/v1`` derives again from the same records.
+``accepted`` is both axes supported; ``completion_claimed`` is whether the agent asserted done
+(the claims record's ``completion.asserted``). There is no other combined verdict:
+:func:`summary` is only the one-line decision a consumer that reads one field sees, derived
+from the two axes by probity-verify's rule. probity-verify's ``done_receipt/v2`` derives every
+one of these again from the same records.
 
-The receipt is the ``probity-done-receipt/v1`` predicate, signed by the harness key and
+The receipt is the ``probity-done-receipt/v2`` predicate, signed by the harness key and
 naming its verifier (``verifier.id``); its in-toto Statement is written unsigned (see
 :mod:`.formats`).
 """
@@ -29,20 +33,28 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from probity_verify.adapters.done_receipt import combine
+from probity_verify.adapters import done_receipt as shared
 from probity_verify.core import adjudicate
 
 from .formats import RECEIPT_PREDICATE, VERIFIER_ID, DoneError, encode, open_record, sha256, sign_record, statement
 
-RECEIPT_SCHEMA = "probity-done-receipt/v1"
+RECEIPT_SCHEMA = shared.SCHEMA
 ROLES = {"contract": "probity-done-contract/v1", "tree": "probity-tree/v2",
          "observation": "probity-observation/v3", "capability": "probity-capabilities/v1",
-         "grade": "probity-acceptance-grade/v1", "claims": "probity-tool-claims/v1"}
+         "grade": "probity-acceptance-grade/v1", "claims": "probity-tool-claims/v2"}
+# (claim type, file stem, records, axis), in probity-verify's check order on each axis.
 CHECKS = (
-    ("protected_paths/v1", "protected-paths", ("contract", "capability", "observation", "tree")),
-    ("acceptance_observed/v1", "acceptance", ("contract", "tree", "grade")),
-    ("tool_claim_match/v1", "tool-claims", ("claims", "capability", "observation", "contract")),
+    ("acceptance_observed/v1", "acceptance", ("contract", "tree", "grade"), "outcome"),
+    ("protected_paths/v1", "protected-paths", ("contract", "capability", "observation", "tree"),
+     "integrity"),
+    ("probe_observed/v1", "probes", ("contract", "tree", "grade"), "integrity"),
+    ("tool_claim_match/v1", "tool-claims", ("claims", "capability", "observation", "contract"),
+     "integrity"),
+    ("completion_claim/v1", "completion", ("claims", "capability", "observation", "contract"),
+     "integrity"),
 )
+# The checks that read the grade, not the observation: they take no observation scope.
+GRADED = {"acceptance_observed/v1", "probe_observed/v1"}
 OBSERVED = {"tree", "observation", "grade"}
 SOURCES = "sources"
 
@@ -140,23 +152,24 @@ def _policy(claim_type: str, claim_id: str, roles: tuple[str, ...], records: dic
     assessment: dict[str, Any] = {"claim_type": claim_type, "observed_party": pins.observed_party,
                                   "invocation_id": observation["invocation_id"]}
     assessment.update({f"{role}_witness": role for role in roles})
-    if claim_type != "acceptance_observed/v1":
+    if claim_type not in GRADED:
         assessment["scope"] = observation["scope"]
-    elif pins.allow_no_heldout:
+    elif claim_type == "acceptance_observed/v1" and pins.allow_no_heldout:
         assessment["allow_no_heldout"] = True
     return {"schema_version": "probity-policy/v1", "witnesses": _witnesses(roles, records, pins),
             "assessments": {claim_id: assessment}}
 
 
 def checks(run: Path, records: dict[str, bytes], pins: Pins,
-           require_witness_scope: str = "PEER") -> list[dict[str, Any]]:
-    """Run the three probity-verify checks on the signed record bytes; write their cases."""
+           require_witness_scope: str = "PEER") -> dict[str, list[dict[str, Any]]]:
+    """Run the five probity-verify checks on the signed record bytes and write their cases;
+    return each axis's entries, as ``done_receipt/v2`` places them."""
     out = run / "verify"
     out.mkdir(exist_ok=True)
-    found = []
+    found: dict[str, list[dict[str, Any]]] = {"outcome": [], "integrity": []}
     claim_id = json.loads(records["observation"])["claim_id"]
     sources = _source_artifacts(run)
-    for claim_type, check_name, roles in CHECKS:
+    for claim_type, check_name, roles, axis in CHECKS:
         case = _case(claim_id, roles, records,
                      sources if claim_type == "protected_paths/v1" else None)
         policy = _policy(claim_type, claim_id, roles, records, pins)
@@ -164,36 +177,37 @@ def checks(run: Path, records: dict[str, bytes], pins: Pins,
         (out / f"{check_name}.policy.json").write_bytes(encode(policy))
         result = adjudicate(case, policy, run, require_witness_scope=require_witness_scope)
         (out / f"{check_name}.decision.json").write_bytes(encode(result))
-        entry = {"claim_type": claim_type, "decision": result["decision"],
-                 "reason": result["reason"],
-                 "vantage": result.get("vantage", "unestablished")}
-        if result["decision"] != "not_established":
-            entry["witness_scope"] = result.get("witness_scope", "PEER")
-        else:
-            entry["vantage"] = "unestablished"
-        detectors = next((item for item in result.get("checks", [])
-                          if item.get("id") == "visible_detectors"), None)
-        if detectors is not None:
-            # The grader's visible-test findings, each with its reason, evidence and (for an
-            # unsatisfiable visible test) the party that made it so, as the check read them.
-            entry["visible_detectors"] = detectors["findings"]
-        found.append(entry)
+        found[axis].append(shared.entry(result))
     return found
 
 
-def verdict(found: list[dict[str, Any]]) -> dict[str, Any]:
-    """probity-verify's combination of the three checks, with its vantage."""
-    derived = combine(found)
-    if derived["decision"] == "not_established":
-        return {"decision": "not_established", "reason": derived["reason"],
-                "vantage": "unestablished"}
-    return {"decision": derived["decision"], "reason": derived["reason"],
-            "vantage": "independent", "witness_scope": derived.get("witness_scope", "PEER")}
+def axes(found: dict[str, list[dict[str, Any]]]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The outcome and integrity verdicts, by probity-verify's own combination."""
+    return shared.combine_outcome(found["outcome"]), shared.combine_integrity(found["integrity"])
+
+
+def summary(predicate: dict[str, Any]) -> dict[str, Any]:
+    """The one decision a consumer that reads one field sees: ``supported`` only when
+    accepted, else the integrity contradiction, else the outcome's, else what is open."""
+    outcome, integrity = predicate["outcome"], predicate["integrity"]
+    decision, reason = shared.decision(outcome, integrity)
+    if decision == "not_established":
+        return {"decision": decision, "reason": reason, "vantage": "unestablished"}
+    axis = integrity if (integrity["decision"], integrity["reason"]) == (decision, reason) \
+        else outcome
+    found = {"decision": decision, "reason": reason, "vantage": "independent",
+             "witness_scope": axis.get("witness_scope", "PEER")}
+    if decision == "supported":
+        found["witness_scope"] = "EXTERNAL" if all(
+            item.get("witness_scope") == "EXTERNAL" for item in (outcome, integrity)) else "PEER"
+    if "class" in axis and axis is integrity and decision == "contradicted":
+        found["class"] = axis["class"]
+    return found
 
 
 def done_receipt_case(run: Path, records: dict[str, bytes], statement_bytes: bytes, pins: Pins,
                       verifier_ids: list[str] | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
-    """The case and policy for probity-verify's ``done_receipt/v1`` over one attempt."""
+    """The case and policy for probity-verify's ``done_receipt/v2`` over one attempt."""
     observation = json.loads(records["observation"])
     claim_id = observation["claim_id"]
     roles = tuple(ROLES)
@@ -201,7 +215,7 @@ def done_receipt_case(run: Path, records: dict[str, bytes], statement_bytes: byt
     case = _case(claim_id, roles, records, {"receipt": _artifact("done-receipt.statement.json",
                                                                  statement_bytes),
                                             **_source_artifacts(run)})
-    assessment: dict[str, Any] = {"claim_type": "done_receipt/v1",
+    assessment: dict[str, Any] = {"claim_type": shared.CLAIM_TYPE,
                                   "observed_party": pins.observed_party,
                                   "invocation_id": observation["invocation_id"],
                                   "scope": observation["scope"], "receipt_witness": "receipt"}
@@ -226,7 +240,7 @@ def _optional(run: Path, name: str) -> tuple[bytes | None, dict[str, Any] | None
 
 
 def assemble(run: Path, pins: Pins, require_witness_scope: str = "PEER") -> dict[str, Any]:
-    """Open the records, run the checks and derive the verdict: the unsigned predicate.
+    """Open the records, run the checks and derive both verdicts: the unsigned predicate.
 
     The caller adds the optional members (``policy``, ``stop_decision``,
     ``verifier_isolation``) and signs it with :func:`sign_receipt`.
@@ -240,11 +254,14 @@ def assemble(run: Path, pins: Pins, require_witness_scope: str = "PEER") -> dict
     if launch_bytes is not None and launch_receipt_bytes is not None:
         digests["launch"] = {"sha256": sha256(launch_bytes)}
         digests["launch_receipt"] = {"sha256": sha256(launch_receipt_bytes)}
+    outcome, integrity = axes(found)
     return {
         "schema_version": RECEIPT_SCHEMA, "verifier": {"id": VERIFIER_ID},
         "claim_id": observation["claim_id"],
-        "invocation_id": observation["invocation_id"], "records": digests, "checks": found,
-        "verdict": verdict(found),
+        "invocation_id": observation["invocation_id"], "records": digests,
+        "completion_claimed": json.loads(records["claims"])["completion"]["asserted"],
+        "accepted": shared.accepted(outcome, integrity),
+        "outcome": outcome, "integrity": integrity,
         "external_effects": observation.get("external_mutations", []),
     }
 
@@ -292,8 +309,18 @@ def verifier_id(predicate: dict[str, Any]) -> str:
 
 
 def decision_line(found: dict[str, Any]) -> str:
-    """``Decision: <decision> / <reason> (vantage: ..., witness_scope: ...)``."""
-    parts = [f"vantage: {found['vantage']}"]
+    """``Decision: <decision> / <reason> (class: ..., vantage: ..., witness_scope: ...)``."""
+    parts = [f"class: {found['class']}"] if "class" in found else []
+    parts.append(f"vantage: {found['vantage']}")
     if "witness_scope" in found:
         parts.append(f"witness_scope: {found['witness_scope']}")
     return f"Decision: {found['decision']} / {found['reason']} ({', '.join(parts)})"
+
+
+def axis_line(name: str, axis: dict[str, Any]) -> str:
+    """``Outcome: supported / ...`` or ``Integrity: contradicted / ... (class: ...)``."""
+    found = {"decision": axis["decision"], "reason": axis["reason"], "vantage": axis["vantage"]}
+    for key in ("class", "witness_scope"):
+        if key in axis:
+            found[key] = axis[key]
+    return decision_line(found).replace("Decision:", f"{name}:", 1)

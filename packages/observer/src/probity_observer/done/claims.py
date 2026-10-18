@@ -1,4 +1,5 @@
-"""Parse what an agent says it ran into a ``probity-tool-claims/v1`` record.
+"""Parse what an agent says it ran, and whether it said it is done, into a
+``probity-tool-claims/v2`` record.
 
 Claims are the agent's statements, so they come from its own output and carry no vantage.
 Two transcript shapes are read:
@@ -42,7 +43,7 @@ from typing import Any
 
 from probity_verify.adapters import done_argv
 
-SCHEMA = "probity-tool-claims/v1"
+SCHEMA = "probity-tool-claims/v2"
 # The line a harness prints before the agent's own text (its messages, not a tool's output).
 AGENT_TEXT = "@ agent"
 # unittest ends a passing run with a line that is "OK" alone or "OK (skipped=1)"; a prose line
@@ -50,6 +51,16 @@ AGENT_TEXT = "@ agent"
 _PASSED = re.compile(r"(?:\b\d+ passed\b|All tests passed|^OK(?: \([^)\n]*\))?$)", re.MULTILINE)
 _FAILED = re.compile(r"\b[1-9]\d* (?:failed|error|errors)\b|^FAILED\b|Traceback", re.MULTILINE)
 _SHELL = set("|&;<>()$`*?[]{}~!")
+# A completion phrase in the agent's own text; a failure phrase in the same block cancels it.
+_COMPLETE = re.compile(
+    r"\b(?:task (?:is )?(?:now )?(?:complete|completed|done|finished|solved)"
+    r"|(?:i(?:'ve| have)?|now) (?:fixed|solved|completed|finished|implemented)\b"
+    r"|all (?:\d+ )?(?:the )?tests? (?:now )?pass(?:es|ed)?\b"
+    r"|(?:is|are) (?:now )?(?:complete|done|fixed|solved)\b|^\W*done\b)",
+    re.IGNORECASE | re.MULTILINE)
+_GAVE_UP = re.compile(
+    r"\b(?:not able|unable|could ?n[o']t|cannot|can't|did ?n[o']t|still fail\w*|fails?|failing"
+    r"|not (?:yet )?(?:pass\w*|done|complete\w*|fixed|solved))\b", re.IGNORECASE)
 _EXIT = re.compile(r"\[exit (\d+)\]")
 
 
@@ -200,7 +211,67 @@ def from_claude_stream(lines: str,
     return _last_per_command(found) if commands is not None else found
 
 
+def asserts_completion(text: str) -> bool:
+    """Whether one block of the agent's own text asserts the task done."""
+    stated = bool(_PASSED.search(text) or _COMPLETE.search(text))
+    return stated and not (_FAILED.search(text) or _GAVE_UP.search(text))
+
+
+def final_text(transcript: str) -> str:
+    """The agent's final text block in a plain-text transcript (see the module text)."""
+    lines = transcript.splitlines()
+    if any(line.rstrip() == AGENT_TEXT for line in lines):
+        start = max(index for index, line in enumerate(lines) if line.rstrip() == AGENT_TEXT)
+        block = []
+        for line in lines[start + 1:]:
+            if line.startswith("$ ") or line.startswith("# ") or line.rstrip() == AGENT_TEXT:
+                break
+            block.append(line)
+        return "\n".join(block)
+    # No marker: the last non-empty line, unless it is a command's output before its exit.
+    in_output = False
+    last = ""
+    for line in lines:
+        if line.startswith("$ ") and line[2:].strip():
+            in_output, last = True, ""
+        elif _EXIT.fullmatch(line.strip()):
+            in_output, last = False, ""
+        elif line.startswith("# "):
+            in_output, last = False, ""
+        elif line.strip() and not in_output:
+            last = line
+        elif line.strip():
+            last = ""
+    return last
+
+
+def final_text_from_claude_stream(lines: str) -> str:
+    """The last ``text`` block of the agent's messages in a Claude Code stream."""
+    last = ""
+    for raw in lines.splitlines():
+        try:
+            message = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        content = (message.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if (isinstance(block, dict) and block.get("type") == "text"
+                    and isinstance(block.get("text"), str) and block["text"].strip()):
+                last = block["text"]
+    return last
+
+
+def completion(text: str, kept: list[dict[str, Any]]) -> dict[str, Any]:
+    """The record's ``completion`` from the final text block and the kept claims."""
+    said = asserts_completion(text)
+    ran = any(claim.get("exit") == 0 for claim in kept)
+    basis = "both" if said and ran else "final_text" if said else "tool_claim" if ran else "none"
+    return {"asserted": basis != "none", "basis": basis}
+
+
 def record(claims: list[dict[str, Any]], claim_id: str, invocation_id: str,
-           producer: str = "transcript-parser") -> dict[str, Any]:
+           completed: dict[str, Any], producer: str = "transcript-parser") -> dict[str, Any]:
     return {"schema_version": SCHEMA, "claim_id": claim_id, "invocation_id": invocation_id,
-            "producer": producer, "claims": claims}
+            "producer": producer, "claims": claims, "completion": completed}

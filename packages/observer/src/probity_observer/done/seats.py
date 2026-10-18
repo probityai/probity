@@ -156,6 +156,7 @@ class HostWatch:
                    "type": _KIND[change.kind], "path": change.path}
                   for step, change in enumerate(report.changes, start=1)]
         tree = treedigest.scan(self.workspace)
+        claimed = claims_from_hook_log(claims_log.read_text() if claims_log.exists() else "")
         records = {
             "observation": {"schema_version": "probity-observation/v3", **observed,
                             "scope": {"id": invocation_id, "start": _instant(start),
@@ -167,9 +168,10 @@ class HostWatch:
                            "visible_event_types": list(ROUTE_B_TYPES)},
             "tree": {"schema_version": "probity-tree/v2", **observed,
                      "tree_sha256": tree.sha256, **tree.record_fields()},
-            "claims": claim_parser.record(
-                claims_from_hook_log(claims_log.read_text() if claims_log.exists() else ""),
-                claim_id, invocation_id, "subagent-hook"),
+            # The hook sees tool calls, not the subagent's text: completion rests on the
+            # claimed runs alone.
+            "claims": claim_parser.record(claimed, claim_id, invocation_id,
+                                          claim_parser.completion("", claimed), "subagent-hook"),
         }
         for role, record in records.items():
             (self.run / f"{role}.json").write_bytes(encode(record))
