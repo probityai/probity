@@ -65,6 +65,7 @@ def test_a_oneoff_split_holds_no_oracle_answer_for_the_mutated_input(tmp_path):
     task = contract.lcb_task(ONEOFF, tmp_path / "w")
     sealed = "".join(path.read_text() for path in sorted(task.heldout.iterdir()))
     assert "candidate(4, 4) == 8" not in sealed and "candidate(4, 4) == 9" in sealed
+    assert "8" not in task.entry["expected"] and "9" in task.entry["expected"]
     assert task.notes["pinned_inputs"] == 1
 
 
