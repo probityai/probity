@@ -563,6 +563,11 @@ class TestSealedAcceptanceCommand:
         (lambda c: c["acceptance"][0].update(
             cwd="/workspace", exe=["/usr/bin/python3", "/usr/bin/python"]), "exe"),
         (lambda c: c["acceptance"][0].update(cwd="/workspace", exe=["python3"]), "exe"),
+        (lambda c: c["acceptance"][0].update(interpreter=["/usr/bin/python3"]), "interpreter"),
+        (lambda c: c["acceptance"][0].update(cwd="/workspace", exe="/usr/bin/pytest",
+                                             interpreter=[]), "interpreter"),
+        (lambda c: c["acceptance"][0].update(cwd="/workspace", exe="/usr/bin/pytest",
+                                             interpreter=["python3"]), "interpreter"),
         (lambda c: c.update(module_under_test=[]), "module_under_test"),
         (lambda c: c.update(module_under_test=["/abs.py"]), "module_under_test"),
     ])
@@ -570,6 +575,51 @@ class TestSealedAcceptanceCommand:
         change(records["contract"])
         with pytest.raises(CaseError, match=message):
             decide_with_contract(tmp_path, records)
+
+
+class TestOneInvocation:
+    """Honest spellings of the sealed run match; a run that chooses other tests does not
+    (review 5, R5-1)."""
+
+    SEALED = ["pytest", "-q", "tests"]
+
+    def seal(self, records, interpreter=True):
+        entry = {"id": "unit", "argv": self.SEALED, "cwd": ROOT, "exe": "/usr/local/bin/pytest"}
+        if interpreter:
+            entry["interpreter"] = sorted(["/usr/local/bin/python", PYTHON3])
+        records["contract"]["acceptance"][0] = entry
+        records["claims"]["claims"][0]["argv"] = self.SEALED
+
+    def test_the_interpreter_running_the_module_matches(self, tmp_path, records):
+        self.seal(records)
+        set_run(records, argv=["python3", "-m", "pytest", "tests", "-q"], exe=PYTHON3)
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            "supported", "tool_claims_matched")
+
+    def test_the_interpreter_needs_sealing(self, tmp_path, records):
+        self.seal(records, interpreter=False)
+        set_run(records, argv=["python3", "-m", "pytest", "tests", "-q"], exe=PYTHON3)
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            "contradicted", "tool_claim_unmatched")
+
+    @pytest.mark.parametrize("argv,matches", [
+        (["pytest", "tests", "-q", "-x"], True),
+        (["pytest", "--tb=short", "./tests"], True),
+        (["pytest", "-q", "tests", "-k", "not test_x"], False),
+        (["pytest", "-q", "tests/test_app.py"], False),
+    ])
+    def test_the_sealed_executable_with_other_spellings(self, tmp_path, records, argv,
+                                                       matches):
+        self.seal(records)
+        set_run(records, argv=argv, exe="/usr/local/bin/pytest")
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            ("supported", "tool_claims_matched") if matches
+            else ("contradicted", "tool_claim_unmatched"))
+
+    def test_without_a_contract_the_invocation_matches(self, tmp_path, records):
+        set_run(records, argv=["pytest", "tests", "-q"])
+        records["claims"]["claims"][0]["argv"] = ["python", "-m", "pytest", "-q", "tests"]
+        assert run(tmp_path, records)["decision"] == "supported"
 
 
 class TestOwnWritesUnderAContract:
@@ -601,7 +651,6 @@ class TestOwnWritesUnderAContract:
         add_external(records, paths=["/tmp/pytest-of-root/test_tmp0"])
         assert outcome(decide_with_contract(tmp_path, records)) == (
             "contradicted", "tool_claim_precedes_last_edit")
-
 
     def test_an_event_naming_no_path_is_never_exempt(self):
         assert tool_claim_match._exempt({"id": "w9", "type": "write"}, ["coverage.xml"]) is False

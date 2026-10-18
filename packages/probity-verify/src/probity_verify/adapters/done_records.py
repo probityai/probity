@@ -176,7 +176,8 @@ def _protected_entry(item: Any, label: str) -> dict:
 
 
 def _acceptance_entry(item: Any, label: str) -> dict:
-    entry = _object(item, label, {"id", "argv"}, {"ids", "run_writes", "cwd", "exe"})
+    entry = _object(item, label, {"id", "argv"},
+                    {"ids", "run_writes", "cwd", "exe", "interpreter"})
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
     if ("cwd" in entry) != ("exe" in entry):
@@ -192,6 +193,14 @@ def _acceptance_entry(item: Any, label: str) -> dict:
                 absolute(name, f"{label}.exe[{index}]")
         else:
             absolute(exe, f"{label}.exe")
+    if "interpreter" in entry:
+        # The paths of the Python that runs the command's entry point as ``-m <module>``.
+        found = entry["interpreter"]
+        if "exe" not in entry or not isinstance(found, list) or not found or (
+                found != sorted(set(found))):
+            raise CaseError(f"{label}.interpreter: expected sorted distinct paths beside exe")
+        for index, name in enumerate(found):
+            absolute(name, f"{label}.interpreter[{index}]")
     if "ids" in entry:
         ids = entry["ids"]
         if (not isinstance(ids, list) or not ids or len(set(map(str, ids))) != len(ids)
