@@ -51,8 +51,8 @@ jobs:
           exit 1
       - name: Verify semantic refusal controls
         run: |
-          python -m ruff check boundary_common.py boundary_native.py boundary_run.py boundary_reader.py host_gate.py tests
-          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' boundary_common.py boundary_native.py boundary_run.py boundary_reader.py host_gate.py tests
+          python -m ruff check --isolated boundary_common.py boundary_native.py boundary_run.py boundary_reader.py host_gate.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' boundary_common.py boundary_native.py boundary_run.py boundary_reader.py host_gate.py tests
           python -m pytest -q tests --junitxml=test-results.xml
       - name: Execute selected 20 real MySQL caller/history exercises
         run: |
