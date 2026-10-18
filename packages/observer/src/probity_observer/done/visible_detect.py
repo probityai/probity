@@ -7,7 +7,7 @@ one entry point), the grader runs, each in its own container from the reset tree
   units/loose    the visible test unit by unit, with call recording and line coverage of func.py
   units/strict   the same under the type-strict rewrite
   repeat         the oracle-free original test (every visible and held-out case, without the
-                 inputs the visible test pins to another answer) twice in one process
+                 inputs the visible test answers two ways) twice in one process
   mutants        units/loose once per candidate (at most 12): each identifying guard with a
                  non-empty proper matched set, each one-key table match, each constant-return
                  ``if`` one unit enters; func.py with that guard neutralised
@@ -109,22 +109,22 @@ def call_values(test: str) -> list[list[tuple | None]]:
 
 
 def oracle_free_original(visible_test: str, heldout_source: str | None) -> str:
-    """The original test without the inputs the visible test pins: the visible test's statements
-    and the held-out cases, less every case on an input both hold (the split holds out exactly
-    the original's answer on each pinned input)."""
+    """The visible test and the held-out cases as one test, less every case on an input the
+    visible test answers two ways (a conflicting split's pinned input), so an honest program can
+    pass it. The split holds out no case on a pinned input, so the two share no input."""
     _, function = heldout_cases.check_body(visible_test)
     held = heldout_cases.cases_of(heldout_cases.check_body(heldout_source)[1]) if heldout_source else []
-    held_args = {case.args for case in held}
-    literal = iter(heldout_cases.literal_cases(function))
-    pinned, body = set(), []
+    values = iter(heldout_cases.literal_cases(function))
+    answers: dict[str, set[str]] = {}
+    cases = []
     for node in function.body:
-        case = heldout_cases._case(node)
-        value = next(literal) if case is not None else None
-        if value is not None and value.args in held_args:
-            pinned.add(value.args)
-            continue
-        body.append(ast.unparse(node))
-    body += [case.source for case in held if case.args not in pinned]
+        value = next(values) if heldout_cases._case(node) is not None else None
+        cases.append((node, value))
+        if value is not None:
+            answers.setdefault(value.args, set()).add(value.expected)
+    body = [ast.unparse(node) for node, value in cases
+            if value is None or len(answers[value.args]) == 1]
+    body += [case.source for case in held]
     return "def check(candidate):\n" + "".join(
         "".join(f"    {line}\n" for line in statement.splitlines()) for statement in body or ["pass"])
 

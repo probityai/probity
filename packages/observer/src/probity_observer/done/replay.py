@@ -28,9 +28,11 @@ from __future__ import annotations
 import ast
 import inspect
 import json
+import os
 import random
 import runpy
 import select
+import signal
 import subprocess
 import sys
 import time
@@ -38,6 +40,7 @@ from pathlib import Path
 from typing import Any
 
 COMMAND = "probity-done-replay"
+TERMINATED_EXIT = 143
 
 
 class Unplain(TypeError):
@@ -151,32 +154,55 @@ class CandidateFailed(AssertionError):
 
 STARTED: list["Child"] = []
 
+# How long a child that was told to stop (its stdin closed, then SIGTERM) gets before the next
+# step. A container runtime cleans up after itself only on an orderly exit.
+CLOSE_GRACE = 5.0
+
 
 class Child:
-    """One isolated candidate process, answering calls in order."""
+    """One isolated candidate process, answering calls in order.
+
+    Use it as a context manager (``with Child(...) as child:``); every container spawn goes
+    through this one class so that every one is ended the same way.
+
+    The child starts in its own session, so its process group holds the whole tree the command
+    starts: for ``apptainer exec`` that includes the ``squashfuse_ll`` daemon that serves the
+    image. :meth:`close` ends it in order, closing stdin first (the call loop ends on EOF and
+    the runtime unmounts and stops its daemon), then SIGTERM, then SIGKILL, each to the whole
+    group, and last kills whatever is left in the group before reaping the leader. Killing
+    only the leader, as an earlier version did, left one ``squashfuse_ll`` (about 20 MB
+    charged to the job) behind per child, until a batch of probes ran out of memory.
+    """
 
     def __init__(self, argv: list[str], cwd: str | None, timeout: float) -> None:
         self.timeout = timeout
         self.timed_out = False
+        self.closed = False
         STARTED.append(self)
         self.process = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                                        text=True)
+                                        text=True, start_new_session=True)
+
+    def __enter__(self) -> "Child":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
 
     def call(self, args_tagged: Any, kwargs_tagged: Any,
              timeout: float | None = None) -> dict[str, Any]:
-        if self.process.stdin is None or self.process.stdout is None:
+        if self.closed or self.process.stdin is None or self.process.stdout is None:
             return {"error": "child-pipes"}
         try:
             self.process.stdin.write(json.dumps({"args": args_tagged, "kwargs": kwargs_tagged}) + "\n")
             self.process.stdin.flush()
-        except BrokenPipeError:
+        except (BrokenPipeError, ValueError):
             return {"error": "child-exited"}
         return self.read(timeout)
 
     def read(self, timeout: float | None = None) -> dict[str, Any]:
         """The child's next protocol line, or an error after ``timeout`` seconds."""
-        if self.process.stdout is None:
+        if self.closed or self.process.stdout is None:
             return {"error": "child-pipes"}
         wait = self.timeout if timeout is None else max(0.0, min(timeout, self.timeout))
         ready, _, _ = select.select([self.process.stdout], [], [], wait)
@@ -194,10 +220,62 @@ class Child:
         except json.JSONDecodeError:
             return {"error": "child-protocol"}
 
+    def _exited(self, within: float) -> bool:
+        """Whether the leader has exited within ``within`` seconds, WITHOUT reaping it: an
+        unreaped leader keeps its pid, so the group id cannot be reused while it is signalled."""
+        deadline = time.monotonic() + within
+        while True:
+            try:
+                info = os.waitid(os.P_PID, self.process.pid,
+                                 os.WEXITED | os.WNOHANG | os.WNOWAIT)
+            except ChildProcessError:
+                return True
+            if info is not None:
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.02)
+
+    def _signal_group(self, sig: int) -> None:
+        try:
+            os.killpg(self.process.pid, sig)
+        except (ProcessLookupError, PermissionError):
+            pass
+
     def close(self) -> None:
-        if self.process.poll() is None:
-            self.process.kill()
-        self.process.wait()
+        """End the child and everything in its process group, then reap it and close pipes."""
+        if self.closed:
+            return
+        if self.process.returncode is not None:
+            # Already reaped: its pid may belong to someone else now, so signal nothing.
+            self.closed = True
+            return
+        try:
+            if self.process.stdin is not None:
+                try:
+                    self.process.stdin.close()
+                except OSError:
+                    pass
+            # A child that timed out is busy, not reading: EOF would only cost the grace.
+            if self.timed_out or not self._exited(CLOSE_GRACE):
+                self._signal_group(signal.SIGTERM)
+                if not self._exited(CLOSE_GRACE):
+                    self._signal_group(signal.SIGKILL)
+            self._exited(CLOSE_GRACE)
+            # The leader is gone but not reaped; what is left in its group (a runtime daemon
+            # whose parent died before it could stop it) dies here.
+            self._signal_group(signal.SIGKILL)
+        finally:
+            self.process.wait()
+            if self.process.stdout is not None:
+                self.process.stdout.close()
+            self.closed = True
+
+
+def close_all() -> None:
+    """Close every child this process started; the replay parent's last act."""
+    for child in STARTED:
+        child.close()
 
 
 class Proxy:
@@ -289,10 +367,10 @@ def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
              budget: float) -> tuple[list[str], float, bool]:
     """One child, each call ``repeat`` times, inside its own ``budget`` seconds."""
     started = time.monotonic()
-    child = Child(request["child_argv"], request.get("child_cwd"), float(request["call_timeout"]))
     answers: list[str] = []
     timed_out = False
-    try:
+    with Child(request["child_argv"], request.get("child_cwd"),
+               float(request["call_timeout"])) as child:
         for args_tagged, kwargs_tagged in calls:
             for _ in range(repeat):
                 left = budget - (time.monotonic() - started)
@@ -307,8 +385,6 @@ def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
                     break
             if timed_out:
                 break
-    finally:
-        child.close()
     return answers, round(time.monotonic() - started, 3), timed_out
 
 
@@ -348,11 +424,11 @@ def type_strict(request: dict[str, Any]) -> dict[str, Any]:
     """Each held-out case compared with :func:`strict_eq`: the result's builtin type, at every
     level, must be the expected value's."""
     cases = sealed_cases(Path(request["test"]))
-    child = Child(request["child_argv"], request.get("child_cwd"), float(request["call_timeout"]))
     mismatched = 0
     made = 0
     failure = None
-    try:
+    with Child(request["child_argv"], request.get("child_cwd"),
+               float(request["call_timeout"])) as child:
         for args, kwargs, expected in cases:
             made += 1
             reply = child.call(*_tagged(args, kwargs))
@@ -361,8 +437,6 @@ def type_strict(request: dict[str, Any]) -> dict[str, Any]:
                 break
             if not strict_eq(unplain(reply["ok"]), expected):
                 mismatched += 1
-    finally:
-        child.close()
     if failure is None and mismatched:
         failure = f"{mismatched} result(s) differ in type or value"
     return {"passed": failure is None, "failure": failure, "mode": "type_strict",
@@ -375,11 +449,9 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
     The child reports ``builtins`` before the import (before any module code has run) and
     after it; the report after the import comes from a process the module's code has run in.
     """
-    child = Child(request["child_argv"], request.get("child_cwd"), float(request["call_timeout"]))
-    try:
+    with Child(request["child_argv"], request.get("child_cwd"),
+               float(request["call_timeout"])) as child:
         before, after = child.read(), child.read()
-    finally:
-        child.close()
     if "builtins" not in before or "builtins" not in after:
         return {"passed": False, "failure": "no builtins report", "mode": "import_side_effects",
                 "calls_intercepted": 0, "distinct_calls": 0}
@@ -404,22 +476,16 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     if mode == "import_side_effects":
         return import_side_effects(request)
     timeout = float(request["call_timeout"])
-    child = Child(request["child_argv"], request.get("child_cwd"), timeout)
-    proxy = Proxy(child)
-    try:
+    with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:
+        proxy = Proxy(child)
         failure = _run_test(Path(request["test"]), proxy)
-    finally:
-        child.close()
     impure = sorted(key for key, answers in proxy.answers.items() if len(set(answers)) != 1)
     order = sorted(proxy.answers)
     random.Random(request["order_seed"]).shuffle(order)
     fresh_mismatch = []
     for key in order:
-        fresh = Child(request["child_argv"], request.get("child_cwd"), timeout)
-        try:
+        with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
             reply = fresh.call(*proxy.requests[key])
-        finally:
-            fresh.close()
         if json.dumps(reply, separators=(",", ":"), sort_keys=True) != proxy.answers[key][0]:
             fresh_mismatch.append(key)
     calls = sum(len(answers) for answers in proxy.answers.values())
@@ -433,7 +499,13 @@ def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
     request = json.loads(Path(args[0]).read_text())
     STARTED.clear()
-    result = replay(request)
+    # The runner sends SIGTERM when the whole command outruns its limit; exiting through
+    # SystemExit runs the ``finally`` below, which stops every child before the parent goes.
+    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(TERMINATED_EXIT))
+    try:
+        result = replay(request)
+    finally:
+        close_all()
     if not result["passed"] and (result.get("failure") == "timeout"
                                  or any(child.timed_out for child in STARTED)):
         result["timed_out"] = True

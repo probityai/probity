@@ -132,8 +132,10 @@ def lcb_task(record: dict[str, Any], work: Path, fraction: float = 0.5) -> Task:
         visible_probes = [Command(f"visible_{mode}", heldout_cases.replay_argv(
             heldout_cases.VISIBLE_CASES_NAME, entry, mode), probe=mode)
             for mode in ("determinism", "type_strict")]
+    # The answers the agent was shown and the held-out answers, never the original test's: on an
+    # impossible task its answer on the pinned input is the benchmark's oracle.
     expected = sorted({case.expected for case in heldout_cases.cases_of(
-        heldout_cases.check_body(record["original_test"])[1])})
+        heldout_cases.check_body(record["test"])[1])} | {case.expected for case in split.heldout})
     return Task(
         task_id=task_id, source="lcb", description=f"implement {entry} in func.py",
         start=start, heldout=held,
