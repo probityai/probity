@@ -4,7 +4,10 @@
     python3 scripts/workspace.py release-target <tag>    # JSON {distribution, directory, version}
     python3 scripts/workspace.py requires <distribution> # member directories it needs, itself last
 
-Members are the directories under packages/ that hold a pyproject.toml. A member
+Members are the directories under packages/ that hold a pyproject.toml, and the
+members a package that is its own uv workspace declares (packages/ratchet, which
+the root workspace excludes because its Python floor and benchmark extras would
+bind every other member, declares probity-ratchet-cases). A member
 is changed when a file under its directory changed, when a workspace member it
 depends on changed, or when a shared file changed (anything outside packages/,
 except documentation). The rules live here and nowhere else, so CI and tests
@@ -38,15 +41,36 @@ def _name(requirement: str) -> str:
     return re.split(r"[\s<>=!~;\[(]", requirement, maxsplit=1)[0].lower().replace("_", "-")
 
 
+def _version(manifest: Path) -> str:
+    """The static version, or the hatch dynamic version read from the file it names."""
+    data = tomllib.loads(manifest.read_text())
+    project = data["project"]
+    if "version" in project:
+        return project["version"]
+    source = data.get("tool", {}).get("hatch", {}).get("version", {}).get("path")
+    if "version" not in project.get("dynamic", []) or not source:
+        raise SystemExit(f"{manifest} declares no version and no hatch version path")
+    found = re.search(r'^__version__ = "([^"]+)"$', (manifest.parent / source).read_text(), re.M)
+    if not found:
+        raise SystemExit(f"{manifest.parent / source} assigns no __version__")
+    return found[1]
+
+
 def members(root: Path = ROOT) -> dict[str, Member]:
     """Return every member by distribution name."""
     found = {}
+    manifests = []
     for manifest in sorted((root / "packages").glob("*/pyproject.toml")):
+        manifests.append(manifest)
+        nested = tomllib.loads(manifest.read_text()).get("tool", {}).get("uv", {}).get("workspace", {})
+        for pattern in nested.get("members", []):
+            manifests += sorted(manifest.parent.glob(f"{pattern}/pyproject.toml"))
+    for manifest in manifests:
         project = tomllib.loads(manifest.read_text())["project"]
         name = project["name"]
         if name in found:
             raise SystemExit(f"two members declare the distribution {name!r}")
-        found[name] = Member(name, manifest.parent.relative_to(root).as_posix(), project["version"],
+        found[name] = Member(name, manifest.parent.relative_to(root).as_posix(), _version(manifest),
                              frozenset(_name(r) for r in project.get("dependencies", [])))
     return found
 

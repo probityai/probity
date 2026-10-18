@@ -99,6 +99,30 @@ def test_every_member_has_its_own_publish_job_in_environment_pypi():
         assert "name: pypi\n" in body and f"name: python-distributions-{name}\n" in body
 
 
+def test_a_package_that_is_its_own_workspace_brings_its_members(tmp_path):
+    _member(tmp_path, "ratchet", "probity-ratchet", "0.2.0", ["probity-ratchet-cases==0.3.0"])
+    manifest = tmp_path / "packages/ratchet/pyproject.toml"
+    manifest.write_text(manifest.read_text() + '\n[tool.uv.workspace]\nmembers = ["cases"]\n')
+    cases = tmp_path / "packages/ratchet/cases"
+    cases.mkdir()
+    (cases / "pyproject.toml").write_text('[project]\nname = "probity-ratchet-cases"\nversion = "0.3.0"\n')
+    table = workspace.members(tmp_path)
+    assert table["probity-ratchet-cases"].directory == "packages/ratchet/cases"
+    assert workspace.changed(["packages/ratchet/cases/x.py"], tmp_path) == {
+        "probity-ratchet": True, "probity-ratchet-cases": True}
+    assert workspace.requires("probity-ratchet", tmp_path) == ["packages/ratchet/cases", "packages/ratchet"]
+
+
+def test_a_hatch_dynamic_version_is_read_from_its_file(tmp_path):
+    pkg = tmp_path / "packages/cases"
+    (pkg / "src/cases").mkdir(parents=True)
+    (pkg / "src/cases/__init__.py").write_text('__version__ = "0.4.1"\n')
+    (pkg / "pyproject.toml").write_text(
+        '[project]\nname = "cases"\ndynamic = ["version"]\n\n'
+        '[tool.hatch.version]\npath = "src/cases/__init__.py"\n')
+    assert workspace.members(tmp_path)["cases"].version == "0.4.1"
+
+
 def test_a_distribution_whose_name_extends_another_resolves_to_itself(tmp_path):
     _member(tmp_path, "ratchet", "probity-ratchet", "0.2.0", [])
     _member(tmp_path, "ratchet-cases", "probity-ratchet-cases", "0.3.0", [])
