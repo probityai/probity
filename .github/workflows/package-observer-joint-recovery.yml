@@ -46,7 +46,7 @@ jobs:
       - name: Select the immutable original reader sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 7047248e5eb3d58804bd14de1c4e7c3d41ccffb2
+          ref: 815e517bb513014b31940a43d35a8ba1f189c573
           path: packages/observer/selected-reader-baseline
           persist-credentials: false
       - name: Install hash-selected native profile and exact Observer checkout
@@ -64,7 +64,7 @@ jobs:
       - name: Normally upgrade the installed original reader and refuse stale selection
         run: |
           python -m pip download --require-hashes --only-binary=:all: -r requirements-reader.lock --dest reader-dependency-wheels
-          python verify_upgrade.py --baseline ../../selected-reader-baseline/interop/joint-recovery-2026-10-02 --packet fresh-run --output upgrade-receipts --dependency-wheels reader-dependency-wheels > upgrade-report.json
+          python verify_upgrade.py --baseline ../../selected-reader-baseline/packages/observer/interop/joint-recovery-2026-10-02 --packet fresh-run --output upgrade-receipts --dependency-wheels reader-dependency-wheels > upgrade-report.json
       - name: Build and normally install a separate framework-free reader
         run: |
           python -m pip wheel --no-deps --no-build-isolation --wheel-dir wheels ../.. .
