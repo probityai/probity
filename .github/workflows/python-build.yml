@@ -57,6 +57,12 @@ jobs:
           if [ -f "$target/scripts/check-artifacts-controls.py" ]; then
             python "$target/scripts/check-artifacts-controls.py" dist/*.whl dist/*.tar.gz
           fi
+          if [ -f "$target/scripts/check-distribution.py" ]; then
+            python "$target/scripts/check-distribution.py" dist/*.whl dist/*.tar.gz
+          fi
+          if [ -f "$target/scripts/check-distribution-controls.py" ]; then
+            python "$target/scripts/check-distribution-controls.py" dist/*.whl
+          fi
           sha256sum dist/* > SHA256SUMS
           git rev-parse HEAD > SOURCE-COMMIT
       - name: Install outside the checkout and rebuild from the source distribution
