@@ -195,7 +195,7 @@ Proposal for `agent-evidence-vocabulary`; it documents the receipt and does not 
 Predicate type the receipt carries:
 
 ```
-https://github.com/probityai/agent-evidence-vocabulary/blob/main/docs/predicates/agent-change-admission-v1.md
+https://github.com/probityai/agent-evidence/blob/main/packages/vocabulary/docs/predicates/agent-change-admission-v1.md
 ```
 
 Proposed term, in the registry's shape:

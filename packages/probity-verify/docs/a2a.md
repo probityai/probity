@@ -27,7 +27,7 @@ The server owns the policy and evidence directory. The caller supplies a case, i
 
 ## Read a Lab record
 
-Retain a register from a pinned [Atlas commit](https://github.com/probityai/agent-evidence-atlas), then record its exact SHA-256. Add it to the server configuration:
+Retain a register from a pinned [Atlas commit](https://github.com/probityai/agent-evidence/tree/main/site), then record its exact SHA-256. Add it to the server configuration:
 
 ```sh
 uv run --frozen --extra a2a probity-a2a \

@@ -7,7 +7,7 @@ It is for component owners and reviewers who want one reproducible run, with neg
 ## Install
 
 ```sh
-uv tool install git+https://github.com/probityai/agent-checkout-runner@v0.2.0
+uv tool install "git+https://github.com/probityai/probity@checkout-runner--v0.2.0#subdirectory=examples/checkout-runner"
 ```
 
 It pins `agent-evidence-vectors==0.18.1` for JCS and Ed25519. It needs git, Node 24 and npm.
@@ -38,7 +38,7 @@ Hand the sealed bundle to an independent reader with `--reader "<command> {bundl
 ## Run it in your own CI
 
 ```yaml
-- uses: probityai/agent-checkout-runner@v0.2.0
+- uses: probityai/probity/examples/checkout-runner@checkout-runner--v0.2.0
   with:
     gate-dir: path/to/your/aps-checkout-gate   # empty: the pinned commit
 ```
@@ -57,5 +57,5 @@ v0.2.0. The matrix drives `aps-checkout-gate` at `dedc818`. CI runs the unit tes
 
 | Page | What it covers |
 | --- | --- |
-| [Coverage map](https://github.com/probityai/agent-checkout-runner/blob/main/docs/COVERAGE-MAP.md) | What each case and suite covers, who owns each component, and what a connected run still needs |
-| [Claims](https://github.com/probityai/agent-checkout-runner/blob/main/docs/CLAIMS.md) | Each claim, the streams it reads, and the bundle layout |
+| [Coverage map](https://github.com/probityai/probity/blob/main/examples/checkout-runner/docs/COVERAGE-MAP.md) | What each case and suite covers, who owns each component, and what a connected run still needs |
+| [Claims](https://github.com/probityai/probity/blob/main/examples/checkout-runner/docs/CLAIMS.md) | Each claim, the streams it reads, and the bundle layout |
