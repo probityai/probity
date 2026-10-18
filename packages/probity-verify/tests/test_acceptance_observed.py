@@ -392,6 +392,10 @@ class TestStrengthMembers:
     ])
     def test_malformed_strength_members(self, tmp_path, records, change, message):
         change(records["contract"])
+        with pytest.raises(CaseError, match=message):
+            run(tmp_path, records)
+
+
 def finding(reason, refuses=True, **extra):
     return {"reason": reason, "refuses": refuses, "evidence": [{"call": "(1,)"}], **extra}
 

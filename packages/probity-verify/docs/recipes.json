@@ -84,8 +84,8 @@
     },
     {
       "path": "src/probity_verify/adapters/acceptance_observed.py",
-      "bytes": 9612,
-      "sha256": "efd273bf5b08d4e4b74e826dfe0013d82ac31874f1c45846c444ef7983785cfc"
+      "bytes": 10454,
+      "sha256": "491806c8acf737fba9df46834565c1d3b97994bd88929a00835a6b0776e836fd"
     },
     {
       "path": "src/probity_verify/adapters/authority_anchor.py",
@@ -109,8 +109,8 @@
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 34118,
-      "sha256": "3e217237aefbe879200bf8e2c95b94a1ea04309ca24f9911f92aeed3a90b2e8e"
+      "bytes": 36043,
+      "sha256": "3697c7f9b0c81c5226d987a3ab49a878ba498af517355de66a8b0606739e0701"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
