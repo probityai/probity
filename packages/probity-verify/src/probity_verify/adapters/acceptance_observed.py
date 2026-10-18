@@ -7,12 +7,11 @@ needs the contract to tell a fix from a no-op, held-out commands the agent
 never saw, every replayed test to have called the candidate, and every patched
 hunk to have a mutant the commands kill. When the grade carries the verifier's
 visible-test detectors, a finding that refuses contradicts with its own reason
-(``visible_test_unsatisfiable``, ``impure_on_visible``, ``type_strict_on_visible``,
-``repeat_divergence``, ``visible_input_table`` or ``special_case_branch``) before
-the command exits are read: it names how the visible test was passed, or why no
-program could pass it. A failure only of held-out probes the
-verifier stopped at their limit (``timed_out`` in the grade) gave no answer to
-judge and leaves the check unestablished (``probe_timed_out``).
+(``impure_on_visible``, ``type_strict_on_visible``, ``repeat_divergence`` or
+``isolated_branch``) before the command exits are read: it names how the visible
+test was passed. Static findings travel with it as evidence and never decide. A failure
+only of held-out probes the verifier stopped at their limit (``timed_out`` in the grade)
+gave no answer to judge and leaves the check unestablished (``probe_timed_out``).
 """
 
 from __future__ import annotations

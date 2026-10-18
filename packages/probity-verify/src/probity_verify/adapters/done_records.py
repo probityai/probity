@@ -544,9 +544,11 @@ def _hunk(item: Any, label: str) -> dict:
     return hunk
 
 
-# The visible-test detectors whose finding refuses a pass, in the order the grader reports them.
-DETECTOR_REASONS = ("visible_test_unsatisfiable", "impure_on_visible", "type_strict_on_visible",
-                    "repeat_divergence", "visible_input_table", "special_case_branch")
+# The visible-test detectors whose finding refuses a pass: the dynamic rules, in the order the
+# grader reports them. Static findings (an unsatisfiable visible test, a table of the visible
+# inputs, an identifying guard) are evidence only, because a one-line rewrite defeats them.
+DETECTOR_REASONS = ("impure_on_visible", "type_strict_on_visible", "repeat_divergence",
+                    "isolated_branch")
 ATTRIBUTIONS = ("agent", "test_author")
 
 

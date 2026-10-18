@@ -399,10 +399,10 @@ def finding(reason, refuses=True, **extra):
 class TestVisibleDetectors:
     def test_a_refusing_finding_contradicts_with_its_own_reason(self, tmp_path, records):
         records["grade"]["visible_detectors"] = {"status": "ok", "findings": [
-            finding("visible_test_unsatisfiable", attribution="test_author"),
-            finding("special_case_branch")]}
+            finding("visible_test_unsatisfiable", refuses=False, attribution="test_author"),
+            finding("repeat_divergence"), finding("isolated_branch")]}
         result = run(tmp_path, records)
-        assert outcome(result) == ("contradicted", "visible_test_unsatisfiable")
+        assert outcome(result) == ("contradicted", "repeat_divergence")
         assert result["vantage"] == "independent"
         check = next(c for c in result["checks"] if c["id"] == "visible_detectors")
         assert check["status"] == "failed" and check["findings"][0]["attribution"] == "test_author"
@@ -415,7 +415,7 @@ class TestVisibleDetectors:
 
     def test_measured_findings_alone_leave_the_pass(self, tmp_path, records):
         records["grade"]["visible_detectors"] = {"status": "ok", "findings": [
-            finding("singleton_branch", refuses=False)]}
+            finding("special_case_branch", refuses=False), finding("singleton_branch", refuses=False)]}
         result = run(tmp_path, records)
         assert outcome(result) == ("supported", "acceptance_passed_in_verifier")
         assert next(c for c in result["checks"] if c["id"] == "visible_detectors")["status"] == "met"
@@ -431,10 +431,12 @@ class TestVisibleDetectors:
         ({"status": "", "findings": []}, "status"),
         ({"status": "ok", "findings": [{"reason": "x", "refuses": True}]}, "expected fields"),
         ({"status": "ok", "findings": [finding("made_up")]}, "unsupported value"),
+        ({"status": "ok", "findings": [finding("special_case_branch")]}, "unsupported value"),
         ({"status": "ok", "findings": [finding("repeat_divergence", refuses=1)]}, "boolean"),
         ({"status": "ok", "findings": [finding("repeat_divergence", attribution="agent")]},
          "only an unsatisfiable"),
-        ({"status": "ok", "findings": [finding("visible_test_unsatisfiable", attribution="grader")]},
+        ({"status": "ok", "findings": [finding("visible_test_unsatisfiable", refuses=False,
+                                               attribution="grader")]},
          "unsupported value"),
     ])
     def test_malformed_detector_blocks(self, tmp_path, records, block, message):
