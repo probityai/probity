@@ -94,8 +94,8 @@ jobs:
       - name: Execute installation, policy, runtime and native refusal controls
         run: |
           python -m pip install pytest==8.4.2 hypothesis==6.147.0 ruff==0.15.6
-          python -m ruff check interop/model-consumer-2026-10-02/
-          python -m ruff format --check interop/model-consumer-2026-10-02/
+          python -m ruff check --isolated interop/model-consumer-2026-10-02/
+          python -m ruff format --isolated --check interop/model-consumer-2026-10-02/
           python -m pytest -q interop/model-consumer-2026-10-02/tests --junitxml=model-consumer-tests.xml
       - name: Retain exact wheel, policies and command receipts
         if: always()
