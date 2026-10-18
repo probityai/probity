@@ -42,6 +42,7 @@ jobs:
     defaults:
       run:
         shell: bash
+        working-directory: packages/observer
     env:
       TERM: dumb
     steps:
