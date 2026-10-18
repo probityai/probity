@@ -183,7 +183,15 @@ def _acceptance_entry(item: Any, label: str) -> dict:
         raise CaseError(f"{label}: cwd and exe are sealed together")
     if "cwd" in entry:
         absolute(entry["cwd"], f"{label}.cwd")
-        absolute(entry["exe"], f"{label}.exe")
+        exe = entry["exe"]
+        if isinstance(exe, list):
+            # Every path that names the one executable file (python, python3, python3.12).
+            if not exe or exe != sorted(set(exe)):
+                raise CaseError(f"{label}.exe: expected a path or sorted distinct paths")
+            for index, name in enumerate(exe):
+                absolute(name, f"{label}.exe[{index}]")
+        else:
+            absolute(exe, f"{label}.exe")
     if "ids" in entry:
         ids = entry["ids"]
         if (not isinstance(ids, list) or not ids or len(set(map(str, ids))) != len(ids)
