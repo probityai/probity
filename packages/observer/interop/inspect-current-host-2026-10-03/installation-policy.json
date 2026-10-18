@@ -1,7 +1,7 @@
 {
   "adapter_sha256": "906e844ac709d8508dddce36c5dd0f451357852e135e1f5bbaee4ca821c14c5a",
   "adapter_wheel_sha256": "a608bf025e32ea95be4ef6cbc76741ff0225b8dc5ab02d2fec268d6da8bb8972",
-  "bootstrap_sha256": "668dca4a3b1bde25cf0592294bacf2807ad73b12247a8e2d544e664da6eb7ab2",
+  "bootstrap_sha256": "860d31aaab792d6b620c7a1ae25250fc72eec6f352fe68439a954b21ecdd1fe4",
   "build": {
     "setuptools": "81.0.0",
     "source_date_epoch": 946684800,

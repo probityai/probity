@@ -356,7 +356,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     }
     try:
         receipt["candidate"] = checkout(
-            args.candidate, args.candidate_sha, "https://github.com/probityai/agent-evidence-observer"
+            args.candidate, args.candidate_sha, "https://github.com/probityai/probity"
         )
         receipt["host"] = checkout(
             args.host, HOST, "https://github.com/UKGovernmentBEIS/inspect_ai"

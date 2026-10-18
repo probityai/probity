@@ -61,7 +61,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/observer-build"
           cp existing-reader/pyproject.toml existing-reader/LICENSE "$RUNNER_TEMP/observer-build/"
           cp -a existing-reader/src "$RUNNER_TEMP/observer-build/src"
-          cp -a owned-consumer/interop/inspect-current-host-2026-10-03 "$RUNNER_TEMP/current-reader-build"
+          cp -a owned-consumer/packages/observer/interop/inspect-current-host-2026-10-03 "$RUNNER_TEMP/current-reader-build"
           uv build --no-build-isolation --python "$RUNNER_TEMP/builder/bin/python" --wheel --out-dir "$RUNNER_TEMP/wheels" "$RUNNER_TEMP/observer-build"
           uv build --no-build-isolation --python "$RUNNER_TEMP/builder/bin/python" --wheel --out-dir "$RUNNER_TEMP/wheels" "$RUNNER_TEMP/current-reader-build"
           uv venv --python python3.12 "$RUNNER_TEMP/reader-env"
@@ -84,12 +84,12 @@ jobs:
         env:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: |
-          "$RUNNER_TEMP/builder/bin/python" -B -m pytest -q -c /dev/null -p no:cacheprovider owned-consumer/interop/inspect-current-host-2026-10-03/test_bootstrap.py --junitxml="$RUNNER_TEMP/inspect-bootstrap-controls.xml"
+          "$RUNNER_TEMP/builder/bin/python" -B -m pytest -q -c /dev/null -p no:cacheprovider owned-consumer/packages/observer/interop/inspect-current-host-2026-10-03/test_bootstrap.py --junitxml="$RUNNER_TEMP/inspect-bootstrap-controls.xml"
       - name: Run the declared current host and repeated isolated consumer
         env:
           SELECTED_OWNED_COMMIT: ${{ github.sha }}
         run: |
-          python owned-consumer/interop/inspect-current-host-2026-10-03/bootstrap.py \
+          python owned-consumer/packages/observer/interop/inspect-current-host-2026-10-03/bootstrap.py \
             --candidate "$GITHUB_WORKSPACE/packages/observer/owned-consumer" --candidate-sha "$SELECTED_OWNED_COMMIT" \
             --host "$GITHUB_WORKSPACE/packages/observer/current-inspect" --reader-source "$GITHUB_WORKSPACE/packages/observer/existing-reader" \
             --producer-python "$GITHUB_WORKSPACE/packages/observer/current-inspect/.venv/bin/python" \
@@ -102,7 +102,7 @@ jobs:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
           INSPECT_CURRENT_PACKET: ${{ runner.temp }}/inspect-current-retained/packet
         run: |
-          "$RUNNER_TEMP/reader-env/bin/python" -I -B -m pytest -q -c /dev/null -p no:cacheprovider --import-mode=importlib owned-consumer/interop/inspect-current-host-2026-10-03/test_native_packet.py --junitxml="$RUNNER_TEMP/inspect-native-controls.xml"
+          "$RUNNER_TEMP/reader-env/bin/python" -I -B -m pytest -q -c /dev/null -p no:cacheprovider --import-mode=importlib owned-consumer/packages/observer/interop/inspect-current-host-2026-10-03/test_native_packet.py --junitxml="$RUNNER_TEMP/inspect-native-controls.xml"
       - name: Retain originals, pre-run selection, installed wheels and refusals
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
