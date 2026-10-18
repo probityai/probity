@@ -33,7 +33,7 @@ jobs:
       - name: Install ordinary CI test tools (separate from native preparation)
         run: python -m pip install pytest==8.3.3 hypothesis==6.168.3 ruff==0.15.8
       - run: python -B -m pytest interop/local-model-tool-arguments-2026-10-03/tests -q
-      - run: python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' interop/local-model-tool-arguments-2026-10-03/*.py
+      - run: python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' interop/local-model-tool-arguments-2026-10-03/*.py
       # The preregistered controls select Git blobs relative to the repository
       # root and cannot change, so give them a checkout whose root is the
       # package tree: a commit with tree HEAD:packages/observer and parent HEAD.
