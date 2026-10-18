@@ -1,5 +1,7 @@
 """tool_claim_match/v1: each claimed run matches an observed exec after the last edit."""
 
+from typing import ClassVar
+
 import pytest
 from done_run import PYTEST, ROOT, build, decide, exec_event, honest_records
 from probity_verify import CaseError, adjudicate
@@ -563,6 +565,11 @@ class TestSealedAcceptanceCommand:
         (lambda c: c["acceptance"][0].update(
             cwd="/workspace", exe=["/usr/bin/python3", "/usr/bin/python"]), "exe"),
         (lambda c: c["acceptance"][0].update(cwd="/workspace", exe=["python3"]), "exe"),
+        (lambda c: c["acceptance"][0].update(interpreter=["/usr/bin/python3"]), "interpreter"),
+        (lambda c: c["acceptance"][0].update(cwd="/workspace", exe="/usr/bin/pytest",
+                                             interpreter=[]), "interpreter"),
+        (lambda c: c["acceptance"][0].update(cwd="/workspace", exe="/usr/bin/pytest",
+                                             interpreter=["python3"]), "interpreter"),
         (lambda c: c.update(module_under_test=[]), "module_under_test"),
         (lambda c: c.update(module_under_test=["/abs.py"]), "module_under_test"),
     ])
@@ -570,6 +577,51 @@ class TestSealedAcceptanceCommand:
         change(records["contract"])
         with pytest.raises(CaseError, match=message):
             decide_with_contract(tmp_path, records)
+
+
+class TestOneInvocation:
+    """Honest spellings of the sealed run match; a run that chooses other tests does not
+    (review 5, R5-1)."""
+
+    SEALED: ClassVar[list[str]] = ["pytest", "-q", "tests"]
+
+    def seal(self, records, interpreter=True):
+        entry = {"id": "unit", "argv": self.SEALED, "cwd": ROOT, "exe": "/usr/local/bin/pytest"}
+        if interpreter:
+            entry["interpreter"] = sorted(["/usr/local/bin/python", PYTHON3])
+        records["contract"]["acceptance"][0] = entry
+        records["claims"]["claims"][0]["argv"] = self.SEALED
+
+    def test_the_interpreter_running_the_module_matches(self, tmp_path, records):
+        self.seal(records)
+        set_run(records, argv=["python3", "-m", "pytest", "tests", "-q"], exe=PYTHON3)
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            "supported", "tool_claims_matched")
+
+    def test_the_interpreter_needs_sealing(self, tmp_path, records):
+        self.seal(records, interpreter=False)
+        set_run(records, argv=["python3", "-m", "pytest", "tests", "-q"], exe=PYTHON3)
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            "contradicted", "tool_claim_unmatched")
+
+    @pytest.mark.parametrize("argv,matches", [
+        (["pytest", "tests", "-q", "-x"], True),
+        (["pytest", "--tb=short", "./tests"], True),
+        (["pytest", "-q", "tests", "-k", "not test_x"], False),
+        (["pytest", "-q", "tests/test_app.py"], False),
+    ])
+    def test_the_sealed_executable_with_other_spellings(self, tmp_path, records, argv,
+                                                       matches):
+        self.seal(records)
+        set_run(records, argv=argv, exe="/usr/local/bin/pytest")
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            ("supported", "tool_claims_matched") if matches
+            else ("contradicted", "tool_claim_unmatched"))
+
+    def test_without_a_contract_the_invocation_matches(self, tmp_path, records):
+        set_run(records, argv=["pytest", "tests", "-q"])
+        records["claims"]["claims"][0]["argv"] = ["python", "-m", "pytest", "-q", "tests"]
+        assert run(tmp_path, records)["decision"] == "supported"
 
 
 class TestOwnWritesUnderAContract:
@@ -584,10 +636,21 @@ class TestOwnWritesUnderAContract:
         assert outcome(decide_with_contract(tmp_path, records)) == (
             "contradicted", "tool_claim_precedes_last_edit")
 
-    def test_the_runs_own_outside_writes_are_edits_under_a_contract(self, tmp_path, records):
+    @pytest.mark.parametrize("paths", [["/tmp/pytest-of-root/test_tmp0"],
+                                       ["/usr/lib/python3/site-packages/app_patch.py"]])
+    @pytest.mark.parametrize("run_writes", [[], ["coverage.xml"]])
+    def test_the_runs_own_outside_writes_are_never_edits(self, tmp_path, records, paths,
+                                                         run_writes):
+        """A test's tmp_path under a sealed contract (review 5, R5-3): sealing run_writes
+        says which workspace paths are the run's, and changes nothing outside it."""
+        records["contract"]["acceptance"][0]["run_writes"] = run_writes
+        add_external(records, paths=paths, origin="x1")
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            "supported", "tool_claims_matched")
+
+    def test_another_process_outside_write_after_the_run_is_an_edit(self, tmp_path, records):
         self.seal(records)
-        add_external(records, paths=["/usr/lib/python3/site-packages/app_patch.py"],
-                     origin="x1")
+        add_external(records, paths=["/tmp/pytest-of-root/test_tmp0"])
         assert outcome(decide_with_contract(tmp_path, records)) == (
             "contradicted", "tool_claim_precedes_last_edit")
 

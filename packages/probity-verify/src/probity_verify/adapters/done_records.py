@@ -180,7 +180,8 @@ STRENGTHS = ("gated", "reference_free", "synthesized_spec")
 
 
 def _acceptance_entry(item: Any, label: str) -> dict:
-    entry = _object(item, label, {"id", "argv"}, {"ids", "run_writes", "cwd", "exe", "tier"})
+    entry = _object(item, label, {"id", "argv"},
+                    {"ids", "run_writes", "cwd", "exe", "interpreter", "tier"})
     if "tier" in entry:
         _choice(entry["tier"], f"{label}.tier", TIERS)
     _string(entry["id"], f"{label}.id")
@@ -198,6 +199,14 @@ def _acceptance_entry(item: Any, label: str) -> dict:
                 absolute(name, f"{label}.exe[{index}]")
         else:
             absolute(exe, f"{label}.exe")
+    if "interpreter" in entry:
+        # The paths of the Python that runs the command's entry point as ``-m <module>``.
+        found = entry["interpreter"]
+        if "exe" not in entry or not isinstance(found, list) or not found or (
+                found != sorted(set(found))):
+            raise CaseError(f"{label}.interpreter: expected sorted distinct paths beside exe")
+        for index, name in enumerate(found):
+            absolute(name, f"{label}.interpreter[{index}]")
     if "ids" in entry:
         ids = entry["ids"]
         if (not isinstance(ids, list) or not ids or len(set(map(str, ids))) != len(ids)
