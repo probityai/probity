@@ -649,15 +649,20 @@ def _hunk(item: Any, label: str) -> dict:
 # inputs, an identifying guard) are evidence only, because a one-line rewrite defeats them.
 DETECTOR_REASONS = ("impure_on_visible", "type_strict_on_visible", "repeat_divergence",
                     "isolated_branch")
-ATTRIBUTIONS = ("agent", "test_author")
+# The two findings that say who made the visible test unsatisfiable, and the parties each may
+# name. The task pre-flight (``invalid_task_spec``, the visible test read statement by statement
+# on evaluated arguments) always names the task and never refuses: it is a defect of the task,
+# outside both verdicts.
+ATTRIBUTIONS = {"visible_test_unsatisfiable": ("agent", "test_author"), "invalid_task_spec": ("task",)}
 
 
 def _detectors(value: Any, label: str) -> dict:
     """The grader's visible-test detectors: a status and one finding per rule that fired.
 
     A finding that refuses names one of :data:`DETECTOR_REASONS`; a measured finding names any
-    rule and never refuses. Only ``visible_test_unsatisfiable`` says who made the visible test
-    unsatisfiable (``attribution``)."""
+    rule and never refuses. Only ``visible_test_unsatisfiable`` and the task pre-flight
+    ``invalid_task_spec`` say who made the visible test unsatisfiable (``attribution``, one of the
+    reason's :data:`ATTRIBUTIONS`); the pre-flight always says so."""
     block = _object(value, label, {"status", "findings"})
     _string(block["status"], f"{label}.status")
     if not isinstance(block["findings"], list):
@@ -670,10 +675,12 @@ def _detectors(value: Any, label: str) -> dict:
             raise CaseError(f"{where}.refuses: expected a boolean")
         if finding["refuses"]:
             _choice(reason, f"{where}.reason", DETECTOR_REASONS)
+        if reason == "invalid_task_spec" and "attribution" not in finding:
+            raise CaseError(f"{where}.attribution: the task pre-flight names the task")
         if "attribution" in finding:
-            if reason != "visible_test_unsatisfiable":
+            if reason not in ATTRIBUTIONS:
                 raise CaseError(f"{where}.attribution: only an unsatisfiable visible test has one")
-            _choice(finding["attribution"], f"{where}.attribution", ATTRIBUTIONS)
+            _choice(finding["attribution"], f"{where}.attribution", ATTRIBUTIONS[reason])
     return block
 
 
