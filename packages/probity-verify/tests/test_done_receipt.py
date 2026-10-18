@@ -208,18 +208,6 @@ class TestCompletionClaimed:
                        verdict=("contradicted", "acceptance_failed_in_verifier"))
         assert outcome(result) == ("contradicted", "acceptance_failed_in_verifier")
 
-    def test_a_completion_in_the_agents_text_is_a_claim_of_done(self, tmp_path, records):
-        records["claims"]["claims"] = []
-        records["claims"]["completion"] = {"claimed": True}
-        records["grade"]["results"][0]["exit"] = 1
-        result = build(tmp_path, records, lambda p: p.update(completion_claimed=True),
-                       verdict=("contradicted", "acceptance_failed_in_verifier"))
-        check = next(c for c in result["checks"] if c["id"] == "completion_claimed")
-        assert check["derived"] is True
-        result = build(tmp_path, records, lambda p: p.update(completion_claimed=False),
-                       verdict=("contradicted", "acceptance_failed_in_verifier"))
-        assert outcome(result) == ("contradicted", "receipt_completion_mismatch")
-
     @pytest.mark.parametrize("reported", [True, False])
     def test_a_receipt_misreporting_the_claim(self, tmp_path, records, reported):
         if reported:

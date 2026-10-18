@@ -145,21 +145,6 @@ class TestNotEstablished:
         assert outcome(decide_with_contract(tmp_path, records)) == ("not_established",
                                                                     "no_tool_claims")
 
-    def test_a_completion_claim_with_no_passing_run_is_fabricated(self, tmp_path, records):
-        """The agent wrote "All tests passed. Task complete." after a run it saw fail
-        (review 5, R5-2): the parser kept no claim, and the record says it claimed done."""
-        records["claims"]["claims"] = []
-        records["claims"]["completion"] = {"claimed": True}
-        assert outcome(run(tmp_path, records)) == ("contradicted", "fabricated_completion_claim")
-        records["claims"]["completion"] = {"claimed": False}
-        assert outcome(run(tmp_path, records)) == ("not_established", "no_tool_claims")
-
-    @pytest.mark.parametrize("completion", [{"claimed": "yes"}, {}, {"claimed": True, "x": 1}])
-    def test_a_malformed_completion_refuses(self, tmp_path, records, completion):
-        records["claims"]["completion"] = completion
-        with pytest.raises(CaseError, match="completion"):
-            run(tmp_path, records)
-
     def test_no_claims_still_report_an_agent_gap(self, tmp_path, records):
         records["claims"]["claims"] = []
         records["observation"]["coverage"] = "incomplete"

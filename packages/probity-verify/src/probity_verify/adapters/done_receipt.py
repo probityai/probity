@@ -18,8 +18,7 @@ A receipt whose verdict differs from the derived one is contradicted
 its own records do not give.
 
 A receipt may also say whether the agent claimed done (``completion_claimed``):
-true exactly when the claims record says the agent's final text claims completion
-or holds a claimed run with exit 0. A receipt
+true exactly when the claims record holds a claimed run with exit 0. A receipt
 that says otherwise is contradicted (``receipt_completion_mismatch``), so a
 consumer can tell an agent that never claimed done from one whose claim was
 refused.
@@ -198,8 +197,8 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
             return decide("not_established", "receipt_subject_mismatch")
     if "completion_claimed" in predicate:
         claims_bytes, _ = bound["claims"]
-        derived_claim = claims_bytes is not None and records.completion_claimed(
-            records.claims(claims_bytes))
+        derived_claim = claims_bytes is not None and any(
+            item.get("exit") == 0 for item in records.claims(claims_bytes)["claims"])
         agrees_claim = predicate["completion_claimed"] is derived_claim
         checks.append({"id": "completion_claimed", "status": "met" if agrees_claim
                        else "failed", "derived": derived_claim,
