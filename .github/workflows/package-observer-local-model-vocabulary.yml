@@ -26,7 +26,7 @@ jobs:
       - run: python -m pip install pytest==9.1.1 'setuptools>=68' wheel
       - run: python -m pytest interop/local-model-vocabulary-2026-10-02/tests -q
       - name: Build, install and repeat the offline consumer controls
-        run: python interop/local-model-vocabulary-2026-10-02/verify_installation.py . installed-reader-controls
+        run: python interop/local-model-vocabulary-2026-10-02/verify_installation.py ../.. installed-reader-controls
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -65,7 +65,7 @@ jobs:
         run: python interop/local-model-vocabulary-2026-10-02/task_matrix.py model-vocabulary-artifacts/run --verify --pins-file model-vocabulary-artifacts/run/consumer-pins.json > model-vocabulary-artifacts/reader.json
       - name: Build the selected model-free installed reader for the actual packet
         run: |
-          python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py . actual-vocabulary-reader-wheel --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json --contract-sha256 4a3a47b14308f726af505ac489c9cb4c482cd48c09eacd3881c2fafe44f14ff7
+          python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py ../.. actual-vocabulary-reader-wheel --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json --contract-sha256 bba85e5835652af11f0a722a4bd819722e7adb840bcea1f2cc36cef7f608d77b
       - name: Preserve strict installed quality decisions and verify actual packet corruption refusals
         run: |
           python -I interop/local-model-vocabulary-2026-10-02/consume_native.py actual-vocabulary-reader-wheel/probity_policy_vocabulary_reader-0.1.0-py3-none-any.whl model-vocabulary-artifacts/run model-vocabulary-artifacts/run/consumer-pins.json model-vocabulary-artifacts/installed-native-consumer --expected-report model-vocabulary-artifacts/run/report.json
@@ -116,7 +116,7 @@ jobs:
               archive.extractall("retained-vocabulary-native-packet")
           PYTHON
       - name: Build the reviewed frozen installed reader without a model runtime
-        run: python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py . retained-vocabulary-reader-wheel --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json --contract-sha256 4a3a47b14308f726af505ac489c9cb4c482cd48c09eacd3881c2fafe44f14ff7
+        run: python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py ../.. retained-vocabulary-reader-wheel --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json --contract-sha256 bba85e5835652af11f0a722a4bd819722e7adb840bcea1f2cc36cef7f608d77b
       - name: Recompute the completed study and preserve all eight strict quality holds
         run: |
           python -I interop/local-model-vocabulary-2026-10-02/consume_native.py retained-vocabulary-reader-wheel/probity_policy_vocabulary_reader-0.1.0-py3-none-any.whl retained-vocabulary-native-packet interop/local-model-vocabulary-2026-10-02/retained/selected-pins-37094901561.json retained-vocabulary-consumer --expected-report interop/local-model-vocabulary-2026-10-02/retained/report-37094901561.json

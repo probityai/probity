@@ -13,7 +13,7 @@ from pathlib import Path
 from build_installed_reader import build
 from task_matrix import digest, encode, population, protocol
 
-CONTRACT_SHA256 = "4a3a47b14308f726af505ac489c9cb4c482cd48c09eacd3881c2fafe44f14ff7"
+CONTRACT_SHA256 = "bba85e5835652af11f0a722a4bd819722e7adb840bcea1f2cc36cef7f608d77b"
 ROOT = Path(__file__).resolve().parent
 
 

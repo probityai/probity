@@ -29,9 +29,9 @@ The final registration is `e5bc19b22fba86d1bf7d2bec7f507773099cf611`, with proto
 Build and install the separate model-free reader from the reviewed source contract:
 
 ```sh
-python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py . reader-wheel \
+python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py ../.. reader-wheel \
   --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json \
-  --contract-sha256 4a3a47b14308f726af505ac489c9cb4c482cd48c09eacd3881c2fafe44f14ff7
+  --contract-sha256 bba85e5835652af11f0a722a4bd819722e7adb840bcea1f2cc36cef7f608d77b
 python -m venv reader-env
 reader-env/bin/python -m pip install --no-index --no-deps reader-wheel/*.whl
 reader-env/bin/probity-policy-vocabulary-reader PACKET --pins-file SELECTED-PINS.json
