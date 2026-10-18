@@ -412,7 +412,7 @@ def surface_from_lines(lines: Sequence[str]) -> tuple[list[str], dict[str, str]]
 
     Entries are the resolutions, normalized and deduplicated, with every entry that lies under
     another removed (the ancestor covers it). Left out: a shared scratch root or the agent's
-    HOME as a whole entry, and anything that is the workspace, inside it or above it. An alias
+    HOME as a whole entry, and the workspace or anything inside it. An alias
     maps a candidate that resolves elsewhere (``/lib`` to ``/usr/lib``) to its resolution, so
     probity-verify reads a path written through the link as one on the surface."""
     pairs = []
@@ -424,8 +424,8 @@ def surface_from_lines(lines: Sequence[str]) -> tuple[list[str], dict[str, str]]
         pairs.append((name, real))
 
     def allowed(path: str) -> bool:
-        return (path not in SURFACE_FORBIDDEN and not _over(path, AGENT_CWD)
-                and not _over(AGENT_CWD, path))
+        # The workspace's only ancestor, ``/``, is already forbidden.
+        return path not in SURFACE_FORBIDDEN and not _over(path, AGENT_CWD)
 
     reals = sorted({real for _, real in pairs if allowed(real)})
     entries = [path for path in reals

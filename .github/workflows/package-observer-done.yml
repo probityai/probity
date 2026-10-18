@@ -36,6 +36,8 @@ jobs:
         run: python scripts/mutate-visible-detectors.py
       - name: Every mutant of the loop policy and the completion reading turns their tests red
         run: python scripts/mutate-done-rules.py
+      - name: Every mutant of the out-of-tree tamper rules turns their tests red
+        run: python scripts/mutate-oot-rules.py
       - name: Combine the suite's data with the data of the test runs it started
         run: python -m coverage combine
       - name: Every done module is at least 80 percent covered

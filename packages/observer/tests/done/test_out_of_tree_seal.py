@@ -83,6 +83,10 @@ class TestFailureKind:
         ({"passed": False, "failure": "assertion", "timed_out": True}, "candidate"),
         ({"passed": False, "failure": "test raised NameError"}, "candidate"),
         ({"passed": False, "failure": "timeout", "mode": "determinism"}, "candidate"),
+        ({"passed": False, "failure": "no builtins report", "mode": "import_side_effects"},
+         "candidate"),
+        ({"passed": False, "failure": "builtins changed on import",
+          "mode": "import_side_effects"}, "assertion"),
         ({"passed": True, "failure": None}, None),
     ])
     def test_the_kind_table(self, result, kind):
