@@ -42,8 +42,10 @@ ANCESTOR_CONFIG = frozenset({"conftest.py", "pytest.ini", "pyproject.toml", "tox
 SURFACE_FORBIDDEN = frozenset({"/", "/tmp", "/var/tmp"})
 ALIAS_HOPS = 40
 # How the grader's trusted run of a command failed: an assertion on the answer, the
-# candidate ending its own process, or anything else the candidate raised.
-FAILURE_KINDS = ("assertion", "candidate_exit", "candidate")
+# candidate ending its own process, an exception the candidate's code raises wherever it runs,
+# or anything else (an exception that can come from the trusted run's isolation, a timeout,
+# a result the codec refused).
+FAILURE_KINDS = ("assertion", "candidate_exit", "candidate_raised", "candidate")
 EQUIVALENCES = ("python_ast",)
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PREDICATE_BASE = "https://w3id.org/agent-evidence/predicate/v1/"

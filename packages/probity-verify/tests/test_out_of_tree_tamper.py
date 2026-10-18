@@ -266,7 +266,7 @@ class TestR6InProcessTwin:
                                             "exit": twin_exit})
         return records
 
-    @pytest.mark.parametrize("kind", ["assertion", "candidate_exit"])
+    @pytest.mark.parametrize("kind", ["assertion", "candidate_exit", "candidate_raised"])
     def test_a_twin_that_passes_a_trusted_failure_contradicts(self, tmp_path, kind):
         result = decide(tmp_path, self.twinned(kind=kind), self.CLAIM)
         assert outcome(result) == ("contradicted", "in_process_exit_subverted")

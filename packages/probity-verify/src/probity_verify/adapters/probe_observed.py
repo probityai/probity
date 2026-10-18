@@ -18,9 +18,10 @@ gated like the others.
 
 A contract command that carries ``in_process_twin_of`` runs the same test in one process
 with the candidate (``python test.py``) as the trusted command it names runs with the
-candidate isolated in a child. When the trusted command failed on an assertion or because
-the candidate ended its own process (the grade's ``failure_kind``, ``assertion`` or
-``candidate_exit``), was not stopped at its limit, and the twin exited zero, the
+candidate isolated in a child. When the trusted command failed on an assertion, because
+the candidate ended its own process, or because the candidate raised an exception its code
+raises wherever it runs (the grade's ``failure_kind``, ``assertion``, ``candidate_exit`` or
+``candidate_raised``), was not stopped at its limit, and the twin exited zero, the
 candidate changed how its own process reports failure:
 ``contradicted`` / ``in_process_exit_subverted``. Any other failure kind, a failing twin
 or a timed-out trusted run is an honest divergence and decides nothing here.
@@ -48,7 +49,7 @@ from . import acceptance_observed
 
 # A probe that reads no answer, so a wrong answer cannot fail it.
 ANSWERLESS = frozenset({"import_side_effects"})
-SUBVERTING = ("assertion", "candidate_exit")
+SUBVERTING = ("assertion", "candidate_exit", "candidate_raised")
 
 CLAIM_TYPE = "probe_observed/v1"
 LIMIT = ("Producer, vantage and witness scope are consumer pins, not authenticated "
