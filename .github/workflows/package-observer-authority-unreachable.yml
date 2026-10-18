@@ -1,0 +1,49 @@
+# Moved from packages/observer/.github/workflows/authority-unreachable.yml when the package was imported;
+# its steps run from packages/observer.
+name: Authority at dispatch and durable effect reference
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths: ['packages/observer/interop/authority-unreachable-2026-10-03/**', 'packages/observer/src/probity_observer/**', '.github/workflows/package-observer-authority-unreachable.yml']
+  push:
+    branches: [main]
+    paths: ['packages/observer/interop/authority-unreachable-2026-10-03/**', 'packages/observer/src/probity_observer/**', '.github/workflows/package-observer-authority-unreachable.yml']
+permissions:
+  contents: read
+defaults:
+  run:
+    working-directory: packages/observer
+
+jobs:
+  authority-effect-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Install exact profile dependencies
+        run: python -m pip install -r interop/authority-unreachable-2026-10-03/requirements.txt
+      - name: Fetch immutable review source for bounded function checks
+        run: curl --fail --location --proto '=https' --output "$RUNNER_TEMP/alakris-publication_jobs.py" 'https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/6e0beb6d39bb1faa279087fd06cf2fe6c98e639c/core/agent-core/src/core/content/publication_jobs.py'
+      - name: Confirm vendored implementation records still match their sources
+        run: python interop/authority-unreachable-2026-10-03/implementation_records.py interop/authority-unreachable-2026-10-03/implementation-records "$RUNNER_TEMP/implementation-records-upstream.json" --check-upstream
+      - name: Build isolated installed producer and reader
+        run: bash interop/authority-unreachable-2026-10-03/verify_install.sh "$RUNNER_TEMP/authority-reference" "$GITHUB_SHA" "$RUNNER_TEMP/alakris-publication_jobs.py"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: authority-unreachable-reference
+          path: |
+            ${{ runner.temp }}/authority-reference/native/
+            ${{ runner.temp }}/authority-reference/wheels/
+            ${{ runner.temp }}/authority-reference/*.json
+            ${{ runner.temp }}/authority-reference/*.xml
+            ${{ runner.temp }}/authority-reference/*.txt
+            ${{ runner.temp }}/implementation-records-upstream.json
+          if-no-files-found: error
+          retention-days: 90

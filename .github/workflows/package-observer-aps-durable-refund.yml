@@ -1,0 +1,45 @@
+# Moved from packages/observer/.github/workflows/aps-durable-refund.yml when the package was imported;
+# its steps run from packages/observer.
+name: Native APS refund controls
+
+on:
+  pull_request:
+    paths: ['packages/observer/**', '.github/workflows/package-observer-aps-durable-refund.yml']
+  push:
+    paths: ['packages/observer/**', '.github/workflows/package-observer-aps-durable-refund.yml']
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: packages/observer
+
+jobs:
+  aps-refund:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - run: bash interop/aps-durable-refund-2026-10-05/verify_install.sh ./aps-refund-run
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: aps-refund-node-${{ matrix.node }}
+          retention-days: 90
+          path: |
+            packages/observer/aps-refund-run/
+            !packages/observer/aps-refund-run/operator/
+            !packages/observer/aps-refund-run/reader/

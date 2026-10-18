@@ -1,0 +1,67 @@
+# Moved from packages/observer/.github/workflows/adk-a2a-failed-task.yml when the package was imported;
+# its steps run from packages/observer.
+name: Native ADK A2A failed-task installed consumer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['packages/observer/interop/adk-a2a-failed-task-2026-10-03/**', '.github/workflows/package-observer-adk-a2a-failed-task.yml', 'packages/observer/pyproject.toml']
+  pull_request:
+    branches: [main]
+    paths: ['packages/observer/interop/adk-a2a-failed-task-2026-10-03/**', '.github/workflows/package-observer-adk-a2a-failed-task.yml', 'packages/observer/pyproject.toml']
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: packages/observer
+
+jobs:
+  native-adk-a2a-failed-task:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Check out immutable baseline native SDK
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: google/adk-python
+          ref: 63aed55113d4fe78245d3d6667b6e87569888bf5
+          path: packages/observer/vendor-adk-baseline
+          persist-credentials: false
+      - name: Check out immutable proposed failure fix
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ferponse/adk-python
+          ref: 23d253f2587ac090412394fe1a71ef5694fe2eda
+          path: packages/observer/vendor-adk-proposed-fix
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.14'
+      - name: Install selected verification runner
+        run: python -m pip install 'uv==0.8.22'
+      - name: Build installed producers and framework-free reader
+        run: bash interop/adk-a2a-failed-task-2026-10-03/verify_install.sh "$RUNNER_TEMP/adk-a2a-failed-task" "$GITHUB_WORKSPACE/packages/observer/vendor-adk-baseline" "$GITHUB_WORKSPACE/packages/observer/vendor-adk-proposed-fix"
+      - name: Retain native effects, transport and installed reader results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: adk-a2a-failed-task-installed-consumer
+          path: |
+            ${{ runner.temp }}/adk-a2a-failed-task/native-*/
+            ${{ runner.temp }}/adk-a2a-failed-task/*-publication/
+            ${{ runner.temp }}/adk-a2a-failed-task/wheels/
+            ${{ runner.temp }}/adk-a2a-failed-task/*-sdk-wheel/
+            ${{ runner.temp }}/adk-a2a-failed-task/*-tests.xml
+            ${{ runner.temp }}/adk-a2a-failed-task/*-report.json
+            ${{ runner.temp }}/adk-a2a-failed-task/*-install.txt
+            ${{ runner.temp }}/adk-a2a-failed-task/*.lock
+            ${{ runner.temp }}/adk-a2a-failed-task/*-source-sha.txt
+            ${{ runner.temp }}/adk-a2a-failed-task/*-runtime.txt
+          if-no-files-found: error
+          retention-days: 90
