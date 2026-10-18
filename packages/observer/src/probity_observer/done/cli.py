@@ -4,7 +4,10 @@
 a real repository through the zero-shot template). ``run`` runs the bounded loop on a sealed
 contract. ``verify`` re-checks one attempt's receipt from its records alone, under the
 consumer's own key pins, and prints the decision line with ``vantage`` and
-``witness_scope``. Exit status: 0 supported, 1 contradicted, 2 not established, 3 refused.
+``witness_scope`` and the two verdicts it rests on, outcome and integrity. The decision is
+``supported`` only when the receipt is accepted (both verdicts supported); otherwise the
+integrity contradiction, then the outcome's. Exit status: 0 supported, 1 contradicted, 2 not
+established, 3 refused.
 """
 
 from __future__ import annotations
@@ -91,6 +94,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     for item in attempts:
         print(f"Attempt {item.number}: {receipt.decision_line(item.verdict)}; "
               f"next: {item.decision.action} ({item.decision.reason})")
+        for name in ("outcome", "integrity"):
+            axis = item.record[name]
+            print(f"  {name}: {axis['decision']} / {axis['reason']}"
+                  + (f" ({axis['class']})" if "class" in axis else ""))
     return EXIT[attempts[-1].verdict["decision"]]
 
 
@@ -126,7 +133,7 @@ def _witnessed(run: Path, pins: receipt.Pins, args: argparse.Namespace) -> str:
 
 
 def shared_receipt_check(run: Path, pins: receipt.Pins, carried: dict[str, Any]) -> dict[str, Any]:
-    """probity-verify's ``done_receipt/v1`` over the attempt: it derives the verdict again
+    """probity-verify's ``done_receipt/v2`` over the attempt: it derives both verdicts again
     from the signed records and the receipt Statement, which must carry the signed predicate."""
     records = receipt.open_run(run, pins)
     statement_bytes = (run / "done-receipt.statement.json").read_bytes()
@@ -136,8 +143,11 @@ def shared_receipt_check(run: Path, pins: receipt.Pins, carried: dict[str, Any])
     return receipt.adjudicate(case, policy, run)
 
 
-# done_receipt/v1 reasons that say the receipt does not describe these records.
-UNBOUND = {"receipt_verdict_mismatch": "verdict", "receipt_records_mismatch": "records",
+# done_receipt/v2 reasons that say the receipt does not describe these records.
+UNBOUND = {"receipt_outcome_mismatch": "outcome", "receipt_integrity_mismatch": "integrity",
+           "receipt_accepted_mismatch": "accepted",
+           "receipt_completion_mismatch": "completion_claimed",
+           "receipt_records_mismatch": "records",
            "receipt_subject_mismatch": "subject", "receipt_context_mismatch": "context",
            "receipt_unavailable_or_unbound": "Statement"}
 
@@ -159,9 +169,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(f"Refused: the receipt's {UNBOUND[shared['reason']]} does not recompute from "
               "the records")
         return REFUSED
-    # The checks and the external effects are carried too; they must recompute as well.
+    # The external effects are carried too; they must recompute as well.
     recomputed = receipt.assemble(run, pins)
-    for name in ("records", "checks", "external_effects"):
+    for name in ("records", "outcome", "integrity", "external_effects"):
         if recomputed.get(name) != carried.get(name):
             print(f"Refused: the receipt's {name} does not recompute from the records")
             return REFUSED
@@ -177,9 +187,10 @@ def cmd_verify(args: argparse.Namespace) -> int:
             verdict = {**verdict, "witness_scope": "EXTERNAL"}
     verdict, adequacy = _adequacy_floor(run, verdict, args.min_killed_fraction)
     print(receipt.decision_line(verdict))
-    derived = next((item for item in shared["checks"] if item["id"] == "derived_verdict"), None)
-    for check in (derived or {}).get("checks", []):
-        print(f"  {check['claim_type']}: {check['decision']} / {check['reason']}")
+    for name, axis in (shared.get("axes") or {}).items():
+        print(receipt.axis_line(name.capitalize(), axis))
+        for check in axis["checks"]:
+            print(f"  {check['claim_type']}: {check['decision']} / {check['reason']}")
     print(adequacy)
     if "stop_decision" in carried:
         print(f"Stop decision: {carried['stop_decision']['action']} ({carried['stop_decision']['reason']})")

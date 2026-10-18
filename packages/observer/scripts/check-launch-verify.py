@@ -163,9 +163,10 @@ def verdicts(name: str, run_dir: Path, sealed: dict) -> dict:
     observation = json.loads((run_dir / "observation.json").read_text())
     raw = {
         "contract": encoded(sealed),
-        "claims": encoded({"schema_version": "probity-tool-claims/v1", "claim_id": name,
+        "claims": encoded({"schema_version": "probity-tool-claims/v2", "claim_id": name,
                            "invocation_id": "call-1", "producer": "transcript-parser",
-                           "claims": [{"id": "c1", "argv": UNITTEST, "exit": 0}]}),
+                           "claims": [{"id": "c1", "argv": UNITTEST, "exit": 0}],
+                           "completion": {"asserted": True, "basis": "tool_claim"}}),
         "capability": (run_dir / "capability.json").read_bytes(),
         "observation": for_verifier("observation", (run_dir / "observation.json").read_bytes()),
         "tree": for_verifier("tree", (run_dir / "tree.json").read_bytes()),

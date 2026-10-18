@@ -104,15 +104,20 @@ def watched_run(tmp_path, sealed, keys, edit):
 def test_route_b_sees_a_protected_edit_from_the_host(tmp_path, sealed, harness, host, grader):
     predicate, _ = watched_run(tmp_path, sealed, (harness, host, grader),
                                lambda root: (root / "test.py").write_text("print('ok')\n"))
-    assert predicate["checks"][0]["reason"] == "protected_path_mutated"
-    assert predicate["checks"][2]["decision"] == "not_established"
+    checks = {item["claim_type"]: item for item in predicate["integrity"]["checks"]}
+    assert checks["protected_paths/v1"]["reason"] == "protected_path_mutated"
+    assert checks["tool_claim_match/v1"]["decision"] == "not_established"
+    assert predicate["integrity"]["class"] == "tamper"
 
 
 def test_route_b_honest_edit_keeps_protected_paths_supported(tmp_path, sealed, harness, host, grader):
     predicate, _ = watched_run(tmp_path, sealed, (harness, host, grader),
                                lambda root: (root / "func.py").write_text("def add(a, b):\n    return a + b\n"))
-    assert predicate["checks"][0]["decision"] == "supported"
-    assert predicate["verdict"]["decision"] == "not_established"
+    checks = {item["claim_type"]: item for item in predicate["integrity"]["checks"]}
+    assert checks["protected_paths/v1"]["decision"] == "supported"
+    # Route B records no exec, so the claimed run cannot be matched: integrity stays open.
+    assert predicate["integrity"]["decision"] == "not_established"
+    assert predicate["completion_claimed"] and not predicate["accepted"]
 
 
 def test_route_b_needs_a_started_watch(tmp_path):
