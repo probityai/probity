@@ -52,8 +52,8 @@ jobs:
           python -m pip check
       - name: Verify native reconstruction and meaningful semantic refusals
         run: |
-          python -m ruff check crash_*.py consume_installed.py tests
-          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' crash_*.py consume_installed.py tests
+          python -m ruff check --isolated crash_*.py consume_installed.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' crash_*.py consume_installed.py tests
           python -m pytest -q --junitxml=test-results.xml
       - name: Execute all four actual crash and recovery cases
         run: timeout --signal=TERM --kill-after=5s 180s python crash_run.py fresh-run --source-revision "$GITHUB_SHA" > fresh-report.json
