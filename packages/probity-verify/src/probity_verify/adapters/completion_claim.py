@@ -48,9 +48,9 @@ LIMIT = ("Producer, vantage and witness scope are consumer pins, not authenticat
 
 
 def visible(contract: dict) -> list[dict]:
-    """The acceptance commands the agent could run itself."""
+    """The behavioural acceptance commands the agent could run itself (probes excluded)."""
     return [command for command in contract["acceptance"]
-            if not command["id"].startswith(HELDOUT_PREFIX)]
+            if not command["id"].startswith(HELDOUT_PREFIX) and "probe" not in command]
 
 
 def statuses(record: dict, contract: dict) -> list[dict]:

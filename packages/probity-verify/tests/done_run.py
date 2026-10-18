@@ -24,6 +24,7 @@ ENV = {"PATH": "/usr/local/bin:/usr/bin:/bin", "PYTHONSAFEPATH": "1"}
 ROLES = {
     "protected_paths/v1": ("contract", "capability", "observation", "tree"),
     "acceptance_observed/v1": ("contract", "tree", "grade"),
+    "probe_observed/v1": ("contract", "tree", "grade"),
     "tool_claim_match/v1": ("claims", "capability", "observation"),
     "completion_claim/v1": ("claims", "capability", "observation", "contract"),
 }
@@ -114,7 +115,7 @@ def build(records: dict, claim_type: str, case_id: str = "case-1") -> tuple[dict
     case = {"schema_version": "probity-case/v1", "case_id": case_id, "artifacts": {}}
     assessment = {"claim_type": claim_type, "invocation_id": "call-1",
                   "observed_party": "agent-1"}
-    if claim_type != "acceptance_observed/v1":
+    if claim_type not in ("acceptance_observed/v1", "probe_observed/v1"):
         assessment["scope"] = SCOPE
     policy = {"schema_version": "probity-policy/v1", "witnesses": {},
               "assessments": {case_id: assessment}}

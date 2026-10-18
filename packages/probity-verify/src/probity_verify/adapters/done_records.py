@@ -175,15 +175,19 @@ def _protected_entry(item: Any, label: str) -> dict:
     return entry
 
 
+PROBES = ("determinism", "type_strict", "import_side_effects")
 TIERS = ("trusted", "synthesized")
 STRENGTHS = ("gated", "reference_free", "synthesized_spec")
 
 
 def _acceptance_entry(item: Any, label: str) -> dict:
     entry = _object(item, label, {"id", "argv"},
-                    {"ids", "run_writes", "cwd", "exe", "interpreter", "tier"})
+                    {"ids", "run_writes", "cwd", "exe", "interpreter", "tier", "probe"})
     if "tier" in entry:
         _choice(entry["tier"], f"{label}.tier", TIERS)
+    if "probe" in entry:
+        # An oracle-free probe that probe_observed/v1 reads, not a behavioural command.
+        _choice(entry["probe"], f"{label}.probe", PROBES)
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
     if ("cwd" in entry) != ("exe" in entry):

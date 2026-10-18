@@ -5,7 +5,9 @@ its record names the contract digest and the tree digest it ran on, and the
 tree record from the observer must report the same final tree. A pass also
 needs the contract to tell a fix from a no-op, held-out commands the agent
 never saw, every replayed test to have called the candidate, and every patched
-hunk to have a mutant the commands kill. A failure only of held-out probes the
+hunk to have a mutant the commands kill. Commands that carry ``probe`` are oracle-free
+probes, judged by ``probe_observed/v1`` on the integrity axis; this check binds their
+results with the rest and then reads only the behavioural commands. A failure only of held-out probes the
 verifier stopped at their limit (``timed_out`` in the grade) gave no answer to
 judge and leaves the check unestablished (``probe_timed_out``).
 """
@@ -49,10 +51,15 @@ def _compare(acceptance: list[dict], results: list[dict]) -> tuple[str | None, l
     return None, outcomes
 
 
+def behavioural(contract: dict) -> list[dict]:
+    """The contract's acceptance commands that are not oracle-free probes."""
+    return [command for command in contract["acceptance"] if "probe" not in command]
+
+
 def _heldout(contract: dict) -> bool:
-    """A sealed held-out split with at least one held-out command to grade it."""
+    """A sealed held-out split with at least one behavioural held-out command to grade it."""
     return "heldout_split_sha256" in contract and any(
-        command["id"].startswith(HELDOUT_PREFIX) for command in contract["acceptance"])
+        command["id"].startswith(HELDOUT_PREFIX) for command in behavioural(contract))
 
 
 def _passed_checks(contract: dict, grade: dict, outcomes: list[dict],
@@ -82,20 +89,23 @@ def _passed_checks(contract: dict, grade: dict, outcomes: list[dict],
     return checks, None
 
 
-def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
-    case_id, assessment = records.start(case, policy, CLAIM_TYPE, FIELDS, OPTIONAL)
+def bind(case: Any, policy: Any, artifact_root: Path, claim_type: str,
+         optional: set[str], limit: str) -> tuple[dict, Any, dict]:
+    """Bind contract, final tree and grade and compare the whole grade with the whole
+    contract. Returns the result skeleton, its ``decide`` and either the decision it
+    already reached (``{"done": result}``) or the bound records and every outcome."""
+    case_id, assessment = records.start(case, policy, claim_type, FIELDS, optional)
     invocation = _string(assessment["invocation_id"], "invocation_id")
-    allow_no_heldout = assessment.get("allow_no_heldout", False)
-    if type(allow_no_heldout) is not bool:
+    if type(assessment.get("allow_no_heldout", False)) is not bool:
         raise CaseError("allow_no_heldout: expected a boolean")
     observed_party = _string(assessment["observed_party"], "observed_party")
     bound = records.witnesses(case, policy, assessment, artifact_root, {
         "contract": False, "tree": True, "grade": True})
     result = {
-        "schema_version": "probity-decision/v1", "case_id": case_id, "claim_type": CLAIM_TYPE,
+        "schema_version": "probity-decision/v1", "case_id": case_id, "claim_type": claim_type,
         "scope": {"invocation_id": invocation, "observed_party": observed_party,
                   "witnesses": {role: pin for role, (_, pin) in bound.items()},
-                  "limit": LIMIT},
+                  "limit": limit},
         "checks": [], "vantage": "unestablished",
     }
     checks = result["checks"]
@@ -105,6 +115,9 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
             result.update(vantage="independent", **records.scope_fields(*pairs))
         return {**result, "decision": decision, "reason": reason}
 
+    def done(reason: str) -> tuple[dict, Any, dict]:
+        return result, decide, {"done": decide("not_established", reason)}
+
     contract_bytes, contract_pin = bound["contract"]
     tree_bytes, tree_pin = bound["tree"]
     grade_bytes, grade_pin = bound["grade"]
@@ -112,34 +125,53 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     tree = records.tree(tree_bytes) if tree_bytes is not None else None
     grade = records.grade(grade_bytes) if grade_bytes is not None else None
     if contract is None:
-        return decide("not_established", "contract_unavailable_or_unbound")
+        return done("contract_unavailable_or_unbound")
     tree_ok = (tree is not None and tree["claim_id"] == case_id
                and tree["invocation_id"] == invocation
                and records.independent(tree, tree_pin, observed_party))
     checks.append({"id": "final_tree", "status": "met" if tree_ok else "unavailable"})
     if not tree_ok:
-        return decide("not_established", "final_tree_unestablished")
+        return done("final_tree_unestablished")
     if grade is None:
-        return decide("not_established", "grade_unavailable_or_unbound")
+        return done("grade_unavailable_or_unbound")
     if grade["claim_id"] != case_id or grade["invocation_id"] != invocation:
-        return decide("not_established", "grade_context_mismatch")
+        return done("grade_context_mismatch")
     grade_ok = records.independent(grade, grade_pin, observed_party)
     checks.append({"id": "grade_vantage", "status": "met" if grade_ok else "unavailable"})
     if not grade_ok:
-        return decide("not_established", "grade_vantage_unestablished")
+        return done("grade_vantage_unestablished")
     bindings = {"contract": grade["contract_sha256"] == contract_pin["consumer_pinned_sha256"],
                 "tree": grade["tree_sha256"] == tree["tree_sha256"]}
     checks.append({"id": "grade_binding", "status": "met" if all(bindings.values())
                    else "unavailable", "contract": bindings["contract"],
                    "tree": bindings["tree"]})
     if not bindings["contract"]:
-        return decide("not_established", "grade_contract_mismatch")
+        return done("grade_contract_mismatch")
     if not bindings["tree"]:
-        return decide("not_established", "grade_tree_unbound")
+        return done("grade_tree_unbound")
+    # The whole grade against the whole contract, probes included, before any filter.
     problem, outcomes = _compare(contract["acceptance"], grade["results"])
     if problem is not None:
-        return decide("not_established", problem)
-    tiers = {command["id"]: command.get("tier", "trusted") for command in contract["acceptance"]}
+        return done(problem)
+    return result, decide, {"assessment": assessment, "contract": contract,
+                            "tree": (tree, tree_pin), "grade": (grade, grade_pin),
+                            "outcomes": outcomes}
+
+
+def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
+    result, decide, bound = bind(case, policy, artifact_root, CLAIM_TYPE, OPTIONAL, LIMIT)
+    if "done" in bound:
+        return bound["done"]
+    allow_no_heldout = bound["assessment"].get("allow_no_heldout", False)
+    checks = result["checks"]
+    contract = bound["contract"]
+    tree, tree_pin = bound["tree"]
+    grade, grade_pin = bound["grade"]
+    # Probes are integrity's (probe_observed/v1); the outcome reads behavioural commands.
+    commands = behavioural(contract)
+    kept = {command["id"] for command in commands}
+    outcomes = [item for item in bound["outcomes"] if item["id"] in kept]
+    tiers = {command["id"]: command.get("tier", "trusted") for command in commands}
     failed = [item for item in outcomes if item["exit"] != 0]
     # A held-out probe the verifier stopped at its limit gave no answer: that is no wrong
     # answer, and only an answered failure contradicts. A visible command the agent could
