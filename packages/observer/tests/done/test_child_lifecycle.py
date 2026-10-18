@@ -150,3 +150,26 @@ def test_closing_a_child_twice_and_calling_a_closed_child_are_safe(tmp_path, pyt
     assert child.call(*replay._tagged((1, 1), {})) == {"error": "child-pipes"}
     assert json.dumps(child.read()) == json.dumps({"error": "child-pipes"})
 
+
+def test_a_hung_candidate_leaves_no_container_behind(tmp_path, image):
+    import subprocess
+
+    from probity_observer.done import verify_run
+
+    def running() -> set[str]:
+        out = subprocess.run(["docker", "ps", "-q", "--filter", f"ancestor={image}"],
+                             capture_output=True, text=True, check=True).stdout
+        return set(out.split())
+
+    before = running()
+    runner = verify_run.DockerRunner(image)
+    scratch = tmp_path / "probe"
+    (scratch / "workspace").mkdir(parents=True)
+    (scratch / "workspace" / "func.py").write_text(HUNG)
+    (scratch / "workspace" / "test.py").write_text(VISIBLE)
+    run_replay(scratch, [replay.COMMAND, "test.py", "func", "add"], runner.child_argv, 3.0, "s",
+               runner.replays)
+    deadline = time.monotonic() + 20
+    while running() - before and time.monotonic() < deadline:
+        time.sleep(0.5)
+    assert running() - before == set()

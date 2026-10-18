@@ -94,8 +94,12 @@ class DockerRunner:
         return image_executable(self.image, name, self.docker)
 
     def child_argv(self, directory: Path, source: str) -> tuple[list[str], None]:
-        """A fresh container holding only the candidate's module, read-only."""
-        return ([self.docker, "run", "-i", "--rm", *self.flags(),
+        """A fresh container holding only the candidate's module, read-only.
+
+        ``--init`` puts an init process at PID 1, so the SIGTERM the client forwards when a
+        child is closed reaches the candidate; a candidate that is PID 1 itself ignores it, and
+        a hung one would outlive its client."""
+        return ([self.docker, "run", "-i", "--rm", "--init", *self.flags(),
                  "--volume", f"{directory}:/workspace:ro", "--workdir", "/workspace",
                  "--entrypoint", "/usr/bin/env", self.image, "-i",
                  *(f"{key}={value}" for key, value in sorted(SCRUBBED_ENV.items())),
