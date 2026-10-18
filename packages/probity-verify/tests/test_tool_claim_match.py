@@ -648,6 +648,15 @@ class TestTheRunsOwnCache:
         assert outcome(decide_with_contract(tmp_path, records)) == (
             "contradicted", "tool_claim_shadowed")
 
+    def test_a_sealed_run_write_by_the_run_does_not_shadow(self, tmp_path, records):
+        """A module the run wrote under its sealed run_writes is its own output."""
+        self.contract(records)
+        records["contract"]["acceptance"][0]["run_writes"] = ["tests/generated"]
+        add_event(records, type="create", path="tests/generated/helper.py", origin="x1")
+        second_run_after_an_edit(records)
+        assert outcome(decide_with_contract(tmp_path, records)) == (
+            "supported", "tool_claims_matched")
+
     def test_a_non_cache_write_by_the_run_still_shadows(self, tmp_path, records):
         """Only the run's cache directories are its own: a module it wrote is code."""
         self.contract(records)
