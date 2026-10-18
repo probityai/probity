@@ -68,6 +68,8 @@ jobs:
         run: cat model-vocabulary-artifacts/run/consumer-pins.json
       - name: Recompute from selected retained bytes in a separate reader invocation
         run: python interop/local-model-vocabulary-2026-10-02/task_matrix.py model-vocabulary-artifacts/run --verify --pins-file model-vocabulary-artifacts/run/consumer-pins.json > model-vocabulary-artifacts/reader.json
+      - name: Provide the build backend the offline reader build needs
+        run: python -m pip install 'setuptools>=68' wheel
       - name: Build the selected model-free installed reader for the actual packet
         run: |
           python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py ../.. actual-vocabulary-reader-wheel --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json --contract-sha256 bba85e5835652af11f0a722a4bd819722e7adb840bcea1f2cc36cef7f608d77b
