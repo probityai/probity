@@ -42,8 +42,8 @@ jobs:
           ./execsurface doctor > doctor-report.json
       - name: Check owned adapter code and complexity
         run: |
-          python -m ruff check companion.py workload.py download_binary.py tests
-          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' companion.py workload.py download_binary.py tests
+          python -m ruff check --isolated companion.py workload.py download_binary.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' companion.py workload.py download_binary.py tests
       - name: Test real native execution, reference verifier and semantic refusal controls
         env:
           EXECSURFACE_BINARY: ${{ github.workspace }}/packages/observer/interop/execsurface-state-2026-10-02/execsurface
