@@ -46,8 +46,8 @@ jobs:
           python -m pip check
       - name: Check adapter code and complexity
         run: |
-          python -m ruff check lg_common.py lg_run.py lg_reader.py durable_run.py durable_worker.py durable_reader.py tests
-          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' lg_common.py lg_run.py lg_reader.py durable_run.py durable_worker.py durable_reader.py tests
+          python -m ruff check --isolated lg_common.py lg_run.py lg_reader.py durable_run.py durable_worker.py durable_reader.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' lg_common.py lg_run.py lg_reader.py durable_run.py durable_worker.py durable_reader.py tests
       - name: Test original native executions and semantic refusal controls
         run: python -m pytest -q tests --junitxml=test-results.xml
       - name: Execute all six real LangGraph graphs in a fresh finite packet
