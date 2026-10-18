@@ -46,8 +46,8 @@ jobs:
           python -m pip check
       - name: Check adapter and bounded complexity
         run: |
-          python -m ruff check authority_*.py tests
-          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' authority_*.py tests
+          python -m ruff check --isolated authority_*.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' authority_*.py tests
       - name: Execute native authority cases and reselected refusal controls
         run: python -m pytest -q tests --junitxml=test-results.xml
       - name: Execute a fresh native authority packet
