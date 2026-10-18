@@ -19,7 +19,7 @@ Run these commands from a new working directory:
 git clone https://github.com/probityai/probity.git verify-source
 git -C verify-source checkout --detach 2ecdbafc0c6cc0f26461ffe913fe342e7de090a6
 uv venv --python 3.12 verify-env
-uv pip install --python verify-env/bin/python probity-verify==0.1.0
+uv pip install --python verify-env/bin/python probity-verify==0.1.1
 verify-env/bin/probity-verify verify-source/examples/source-coverage/case.json \
   --policy verify-source/examples/source-coverage/policy-june.json
 ```

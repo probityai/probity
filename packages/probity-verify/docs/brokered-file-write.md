@@ -137,7 +137,7 @@ records remain separate from new assertions and decisions. The original
 These controls prove the stated local behavior, not independent operation.
 
 
-The maintained [native CI job](../.github/workflows/brokered-file-write.yml)
+The maintained [native CI job](../../../.github/workflows/probity-verify.yml)
 uses the same controller and an immutable public Observer source revision. Its
 artifact keeps original evidence, actual worker/reader streams, source, wheels
 and dependency records. `manifest.json` declares paths, lengths and SHA-256
