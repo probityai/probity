@@ -26,9 +26,9 @@
       "sha256": "67e0635004f4577247ffda670b29d7df17006e7bb75ca5d7b54e375c2d569542"
     },
     "receipt": {
-      "length": 2692,
+      "length": 2869,
       "path": "receipt.json",
-      "sha256": "8ebfe12d6bfe0774f494e4ee6f8f6c0fc99878146e221f6abc65736962f71045"
+      "sha256": "9943894294fa91b6eff67086ff8315bbfd8d4a0ed4436df3617815b971110094"
     },
     "tree": {
       "length": 526,

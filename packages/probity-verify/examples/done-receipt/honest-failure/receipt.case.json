@@ -11,14 +11,14 @@
       "sha256": "9d9389ccd3b22873f3ba36259a5043deb447ce6f93672978329375403b42474d"
     },
     "contract": {
-      "length": 797,
+      "length": 1182,
       "path": "contract.json",
-      "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+      "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
     },
     "grade": {
-      "length": 716,
+      "length": 1075,
       "path": "grade.json",
-      "sha256": "fb3f580ccefe9f1f47b256d3ac369ccc702a93b742d15bb94d870cf7f0556c88"
+      "sha256": "11dc8518a05f6cf95bc8161446527fccb939ff4bf19ff91be37fad5a3d5663ad"
     },
     "observation": {
       "length": 1133,
@@ -26,9 +26,9 @@
       "sha256": "360bb3c4e0d60b6131d1347eb66bc931ab9a35593336ccd73413e9d206085035"
     },
     "receipt": {
-      "length": 2547,
+      "length": 2755,
       "path": "receipt.json",
-      "sha256": "0b1b271afa348cf8c20a60bb9c4d3595020337ccad1576a227e432ba8cfcc8d5"
+      "sha256": "5d4b6bc5a150a6166f0b8c6fc09ca8beb62f78928ef6b251cee73b4cfdccaf93"
     },
     "tree": {
       "length": 525,

@@ -217,6 +217,15 @@
       "scope": "Synthetic observer records; PEER scope."
     },
     {
+      "task": "Check a contract's oracle-free probes on a split whose behavioural tests passed",
+      "claim_type": "probe_observed/v1",
+      "case": "examples/done-receipt/honest/probes.case.json",
+      "policy": "examples/done-receipt/honest/probes.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic verifier grade; PEER scope."
+    },
+    {
       "task": "Detect a done receipt that reports verdicts its records do not give",
       "claim_type": "done_receipt/v2",
       "case": "examples/done-receipt/forged-receipt/receipt.case.json",

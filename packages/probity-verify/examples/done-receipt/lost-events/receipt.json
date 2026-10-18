@@ -13,6 +13,12 @@
           "vantage": "unestablished"
         },
         {
+          "claim_type": "probe_observed/v1",
+          "decision": "not_established",
+          "reason": "no_probes",
+          "vantage": "unestablished"
+        },
+        {
           "claim_type": "tool_claim_match/v1",
           "decision": "not_established",
           "reason": "observation_coverage_unestablished",

@@ -27,12 +27,19 @@ ROOT = "/workspace"
 EXEC = {"cwd": ROOT, "env": {"PATH": "/usr/local/bin:/usr/bin:/bin", "PYTHONSAFEPATH": "1"}}
 VISIBLE = ["chmod", "connect", "create", "exec", "link", "read", "rename", "truncate",
            "unlink", "write"]
+# The oracle-free probes the honest runs seal (probe_observed/v1). On honest-failure every
+# command fails, the probes too, and no split passed, so none of them counts.
+PROBES = (("visible_determinism", "determinism", ["python", "-m", "pytest", "-q", "probes/det"]),
+          ("heldout_type_strict", "type_strict",
+           ["python", "-m", "pytest", "-q", "/heldout/probes/types"]))
+PROBED = ("honest", "honest-failure")
 RUNS = ("honest", "tampered-grader", "honest-failure", "planted-adversary", "lost-events",
         "forged-receipt")
 CHECKS = {
     "protected-paths": ("protected_paths/v1",
                         ("contract", "capability", "observation", "tree")),
     "acceptance": ("acceptance_observed/v1", ("contract", "tree", "grade")),
+    "probes": ("probe_observed/v1", ("contract", "tree", "grade")),
     "tool-claims": ("tool_claim_match/v1", ("claims", "capability", "observation")),
     "completion-claim": ("completion_claim/v1",
                          ("claims", "capability", "observation", "contract")),
@@ -67,7 +74,9 @@ def encoded(value):
 TEST_FILE = sha("def test_app():\n    assert app() == 1\n")
 
 
-def contract(killed):
+def contract(killed, probes):
+    probe_commands = [{"id": command_id, "argv": argv, "probe": mode}
+                      for command_id, mode, argv in PROBES] if probes else []
     return {
         "schema_version": "probity-done-contract/v1", "contract_id": "contract-app-1",
         "task": "make test_app pass",
@@ -76,7 +85,7 @@ def contract(killed):
              "sha256": tree_digest({"tests/test_app.py": TEST_FILE})},
         ],
         "acceptance": [{"id": "unit", "argv": PYTEST},
-                       {"id": "heldout-unit", "argv": HELDOUT}],
+                       {"id": "heldout-unit", "argv": HELDOUT}, *probe_commands],
         "adequacy": {"mutants": 4, "killed": killed},
         "heldout_split_sha256": sha("heldout/test_app_hidden.py"),
     }
@@ -126,7 +135,7 @@ def run(name):
     host = {**origin, "producer": "host-observer", "vantage": "independent",
             "witness_scope": "PEER"}
     records = {
-        "contract": contract(killed),
+        "contract": contract(killed, name in PROBED),
         "tree": tree_record(host, files),
         "observation": {"schema_version": "probity-observation/v3", **host,
                         "scope": SCOPE, "coverage": coverage, "workspace_root": ROOT,
@@ -146,7 +155,9 @@ def run(name):
         "contract_sha256": hashlib.sha256(raw["contract"]).hexdigest(),
         "tree_sha256": tree_digest(files),
         "results": [{"id": "unit", "argv": PYTEST, "exit": exits},
-                    {"id": "heldout-unit", "argv": HELDOUT, "exit": exits}]}
+                    {"id": "heldout-unit", "argv": HELDOUT, "exit": exits},
+                    *({"id": command_id, "argv": argv, "exit": exits}
+                      for command_id, _, argv in (PROBES if name in PROBED else ()))]}
     raw["grade"] = encoded(records["grade"])
     return records, raw
 
@@ -175,7 +186,7 @@ def case_and_policy(name, records, raw, claim_type, roles):
     case = {"schema_version": "probity-case/v1", "case_id": name, "artifacts": {}}
     assessment = {"claim_type": claim_type, "invocation_id": "call-1",
                   "observed_party": "agent-1"}
-    if claim_type != "acceptance_observed/v1":
+    if claim_type not in ("acceptance_observed/v1", "probe_observed/v1"):
         assessment["scope"] = SCOPE
     witnesses = {}
     for role in roles:

@@ -14,6 +14,13 @@
           "witness_scope": "PEER"
         },
         {
+          "claim_type": "probe_observed/v1",
+          "decision": "supported",
+          "reason": "probes_passed",
+          "vantage": "independent",
+          "witness_scope": "PEER"
+        },
+        {
           "claim_type": "tool_claim_match/v1",
           "decision": "supported",
           "reason": "tool_claims_matched",

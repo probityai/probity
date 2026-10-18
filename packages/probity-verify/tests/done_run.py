@@ -98,6 +98,22 @@ def honest_records() -> dict:
             "capability": capability, "grade": grade, "claims": claims}
 
 
+PROBE_COMMANDS = (
+    ("visible_determinism", "determinism", ["python", "-m", "pytest", "-q", "probes/det"]),
+    ("visible_type_strict", "type_strict", ["python", "-m", "pytest", "-q", "probes/types"]),
+    ("heldout_determinism", "determinism", ["python", "-m", "pytest", "-q", "/heldout/det"]),
+)
+
+
+def add_probes(records: dict) -> dict:
+    """Seal two visible probes and one held-out probe, each passing in the grade."""
+    for command_id, mode, argv in PROBE_COMMANDS:
+        records["contract"]["acceptance"].append({"id": command_id, "argv": argv,
+                                                  "probe": mode})
+        records["grade"]["results"].append({"id": command_id, "argv": argv, "exit": 0})
+    return records
+
+
 def encode(value: dict) -> bytes:
     return (json.dumps(value, sort_keys=True, indent=2) + "\n").encode()
 

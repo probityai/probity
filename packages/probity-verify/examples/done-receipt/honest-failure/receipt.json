@@ -14,6 +14,13 @@
           "witness_scope": "PEER"
         },
         {
+          "claim_type": "probe_observed/v1",
+          "decision": "supported",
+          "reason": "probes_passed",
+          "vantage": "independent",
+          "witness_scope": "PEER"
+        },
+        {
           "claim_type": "tool_claim_match/v1",
           "decision": "supported",
           "reason": "tool_claims_matched",
@@ -57,10 +64,10 @@
         "sha256": "9d9389ccd3b22873f3ba36259a5043deb447ce6f93672978329375403b42474d"
       },
       "contract": {
-        "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
       },
       "grade": {
-        "sha256": "fb3f580ccefe9f1f47b256d3ac369ccc702a93b742d15bb94d870cf7f0556c88"
+        "sha256": "11dc8518a05f6cf95bc8161446527fccb939ff4bf19ff91be37fad5a3d5663ad"
       },
       "observation": {
         "sha256": "360bb3c4e0d60b6131d1347eb66bc931ab9a35593336ccd73413e9d206085035"

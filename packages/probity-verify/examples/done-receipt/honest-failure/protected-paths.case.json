@@ -6,9 +6,9 @@
       "sha256": "26044132c0933de74dd129466754b4cb375e7265422f314edc57275b41b268e5"
     },
     "contract": {
-      "length": 797,
+      "length": 1182,
       "path": "contract.json",
-      "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+      "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
     },
     "observation": {
       "length": 1133,

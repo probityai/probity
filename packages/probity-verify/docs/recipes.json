@@ -84,8 +84,8 @@
     },
     {
       "path": "src/probity_verify/adapters/acceptance_observed.py",
-      "bytes": 8619,
-      "sha256": "4db4582775f3c80f8a3c7e6b0e7a7ece7a6f751fe5304a43cd9a2b95833015e0"
+      "bytes": 11241,
+      "sha256": "1c7929222a04a05cb6ec0e752c2556f4ecf1d987a4ce3f142a8e70d333acf4a0"
     },
     {
       "path": "src/probity_verify/adapters/authority_anchor.py",
@@ -99,8 +99,8 @@
     },
     {
       "path": "src/probity_verify/adapters/completion_claim.py",
-      "bytes": 8022,
-      "sha256": "7c5781b7d03ecadbff65b9648ce94da53a48e016c3de1f970bc06897d9eecfe1"
+      "bytes": 8079,
+      "sha256": "5d9e9818c488095d74ed74a00bcfeadd0e345bdfb58c7948e7596ae221774acd"
     },
     {
       "path": "src/probity_verify/adapters/done_argv.py",
@@ -109,13 +109,13 @@
     },
     {
       "path": "src/probity_verify/adapters/done_receipt.py",
-      "bytes": 18858,
-      "sha256": "724c325c6928c173d5f96b9250c77aea5f327b4442918d870e0dd3b22feae3f7"
+      "bytes": 19386,
+      "sha256": "42361d666d2b55b7f4d33ad7fb04cd181e09c1aa70db59fab1ed1bc136d5e596"
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 33827,
-      "sha256": "789bf03d7b134dd61bd9458cff8a62133a04c156bfcef82fed72a11c2fba19c3"
+      "bytes": 35145,
+      "sha256": "cb79d0eefa0522e1e8fd8f13d5a4d949c14beb070723f81bcce2ebb8f05f0a5c"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
@@ -126,6 +126,11 @@
       "path": "src/probity_verify/adapters/operand_lineage.py",
       "bytes": 12072,
       "sha256": "a24ae4f5e3b0517a1a9030c8a698128061be65bd0aa8d0880d9b4c99a74fa83b"
+    },
+    {
+      "path": "src/probity_verify/adapters/probe_observed.py",
+      "bytes": 3066,
+      "sha256": "04ff2174dfce7e3e5b7e0b60d7d8bffd611a7e890da6104ad06dd1641e09b899"
     },
     {
       "path": "src/probity_verify/adapters/protected_paths.py",
@@ -174,8 +179,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 9306,
-      "sha256": "b4b231f50090b99bf4a88e7cd5ede9b11c501bee6f5d107974818c0196c7beef"
+      "bytes": 9378,
+      "sha256": "aff5e31be463f7801c32334a5eb69a64c9913ca4ed41c2bc8095d45dc096288e"
     },
     {
       "path": "src/probity_verify/dsse.py",
@@ -691,13 +696,13 @@
       "bindings": [
         {
           "path": "examples/done-receipt/honest/protected-paths.case.json",
-          "bytes": 729,
-          "sha256": "1c27fea0fd0ac63204dea6f547bfb66cb0f497c2c050f8494d1ce7eb221f58f8"
+          "bytes": 730,
+          "sha256": "426d00699e9c7e1d21b7d5cd221555f4db83d1ee6f346d2a4ad21c156dc6c84d"
         },
         {
           "path": "examples/done-receipt/honest/protected-paths.policy.json",
           "bytes": 1412,
-          "sha256": "7a97ba0839bfb0779385ed2914617e58277a2b96f20a7905cb51e122b393a412"
+          "sha256": "c80692228341b3067f8f9a547d83bff74904de354a72195fd5f4dc387feab6d8"
         },
         {
           "path": "examples/done-receipt/honest/capability.json",
@@ -706,8 +711,8 @@
         },
         {
           "path": "examples/done-receipt/honest/contract.json",
-          "bytes": 797,
-          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+          "bytes": 1182,
+          "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
         },
         {
           "path": "examples/done-receipt/honest/observation.json",
@@ -844,23 +849,23 @@
       "bindings": [
         {
           "path": "examples/done-receipt/honest/acceptance.case.json",
-          "bytes": 552,
-          "sha256": "7eef11b5ba16ab7e80d8387708618dace7a4a33315890211e4f21eb91e92d984"
+          "bytes": 554,
+          "sha256": "576b84aac5b48fe480825638140d3171d7e93699d0f073913dad1c4614774fea"
         },
         {
           "path": "examples/done-receipt/honest/acceptance.policy.json",
           "bytes": 1043,
-          "sha256": "f19beb9e4da3d7f42e2e84db4d4cecd7719db0415205e27fff392f2c990c72ed"
+          "sha256": "cb9997b9f3a2880374b8b9cea0d2a8308be17c05ce626629990b4b368e0a13cf"
         },
         {
           "path": "examples/done-receipt/honest/contract.json",
-          "bytes": 797,
-          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+          "bytes": 1182,
+          "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
         },
         {
           "path": "examples/done-receipt/honest/grade.json",
-          "bytes": 708,
-          "sha256": "cba51bfa89a9b0048883ad3ea179aecd1c65d2e76feb3a27b92be424b55e40a6"
+          "bytes": 1067,
+          "sha256": "ae5ad82aa36ccb9f390967c516e45837c081900153b9a30c859fbe2c5399c29a"
         },
         {
           "path": "examples/done-receipt/honest/tree.json",
@@ -1120,13 +1125,13 @@
       "bindings": [
         {
           "path": "examples/done-receipt/honest/receipt.case.json",
-          "bytes": 1198,
-          "sha256": "d712b6e693ce12d3e0cb9c56c212ad9564bb47fa5232c14c68ddb2d2cbeea6a4"
+          "bytes": 1200,
+          "sha256": "544113a2af798a3d2ec568dd2128720c62d2c947d5287c0aff46d96d9c3ba538"
         },
         {
           "path": "examples/done-receipt/honest/receipt.policy.json",
           "bytes": 2134,
-          "sha256": "80c1d8ae5a1ce4d96271f091d5450001c65bc226a98e1d6deae9e111cf3e77a8"
+          "sha256": "ee4eca5f06971bb4da5bd18dc22a3a445d8552eb80047dc4cc20cfe879eb511a"
         },
         {
           "path": "examples/done-receipt/honest/capability.json",
@@ -1140,13 +1145,13 @@
         },
         {
           "path": "examples/done-receipt/honest/contract.json",
-          "bytes": 797,
-          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+          "bytes": 1182,
+          "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
         },
         {
           "path": "examples/done-receipt/honest/grade.json",
-          "bytes": 708,
-          "sha256": "cba51bfa89a9b0048883ad3ea179aecd1c65d2e76feb3a27b92be424b55e40a6"
+          "bytes": 1067,
+          "sha256": "ae5ad82aa36ccb9f390967c516e45837c081900153b9a30c859fbe2c5399c29a"
         },
         {
           "path": "examples/done-receipt/honest/observation.json",
@@ -1155,8 +1160,8 @@
         },
         {
           "path": "examples/done-receipt/honest/receipt.json",
-          "bytes": 2535,
-          "sha256": "58ba23fa6799cac0d87a13df7d2721173d64a6959213812a2f087adac9bc93ae"
+          "bytes": 2743,
+          "sha256": "a45212cf7cfa66973420d520090c6e0a8764e167104f182d353fc4c7a1fc24cd"
         },
         {
           "path": "examples/done-receipt/honest/tree.json",
@@ -1187,12 +1192,12 @@
         {
           "path": "examples/done-receipt/tampered-grader/receipt.case.json",
           "bytes": 1207,
-          "sha256": "feffc65ad42250a3a9ddebde6d1a117ca63fbc6c8afc4c88e55f325320bdbd0a"
+          "sha256": "7c1f4aeb9c0e006044e0ccc993c1ea51ede4d638ee0da87f4a1a055e35c2946f"
         },
         {
           "path": "examples/done-receipt/tampered-grader/receipt.policy.json",
           "bytes": 2143,
-          "sha256": "a01313416b9fe03a35cdbf9195bf7b7abd4867cc18c9354f15c91884575285f1"
+          "sha256": "06fe6397709513718b82e7ba8b6243b0330685082a1d6d2d4c5094669cab394d"
         },
         {
           "path": "examples/done-receipt/tampered-grader/capability.json",
@@ -1221,8 +1226,8 @@
         },
         {
           "path": "examples/done-receipt/tampered-grader/receipt.json",
-          "bytes": 2692,
-          "sha256": "8ebfe12d6bfe0774f494e4ee6f8f6c0fc99878146e221f6abc65736962f71045"
+          "bytes": 2869,
+          "sha256": "9943894294fa91b6eff67086ff8315bbfd8d4a0ed4436df3617815b971110094"
         },
         {
           "path": "examples/done-receipt/tampered-grader/tree.json",
@@ -1252,13 +1257,13 @@
       "bindings": [
         {
           "path": "examples/done-receipt/honest-failure/receipt.case.json",
-          "bytes": 1206,
-          "sha256": "0b742896a1a0fb7a078e435c4f90fc34f8d94044464cf4355d3542842b717c4c"
+          "bytes": 1208,
+          "sha256": "7c5e591808718a8006f495081d10b71fd00c652da4295d7c45a0265d0b2d0d03"
         },
         {
           "path": "examples/done-receipt/honest-failure/receipt.policy.json",
           "bytes": 2142,
-          "sha256": "577cd5e530608d75ab8432260e8a7970de144af4f60e47716dc049c0add8c125"
+          "sha256": "9077638f2e80f6f32c17f5fcfe90a73da4e1ec374025113a1ce243035e7d0f4b"
         },
         {
           "path": "examples/done-receipt/honest-failure/capability.json",
@@ -1272,13 +1277,13 @@
         },
         {
           "path": "examples/done-receipt/honest-failure/contract.json",
-          "bytes": 797,
-          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+          "bytes": 1182,
+          "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
         },
         {
           "path": "examples/done-receipt/honest-failure/grade.json",
-          "bytes": 716,
-          "sha256": "fb3f580ccefe9f1f47b256d3ac369ccc702a93b742d15bb94d870cf7f0556c88"
+          "bytes": 1075,
+          "sha256": "11dc8518a05f6cf95bc8161446527fccb939ff4bf19ff91be37fad5a3d5663ad"
         },
         {
           "path": "examples/done-receipt/honest-failure/observation.json",
@@ -1287,8 +1292,8 @@
         },
         {
           "path": "examples/done-receipt/honest-failure/receipt.json",
-          "bytes": 2547,
-          "sha256": "0b1b271afa348cf8c20a60bb9c4d3595020337ccad1576a227e432ba8cfcc8d5"
+          "bytes": 2755,
+          "sha256": "5d4b6bc5a150a6166f0b8c6fc09ca8beb62f78928ef6b251cee73b4cfdccaf93"
         },
         {
           "path": "examples/done-receipt/honest-failure/tree.json",
@@ -1349,6 +1354,52 @@
       ]
     },
     {
+      "task": "Check a contract's oracle-free probes on a split whose behavioural tests passed",
+      "claim_type": "probe_observed/v1",
+      "case": "examples/done-receipt/honest/probes.case.json",
+      "policy": "examples/done-receipt/honest/probes.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic verifier grade; PEER scope.",
+      "case_id": "honest",
+      "expected_reason": "probes_passed",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest/probes.case.json",
+        "--policy",
+        "examples/done-receipt/honest/probes.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest/probes.case.json",
+          "bytes": 554,
+          "sha256": "576b84aac5b48fe480825638140d3171d7e93699d0f073913dad1c4614774fea"
+        },
+        {
+          "path": "examples/done-receipt/honest/probes.policy.json",
+          "bytes": 1038,
+          "sha256": "aacd415fadf2293367402186cf008bb1d762f843edcdb997d02290a849d9db06"
+        },
+        {
+          "path": "examples/done-receipt/honest/contract.json",
+          "bytes": 1182,
+          "sha256": "cd1f9bb2e12ad6529dba7c1567d6cb39f1e2e1c5eed14b36cbda40a3d639076b"
+        },
+        {
+          "path": "examples/done-receipt/honest/grade.json",
+          "bytes": 1067,
+          "sha256": "ae5ad82aa36ccb9f390967c516e45837c081900153b9a30c859fbe2c5399c29a"
+        },
+        {
+          "path": "examples/done-receipt/honest/tree.json",
+          "bytes": 517,
+          "sha256": "4ea98504bc8d69faa6e2878e4bcfe39aa9f525ebd493d07fc458147eca12448e"
+        }
+      ]
+    },
+    {
       "task": "Detect a done receipt that reports verdicts its records do not give",
       "claim_type": "done_receipt/v2",
       "case": "examples/done-receipt/forged-receipt/receipt.case.json",
@@ -1370,12 +1421,12 @@
         {
           "path": "examples/done-receipt/forged-receipt/receipt.case.json",
           "bytes": 1205,
-          "sha256": "18849dedeb0afb8413f2d2bc4fbdf32c1048165153fc45e2f67e456cf6a0dc0f"
+          "sha256": "6923621a313b956b006d431cf6e35c4898bc938ebb2891cd6f7b02b23e554e1d"
         },
         {
           "path": "examples/done-receipt/forged-receipt/receipt.policy.json",
           "bytes": 2142,
-          "sha256": "9c34a80ce0a708b9a384efe15bf88559d993809eeb01a0464d5b0a1a2530de6c"
+          "sha256": "a9598bad2bdc4c51575a84aab6da74a96a818c3d8047a1af77dfa5c5bef501ae"
         },
         {
           "path": "examples/done-receipt/forged-receipt/capability.json",
@@ -1404,8 +1455,8 @@
         },
         {
           "path": "examples/done-receipt/forged-receipt/receipt.json",
-          "bytes": 2543,
-          "sha256": "325699470c8147619c98dd08281fa51bcda601567ef9e217eb3e7fa94e2abded"
+          "bytes": 2751,
+          "sha256": "e8a10de6c67a4e5d7bb492231d3008ca424b8ee5037ba5817fdc092db748964f"
         },
         {
           "path": "examples/done-receipt/forged-receipt/tree.json",

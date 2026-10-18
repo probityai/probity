@@ -54,7 +54,7 @@
     "receipt": {
       "artifact": "receipt",
       "authority": "synthetic fixture",
-      "sha256": "325699470c8147619c98dd08281fa51bcda601567ef9e217eb3e7fa94e2abded"
+      "sha256": "e8a10de6c67a4e5d7bb492231d3008ca424b8ee5037ba5817fdc092db748964f"
     },
     "tree": {
       "artifact": "tree",
