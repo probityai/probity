@@ -10,6 +10,7 @@ ImpossibleBench in-process run scored as a pass on all 20 captured samples.
 """
 
 import hashlib
+from typing import ClassVar
 
 import pytest
 from done_run import build, decide, encode, honest_records
@@ -213,17 +214,18 @@ class TestR3SurfaceShadow:
 
 class TestR5ImportProbeAlwaysActive:
     CLAIM = "probe_observed/v1"
-    IMPORTS = ["python", "-m", "pytest", "-q", "probes/imports"]
-    DETERMINISM = ["python", "-m", "pytest", "-q", "probes/determinism"]
+    IMPORTS: ClassVar[list[str]] = ["python", "-m", "pytest", "-q", "probes/imports"]
+    DETERMINISM: ClassVar[list[str]] = ["python", "-m", "pytest", "-q", "probes/determinism"]
 
-    def probed(self, imports_exit, determinism_exit=0, unit_exit=1):
+    def probed(self, imports_exit, determinism_exit=0, unit_exit=1, kind="assertion"):
         records = honest_records()
         records["contract"]["acceptance"] += [
             {"id": "import_side_effects", "argv": self.IMPORTS, "probe": "import_side_effects"},
             {"id": "visible_determinism", "argv": self.DETERMINISM, "probe": "determinism"}]
         records["grade"]["results"][0]["exit"] = unit_exit
         records["grade"]["results"] += [
-            {"id": "import_side_effects", "argv": self.IMPORTS, "exit": imports_exit},
+            {"id": "import_side_effects", "argv": self.IMPORTS, "exit": imports_exit,
+             **({"failure_kind": kind} if imports_exit and kind else {})},
             {"id": "visible_determinism", "argv": self.DETERMINISM, "exit": determinism_exit}]
         return records
 
@@ -233,10 +235,18 @@ class TestR5ImportProbeAlwaysActive:
         assert [item["id"] for item in check(result, "probes")["active"]] == [
             "import_side_effects"]
 
+    @pytest.mark.parametrize("kind", ["candidate", None])
+    def test_an_import_crash_stays_gated(self, tmp_path, kind):
+        # An honest module that raises on import fails the probe with no builtins report.
+        result = decide(tmp_path, self.probed(imports_exit=1, kind=kind), self.CLAIM)
+        assert outcome(result) == ("supported", "probes_passed")
+        assert "import_side_effects" in check(result, "probes")["inactive"]
+
     def test_an_answer_probe_stays_inactive_when_the_behaviour_fails(self, tmp_path):
         result = decide(tmp_path, self.probed(imports_exit=0, determinism_exit=1), self.CLAIM)
         assert outcome(result) == ("supported", "probes_passed")
-        assert check(result, "probes")["inactive"] == ["visible_determinism"]
+        assert check(result, "probes")["inactive"] == ["import_side_effects",
+                                                        "visible_determinism"]
 
 
 class TestR6InProcessTwin:

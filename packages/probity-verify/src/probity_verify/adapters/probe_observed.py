@@ -10,8 +10,11 @@ a plain wrong answer, so it counts only on a split whose behavioural commands al
 passed: a visible probe when every visible behavioural command exited zero, a held-out
 probe (``heldout`` id prefix) when every held-out one did. An inactive probe's result is
 the outcome axis's business. The import probe (``import_side_effects``) compares no
-answer, so it is always active: a module that changes the interpreter when imported has
-done so whether or not its answers are right.
+answer, so its own finding counts on any split: when the grade says it failed on its
+comparison (``failure_kind: assertion``, the module changed the interpreter when
+imported) it is active whether or not the answers are right. A module that only crashed
+on import (any other failure kind, or none) is an honest wrong answer and the probe stays
+gated like the others.
 
 A contract command that carries ``in_process_twin_of`` runs the same test in one process
 with the candidate (``python test.py``) as the trusted command it names runs with the
@@ -109,8 +112,12 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     for item in outcomes:
         if item["id"] not in modes and item["exit"] != 0:
             passing[_split(item["id"])] = False
+    kinds = {item["id"]: item.get("failure_kind") for item in grade["results"]}
+
     def counts(item: dict) -> bool:
-        return modes[item["id"]] in ANSWERLESS or passing[_split(item["id"])]
+        own = (modes[item["id"]] in ANSWERLESS and item["exit"] != 0
+               and kinds[item["id"]] == "assertion")
+        return own or passing[_split(item["id"])]
 
     active = [item for item in outcomes if item["id"] in modes and counts(item)]
     inactive = [item["id"] for item in outcomes if item["id"] in modes and not counts(item)]
