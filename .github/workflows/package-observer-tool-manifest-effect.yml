@@ -1,0 +1,61 @@
+# Moved from packages/observer/.github/workflows/tool-manifest-effect.yml when the package was imported;
+# its steps run from packages/observer.
+name: Tool manifest and retained effect
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/observer/src/probity_observer/**'
+      - 'packages/observer/tests/**'
+      - 'packages/observer/examples/tool_manifest_effect.py'
+      - 'packages/observer/pyproject.toml'
+      - 'packages/observer/interop/**/requirements*.lock'
+      - 'packages/observer/scripts/check-runtime-locks.py'
+      - 'packages/observer/docs/TOOL-MANIFEST-EFFECT.md'
+      - 'packages/observer/docs/reference/TOOL-MANIFEST-EFFECT.md'
+      - '.github/workflows/package-observer-tool-manifest-effect.yml'
+  pull_request:
+    paths: ['packages/observer/**', '.github/workflows/package-observer-tool-manifest-effect.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: packages/observer
+
+jobs:
+  offline-consumer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TERM: dumb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
+        with:
+          version: '0.12.8'
+      - name: Install and run the core source suite
+        run: |
+          uv venv .venv --python python3.12
+          uv pip install --python .venv/bin/python -e '.[test,witness]'
+          uv pip check --python .venv/bin/python
+          .venv/bin/python scripts/check-runtime-locks.py
+          .venv/bin/pytest -q --ignore=tests/done
+      - name: Retain and read the unchanged contributor case
+        run: |
+          .venv/bin/python examples/tool_manifest_effect.py ./manifest-effect-run > manifest-effect-run.stdout.json
+          .venv/bin/python examples/tool_manifest_effect.py ./manifest-effect-run --verify --consumer-pins ./manifest-effect-run/tool-match/consumer-pins.json > manifest-effect-run.verification.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tool-manifest-effect
+          if-no-files-found: error
+          path: |
+            packages/observer/manifest-effect-run/
+            packages/observer/manifest-effect-run.stdout.json
+            packages/observer/manifest-effect-run.verification.json

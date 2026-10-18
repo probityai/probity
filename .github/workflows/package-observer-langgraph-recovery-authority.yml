@@ -1,0 +1,72 @@
+# Moved from packages/observer/.github/workflows/langgraph-recovery-authority.yml when the package was imported;
+# its steps run from packages/observer.
+name: LangGraph recovery authority
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/observer/interop/langgraph-recovery-authority-2026-10-02/**'
+      - 'packages/observer/interop/langgraph-ticket-2026-10-02/**'
+      - 'packages/observer/src/probity_observer/**'
+      - 'packages/observer/pyproject.toml'
+      - '.github/workflows/package-observer-langgraph-recovery-authority.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/observer/interop/langgraph-recovery-authority-2026-10-02/**'
+      - 'packages/observer/interop/langgraph-ticket-2026-10-02/**'
+      - 'packages/observer/src/probity_observer/**'
+      - 'packages/observer/pyproject.toml'
+      - '.github/workflows/package-observer-langgraph-recovery-authority.yml'
+permissions:
+  contents: read
+defaults:
+  run:
+    working-directory: packages/observer
+
+jobs:
+  recovery-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/observer/interop/langgraph-recovery-authority-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13'
+      - name: Install selected native profile and exact Observer checkout
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r ../langgraph-ticket-2026-10-02/requirements-restart.lock --report install-report.json
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check adapter and bounded complexity
+        run: |
+          python -m ruff check authority_*.py tests
+          python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' authority_*.py tests
+      - name: Execute native authority cases and reselected refusal controls
+        run: python -m pytest -q tests --junitxml=test-results.xml
+      - name: Execute a fresh native authority packet
+        run: timeout --signal=TERM --kill-after=5s 240s python authority_run.py fresh-run --source-revision "$GITHUB_SHA" > fresh-report.json
+      - name: Require selected host policy and separate offline replay
+        run: |
+          cp fresh-run/consumer-pins.json "$RUNNER_TEMP/authority-host-pins.json"
+          python authority_reader.py fresh-run --pins-file "$RUNNER_TEMP/authority-host-pins.json" > reader-report.json
+          python -c 'import json; assert json.load(open("fresh-report.json")) == json.load(open("reader-report.json"))'
+      - name: Retain complete native authority evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: langgraph-recovery-authority-${{ github.sha }}
+          path: |
+            packages/observer/interop/langgraph-recovery-authority-2026-10-02/fresh-run/
+            packages/observer/interop/langgraph-recovery-authority-2026-10-02/fresh-report.json
+            packages/observer/interop/langgraph-recovery-authority-2026-10-02/reader-report.json
+            packages/observer/interop/langgraph-recovery-authority-2026-10-02/install-report.json
+            packages/observer/interop/langgraph-recovery-authority-2026-10-02/test-results.xml
+          if-no-files-found: error
+          retention-days: 90
