@@ -25,8 +25,11 @@ All examples are authored synthetic records. They do not establish independent o
 | [Match a claimed test run to an observed exec after the last edit](done-receipt.md) | `tool_claim_match/v1` | `supported` | Synthetic observer records; exact argv; PEER scope. |
 | [Detect a claimed test run that never executed](done-receipt.md) | `tool_claim_match/v1` | `contradicted` | Synthetic observer records; exact argv; PEER scope. |
 | [Keep a claimed run open when observer events were lost](done-receipt.md) | `tool_claim_match/v1` | `not_established` | Synthetic observer records with unknown coverage. |
-| [Derive a done receipt's verdict again from the records it names](done-receipt.md) | `done_receipt/v1` | `supported` | Synthetic records and an unsigned receipt Statement; PEER scope. |
-| [Detect a done receipt that reports a pass its records do not give](done-receipt.md) | `done_receipt/v1` | `contradicted` | Synthetic records and an unsigned receipt Statement; PEER scope. |
+| [Accept done, ungamed work from a receipt whose two verdicts derive again](done-receipt.md) | `done_receipt/v2` | `supported` | Synthetic records and an unsigned receipt Statement; PEER scope. |
+| [Refuse work that passed its tests while the agent tampered with the grader](done-receipt.md) | `done_receipt/v2` | `contradicted` | Synthetic records and an unsigned receipt Statement; PEER scope. |
+| [Refuse unfinished work an honest agent did not claim done](done-receipt.md) | `done_receipt/v2` | `contradicted` | Synthetic records and an unsigned receipt Statement; PEER scope. |
+| [Check an agent's completion assertion against the runs the observer saw](done-receipt.md) | `completion_claim/v1` | `contradicted` | Synthetic observer records; PEER scope. |
+| [Detect a done receipt that reports verdicts its records do not give](done-receipt.md) | `done_receipt/v2` | `contradicted` | Synthetic records and an unsigned receipt Statement; PEER scope. |
 
 ## Retrieve a command
 

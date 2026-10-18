@@ -181,8 +181,8 @@
       "scope": "Synthetic observer records with unknown coverage."
     },
     {
-      "task": "Derive a done receipt's verdict again from the records it names",
-      "claim_type": "done_receipt/v1",
+      "task": "Accept done, ungamed work from a receipt whose two verdicts derive again",
+      "claim_type": "done_receipt/v2",
       "case": "examples/done-receipt/honest/receipt.case.json",
       "policy": "examples/done-receipt/honest/receipt.policy.json",
       "documentation": "docs/done-receipt.md",
@@ -190,10 +190,37 @@
       "scope": "Synthetic records and an unsigned receipt Statement; PEER scope."
     },
     {
-      "task": "Detect a done receipt that reports a pass its records do not give",
-      "claim_type": "done_receipt/v1",
-      "case": "examples/done-receipt/planted-adversary/receipt.case.json",
-      "policy": "examples/done-receipt/planted-adversary/receipt.policy.json",
+      "task": "Refuse work that passed its tests while the agent tampered with the grader",
+      "claim_type": "done_receipt/v2",
+      "case": "examples/done-receipt/tampered-grader/receipt.case.json",
+      "policy": "examples/done-receipt/tampered-grader/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope."
+    },
+    {
+      "task": "Refuse unfinished work an honest agent did not claim done",
+      "claim_type": "done_receipt/v2",
+      "case": "examples/done-receipt/honest-failure/receipt.case.json",
+      "policy": "examples/done-receipt/honest-failure/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope."
+    },
+    {
+      "task": "Check an agent's completion assertion against the runs the observer saw",
+      "claim_type": "completion_claim/v1",
+      "case": "examples/done-receipt/planted-adversary/completion-claim.case.json",
+      "policy": "examples/done-receipt/planted-adversary/completion-claim.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic observer records; PEER scope."
+    },
+    {
+      "task": "Detect a done receipt that reports verdicts its records do not give",
+      "claim_type": "done_receipt/v2",
+      "case": "examples/done-receipt/forged-receipt/receipt.case.json",
+      "policy": "examples/done-receipt/forged-receipt/receipt.policy.json",
       "documentation": "docs/done-receipt.md",
       "expected_decision": "contradicted",
       "scope": "Synthetic records and an unsigned receipt Statement; PEER scope."

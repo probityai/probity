@@ -2,7 +2,7 @@
   "assessments": {
     "lost-events": {
       "capability_witness": "capability",
-      "claim_type": "done_receipt/v1",
+      "claim_type": "done_receipt/v2",
       "claims_witness": "claims",
       "contract_witness": "contract",
       "grade_witness": "grade",
@@ -54,7 +54,7 @@
     "receipt": {
       "artifact": "receipt",
       "authority": "synthetic fixture",
-      "sha256": "dcf105d079938e1164e5e62e7653f3db001c062782a2651b12d80f2fc3c8fd59"
+      "sha256": "10784c890d18e82a6d3e4001baf6db3547412b1c4218bc87244d94784e11d0d3"
     },
     "tree": {
       "artifact": "tree",

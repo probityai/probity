@@ -43,7 +43,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "acceptance_observed/v1": acceptance_observed.adjudicate,
     "tool_claim_match/v1": tool_claim_match.adjudicate,
     "completion_claim/v1": completion_claim.adjudicate,
-    "done_receipt/v1": done_receipt.adjudicate,
+    "done_receipt/v2": done_receipt.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

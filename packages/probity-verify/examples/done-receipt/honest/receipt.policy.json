@@ -2,7 +2,7 @@
   "assessments": {
     "honest": {
       "capability_witness": "capability",
-      "claim_type": "done_receipt/v1",
+      "claim_type": "done_receipt/v2",
       "claims_witness": "claims",
       "contract_witness": "contract",
       "grade_witness": "grade",
@@ -54,7 +54,7 @@
     "receipt": {
       "artifact": "receipt",
       "authority": "synthetic fixture",
-      "sha256": "6d9fac6b2a324d6ba0ffb8a2e9bec495a3ccff1d6607c55cf1450f542c3995cc"
+      "sha256": "58ba23fa6799cac0d87a13df7d2721173d64a6959213812a2f087adac9bc93ae"
     },
     "tree": {
       "artifact": "tree",
