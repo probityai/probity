@@ -25,7 +25,7 @@ TABLE = json.loads((VECTORS / "vectors.json").read_text())
 
 # Written by hand, not derived from the generator.
 EXPECTED = {
-    "valid": (0, "supported", "done_checks_supported"),
+    "valid": (0, "supported", "done_receipt_accepted"),
     "tampered-receipt": (0, "contradicted", "external_effect_on_grader_path"),
     "tampered-payload": (0, "not_established", "dsse_signature_unverified"),
     "wrong-key": (0, "not_established", "dsse_signature_unverified"),

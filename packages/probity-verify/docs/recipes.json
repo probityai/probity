@@ -84,8 +84,8 @@
     },
     {
       "path": "src/probity_verify/adapters/acceptance_observed.py",
-      "bytes": 9612,
-      "sha256": "efd273bf5b08d4e4b74e826dfe0013d82ac31874f1c45846c444ef7983785cfc"
+      "bytes": 8619,
+      "sha256": "4db4582775f3c80f8a3c7e6b0e7a7ece7a6f751fe5304a43cd9a2b95833015e0"
     },
     {
       "path": "src/probity_verify/adapters/authority_anchor.py",
@@ -98,19 +98,24 @@
       "sha256": "9a0b45b24fb366d4f207c09dd74cbb94d0b3ee0eb84ce6ba1bf572cd2323edad"
     },
     {
+      "path": "src/probity_verify/adapters/completion_claim.py",
+      "bytes": 8022,
+      "sha256": "7c5781b7d03ecadbff65b9648ce94da53a48e016c3de1f970bc06897d9eecfe1"
+    },
+    {
       "path": "src/probity_verify/adapters/done_argv.py",
       "bytes": 7461,
       "sha256": "a0696bd433d3310c259424c39f0e3c37baaf1ceba6706a27d147f8191ade93c5"
     },
     {
       "path": "src/probity_verify/adapters/done_receipt.py",
-      "bytes": 12908,
-      "sha256": "d5bb33dffe571ecebefc0408eb1a5abaca45ae0b8b91cde2480af891c1363d4d"
+      "bytes": 18858,
+      "sha256": "724c325c6928c173d5f96b9250c77aea5f327b4442918d870e0dd3b22feae3f7"
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 34118,
-      "sha256": "3e217237aefbe879200bf8e2c95b94a1ea04309ca24f9911f92aeed3a90b2e8e"
+      "bytes": 33827,
+      "sha256": "789bf03d7b134dd61bd9458cff8a62133a04c156bfcef82fed72a11c2fba19c3"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",
@@ -169,8 +174,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 9228,
-      "sha256": "16a776a68ec56e13501cfd747a3a0550396dbfd47974d583bb56b8c3e52ebfa4"
+      "bytes": 9306,
+      "sha256": "b4b231f50090b99bf4a88e7cd5ede9b11c501bee6f5d107974818c0196c7beef"
     },
     {
       "path": "src/probity_verify/dsse.py",
@@ -978,12 +983,12 @@
         {
           "path": "examples/done-receipt/honest/tool-claims.case.json",
           "bytes": 573,
-          "sha256": "63c403c408d9a857a058b15f30131d2ba3301e45985ed8d847dc57d78c6b158c"
+          "sha256": "cd4defedf92f1e47da0414d9a5e25cb5b82a4fa933ddca2564f34c4ee1c00326"
         },
         {
           "path": "examples/done-receipt/honest/tool-claims.policy.json",
           "bytes": 1107,
-          "sha256": "996f0e8b1317fa897391f9200a73b1cf7f9d1558625b216d025276c620026479"
+          "sha256": "9bf483f81fac7c43720be847eb8fc089b90bc3d6de5095ae97c007227b09421a"
         },
         {
           "path": "examples/done-receipt/honest/capability.json",
@@ -992,8 +997,8 @@
         },
         {
           "path": "examples/done-receipt/honest/claims.json",
-          "bytes": 307,
-          "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+          "bytes": 372,
+          "sha256": "d77aad0972099027f6f55eb9bdc2a8b75d16b0c3d51cbef451d8495ae7e13967"
         },
         {
           "path": "examples/done-receipt/honest/observation.json",
@@ -1024,12 +1029,12 @@
         {
           "path": "examples/done-receipt/planted-adversary/tool-claims.case.json",
           "bytes": 583,
-          "sha256": "b82e674bfc46c3e5cc2341217b5798a4dcd841f9c759b44b1ca74aed54895eec"
+          "sha256": "1f56e0dfc89794db43aa7feb126d6e7d13619aafca898ba325f7432272ee555f"
         },
         {
           "path": "examples/done-receipt/planted-adversary/tool-claims.policy.json",
           "bytes": 1118,
-          "sha256": "ca6be137370ee6ed450c4f593bee0490388ee2bf158add46df8e58d72a65d5a0"
+          "sha256": "e377efc60cce28721f356c8b3d59a668c5d545226d00d8e9da180a64ed232de6"
         },
         {
           "path": "examples/done-receipt/planted-adversary/capability.json",
@@ -1038,8 +1043,8 @@
         },
         {
           "path": "examples/done-receipt/planted-adversary/claims.json",
-          "bytes": 318,
-          "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+          "bytes": 383,
+          "sha256": "c4a4e8f27b4aec21eb419d88176d0bc74e3bee7f458a3b5d2be894c4da85ac9d"
         },
         {
           "path": "examples/done-receipt/planted-adversary/observation.json",
@@ -1070,12 +1075,12 @@
         {
           "path": "examples/done-receipt/lost-events/tool-claims.case.json",
           "bytes": 577,
-          "sha256": "5506b3fa05b3c0826d7216c91af558002c3f03a97b8d1ddb7289033a0574467e"
+          "sha256": "bbac52120c93d3d333759ce77247bb26e6fb603f659310ab4f9d95cea55a3267"
         },
         {
           "path": "examples/done-receipt/lost-events/tool-claims.policy.json",
           "bytes": 1112,
-          "sha256": "754937ed4e967d2392f91603f7104b300870141092d99546661ddd13ab8d8471"
+          "sha256": "121409a4fa2917a1416674f46125e162c9a66c787776a7fb7911fc7338080e29"
         },
         {
           "path": "examples/done-receipt/lost-events/capability.json",
@@ -1084,8 +1089,8 @@
         },
         {
           "path": "examples/done-receipt/lost-events/claims.json",
-          "bytes": 312,
-          "sha256": "79d105cd99d0b7f4b35c577abfb7739d94713189b2a4ac51015adc476de4c408"
+          "bytes": 377,
+          "sha256": "0bce38f0ad02d429e5f3abf1e344cb75ba37856a9a18f764f551e2620c12d150"
         },
         {
           "path": "examples/done-receipt/lost-events/observation.json",
@@ -1095,15 +1100,15 @@
       ]
     },
     {
-      "task": "Derive a done receipt's verdict again from the records it names",
-      "claim_type": "done_receipt/v1",
+      "task": "Accept done, ungamed work from a receipt whose two verdicts derive again",
+      "claim_type": "done_receipt/v2",
       "case": "examples/done-receipt/honest/receipt.case.json",
       "policy": "examples/done-receipt/honest/receipt.policy.json",
       "documentation": "docs/done-receipt.md",
       "expected_decision": "supported",
       "scope": "Synthetic records and an unsigned receipt Statement; PEER scope.",
       "case_id": "honest",
-      "expected_reason": "done_checks_supported",
+      "expected_reason": "done_receipt_accepted",
       "exit_code": 0,
       "argv": [
         "probity-verify",
@@ -1116,12 +1121,12 @@
         {
           "path": "examples/done-receipt/honest/receipt.case.json",
           "bytes": 1198,
-          "sha256": "f16c27ddcab1d6aa8a955453b6d616ea19d167b1ed321e86d007cea21cca6828"
+          "sha256": "d712b6e693ce12d3e0cb9c56c212ad9564bb47fa5232c14c68ddb2d2cbeea6a4"
         },
         {
           "path": "examples/done-receipt/honest/receipt.policy.json",
           "bytes": 2134,
-          "sha256": "645ff875cbbf9c940bda7632813a1015c205218b8a45892d11fc1aeaa9fc2f99"
+          "sha256": "80c1d8ae5a1ce4d96271f091d5450001c65bc226a98e1d6deae9e111cf3e77a8"
         },
         {
           "path": "examples/done-receipt/honest/capability.json",
@@ -1130,8 +1135,8 @@
         },
         {
           "path": "examples/done-receipt/honest/claims.json",
-          "bytes": 307,
-          "sha256": "7b8a21a53f1696de8576d8e671a83031eacade8c2658fca192cabc2e41a0e0da"
+          "bytes": 372,
+          "sha256": "d77aad0972099027f6f55eb9bdc2a8b75d16b0c3d51cbef451d8495ae7e13967"
         },
         {
           "path": "examples/done-receipt/honest/contract.json",
@@ -1150,8 +1155,8 @@
         },
         {
           "path": "examples/done-receipt/honest/receipt.json",
-          "bytes": 1355,
-          "sha256": "0208c770a448c0e4763a84cb3faa433da77b1ac8832546bbe8f09b72400a1e89"
+          "bytes": 2535,
+          "sha256": "58ba23fa6799cac0d87a13df7d2721173d64a6959213812a2f087adac9bc93ae"
         },
         {
           "path": "examples/done-receipt/honest/tree.json",
@@ -1161,33 +1166,165 @@
       ]
     },
     {
-      "task": "Detect a done receipt that reports a pass its records do not give",
-      "claim_type": "done_receipt/v1",
-      "case": "examples/done-receipt/planted-adversary/receipt.case.json",
-      "policy": "examples/done-receipt/planted-adversary/receipt.policy.json",
+      "task": "Refuse work that passed its tests while the agent tampered with the grader",
+      "claim_type": "done_receipt/v2",
+      "case": "examples/done-receipt/tampered-grader/receipt.case.json",
+      "policy": "examples/done-receipt/tampered-grader/receipt.policy.json",
       "documentation": "docs/done-receipt.md",
       "expected_decision": "contradicted",
       "scope": "Synthetic records and an unsigned receipt Statement; PEER scope.",
-      "case_id": "planted-adversary",
-      "expected_reason": "receipt_verdict_mismatch",
+      "case_id": "tampered-grader",
+      "expected_reason": "external_effect_on_grader_path",
       "exit_code": 0,
       "argv": [
         "probity-verify",
-        "examples/done-receipt/planted-adversary/receipt.case.json",
+        "examples/done-receipt/tampered-grader/receipt.case.json",
         "--policy",
-        "examples/done-receipt/planted-adversary/receipt.policy.json",
+        "examples/done-receipt/tampered-grader/receipt.policy.json",
         "--json"
       ],
       "bindings": [
         {
-          "path": "examples/done-receipt/planted-adversary/receipt.case.json",
-          "bytes": 1208,
-          "sha256": "08ee73295adebf3e1d68a4c4c8a1e926fe0075fe8ff418d9aaaf0d70caf6ea77"
+          "path": "examples/done-receipt/tampered-grader/receipt.case.json",
+          "bytes": 1207,
+          "sha256": "feffc65ad42250a3a9ddebde6d1a117ca63fbc6c8afc4c88e55f325320bdbd0a"
         },
         {
-          "path": "examples/done-receipt/planted-adversary/receipt.policy.json",
-          "bytes": 2145,
-          "sha256": "bd3e2805d5c57e57c2aa25e769cb0bde716d4226c1126894dcf2f7adc09ca771"
+          "path": "examples/done-receipt/tampered-grader/receipt.policy.json",
+          "bytes": 2143,
+          "sha256": "a01313416b9fe03a35cdbf9195bf7b7abd4867cc18c9354f15c91884575285f1"
+        },
+        {
+          "path": "examples/done-receipt/tampered-grader/capability.json",
+          "bytes": 309,
+          "sha256": "79c6152a2507c0d7b999c29efcdfedd98a66c9c503603b90c00886203d311b3b"
+        },
+        {
+          "path": "examples/done-receipt/tampered-grader/claims.json",
+          "bytes": 381,
+          "sha256": "d215a06a9a7ee75cf9ff67970a5483ec8f1424ba77bafc6d3da329f563d51a2e"
+        },
+        {
+          "path": "examples/done-receipt/tampered-grader/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/tampered-grader/grade.json",
+          "bytes": 717,
+          "sha256": "aedeb31fc4c83d07d08b3a547cf89e8fff1e38681e4e5a2f275f8566a14537ea"
+        },
+        {
+          "path": "examples/done-receipt/tampered-grader/observation.json",
+          "bytes": 1500,
+          "sha256": "67e0635004f4577247ffda670b29d7df17006e7bb75ca5d7b54e375c2d569542"
+        },
+        {
+          "path": "examples/done-receipt/tampered-grader/receipt.json",
+          "bytes": 2692,
+          "sha256": "8ebfe12d6bfe0774f494e4ee6f8f6c0fc99878146e221f6abc65736962f71045"
+        },
+        {
+          "path": "examples/done-receipt/tampered-grader/tree.json",
+          "bytes": 526,
+          "sha256": "8317b5beae090dfb79a932915cceb7fa240d67cc986ee31ea726110cd276a210"
+        }
+      ]
+    },
+    {
+      "task": "Refuse unfinished work an honest agent did not claim done",
+      "claim_type": "done_receipt/v2",
+      "case": "examples/done-receipt/honest-failure/receipt.case.json",
+      "policy": "examples/done-receipt/honest-failure/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope.",
+      "case_id": "honest-failure",
+      "expected_reason": "acceptance_failed_in_verifier",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/honest-failure/receipt.case.json",
+        "--policy",
+        "examples/done-receipt/honest-failure/receipt.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/honest-failure/receipt.case.json",
+          "bytes": 1206,
+          "sha256": "0b742896a1a0fb7a078e435c4f90fc34f8d94044464cf4355d3542842b717c4c"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/receipt.policy.json",
+          "bytes": 2142,
+          "sha256": "577cd5e530608d75ab8432260e8a7970de144af4f60e47716dc049c0add8c125"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/capability.json",
+          "bytes": 308,
+          "sha256": "26044132c0933de74dd129466754b4cb375e7265422f314edc57275b41b268e5"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/claims.json",
+          "bytes": 381,
+          "sha256": "9d9389ccd3b22873f3ba36259a5043deb447ce6f93672978329375403b42474d"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/grade.json",
+          "bytes": 716,
+          "sha256": "fb3f580ccefe9f1f47b256d3ac369ccc702a93b742d15bb94d870cf7f0556c88"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/observation.json",
+          "bytes": 1133,
+          "sha256": "360bb3c4e0d60b6131d1347eb66bc931ab9a35593336ccd73413e9d206085035"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/receipt.json",
+          "bytes": 2547,
+          "sha256": "0b1b271afa348cf8c20a60bb9c4d3595020337ccad1576a227e432ba8cfcc8d5"
+        },
+        {
+          "path": "examples/done-receipt/honest-failure/tree.json",
+          "bytes": 525,
+          "sha256": "3fb9d1a3a96564f49be7c601db899ad464020996c7e78ec88de2124c1ef0841a"
+        }
+      ]
+    },
+    {
+      "task": "Check an agent's completion assertion against the runs the observer saw",
+      "claim_type": "completion_claim/v1",
+      "case": "examples/done-receipt/planted-adversary/completion-claim.case.json",
+      "policy": "examples/done-receipt/planted-adversary/completion-claim.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic observer records; PEER scope.",
+      "case_id": "planted-adversary",
+      "expected_reason": "completion_claimed_without_run",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/planted-adversary/completion-claim.case.json",
+        "--policy",
+        "examples/done-receipt/planted-adversary/completion-claim.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/planted-adversary/completion-claim.case.json",
+          "bytes": 743,
+          "sha256": "3e324cc0c1ecc86cfe43d0f7c3145b4ed0d70d94f7c62eb0a22b01896d21bb6a"
+        },
+        {
+          "path": "examples/done-receipt/planted-adversary/completion-claim.policy.json",
+          "bytes": 1334,
+          "sha256": "38a349ccd05d523e5aca03c22744406fe4e5739504256a90a8b7d80e4b763c1c"
         },
         {
           "path": "examples/done-receipt/planted-adversary/capability.json",
@@ -1196,8 +1333,8 @@
         },
         {
           "path": "examples/done-receipt/planted-adversary/claims.json",
-          "bytes": 318,
-          "sha256": "1d15bb31c66a2947ff572cdd575481bbe6f152491716e6e244d1eee8079ccc74"
+          "bytes": 383,
+          "sha256": "c4a4e8f27b4aec21eb419d88176d0bc74e3bee7f458a3b5d2be894c4da85ac9d"
         },
         {
           "path": "examples/done-receipt/planted-adversary/contract.json",
@@ -1205,24 +1342,75 @@
           "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
         },
         {
-          "path": "examples/done-receipt/planted-adversary/grade.json",
-          "bytes": 719,
-          "sha256": "81f3bb3191c4d4cb25b18daaa2a6817436a587718c6b7524d3170da8b284c61f"
-        },
-        {
           "path": "examples/done-receipt/planted-adversary/observation.json",
           "bytes": 907,
           "sha256": "b55951efe8ce2500e8ac8ed989aad67e2558aae3cb01352e34f3b34157b1033d"
+        }
+      ]
+    },
+    {
+      "task": "Detect a done receipt that reports verdicts its records do not give",
+      "claim_type": "done_receipt/v2",
+      "case": "examples/done-receipt/forged-receipt/receipt.case.json",
+      "policy": "examples/done-receipt/forged-receipt/receipt.policy.json",
+      "documentation": "docs/done-receipt.md",
+      "expected_decision": "contradicted",
+      "scope": "Synthetic records and an unsigned receipt Statement; PEER scope.",
+      "case_id": "forged-receipt",
+      "expected_reason": "receipt_outcome_mismatch",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/done-receipt/forged-receipt/receipt.case.json",
+        "--policy",
+        "examples/done-receipt/forged-receipt/receipt.policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/done-receipt/forged-receipt/receipt.case.json",
+          "bytes": 1205,
+          "sha256": "18849dedeb0afb8413f2d2bc4fbdf32c1048165153fc45e2f67e456cf6a0dc0f"
         },
         {
-          "path": "examples/done-receipt/planted-adversary/receipt.json",
-          "bytes": 1366,
-          "sha256": "2e1a6de23f2f1f02ad422a2fda8251220bf1df063cbd5eea68335154105a5203"
+          "path": "examples/done-receipt/forged-receipt/receipt.policy.json",
+          "bytes": 2142,
+          "sha256": "9c34a80ce0a708b9a384efe15bf88559d993809eeb01a0464d5b0a1a2530de6c"
         },
         {
-          "path": "examples/done-receipt/planted-adversary/tree.json",
-          "bytes": 621,
-          "sha256": "993e48c126e6d94747e4548e9ccce6bf8eb3b24fe6b078401ee8e7ed05b171ab"
+          "path": "examples/done-receipt/forged-receipt/capability.json",
+          "bytes": 308,
+          "sha256": "eb049af8b5eb29f408b91bbf6b51d318d3653a4627b30f9ede604f0ae81a0c63"
+        },
+        {
+          "path": "examples/done-receipt/forged-receipt/claims.json",
+          "bytes": 380,
+          "sha256": "0a4a31b66e720b3ca2d9f9ce7329cbd88c0be508aa4453a2e8bd0ef74b5a39a0"
+        },
+        {
+          "path": "examples/done-receipt/forged-receipt/contract.json",
+          "bytes": 797,
+          "sha256": "ab08f5c60b2f24f7bdae21877ff7db72dfa5a1bd3bd6954b4e01e9f015313a48"
+        },
+        {
+          "path": "examples/done-receipt/forged-receipt/grade.json",
+          "bytes": 716,
+          "sha256": "8b8685218afa26c454bccc15701216e4dcc8a348855e7eb361d2cb0a0e4f7e28"
+        },
+        {
+          "path": "examples/done-receipt/forged-receipt/observation.json",
+          "bytes": 904,
+          "sha256": "83b510116e29d5da1d8cd82a6895867c67aab99df624ddfff84aeadd6047af6c"
+        },
+        {
+          "path": "examples/done-receipt/forged-receipt/receipt.json",
+          "bytes": 2543,
+          "sha256": "325699470c8147619c98dd08281fa51bcda601567ef9e217eb3e7fa94e2abded"
+        },
+        {
+          "path": "examples/done-receipt/forged-receipt/tree.json",
+          "bytes": 618,
+          "sha256": "5bdad9546644554bde7c9cc71f0263b6eb2906d33d3851c9bd8cad59978882a4"
         }
       ]
     }

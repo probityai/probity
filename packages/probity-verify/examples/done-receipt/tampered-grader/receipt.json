@@ -1,9 +1,58 @@
 {
   "_type": "https://in-toto.io/Statement/v1",
   "predicate": {
-    "checks": [],
+    "accepted": false,
     "claim_id": "tampered-grader",
+    "completion_claimed": true,
+    "integrity": {
+      "checks": [
+        {
+          "claim_type": "protected_paths/v1",
+          "class": "tamper",
+          "decision": "contradicted",
+          "reason": "external_effect_on_grader_path",
+          "vantage": "independent",
+          "witness_scope": "PEER"
+        },
+        {
+          "claim_type": "tool_claim_match/v1",
+          "class": "tamper",
+          "decision": "contradicted",
+          "reason": "tracer_terminated_prematurely",
+          "vantage": "independent",
+          "witness_scope": "PEER"
+        },
+        {
+          "claim_type": "completion_claim/v1",
+          "class": "tamper",
+          "decision": "contradicted",
+          "reason": "tracer_terminated_prematurely",
+          "vantage": "independent",
+          "witness_scope": "PEER"
+        }
+      ],
+      "class": "tamper",
+      "decision": "contradicted",
+      "reason": "external_effect_on_grader_path",
+      "vantage": "independent",
+      "witness_scope": "PEER"
+    },
     "invocation_id": "call-1",
+    "outcome": {
+      "checks": [
+        {
+          "claim_type": "acceptance_observed/v1",
+          "decision": "supported",
+          "reason": "acceptance_passed_in_verifier",
+          "vantage": "independent",
+          "witness_scope": "PEER"
+        }
+      ],
+      "decision": "supported",
+      "reason": "acceptance_passed_in_verifier",
+      "vantage": "independent",
+      "witness_scope": "PEER"
+    },
     "records": {
       "capability": {
         "sha256": "79c6152a2507c0d7b999c29efcdfedd98a66c9c503603b90c00886203d311b3b"
@@ -24,12 +73,7 @@
         "sha256": "8317b5beae090dfb79a932915cceb7fa240d67cc986ee31ea726110cd276a210"
       }
     },
-    "schema_version": "probity-done-receipt/v1",
-    "verdict": {
-      "decision": "contradicted",
-      "reason": "external_effect_on_grader_path",
-      "vantage": "independent"
-    },
+    "schema_version": "probity-done-receipt/v2",
     "verifier": {
       "id": "https://github.com/probityai/probity"
     }

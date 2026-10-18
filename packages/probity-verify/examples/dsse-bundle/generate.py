@@ -51,7 +51,7 @@ def receipt(run):
 
 def tampered(data):
     value = json.loads(data)
-    value["predicate"]["verdict"]["reason"] = "tampered_after_signing"
+    value["predicate"]["integrity"]["reason"] = "tampered_after_signing"
     return encoded(value)
 
 
@@ -60,19 +60,21 @@ def vectors():
     honest = receipt("honest")
     signed = envelope(honest)
     forged = dict(signed, payload=b64(tampered(honest)))
-    padded = b64(honest)
+    gamed = envelope(receipt("tampered-grader"))
+    # The unpadded vector needs a payload whose canonical base64 ends in "=".
+    padded = b64(receipt("tampered-grader"))
+    if not padded.endswith("="):
+        raise SystemExit("the tampered-grader receipt no longer needs base64 padding")
     return {
         "valid": (signed, "honest", "signer.pub", 0),
-        "tampered-receipt": (envelope(receipt("tampered-grader")), "tampered-grader",
-                             "signer.pub", 0),
+        "tampered-receipt": (gamed, "tampered-grader", "signer.pub", 0),
         "tampered-payload": (forged, "honest", "signer.pub", 0),
         "wrong-key": (signed, "honest", "other.pub", 0),
         "wrong-payload-type": (envelope(honest, kind="application/json"), "honest",
                                "signer.pub", 0),
         "malformed-no-signatures": (dict(signed, signatures=[]), "honest", "signer.pub", 2),
-        # The receipt is 1355 bytes, so canonical base64 ends in one "=".
-        "malformed-unpadded-base64": (dict(signed, payload=padded.rstrip("=")), "honest",
-                                      "signer.pub", 2),
+        "malformed-unpadded-base64": (dict(gamed, payload=padded.rstrip("=")),
+                                      "tampered-grader", "signer.pub", 2),
     }
 
 
