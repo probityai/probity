@@ -4,8 +4,10 @@ A claimed run matches an ``exec`` event with the same argv whose step follows
 the last edit. When the assessment also pins the done contract and the claim
 names one of its acceptance commands, and the contract sealed the working
 directory and executable the observer saw for that command, a run matches when
-its ``cwd`` and ``exe`` equal the sealed ones and its arguments after the
-program name equal the command's; the agent's spelling of the program is not
+its ``cwd`` equals the sealed one, its ``exe`` is the sealed path or one of the
+sealed paths (a contract may seal every path that names the one executable
+file, such as ``python`` and ``python3``), and its arguments after the program
+name equal the command's; the agent's spelling of the program is not
 consulted. The last clear run must agree with the claimed exit, and a claim
 that states no exit settles nothing.
 
@@ -73,8 +75,9 @@ def _command(claim: dict, contract: dict | None) -> dict | None:
 def _runs(claim: dict, command: dict | None, execs: list[dict]) -> list[dict]:
     """The exec events that are runs of the claimed command."""
     if command is not None and "exe" in command:
+        exes = command["exe"] if isinstance(command["exe"], list) else [command["exe"]]
         return [event for event in execs
-                if event["cwd"] == command["cwd"] and event["exe"] == command["exe"]
+                if event["cwd"] == command["cwd"] and event["exe"] in exes
                 and event["argv"][1:] == command["argv"][1:]]
     return [event for event in execs if event["argv"] == claim["argv"]]
 

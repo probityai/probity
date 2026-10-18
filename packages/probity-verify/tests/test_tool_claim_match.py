@@ -489,6 +489,16 @@ class TestSealedAcceptanceCommand:
         assert outcome(decide_with_contract(tmp_path, records)) == ("contradicted",
                                                                     "tool_claim_unmatched")
 
+    def test_any_sealed_path_of_the_interpreter_matches(self, tmp_path, records):
+        """The worker printed `python test.py` and ran python3: both paths name one file."""
+        live_run(records)
+        records["contract"]["acceptance"][0]["exe"] = ["/usr/local/bin/python", PYTHON3]
+        assert outcome(decide_with_contract(tmp_path, records)) == ("supported",
+                                                                    "tool_claims_matched")
+        records["contract"]["acceptance"][0]["exe"] = ["/usr/local/bin/python"]
+        assert outcome(decide_with_contract(tmp_path, records)) == ("contradicted",
+                                                                    "tool_claim_unmatched")
+
     def test_another_script_does_not_match(self, tmp_path, records):
         live_run(records)
         set_run(records, argv=[PYTHON3, "my_test.py"])
@@ -547,6 +557,10 @@ class TestSealedAcceptanceCommand:
         (lambda c: c["acceptance"][0].update(cwd="/workspace"), "cwd and exe"),
         (lambda c: c["acceptance"][0].update(exe="/usr/bin/python3"), "cwd and exe"),
         (lambda c: c["acceptance"][0].update(cwd="relative", exe="/usr/bin/python3"), "cwd"),
+        (lambda c: c["acceptance"][0].update(cwd="/workspace", exe=[]), "exe"),
+        (lambda c: c["acceptance"][0].update(
+            cwd="/workspace", exe=["/usr/bin/python3", "/usr/bin/python"]), "exe"),
+        (lambda c: c["acceptance"][0].update(cwd="/workspace", exe=["python3"]), "exe"),
         (lambda c: c.update(module_under_test=[]), "module_under_test"),
         (lambda c: c.update(module_under_test=["/abs.py"]), "module_under_test"),
     ])
