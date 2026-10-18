@@ -1,0 +1,858 @@
+"""Real HTTP, durable process crashes and service-native consumer controls."""
+
+from __future__ import annotations
+
+import copy
+import hashlib
+import multiprocessing
+import os
+import socket
+import sqlite3
+import threading
+from contextlib import closing
+from dataclasses import asdict, replace
+from datetime import datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
+from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
+from probity_observer.ticket_service import DOMAIN, MAX_BODY, TicketHTTPServer, TicketStore, http_json, running_server, verify_ticket_capture, verify_ticket_result
+
+
+@pytest.fixture
+def case(tmp_path: Path) -> dict[str, Any]:
+    """Select an exact ticket action and role keys outside candidate evidence."""
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    issuer, server_key = SigningKey.generate(), SigningKey.generate()
+    content = b'{"status":"approved","summary":"finite ticket"}'
+    request = ActionRequest("run-ticket", "attempt-ticket", "request-ticket", "tenant-1", "principal-1", "ticket-update", "/work/tickets/ticket-1", hashlib.sha256(content).hexdigest())
+    policy = GrantPolicy(issuer.public_hex)
+    grant = issue_grant(request, issuer, issued_at=now - timedelta(seconds=1), expires_at=now + timedelta(seconds=120))
+    store = TicketStore(tmp_path / "service.sqlite", request, policy, server_key, clock=lambda: now)
+    initial = store.initialize()
+    return {"store": store, "request": request, "policy": policy, "key": server_key, "issuer": issuer, "now": now, "grant": grant, "initial": initial, "candidate": {"request": asdict(request), "grant": grant, "contentHex": content.hex()}}
+
+
+def reopen(case: dict[str, Any], **kwargs: Any) -> TicketStore:
+    """Restart under externally retained request, policy and service key."""
+    return TicketStore(case["store"].path, case["request"], case["policy"], case["key"], clock=kwargs.pop("clock", lambda: case["now"]), **kwargs)
+
+
+def read_url(server: TicketHTTPServer) -> str:
+    """Select the separate native read-back route outside the POST response."""
+    return server.url + "/tickets/tenant-1/ticket-1"
+
+
+def consume(case: dict[str, Any], receipt: Any, readback: Any) -> dict[str, Any]:
+    """Use keys, grant, clock and request from consumer policy, not the bundle."""
+    return verify_ticket_result(receipt, readback, case["request"], case["policy"], case["key"].public_hex, case["grant"], now=case["now"])
+
+
+def payload_case(case: dict[str, Any], path: Path, content: bytes, **identity: str) -> dict[str, Any]:
+    """Select fresh authority and native storage for an exact boundary payload."""
+    request = replace(case["request"], content_sha256=hashlib.sha256(content).hexdigest(), **identity)
+    grant = issue_grant(request, case["issuer"], issued_at=case["now"] - timedelta(seconds=1), expires_at=case["now"] + timedelta(seconds=120))
+    store = TicketStore(path, request, case["policy"], case["key"], clock=lambda: case["now"])
+    initial = store.initialize()
+    return {**case, "request": request, "grant": grant, "store": store, "initial": initial, "candidate": {"request": asdict(request), "grant": grant, "contentHex": content.hex()}}
+
+
+@pytest.mark.parametrize("identity", [{}, {"principal_id": '"' * 128, "run_id": "\\" * 128, "attempt_id": '"' * 128, "request_id": "\\" * 128, "tenant_id": "t" * 128, "target_path": "/work/tickets/" + "x" * (256 - len("/work/tickets/"))}])
+@pytest.mark.parametrize("unit", [b"x", b"\x00", '{"summary":"\u00e9\U0001f512"}'.encode()])
+def test_exact_http_round_trip_boundary(case: dict[str, Any], tmp_path: Path, identity: dict[str, str], unit: bytes) -> None:
+    """Escaped identities and arbitrary native bytes obey both envelope budgets."""
+    sample = payload_case(case, tmp_path / "sample.sqlite", b"x", **identity)
+    sample_receipt = sample["store"].dispatch(sample["candidate"])
+    sample_native = sample["store"].readback()
+    assert consume(sample, sample_receipt, sample_native)["status"] == "verified"
+    request_overhead = len(canonical(sample["candidate"])) - 2
+    response_overhead = len(canonical(sample_native)) - 2
+    size = (MAX_BODY - max(request_overhead, response_overhead)) // 2
+    content = (unit * (size // len(unit) + 1))[:size]
+    bounded = payload_case(case, tmp_path / "bounded.sqlite", content, **identity)
+    with running_server(bounded["store"]) as server:
+        status, receipt = http_json(server.url + "/dispatch", bounded["candidate"])
+        assert status == 200
+        route = server.url + f"/tickets/{bounded['request'].tenant_id}/{bounded['store'].ticket_id}"
+        status, native = http_json(route)
+        assert status == 200
+        assert consume(bounded, receipt, native)["status"] == "verified"
+        assert native["contentHex"] == content.hex()
+        assert len(canonical(native)) == response_overhead + 2 * size
+        assert MAX_BODY - max(len(canonical(native)), len(canonical(bounded["candidate"]))) <= 1
+        assert http_json(server.url + "/dispatch", bounded["candidate"]) == (200, receipt)
+        assert http_json(route) == (200, native)
+        bounded["store"].revoke()
+        status, revoked = http_json(route)
+        assert status == 200
+        assert len(canonical(revoked)) == len(canonical(native)) - 1
+        assert revoked["contentHex"] == content.hex()
+        assert revoked["revision"] == 1
+        with pytest.raises(VerificationError, match="unrevoked"):
+            consume(bounded, receipt, revoked)
+        assert http_json(server.url + "/dispatch", bounded["candidate"])[0] == 409
+    overflow = payload_case(case, tmp_path / "overflow.sqlite", content + b"x", **identity)
+    with running_server(overflow["store"]) as server:
+        raw = canonical(overflow["candidate"])
+        if len(raw) <= MAX_BODY:
+            assert http_json(server.url + "/dispatch", overflow["candidate"])[0] == 409
+        else:
+            with pytest.raises(VerificationError, match="HTTP request exceeds"):
+                http_json(server.url + "/dispatch", overflow["candidate"])
+            with socket.create_connection(server.server_address, timeout=5) as connection:
+                connection.sendall(b"POST /dispatch HTTP/1.0\r\nContent-Length: " + str(len(raw)).encode() + b"\r\n\r\n" + raw)
+                assert b"409" in connection.recv(1024)
+        assert overflow["store"].readback() == overflow["initial"]
+    with pytest.raises(VerificationError, match="finite limit"):
+        overflow["store"].dispatch(overflow["candidate"])
+    assert overflow["store"].readback() == overflow["initial"]
+
+
+def test_http_body_fits_but_readback_does_not(case: dict[str, Any], tmp_path: Path) -> None:
+    """A formerly accepted POST must refuse before recording an unreadable effect."""
+    overhead = len(canonical(case["candidate"])) - len(case["candidate"]["contentHex"])
+    content = b"x" * ((MAX_BODY - overhead) // 2)
+    oversized = payload_case(case, tmp_path / "readback-overflow.sqlite", content)
+    assert MAX_BODY - len(canonical(oversized["candidate"])) <= 1
+    with running_server(oversized["store"]) as server:
+        assert http_json(server.url + "/dispatch", oversized["candidate"])[0] == 409
+        assert http_json(read_url(server))[1] == oversized["initial"]
+    with pytest.raises(VerificationError, match="native read-back exceeds"):
+        oversized["store"].dispatch(oversized["candidate"])
+    assert oversized["store"].readback() == oversized["initial"]
+
+
+def test_retained_unreadable_completion_refuses_without_mutation(case: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Old admission can leave valid native state that cannot fit the GET budget."""
+    overhead = len(canonical(case["candidate"])) - len(case["candidate"]["contentHex"])
+    content = b"x" * ((MAX_BODY - overhead) // 2)
+    retained = payload_case(case, tmp_path / "retained-overflow.sqlite", content)
+    # Reproduce the previous admission rule while retaining real signatures,
+    # intent/effect history and SQLite bytes. Restore the current rule before
+    # reopening the retained store and exercising its supported interfaces.
+    with monkeypatch.context() as previous:
+        previous.setattr(retained["store"], "_require_readable_readback", lambda *args: None)
+        receipt = retained["store"].dispatch(retained["candidate"])
+        assert len(canonical(retained["store"].readback())) > MAX_BODY
+    assert receipt["payload"]["phase"] == "completed"
+    before = retained["store"].path.read_bytes()
+    restored = reopen(retained, retained_head=receipt)
+    with pytest.raises(VerificationError, match="native read-back exceeds"):
+        restored.readback()
+    with pytest.raises(VerificationError, match="native read-back exceeds"):
+        restored.dispatch(retained["candidate"])
+    with running_server(restored) as server:
+        for status, refusal in [http_json(server.url + "/dispatch", retained["candidate"]), http_json(read_url(server))]:
+            assert status == 409
+            assert refusal["status"] == "refused"
+    assert restored.path.read_bytes() == before
+    with sqlite3.connect(restored.path) as db:
+        assert db.execute("SELECT content,revision FROM tickets").fetchall() == [(content, 1)]
+        assert db.execute("SELECT COUNT(*) FROM events").fetchone() == (3,)
+
+
+def test_non_ascii_request_refuses_before_intent(case: dict[str, Any]) -> None:
+    """Native UTF-8 content remains separate from restricted signed JSON identity."""
+    candidate = copy.deepcopy(case["candidate"])
+    candidate["request"]["principal_id"] = "\u00e9"
+    with pytest.raises(VerificationError, match="non-ASCII"):
+        case["store"].dispatch(candidate)
+    with running_server(case["store"]) as server:
+        raw = b'{"principal_id":"\xc3\xa9"}'
+        with socket.create_connection(server.server_address, timeout=5) as connection:
+            connection.sendall(b"POST /dispatch HTTP/1.0\r\nContent-Length: " + str(len(raw)).encode() + b"\r\n\r\n" + raw)
+            assert b"409" in connection.recv(1024)
+    assert case["store"].readback() == case["initial"]
+
+
+def test_server_refuses_oversized_readback(case: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """An oversized native response cannot bypass the server's actual byte bound."""
+    original = case["store"].readback
+    monkeypatch.setattr(case["store"], "readback", lambda: {"unexpected": "x" * MAX_BODY})
+    with running_server(case["store"]) as server:
+        status, refusal = http_json(read_url(server))
+        assert status == 409
+        assert refusal["status"] == "refused"
+    assert original() == case["initial"]
+
+
+def test_client_bounds_oversized_get_response() -> None:
+    """A real external HTTP response cannot enlarge the client's read budget."""
+    class OversizedHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Length", str(MAX_BODY + 1))
+            self.end_headers()
+            self.wfile.write(b"x" * (MAX_BODY + 1))
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), OversizedHandler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with pytest.raises(VerificationError, match="HTTP response exceeds"):
+                http_json(f"http://127.0.0.1:{server.server_address[1]}/readback")
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)
+
+
+def test_real_http_write_and_restart(case: dict[str, Any]) -> None:
+    """A completed native ticket survives server restart without a second write."""
+    with running_server(case["store"]) as server:
+        status, receipt = http_json(server.url + "/dispatch", case["candidate"])
+        assert status == 200
+        status, native = http_json(read_url(server))
+        assert status == 200
+        result = consume(case, receipt, native)
+        assert result["status"] == "verified"
+        assert len({result["requestId"], result["attemptId"], result["effectId"]}) == 3
+        assert native["revision"] == 1
+    with running_server(reopen(case, retained_head=receipt)) as server:
+        assert http_json(server.url + "/dispatch", case["candidate"]) == (200, receipt)
+        assert http_json(read_url(server))[1] == native
+
+
+@pytest.mark.parametrize("field,value", [("tenant_id", "tenant-2"), ("principal_id", "principal-2"), ("tool_id", "wrong-tool"), ("target_path", "/work/tickets/ticket-2"), ("request_id", "request-other"), ("attempt_id", "attempt-other"), ("run_id", "run-other")])
+def test_request_substitution_refused(case: dict[str, Any], field: str, value: str) -> None:
+    """Changed tenant, action, principal and invocation identity never mutate state."""
+    candidate = copy.deepcopy(case["candidate"])
+    candidate["request"][field] = value
+    with running_server(case["store"]) as server:
+        assert http_json(server.url + "/dispatch", candidate)[0] == 409
+        assert http_json(read_url(server))[1]["revision"] == 0
+
+
+@pytest.mark.parametrize("kind", ["content", "issuer", "expired", "grant-replacement"])
+def test_authority_and_content_controls(case: dict[str, Any], kind: str) -> None:
+    """Native gate refuses changed bytes, issuer, expiry and grant cache reuse."""
+    candidate = copy.deepcopy(case["candidate"])
+    store = case["store"]
+    if kind == "content":
+        candidate["contentHex"] = b"different".hex()
+    elif kind == "issuer":
+        other = SigningKey.generate()
+        candidate["grant"] = issue_grant(case["request"], other, issued_at=case["now"], expires_at=case["now"] + timedelta(seconds=60))
+    elif kind == "expired":
+        store = reopen(case, clock=lambda: case["now"] + timedelta(seconds=120))
+    else:
+        store.dispatch(candidate)
+        candidate["grant"] = issue_grant(case["request"], case["issuer"], issued_at=case["now"], expires_at=case["now"] + timedelta(seconds=60))
+    with running_server(store) as server:
+        assert http_json(server.url + "/dispatch", candidate)[0] == 409
+        assert http_json(read_url(server))[1]["revision"] == (1 if kind == "grant-replacement" else 0)
+
+
+@pytest.mark.parametrize("after_effect", [False, True])
+def test_revocation_on_fresh_and_cached_actions(case: dict[str, Any], after_effect: bool) -> None:
+    """Revocation refuses cached retry while retaining the already completed effect."""
+    if after_effect:
+        receipt = case["store"].dispatch(case["candidate"])
+    case["store"].revoke()
+    with running_server(reopen(case)) as server:
+        assert http_json(server.url + "/dispatch", case["candidate"])[0] == 409
+        native = http_json(read_url(server))[1]
+        assert native["revision"] == int(after_effect)
+        assert native["receipt"]["payload"]["revoked"] is True
+        if after_effect:
+            with pytest.raises(VerificationError):
+                consume(case, receipt, native)
+
+
+def test_revocation_between_intent_and_effect(case: dict[str, Any]) -> None:
+    """A revoke committed in the two-transaction gap prevents native mutation."""
+    def hook(point: str) -> None:
+        if point == "after-intent":
+            reopen(case).revoke()
+    store = reopen(case, crash_hook=hook)
+    with pytest.raises(VerificationError, match="pending authority"):
+        store.dispatch(case["candidate"])
+    native = store.readback()
+    assert native["revision"] == 0
+    assert store.recover()["payload"]["phase"] == "incomplete"
+
+
+def test_revocation_waits_for_native_transaction(case: dict[str, Any]) -> None:
+    """A racing revoke shares SQLite's lock and cannot erase a committed effect."""
+    started, requested, finished = threading.Event(), threading.Event(), threading.Event()
+    def revoke() -> None:
+        requested.set()
+        reopen(case).revoke()
+        finished.set()
+    worker: threading.Thread | None = None
+    def hook(point: str) -> None:
+        nonlocal worker
+        if point == "inside-effect-transaction":
+            started.set()
+            worker = threading.Thread(target=revoke)
+            worker.start()
+            assert requested.wait(2)
+            assert not finished.wait(0.05)
+    store = reopen(case, crash_hook=hook)
+    store.dispatch(case["candidate"])
+    assert started.is_set() and worker is not None
+    worker.join(5)
+    assert finished.is_set()
+    assert store.readback()["revision"] == 1
+    with pytest.raises(VerificationError, match="revoked"):
+        store.dispatch(case["candidate"])
+
+
+def _crash_server(case: dict[str, Any], point: str, port_pipe: Any) -> None:
+    """Crash a real server process at a selected durable transaction boundary."""
+    def crash(selected: str) -> None:
+        if selected == point:
+            os._exit(73)
+    with TicketHTTPServer(reopen(case, crash_hook=crash)) as server:
+        port_pipe.send(server.server_address[1])
+        port_pipe.close()
+        server.serve_forever()
+
+
+@pytest.mark.parametrize("point,revision,phase", [("after-intent", 0, "incomplete"), ("inside-effect-transaction", 0, "incomplete"), ("after-effect", 1, "completed")])
+def test_actual_process_crash_recovery(case: dict[str, Any], point: str, revision: int, phase: str) -> None:
+    """Hard process exit preserves intent and SQLite commits without automatic replay."""
+    context = multiprocessing.get_context("fork")
+    receive, send = context.Pipe(duplex=False)
+    process = context.Process(target=_crash_server, args=(case, point, send))
+    process.start()
+    send.close()
+    assert receive.poll(5)
+    port = receive.recv()
+    receive.close()
+    try:
+        with pytest.raises((OSError, ConnectionError)):
+            http_json(f"http://127.0.0.1:{port}/dispatch", case["candidate"])
+    finally:
+        process.join(5)
+        if process.is_alive():
+            process.terminate()
+            process.join(5)
+    assert process.exitcode == 73
+    store = reopen(case)
+    receipt = store.recover()
+    assert receipt["payload"]["phase"] == phase
+    assert store.readback()["revision"] == revision
+    if revision:
+        assert store.dispatch(case["candidate"])["payload"]["revision"] == 1
+    else:
+        with pytest.raises(VerificationError, match="incomplete"):
+            store.dispatch(case["candidate"])
+
+
+@pytest.mark.parametrize("bypass", ["native-bytes", "native-extra-row", "native-revision", "native-content-type", "history-delete", "state-delete"])
+def test_persistent_bypass_controls(case: dict[str, Any], bypass: str) -> None:
+    """Unrecorded native table changes and missing service history refuse read-back."""
+    case["store"].dispatch(case["candidate"])
+    with sqlite3.connect(case["store"].path) as db:
+        if bypass == "native-bytes":
+            db.execute("UPDATE tickets SET content=?", (b"bypassed",))
+        elif bypass == "native-extra-row":
+            db.execute("INSERT INTO tickets VALUES('other','ticket',?,1,'other')", (b"bypass",))
+        elif bypass == "native-revision":
+            db.execute("UPDATE tickets SET revision=2")
+        elif bypass == "native-content-type":
+            db.execute("UPDATE tickets SET content='changed native SQL type'")
+        elif bypass == "history-delete":
+            db.execute("DELETE FROM events WHERE sequence=2")
+        else:
+            db.execute("DELETE FROM state")
+    with running_server(reopen(case)) as server:
+        assert http_json(read_url(server))[0] == 409
+        assert http_json(server.url + "/dispatch", case["candidate"])[0] == 409
+
+
+def test_whole_store_rollback_requires_retained_head(case: dict[str, Any], tmp_path: Path) -> None:
+    """An external retained head detects a coherent older database restoration."""
+    backup = tmp_path / "old.sqlite"
+    backup.write_bytes(case["store"].path.read_bytes())
+    receipt = case["store"].dispatch(case["candidate"])
+    case["store"].path.write_bytes(backup.read_bytes())
+    with pytest.raises(VerificationError, match="predates"):
+        reopen(case, retained_head=receipt).readback()
+    # Without an externally retained head, a coherent older local store is valid.
+    assert reopen(case).readback()["revision"] == 0
+
+
+def test_missing_store_never_reinitialized(case: dict[str, Any]) -> None:
+    """Restart read-back and dispatch refuse missing native state."""
+    case["store"].path.unlink()
+    with pytest.raises(VerificationError, match="missing"):
+        reopen(case).readback()
+    with pytest.raises(VerificationError, match="missing"):
+        reopen(case).dispatch(case["candidate"])
+    assert not case["store"].path.exists()
+
+
+@pytest.mark.parametrize("mutation", ["readback-bytes", "readback-tenant", "readback-effect", "receipt-signature", "wrong-key", "changed-request"])
+def test_consumer_mutations(case: dict[str, Any], mutation: str) -> None:
+    """Separate consumer refuses fabricated read-back and substituted trust pins."""
+    receipt = case["store"].dispatch(case["candidate"])
+    native = case["store"].readback()
+    if mutation == "readback-bytes":
+        native["contentHex"] = b"forged".hex()
+    elif mutation == "readback-tenant":
+        native["tenantId"] = "other"
+    elif mutation == "readback-effect":
+        native["effectId"] = "other"
+    elif mutation == "receipt-signature":
+        receipt["payload"]["revision"] = 2
+    elif mutation == "wrong-key":
+        case["key"] = SigningKey.generate()
+    else:
+        case["request"] = replace(case["request"], principal_id="other")
+    with pytest.raises(VerificationError):
+        consume(case, receipt, native)
+
+
+def test_http_framing_and_route_controls(case: dict[str, Any]) -> None:
+    """Unknown routes, duplicate members and oversized framing cannot write."""
+    with running_server(case["store"]) as server:
+        assert http_json(server.url + "/revoke", case["candidate"])[0] == 409
+        assert http_json(server.url + "/tickets/tenant-2/ticket-1")[0] == 404
+        bodies = [(b'{"request":{},"request":{}}', "25"), (b"", "999999")]
+        for body, length in bodies:
+            with socket.create_connection(server.server_address, timeout=5) as connection:
+                connection.sendall(b"POST /dispatch HTTP/1.0\r\nContent-Length: " + length.encode() + b"\r\n\r\n" + body)
+                assert b"409" in connection.recv(1024)
+        assert case["store"].readback()["revision"] == 0
+
+
+def test_wrong_restart_configuration(case: dict[str, Any]) -> None:
+    """A different tenant-selected request cannot reopen an existing action store."""
+    store = TicketStore(case["store"].path, replace(case["request"], tenant_id="other"), case["policy"], case["key"])
+    with pytest.raises(VerificationError, match="configuration"):
+        store.readback()
+
+
+@pytest.mark.parametrize("field,value", [("revision", True), ("eventCount", True), ("revoked", 0), ("phase", []), ("effectTime", "2000-01-01T00:00:00Z"), ("intentTime", "2000-01-01T00:00:00Z"), ("effectTime", "2035-01-01T00:00:00Z"), ("unknown", "extra")])
+def test_genuinely_signed_malformed_receipt(case: dict[str, Any], field: str, value: Any) -> None:
+    """A valid service signature cannot erase strict types or historical grant limits."""
+    receipt = case["store"].dispatch(case["candidate"])
+    native = case["store"].readback()
+    receipt["payload"][field] = value
+    receipt["signature"] = case["key"].sign(DOMAIN, receipt["payload"])
+    native["receipt"] = copy.deepcopy(receipt)
+    with pytest.raises(VerificationError):
+        consume(case, receipt, native)
+
+
+@pytest.mark.parametrize("corruption", ["invalid-bytes", "missing-table"])
+def test_corrupt_native_store_refuses_http(case: dict[str, Any], corruption: str) -> None:
+    """Malformed SQLite and missing tables return finite refusal without fresh state."""
+    if corruption == "invalid-bytes":
+        case["store"].path.write_bytes(b"this is not SQLite")
+    else:
+        with sqlite3.connect(case["store"].path) as db:
+            db.execute("DROP TABLE tickets")
+    with running_server(reopen(case)) as server:
+        assert http_json(read_url(server))[0] == 409
+        assert http_json(server.url + "/dispatch", case["candidate"])[0] == 409
+
+
+def test_grant_expiry_between_intent_and_effect(case: dict[str, Any]) -> None:
+    """Expiry after durable intent aborts mutation and retains an incomplete effect."""
+    times = iter((case["now"], case["now"] + timedelta(seconds=120)))
+    store = reopen(case, clock=lambda: next(times))
+    with pytest.raises(VerificationError, match="not valid"):
+        store.dispatch(case["candidate"])
+    assert store.readback()["revision"] == 0
+    assert store.recover()["payload"]["phase"] == "incomplete"
+
+
+def test_expired_cached_retry(case: dict[str, Any]) -> None:
+    """A completed effect remains recorded when its grant expires before retry."""
+    case["store"].dispatch(case["candidate"])
+    store = reopen(case, clock=lambda: case["now"] + timedelta(seconds=120))
+    with pytest.raises(VerificationError, match="not valid"):
+        store.dispatch(case["candidate"])
+    assert store.readback()["revision"] == 1
+
+
+def test_backwards_clock_before_effect(case: dict[str, Any]) -> None:
+    """A still-valid grant does not excuse reversing the observed event clock."""
+    times = iter((case["now"], case["now"] - timedelta(seconds=1)))
+    store = reopen(case, clock=lambda: next(times))
+    with pytest.raises(VerificationError, match="backwards"):
+        store.dispatch(case["candidate"])
+    assert store.readback()["revision"] == 0
+
+
+def test_backwards_cached_retry_clock(case: dict[str, Any]) -> None:
+    """A valid grant cannot admit cached completion before its recorded effect time."""
+    case["store"].dispatch(case["candidate"])
+    store = reopen(case, clock=lambda: case["now"] - timedelta(seconds=1))
+    with pytest.raises(VerificationError, match="predates cached"):
+        store.dispatch(case["candidate"])
+    assert store.readback()["revision"] == 1
+
+
+def test_backwards_consumer_clock(case: dict[str, Any]) -> None:
+    """An otherwise valid grant cannot place completed effect in the reader's future."""
+    receipt = case["store"].dispatch(case["candidate"])
+    native = case["store"].readback()
+    with pytest.raises(VerificationError, match="predates completed"):
+        verify_ticket_result(receipt, native, case["request"], case["policy"], case["key"].public_hex, case["grant"], now=case["now"] - timedelta(seconds=1))
+
+
+@pytest.mark.parametrize("kind", ["duplicate-length", "transfer-encoding", "excessive-nesting"])
+def test_ambiguous_http_framing(case: dict[str, Any], kind: str) -> None:
+    """Duplicate length, chunk framing and parser-depth attacks retain no effect."""
+    body = b"{}"
+    if kind == "duplicate-length":
+        headers = b"Content-Length: 2\r\nContent-Length: 2\r\n"
+    elif kind == "transfer-encoding":
+        headers = b"Content-Length: 2\r\nTransfer-Encoding: chunked\r\n"
+    else:
+        body = b"[" * 1200 + b"]" * 1200
+        headers = b"Content-Length: " + str(len(body)).encode() + b"\r\n"
+    with running_server(case["store"]) as server:
+        with socket.create_connection(server.server_address, timeout=5) as connection:
+            connection.sendall(b"POST /dispatch HTTP/1.0\r\n" + headers + b"\r\n" + body)
+            assert b"409" in connection.recv(1024)
+    assert case["store"].readback()["revision"] == 0
+
+
+def test_concurrent_http_retries_do_not_duplicate_effect(case: dict[str, Any]) -> None:
+    """Two HTTP callers share native locks and create at most one ticket mutation."""
+    barrier = threading.Barrier(2)
+    statuses: list[int] = []
+    with running_server(case["store"]) as server:
+        def invoke() -> None:
+            barrier.wait(timeout=5)
+            statuses.append(http_json(server.url + "/dispatch", case["candidate"])[0])
+        workers = [threading.Thread(target=invoke) for _ in range(2)]
+        for worker in workers:
+            worker.start()
+        for worker in workers:
+            worker.join(timeout=5)
+        assert len(statuses) == 2 and 200 in statuses and set(statuses) <= {200, 409}
+        assert http_json(read_url(server))[1]["revision"] == 1
+        with sqlite3.connect(case["store"].path) as db:
+            assert db.execute("SELECT COUNT(*) FROM tickets").fetchone()[0] == 1
+            assert db.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 3
+
+
+
+def captured_populations(case: dict[str, Any]) -> tuple:
+    """Query the actual selected native populations and close this owned reader."""
+    with closing(sqlite3.connect(case["store"].path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
+        return (db.execute("SELECT record FROM state WHERE singleton=1").fetchone()[0],
+                db.execute("SELECT sequence,record FROM events ORDER BY sequence").fetchall(),
+                db.execute("SELECT tenant,ticket,content,revision,effect FROM tickets").fetchall())
+
+
+@pytest.mark.parametrize("phase", ["ready", "pending", "incomplete", "completed", "revoked-ready", "revoked-completed"])
+def test_public_native_capture_preserves_real_store_phases(case: dict[str, Any], phase: str) -> None:
+    """A public-key-only validator and the store share actual phase and row semantics."""
+    store = case["store"]
+    if phase in {"pending", "incomplete"}:
+        def interrupted(point: str) -> None:
+            if point == "after-intent":
+                raise RuntimeError("controlled interruption")
+        store.crash_hook = interrupted
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+            store.dispatch(case["candidate"])
+        if phase == "incomplete":
+            store.recover()
+    elif phase in {"completed", "revoked-completed"}:
+        store.dispatch(case["candidate"])
+    if phase.startswith("revoked-"):
+        store.revoke()
+    native = store.readback()
+    before = store.path.read_bytes()
+    verified = verify_ticket_capture(*captured_populations(case), case["request"], case["policy"],
+                                     case["key"].public_hex, retained_head=native["receipt"])
+    assert verified.state["phase"] == native["receipt"]["payload"]["phase"]
+    assert verified.logical_admissions == int(phase not in {"ready", "revoked-ready"})
+    assert verified.local_effects == int(phase in {"completed", "revoked-completed"})
+    assert type(verified.logical_admissions) is type(verified.local_effects) is int
+    assert verified.content == (bytes.fromhex(native["contentHex"]) if native["contentHex"] is not None else None)
+    assert store.path.read_bytes() == before
+
+
+def rewrite_signed_ticket_capture(case: dict[str, Any], kind: str) -> None:
+    """Retain real signing authority while making the intended native relation invalid."""
+    key = case["key"]
+    with closing(sqlite3.connect(case["store"].path)) as db:
+        state = strict_loads(db.execute("SELECT record FROM state WHERE singleton=1").fetchone()[0])["payload"]
+        events = [strict_loads(raw)["payload"] for (_, raw) in db.execute("SELECT sequence,record FROM events ORDER BY sequence")]
+        if kind == "boolean-event-sequence":
+            events[0]["sequence"] = True
+        elif kind == "boolean-intent-revision":
+            events[1]["event"]["beforeRevision"] = False
+        elif kind == "boolean-effect-revision":
+            events[2]["event"]["revision"] = True
+        elif kind == "unsupported-event":
+            events[2]["event"]["kind"] = "claimed-provider-effect"
+        elif kind == "missing-initialize":
+            events = events[1:]
+            for number, event in enumerate(events, 1):
+                event["sequence"] = number
+        elif kind == "boolean-state-revision":
+            state["revision"] = True
+        elif kind == "boolean-state-count":
+            state["eventCount"] = True
+        elif kind == "integer-state-revocation":
+            state["revoked"] = 0
+        elif kind == "wrong-terminal-phase":
+            state.update(phase="incomplete", revision=0, contentDigest=None, effectTime=None)
+            db.execute("DELETE FROM tickets")
+        elif kind == "sql-event-real":
+            db.execute("ALTER TABLE events RENAME TO old_events")
+            db.execute("CREATE TABLE events(sequence REAL PRIMARY KEY, record BLOB NOT NULL)")
+            db.execute("INSERT INTO events SELECT * FROM old_events")
+            db.execute("DROP TABLE old_events")
+        elif kind == "sql-row-real":
+            db.execute("ALTER TABLE tickets RENAME TO old_tickets")
+            db.execute("CREATE TABLE tickets(tenant TEXT, ticket TEXT, content BLOB NOT NULL, revision REAL NOT NULL, effect TEXT NOT NULL, PRIMARY KEY(tenant,ticket))")
+            db.execute("INSERT INTO tickets SELECT * FROM old_tickets")
+            db.execute("DROP TABLE old_tickets")
+        else:
+            raise AssertionError("unknown signed control")
+        db.execute("DELETE FROM events")
+        previous = "0" * 64
+        for number, event in enumerate(events, 1):
+            body = {"sequence": event["sequence"], "previous": previous, "event": event["event"]}
+            body["hash"] = digest(DOMAIN + "-event", body)
+            signed = {"payload": body, "keyid": key.public_hex, "signature": key.sign(DOMAIN, body)}
+            db.execute("INSERT INTO events VALUES(?,?)", (number, canonical(signed)))
+            previous = body["hash"]
+        state["eventHead"] = previous
+        if kind != "boolean-state-count":
+            state["eventCount"] = len(events)
+        signed = {"payload": state, "keyid": key.public_hex, "signature": key.sign(DOMAIN, state)}
+        db.execute("UPDATE state SET record=? WHERE singleton=1", (canonical(signed),))
+        db.commit()
+
+
+@pytest.mark.parametrize("kind,refusal", [
+    ("boolean-event-sequence", "event schema"), ("boolean-intent-revision", "intent history"),
+    ("boolean-effect-revision", "effect history"), ("unsupported-event", "unsupported event"),
+    ("missing-initialize", "lacks initial configuration"), ("boolean-state-revision", "counters or revocation"),
+    ("boolean-state-count", "counters or revocation"), ("integer-state-revocation", "counters or revocation"),
+    ("wrong-terminal-phase", "native effect history"), ("sql-event-real", "event schema"),
+    ("sql-row-real", "row types"),
+])
+def test_signed_native_faults_refuse_in_store_and_public_capture(case: dict[str, Any], kind: str, refusal: str) -> None:
+    """Authentic signatures and closed canonical bytes cannot erase native phase or type faults."""
+    case["store"].dispatch(case["candidate"])
+    rewrite_signed_ticket_capture(case, kind)
+    populations = captured_populations(case)
+    before = case["store"].path.read_bytes()
+    with pytest.raises(VerificationError, match=refusal):
+        verify_ticket_capture(*populations, case["request"], case["policy"], case["key"].public_hex)
+    with pytest.raises(VerificationError, match=refusal):
+        reopen(case).readback()
+    assert case["store"].path.read_bytes() == before
+
+
+@pytest.mark.parametrize("kind", ["request", "authority", "scope", "coverage"])
+def test_signed_retained_profile_refuses_in_store_and_public_capture(case: dict[str, Any], kind: str) -> None:
+    """A genuinely signed retained head must name this exact bounded ticket profile."""
+    receipt = case["store"].dispatch(case["candidate"])
+    field = {"request": "request", "authority": "authorityKey", "scope": "witnessScope", "coverage": "coverage"}[kind]
+    replacement = {"request": {**asdict(case["request"]), "request_id": "other"},
+                   "authority": "00" * 32, "scope": "INDEPENDENT", "coverage": "provider-completion"}[kind]
+    receipt["payload"][field] = replacement
+    receipt["signature"] = case["key"].sign(DOMAIN, receipt["payload"])
+    before = case["store"].path.read_bytes()
+    with pytest.raises(VerificationError, match="retained ticket head profile"):
+        verify_ticket_capture(*captured_populations(case), case["request"], case["policy"],
+                              case["key"].public_hex, retained_head=receipt)
+    with pytest.raises(VerificationError, match="retained ticket head profile"):
+        reopen(case, retained_head=receipt).readback()
+    assert case["store"].path.read_bytes() == before
+
+
+@pytest.mark.parametrize("kind,refusal", [("tool", "action or target"), ("target", "URL-safe"),
+    ("tenant", "URL-safe"), ("same-role-key", "issuer keys must differ")])
+def test_public_and_store_selected_configuration_share_constraints(case: dict[str, Any], kind: str, refusal: str) -> None:
+    """Both entry points reject unsupported selected tool, literal identifiers and key roles."""
+    request, policy = case["request"], case["policy"]
+    if kind == "tool":
+        request = replace(request, tool_id="file-write")
+    elif kind == "target":
+        request = replace(request, target_path="/work/tickets/group/ticket")
+    elif kind == "tenant":
+        request = replace(request, tenant_id="tenant/other")
+    else:
+        policy = GrantPolicy(case["key"].public_hex)
+    with pytest.raises(VerificationError, match=refusal):
+        verify_ticket_capture(*captured_populations(case), request, policy, case["key"].public_hex)
+    with pytest.raises(VerificationError, match=refusal):
+        TicketStore(case["store"].path, request, policy, case["key"])
+
+
+@pytest.mark.parametrize("kind", ["content-digest-and-row", "consistent-effect-id"])
+def test_signed_state_history_and_rows_require_selected_relations(case: dict[str, Any], kind: str) -> None:
+    """Matching host signatures cannot replace the selected payload or deterministic effect."""
+    case["store"].dispatch(case["candidate"])
+    key = case["key"]
+    with closing(sqlite3.connect(case["store"].path)) as db:
+        state = strict_loads(db.execute("SELECT record FROM state WHERE singleton=1").fetchone()[0])["payload"]
+        if kind == "content-digest-and-row":
+            content = b"different native content"
+            state["contentDigest"] = hashlib.sha256(content).hexdigest()
+            db.execute("UPDATE tickets SET content=?", (content,))
+        else:
+            state["effectId"] = "f" * 64
+            events = [strict_loads(raw)["payload"] for (raw,) in db.execute("SELECT record FROM events ORDER BY sequence")]
+            db.execute("DELETE FROM events")
+            previous = "0" * 64
+            for event in events:
+                if "effectId" in event["event"]:
+                    event["event"]["effectId"] = state["effectId"]
+                body = {"sequence": event["sequence"], "previous": previous, "event": event["event"]}
+                body["hash"] = digest(DOMAIN + "-event", body)
+                db.execute("INSERT INTO events VALUES(?,?)", (body["sequence"], canonical({"payload": body,
+                    "keyid": key.public_hex, "signature": key.sign(DOMAIN, body)})))
+                previous = body["hash"]
+            state["eventHead"] = previous
+            db.execute("UPDATE tickets SET effect=?", (state["effectId"],))
+        db.execute("UPDATE state SET record=? WHERE singleton=1", (canonical({"payload": state,
+            "keyid": key.public_hex, "signature": key.sign(DOMAIN, state)}),))
+        db.commit()
+    before = case["store"].path.read_bytes()
+    refusal = "native ticket bytes" if kind == "content-digest-and-row" else "deterministic effect identity"
+    with pytest.raises(VerificationError, match=refusal):
+        verify_ticket_capture(*captured_populations(case), case["request"], case["policy"], key.public_hex)
+    with pytest.raises(VerificationError, match=refusal):
+        reopen(case).readback()
+    assert case["store"].path.read_bytes() == before
+
+
+@pytest.mark.parametrize("kind", ["revocation", "phase", "content", "effect", "grant", "intent-time", "effect-time"])
+def test_signed_retained_state_requires_replayed_prefix(case: dict[str, Any], kind: str) -> None:
+    """An unchanged retained event hash cannot authenticate contradictory state fields."""
+    receipt = case["store"].dispatch(case["candidate"])
+    payload = receipt["payload"]
+    if kind == "phase":
+        payload.update(phase="incomplete", revision=0, contentDigest=None, effectTime=None)
+    elif kind == "revocation":
+        payload["revoked"] = True
+    elif kind in {"intent-time", "effect-time"}:
+        field = "intentTime" if kind == "intent-time" else "effectTime"
+        offset = -1 if kind == "intent-time" else 1
+        payload[field] = (case["now"] + timedelta(seconds=offset)).isoformat(timespec="seconds").replace("+00:00", "Z")
+    else:
+        payload[{"content": "contentDigest", "effect": "effectId", "grant": "grantDigest"}[kind]] = "f" * 64
+    receipt["signature"] = case["key"].sign(DOMAIN, payload)
+    before = case["store"].path.read_bytes()
+    with pytest.raises(VerificationError, match="retained state differs from native history"):
+        verify_ticket_capture(*captured_populations(case), case["request"], case["policy"],
+            case["key"].public_hex, retained_head=receipt)
+    with pytest.raises(VerificationError, match="retained state differs from native history"):
+        reopen(case, retained_head=receipt).readback()
+    assert case["store"].path.read_bytes() == before
+
+
+@pytest.mark.parametrize("prefix", ["ready", "pending"])
+def test_real_retained_prefix_preserves_later_completion(case: dict[str, Any], prefix: str) -> None:
+    """Genuine ready and pending heads remain valid prefixes of an actual completed operation."""
+    heads = {"ready": case["store"].readback()["receipt"]}
+    def retain(point: str) -> None:
+        if point == "after-intent":
+            heads["pending"] = case["store"].readback()["receipt"]
+    case["store"].crash_hook = retain
+    case["store"].dispatch(case["candidate"])
+    before = case["store"].path.read_bytes()
+    result = verify_ticket_capture(*captured_populations(case), case["request"], case["policy"],
+        case["key"].public_hex, retained_head=heads[prefix])
+    assert result.logical_admissions == result.local_effects == 1
+    assert reopen(case, retained_head=heads[prefix]).readback()["revision"] == 1
+    assert case["store"].path.read_bytes() == before
+
+
+def test_default_second_capture_keeps_exact_configuration_and_signed_bytes(case: dict[str, Any]) -> None:
+    """The seconds default adds no field and retains its original signed lexical form."""
+    receipt = case["store"].dispatch(case["candidate"])
+    configuration = {"request": asdict(case["request"]), "policy": asdict(case["policy"]), "serviceKey": case["key"].public_hex}
+    assert case["store"].configuration == configuration
+    assert receipt["payload"]["configuration"] == digest(DOMAIN + "-configuration", configuration)
+    expected_time = case["now"].isoformat(timespec="seconds").replace("+00:00", "Z")
+    assert receipt["payload"]["intentTime"] == receipt["payload"]["effectTime"] == expected_time
+    assert len(expected_time) == 20
+    expected_receipt = {"payload": receipt["payload"], "keyid": case["key"].public_hex,
+        "signature": case["key"].sign(DOMAIN, receipt["payload"])}
+    assert canonical(receipt) == canonical(expected_receipt)
+    assert consume(case, receipt, case["store"].readback())["status"] == "verified"
+
+
+def test_selected_milliseconds_preserve_both_transaction_observations(case: dict[str, Any], tmp_path: Path) -> None:
+    """One declared configuration preserves exact observations through store and public APIs."""
+    observations = [case["now"] + timedelta(milliseconds=123), case["now"] + timedelta(milliseconds=456)]
+    clock = iter(observations)
+    store = TicketStore(tmp_path / "milliseconds.sqlite", case["request"], case["policy"], case["key"],
+        clock=lambda: next(clock), time_precision="milliseconds")
+    store.initialize()
+    selected = {**case, "store": store}
+    receipt = store.dispatch(case["candidate"])
+    assert store.configuration["timePrecision"] == "milliseconds"
+    assert receipt["payload"]["intentTime"].endswith(".123Z") and receipt["payload"]["effectTime"].endswith(".456Z")
+    capture = verify_ticket_capture(*captured_populations(selected), case["request"], case["policy"],
+        case["key"].public_hex, retained_head=receipt, time_precision="milliseconds")
+    assert capture.local_effects == capture.logical_admissions == 1
+    readback = store.readback()
+    assert verify_ticket_result(receipt, readback, case["request"], case["policy"], case["key"].public_hex,
+        case["grant"], now=observations[-1], time_precision="milliseconds")["status"] == "verified"
+    with pytest.raises(VerificationError, match="ticket reference time is malformed"):
+        verify_ticket_capture(*captured_populations(selected), case["request"], case["policy"], case["key"].public_hex)
+    assert case["grant"]["issuedAt"].endswith("Z") and "." not in case["grant"]["issuedAt"]
+
+
+@pytest.mark.parametrize("precision", ["microseconds", "Milliseconds", True, None, [], {}])
+def test_ticket_precision_selection_is_closed(case: dict[str, Any], tmp_path: Path, precision: Any) -> None:
+    """Unsupported host selections refuse before creating storage or admitting an intent."""
+    path = tmp_path / "unsupported.sqlite"
+    with pytest.raises(VerificationError, match="selected time precision is unsupported"):
+        TicketStore(path, case["request"], case["policy"], case["key"], time_precision=precision)
+    assert not path.exists()
+
+
+@pytest.mark.parametrize("stage", ["intent", "effect"])
+def test_millisecond_ticket_refuses_finer_injected_clock(case: dict[str, Any], tmp_path: Path, stage: str) -> None:
+    """Finer host observations are refused without rounding or committing an effect."""
+    precise = case["now"] + timedelta(microseconds=123001)
+    reads = iter([precise, precise] if stage == "intent" else [case["now"], precise])
+    store = TicketStore(tmp_path / "fine.sqlite", case["request"], case["policy"], case["key"],
+        clock=lambda: next(reads), time_precision="milliseconds")
+    store.initialize()
+    with pytest.raises(VerificationError, match="UTC millisecond precision"):
+        store.dispatch(case["candidate"])
+    state = store.readback()["receipt"]["payload"]
+    assert state["phase"] == ("ready" if stage == "intent" else "pending") and state["revision"] == 0
+    assert not captured_populations({**case, "store": store})[2]
+
+
+def test_selected_precision_is_a_configuration_relation_even_without_timestamps(case: dict[str, Any], tmp_path: Path) -> None:
+    """A ready state has no time lexemes, so refusal must reach the selected configuration join."""
+    store = TicketStore(tmp_path / "ready-ms.sqlite", case["request"], case["policy"], case["key"], time_precision="milliseconds")
+    store.initialize()
+    populations = captured_populations({**case, "store": store})
+    assert verify_ticket_capture(*populations, case["request"], case["policy"], case["key"].public_hex,
+        time_precision="milliseconds").logical_admissions == 0
+    with pytest.raises(VerificationError, match="configuration differs on restart"):
+        verify_ticket_capture(*populations, case["request"], case["policy"], case["key"].public_hex)
+
+
+@pytest.mark.parametrize("suffix", ["Z", ".1Z", ".1230Z", ".123+00:00", ".123001Z"])
+def test_signed_millisecond_state_requires_exact_selected_lexical_form(case: dict[str, Any], tmp_path: Path, suffix: str) -> None:
+    """A valid state signature cannot admit timestamp aliases or finer observations."""
+    store = TicketStore(tmp_path / "lexical-ms.sqlite", case["request"], case["policy"], case["key"],
+        clock=lambda: case["now"] + timedelta(milliseconds=123), time_precision="milliseconds")
+    store.initialize()
+    store.dispatch(case["candidate"])
+    populations = captured_populations({**case, "store": store})
+    state = strict_loads(populations[0])["payload"]
+    state["intentTime"] = case["now"].isoformat(timespec="seconds").removesuffix("+00:00") + suffix
+    encoded = canonical({"payload": state, "keyid": case["key"].public_hex, "signature": case["key"].sign(DOMAIN, state)})
+    with pytest.raises(VerificationError, match="ticket reference time is malformed|ticket reference time is noncanonical|UTC millisecond precision"):
+        verify_ticket_capture(encoded, populations[1], populations[2], case["request"], case["policy"],
+            case["key"].public_hex, time_precision="milliseconds")

@@ -171,3 +171,34 @@ jobs:
         with:
           packages-dir: release-artifacts/dist/
           attestations: true
+
+  publish-agent-evidence-observer:
+    needs: [resolve, build]
+    if: needs.resolve.outputs.distribution == 'agent-evidence-observer'
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/project/agent-evidence-observer/
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-distributions-agent-evidence-observer
+          path: release-artifacts
+      - name: the files are the ones built from this commit
+        run: |
+          cd release-artifacts
+          test "$(cat SOURCE-COMMIT)" = "$GITHUB_SHA"
+          sha256sum --check SHA256SUMS
+      - name: attest the checked distributions
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: release-artifacts/dist/*
+      - name: publish with PyPI attestations
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          packages-dir: release-artifacts/dist/
+          attestations: true

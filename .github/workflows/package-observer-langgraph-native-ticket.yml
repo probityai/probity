@@ -1,0 +1,80 @@
+# Moved from packages/observer/.github/workflows/langgraph-native-ticket.yml when the package was imported;
+# its steps run from packages/observer.
+name: LangGraph protected ticket integration
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/observer/interop/langgraph-ticket-2026-10-02/**'
+      - 'packages/observer/src/probity_observer/**'
+      - 'packages/observer/pyproject.toml'
+      - '.github/workflows/package-observer-langgraph-native-ticket.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/observer/interop/langgraph-ticket-2026-10-02/**'
+      - 'packages/observer/src/probity_observer/**'
+      - 'packages/observer/pyproject.toml'
+      - '.github/workflows/package-observer-langgraph-native-ticket.yml'
+permissions:
+  contents: read
+defaults:
+  run:
+    working-directory: packages/observer
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/observer/interop/langgraph-ticket-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13'
+      - name: Install hash-pinned profile dependencies
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-restart.lock --report install-report.json
+      - name: Install this exact Observer checkout without changing dependency selection
+        run: |
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check adapter code and complexity
+        run: |
+          python -m ruff check --isolated lg_common.py lg_run.py lg_reader.py durable_run.py durable_worker.py durable_reader.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' lg_common.py lg_run.py lg_reader.py durable_run.py durable_worker.py durable_reader.py tests
+      - name: Test original native executions and semantic refusal controls
+        run: python -m pytest -q tests --junitxml=test-results.xml
+      - name: Execute all six real LangGraph graphs in a fresh finite packet
+        run: timeout --signal=TERM --kill-after=5s 180s python lg_run.py fresh-run --source-revision "$GITHUB_SHA" > fresh-report.json
+      - name: Reconstruct offline using separately copied local selected pins
+        run: |
+          cp fresh-run/consumer-pins.json "$RUNNER_TEMP/langgraph-selected-pins.json"
+          python lg_reader.py fresh-run --pins-file "$RUNNER_TEMP/langgraph-selected-pins.json" > fresh-reader.json
+      - name: Execute durable checkpoint recovery in distinct hard-exiting workers
+        run: timeout --signal=TERM --kill-after=5s 180s python durable_run.py durable-run --source-revision "$GITHUB_SHA" > durable-report.json
+      - name: Reconstruct durable recovery offline from separately copied local pins
+        run: |
+          cp durable-run/consumer-pins.json "$RUNNER_TEMP/langgraph-durable-selected-pins.json"
+          python durable_reader.py durable-run --pins-file "$RUNNER_TEMP/langgraph-durable-selected-pins.json" > durable-reader.json
+      - name: Retain native checkpoints, HTTP bytes, sources, resource and install evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: langgraph-native-ticket-${{ github.sha }}
+          path: |
+            packages/observer/interop/langgraph-ticket-2026-10-02/fresh-run/
+            packages/observer/interop/langgraph-ticket-2026-10-02/fresh-report.json
+            packages/observer/interop/langgraph-ticket-2026-10-02/fresh-reader.json
+            packages/observer/interop/langgraph-ticket-2026-10-02/durable-run/
+            packages/observer/interop/langgraph-ticket-2026-10-02/durable-report.json
+            packages/observer/interop/langgraph-ticket-2026-10-02/durable-reader.json
+            packages/observer/interop/langgraph-ticket-2026-10-02/install-report.json
+            packages/observer/interop/langgraph-ticket-2026-10-02/test-results.xml
+          if-no-files-found: error
+          retention-days: 90

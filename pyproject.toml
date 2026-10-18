@@ -6,8 +6,9 @@
 members = ["packages/*"]
 # packages/ratchet is its own uv workspace with its own lock: its Python floor
 # (3.12) and its benchmark extras (git sources, overrides) would otherwise bind
-# every member. scripts/workspace.py still reads it and its members.
-exclude = ["packages/ratchet"]
+# every member. packages/observer keeps its own lock for the same floor.
+# scripts/workspace.py still reads both and their members.
+exclude = ["packages/ratchet", "packages/observer"]
 
 [tool.uv]
 package = false
@@ -26,7 +27,9 @@ addopts = ["--strict-markers"]
 # widening it is one change here that applies to the whole workspace.
 [tool.ruff]
 target-version = "py311"
-extend-exclude = ["packages/*/vectors-*/cases"]
+# packages/observer brings its own checks; its interop experiments are frozen
+# with recorded file digests. Row CONS-ORG-OBSERVER-RUFF holds the rest.
+extend-exclude = ["packages/*/vectors-*/cases", "packages/observer"]
 
 [tool.ruff.lint.per-file-ignores]
 # A resource directory read with importlib.resources, not an importable module;

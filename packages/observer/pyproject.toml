@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-evidence-observer"
+version = "0.0.2"
+description = "Record brokered agent writes and check selected native reports offline"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Sankalp Gilda"}]
+keywords = ["ai-agents", "observability", "audit-logs", "provenance", "attestation"]
+requires-python = ">=3.12"
+dependencies = ["cryptography>=46,<51", "rfc8785==0.1.4"]
+
+[project.urls]
+Documentation = "https://github.com/probityai/probity/blob/main/packages/observer/docs/INSTALLATION.md"
+Source = "https://github.com/probityai/probity/tree/main/packages/observer"
+Issues = "https://github.com/probityai/probity/issues"
+"Agent guide" = "https://github.com/probityai/probity/blob/main/packages/observer/llms.txt"
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "hypothesis>=6,<7", "jsonschema>=4,<5"]
+inspect = ["inspect-ai==0.3.273"]
+witness = ["jcs-admit @ git+https://github.com/probityai/jcs-admit@b69943787266702da3c02741dcc3a37643c7dc3e#subdirectory=python"]
+cover = ["coverage>=7.10,<8"]
+done = [
+    "jcs-admit @ git+https://github.com/probityai/jcs-admit@b69943787266702da3c02741dcc3a37643c7dc3e#subdirectory=python",
+    "probity-verify @ git+https://github.com/probityai/probity@41a33b6ba051f34989cfa5469d45bbca2b4987a5#subdirectory=packages/probity-verify",
+]
+
+[project.scripts]
+agent-evidence-observer = "probity_observer.cli:main"
+agent-evidence-admit = "probity_observer.admission:main"
+agent-evidence-read-native = "probity_observer.native_reader:main"
+agent-evidence-read-atomic = "probity_observer.atomic_reader:main"
+agent-evidence-read-refund-handoff = "probity_observer.refund_handoff:main"
+agent-evidence-witness = "probity_observer.witness.cli:main"
+probity-done = "probity_observer.done.cli:main"
+
+[project.entry-points."probityai.cli_subcommands"]
+done = "probity_observer.done.cli:register"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"probity_observer.done" = ["prompts/*.txt"]
+
+[tool.coverage.paths]
+# The done tests' child processes run copies of the sealed pytest plugins; combine counts
+# those lines against the source files.
+pytest_plugins = ["src/probity_observer/done/pytest_plugins/", "*/probity-plugins/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

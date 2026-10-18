@@ -1,0 +1,147 @@
+{
+  "schema": "proofable-authority-at-dispatch-results/v1",
+  "implementation": "Proofable",
+  "deployed_revision": "e1217327a1568b39d5153686b8085471b5329cde",
+  "run_id": "aaif-e1217327a-20261008",
+  "source_runs": [
+    {
+      "run_id": "aaif-e1217327a-20261008",
+      "role": "eight-case authority suite",
+      "records": 8
+    },
+    {
+      "run_id": "aaif-e1217327a-20261008",
+      "role": "ordered post-revocation probe",
+      "records": 1
+    }
+  ],
+  "custody": "SELF (author-operated; no independent witness)",
+  "boundary": "authority → decision → dispatch → effect/outcome → receipt",
+  "results": {
+    "binding_veto": "SUPPORTED",
+    "revoked_stale": "SUPPORTED",
+    "unreachable": "NOT_APPLICABLE_CURRENT_PATH",
+    "post_dispatch_revoke": "SUPPORTED"
+  },
+  "cases": [
+    {
+      "case_id": "binding_veto",
+      "requested_action": "isolated-computer execution requiring run_command",
+      "protected_target": "isolated computer execution (run_command)",
+      "authority_evidence": {
+        "source": "current Proofable authority state evaluated at dispatch",
+        "status": "current at dispatch",
+        "observation_time": "2026-10-08T16:09:12.553Z",
+        "freshness_rule": "delegation evaluated at dispatch from current state; freshness = delegation expiry/revocation",
+        "check_at_dispatch": "controller→agent delegation resolved; requested action checked against the allow-list"
+      },
+      "dispatch_decision": {
+        "job_admission": "ALLOW",
+        "protected_action_decision": "DENY",
+        "decision": "DENY",
+        "reason": "run_command is required"
+      },
+      "observed_effect": {
+        "state": "none_no_executor"
+      },
+      "task_recovery": {
+        "terminal_state": "failed"
+      },
+      "custody": "SELF (author-operated)",
+      "limitations": [
+        "Author-operated; no independent target-side effect witness."
+      ],
+      "result": "SUPPORTED"
+    },
+    {
+      "case_id": "revoked_stale",
+      "requested_action": "dispatch under a revoked grant, with a never-revoked control",
+      "protected_target": "Proofable job dispatch (authority gate before executor assignment)",
+      "authority_evidence": {
+        "source": "current Proofable authority state evaluated at dispatch",
+        "status": "revoked (replay) vs valid (control)",
+        "observation_time": "2026-10-08T16:12:58.352Z",
+        "freshness_rule": "delegation evaluated at dispatch from current state; freshness = delegation expiry/revocation",
+        "check_at_dispatch": "controller→agent delegation resolved; requested action checked against the allow-list"
+      },
+      "dispatch_decision": {
+        "decision": "DENY",
+        "reason": "DELEGATION_PROOF_DENIED"
+      },
+      "observed_effect": {
+        "state": "none_no_dispatch"
+      },
+      "task_recovery": {
+        "terminal_state": "not_applicable"
+      },
+      "custody": "SELF (author-operated)",
+      "limitations": [
+        "Author-operated; revoked authority denied while the never-revoked control was accepted."
+      ],
+      "result": "SUPPORTED"
+    },
+    {
+      "case_id": "unreachable",
+      "requested_action": "dispatch under a remote-authority dependency",
+      "protected_target": "Proofable job dispatch (authority gate before executor assignment)",
+      "authority_evidence": {
+        "source": "current Proofable authority state evaluated at dispatch",
+        "status": "not applicable — no remote authority dependency on this path",
+        "observation_time": null
+      },
+      "dispatch_decision": {
+        "decision": "not_applicable_to_current_path",
+        "reason": "no remote authority dependency on this path"
+      },
+      "observed_effect": {
+        "state": "not_applicable"
+      },
+      "task_recovery": {
+        "terminal_state": "not_applicable"
+      },
+      "custody": "SELF (author-operated)",
+      "limitations": [
+        "Requires a path with a real remote authority dependency; not inferred as passing."
+      ],
+      "result": "NOT_APPLICABLE_CURRENT_PATH"
+    },
+    {
+      "case_id": "post_dispatch_revoke",
+      "requested_action": "bounded job execution, then revoke the pinned grant in flight, then attempt the next dispatch",
+      "protected_target": "bounded job execution (in-flight revocation)",
+      "authority_evidence": {
+        "source": "current local Proofable authority state evaluated at dispatch",
+        "status": "current at dispatch",
+        "observation_time": "2026-10-08T16:14:29.241Z",
+        "freshness_rule": "delegation evaluated at dispatch from current state; freshness = delegation expiry/revocation",
+        "check_at_dispatch": "controller→agent delegation resolved; requested action checked against the allow-list"
+      },
+      "dispatch_decision": {
+        "decision": "ALLOW"
+      },
+      "temporal_revocation": {
+        "trigger_time": "2026-10-08T16:14:50.334Z",
+        "authority_evidence_consulted": "pinned delegation at dispatch",
+        "last_accepted_action": "2026-10-08T16:14:34.247Z",
+        "required_deny_point": "the next dispatch after revocation",
+        "first_observed_denial": "2026-10-08T16:16:15.865Z",
+        "first_observed_denial_reason": "DELEGATION_PROOF_DENIED",
+        "observed_in_flight": true,
+        "revocation_latency": "not measured; not claimed"
+      },
+      "observed_effect": {
+        "state": "observed_at_platform",
+        "evidence": "job reached completed after the grant was revoked; the platform terminal state is the effect observation, not an independent target-side byte"
+      },
+      "task_recovery": {
+        "terminal_state": "completed"
+      },
+      "custody": "SELF (author-operated)",
+      "limitations": [
+        "Effect observed at the platform boundary, not by an independent target-side readback.",
+        "Revocation latency is not measured in this run and is not claimed."
+      ],
+      "result": "SUPPORTED"
+    }
+  ]
+}

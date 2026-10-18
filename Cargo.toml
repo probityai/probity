@@ -7,6 +7,9 @@
 [workspace]
 resolver = "3"
 members = []
+# A standalone crate with its own Cargo.lock, built by its experiment's
+# workflow; it is not a workspace member.
+exclude = ["packages/observer/interop/eight-component-host-2026-10-02/rust"]
 
 [workspace.package]
 edition = "2024"

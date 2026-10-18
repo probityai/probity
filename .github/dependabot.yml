@@ -22,3 +22,7 @@ updates:
     directory: /packages/ratchet
     schedule:
       interval: weekly
+  - package-ecosystem: uv
+    directory: /packages/observer
+    schedule:
+      interval: weekly

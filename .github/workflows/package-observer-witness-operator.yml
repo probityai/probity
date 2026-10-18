@@ -1,0 +1,52 @@
+# Moved from packages/observer/.github/workflows/witness-operator.yml when the package was imported;
+# its steps run from packages/observer.
+name: Installed witness operator and public client
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['packages/observer/src/**', 'packages/observer/tests/**', 'packages/observer/interop/witness-operator-2026-10-03/**', '.github/workflows/package-observer-witness-operator.yml', 'packages/observer/pyproject.toml']
+  pull_request:
+    branches: [main]
+    paths: ['packages/observer/src/**', 'packages/observer/tests/**', 'packages/observer/interop/witness-operator-2026-10-03/**', '.github/workflows/package-observer-witness-operator.yml', 'packages/observer/pyproject.toml']
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: packages/observer
+
+jobs:
+  native-witness-operator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.14'
+      - name: Install selected verification runner
+        run: python -m pip install 'uv==0.8.22'
+      - name: Build separate installed operator, producer and reader
+        run: bash interop/witness-operator-2026-10-03/verify_install.sh "$RUNNER_TEMP/witness-operator"
+      - name: Retain public native histories, heads and offline reader results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: witness-operator-installed-consumer
+          path: |
+            ${{ runner.temp }}/witness-operator/native/
+            ${{ runner.temp }}/witness-operator/wheels/
+            ${{ runner.temp }}/witness-operator/*-tests.xml
+            ${{ runner.temp }}/witness-operator/*-report.json
+            ${{ runner.temp }}/witness-operator/*-install.txt
+            ${{ runner.temp }}/witness-operator/*.lock
+            ${{ runner.temp }}/witness-operator/*-sha.txt
+            ${{ runner.temp }}/witness-operator/*-runtime.txt
+            ${{ runner.temp }}/witness-operator/complexity.json
+          if-no-files-found: error
+          retention-days: 90
