@@ -182,6 +182,8 @@ def run_episode(row: dict[str, Any], row_index: int, revision: str, config: Conf
             _stop_observer(cmd, observer_name, work)
         if driver.poll() is None:
             driver.terminate()
+        # BashArena's per-task images too: disk is the limit on this host, and a rerun rebuilds them.
+        images += [f"bash-arena-default-{spec.task_id}:latest", f"bash-arena-database-server-{spec.task_id}:latest"]
         _teardown(cmd, container, images)
 
 
