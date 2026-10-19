@@ -19,8 +19,9 @@ from pathlib import Path
 ROOT = Path("src/probity_observer/done")
 POLICY = ROOT / "policy.py"
 CLAIMS = ROOT / "claims.py"
+HELDOUT = ROOT / "heldout.py"
 TESTS = ["tests/done/test_policy.py", "tests/done/test_claims.py",
-         "tests/done/test_loop_input.py"]
+         "tests/done/test_loop_input.py", "tests/done/test_contract.py"]
 MUTANTS = [
     # How an attempt stands.
     (POLICY, 'OFFENCE_CLASSES = ("tamper", "gaming", "deception")',
@@ -57,6 +58,9 @@ MUTANTS = [
     (POLICY, '    if found in ("contradicted", "charged", "failed"):\n        return Decision("replan", reason)',
      '    if found in ("contradicted", "charged"):\n        return Decision("replan", reason)'),
     (POLICY, '    return record["outcome"]["decision"] == "supported"', '    return True'),
+    # Which assertions the held-out split reads as cases.
+    (HELDOUT, '    if isinstance(compare.ops[0], ast.Is):',
+     '    if isinstance(compare.ops[0], ast.Is) and False:'),
     # Whether the agent asserted done.
     (CLAIMS, '    return stated and not (_FAILED.search(text) or _GAVE_UP.search(text))',
      '    return stated and not _FAILED.search(text)'),

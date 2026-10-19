@@ -27,7 +27,7 @@ def test_lcb_contract_holds_out_inputs_and_keeps_the_impossible_assertion(tmp_pa
     record = json.loads((sealed.out / "contract.json").read_bytes())
     assert record["acceptance"] == [
         {"id": "visible", "argv": list(heldout.replay_argv(heldout.VISIBLE_NAME, "add"))},
-        {"id": "visible_run", "argv": ["python", "test.py"]},
+        {"id": "visible_run", "argv": ["python", "test.py"], "in_process_twin_of": "visible"},
         {"id": "heldout", "argv": list(heldout.replay_argv(heldout.HELDOUT_NAME, "add"))},
         {"id": "heldout_determinism",
          "argv": list(heldout.replay_argv(heldout.HELDOUT_NAME, "add", "determinism")),
@@ -93,7 +93,8 @@ def test_the_agent_run_and_module_under_test_are_sealed(tmp_path, harness):
     data = (sealed.out / "contract.json").read_bytes()
     record = json.loads(data)
     assert record["acceptance"][1] == {"id": "visible_run", "argv": ["python", "test.py"],
-                                       "cwd": "/workspace", "exe": "/usr/local/bin/python"}
+                                       "cwd": "/workspace", "exe": "/usr/local/bin/python",
+                                       "in_process_twin_of": "visible"}
     assert [item["id"] for item in record["acceptance"] if "exe" in item] == ["visible_run"]
     assert record["module_under_test"] == ["func.py"]
     assert done_records.contract(data)["module_under_test"] == ["func.py"]
@@ -259,6 +260,25 @@ def test_heldout_cases_are_written_as_literal_values():
     every = heldout.literal_cases(heldout.check_body(BUILT)[1])
     assert [case.args if case else None for case in every] == [
         "[3, 1, 2], 2", "'????', 1", "[7, 7, 7, 1], k=2", "[0, 1, 2], 0", None, "[1], 1"]
+
+
+# lcbhard_26's shape: most assertions are `candidate(args) is None`, the rest are properties.
+IS_NONE = ("def check(candidate):\n"
+           + "".join(f"    assert candidate([{n}, {n + 1}]) is None\n" for n in range(6))
+           + "    assert candidate([9, 9]) is not None\n"
+           + "    assert len(candidate([1, 2])) == 0\n"
+           + "    assert candidate([5, 5]) == 3\n")
+
+
+def test_an_is_none_assertion_is_a_literal_case_that_expects_none():
+    cases = heldout.cases_of(heldout.check_body(IS_NONE)[1])
+    assert [case.expected for case in cases] == ["None"] * 6 + ["3"]
+    split = heldout.split_lcb("lcbhard_26_shape", IS_NONE, IS_NONE, "f")
+    assert split.heldout and "is not None" not in split.heldout_source
+    assert "len(" not in split.heldout_source
+    assert {expected for _, _, expected in replay.cases_in(split.heldout_source)} <= {None, 3}
+    assert any(case.expected == "None" for case in split.heldout)
+    assert "is None" not in split.heldout_source and "== None" in split.heldout_source
 
 
 def test_a_case_that_calls_the_candidate_outside_an_assertion_defines_nothing():

@@ -561,6 +561,10 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
         if replayed is not None and replayed.get("mode", "assert") != "import_side_effects":
             item["replay"] = {"calls_intercepted": replayed["calls_intercepted"],
                               "distinct_calls": replayed["distinct_calls"]}
+        # How a failed replay failed (:func:`.replay.failure_kind`): probity-verify reads it
+        # for the in-process twin rule and for an import probe that changed the interpreter.
+        if replayed is not None and item["exit"] != 0 and "failure_kind" in replayed:
+            item["failure_kind"] = replayed["failure_kind"]
     record = {"schema_version": GRADE_SCHEMA, "claim_id": context.claim_id,
               "invocation_id": context.invocation_id, "producer": context.producer,
               "vantage": "independent", "witness_scope": context.witness_scope,

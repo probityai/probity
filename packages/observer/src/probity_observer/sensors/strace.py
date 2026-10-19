@@ -52,7 +52,9 @@ MMAP = ("mmap",)
 CONNECT = ("connect",)
 PROCESS = ("fork", "vfork", "clone", "clone3", "chdir", "fchdir")
 SIGNAL = ("kill", "tkill", "tgkill", "pidfd_send_signal", "rt_sigqueueinfo", "rt_tgsigqueueinfo")
-ESCAPE = ("io_uring_setup", "ptrace", "process_vm_writev")
+# A call that opens a file the trace cannot name by path (a file handle) is an escape too.
+ESCAPE = ("io_uring_setup", "ptrace", "process_vm_writev", "open_by_handle_at")
+LINK_HOPS = 40
 TRACED = (EXEC + OPEN + CREATE + RENAME + LINK + UNLINK + TRUNCATE + CHMOD + MMAP + CONNECT
           + PROCESS + SIGNAL + ESCAPE)
 TRACE_EXPRESSION = "trace=" + ",".join(TRACED)
@@ -291,11 +293,19 @@ class Effects:
 
 
 class _Resolver:
-    """Track each process's working directory so relative paths resolve."""
+    """Track each process's working directory so relative paths resolve, and each symbolic
+    link the traced run made, so a path that passes through one is recorded where it lands.
+
+    Only directories above a path's last component are followed: a call that names a link
+    itself (``unlink``, ``rename``, ``symlink``) acts on the link, and a path the kernel
+    printed for an opened descriptor is already resolved. Without this an agent could make
+    ``/tmp/r`` a link to ``/`` and write ``/tmp/r/usr/lib/python3.12/os.py``, which a
+    lexical reading records outside every sealed directory."""
 
     def __init__(self, cwd: str):
         self.start = cwd
         self.cwd: dict[int, str] = {}
+        self.links: dict[str, str] = {}
 
     def of(self, pid: int) -> str:
         return self.cwd.get(pid, self.start)
@@ -312,7 +322,33 @@ class _Resolver:
                 if base is None:
                     raise Unresolved(dirfd)
             value = posixpath.join(base, value)
-        return posixpath.normpath(value)
+        return self.follow(posixpath.normpath(value))
+
+    def follow(self, name: str) -> str:
+        """``name`` with each link the run made in a directory above its last component
+        replaced by the link's target, at most :data:`LINK_HOPS` times."""
+        for _ in range(LINK_HOPS):
+            head = posixpath.dirname(name)
+            link = max((key for key in self.links
+                        if head == key or head.startswith(key.rstrip("/") + "/")),
+                       key=len, default=None)
+            if link is None:
+                return name
+            name = posixpath.normpath((self.links[link].rstrip("/") + name[len(link):]) or "/")
+        raise Unresolved(name)
+
+    def made_link(self, name: str, target: str | None) -> None:
+        """Record a symbolic link at ``name`` pointing at ``target`` (relative to its own
+        directory when not absolute)."""
+        if target:
+            self.links[name] = posixpath.normpath(posixpath.join(posixpath.dirname(name), target))
+
+    def moved(self, kind: str, path: str | None, target: str | None) -> None:
+        """Forget a link that was removed, and carry one that was renamed."""
+        if path in self.links and kind in ("unlink", "rename"):
+            destination = self.links.pop(path)
+            if kind == "rename" and target:
+                self.links[target] = destination
 
 
 def _ret_int(result: str) -> int | None:
@@ -447,6 +483,9 @@ def effects(trace: Trace, workdir: str) -> Effects:
             elif effect := _path_effect(name, args, call.result, here, resolve):
                 kind, fields = effect
                 found.events.append(Event(kind, here, call.time, **fields))
+                resolve.moved(kind, fields.get("path"), fields.get("target"))
+                if name in ("symlink", "symlinkat"):
+                    resolve.made_link(fields["path"], string_arg(args[0]))
         except Unresolved:
             found.unresolved.append({"syscall": name, "pid": here, "time": call.time})
     for call in trace.interrupted:
