@@ -32,7 +32,7 @@ is preserved; this sample adds no ADK plugin or framework API.
 
 Credential-free current-SDK execution, source selection, normal reader wheel
 installation and semantic refusal controls are maintained in the
-[public reference repository](https://github.com/probityai/probity/tree/main/packages/observer).
+[public reference repository](https://github.com/probityai/agent-evidence-observer).
 This sample's unit tests live at
 `tests/unittests/plugins/test_report_publication_sample.py` and run as part of the
 ordinary ADK test suite. Run the full supported-version `tox` matrix before
