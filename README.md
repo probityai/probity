@@ -10,7 +10,9 @@ Open tools that check claims about AI agents against evidence you pinned: an off
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `pip install probity-verify==0.1.1`.
+Install the released verifier: `uv add probity-verify==0.1.1`, then `pip install probity-verify==0.1.1`.
+
+Verified by Probity (github.com/probityai/probity). The `probityai` command line is planned, not yet released: `uv add probityai`, then `pip install probityai`.
 
 ## Quick start
 
