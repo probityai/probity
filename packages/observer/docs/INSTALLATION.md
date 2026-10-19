@@ -27,7 +27,7 @@ With Python 3.12 and [uv](https://docs.astral.sh/uv/):
 
 ```sh
 uv venv observer-env --python python3.12
-uv pip install --python observer-env/bin/python 'agent-evidence-observer @ git+https://github.com/probityai/agent-evidence-observer.git@2e3a36c031740cb0f415f0d813d1faeb8e6152f3'
+uv pip install --python observer-env/bin/python 'agent-evidence-observer @ git+https://github.com/probityai/probity.git@b617361c221db5ca96989a94c60e8480e14aecd5#subdirectory=packages/observer'
 observer-env/bin/agent-evidence-observer demo sample-run
 observer-env/bin/agent-evidence-observer verify sample-run
 ```
@@ -54,11 +54,11 @@ Select packet hashes, reader hashes and keys through the consumer's accepted pro
 | Task | Installed entry point | Other selected inputs |
 | --- | --- | --- |
 | Record and verify brokered writes | `agent-evidence-observer` | A new local run, or a retained packet and consumer-pinned keys |
-| Apply consumer policy to a broker packet | `agent-evidence-admit` | [Admission policy and retained state](https://github.com/probityai/agent-evidence-observer/blob/main/docs/CONSUMER-ADMISSION.md) |
-| Read bounded Inspect execution or A2A SDK packets | `agent-evidence-read-native` | A matching immutable checkout and a separately selected manifest; [consumer CI guide](https://github.com/probityai/agent-evidence-observer/blob/main/docs/NATIVE-CONSUMER-CI.md) |
-| Read Atomic native delegation tests | `agent-evidence-read-atomic` | Selected native test packet and manifest; [Atomic guide](https://github.com/probityai/agent-evidence-observer/blob/main/docs/ATOMIC-NATIVE-READER.md). No separate source checkout |
-| Verify a refund admission-to-effect handoff | `agent-evidence-read-refund-handoff` | Consumer-selected trust snapshot and a [`refund-handoff/0.1` evidence bundle](https://github.com/probityai/agent-evidence-observer/blob/main/docs/reference/REFUND-HANDOFF-CONFORMANCE.md) |
-| Demonstrate and read a witnessed run selection | `python -I -m probity_observer.selection_profile` | [Opening, closing, operator and witness pins](https://github.com/probityai/agent-evidence-observer/blob/main/docs/WITNESSED-RUN-SELECTION.md) |
+| Apply consumer policy to a broker packet | `agent-evidence-admit` | [Admission policy and retained state](https://github.com/probityai/probity/blob/main/packages/observer/docs/CONSUMER-ADMISSION.md) |
+| Read bounded Inspect execution or A2A SDK packets | `agent-evidence-read-native` | A matching immutable checkout and a separately selected manifest; [consumer CI guide](https://github.com/probityai/probity/blob/main/packages/observer/docs/NATIVE-CONSUMER-CI.md) |
+| Read Atomic native delegation tests | `agent-evidence-read-atomic` | Selected native test packet and manifest; [Atomic guide](https://github.com/probityai/probity/blob/main/packages/observer/docs/ATOMIC-NATIVE-READER.md). No separate source checkout |
+| Verify a refund admission-to-effect handoff | `agent-evidence-read-refund-handoff` | Consumer-selected trust snapshot and a [`refund-handoff/0.1` evidence bundle](https://github.com/probityai/probity/blob/main/packages/observer/docs/reference/REFUND-HANDOFF-CONFORMANCE.md) |
+| Demonstrate and read a witnessed run selection | `python -I -m probity_observer.selection_profile` | [Opening, closing, operator and witness pins](https://github.com/probityai/probity/blob/main/packages/observer/docs/WITNESSED-RUN-SELECTION.md) |
 
 The root wheel contains `probity_observer` modules and the Apache license.
 It does not contain the `interop/` scripts, profile wheels, native frameworks,
@@ -80,10 +80,10 @@ Use its install instructions and workflow. Some profiles need a root wheel insta
 others have their own dependency or source-selection contract.
 Do not replace their frozen input pins with a newer framework or main revision.
 
-The dedicated [LangGraph and Pydantic readers](https://github.com/probityai/agent-evidence-observer/blob/main/interop/framework-consumer-2026-10-02/README.md)
+The dedicated [LangGraph and Pydantic readers](https://github.com/probityai/probity/blob/main/packages/observer/interop/framework-consumer-2026-10-02/README.md)
 have a source-checked wheel builder and an explicit durable-reader upgrade.
 They are not installed by the root package or by a framework producer's manifest.
-The accepted [Inspect consumer guide](https://github.com/probityai/agent-evidence-observer/blob/main/interop/inspect-current-host-2026-10-03/README.md)
+The accepted [Inspect consumer guide](https://github.com/probityai/probity/blob/main/packages/observer/interop/inspect-current-host-2026-10-03/README.md)
 selects its own reader unit and Python 3.12 runtime.
 
 The following source manifests declare separate distributions. A module/script
@@ -93,36 +93,36 @@ field uses its directory's `README.md`, the convention for the existing profiles
 
 | Profile source | Distribution | Python constraint | Declared console commands |
 | --- | --- | --- | --- |
-| [a2a-history-boundary-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/a2a-history-boundary-2026-10-02/README.md) | `probity-a2a-history-reader` | `>=3.12` | `probity-read-a2a-history` |
-| [a2a-native-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/a2a-native-2026-10-02/README.md) | `probity-a2a-native-reference` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [adk-a2a-failed-task-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/adk-a2a-failed-task-2026-10-03/README.md) | `probity-adk-failure-reference` | `>=3.12` | `probity-adk-failure-produce`, `probity-adk-failure-read` |
-| [adk-nested-compaction-2026-10-04](https://github.com/probityai/agent-evidence-observer/blob/main/interop/adk-nested-compaction-2026-10-04/README.md) | `probity-adk-nested-compaction` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [adk-ticket-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/adk-ticket-2026-10-02/README.md) | `probity-adk-reference` | `>=3.13` | `probity-adk-run`, `probity-adk-read`, `probity-adk-gate` |
-| [adk-user-responses-2026-10-04](https://github.com/probityai/agent-evidence-observer/blob/main/interop/adk-user-responses-2026-10-04/README.md) | `probity-adk-user-responses` | `>=3.12` | `probity-adk-responses-produce`, `probity-adk-responses-read` |
-| [ag2-push-authority-2026-10-04](https://github.com/probityai/agent-evidence-observer/blob/main/interop/ag2-push-authority-2026-10-04/README.md) | `probity-ag2-push-authority` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [aps-durable-refund-2026-10-05](https://github.com/probityai/agent-evidence-observer/blob/main/interop/aps-durable-refund-2026-10-05/README.md) | `probity-aps-refund-controls` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [authority-unreachable-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/authority-unreachable-2026-10-03/README.md) | `agent-evidence-authority-reference` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [control-arena-native-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/control-arena-native-2026-10-02/README.md) | `probity-control-arena-reader` | `>=3.11` | `probity-read-control-arena` |
-| [crewai-job-fences-2026-10-04](https://github.com/probityai/agent-evidence-observer/blob/main/interop/crewai-job-fences-2026-10-04/README.md) | `probity-crewai-job-fences` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [evaluation-contract-2026-10-01](https://github.com/probityai/agent-evidence-observer/blob/main/interop/evaluation-contract-2026-10-01/README.md) | `probity-evaluation-contract-reference` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [haystack-native-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/haystack-native-2026-10-03/README.md) | `probity-haystack-reference` | `>=3.12` | `agent-evidence-read-haystack` |
-| [inspect-current-host-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/inspect-current-host-2026-10-03/README.md) | `probity-inspect-current-reader` | `>=3.12,<3.13` | `probity-inspect-current` |
-| [joint-recovery-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/joint-recovery-2026-10-02/README.md) | `probity-joint-recovery-reader` | `>=3.12` | `probity-read-joint-recovery`, `probity-gate-joint-recovery` |
-| [langgraph-crash-window-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/langgraph-crash-window-2026-10-03/PROFILE.md) | `probity-langgraph-crash-window-reader` | `>=3.12` | `probity-read-langgraph-crash-window` |
-| [local-model-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/local-model-2026-10-02/README.md) | `probity-local-model-reference` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [local-model-boundary-tasks-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/local-model-boundary-tasks-2026-10-02/README.md) | `probity-local-cpu-boundary-tasks` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [local-model-comparison-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/local-model-comparison-2026-10-02/README.md) | `probity-local-cpu-model-comparison` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [local-model-format-control-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/local-model-format-control-2026-10-02/README.md) | `probity-local-cpu-format-control` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [local-model-tasks-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/local-model-tasks-2026-10-02/README.md) | `probity-local-cpu-task-matrix` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [local-model-vocabulary-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/local-model-vocabulary-2026-10-02/README.md) | `probity-local-cpu-vocabulary` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [openai-agents-ticket-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/openai-agents-ticket-2026-10-02/README.md) | `probity-openai-agents-reference` | `>=3.13` | `probity-openai-run`, `probity-openai-read` |
-| [pic-aps-refund-reader-2026-10-09](https://github.com/probityai/agent-evidence-observer/blob/main/interop/pic-aps-refund-reader-2026-10-09/README.md) | `probity-pic-aps-refund-reader` | `>=3.12` | `probity-read-pic-aps-refund` |
-| [protected-action-operator-2026-10-06](https://github.com/probityai/agent-evidence-observer/blob/main/interop/protected-action-operator-2026-10-06/PROFILE.md) | `probity-protected-operator-reference` | `>=3.12` | `agent-evidence-authorization-witness` |
-| [pydantic-ai-native-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/pydantic-ai-native-2026-10-02/README.md) | `probity-pydantic-reference` | `>=3.12` | `probity-pydantic-run`, `probity-pydantic-read` |
-| [pydantic-recovery-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/pydantic-recovery-2026-10-03/README.md) | `probity-pydantic-recovery-reader` | `>=3.12` | `probity-read-pydantic-recovery` |
-| [smolagents-native-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/smolagents-native-2026-10-03/README.md) | `probity-smolagents-reference` | `>=3.12` | `probity-smolagents-produce`, `probity-smolagents-read` |
-| [target-recovery-2026-10-02](https://github.com/probityai/agent-evidence-observer/blob/main/interop/target-recovery-2026-10-02/README.md) | `probity-target-recovery-reader` | `>=3.12` | `probity-read-target-recovery` |
-| [witness-operator-2026-10-03](https://github.com/probityai/agent-evidence-observer/blob/main/interop/witness-operator-2026-10-03/README.md) | `probity-witness-operator-reference` | `>=3.12` | `agent-evidence-witness` |
+| [a2a-history-boundary-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/a2a-history-boundary-2026-10-02/README.md) | `probity-a2a-history-reader` | `>=3.12` | `probity-read-a2a-history` |
+| [a2a-native-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/a2a-native-2026-10-02/README.md) | `probity-a2a-native-reference` | `>=3.12` | Module/script entry points; follow the profile guide |
+| [adk-a2a-failed-task-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/adk-a2a-failed-task-2026-10-03/README.md) | `probity-adk-failure-reference` | `>=3.12` | `probity-adk-failure-produce`, `probity-adk-failure-read` |
+| [adk-nested-compaction-2026-10-04](https://github.com/probityai/probity/blob/main/packages/observer/interop/adk-nested-compaction-2026-10-04/README.md) | `probity-adk-nested-compaction` | `>=3.12` | Module/script entry points; follow the profile guide |
+| [adk-ticket-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/adk-ticket-2026-10-02/README.md) | `probity-adk-reference` | `>=3.13` | `probity-adk-run`, `probity-adk-read`, `probity-adk-gate` |
+| [adk-user-responses-2026-10-04](https://github.com/probityai/probity/blob/main/packages/observer/interop/adk-user-responses-2026-10-04/README.md) | `probity-adk-user-responses` | `>=3.12` | `probity-adk-responses-produce`, `probity-adk-responses-read` |
+| [ag2-push-authority-2026-10-04](https://github.com/probityai/probity/blob/main/packages/observer/interop/ag2-push-authority-2026-10-04/README.md) | `probity-ag2-push-authority` | `>=3.12` | Module/script entry points; follow the profile guide |
+| [aps-durable-refund-2026-10-05](https://github.com/probityai/probity/blob/main/packages/observer/interop/aps-durable-refund-2026-10-05/README.md) | `probity-aps-refund-controls` | `>=3.12` | Module/script entry points; follow the profile guide |
+| [authority-unreachable-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/authority-unreachable-2026-10-03/README.md) | `agent-evidence-authority-reference` | `>=3.12` | Module/script entry points; follow the profile guide |
+| [control-arena-native-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/control-arena-native-2026-10-02/README.md) | `probity-control-arena-reader` | `>=3.11` | `probity-read-control-arena` |
+| [crewai-job-fences-2026-10-04](https://github.com/probityai/probity/blob/main/packages/observer/interop/crewai-job-fences-2026-10-04/README.md) | `probity-crewai-job-fences` | `>=3.12` | Module/script entry points; follow the profile guide |
+| [evaluation-contract-2026-10-01](https://github.com/probityai/probity/blob/main/packages/observer/interop/evaluation-contract-2026-10-01/README.md) | `probity-evaluation-contract-reference` | `>=3.11` | Module/script entry points; follow the profile guide |
+| [haystack-native-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/haystack-native-2026-10-03/README.md) | `probity-haystack-reference` | `>=3.12` | `agent-evidence-read-haystack` |
+| [inspect-current-host-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/inspect-current-host-2026-10-03/README.md) | `probity-inspect-current-reader` | `>=3.12,<3.13` | `probity-inspect-current` |
+| [joint-recovery-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/joint-recovery-2026-10-02/README.md) | `probity-joint-recovery-reader` | `>=3.12` | `probity-read-joint-recovery`, `probity-gate-joint-recovery` |
+| [langgraph-crash-window-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/langgraph-crash-window-2026-10-03/PROFILE.md) | `probity-langgraph-crash-window-reader` | `>=3.12` | `probity-read-langgraph-crash-window` |
+| [local-model-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/local-model-2026-10-02/README.md) | `probity-local-model-reference` | `>=3.11` | Module/script entry points; follow the profile guide |
+| [local-model-boundary-tasks-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/local-model-boundary-tasks-2026-10-02/README.md) | `probity-local-cpu-boundary-tasks` | `>=3.11` | Module/script entry points; follow the profile guide |
+| [local-model-comparison-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/local-model-comparison-2026-10-02/README.md) | `probity-local-cpu-model-comparison` | `>=3.11` | Module/script entry points; follow the profile guide |
+| [local-model-format-control-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/local-model-format-control-2026-10-02/README.md) | `probity-local-cpu-format-control` | `>=3.11` | Module/script entry points; follow the profile guide |
+| [local-model-tasks-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/local-model-tasks-2026-10-02/README.md) | `probity-local-cpu-task-matrix` | `>=3.11` | Module/script entry points; follow the profile guide |
+| [local-model-vocabulary-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/local-model-vocabulary-2026-10-02/README.md) | `probity-local-cpu-vocabulary` | `>=3.11` | Module/script entry points; follow the profile guide |
+| [openai-agents-ticket-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/openai-agents-ticket-2026-10-02/README.md) | `probity-openai-agents-reference` | `>=3.13` | `probity-openai-run`, `probity-openai-read` |
+| [pic-aps-refund-reader-2026-10-09](https://github.com/probityai/probity/blob/main/packages/observer/interop/pic-aps-refund-reader-2026-10-09/README.md) | `probity-pic-aps-refund-reader` | `>=3.12` | `probity-read-pic-aps-refund` |
+| [protected-action-operator-2026-10-06](https://github.com/probityai/probity/blob/main/packages/observer/interop/protected-action-operator-2026-10-06/PROFILE.md) | `probity-protected-operator-reference` | `>=3.12` | `agent-evidence-authorization-witness` |
+| [pydantic-ai-native-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/pydantic-ai-native-2026-10-02/README.md) | `probity-pydantic-reference` | `>=3.12` | `probity-pydantic-run`, `probity-pydantic-read` |
+| [pydantic-recovery-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/pydantic-recovery-2026-10-03/README.md) | `probity-pydantic-recovery-reader` | `>=3.12` | `probity-read-pydantic-recovery` |
+| [smolagents-native-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/smolagents-native-2026-10-03/README.md) | `probity-smolagents-reference` | `>=3.12` | `probity-smolagents-produce`, `probity-smolagents-read` |
+| [target-recovery-2026-10-02](https://github.com/probityai/probity/blob/main/packages/observer/interop/target-recovery-2026-10-02/README.md) | `probity-target-recovery-reader` | `>=3.12` | `probity-read-target-recovery` |
+| [witness-operator-2026-10-03](https://github.com/probityai/probity/blob/main/packages/observer/interop/witness-operator-2026-10-03/README.md) | `probity-witness-operator-reference` | `>=3.12` | `agent-evidence-witness` |
 
 For APS approvals, the [worked refund-retry guide](APS-REFUND-RETRIES.md) runs the
 local SQLite fixture and reads its reissue, lost-acknowledgement and interrupted
@@ -132,7 +132,7 @@ install this profile. The example records no provider payment and retains PEER s
 ## Source workflows and refusal
 
 Profiles without a separate package manifest remain source workflows. Start with
-[the interop index](https://github.com/probityai/agent-evidence-observer/tree/main/interop)
+[the interop index](https://github.com/probityai/probity/tree/main/packages/observer/interop)
 and the corresponding maintained workflow. This includes native LangGraph tickets,
 recovery authority, ExecSurface state, the five-tier launcher and bounded consumer gates.
 The local-model profiles need their selected model/source bytes and preparation budgets;

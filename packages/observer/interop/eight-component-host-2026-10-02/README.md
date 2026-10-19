@@ -9,7 +9,7 @@ installed Observer HTTP ticket effect. Fresh actual target processes reopen and
 recover its SQLite state; refused authority cannot replay an effect.
 
 The [host contract](HOST-CONTRACT.md) defines source, installation, policy, key,
-clock and retention boundaries. The [native workflow](../../.github/workflows/eight-component-host.yml)
+clock and retention boundaries. The [native workflow](../../../../.github/workflows/package-observer-eight-component-host.yml)
 clones the eight frozen source snapshots, builds and normally installs three
 wheels, installs locked real Rust registry crates, verifies OPA's official binary
 hash, and runs the complete native chain and refusal/recovery tests.

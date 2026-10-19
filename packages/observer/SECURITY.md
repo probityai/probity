@@ -4,7 +4,7 @@
 
 Report a vulnerability privately through GitHub: open the repository's
 **Security** tab and choose **Report a vulnerability**
-(https://github.com/probityai/agent-evidence-observer/security/advisories/new).
+(https://github.com/probityai/probity/security/advisories/new).
 Please do not open a public issue for it.
 
 The most useful report is a packet and a command: a signed packet that

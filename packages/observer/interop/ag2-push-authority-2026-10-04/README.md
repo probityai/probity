@@ -25,7 +25,7 @@ reconstructs the finite run twice.
 | no registration policy, config only | 1 | 0 | 0 |
 | SDK policy refuses three internal/file URLs | 0 | 0 | 0 |
 
-The [workflow](../../.github/workflows/ag2-push-authority.yml) installs normal
+The [workflow](../../../../.github/workflows/package-observer-ag2-push-authority.yml) installs normal
 wheels and the pinned native sources under Python 3.12.14. `requirements.lock`
 pins dependency bytes. The source install replaces the SDK registry wheel;
 version strings alone do not establish source equality. Sixteen reader controls

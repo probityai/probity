@@ -29,7 +29,7 @@ consumer adoption.
 
 ## Run installed copies
 
-The [workflow](../../.github/workflows/adk-user-responses.yml) shows the ordinary
+The [workflow](../../../../.github/workflows/package-observer-adk-user-responses.yml) shows the ordinary
 wheel builds, hash-locked dependencies and separate producer and reader installs.
 It replaces the release SDK with a normal install from the exact source checkout,
 then checks all 778 installed SDK Python Git blobs before importing it. The

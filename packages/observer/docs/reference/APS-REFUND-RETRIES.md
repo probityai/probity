@@ -184,5 +184,5 @@ authority, merchant legitimacy, PIC integration or a completed provider refund.
 
 Read the [profile protocol](../../interop/aps-durable-refund-2026-10-05/PROTOCOL.md)
 for the exact source, authority and storage contract, and the
-[Node 20/22 qualification workflow](../../.github/workflows/aps-durable-refund.yml)
+[Node 20/22 qualification workflow](../../../../.github/workflows/package-observer-aps-durable-refund.yml)
 for the complete qualification and retained public artifacts.
