@@ -1,5 +1,11 @@
 # Probity
 
+[![CI](https://img.shields.io/github/actions/workflow/status/probityai/probity/ci.yml?label=CI)](https://github.com/probityai/probity/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/probity-verify?label=probity-verify)](https://pypi.org/project/probity-verify/)
+[![Downloads](https://static.pepy.tech/badge/probity-verify)](https://pepy.tech/projects/probity-verify)
+[![Licence](https://img.shields.io/github/license/probityai/probity)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity/stargazers)
+
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier today, with the observer, admission rules, vocabulary, conformance vectors and Rust crates joining this repository.
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
