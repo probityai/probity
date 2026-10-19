@@ -464,8 +464,7 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
                     gates: dict[str, Any] | None = None) -> dict[str, Any]:
     """The ``probity-done-contract/v1`` record for a compiled task.
 
-    Every acceptance entry carries its ``tier`` (``synthesized`` for a model-written test,
-    else ``trusted``); ``strength`` and the seal ``gates`` are sealed when the compiler
+    A model-written test carries ``tier: synthesized`` (an entry with no tier is trusted); ``strength`` and the seal ``gates`` are sealed when the compiler
     measured them, so the verifier grades a failing synthesized test ``not_established`` and
     a reference-free contract never ``supported``.
 
@@ -488,7 +487,8 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
     entries = []
     for command in commands:
         entry = command.record()
-        entry["tier"] = "synthesized" if strengthen.is_synthesized(command.id) else "trusted"
+        if strengthen.is_synthesized(command.id):
+            entry["tier"] = "synthesized"
         if command.agent_command and executables is not None and command.argv[0] in executables:
             entry.update(cwd=AGENT_CWD, exe=executables[command.argv[0]])
             if run_writes is not None and command.id in run_writes:

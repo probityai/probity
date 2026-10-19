@@ -78,7 +78,7 @@ def test_a_weak_contract_is_strengthened_and_seals_with_tier_and_strength(
     assert (sealed.out / "sealed/heldout/synth/test_synth_1.py").is_file()
     assert compiled["adequacy"]["trusted_kill_vector_sha256"] != compiled["adequacy"]["kill_vector_sha256"]
     record = done_records.contract((sealed.out / "contract.json").read_bytes())
-    tiers = {entry["id"]: entry["tier"] for entry in record["acceptance"]}
+    tiers = {entry["id"]: entry.get("tier", "trusted") for entry in record["acceptance"]}
     assert tiers == compiled["tiers"]
     assert record["strength"] == "gated"
     assert record["adequacy"]["gates"] and all(
@@ -102,7 +102,7 @@ def test_with_no_failing_command_one_round_synthesizes_the_spec(tmp_path, repo, 
     assert compiled["strength"] == "synthesized_spec"
     record = done_records.contract((sealed.out / "contract.json").read_bytes())
     assert record["strength"] == "synthesized_spec"
-    assert "synthesized" in {entry["tier"] for entry in record["acceptance"]}
+    assert "synthesized" in {entry.get("tier") for entry in record["acceptance"]}
 
 
 def test_without_a_model_a_weak_contract_is_refused_by_its_gate(tmp_path, repo, harness,
