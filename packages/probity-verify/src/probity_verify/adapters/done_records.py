@@ -450,6 +450,7 @@ def _exec_fields(event: dict, label: str) -> None:
 EXEC_FIELDS = {"argv", "exit", "exe", "cwd", "env"}
 
 
+# An origin names an exec event id; a value that is not text names none.
 def _event(item: Any, index: int, exec_ids: set[str]) -> dict:
     label = f"events[{index}]"
     event = _object(item, label, {"id", "type", "time", "step"},
@@ -457,7 +458,8 @@ def _event(item: Any, index: int, exec_ids: set[str]) -> dict:
     _string(event["id"], f"{label}.id")
     kind = _string(event["type"], f"{label}.type")
     _count(event["step"], f"{label}.step")
-    if "origin" in event and event["origin"] not in exec_ids:
+    if "origin" in event and (not isinstance(event["origin"], str)
+                           or event["origin"] not in exec_ids):
         raise CaseError(f"{label}.origin: expected an earlier exec event id")
     if kind == EXEC_TYPE:
         _exec_fields(event, label)
@@ -495,7 +497,8 @@ def _external(item: Any, index: int, exec_ids: set[str], root: str) -> dict:
     for position, name in enumerate(paths):
         if under(absolute(name, f"{label}.paths[{position}]"), root):
             raise CaseError(f"{label}.paths: an outside mutation names a workspace path")
-    if "origin" in entry and entry["origin"] not in exec_ids:
+    if "origin" in entry and (not isinstance(entry["origin"], str)
+                           or entry["origin"] not in exec_ids):
         raise CaseError(f"{label}.origin: expected an earlier exec event id")
     return entry
 
