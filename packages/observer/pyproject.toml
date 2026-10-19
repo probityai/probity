@@ -11,6 +11,17 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{name = "Sankalp Gilda"}]
 keywords = ["ai-agents", "observability", "audit-logs", "provenance", "attestation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: System :: Logging",
+]
 requires-python = ">=3.12"
 dependencies = ["cryptography>=46,<51", "rfc8785==0.1.4"]
 
