@@ -62,5 +62,5 @@ an outside clock needs a separate check.
 The [technical reference](reference/APS-REFUND-RETRIES.md) holds the commands,
 source pin, output fields, file map and exact evidence boundary in one place.
 The [profile protocol](../interop/aps-durable-refund-2026-10-05/PROTOCOL.md) defines
-the authority and storage contract. The [workflow](../.github/workflows/aps-durable-refund.yml)
+the authority and storage contract. The [workflow](../../../.github/workflows/package-observer-aps-durable-refund.yml)
 runs the complete qualification and retains its public artifacts.

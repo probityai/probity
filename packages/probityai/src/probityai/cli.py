@@ -18,6 +18,8 @@ from collections.abc import Callable, Iterable
 from importlib.metadata import EntryPoint, entry_points, version
 from typing import Any
 
+from .starhint import maybe_print_hint
+
 PROG = "probity"
 GROUP = "probityai.cli_subcommands"
 _DISPATCH = "_probity_handler"
@@ -83,7 +85,10 @@ def main(argv: list[str] | None = None, points: Iterable[EntryPoint] | None = No
         else:
             print(f"{PROG}: error: a command is required; run '{PROG} --help' for the list", file=sys.stderr)
         return 2
-    return handler(args)
+    status = handler(args)
+    if status == 0:
+        maybe_print_hint(sys.argv[1:] if argv is None else argv)
+    return status
 
 
 if __name__ == "__main__":

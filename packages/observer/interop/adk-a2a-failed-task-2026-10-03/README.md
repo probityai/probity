@@ -11,4 +11,4 @@ bash interop/adk-a2a-failed-task-2026-10-03/verify_install.sh \
   /tmp/adk-a2a-failure vendor-adk-baseline vendor-adk-proposed-fix
 ```
 
-Requires Python 3.12 and uv. [PROFILE.md](PROFILE.md) gives the source pins, controls and exact scope. [.github/workflows/adk-a2a-failed-task.yml](../../.github/workflows/adk-a2a-failed-task.yml) runs the same command and retains native transport bodies, session events, signed effects, installed wheels and reader reports.
+Requires Python 3.12 and uv. [PROFILE.md](PROFILE.md) gives the source pins, controls and exact scope. [.github/workflows/adk-a2a-failed-task.yml](../../../../.github/workflows/package-observer-adk-a2a-failed-task.yml) runs the same command and retains native transport bodies, session events, signed effects, installed wheels and reader reports.

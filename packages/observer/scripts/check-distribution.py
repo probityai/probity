@@ -130,7 +130,7 @@ def check(wheel: Path, sdist: Path | None = None, source_root: Path | None = Non
         row = rows[0]
         require(f"`{profile['name']}`" in row, f"distribution identity: {manifest}")
         require(f"`{profile['requires-python']}`" in row, f"Python constraint: {manifest}")
-        url = "https://github.com/probityai/agent-evidence-observer/blob/main/"
+        url = "https://github.com/probityai/probity/blob/main/packages/observer/"
         url += profile_guide.relative_to(root).as_posix()
         require(f"{prefix}({url})" in row, f"profile guide URL: {manifest}")
         for command in profile.get("scripts", {}):

@@ -165,6 +165,26 @@ def add_external(records, location="grader_path", **entry):
          "location": location, **entry})
 
 
+NOT_TEXT = [7, ["e1"], None, {"id": "e1"}, True]
+
+
+class TestOriginIsText:
+    """An origin names an exec event id; a value that is not text names none."""
+
+    @pytest.mark.parametrize("origin", NOT_TEXT)
+    def test_an_event_origin_that_is_not_text_is_refused(self, tmp_path, records, origin):
+        records["observation"]["events"][2]["origin"] = origin
+        with pytest.raises(CaseError, match="origin"):
+            run(tmp_path, records)
+
+    @pytest.mark.parametrize("origin", NOT_TEXT)
+    def test_an_outside_mutation_origin_that_is_not_text_is_refused(
+            self, tmp_path, records, origin):
+        add_external(records, origin=origin, paths=["/outside/x.py"])
+        with pytest.raises(CaseError, match="origin"):
+            run(tmp_path, records)
+
+
 def with_sources(tmp_path, records, sources):
     """Run with ``source:<sha256>`` artifacts holding each given text."""
     files, case, policy = build(records, CLAIM)

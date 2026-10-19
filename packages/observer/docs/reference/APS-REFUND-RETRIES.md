@@ -34,9 +34,9 @@ bash <<'SH'
 set -euo pipefail
 mkdir aps-refund-demo
 cd aps-refund-demo
-git clone https://github.com/probityai/agent-evidence-observer.git source
-git -C source checkout d00e93c98290edb065a4b73a4f29e9983485fe18
-cd source
+git clone https://github.com/probityai/probity.git source
+git -C source checkout b617361c221db5ca96989a94c60e8480e14aecd5
+cd source/packages/observer
 bash interop/aps-durable-refund-2026-10-05/verify_install.sh ../capture
 SH
 ```
@@ -184,5 +184,5 @@ authority, merchant legitimacy, PIC integration or a completed provider refund.
 
 Read the [profile protocol](../../interop/aps-durable-refund-2026-10-05/PROTOCOL.md)
 for the exact source, authority and storage contract, and the
-[Node 20/22 qualification workflow](../../.github/workflows/aps-durable-refund.yml)
+[Node 20/22 qualification workflow](../../../../.github/workflows/package-observer-aps-durable-refund.yml)
 for the complete qualification and retained public artifacts.
