@@ -114,8 +114,8 @@
     },
     {
       "path": "src/probity_verify/adapters/done_records.py",
-      "bytes": 43063,
-      "sha256": "9c731b8e6a18d0fcc9a3089cd4437cb95a1d7e622335605fc8fe1fe898d7ba26"
+      "bytes": 43274,
+      "sha256": "f0665f7e62e7e7ed040e218a8bc1fa16f1e34312f11dfa39ad3b25d77555451f"
     },
     {
       "path": "src/probity_verify/adapters/event_absence.py",

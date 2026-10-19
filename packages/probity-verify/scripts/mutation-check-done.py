@@ -56,13 +56,13 @@ MUTATIONS = [
     ("claims: a run's own outside writes are edits", *CLAIMS,
      '              if entry.get("origin") not in own]', "              ]"),
     ("records: an event origin that is not text raises", RECORDS, "tests/test_protected_paths.py",
-     '    if "origin" in event and (not isinstance(event["origin"], str)\n'
-     '                           or event["origin"] not in exec_ids):\n',
+     ('    if "origin" in event and (not isinstance(event["origin"], str)\n'
+      '                           or event["origin"] not in exec_ids):\n'),
      '    if "origin" in event and event["origin"] not in exec_ids:\n'),
     ("records: an outside mutation origin that is not text raises", RECORDS,
      "tests/test_protected_paths.py",
-     '    if "origin" in entry and (not isinstance(entry["origin"], str)\n'
-     '                           or entry["origin"] not in exec_ids):\n',
+     ('    if "origin" in entry and (not isinstance(entry["origin"], str)\n'
+      '                           or entry["origin"] not in exec_ids):\n'),
      '    if "origin" in entry and entry["origin"] not in exec_ids:\n'),
     ("records: an interpreter without a sealed executable accepted", RECORDS, CLAIMS[1],
      'if "exe" not in entry or not isinstance(found, list)', "if not isinstance(found, list)"),
