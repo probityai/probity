@@ -96,19 +96,25 @@ def check_body(source: str) -> tuple[ast.Module, ast.FunctionDef]:
 
 
 def _case(node: ast.stmt) -> Case | None:
-    """The case an ``assert candidate(...) == literal`` statement makes, if it is one."""
+    """The case an ``assert candidate(...) == literal`` or ``assert candidate(...) is None``
+    statement makes, if it is one; the second reads as an expected value of ``None``."""
     if not isinstance(node, ast.Assert) or not isinstance(node.test, ast.Compare):
         return None
     compare = node.test
-    if (len(compare.ops) != 1 or not isinstance(compare.ops[0], ast.Eq)
-            or not isinstance(compare.left, ast.Call)
+    if (len(compare.ops) != 1 or not isinstance(compare.left, ast.Call)
             or not isinstance(compare.left.func, ast.Name)
             or compare.left.func.id != "candidate"):
         return None
     expected = compare.comparators[0]
-    try:
-        ast.literal_eval(expected)
-    except ValueError:
+    if isinstance(compare.ops[0], ast.Is):
+        if not (isinstance(expected, ast.Constant) and expected.value is None):
+            return None
+    elif isinstance(compare.ops[0], ast.Eq):
+        try:
+            ast.literal_eval(expected)
+        except ValueError:
+            return None
+    else:
         return None
     call = compare.left
     args = ", ".join([ast.unparse(arg) for arg in call.args]
