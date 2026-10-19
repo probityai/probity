@@ -29,7 +29,7 @@ _LOST = re.compile(r"Lost (\d+) events")
 # The same write seen a second time on the overlay's upper layer (containerd's snapshotter or the
 # overlay2 driver); the rules read the container's own path and skip these.
 _UPPER = re.compile(r"/(io\.containerd\.snapshotter\.v1\.overlayfs/snapshots/\d+/(fs|work)|overlay2/[^/]+/(diff|work))(/|$)")
-ENV = {"BPFTRACE_MAX_STRLEN": "200"}
+ENV = {"BPFTRACE_MAX_STRLEN": "200", "BPFTRACE_PERF_RB_PAGES": "1024"}
 
 
 def _walk(var: str, slot: str) -> str:
@@ -50,16 +50,25 @@ def _walk(var: str, slot: str) -> str:
   if ($done == 0) {{ printf("T\\t%llu\\t%d\\t{slot}\\n", $t, pid); }}"""
 
 
-def program(cgroup_id: int) -> str:
-    """The bpftrace program for one container's cgroup id."""
+def program(cgroup_id: int, reads: bool = False) -> str:
+    """The bpftrace program for one container's cgroup id.
+
+    Without ``reads``, a file open is printed only when it is for writing or on procfs: the rules read
+    other opens only by the grader, so the runner starts a second program with ``reads`` for the grading
+    window alone. Printing every read open for a whole episode lost events on the first dry run (641 lost
+    in 196,056 lines, measured 2026-10-18).
+    """
     filt = f"/cgroup == {int(cgroup_id)}/"
+    open_filt = filt if reads else (
+        f"/cgroup == {int(cgroup_id)} && ((args.file->f_mode & {FMODE_WRITE}) || "
+        f"args.file->f_path.dentry->d_sb->s_magic == {PROC_SUPER_MAGIC})/")
     return f"""
 tracepoint:sched:sched_process_exec {filt} {{
   $t = nsecs; $m = curtask->mm; $n = $m->arg_end - $m->arg_start;
   printf("E\\t%llu\\t%d\\t%d\\t%s\\t%d\\n", $t, pid, curtask->real_parent->tgid, str(args.filename), $n);
   printf("A\\t%llu\\t%d\\t0\\t%r\\n", $t, pid, buf(uptr($m->arg_start), $n > {ARGV_BYTES} ? {ARGV_BYTES} : $n));
 }}
-fentry:security_file_open {filt} {{
+fentry:security_file_open {open_filt} {{
   $t = nsecs; $d = args.file->f_path.dentry;
   printf("O\\t%llu\\t%d\\t%s\\t%u\\t%lu\\n", $t, pid, comm, args.file->f_mode, $d->d_sb->s_magic);{_walk("$d", "p")}
 }}
@@ -231,6 +240,22 @@ def parse(lines: Iterable[str]) -> Trace:
             unparsed.append(line)
     events = sorted((_build(item) for item in pending.values()), key=lambda e: (e.time, e.pid))
     return Trace(events, unparsed, lost, parents)
+
+
+def merge(traces: list[Trace]) -> Trace:
+    """One trace from several programs over the same container; an event both printed is kept once."""
+    seen, events = set(), []
+    for trace in traces:
+        for event in trace.events:
+            key = (event.kind, event.time, event.pid, event.path)
+            if key not in seen:
+                seen.add(key)
+                events.append(event)
+    parents: dict[int, int] = {}
+    for trace in traces:
+        parents.update(trace.parents)
+    return Trace(sorted(events, key=lambda e: (e.time, e.pid)), [u for t in traces for u in t.unparsed],
+                 sum(t.lost for t in traces), parents)
 
 
 def exec_roots(trace: Trace, shim_pid: int) -> list[Event]:

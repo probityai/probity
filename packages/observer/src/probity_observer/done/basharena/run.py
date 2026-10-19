@@ -38,21 +38,23 @@ def _driver(config: Config, work: Path) -> subprocess.Popen:
         cwd=config.basharena, env=env, stdout=log, stderr=subprocess.STDOUT)
 
 
-def _start_observer(cmd: Commands, config: Config, container: episode.Container, work: Path) -> str:
-    program = work / "trace.bt"
-    program.write_text(observer.program(container.cgroup))
-    name = f"obs-{work.name}-{int(time.time())}"
-    cmd.run(["docker", "run", "-d", "--name", name, "--privileged", "--pid=host", "-v",
+def _start_observer(cmd: Commands, config: Config, container: episode.Container, work: Path,
+                    stem: str = "trace", reads: bool = False) -> str:
+    program = work / f"{stem}.bt"
+    program.write_text(observer.program(container.cgroup, reads=reads))
+    log = work / f"{stem}.log"
+    name = f"obs-{work.name}-{stem}-{int(time.time())}"
+    env = [a for k, v in observer.ENV.items() for a in ("-e", f"{k}={v}")]
+    cmd.run(["docker", "run", "-d", "--name", name, "--privileged", "--pid=host", *env, "-v",
              "/sys/kernel:/sys/kernel:ro", "-v", f"{work}:/out", config.observer_image, "bpftrace", "-o",
-             "/out/trace.log", "/out/trace.bt"])
+             f"/out/{stem}.log", f"/out/{stem}.bt"])
     deadline = time.monotonic() + 120
     while time.monotonic() < deadline:
         logs = cmd.run(["docker", "logs", name], check=False)
         text = (logs.stdout + logs.stderr).decode("utf-8", "replace")
         if "ERROR" in text or "error:" in text:
             raise RuntimeError(f"bpftrace failed: {text[-800:]}")
-        trace = work / "trace.log"
-        if trace.exists() and trace.read_text(errors="replace").startswith("Attaching"):
+        if log.exists() and log.read_text(errors="replace").startswith("Attaching"):
             return name
         time.sleep(0.5)
     raise RuntimeError("bpftrace did not attach within 120 s")
@@ -61,7 +63,8 @@ def _start_observer(cmd: Commands, config: Config, container: episode.Container,
 def _stop_observer(cmd: Commands, name: str, work: Path) -> None:
     cmd.run(["docker", "stop", "-t", "30", name], check=False, timeout=120)
     logs = cmd.run(["docker", "logs", name], check=False)
-    (work / "observer.log").write_bytes(logs.stdout + logs.stderr)
+    with (work / "observer.log").open("ab") as handle:
+        handle.write(logs.stdout + logs.stderr)
     cmd.run(["docker", "rm", "-f", name], check=False)
 
 
@@ -91,12 +94,17 @@ def _host_end(cmd: Commands, config: Config, container: episode.Container, work:
         "changed_image_binaries": episode.changed_image_binaries(upper, lower, dpkg)})
 
 
-def _readings(cmd: Commands, container: episode.Container, final: str, runtime: bytes, spec: task.Spec,
+def _readings(cmd: Commands, config: Config, container: episode.Container, runtime: bytes, spec: task.Spec,
               work: Path) -> None:
+    """The two live readings, with a second program recording every open for the grading window."""
     out = work / "readings"
     out.mkdir(exist_ok=True)
-    write_json(out / "L_s.json", episode.reading_sealed(cmd, container.id, runtime, spec.tests))
-    write_json(out / "L_std.json", episode.reading_standard(cmd, container.id, spec.tests, work))
+    grading = _start_observer(cmd, config, container, work, stem="trace-grading", reads=True)
+    try:
+        write_json(out / "L_s.json", episode.reading_sealed(cmd, container.id, runtime, spec.tests))
+        write_json(out / "L_std.json", episode.reading_standard(cmd, container.id, spec.tests, work))
+    finally:
+        _stop_observer(cmd, grading, work)
 
 
 def _cold_readings(cmd: Commands, container: episode.Container, final: str, runtime: bytes,
@@ -160,7 +168,7 @@ def run_episode(row: dict[str, Any], row_index: int, revision: str, config: Conf
         final = f"probity-final-{work.name}:latest"
         cmd.run(["docker", "commit", container.id, final], timeout=900)
         images.append(final)
-        _readings(cmd, container, final, runtime, spec, work)
+        _readings(cmd, config, container, runtime, spec, work)
         _stop_observer(cmd, observer_name, work)
         observer_name = None
         _cold_readings(cmd, container, final, runtime, spec, work)

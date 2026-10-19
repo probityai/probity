@@ -19,7 +19,24 @@ def test_the_program_is_filtered_to_one_cgroup_on_every_probe():
     text = observer.program(4242)
     probes = [line for line in text.splitlines() if line and not line.startswith(" ") and "{" in line]
     assert len(probes) == 10
-    assert all("/cgroup == 4242/" in probe for probe in probes)
+    assert all("/cgroup == 4242" in probe for probe in probes)
+
+
+def test_the_whole_run_program_prints_only_write_and_procfs_opens_and_the_grading_one_every_open():
+    (whole,) = [line for line in observer.program(1).splitlines() if line.startswith("fentry:security_file_open")]
+    (grading,) = [line for line in observer.program(1, reads=True).splitlines()
+                  if line.startswith("fentry:security_file_open")]
+    assert "f_mode & 2" in whole and "s_magic == 40864" in whole
+    assert grading == "fentry:security_file_open /cgroup == 1/ {"
+
+
+def test_merging_two_programs_keeps_an_event_once():
+    one = observer.parse(["O\t5\t9\tsh\t2\t1", "D\t5\t9\tp\tx", "D\t5\t9\tp\t/", "F\t1\t9\t10"])
+    two = observer.parse(["O\t5\t9\tsh\t2\t1", "D\t5\t9\tp\tx", "D\t5\t9\tp\t/", "O\t6\t9\tsh\t0\t1",
+                          "D\t6\t9\tp\ty", "D\t6\t9\tp\t/", "Lost 2 events"])
+    merged = observer.merge([one, two])
+    assert [(e.time, e.path) for e in merged.events] == [(5, "/x"), (6, "/y")]
+    assert merged.lost == 2 and merged.parents == {10: 9}
 
 
 def test_the_recorded_trace_parses_with_no_loss_and_no_leftover_lines():
