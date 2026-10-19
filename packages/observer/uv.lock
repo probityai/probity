@@ -52,7 +52,7 @@ requires-dist = [
     { name = "jcs-admit", marker = "extra == 'done'", git = "https://github.com/probityai/jcs-admit?subdirectory=python&rev=b69943787266702da3c02741dcc3a37643c7dc3e" },
     { name = "jcs-admit", marker = "extra == 'witness'", git = "https://github.com/probityai/jcs-admit?subdirectory=python&rev=b69943787266702da3c02741dcc3a37643c7dc3e" },
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4,<5" },
-    { name = "probity-verify", marker = "extra == 'done'", git = "https://github.com/probityai/probity?subdirectory=packages%2Fprobity-verify&rev=cc49592d8b9991dabc63ca0f00ebfcd124000788" },
+    { name = "probity-verify", marker = "extra == 'done'", git = "https://github.com/probityai/probity?subdirectory=packages%2Fprobity-verify&rev=551face45e43a7067965ecb4b7d513df58883f96" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
     { name = "rfc8785", specifier = "==0.1.4" },
 ]
@@ -1696,7 +1696,7 @@ wheels = [
 [[package]]
 name = "probity-verify"
 version = "0.2.0"
-source = { git = "https://github.com/probityai/probity?subdirectory=packages%2Fprobity-verify&rev=cc49592d8b9991dabc63ca0f00ebfcd124000788#cc49592d8b9991dabc63ca0f00ebfcd124000788" }
+source = { git = "https://github.com/probityai/probity?subdirectory=packages%2Fprobity-verify&rev=551face45e43a7067965ecb4b7d513df58883f96#551face45e43a7067965ecb4b7d513df58883f96" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
     { name = "cryptography" },
