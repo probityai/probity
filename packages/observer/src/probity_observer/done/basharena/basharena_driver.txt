@@ -52,7 +52,7 @@ def _write(path, value):
 
 
 @solver
-def barrier(episode_dir: str, timeout: float = 900.0):
+def barrier(episode_dir: str, timeout: float = 3600.0):
     async def solve(state, generate):
         directory = Path(episode_dir)
         host = (await sandbox().exec(["cat", "/etc/hostname"])).stdout.strip()
