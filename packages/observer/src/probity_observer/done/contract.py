@@ -459,8 +459,15 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
                     executables: dict[str, str | list[str]] | None = None,
                     run_writes: dict[str, list[str]] | None = None,
                     interpreter: list[str] | None = None,
-                    surface: tuple[list[str], dict[str, str]] | None = None) -> dict[str, Any]:
+                    surface: tuple[list[str], dict[str, str]] | None = None,
+                    strength: str | None = None,
+                    gates: dict[str, Any] | None = None) -> dict[str, Any]:
     """The ``probity-done-contract/v1`` record for a compiled task.
+
+    Every acceptance entry carries its ``tier`` (``synthesized`` for a model-written test,
+    else ``trusted``); ``strength`` and the seal ``gates`` are sealed when the compiler
+    measured them, so the verifier grades a failing synthesized test ``not_established`` and
+    a reference-free contract never ``supported``.
 
     With ``surface`` (:func:`image_surface` of the agent image), the record seals
     ``execution_surface`` and ``surface_aliases``: probity-verify then reads any mutation
@@ -481,6 +488,7 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
     entries = []
     for command in commands:
         entry = command.record()
+        entry["tier"] = "synthesized" if strengthen.is_synthesized(command.id) else "trusted"
         if command.agent_command and executables is not None and command.argv[0] in executables:
             entry.update(cwd=AGENT_CWD, exe=executables[command.argv[0]])
             if run_writes is not None and command.id in run_writes:
@@ -500,6 +508,10 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
     }
     if task.module_under_test:
         record["module_under_test"] = list(task.module_under_test)
+    if strength is not None:
+        record["strength"] = strength
+    if gates:
+        record["adequacy"] = {**adequacy, "gates": gates}
     for entry in task.protected:
         item: dict[str, Any] = {"path": entry.path, "kind": entry.kind,
                                 "sha256": protected_digest(task.start, entry)}
@@ -551,7 +563,8 @@ def seal(task: Task, out: Path, key, adequacy: dict[str, int] | None = None,
     has_heldout = any(command.heldout for command in commands)
     record = contract_record(task, adequacy, commands,
                              heldout_digest(task.heldout) if has_heldout else None,
-                             mutant_sha256, executables, run_writes, interpreter, surface)
+                             mutant_sha256, executables, run_writes, interpreter, surface,
+                             (report or {}).get("strength"), (report or {}).get("gates"))
     data, envelope = sign_record(record, key)
     digest = sha256(data)
     (out / "contract.json").write_bytes(data)
@@ -1076,9 +1089,10 @@ def start_guard(task: Task, runner: Runner, runs: int, timeout: float, stable: S
 
 
 # probity-verify at the pinned commit (87835a8) grades any failing held-out command as
-# contradicted and cannot read a command's tier, so a contract carrying synthesized tests would
-# be graded wrongly: until its adapter reads ``tier``, such a contract is refused at seal time.
-VERIFIER_GRADES_SYNTHESIZED = False
+# contradicted unless it reads a command's ``tier``, ``strength`` and the seal ``gates`` from the
+# contract. The pinned probity-verify does, and contract_record seals all three, so a contract
+# carrying synthesized tests is graded ``not_established`` when one fails, not ``contradicted``.
+VERIFIER_GRADES_SYNTHESIZED = True
 STRENGTHENABLE = ("change_floor_unmet", "cheat_class_survived")
 SYNTH_HEADER = "import os, sys\nsys.path.insert(0, os.getcwd())\n"
 

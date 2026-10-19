@@ -278,6 +278,7 @@ def test_without_a_reference_the_start_suite_guards_and_the_strength_says_so(tmp
     guard = next(item for item in sealed.record["acceptance"] if item["id"] == "guard-repo")
     assert guard["ids"] == ["tests/test_more.py::test_zero", "tests/test_other.py::test_triple"]
     assert sealed.record["adequacy"] == {"mutants": 0, "killed": 0}
+    assert sealed.record["strength"] == "reference_free" and guard["tier"] == "trusted"
 
 
 def test_the_v2_template_is_the_default_and_lists_collected_node_ids(tmp_path, repo, python_bin):

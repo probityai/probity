@@ -1,4 +1,4 @@
-"""Model strengthening rounds: static rules, run validation, and the verifier-tier refusal."""
+"""Model strengthening rounds: static rules, run validation, and the tier and strength fields."""
 
 import ast
 import json
@@ -7,6 +7,7 @@ import shutil
 import pytest
 
 from probity_observer.done import contract, strengthen, zeroshot
+from probity_verify.adapters import done_records
 from probity_observer.done.runner import SubprocessRunner
 
 from .test_zeroshot import ANSWER, Fixed, repo  # noqa: F401  (the repo fixture)
@@ -46,8 +47,13 @@ def _task(tmp_path, repo, answer=ANSWER):
                             tmp_path / "w", template_name="contract_v1.txt").task
 
 
-def test_a_weak_contract_is_strengthened_and_refused_until_the_verifier_reads_tiers(
-        tmp_path, repo, harness, python_bin):
+def test_the_verifier_grade_flag_is_set():
+    assert contract.VERIFIER_GRADES_SYNTHESIZED is True
+
+
+def test_a_flag_off_contract_with_synthesized_tests_is_refused(
+        tmp_path, repo, harness, python_bin, monkeypatch):
+    monkeypatch.setattr(contract, "VERIFIER_GRADES_SYNTHESIZED", False)
     task = _task(tmp_path, repo)
     model = Fixed("```python\n" + GOOD + "```\n")
     with pytest.raises(contract.Refused, match="synthesized_tier_unsupported"):
@@ -57,9 +63,8 @@ def test_a_weak_contract_is_strengthened_and_refused_until_the_verifier_reads_ti
     assert "def double(x):\n    return x" in model.prompts[0]
 
 
-def test_with_a_tier_reading_verifier_the_strengthened_contract_seals(
-        tmp_path, repo, harness, python_bin, monkeypatch):
-    monkeypatch.setattr(contract, "VERIFIER_GRADES_SYNTHESIZED", True)
+def test_a_weak_contract_is_strengthened_and_seals_with_tier_and_strength(
+        tmp_path, repo, harness, python_bin):
     task = _task(tmp_path, repo)
     sealed = contract.compile_task(task, tmp_path / "out", harness, SubprocessRunner(python_bin),
                                    timeout=60, model=Fixed("```python\n" + GOOD + "```\n"))
@@ -72,10 +77,16 @@ def test_with_a_tier_reading_verifier_the_strengthened_contract_seals(
     assert compiled["tiers"]["unit"] == "trusted" and compiled["strength"] == "gated"
     assert (sealed.out / "sealed/heldout/synth/test_synth_1.py").is_file()
     assert compiled["adequacy"]["trusted_kill_vector_sha256"] != compiled["adequacy"]["kill_vector_sha256"]
+    record = done_records.contract((sealed.out / "contract.json").read_bytes())
+    tiers = {entry["id"]: entry["tier"] for entry in record["acceptance"]}
+    assert tiers == compiled["tiers"]
+    assert record["strength"] == "gated"
+    assert record["adequacy"]["gates"] and all(
+        gate["pass"] for gate in record["adequacy"]["gates"].values())
 
 
 def test_with_no_failing_command_one_round_synthesizes_the_spec(tmp_path, repo, harness,
-                                                                python_bin, monkeypatch):
+                                                                python_bin):
     passing = json.dumps({"acceptance": [{"id": "known", "argv": [
         "python", "-m", "pytest", "-q", "tests/test_zero.py"], "expect_on_start": "pass"}],
         "protected_paths": [], "rationale": "r"})
@@ -84,16 +95,14 @@ def test_with_no_failing_command_one_round_synthesizes_the_spec(tmp_path, repo, 
         "def test_zero():\n    assert double(0) + 0 == 0\n    assert double(5) % 1 == 0\n")
     task = _task(tmp_path, repo, passing)
     model = Fixed("```python\n" + GOOD + "```\n")
-    with pytest.raises(contract.Refused, match="synthesized_tier_unsupported"):
-        contract.compile_task(task, tmp_path / "out", harness, SubprocessRunner(python_bin),
-                              timeout=60, model=model)
+    sealed = contract.compile_task(task, tmp_path / "out", harness, SubprocessRunner(python_bin),
+                                   timeout=60, model=model)
     assert "fail on the repository as it is now" in model.prompts[0]
-    monkeypatch.setattr(contract, "VERIFIER_GRADES_SYNTHESIZED", True)
-    task = _task(tmp_path / "again", repo, passing)
-    sealed = contract.compile_task(task, tmp_path / "out2", harness, SubprocessRunner(python_bin),
-                                   timeout=60, model=Fixed("```python\n" + GOOD + "```\n"))
     compiled = json.loads((sealed.out / "sealed" / "compile.json").read_bytes())
     assert compiled["strength"] == "synthesized_spec"
+    record = done_records.contract((sealed.out / "contract.json").read_bytes())
+    assert record["strength"] == "synthesized_spec"
+    assert "synthesized" in {entry["tier"] for entry in record["acceptance"]}
 
 
 def test_without_a_model_a_weak_contract_is_refused_by_its_gate(tmp_path, repo, harness,
