@@ -30,7 +30,7 @@ both child streams and refuses missing populations or stronger scope.
 
 ## Reproduce
 
-The [workflow](../../.github/workflows/a2a-history-boundary.yml) gives all install,
+The [workflow](../../../../.github/workflows/package-observer-a2a-history-boundary.yml) gives all install,
 container, native-run, installed-reader and host-selection commands. It pins the
 SDK commit, native dependencies from the upstream lock, MySQL OCI digest and
 reader/test dependencies. The database uses one CPU, 512 MiB, 128 PIDs and only a

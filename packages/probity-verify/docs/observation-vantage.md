@@ -28,9 +28,10 @@ The [Observer operator profile at 0770e031](https://github.com/probityai/agent-e
 On a Linux host with Python 3.12, uv and permission to run the finite UID controls:
 
 ```sh
-git clone https://github.com/probityai/agent-evidence-observer
-cd agent-evidence-observer
-git checkout 0770e0311903d2f658dba04644805e3449a4f622
+git clone https://github.com/probityai/probity
+cd probity
+git checkout b617361c221db5ca96989a94c60e8480e14aecd5
+cd packages/observer
 bash interop/witness-operator-2026-10-03/verify_install.sh \
   "$PWD/witness-evidence"
 ```

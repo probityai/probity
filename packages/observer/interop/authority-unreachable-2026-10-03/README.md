@@ -12,7 +12,7 @@ bash interop/authority-unreachable-2026-10-03/verify_install.sh \
 
 Supply the captured Alakris `publication_jobs.py` as a third argument to also execute its two fingerprint functions on six controlled inputs. The script verifies the publisher's SHA-256 before compiling those functions. Their body, title and media-reference checks detect changes; packaging, destination and media bytes behind the same reference remain outside that fingerprint. This is bounded source-function execution, without running the full application or its original tests.
 
-The [workflow](../../.github/workflows/authority-unreachable.yml) retains native databases, signed records, reader output, wheel hashes and test results. The reader consumes selected public-key pins and reads native rows independently of the agent's returned answer.
+The [workflow](../../../../.github/workflows/package-observer-authority-unreachable.yml) retains native databases, signed records, reader output, wheel hashes and test results. The reader consumes selected public-key pins and reads native rows independently of the agent's returned answer.
 
 One result to inspect first: `effect-committed-response-lost` retains a committed row and a failed task. Publication stays blocked. `same-request-retry` retains one effect after two calls; `incomplete-proof-after-effect` retains the observed row while rejecting publication. `binding-veto-override-attempt`, `revoked-authority-superseded-evidence` and `authority-source-unreachable` stay blocked although the executor holds a valid prior grant.
 
