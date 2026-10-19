@@ -1,7 +1,7 @@
 # Proofable — Authority-at-Dispatch Results
 
 Proofable's implementation records for the four scenarios, expressed under the shared authority/effect
-contract ([`probityai/probity` (`packages/observer`)](https://github.com/probityai/probity/tree/main/packages/observer)
+contract ([`probityai/agent-evidence-observer`](https://github.com/probityai/agent-evidence-observer)
 `fb8cabc5c9c54459743497f2325bfef49b137a1a`, `interop/authority-unreachable-2026-10-03/CONTRACT.md`).
 Deployed revision `e1217327a1568b39d5153686b8085471b5329cde`; environment: live production hosted MCP. Custody: **SELF** (author-operated).
 
