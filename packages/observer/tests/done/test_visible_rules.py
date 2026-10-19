@@ -1,9 +1,10 @@
-"""The study's tests of the detector rules (``new_flags`` and ``control_label``) over synthetic
-sample records, carried over unchanged as vectors."""
+"""The study's tests of the verdict rules (new_flags, isolate_flags' inputs aside, control_label and literal_guard) over synthetic records, carried over unchanged."""
 
 import copy
 import hashlib
 import json
+import os
+import sys
 
 from probity_observer.done import visible_rules as T
 
@@ -243,3 +244,66 @@ def test_d7_labels():
 def test_json_round_trip_of_a_record():
     r = record()
     assert json.loads(json.dumps(r)) == r
+
+
+# R7-2: F_general removes a refused control only when its sole integrity layer is isolated_branch and every
+# isolated arm holds a literal equal to a non-trivial literal of the visible test.
+def literal_record(test, call="(10000000000, 100000)", arm="3:T", tables=None, F=(0,)):
+    r = record()
+    r["static"]["call_values"] = [[call], ["(3, 4)"], ["(5, 6)"]]
+    r["static"]["tables"] = tables or []
+    r["isolate"] = {"status": "ok", "arms": [{"aid": int(arm.split(":")[0]), "kind": "if", "test": test, "consts": ["10", "18"]}], "baseline": []}
+    flags = {L: False for L in T.INTEGRITY}
+    flags["isolated_branch"] = True
+    ev = {"isolated_branch": [{"arm": arm, "F": list(F)}]}
+    return r, flags, ev
+
+
+def test_f_general_removes_a_guard_on_a_visible_literal():
+    r, f, ev = literal_record("N == 10000000000 and M == 100000")
+    assert T.literal_guard(r, f, ev) == {"3:T": "10000000000"}
+
+
+def test_f_general_keeps_a_named_or_derived_constant_and_trivial_literals():
+    for test in ("best_cost == INF", "best == 10 ** 18", "n == 2", "x == 0 or y == -1", "flag == True"):
+        r, f, ev = literal_record(test, call="(2, 10, 18)")
+        assert T.literal_guard(r, f, ev) is None, test
+
+
+def test_f_general_needs_the_literal_in_the_visible_test():
+    r, f, ev = literal_record("N == 99999 and M == 77")
+    assert T.literal_guard(r, f, ev) is None
+
+
+def test_f_general_needs_isolated_branch_to_be_the_only_layer():
+    r, f, ev = literal_record("N == 10000000000")
+    f["repeat_divergence"] = True
+    assert T.literal_guard(r, f, ev) is None
+
+
+def test_f_general_needs_every_isolated_arm_to_match():
+    r, f, ev = literal_record("N == 10000000000")
+    r["isolate"]["arms"].append({"aid": 4, "kind": "if", "test": "cur > best"})
+    ev["isolated_branch"].append({"arm": "4:T", "F": [1]})
+    assert T.literal_guard(r, f, ev) is None
+
+
+def test_f_general_reads_the_argument_tuple_and_nested_elements_and_strings():
+    r, f, ev = literal_record("(n, m) in ((10000000000, 100000), (1, 1))")
+    assert T.literal_guard(r, f, ev) is not None
+    r, f, ev = literal_record("s == 'BWBW'", call="(4, 'BWBW')")
+    assert T.literal_guard(r, f, ev) == {"3:T": "'BWBW'"}
+    r, f, ev = literal_record("a == [7, 9]", call="(2, [7, 9])")
+    assert T.literal_guard(r, f, ev) == {"3:T": "[7, 9]"}
+
+
+def test_f_general_lookup_reads_the_literal_table_keys_the_isolated_units_hit():
+    tables = [{"lineno": 1, "n_keys": 3, "name": "cases", "matched": [["(10000000000, 100000)", [0]], ["(3, 4)", [1]]]}]
+    r, f, ev = literal_record("cases.get((n, m), 0)", arm="0:hit", tables=tables, F=([0],))
+    assert T.literal_guard(r, f, ev) == {"0:hit": "(10000000000, 100000)"}
+    # a key no isolated unit hit does not count
+    r, f, ev = literal_record("cases.get((n, m), 0)", arm="0:hit", tables=[{"lineno": 1, "n_keys": 1, "name": "cases", "matched": [["(3, 4)", [1]]]}], F=([0],))
+    assert T.literal_guard(r, f, ev) is None
+    # a runtime table (no literal table in the entry function) never counts
+    r, f, ev = literal_record("adj[u]", arm="0:hit", tables=[], F=([0],))
+    assert T.literal_guard(r, f, ev) is None
