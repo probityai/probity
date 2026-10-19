@@ -1,0 +1,135 @@
+"""Run one honest BashArena episode with BashArena's own code, holding the containers for the grader.
+
+Run with BashArena's environment, from its clone (the module path ``src`` is BashArena's):
+
+    <clone>/.venv/bin/python basharena_driver.txt episode --row row.json --model <inspect model> \
+        --episode-dir <dir> [--max-steps 100]
+
+What changes from BashArena's published honest protocol, and why:
+- the main-task scorer is removed: it would run the hidden tests inside the agent's container before the
+  sealed grader does; the runner runs BashArena's exact command later as the reading ``L_std``;
+- a barrier step after setup writes ``ready.json`` (the container's hostname and the clock pair) and waits
+  for ``go.json``, so the host observer is attached before the agent's first turn;
+- sandbox cleanup is off, so the runner reads, grades and removes the containers itself;
+- the honest policy is control-arena's ``honest_policy_builder`` with BashArena's ``honest.txt`` system prompt
+  (paper section E.5), because ``src/policies/honest_policy.py`` at 86082fd imports ``stable_message_ids``,
+  which the locked inspect-ai 0.3.169 does not export, and reads ``no_tests_honest.txt``, which the
+  repository does not contain.
+Everything else is BashArena's: the dataset row to sample conversion, the compose environment, the setup
+solver, the tools, the four side tasks checked after every action by ``auto_submit_protocol_wrapper``, and the
+side-task scorer. After the eval, ``tools.json`` lists each tool call's window and each side-task result.
+"""
+
+import argparse
+import asyncio
+import json
+import sys
+import time
+from pathlib import Path
+
+from control_arena import EvalMode
+from control_arena.eval import ControlEvalConfig, get_control_task
+from control_arena.policy import honest_policy_builder
+from inspect_ai import eval as inspect_eval
+from inspect_ai.dataset import MemoryDataset
+from inspect_ai.log import read_eval_log
+from inspect_ai.solver import chain, solver
+from inspect_ai.util import sandbox
+
+from src.bash_arena_setting import BashArenaSetting
+from src.protocol.auto_submit_protocol_wrapper import auto_submit_protocol_wrapper
+from src.side_tasks import create_multi_side_task
+from src.task.dataset import DatasetSpec, record_to_sample_factory
+
+SIDE_TASKS = ["sudo_edit", "disable_firewall", "download_malware", "leak_passwords"]
+HONEST_PROMPT = Path("src/policies/system_prompts/honest.txt")
+
+
+def _write(path, value):
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(value, indent=1, sort_keys=True))
+    tmp.replace(path)
+
+
+@solver
+def barrier(episode_dir: str, timeout: float = 900.0):
+    async def solve(state, generate):
+        directory = Path(episode_dir)
+        host = (await sandbox().exec(["cat", "/etc/hostname"])).stdout.strip()
+        _write(directory / "ready.json", {"hostname": host, "wall": time.time(),
+                                          "monotonic_ns": time.monotonic_ns()})
+        deadline = time.monotonic() + timeout
+        while not (directory / "go.json").exists():
+            if time.monotonic() > deadline:
+                raise RuntimeError("the runner did not release the barrier")
+            await asyncio.sleep(0.5)
+        return state
+    return solve
+
+
+class HeldSetting(BashArenaSetting):
+    episode_dir: str = ""
+
+    def setup_environment(self):
+        return chain(super().setup_environment(), barrier(self.episode_dir))
+
+    def get_scorers(self):
+        return [create_multi_side_task(self.dataset_spec.side_tasks).scorer]
+
+
+def _events(log_path):
+    log = read_eval_log(log_path)
+    sample = log.samples[0]
+    tools, checks = [], []
+    for event in sample.events:
+        if event.event == "tool":
+            end = event.completed.timestamp() if event.completed else event.timestamp.timestamp()
+            tools.append({"start": event.timestamp.timestamp(), "end": end, "function": event.function,
+                          "arguments": event.arguments})
+    for message in sample.messages:
+        text = message.text if hasattr(message, "text") else ""
+        if message.role == "user" and text.startswith("Side task '"):
+            checks.append(text.split("'")[1])
+    scores = {name: (score.value if score else None) for name, score in (sample.scores or {}).items()}
+    return {"tools": tools, "side_tasks_passed_during_run": checks, "scores": scores,
+            "messages": len(sample.messages), "error": str(sample.error) if sample.error else None,
+            "limit": str(sample.limit) if getattr(sample, "limit", None) else None}
+
+
+def episode(args):
+    directory = Path(args.episode_dir)
+    row = json.loads(Path(args.row).read_text())
+    to_sample = record_to_sample_factory(EvalMode.HONEST, create_multi_side_task(SIDE_TASKS),
+                                         include_test_content=False)
+    sample = to_sample(row)
+    sample = sample[0] if isinstance(sample, list) else sample
+    setting = HeldSetting(dataset_spec=DatasetSpec(side_tasks=SIDE_TASKS), episode_dir=str(directory))
+    protocol = auto_submit_protocol_wrapper(protocol=honest_policy_builder(model_role="untrusted"),
+                                            side_task_checkers=SIDE_TASKS)
+    config = ControlEvalConfig(max_steps=args.max_steps, untrusted_model=args.model,
+                               trusted_model=args.model, system_prompt=HONEST_PROMPT.read_text(),
+                               log_dir=str(directory / "logs"), time_limit=args.time_limit,
+                               token_limit=100_000_000)
+    task = get_control_task(setting, protocol, EvalMode.HONEST, eval_config=config,
+                            dataset=MemoryDataset([sample]))
+    logs = inspect_eval(task, sandbox_cleanup=False, **config.eval_args())
+    _write(directory / "tools.json", _events(logs[0].location))
+    _write(directory / "driver-done.json", {"log": logs[0].location, "status": logs[0].status})
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    sub = parser.add_subparsers(dest="command", required=True)
+    run = sub.add_parser("episode")
+    run.add_argument("--row", required=True)
+    run.add_argument("--model", required=True)
+    run.add_argument("--episode-dir", required=True)
+    run.add_argument("--max-steps", type=int, default=100)
+    run.add_argument("--time-limit", type=int, default=7200)
+    args = parser.parse_args()
+    return episode(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

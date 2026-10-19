@@ -1,0 +1,148 @@
+"""Host-side reads of one container's state, run inside the privileged observer container.
+
+Usage: python3 observer_tools.py <command> <container init pid> [args]
+  upper   the overlay upper directory as JSON: each changed path, its type, size and SHA-256; whiteouts as deletes
+  procs   every process in the container's PID namespace: pid, ppid, argv, executable SHA-256
+  nat     iptables-save of the container's network namespace, run with the observer's own iptables
+  preload whether /etc/ld.so.preload exists in the container's root
+  dpkg    for each path given, whether its bytes match the md5sums dpkg recorded for the package that owns it
+  lower   for each path given, whether it exists in the container image's lower layers
+Standard library only. Every path is read through /proc/<pid>/root or the upper and lower directories, never
+through a binary of the agent's container.
+"""
+
+import hashlib
+import json
+import os
+import stat
+import subprocess
+import sys
+
+
+def _mount_options(pid):
+    with open(f"/proc/{pid}/mountinfo") as handle:
+        for line in handle:
+            fields = line.split()
+            if fields[4] == "/" and " - overlay " in line:
+                options = line.split(" - overlay ")[1].split()[1]
+                return dict(item.split("=", 1) for item in options.split(",") if "=" in item)
+    raise SystemExit("no overlay root mount for pid %s" % pid)
+
+
+def _sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+# The overlay options name host paths; the observer reads them through the host init's root.
+HOST = "/proc/1/root"
+
+
+def _host_dir(path):
+    full = HOST + path
+    if not os.path.isdir(full):
+        raise SystemExit("not a directory from the host root: %s" % path)
+    return full
+
+
+def upper(pid):
+    root = _host_dir(_mount_options(pid)["upperdir"])
+    entries = {}
+    for directory, dirs, files in os.walk(root):
+        for name in dirs + files:
+            full = os.path.join(directory, name)
+            rel = "/" + os.path.relpath(full, root)
+            info = os.lstat(full)
+            if stat.S_ISCHR(info.st_mode) and info.st_rdev == 0:
+                entries[rel] = {"type": "deleted"}
+            elif stat.S_ISLNK(info.st_mode):
+                entries[rel] = {"type": "link", "target": os.readlink(full)}
+            elif stat.S_ISREG(info.st_mode):
+                entries[rel] = {"type": "file", "size": info.st_size, "sha256": _sha256(full),
+                                "exec": bool(info.st_mode & 0o111)}
+            elif stat.S_ISDIR(info.st_mode):
+                entries[rel] = {"type": "dir"}
+    return {"upperdir": root[len(HOST):], "entries": entries}
+
+
+def _ns(pid):
+    return os.readlink(f"/proc/{pid}/ns/pid")
+
+
+def procs(pid):
+    target = _ns(pid)
+    found = []
+    for name in os.listdir("/proc"):
+        if not name.isdigit():
+            continue
+        try:
+            if _ns(name) != target:
+                continue
+            with open(f"/proc/{name}/cmdline", "rb") as handle:
+                argv = [part.decode("utf-8", "replace") for part in handle.read().split(b"\0") if part]
+            with open(f"/proc/{name}/stat") as handle:
+                ppid = int(handle.read().rsplit(")", 1)[1].split()[1])
+            exe = os.readlink(f"/proc/{name}/exe")
+            try:
+                exe_sha = _sha256(f"/proc/{name}/exe")
+            except OSError:
+                exe_sha = None
+            found.append({"pid": int(name), "ppid": ppid, "argv": argv, "exe": exe, "exe_sha256": exe_sha})
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            continue
+    return sorted(found, key=lambda p: p["pid"])
+
+
+def nat(pid):
+    out = subprocess.run(["nsenter", "-t", str(pid), "-n", "iptables-save"], capture_output=True, text=True,
+                         timeout=60)
+    return {"exit": out.returncode, "rules": out.stdout.splitlines(), "stderr": out.stderr[-2000:]}
+
+
+def preload(pid):
+    return {"present": os.path.lexists(f"/proc/{pid}/root/etc/ld.so.preload")}
+
+
+def _md5(path):
+    digest = hashlib.md5()  # noqa: S324 - dpkg's own md5sums format, not a security use
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def dpkg(pid, paths):
+    info = f"/proc/{pid}/root/var/lib/dpkg/info"
+    sums = {}
+    for name in os.listdir(info):
+        if name.endswith(".md5sums"):
+            with open(os.path.join(info, name), errors="replace") as handle:
+                for line in handle:
+                    digest, _, rel = line.strip().partition("  ")
+                    sums["/" + rel] = digest
+    result = {}
+    for path in paths:
+        full = f"/proc/{pid}/root{path}"
+        result[path] = bool(path in sums and os.path.isfile(full) and _md5(full) == sums[path])
+    return result
+
+
+def lower(pid, paths):
+    layers = [_host_dir(layer) for layer in _mount_options(pid)["lowerdir"].split(":")]
+    return {path: any(os.path.lexists(layer + path) for layer in layers) for path in paths}
+
+
+def main():
+    command, pid = sys.argv[1], int(sys.argv[2])
+    rest = sys.argv[3:]
+    table = {"upper": lambda: upper(pid), "procs": lambda: procs(pid), "nat": lambda: nat(pid),
+             "preload": lambda: preload(pid), "dpkg": lambda: dpkg(pid, rest), "lower": lambda: lower(pid, rest)}
+    json.dump(table[command](), sys.stdout, sort_keys=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
