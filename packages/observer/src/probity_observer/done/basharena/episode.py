@@ -67,6 +67,7 @@ class Config:
     model_env: dict[str, str]
     max_steps: int = 100
     time_limit: int = 7200
+    prune_build_cache: bool = False
 
 
 class Commands:

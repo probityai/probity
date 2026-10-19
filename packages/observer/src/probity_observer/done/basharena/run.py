@@ -118,13 +118,38 @@ def _cold_readings(cmd: Commands, container: episode.Container, final: str, runt
         lambda cid: episode.reading_standard(cmd, cid, spec.tests, work)))
 
 
-def _teardown(cmd: Commands, container: episode.Container | None, images: list[str]) -> None:
+def task_images(task_id: str, taken: list[str]) -> list[str]:
+    """Every image one task leaves behind: the two committed snapshots and BashArena's two built images.
+
+    The shared bases (``benchmark-base``, ``bash-arena-malware-server``, ``bash-arena-logging-server``)
+    are never named here, so they stay for the next task.
+    """
+    return [*taken, f"bash-arena-default-{task_id}:latest", f"bash-arena-database-server-{task_id}:latest"]
+
+
+def _save_image_digests(cmd: Commands, work: Path, images: list[str]) -> None:
+    """Record each image's id in ``images.json`` before the image is removed.
+
+    The verdict reads only files under the episode directory, and the start image's id is already in
+    the sealed contract; this keeps the final image's id (and the built images') next to them.
+    """
+    found: dict[str, str | None] = {}
+    for image in images:
+        done = cmd.run(["docker", "image", "inspect", "-f", "{{.Id}}", image], check=False)
+        found[image] = done.stdout.decode().strip() if done.returncode == 0 else None
+    write_json(work / "images.json", found)
+
+
+def _teardown(cmd: Commands, container: episode.Container | None, images: list[str],
+              prune_build_cache: bool = False) -> None:
     if container is not None:
         files = [a for f in container.compose_files.split(",") for a in ("-f", f)]
         cmd.run(["docker", "compose", "-p", container.project, *files, "down", "-v", "--remove-orphans"],
                 check=False, timeout=600)
     for image in images:
         cmd.run(["docker", "image", "rm", "-f", image], check=False)
+    if prune_build_cache:
+        cmd.run(["docker", "builder", "prune", "-f"], check=False, timeout=600)
 
 
 def run_episode(row: dict[str, Any], row_index: int, revision: str, config: Config, root: Path, key) -> dict:
@@ -182,9 +207,10 @@ def run_episode(row: dict[str, Any], row_index: int, revision: str, config: Conf
             _stop_observer(cmd, observer_name, work)
         if driver.poll() is None:
             driver.terminate()
-        # BashArena's per-task images too: disk is the limit on this host, and a rerun rebuilds them.
-        images += [f"bash-arena-default-{spec.task_id}:latest", f"bash-arena-database-server-{spec.task_id}:latest"]
-        _teardown(cmd, container, images)
+        # Disk is the limit on a host: the verdict and its evidence are on disk by now, and a rerun rebuilds.
+        images = task_images(spec.task_id, images)
+        _save_image_digests(cmd, work, images)
+        _teardown(cmd, container, images, config.prune_build_cache)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -198,9 +224,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--revision", required=True)
     parser.add_argument("--max-steps", type=int, default=100)
     parser.add_argument("--only", nargs="*")
+    parser.add_argument("--prune-build-cache", action="store_true",
+                        help="also prune Docker's build cache after each task (dedicated hosts only)")
     args = parser.parse_args(argv)
     env = {k: os.environ[k] for k in os.environ if k.startswith("HPG_")}
-    config = Config(args.basharena, args.observer_image, args.model, env, args.max_steps)
+    config = Config(args.basharena, args.observer_image, args.model, env, args.max_steps,
+                    prune_build_cache=args.prune_build_cache)
     key = load_signer(args.key)
     args.out.mkdir(parents=True, exist_ok=True)
     status = 0
