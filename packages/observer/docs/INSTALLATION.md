@@ -40,9 +40,9 @@ Its coverage applies to brokered file writes and checked snapshots.
 Keep a separate source checkout if the selected profile needs scripts:
 
 ```sh
-git clone https://github.com/probityai/agent-evidence-observer.git observer-source
-git -C observer-source checkout 2e3a36c031740cb0f415f0d813d1faeb8e6152f3
-observer-env/bin/agent-evidence-read-native --source-checkout "$PWD/observer-source" --describe-sources inspect-execution
+git clone https://github.com/probityai/probity.git observer-source
+git -C observer-source checkout b617361c221db5ca96989a94c60e8480e14aecd5
+observer-env/bin/agent-evidence-read-native --source-checkout "$PWD/observer-source/packages/observer" --describe-sources inspect-execution
 ```
 
 This command prints `installed_sources` and `reader_sources` hash maps for review.
@@ -159,8 +159,9 @@ These commands install a pinned source snapshot. Python 3.12 or later and
 [`uv`](https://docs.astral.sh/uv/) are needed:
 
 ```sh
-git clone https://github.com/probityai/agent-evidence-observer && cd agent-evidence-observer
-git checkout f68c8538639aea1515ea357a85a20739004e66fd
+git clone https://github.com/probityai/probity && cd probity
+git checkout b617361c221db5ca96989a94c60e8480e14aecd5
+cd packages/observer
 uv venv .venv --python python3.12 && uv pip install --python .venv/bin/python .
 .venv/bin/agent-evidence-observer demo ./sample-run
 .venv/bin/agent-evidence-observer verify ./sample-run
