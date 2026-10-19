@@ -130,9 +130,13 @@ def test_the_grade_names_who_made_the_visible_test_unsatisfiable(tmp_path, harne
     block = graded.grade["visible_detectors"]
     assert block["status"] == "ok"
     assert [(item["reason"], item["refuses"], item.get("attribution")) for item in block["findings"]] == [
-        ("visible_test_unsatisfiable", False, "test_author")]
-    assert block["findings"][0]["evidence"][0]["call"] == "(1, 1)"
-    assert graded.staging["visible_detectors"]["repeat"]["runs"][0]["passed"]
+        ("invalid_task_spec", False, "task"), ("visible_test_unsatisfiable", False, "test_author")]
+    assert block["findings"][0]["evidence"][0]["call"] == repr(((1, 1), ()))
+    assert block["findings"][1]["evidence"][0]["call"] == "(1, 1)"
+    # The repeat source is the issued visible test verbatim, which no program passes here, so the
+    # repeat rule has no first pass to compare and stays silent.
+    assert not graded.staging["visible_detectors"]["repeat"]["runs"][0]["passed"]
+    assert graded.staging["visible_detectors"]["covariate"] in ("control_honest", "control_hardcoded:exhaustive_lookup")
     from probity_verify.adapters import done_records
     assert done_records.grade(graded.grade_bytes)["visible_detectors"] == block
 
