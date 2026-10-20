@@ -234,7 +234,106 @@ def test_every_package_is_pinned_exactly_and_installed_at_that_pin() -> None:
     pins = dict(r.split("==") for r in requires)
     assert set(pins) == {
         "mcp", "pyyaml", "probity-verify", "agent-evidence-vectors",
-        "agent-evidence-vocabulary", "agent-evidence-admission",
+        "agent-evidence-vocabulary", "agent-evidence-admission", "jcs-admit",
     }
     for name, version in pins.items():
         assert metadata.version(name) == version
+
+
+# --- canonicalize_json and verify_dsse (real jcs-admit and dsse crates) ----------------
+
+JCS_BYTE_VECTORS = json.loads(
+    Path(str(resources.files("agent_evidence_vectors") / "corpora" / "corpora" / "jcs-byte-vectors" / "cases.json"))
+    .read_text(encoding="utf-8")
+)
+
+
+@pytest.mark.parametrize("case", JCS_BYTE_VECTORS["canonicalCases"], ids=lambda c: c["id"])
+def test_canonicalize_matches_the_shipped_rfc8785_byte_vectors(case: dict) -> None:
+    out = call("canonicalize_json", {"document": case["input"]})
+    assert out["ok"] is True
+    assert out["canonical_hex"] == case["canonicalHex"]
+    assert out["sha256"] == case["sha256"]
+    assert out["bytes"] == len(bytes.fromhex(case["canonicalHex"]))
+
+
+def test_canonicalize_sorts_members_and_normalizes_numbers() -> None:
+    out = call("canonicalize_json", {"document": '{"b": 1.0, "a": [1, "x"]}'})
+    assert out["canonical"] == '{"a":[1,"x"],"b":1}'
+
+
+def _variant(kebab: str) -> str:
+    return {"invalid-unicode": "StringNotScalar", "unsafe-integer": "UnsafeInteger"}.get(
+        kebab, "".join(part.capitalize() for part in kebab.split("-"))
+    )
+
+
+@pytest.mark.parametrize("case", JCS_BYTE_VECTORS["rejectCases"], ids=lambda c: c["id"])
+def test_canonicalize_refuses_what_the_reject_vectors_refuse(case: dict) -> None:
+    # A case with "jcsError" is refused by RFC 8785 itself; one with "boundedError" only by the I-JSON profile.
+    profile, expected = ("rfc8785", case["jcsError"]) if "jcsError" in case else ("ijson", case["boundedError"])
+    out = call("canonicalize_json", {"document": case["input"], "profile": profile})
+    assert out["ok"] is False and "canonical" not in out
+    assert out["error"] == _variant(expected)
+    if "boundedError" in case:
+        assert call("canonicalize_json", {"document": case["input"]})["ok"] is True
+
+
+def test_canonicalize_profiles() -> None:
+    big = '{"n": 9007199254740993}'
+    assert call("canonicalize_json", {"document": big, "profile": "rfc8785"})["ok"] is True
+    ijson = call("canonicalize_json", {"document": big, "profile": "ijson"})
+    assert ijson["ok"] is False
+    assert call("canonicalize_json", {"document": "{}", "profile": "other"})["ok"] is False
+
+
+def _signed(payload: bytes, key_id: str = "k1", seed: bytes = bytes(range(32))) -> tuple[str, str]:
+    from jcs_admit import dsse
+
+    signer = dsse.Ed25519Signer(seed, key_id=key_id)
+    envelope = dsse.sign("application/vnd.in-toto+json", payload, signer)
+    return envelope.decode("utf-8"), bytes(signer.verifier().public_key).hex()
+
+
+def test_verify_dsse_accepts_a_signed_envelope_and_returns_the_payload() -> None:
+    envelope, public = _signed(b'{"a":1}')
+    out = call("verify_dsse", {"envelope": envelope, "trusted_keys": [{"key_id": "k1", "public_key_hex": public}]})
+    assert out["verified"] is True and out["accepted_keys"] == ["k1"]
+    assert out["payload_type"] == "application/vnd.in-toto+json"
+    assert base64.b64decode(out["payload_base64"]) == b'{"a":1}'
+    assert out["payload_sha256"] == hashlib.sha256(b'{"a":1}').hexdigest()
+
+
+def test_verify_dsse_refuses_a_key_it_was_not_signed_by() -> None:
+    envelope, _ = _signed(b'{"a":1}')
+    _, other = _signed(b"x", key_id="k2", seed=bytes(range(1, 33)))
+    out = call("verify_dsse", {"envelope": envelope, "trusted_keys": [{"key_id": "k2", "public_key_hex": other}]})
+    assert out["verified"] is False and out["error"] == "ThresholdNotMet"
+
+
+def test_verify_dsse_refuses_a_tampered_payload() -> None:
+    envelope, public = _signed(b'{"a":1}')
+    tampered = json.loads(envelope)
+    tampered["payload"] = base64.b64encode(b'{"a":2}').decode()
+    out = call("verify_dsse", {"envelope": json.dumps(tampered),
+                               "trusted_keys": [{"key_id": "k1", "public_key_hex": public}]})
+    assert out["verified"] is False
+
+
+def test_verify_dsse_threshold_counts_distinct_keys() -> None:
+    envelope, public = _signed(b"{}")
+    keys = [{"key_id": "k1", "public_key_hex": public}]
+    out = call("verify_dsse", {"envelope": envelope, "trusted_keys": keys, "threshold": 2})
+    assert out["verified"] is False and out["error"] == "ThresholdNotMet"
+
+
+def test_verify_dsse_rejects_malformed_inputs() -> None:
+    empty = call("verify_dsse", {"envelope": "{}", "trusted_keys": []})
+    assert empty["ok"] is False and "trusted_keys invalid" in empty["error"]
+    many = [{"key_id": f"k{i}", "public_key_hex": "00" * 32} for i in range(17)]
+    over = call("verify_dsse", {"envelope": "{}", "trusted_keys": many})
+    assert over["ok"] is False and "trusted_keys invalid" in over["error"]
+    assert call("verify_dsse", {"envelope": "{}", "trusted_keys": [{"public_key_hex": "zz"}]})["ok"] is False
+    _, public = _signed(b"{}")
+    out = call("verify_dsse", {"envelope": "not json", "trusted_keys": [{"key_id": "k1", "public_key_hex": public}]})
+    assert out["verified"] is False and out["error"] == "MalformedEnvelope"
