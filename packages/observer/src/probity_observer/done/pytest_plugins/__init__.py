@@ -213,8 +213,12 @@ def reads(printed: Sequence[str]) -> list[str] | None:
 
 
 def report(printed: Sequence[str], key: bytes) -> dict[str, Any] | None:
-    """The last worker report line whose HMAC verifies under ``key``, or ``None``."""
-    found = None
+    """The one worker report line whose HMAC verifies under ``key``, or ``None``.
+
+    The plugin prints exactly one report per run. A second verified line means code in the
+    worker held the key and wrote a report of its own (appending a forged all-passed report
+    after the real one is the cheapest forgery), so neither is read."""
+    found = []
     for text in printed:
         for line in text.splitlines():
             if not line.startswith(MARKER + " "):
@@ -222,8 +226,8 @@ def report(printed: Sequence[str], key: bytes) -> dict[str, Any] | None:
             _, mac, data = line.split(" ", 2)
             expected = hmac.new(key, data.encode(), hashlib.sha256).hexdigest()
             if hmac.compare_digest(mac, expected):
-                found = json.loads(data)
-    return found
+                found.append(json.loads(data))
+    return found[0] if len(found) == 1 else None
 
 
 def collected(item_ids: Sequence[str], sealed_ids: Sequence[str]) -> int:

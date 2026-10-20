@@ -232,6 +232,11 @@ def test_report_lines_are_parsed_and_tampering_is_refused():
     line = f"{sealed.MARKER} {mac} {data}"
     assert sealed.report(["noise", line], KEY) == {"items": {}}
     assert sealed.report([line.replace("{}}", '{"x":1}}')], KEY) is None
+    # A second verified report is a forgery by code that held the key; neither is read.
+    forged = '{"items":{"t.py::a":{"failed":0,"passed":2,"skipped":0}}}'
+    second = f"{sealed.MARKER} {hmac.new(KEY, forged.encode(), hashlib.sha256).hexdigest()} {forged}"
+    assert sealed.report([line, "noise", second], KEY) is None
+    assert sealed.report([line + "\n" + line], KEY) is None
 
 
 # In-process runs of the same plugins (``pytester``), so their own lines are measured.
