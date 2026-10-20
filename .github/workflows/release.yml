@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       distribution: ${{ steps.target.outputs.distribution }}
+      published: ${{ steps.registry.outputs.published }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -41,16 +42,32 @@ jobs:
           python3 scripts/workspace.py release-target "$TAG" > target.json
           cat target.json
           python3 -c 'import json; print("distribution=" + json.load(open("target.json"))["distribution"])' >> "$GITHUB_OUTPUT"
+      # A release that only records a version PyPI already holds (a backfilled
+      # GitHub Release) must not build or upload anything: PyPI refuses to replace
+      # files, so the run would end red. 404 means not published; any other
+      # answer than 200 or 404 fails the job, because an unread registry is not
+      # evidence that nothing is there.
+      - id: registry
+        run: |
+          set -euo pipefail
+          read -r name version < <(python3 -c 'import json; d=json.load(open("target.json")); print(d["distribution"], d["version"])')
+          status=$(curl -sS -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/${name}/${version}/json")
+          case "$status" in
+            200) echo "published=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "published=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "PyPI answered $status for $name $version" >&2; exit 1 ;;
+          esac
 
   build:
     needs: resolve
+    if: needs.resolve.outputs.published == 'false'
     uses: ./.github/workflows/python-build.yml
     with:
       distribution: ${{ needs.resolve.outputs.distribution }}
 
   publish-probity-verify:
     needs: [resolve, build]
-    if: needs.resolve.outputs.distribution == 'probity-verify'
+    if: needs.resolve.outputs.distribution == 'probity-verify' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -81,7 +98,7 @@ jobs:
 
   publish-probityai:
     needs: [resolve, build]
-    if: needs.resolve.outputs.distribution == 'probityai'
+    if: needs.resolve.outputs.distribution == 'probityai' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -112,7 +129,7 @@ jobs:
 
   publish-probity-ratchet:
     needs: [resolve, build]
-    if: needs.resolve.outputs.distribution == 'probity-ratchet'
+    if: needs.resolve.outputs.distribution == 'probity-ratchet' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -143,7 +160,7 @@ jobs:
 
   publish-probity-ratchet-cases:
     needs: [resolve, build]
-    if: needs.resolve.outputs.distribution == 'probity-ratchet-cases'
+    if: needs.resolve.outputs.distribution == 'probity-ratchet-cases' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -174,7 +191,7 @@ jobs:
 
   publish-agent-evidence-observer:
     needs: [resolve, build]
-    if: needs.resolve.outputs.distribution == 'agent-evidence-observer'
+    if: needs.resolve.outputs.distribution == 'agent-evidence-observer' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
