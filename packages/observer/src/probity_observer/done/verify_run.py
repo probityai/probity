@@ -399,9 +399,43 @@ class GradeContext:
     witness_scope: str = "PEER"
 
 
+def test_counts(commands: list[dict[str, Any]], results: list[dict[str, Any]],
+                replays: list[dict[str, Any]]) -> dict[str, int]:
+    """How many tests the graded commands were expected to run, ran, and skipped, as measured.
+
+    A command with sealed ids counts each id: collected and skipped from the verified worker
+    report (a collected id that did not pass is counted skipped only when it did not fail, so
+    a failing test is a failure, not a skip). A replay counts one test, collected when its
+    report shows it called the candidate (or, for the import probe, that it ran). Any other
+    command counts one test, shown only by its exit status. A run the agent makes itself
+    (sealed with ``exe``) is not graded here."""
+    by_id = {item["id"]: item for item in results}
+    by_argv = {tuple(item["argv"]): item for item in replays}
+    expected = collected = skipped = 0
+    for command in commands:
+        if "exe" in command:
+            continue
+        result = by_id.get(command["id"], {})
+        if "ids" in command:
+            expected += len(command["ids"])
+            collected += result.get("collected", 0)
+            if result.get("exit") == 0:
+                skipped += result.get("collected", 0) - result.get("passed", 0)
+        elif is_replay(command["argv"]):
+            expected += 1
+            report = by_argv.get(tuple(command["argv"]))
+            ran = report is not None and (report.get("mode") == "import_side_effects"
+                                          or report.get("calls_intercepted", 0) > 0)
+            collected += 1 if ran else 0
+        else:
+            expected += 1
+            collected += 1
+    return {"expected": expected, "collected": collected, "skipped": skipped}
+
+
 def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRunner,
                commands: list[dict[str, Any]], steps: tuple[int, int], result_dir: Path,
-               heldout_mode: str | None) -> dict[str, Any]:
+               heldout_mode: str | None, counts: dict[str, int]) -> dict[str, Any]:
     """The verifier's account of itself, in the fields ``docs/VERIFIER-ISOLATION.md`` names."""
     # A run the agent makes itself (sealed with ``cwd`` and ``exe``) is graded as the agent
     # runs it, so its exit status can only add a failure beside the replays that decide.
@@ -424,8 +458,7 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
                    "precleared": True, "written_by": "verifier",
                    "files_read": ["replay-result" if replayed else "container-exit-status"]
                    + (["container-exit-status"] if replayed and agent_runs else [])},
-        "tests": {"expected": len(commands), "collected": len(commands), "skipped": 0,
-                  "exit_status_alone_accepted": not replayed},
+        "tests": {**counts, "exit_status_alone_accepted": not replayed},
         "processes": {"worker_killed": True, "remaining": 0, "killed_step": steps[0],
                       "result_read_step": steps[1]},
         "staging": {"nofollow": True, "destination_removed_first": True,
@@ -526,10 +559,10 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
             if stopped and exit_code != 0:
                 result["timed_out"] = True
             if "ids" in item:
-                found = reports.get(item["id"])
-                # No verified report means nothing was shown collected.
-                result["collected"] = pytest_plugins.collected(
-                    list((found or {}).get("items", {})), item["ids"])
+                # No verified report means nothing was shown collected or passed.
+                items = (reports.get(item["id"]) or {}).get("items", {})
+                result["collected"] = pytest_plugins.collected(list(items), item["ids"])
+                result["passed"] = pytest_plugins.passed(items, item["ids"])
             results.append(result)
         replays = list(runner.replays)
         hunks = (post_patch(runner, staged.root, start, contract, dirs, timeout)
@@ -544,7 +577,8 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
         # exit status is read: kill is step 1, the read step 2, for every command.
         isolation = _isolation(sha256(contract_bytes), trusted, runner, contract["acceptance"],
                                (1, 2), result_dir,
-                               format(0o755, "04o") if has_heldout else None)
+                               format(0o755, "04o") if has_heldout else None,
+                               test_counts(contract["acceptance"], results, replays))
         if reports:
             isolation["evidence_from_worker"].append("pytest_worker_report")
         staging = {"rejected": staged.rejected, "removed_caches": staged.removed_caches,

@@ -272,7 +272,8 @@ def command(number: int, prefix: Sequence[str], fails_on_start: bool) -> Command
     script = (f"mkdir -p {SYNTH_DIR} && cp ../heldout/synth/test_synth_{number}.py {SYNTH_DIR}/ "
               f"&& exec {shlex.join(tuple(prefix) + (name,))}")
     return Command(f"{PREFIX}{number}", ("sh", "-c", script), heldout=True,
-                   prepatch="fail" if fails_on_start else "pass")
+                   prepatch="fail" if fails_on_start else "pass",
+                   sealed_ids=(name,) if pytest_plugins.is_sealed_pytest(prefix) else None)
 
 
 def is_synthesized(command_id: str) -> bool:

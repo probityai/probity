@@ -193,7 +193,8 @@ def test_swe_contract_from_dataset_fields(tmp_path, swe_repo, harness):
     assert task.notes["isolated_targets"] == ["pkg/shapes.py::area"]
     assert (task.heldout / "config/probity-plugins/probity_repeat.py").is_file()
     assert task.commands[0].record()["ids"] == ["tests/test_shapes.py::test_area"]
-    assert "ids" not in task.commands[2].record()
+    # The overlay runs the sealed plugins too, so its ids are sealed for the grade's counts.
+    assert task.commands[2].record()["ids"] == ["tests/test_shapes.py::test_area"]
     assert task.commands[2].argv[:2] == ("sh", "-c") and "../heldout" in task.commands[2].argv[2]
     protected = {(entry.path, entry.kind) for entry in task.protected}
     assert protected == {("tests", "directory"), ("conftest.py", "file")}
