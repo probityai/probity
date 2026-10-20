@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-evidence-mcp"
+version = "0.1.0"
+description = "Offline, read-only MCP server that verifies agent evidence claims and replays the agent-evidence conformance vectors"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["mcp", "model-context-protocol", "ai-agents", "evidence-verification", "conformance"]
+dependencies = [
+  "mcp==2.3.0",
+  "pyyaml==6.0.3",
+  "probity-verify==0.1.1",
+  "agent-evidence-vectors==0.23.0",
+  "agent-evidence-vocabulary==0.6.0",
+  "agent-evidence-admission==0.1.2",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1"]
+
+[project.urls]
+Source = "https://github.com/probityai/agent-evidence-mcp"
+Documentation = "https://github.com/probityai/agent-evidence-mcp/blob/main/docs/tools.md"
+Issues = "https://github.com/probityai/agent-evidence-mcp/issues"
+
+[project.scripts]
+agent-evidence-mcp = "agent_evidence_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
