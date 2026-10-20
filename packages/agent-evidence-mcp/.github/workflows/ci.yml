@@ -28,12 +28,7 @@ jobs:
           uv build
           uv venv --python 3.12 /tmp/wheel-venv
           uv pip install --python /tmp/wheel-venv/bin/python dist/*.whl
-          /tmp/wheel-venv/bin/python -c "import asyncio; from mcp.client import Client; from mcp.client.stdio import StdioServerParameters
-async def main():
-    async with Client(StdioServerParameters(command='/tmp/wheel-venv/bin/agent-evidence-mcp')) as c:
-        r = await c.call_tool('verify_sample', {'scenario': 'contradicted'})
-        assert r.structured_content['decision'] == 'contradicted', r
-asyncio.run(main())"
+          /tmp/wheel-venv/bin/python scripts/wheel_smoke.py /tmp/wheel-venv/bin/agent-evidence-mcp
   hygiene:
     runs-on: ubuntu-latest
     timeout-minutes: 10
