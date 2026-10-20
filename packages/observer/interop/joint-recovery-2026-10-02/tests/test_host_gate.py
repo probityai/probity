@@ -42,7 +42,7 @@ def selected_files(tmp_path: Path, report: dict[str, Any]) -> tuple[Path, Path, 
 
 def fixture_modules(site: Path) -> None:
     """Create explicit tiny package identities without importing their code."""
-    for name, version in [("probity-joint-recovery-reader", "0.0.1"), ("agent-evidence-observer", "0.0.2")]:
+    for name, version in [("probity-joint-recovery-reader", "0.0.1"), ("agent-evidence-observer", "0.1.0")]:
         metadata = site / (name + "-" + version + ".dist-info/METADATA")
         metadata.parent.mkdir()
         metadata.write_text("Metadata-Version: 2.1\nName: " + name + "\nVersion: " + version + "\n")

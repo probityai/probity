@@ -1,6 +1,6 @@
 # Release the root Python package
 
-The root distribution is `agent-evidence-observer` 0.0.2. It installs the
+The root distribution is `agent-evidence-observer` 0.1.0. It installs the
 `probity_observer` modules and five declared console commands. Separate
 `interop/` distributions keep their own names, dependencies, source pins and
 qualification. Publishing the root wheel does not publish those profiles.
@@ -47,14 +47,14 @@ attestation is separate from a PyPI Publish attestation and registry publication
 
 ## Publish with a bound source tag
 
-Only a non-prerelease GitHub release can reach the publish job. Its `v0.0.2`
+Only a non-prerelease GitHub release can reach the publish job. Its `agent-evidence-observer-v0.1.0`
 tag must match the root metadata and point to a commit on main. The publish job
 downloads the checked files from the build job. It receives `contents: read`
 and `id-token: write`. It has no account-token or password fallback.
 
 Configure an [existing or pending PyPI trusted publisher](https://docs.pypi.org/trusted-publishers/)
-with owner `probityai`, repository `agent-evidence-observer`, workflow
-`python-distribution.yml`, and environment `pypi`. The pinned PyPA action uploads
+with owner `probityai`, repository `probity`, workflow
+`release.yml`, and environment `pypi`. The pinned PyPA action uploads
 the wheel, source distribution and [PyPI attestations](https://docs.pypi.org/attestations/producing-attestations/).
 The workflow's existence does not prove that the account binding is configured.
 

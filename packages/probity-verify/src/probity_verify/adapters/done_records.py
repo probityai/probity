@@ -632,7 +632,7 @@ def external_grader_effects(record: dict) -> list[str]:
 
 def _result(item: Any, label: str) -> dict:
     entry = _object(item, label, {"id", "argv", "exit"},
-                    {"collected", "replay", "timed_out", "failure_kind"})
+                    {"collected", "passed", "replay", "timed_out", "failure_kind"})
     _string(entry["id"], f"{label}.id")
     _argv(entry["argv"], f"{label}.argv")
     _exit(entry["exit"], f"{label}.exit")
@@ -645,6 +645,10 @@ def _result(item: Any, label: str) -> dict:
             raise CaseError(f"{label}.failure_kind: only a failed run has one")
     if "collected" in entry:
         _count(entry["collected"], f"{label}.collected")
+    # Of the sealed ids that ran, how many passed on every run (none failed or skipped).
+    if "passed" in entry and ("collected" not in entry
+                              or _count(entry["passed"], f"{label}.passed") > entry["collected"]):
+        raise CaseError(f"{label}.passed: expected a count of collected ids, beside collected")
     if "replay" in entry:
         replay = _object(entry["replay"], f"{label}.replay",
                          {"calls_intercepted", "distinct_calls"})

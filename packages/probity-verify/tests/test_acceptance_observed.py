@@ -198,9 +198,29 @@ class TestGradeCounts:
     def test_sealed_ids_must_all_be_collected(self, tmp_path, records):
         records["contract"]["acceptance"][0]["ids"] = ["tests/test_app.py::test_app",
                                                        "tests/test_app.py::test_b"]
-        records["grade"]["results"][0]["collected"] = 1
+        records["grade"]["results"][0].update(collected=1, passed=1)
         assert run(tmp_path, records)["reason"] == "acceptance_collection_mismatch"
-        records["grade"]["results"][0]["collected"] = 2
+        records["grade"]["results"][0].update(collected=2, passed=2)
+        assert run(tmp_path, records)["decision"] == "supported"
+
+    def test_a_sealed_test_that_was_skipped_is_not_a_pass(self, tmp_path, records):
+        # pytest exits 0 when a test skips; the id was collected and did not pass.
+        records["contract"]["acceptance"][1]["ids"] = ["tests/test_app.py::test_app",
+                                                       "tests/test_app.py::test_b"]
+        records["grade"]["results"][1].update(collected=2, passed=1)
+        result = run(tmp_path, records)
+        assert outcome(result) == ("not_established", "sealed_tests_not_passed")
+        check = next(c for c in result["checks"] if c["id"] == "sealed_tests_passed")
+        assert check == {"id": "sealed_tests_passed", "status": "unavailable",
+                         "short_ids": ["heldout-unit"]}
+
+    def test_sealed_ids_with_no_pass_count_cannot_support(self, tmp_path, records):
+        records["contract"]["acceptance"][0]["ids"] = ["tests/test_app.py::test_app"]
+        records["grade"]["results"][0]["collected"] = 1
+        assert run(tmp_path, records)["reason"] == "sealed_tests_not_passed"
+
+    def test_a_pass_count_without_sealed_ids_is_ignored(self, tmp_path, records):
+        records["grade"]["results"][0].update(collected=3, passed=0)
         assert run(tmp_path, records)["decision"] == "supported"
 
     def test_sealed_ids_with_no_count_cannot_support(self, tmp_path, records):
@@ -239,6 +259,9 @@ class TestContractV1Members:
         (lambda g: g["results"][0].update(replay={"calls_intercepted": 1,
                                                   "distinct_calls": 2}), "distinct calls"),
         (lambda g: g["results"][0].update(collected=-1), "collected"),
+        (lambda g: g["results"][0].update(passed=1), "passed"),
+        (lambda g: g["results"][0].update(collected=1, passed=2), "passed"),
+        (lambda g: g["results"][0].update(collected=1, passed=-1), "passed"),
         (lambda g: g.update(hunks=[{"path": "a.py", "lines": [3, 2], "mutants": 1,
                                     "killed": 0}]), "lines"),
         (lambda g: g.update(hunks=[{"path": "a.py", "lines": [1, 2], "mutants": 1,
