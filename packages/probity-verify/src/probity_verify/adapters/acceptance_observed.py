@@ -42,7 +42,7 @@ def _compare(acceptance: list[dict], results: list[dict]) -> tuple[str | None, l
         if found["argv"] != command["argv"]:
             return "acceptance_argv_mismatch", outcomes
         outcome = {"id": command["id"], "exit": found["exit"]}
-        for key in ("collected", "replay", "timed_out"):
+        for key in ("collected", "passed", "replay", "timed_out"):
             if key in found:
                 outcome[key] = found[key]
         if "ids" in command:
@@ -198,6 +198,14 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
                    "short_ids": short})
     if short:
         return decide("not_established", "acceptance_collection_mismatch")
+    # pytest exits 0 when a test skips, so a collected id that did not pass on every run is
+    # no pass, whatever the exit status says.
+    unpassed = [item["id"] for item in outcomes
+                if "ids_sealed" in item and item.get("passed") != item["ids_sealed"]]
+    checks.append({"id": "sealed_tests_passed", "status": "unavailable" if unpassed else "met",
+                   "short_ids": unpassed})
+    if unpassed:
+        return decide("not_established", "sealed_tests_not_passed")
     if contract.get("strength") == "reference_free":
         # No reference measured these commands; no pin may lift this.
         return decide("not_established", "reference_free_contract")
