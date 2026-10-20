@@ -56,7 +56,7 @@ def check(wheel: Path, sdist: Path, source_root: Path | None = None) -> None:
                 value = base64.urlsafe_b64encode(hashlib.sha256(raw).digest()).rstrip(b"=").decode()
                 require(digest == "sha256=" + value and size == str(len(raw)), "RECORD bytes: " + name)
     tracked = subprocess.check_output(["git", "ls-files", "-z", "--", "src", "examples", "tests", "scripts",
-        "docs", "vectors-source-coverage", "vectors-operand-lineage", "pyproject.toml", "README.md", "LICENSE",
+        "docs", "vectors-source-coverage", "vectors-operand-lineage", "vectors-done-checks", "pyproject.toml", "README.md", "LICENSE",
         "MANIFEST.in"], cwd=root)
     expected = {name for name in tracked.decode().split("\0") if name}
     check_source_archive(sdist, root, project, metadata, expected,

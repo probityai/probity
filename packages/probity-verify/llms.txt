@@ -16,3 +16,4 @@
 - [Adapter plan](https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/architecture.md): architecture
 - [Source coverage vectors](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-source-coverage/README.md)
 - [Operand-lineage vectors](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-operand-lineage/README.md)
+- [Done-check vectors](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-done-checks/README.md)
