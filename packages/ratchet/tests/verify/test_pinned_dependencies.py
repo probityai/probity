@@ -39,13 +39,13 @@ def test_pinned_vector_harness_self_test_passes(monkeypatch: pytest.MonkeyPatch)
     assert vectors_main() == 0
 
 
-def test_the_demo_image_builds_jcs_admit_from_the_locked_commit() -> None:
-    """Until jcs-admit is on PyPI the image builds its wheel; it must be the commit uv.lock pins."""
-    dockerfile = (ROOT / "docker/demo.Dockerfile").read_text(encoding="utf-8")
+def test_jcs_admit_is_the_hash_pinned_release_from_pypi() -> None:
+    """The lock takes jcs-admit from the index, with a hash per file, and the image builds no wheel."""
     lock = (ROOT / "uv.lock").read_text(encoding="utf-8")
     entry = lock[lock.index('[[package]]\nname = "jcs-admit"') :]
     entry = entry[: entry.index("\n[[package]]", 1)]
-    source = entry[entry.index("source = { git = ") :].split("\n", 1)[0]
-    commit = source[source.index("#") + 1 :][:40]
-    assert len(commit) == 40 and "jcs-admit?subdirectory=python" in source
-    assert f"ARG JCS_ADMIT_COMMIT={commit}\n" in dockerfile
+    assert 'version = "0.1.0"' in entry
+    assert 'source = { registry = "https://pypi.org/simple" }' in entry
+    assert entry.count('hash = "sha256:') >= 2
+    dockerfile = (ROOT / "docker/demo.Dockerfile").read_text(encoding="utf-8")
+    assert "JCS_ADMIT_COMMIT" not in dockerfile and "rustup" not in dockerfile

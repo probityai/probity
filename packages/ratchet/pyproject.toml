@@ -1,6 +1,6 @@
 [project]
 name = "probity-ratchet"
-version = "0.1.2"
+version = "0.2.0"
 description = "An agent harness that turns each failure into a proven guard or procedure, with every version and proof kept in MongoDB Atlas."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -111,10 +111,6 @@ members = ["probity-ratchet-cases"]
 
 [tool.uv.sources]
 probity-ratchet-cases = { workspace = true }
-# jcs-admit 0.1.0 (RFC 8785 and DSSE bound from the jcs-admit and dsse crates) is not on PyPI yet: it is built
-# from the merged binding at this exact commit, which needs a Rust toolchain (1.88 or later) at install time.
-# The PyPI pin replaces this source when 0.1.0 is released.
-jcs-admit = { git = "https://github.com/probityai/jcs-admit", rev = "b69943787266702da3c02741dcc3a37643c7dc3e", subdirectory = "python" }
 tau-bench = { git = "https://github.com/sierra-research/tau-bench", rev = "59a200c6d575d595120f1cb70fea53cef0632f6b" }
 tau2 = { git = "https://github.com/sierra-research/tau2-bench", rev = "4ce7c0397c1eb65c9bbe59aeacfe1ca44a1cd699" }
 tool-sandbox = { git = "https://github.com/apple/ToolSandbox", rev = "c8571d7854316d2e1c5f288e59fe1e34e53f6dd1" }

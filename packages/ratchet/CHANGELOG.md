@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-20)
 
 Hardening of what a receipt rests on: canonical bytes, signatures, the admission rule's statistics and the
 store. Every change below is in this repository; the releases it waits for are named at the end.
@@ -47,7 +47,7 @@ store. Every change below is in this repository; the releases it waits for are n
   `model_turns_as_recorded` and `container_isolation`. Reports written before run records leave the four
   items not supplied, so an older receipt never reads as complete.
 
-Waits for: `jcs-admit` 0.1.0 on PyPI (built from its merged source until then).
+Requires `jcs-admit==0.1.0` from PyPI, `probity-verify==0.1.1`, `agent-evidence-vectors==0.19.0` and `probity-ratchet-cases==0.2.0`.
 
 ## 0.1.2 (2026-10-13)
 
