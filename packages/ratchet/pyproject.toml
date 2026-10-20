@@ -15,11 +15,6 @@ dependencies = [
     "probity-ratchet-cases==0.2.0",
 ]
 
-[project.urls]
-Source = "https://github.com/probityai/probity/tree/main/packages/ratchet"
-Documentation = "https://github.com/probityai/probity/blob/main/packages/ratchet/README.md"
-Issues = "https://github.com/probityai/probity/issues"
-
 [project.scripts]
 ratchet = "ratchet.cli:main"
 
