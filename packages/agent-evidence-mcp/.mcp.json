@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agent-evidence": {
+      "command": "uvx",
+      "args": ["agent-evidence-mcp@0.1.0"]
+    }
+  }
+}

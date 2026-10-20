@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.probityai/agent-evidence-mcp",
+  "title": "Agent evidence",
+  "description": "Offline, read-only tools that verify a claim about an AI system against supplied evidence and replay the agent-evidence conformance vectors.",
+  "repository": {"url": "https://github.com/probityai/agent-evidence-mcp", "source": "github"},
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "agent-evidence-mcp",
+      "version": "0.1.0",
+      "transport": {"type": "stdio"}
+    }
+  ]
+}
