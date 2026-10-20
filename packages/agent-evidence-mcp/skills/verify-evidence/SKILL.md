@@ -10,4 +10,6 @@ Use the `agent-evidence` MCP tools; they are offline and read-only.
 3. To check a conformance claim, call `list_vector_corpora`, then `run_vectors` for a corpus, and `explain_vector` for any vector.
 4. To define a term, call `lookup_term`. To check that an artifact has a digest its SBOM or attestation names, call `check_artifact_digest`.
 
+5. To canonicalize JSON before it is signed, call `canonicalize_json`; to check a DSSE envelope against keys you trust, call `verify_dsse`. A refusal names the crate's variant; quote it.
+
 Never state a verdict the tool did not return, and quote an error as an error.
