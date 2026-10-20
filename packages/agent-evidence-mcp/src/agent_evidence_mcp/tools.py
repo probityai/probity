@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hashlib
 import json
 import subprocess
 import sys
@@ -12,12 +13,17 @@ from importlib import resources
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+import jcs_admit
 import yaml
+from jcs_admit import dsse
 from agent_evidence_admission.digest_check import check, parse_document
 from probity_verify.core import CaseError, adjudicate, render_packet
 
 MAX_ARTIFACT_CHARS = 2_000_000
 MAX_VECTOR_BYTES = 16_384
+MAX_DOCUMENT_CHARS = 1_000_000
+MAX_TRUSTED_KEYS = 16
+MAX_PAYLOAD_PREVIEW_BYTES = 16_384
 MAX_PAGE = 200
 HARNESS_TIMEOUT_SECONDS = 300
 OUTPUT_TAIL_CHARS = 2000
@@ -243,4 +249,58 @@ def check_artifact_digest(document: str, artifact_text: str | None = None,
         "reason": result.reason or "digest-matched",
         "matched": {"algorithm": result.matched[0], "digest": result.matched[1]} if result.matched else None,
         "declared": [{"algorithm": a, "digest": d} for a, d in result.declared],
+    }
+
+
+def canonicalize_json(document: str, profile: str = "rfc8785") -> dict[str, Any]:
+    """Admit one JSON document and return its RFC 8785 canonical bytes, with the jcs-admit crate."""
+    if profile not in ("rfc8785", "ijson"):
+        return _error("profile must be 'rfc8785' or 'ijson'")
+    if len(document) > MAX_DOCUMENT_CHARS:
+        return _error("document exceeds the size limit")
+    admit = jcs_admit.admit if profile == "rfc8785" else jcs_admit.admit_ijson
+    try:
+        canonical = admit(document.encode("utf-8"))
+    except jcs_admit.JcsError as exc:
+        return {"ok": False, "error": exc.variant, "fields": exc.fields, "profile": profile}
+    return {
+        "ok": True,
+        "profile": profile,
+        "canonical": canonical.decode("utf-8"),
+        "canonical_hex": canonical.hex(),
+        "sha256": hashlib.sha256(canonical).hexdigest(),
+        "bytes": len(canonical),
+    }
+
+
+def _verifiers(trusted_keys: list[dict[str, str]]) -> list[Any]:
+    if not trusted_keys or len(trusted_keys) > MAX_TRUSTED_KEYS:
+        raise ValueError(f"trusted_keys must hold between 1 and {MAX_TRUSTED_KEYS} keys")
+    verifiers = []
+    for entry in trusted_keys:
+        raw = bytes.fromhex(entry["public_key_hex"])
+        verifiers.append(dsse.Ed25519Verifier(raw, key_id=entry.get("key_id")))
+    return verifiers
+
+
+def verify_dsse(envelope: str, trusted_keys: list[dict[str, str]], threshold: int = 1) -> dict[str, Any]:
+    """Verify a DSSE envelope against Ed25519 keys the caller trusts, with the dsse crate."""
+    try:
+        keys = _verifiers(trusted_keys)
+    except (ValueError, KeyError, TypeError) as exc:
+        return _error(f"trusted_keys invalid: {exc}")
+    try:
+        verified = dsse.verify_threshold(envelope.encode("utf-8"), keys, threshold)
+    except dsse.DsseError as exc:
+        return {"ok": False, "verified": False, "error": exc.variant, "fields": exc.fields}
+    payload = bytes(verified.payload)
+    return {
+        "ok": True,
+        "verified": True,
+        "payload_type": verified.payload_type,
+        "accepted_keys": list(verified.accepted_keys),
+        "payload_bytes": len(payload),
+        "payload_sha256": hashlib.sha256(payload).hexdigest(),
+        "payload_truncated": len(payload) > MAX_PAYLOAD_PREVIEW_BYTES,
+        "payload_base64": base64.b64encode(payload[:MAX_PAYLOAD_PREVIEW_BYTES]).decode("ascii"),
     }

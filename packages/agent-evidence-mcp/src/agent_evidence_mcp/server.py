@@ -1,4 +1,4 @@
-"""MCP server wiring: seven offline, read-only tools over stdio."""
+"""MCP server wiring: nine offline, read-only tools over stdio."""
 
 from __future__ import annotations
 
@@ -18,6 +18,8 @@ TOOLS = [
     (tools.explain_vector, "Explain one conformance vector"),
     (tools.lookup_term, "Look up a vocabulary term"),
     (tools.check_artifact_digest, "Check an artifact digest against a document"),
+    (tools.canonicalize_json, "Canonicalize JSON under RFC 8785"),
+    (tools.verify_dsse, "Verify a DSSE envelope"),
 ]
 
 

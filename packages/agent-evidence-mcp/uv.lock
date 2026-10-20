@@ -18,12 +18,13 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-mcp"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "agent-evidence-admission" },
     { name = "agent-evidence-vectors" },
     { name = "agent-evidence-vocabulary" },
+    { name = "jcs-admit" },
     { name = "mcp" },
     { name = "probity-verify" },
     { name = "pyyaml" },
@@ -39,6 +40,7 @@ requires-dist = [
     { name = "agent-evidence-admission", specifier = "==0.1.2" },
     { name = "agent-evidence-vectors", specifier = "==0.23.0" },
     { name = "agent-evidence-vocabulary", specifier = "==0.6.0" },
+    { name = "jcs-admit", specifier = "==0.1.0" },
     { name = "mcp", specifier = "==2.3.0" },
     { name = "probity-verify", specifier = "==0.1.1" },
     { name = "pytest", marker = "extra == 'test'", specifier = "==9.1.1" },
@@ -344,6 +346,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/01/e1/2069291243c926a2ff1cd706c7f3eeb9b62144bf60f77c9fb9ff2fb26bd3/iniconfig-2.3.1.tar.gz", hash = "sha256:67f4b9c50da0dedf52af349e7749a80a9057a5031199791b906c3bb3ae878960", size = 21209, upload-time = "2026-10-06T22:48:38.076Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/43/4ca9e49d27a1fcf6bece6f6aec0ea46bb9112489b93d4b688fb415457bdb/iniconfig-2.3.1-py3-none-any.whl", hash = "sha256:9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7", size = 7552, upload-time = "2026-10-06T22:48:36.959Z" },
+]
+
+[[package]]
+name = "jcs-admit"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/c5/f8dace82f946b92008e25a08168e56d56a95aaac81cc7c2daa3e62a188ae/jcs_admit-0.1.0.tar.gz", hash = "sha256:dfe09e446a4a478334842eb7445bedfa61c512c1809e6f2a3be45409c878cae5", size = 60390, upload-time = "2026-10-20T02:24:35.553Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/fe/f9d7850e50545a9d9abbb9c080e9a347f9eab2578c3d8d8f7845ba2c09e4/jcs_admit-0.1.0-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f1e8c5705579078cc5ff64bdb031f6a981f43db5a24fe7812504e1463003765d", size = 530670, upload-time = "2026-10-20T02:24:23.659Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/ea/3eb071e62b12a8030afffbcb025ba8b627538447f5037ad6139c2badeb35/jcs_admit-0.1.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:82148364fe2a2aca3af1fbb33dce64e51c244959231c6c22a04d712212098aee", size = 495920, upload-time = "2026-10-20T02:24:25.344Z" },
+    { url = "https://files.pythonhosted.org/packages/56/c2/16fecd94781e31b7a9356f9f048da1cd93363fd66329379d2fc03ae62b6f/jcs_admit-0.1.0-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:c9342daeee4e623552ed24e7493066784e009a9d898a7beb0cdbf0ab0c83aba7", size = 549597, upload-time = "2026-10-20T02:24:26.881Z" },
+    { url = "https://files.pythonhosted.org/packages/93/74/8520b59f3badae16248f3ec0c8634cc88a71384ac9c7141bcff93c81c7bb/jcs_admit-0.1.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:5506b8265d8c23759ddb0c6673d8f832a070503bbabcec01680b1f97527541b0", size = 578922, upload-time = "2026-10-20T02:24:29.061Z" },
+    { url = "https://files.pythonhosted.org/packages/50/7a/c743597b9a0581b7f910d367903a494e7915269c15060ff3219acbcfd22e/jcs_admit-0.1.0-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:f850733f135414507610d1f7d703711958734cfa50f16fc236182f551ce24fdc", size = 726286, upload-time = "2026-10-20T02:24:30.807Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/a7/735b1fd0fb61d852a41a21a0699a48d8361bcedd4a84491b66e1a36a8a30/jcs_admit-0.1.0-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:7b8295d9b3fd8873be79189456bfc199339c609e7479fae54bacc54494f771ec", size = 783940, upload-time = "2026-10-20T02:24:32.396Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/b7/30563a659710fd703a30c98f06079cb2a543f99daf1e88c4d5bd7a416cb7/jcs_admit-0.1.0-cp310-abi3-win_amd64.whl", hash = "sha256:9675034f3c555cde9361392a85e89e2bfbfedcc08eab9259503926ec2c24e46b", size = 416937, upload-time = "2026-10-20T02:24:33.906Z" },
 ]
 
 [[package]]
