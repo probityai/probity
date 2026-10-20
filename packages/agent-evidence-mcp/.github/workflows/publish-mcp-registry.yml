@@ -1,0 +1,33 @@
+name: publish-mcp-registry
+
+# Publishes server.json to the official MCP Registry. The registry checks that the
+# repository owner matches the io.github.probityai namespace through this job's
+# GitHub OIDC identity, and that the PyPI package's README carries the mcp-name line.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  MCP_PUBLISHER_VERSION: v1.8.1
+  MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: install the pinned publisher
+        run: |
+          curl -fsSL -o publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  publisher.tar.gz" | sha256sum -c -
+          tar xzf publisher.tar.gz mcp-publisher
+      - name: validate, authenticate with OIDC, publish
+        run: |
+          ./mcp-publisher validate
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
