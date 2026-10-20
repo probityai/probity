@@ -134,6 +134,42 @@ def test_the_grader_counts_collected_ids_from_the_verified_report(tmp_path, pyth
     assert sealed.collected(list(found["items"]), item["ids"]) == 1
 
 
+def test_a_sealed_id_passes_only_when_every_matching_run_passed():
+    items = {"t.py::a": {"passed": 2, "failed": 0, "skipped": 0},
+             "t.py::b": {"passed": 0, "failed": 0, "skipped": 2},
+             "t.py::c": {"passed": 1, "failed": 1, "skipped": 0},
+             "t.py::d[1]": {"passed": 2, "failed": 0, "skipped": 0},
+             "t.py::d[2]": {"passed": 1, "failed": 0, "skipped": 1},
+             "u.py::C::x": {"passed": 2, "failed": 0, "skipped": 0}}
+    assert sealed.passed(items, ["t.py::a"]) == 1
+    assert sealed.passed(items, ["t.py::b"]) == 0
+    assert sealed.passed(items, ["t.py::c"]) == 0
+    assert sealed.passed(items, ["t.py::d"]) == 0
+    assert sealed.passed(items, ["u.py", "u.py::C"]) == 2
+    assert sealed.passed(items, ["t.py::missing"]) == 0
+    assert sealed.passed({}, ["t.py::a"]) == 0
+    assert sealed.collected(list(items), ["t.py::b", "t.py::d", "t.py::missing"]) == 2
+
+
+def test_isolation_test_counts_are_measured_not_assumed():
+    replay = ["probity-done-replay", "test.py", "func", "add"]
+    probe = [*replay, "import_side_effects"]
+    commands = [{"id": "unit", "argv": ["python", "-m", "pytest"], "ids": ["a", "b", "c"]},
+                {"id": "heldout", "argv": ["sh", "-c", "x"], "ids": ["d"]},
+                {"id": "visible", "argv": replay}, {"id": "probe", "argv": probe},
+                {"id": "plain", "argv": ["make", "test"]},
+                {"id": "agent", "argv": ["python", "test.py"], "exe": "/usr/bin/python"}]
+    results = [{"id": "unit", "exit": 0, "collected": 3, "passed": 1},
+               {"id": "heldout", "exit": 1, "collected": 1, "passed": 0}]
+    replays = [{"argv": replay, "calls_intercepted": 0},
+               {"argv": probe, "mode": "import_side_effects", "calls_intercepted": 0}]
+    assert verify_run.test_counts(commands, results, replays) == {
+        "expected": 7, "collected": 6, "skipped": 2}
+    replays[0]["calls_intercepted"] = 4
+    assert verify_run.test_counts(commands, results, replays)["collected"] == 7
+    assert verify_run.test_counts(commands, [], [])["collected"] == 1
+
+
 def test_a_patch_that_reads_caller_frames_is_listed(tmp_path):
     start, root = tmp_path / "start", tmp_path / "root"
     for base, text in ((start, HONEST), (root, FRAME_AWARE)):

@@ -57,14 +57,19 @@ class Command:
     # whether passing code passes for the right reason, and probity-verify reads it on the
     # integrity axis (``probe_observed/v1``), never as a behavioural test.
     probe: str | None = None
+    # The test ids a wrapped command runs (``sh -c "<copy> && exec <sealed pytest> <ids>"``),
+    # whose ids are not a tail of ``argv`` for ``ids_from`` to name.
+    sealed_ids: tuple[str, ...] | None = None
 
     def record(self) -> dict:
         """The contract entry; a command the sealed pytest plugins run also seals its test
-        ids, which the grade's ``collected`` count must match."""
+        ids, which the grade's ``collected`` and ``passed`` counts must match."""
         entry: dict = {"id": self.id, "argv": list(self.argv)}
         if self.probe is not None:
             entry["probe"] = self.probe
-        if self.ids_from is not None and pytest_plugins.is_sealed_pytest(self.argv):
+        if self.sealed_ids is not None:
+            entry["ids"] = list(self.sealed_ids)
+        elif self.ids_from is not None and pytest_plugins.is_sealed_pytest(self.argv):
             entry["ids"] = list(self.argv[self.ids_from:])
         return entry
 

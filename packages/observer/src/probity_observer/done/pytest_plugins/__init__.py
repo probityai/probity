@@ -229,9 +229,24 @@ def report(printed: Sequence[str], key: bytes) -> dict[str, Any] | None:
 def collected(item_ids: Sequence[str], sealed_ids: Sequence[str]) -> int:
     """How many sealed ids the run collected: an id, a parametrised ``id[...]`` of it, or,
     for an id that names a test file or class, a test inside it (``id::...``)."""
-    return sum(1 for test_id in sealed_ids
-               if any(name == test_id or name.startswith((test_id + "[", test_id + "::"))
-                      for name in item_ids))
+    return sum(1 for test_id in sealed_ids if any(_matches(name, test_id) for name in item_ids))
+
+
+def _matches(name: str, test_id: str) -> bool:
+    return name == test_id or name.startswith((test_id + "[", test_id + "::"))
+
+
+def passed(items: dict[str, dict[str, int]], sealed_ids: Sequence[str]) -> int:
+    """How many sealed ids passed: at least one matching item ran, and every matching item
+    passed on every run with none failed or skipped. pytest exits 0 when a test skips, so the
+    exit status alone cannot say this."""
+    count = 0
+    for test_id in sealed_ids:
+        found = [counts for name, counts in items.items() if _matches(name, test_id)]
+        if found and all(entry.get("passed", 0) > 0 and not entry.get("failed", 0)
+                         and not entry.get("skipped", 0) for entry in found):
+            count += 1
+    return count
 
 
 def outcomes(printed: Sequence[str]) -> dict[str, dict[str, Any]]:

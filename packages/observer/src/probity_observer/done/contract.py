@@ -334,7 +334,11 @@ def swe_task(record: dict[str, Any], repo: Path, work: Path,
         commands.append(Command("pass-to-pass", prefix + tuple(passing), prepatch="pass",
                                 ids_from=len(prefix)))
     overlay = "cp -R ../heldout/tree/. . && exec " + shlex.join(prefix + tuple(fail))
-    commands.append(Command("heldout-fail-to-pass", ("sh", "-c", overlay), heldout=True))
+    # The sealed plugins run inside the overlay too, so its ids are sealed like the visible
+    # commands' and a held-out test that skipped is no pass.
+    commands.append(Command("heldout-fail-to-pass", ("sh", "-c", overlay), heldout=True,
+                            sealed_ids=tuple(fail) if pytest_plugins.is_sealed_pytest(prefix)
+                            else None))
     # The run the agent itself makes on the visible tests; the contract seals where it runs
     # and its interpreter, so a claim of it is matched to the agent's own exec.
     commands.append(Command("visible_run", ("python", "-m", "pytest", *tests),
