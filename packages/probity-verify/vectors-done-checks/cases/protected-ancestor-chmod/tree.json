@@ -1,0 +1,16 @@
+{
+  "claim_id": "case-1",
+  "executable": [],
+  "files": {
+    "src/app.py": "733eb58f7c38d30ea4f6f000d2e412410f26291d126e29434e8052b904ca7f41",
+    "tests/test_app.py": "690bf2cb0a250b8516738eec867a03b06f7323c33ce917808a2d682baa131427"
+  },
+  "invocation_id": "call-1",
+  "producer": "host-observer",
+  "schema_version": "probity-tree/v2",
+  "special": {},
+  "symlinks": {},
+  "tree_sha256": "78f38a0fd7aaf107089255cc1e28982d4cd3c7ee1cf67407494b543b27e8129b",
+  "vantage": "independent",
+  "witness_scope": "PEER"
+}

@@ -1,0 +1,69 @@
+{
+  "claim_id": "case-1",
+  "coverage": "complete",
+  "events": [
+    {
+      "id": "w1",
+      "path": "src/app.py",
+      "step": 1,
+      "time": "2026-10-17T00:01:00Z",
+      "type": "write"
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests"
+      ],
+      "cwd": "/workspace",
+      "env": {
+        "PATH": "/usr/local/bin:/usr/bin:/bin",
+        "PYTHONSAFEPATH": "1"
+      },
+      "exe": "/usr/bin/python",
+      "exit": 0,
+      "id": "x1",
+      "step": 2,
+      "time": "2026-10-17T00:02:00Z",
+      "type": "exec"
+    },
+    {
+      "id": "w2",
+      "origin": "x1",
+      "path": "tests/__pycache__/test_app.cpython-312.pyc",
+      "step": 3,
+      "time": "2026-10-17T00:02:01Z",
+      "type": "create"
+    },
+    {
+      "id": "e4",
+      "path": "pkg",
+      "step": 4,
+      "target": "pkg_orig",
+      "time": "2026-10-17T00:03:00Z",
+      "type": "rename"
+    },
+    {
+      "id": "e5",
+      "path": "pkg_orig",
+      "step": 5,
+      "target": "pkg",
+      "time": "2026-10-17T00:03:00Z",
+      "type": "rename"
+    }
+  ],
+  "external_mutations": [],
+  "invocation_id": "call-1",
+  "producer": "host-observer",
+  "schema_version": "probity-observation/v3",
+  "scope": {
+    "end": "2026-10-17T00:10:00Z",
+    "id": "run-1",
+    "start": "2026-10-17T00:00:00Z"
+  },
+  "vantage": "independent",
+  "witness_scope": "PEER",
+  "workspace_root": "/workspace"
+}

@@ -1,5 +1,5 @@
 {
-  "corpusDigest": "576b3704c569f7fba82dc88030c9ee38412b5d2956a54656dbfbf99d898f3c5f",
+  "corpusDigest": "18251c0075108ec115cf536ba0f0ab079e7806a232d28cb1b03c66a8b23c3fdc",
   "suite": "done-checks/v1",
   "vectors": [
     {
@@ -265,6 +265,78 @@
       },
       "id": "protected-ancestor-swap",
       "path": "cases/protected-ancestor-swap"
+    },
+    {
+      "claimType": "protected_paths/v1",
+      "edit": "the protected file's directory removed",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "protected_path_mutated"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "3f560cca2d58b429cb15ce0df3208aaa7f0d9e9aa54fb43312722a4b2f88fa1c",
+        "contract.json": "2a84afb537c752f9950ce2c9e05d1dc1c4c11c273a99c6c5324112b6a6541579",
+        "observation.json": "a67cd30e93415331fa1f67a5c923219633a4199196459d4c36dd13098984ab2a",
+        "policy.json": "6bce764392934de3dc1ae6c187a86a663e4d2a27f22afece0cd8998a5d196697",
+        "tree.json": "d26abc64db4d11ecd1a8b9606e2ece252cfe13bdec1ab4b1dd62890578a99d6c"
+      },
+      "id": "protected-ancestor-unlinked",
+      "path": "cases/protected-ancestor-unlinked"
+    },
+    {
+      "claimType": "protected_paths/v1",
+      "edit": "the protected file's directory had its mode changed",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "protected_path_mutated"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "e7b9a66bb00de1f51427fe408361ec8a5e988b6b65ab1bef7d8621f9bf1d3feb",
+        "contract.json": "2a84afb537c752f9950ce2c9e05d1dc1c4c11c273a99c6c5324112b6a6541579",
+        "observation.json": "288f9a1901e6cb2904ed10eb744608551ccf0fa94ced51c2273b1b97b79883bf",
+        "policy.json": "85638047e1fb8a05c03a8883fd47f2aae82d311dbc988098717b490e31e19c31",
+        "tree.json": "d26abc64db4d11ecd1a8b9606e2ece252cfe13bdec1ab4b1dd62890578a99d6c"
+      },
+      "id": "protected-ancestor-chmod",
+      "path": "cases/protected-ancestor-chmod"
+    },
+    {
+      "claimType": "protected_paths/v1",
+      "edit": "the parent of a protected directory renamed away and back",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "protected_path_mutated"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "71384d5a3e2df6ca5ea07795e47b7498d4c0e190ea58685d5e8701247903095b",
+        "contract.json": "a00f2308067ee5be7c365bac50abbf9219bc1dccdd4efd4bf9e63aad34a32451",
+        "observation.json": "eb47e44ae0871af63c130d1e80d0ed105aee9f84d5397510d7e1228ed0520e4c",
+        "policy.json": "ae301a9befed10d5654aca8943c63361f939ac0d386ea9d7096e99bdd7ce1b20",
+        "tree.json": "d26abc64db4d11ecd1a8b9606e2ece252cfe13bdec1ab4b1dd62890578a99d6c"
+      },
+      "id": "protected-directory-entry-ancestor-renamed",
+      "path": "cases/protected-directory-entry-ancestor-renamed"
+    },
+    {
+      "claimType": "protected_paths/v1",
+      "edit": "the protected file's directory replaced by a symbolic link in the final tree",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "protected_path_digest_changed"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "2cbcbe9861a0416fc210c8c46312a689fc831530eddbe5e0c279fb7f324d1816",
+        "contract.json": "2a84afb537c752f9950ce2c9e05d1dc1c4c11c273a99c6c5324112b6a6541579",
+        "observation.json": "b23ad15c1e8fe3a57a9c34f46571aade9e6d2be9ac619153cb9b27c90c66a8d6",
+        "policy.json": "a721c489ce92112c270a6d1c5d76997653a3febc2e71a06c1bdd5e39746ed427",
+        "tree.json": "db2a1b88df154d6436e0c8447ef12296bbf52ca954a6f29814a55356bc1e1376"
+      },
+      "id": "protected-ancestor-replaced-by-symlink",
+      "path": "cases/protected-ancestor-replaced-by-symlink"
     },
     {
       "claimType": "protected_paths/v1",
