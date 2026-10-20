@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: install the pinned dependencies
+        run: |
+          uv venv --python 3.12
+          uv pip install -e ".[test]"
+      - name: tests (real MCP client, real corpus, no mocks)
+        run: .venv/bin/python -m pytest -q
+      - name: every mutation of a tool output is caught by the tests
+        run: .venv/bin/python scripts/mutation_check.py
+      - name: the server answers over stdio from the built wheel
+        run: |
+          uv build
+          uv venv --python 3.12 /tmp/wheel-venv
+          uv pip install --python /tmp/wheel-venv/bin/python dist/*.whl
+          /tmp/wheel-venv/bin/python -c "import asyncio; from mcp.client import Client; from mcp.client.stdio import StdioServerParameters
+async def main():
+    async with Client(StdioServerParameters(command='/tmp/wheel-venv/bin/agent-evidence-mcp')) as c:
+        r = await c.call_tool('verify_sample', {'scenario': 'contradicted'})
+        assert r.structured_content['decision'] == 'contradicted', r
+asyncio.run(main())"
+  hygiene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: README stays one screen
+        run: |
+          python3 scripts/readme-lint-test.py
+          python3 scripts/readme-lint.py README.md
+      - name: manifests parse
+        run: |
+          for f in server.json gemini-extension.json .mcp.json .claude-plugin/plugin.json .claude-plugin/marketplace.json; do python3 -m json.tool "$f" > /dev/null; done
