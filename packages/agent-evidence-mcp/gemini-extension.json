@@ -1,11 +1,11 @@
 {
   "name": "agent-evidence",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Verify claims about AI systems against supplied evidence and replay the agent-evidence conformance vectors, offline and read-only.",
   "mcpServers": {
     "agent-evidence": {
       "command": "uvx",
-      "args": ["agent-evidence-mcp@0.1.0"]
+      "args": ["agent-evidence-mcp@0.2.0"]
     }
   },
   "contextFileName": "llms.txt"
