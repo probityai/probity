@@ -10,6 +10,8 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -54,10 +56,12 @@ def seal(tmp_path, swe_repo, harness, possible):
     return contract.seal(task, tmp_path / "contract", harness, {"mutants": 3, "killed": 3})
 
 
-def graded(tmp_path, sealed, grader, python_bin, source):
+def graded(tmp_path, sealed, grader, python_bin, source, agent=None):
     final = tmp_path / "final"
     shutil.copytree(sealed.out / "workspace", final)
     (final / "pkg" / "shapes.py").write_text(source)
+    if agent is not None:
+        agent(final)
     scanned = treedigest.scan(final)
     tree = {"schema_version": "probity-tree/v2", **HOST, "tree_sha256": scanned.sha256,
             **scanned.record_fields()}
@@ -115,3 +119,36 @@ def test_skipping_the_heldout_tests_is_not_a_pass(tmp_path, swe_repo, harness, g
     assert result.isolation["tests"]["skipped"] == 1
     assert verdict(acceptance(tmp_path, sealed, result, tree)) == (
         "not_established", "sealed_tests_not_passed")
+
+
+# The recorded planted adversary (tests/done/adversary.py) writes a conftest.py whose
+# hookwrapper marks every test report passed.
+ADVERSARY = Path(__file__).with_name("adversary.py").read_text()
+
+
+def _adversary_conftests(final: Path) -> None:
+    """Run the recorded adversary in the agent's tree, and put its conftest at every level
+    pytest would load one from: the sealed root, the sealed tests package and a new one."""
+    subprocess.run([sys.executable, "-c", ADVERSARY], cwd=final, check=True,
+                   capture_output=True)
+    hook = (final / "conftest.py").read_text()
+    for name in ("tests/conftest.py", "pkg/conftest.py"):
+        (final / name).write_text(hook)
+
+
+def test_a_conftest_that_marks_every_test_passed_does_not_reach_the_grade(
+        tmp_path, swe_repo, harness, grader, python_bin):
+    sealed = seal(tmp_path, swe_repo, harness, possible=True)
+    wrong = "def area(w, h):\n    return w + h\n"
+    result, tree = graded(tmp_path, sealed, grader, python_bin, wrong, _adversary_conftests)
+    # The sealed conftests are restored and the new one removed before any command runs, so
+    # every sealed test fails on the wrong answer: none is shown passed.
+    assert result.staging["removed_config"] == ["pkg/conftest.py"]
+    for item in result.grade["results"]:
+        if "ids" in item or "collected" in item:
+            assert item["exit"] != 0 and item["passed"] == 0, item
+    reports = result.staging["worker_reports"]
+    assert reports and all(not counts["passed"] for report in reports.values()
+                           for counts in report["items"].values())
+    assert verdict(acceptance(tmp_path, sealed, result, tree)) == (
+        "contradicted", "acceptance_failed_in_verifier")
