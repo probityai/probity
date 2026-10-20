@@ -19,7 +19,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent / "tests"))
 
-from done_run import PYTEST, build, encode, exec_event, honest_records, retree, tree_digest
+from done_run import (
+    PYTEST,
+    build,
+    encode,
+    exec_event,
+    honest_records,
+    retree,
+    tree_digest,
+)
 from done_run import ROOT as WORKSPACE
 
 TOOLS = "tool_claim_match/v1"
