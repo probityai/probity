@@ -9,27 +9,27 @@ Other native profiles have separate install units or source workflows.
 
 ## Start with your task
 
-- [Install and choose a profile](https://github.com/probityai/agent-evidence-observer/blob/main/docs/INSTALLATION.md): exact source install, expected output, root commands and all separate package manifests.
-- [Record brokered writes](https://github.com/probityai/agent-evidence-observer/blob/main/docs/RUNNING.md): run the demo and verify its PEER packet.
-- [Read retained Inspect or A2A execution](https://github.com/probityai/agent-evidence-observer/blob/main/docs/NATIVE-CONSUMER-CI.md): normally installed wrapper, matching source checkout, separately selected inputs and fail-closed consumer action.
-- [Read Atomic delegation tests](https://github.com/probityai/agent-evidence-observer/blob/main/docs/ATOMIC-NATIVE-READER.md): installed offline reader, native executable custody and selected-input controls.
-- [Read current Inspect results](https://github.com/probityai/agent-evidence-observer/blob/main/interop/inspect-current-host-2026-10-03/README.md): separate pinned reader package and native producer/consumer workflow.
-- [Read LangGraph or Pydantic AI packets](https://github.com/probityai/agent-evidence-observer/blob/main/interop/framework-consumer-2026-10-02/README.md): dedicated source-checked reader wheels and their explicit upgrade contract.
-- [Read ADK user-response routing](https://github.com/probityai/agent-evidence-observer/blob/main/interop/adk-user-responses-2026-10-04/README.md): separately installed producer and reader; grants, denial and long-running routing stay distinct.
-- [Check nested ADK calls](https://github.com/probityai/agent-evidence-observer/blob/main/interop/adk-nested-compaction-2026-10-04/README.md): native repeated calls, callback coverage and the excluded-plugin case.
-- [Read AG2 push authority](https://github.com/probityai/agent-evidence-observer/blob/main/interop/ag2-push-authority-2026-10-04/README.md): registration, explicit SDK dispatch, target callbacks and effects across three transports.
-- [Read CrewAI job fences](https://github.com/probityai/agent-evidence-observer/blob/main/interop/crewai-job-fences-2026-10-04/README.md): pinned native jobs, Observer body effects, foreground publication and offline controls.
-- [Check approved refund retries](https://github.com/probityai/agent-evidence-observer/blob/main/docs/APS-REFUND-RETRIES.md): pinned APS SDK, local SQLite effects, retained interruption cases and a separately installed public reader. No provider refund or independent custody claim.
-- [Bind a selected run to retained witness anchors](https://github.com/probityai/agent-evidence-observer/blob/main/docs/WITNESSED-RUN-SELECTION.md): installed finite protocol, opening checkpoint, execution closure and hostile controls.
-- [Apply a consumer decision](https://github.com/probityai/agent-evidence-observer/blob/main/docs/CONSUMER-ADMISSION.md): consumer-selected keys, policy and replay state.
+- [Install and choose a profile](https://github.com/probityai/probity/blob/main/packages/observer/docs/INSTALLATION.md): exact source install, expected output, root commands and all separate package manifests.
+- [Record brokered writes](https://github.com/probityai/probity/blob/main/packages/observer/docs/RUNNING.md): run the demo and verify its PEER packet.
+- [Read retained Inspect or A2A execution](https://github.com/probityai/probity/blob/main/packages/observer/docs/NATIVE-CONSUMER-CI.md): normally installed wrapper, matching source checkout, separately selected inputs and fail-closed consumer action.
+- [Read Atomic delegation tests](https://github.com/probityai/probity/blob/main/packages/observer/docs/ATOMIC-NATIVE-READER.md): installed offline reader, native executable custody and selected-input controls.
+- [Read current Inspect results](https://github.com/probityai/probity/blob/main/packages/observer/interop/inspect-current-host-2026-10-03/README.md): separate pinned reader package and native producer/consumer workflow.
+- [Read LangGraph or Pydantic AI packets](https://github.com/probityai/probity/blob/main/packages/observer/interop/framework-consumer-2026-10-02/README.md): dedicated source-checked reader wheels and their explicit upgrade contract.
+- [Read ADK user-response routing](https://github.com/probityai/probity/blob/main/packages/observer/interop/adk-user-responses-2026-10-04/README.md): separately installed producer and reader; grants, denial and long-running routing stay distinct.
+- [Check nested ADK calls](https://github.com/probityai/probity/blob/main/packages/observer/interop/adk-nested-compaction-2026-10-04/README.md): native repeated calls, callback coverage and the excluded-plugin case.
+- [Read AG2 push authority](https://github.com/probityai/probity/blob/main/packages/observer/interop/ag2-push-authority-2026-10-04/README.md): registration, explicit SDK dispatch, target callbacks and effects across three transports.
+- [Read CrewAI job fences](https://github.com/probityai/probity/blob/main/packages/observer/interop/crewai-job-fences-2026-10-04/README.md): pinned native jobs, Observer body effects, foreground publication and offline controls.
+- [Check approved refund retries](https://github.com/probityai/probity/blob/main/packages/observer/docs/APS-REFUND-RETRIES.md): pinned APS SDK, local SQLite effects, retained interruption cases and a separately installed public reader. No provider refund or independent custody claim.
+- [Bind a selected run to retained witness anchors](https://github.com/probityai/probity/blob/main/packages/observer/docs/WITNESSED-RUN-SELECTION.md): installed finite protocol, opening checkpoint, execution closure and hostile controls.
+- [Apply a consumer decision](https://github.com/probityai/probity/blob/main/packages/observer/docs/CONSUMER-ADMISSION.md): consumer-selected keys, policy and replay state.
 
 ## Reference
 
-- [Component tour](https://github.com/probityai/agent-evidence-observer/blob/main/docs/OVERVIEW.md): broker, protected dispatch, ticket, evaluation and history contracts.
-- [Native source profiles](https://github.com/probityai/agent-evidence-observer/tree/main/interop): all remaining profiles, including Haystack, smolagents, OpenAI Agents, recovery and bounded local-model workflows. Follow each profile's own installation and source pins.
-- [Witness ledger](https://github.com/probityai/agent-evidence-observer/blob/main/docs/WITNESS-LEDGER.md): signed interval receipts.
-- [Design and trust boundary](https://github.com/probityai/agent-evidence-observer/blob/main/docs/DESIGN.md): observation coverage, Linux boundary and roadmap.
-- [License](https://github.com/probityai/agent-evidence-observer/blob/main/LICENSE): Apache-2.0.
+- [Component tour](https://github.com/probityai/probity/blob/main/packages/observer/docs/OVERVIEW.md): broker, protected dispatch, ticket, evaluation and history contracts.
+- [Native source profiles](https://github.com/probityai/probity/tree/main/packages/observer/interop): all remaining profiles, including Haystack, smolagents, OpenAI Agents, recovery and bounded local-model workflows. Follow each profile's own installation and source pins.
+- [Witness ledger](https://github.com/probityai/probity/blob/main/packages/observer/docs/WITNESS-LEDGER.md): signed interval receipts.
+- [Design and trust boundary](https://github.com/probityai/probity/blob/main/packages/observer/docs/DESIGN.md): observation coverage, Linux boundary and roadmap.
+- [License](https://github.com/probityai/probity/blob/main/packages/observer/LICENSE): Apache-2.0.
 
 The broker's witness runs under the same operator and retains PEER scope.
 A selected-history result checks one supplied anchored history; global selection,
