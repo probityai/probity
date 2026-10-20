@@ -56,6 +56,7 @@ uv run python -m pytest
 | [probity-verify](packages/probity-verify/README.md) | the verifier, its adapters and its recipes |
 | [Repository layout](docs/architecture/MONOREPO.md) | the workspace, the `probity` command seam, CI and releases |
 | [Agent instructions](AGENTS.md) | commands to run before a change |
+| [Contributing](CONTRIBUTING.md) | reporting a problem and opening a pull request |
 
 ## License
 
