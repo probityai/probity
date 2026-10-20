@@ -93,6 +93,16 @@ def protects(entry: dict, name: str) -> bool:
     return True
 
 
+def affects(entry: dict, name: str) -> bool:
+    """Whether a mutation of ``name`` can change what a protected entry resolves to.
+
+    That is a path the entry covers (:func:`protects`) or any ancestor directory of the
+    entry: renaming, removing or replacing ``tests`` changes what ``tests/test_app.py``
+    names, even when every byte under it is later moved back.
+    """
+    return protects(entry, name) or under(entry["path"], name)
+
+
 def ancestor_config(name: str, root: str) -> bool:
     """A pytest configuration file in the workspace's own parent chain, which pytest
     reads for a run in the workspace whatever the command line says."""
@@ -603,11 +613,13 @@ def agent_gap(record: dict) -> str | None:
 
 def external_grader_effects(record: dict) -> list[str]:
     """Ids of outside mutations at a grader path, by the record's label or by the path,
-    and of pytest configuration written in a directory above the workspace."""
+    of pytest configuration written in a directory above the workspace, and of a mutation
+    of a directory above the workspace itself (moving it aside swaps every path below it,
+    protected ones included, as an ancestor rename inside the workspace does)."""
     root = record["workspace_root"]
     return [entry["id"] for entry in record["external_mutations"]
             if entry["location"] == "grader_path"
-            or any(grader_path(name) or ancestor_config(name, root)
+            or any(grader_path(name) or ancestor_config(name, root) or under(root, name)
                    for name in entry["paths"])]
 
 

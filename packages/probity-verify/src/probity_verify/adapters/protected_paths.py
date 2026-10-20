@@ -32,7 +32,7 @@ LIMIT = ("Producer, vantage and witness scope are consumer pins, not authenticat
 
 def _protected(entries: list[dict]):
     def hit(name: str) -> bool:
-        return any(records.protects(entry, name) for entry in entries)
+        return any(records.affects(entry, name) for entry in entries)
 
     def matches(event: dict) -> bool:
         return event["type"] in records.MUTATION_TYPES and (
