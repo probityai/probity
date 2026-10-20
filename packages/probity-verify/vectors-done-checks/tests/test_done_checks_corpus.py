@@ -20,7 +20,7 @@ def _module(name: str, filename: str):
 
 
 corpus = _module("done_checks_corpus", "check_vectors.py")
-MEMBERS = 18
+MEMBERS = 20
 
 
 def test_regeneration_is_byte_identical() -> None:

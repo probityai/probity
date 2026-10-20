@@ -1,6 +1,7 @@
 # Done-check vectors
 
-Eighteen synthetic cases for `tool_claim_match/v1` and `protected_paths/v1`. Each one is
+Twenty synthetic cases for `tool_claim_match/v1`, `acceptance_observed/v1` and
+`protected_paths/v1`. Each one is
 the honest run the adapter tests use, changed in one way, with the decision and reason a
 verifier must return. `MANIFEST.json` pins every file's bytes.
 
@@ -17,6 +18,8 @@ verifier must return. `MANIFEST.json` pins every file's bytes.
 | tool-claim-sealed-other-exe | contradicted | The run used another interpreter. |
 | tool-claim-sealed-other-script | contradicted | The run executed another script. |
 | tool-claim-shadowed-beside-module | contradicted | An importable file sat beside the module under test. |
+| acceptance-sealed-tests-passed | supported | Control: every sealed held-out test passed. |
+| acceptance-sealed-test-skipped | not_established | A sealed test was collected and skipped; pytest exited 0. |
 | protected-untouched | supported | Control: the protected paths were left alone. |
 | protected-ancestor-swap | contradicted | The protected file's directory moved aside for a decoy and back. |
 | protected-workspace-moved-outside | contradicted | A directory above the workspace was renamed. |

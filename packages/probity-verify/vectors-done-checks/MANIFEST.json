@@ -1,5 +1,5 @@
 {
-  "corpusDigest": "3f98519caba93908ccdf1695fd06a06389f83f0ea12485f4da9cdc131fc4ed03",
+  "corpusDigest": "576b3704c569f7fba82dc88030c9ee38412b5d2956a54656dbfbf99d898f3c5f",
   "suite": "done-checks/v1",
   "vectors": [
     {
@@ -195,6 +195,40 @@
       },
       "id": "tool-claim-shadowed-beside-module",
       "path": "cases/tool-claim-shadowed-beside-module"
+    },
+    {
+      "claimType": "acceptance_observed/v1",
+      "edit": "control: every sealed held-out test passed",
+      "expected": {
+        "decision": "supported",
+        "reason": "acceptance_passed_in_verifier"
+      },
+      "files": {
+        "case.json": "5d5bc12d20564219b58a192cf529a0835d70e82984fa684d0384e62f31f2762f",
+        "contract.json": "54f8d0cbdb7163757586aea5366e2d322e006b070ff939c7d6a64e1c3f4cc84c",
+        "grade.json": "d29c7df5479d8f7c9f78401cc7ad1f6e585abf324644cef07ecee8a56c72ef8f",
+        "policy.json": "64642f739c85c8b0c28ecb4c6db49f9b79a7aefe2e20b0c2a5307434ea5fd729",
+        "tree.json": "d26abc64db4d11ecd1a8b9606e2ece252cfe13bdec1ab4b1dd62890578a99d6c"
+      },
+      "id": "acceptance-sealed-tests-passed",
+      "path": "cases/acceptance-sealed-tests-passed"
+    },
+    {
+      "claimType": "acceptance_observed/v1",
+      "edit": "a sealed held-out test was collected and skipped, and pytest exited 0",
+      "expected": {
+        "decision": "not_established",
+        "reason": "sealed_tests_not_passed"
+      },
+      "files": {
+        "case.json": "bd92e79a1f85031356f057a9e4f6b3c1570a034b1a6d87fb45f53adefbb70920",
+        "contract.json": "54f8d0cbdb7163757586aea5366e2d322e006b070ff939c7d6a64e1c3f4cc84c",
+        "grade.json": "294c03423ea5512e7fdf9ea2a430babafdec25c618b3c8e772904f2d655660c1",
+        "policy.json": "873b65d0876d5df38c1b73646f606e4a930544e3a7c8627bd4edddb5080ea9ae",
+        "tree.json": "d26abc64db4d11ecd1a8b9606e2ece252cfe13bdec1ab4b1dd62890578a99d6c"
+      },
+      "id": "acceptance-sealed-test-skipped",
+      "path": "cases/acceptance-sealed-test-skipped"
     },
     {
       "claimType": "protected_paths/v1",
