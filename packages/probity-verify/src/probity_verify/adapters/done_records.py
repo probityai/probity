@@ -33,8 +33,13 @@ LOADER_ENV = frozenset({
     "PYTHONSAFEPATH", "PYTHONSTARTUP", "PYTHONUSERBASE", "PYTHONNOUSERSITE",
     "PYTHONPYCACHEPREFIX", "PYTHONWARNINGS", "PYTEST_ADDOPTS", "PYTEST_PLUGINS",
     "NODE_OPTIONS", "NODE_PATH"})
-GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt"})
-GRADER_SEGMENTS = frozenset({"site-packages", "dist-packages", "verifier"})
+# Files that change what a later run loads before any of its own code runs: Python's start-up
+# hooks and environment marker, the dynamic loader's preload list, cache and configuration,
+# and the grader's reward files. ``<name>._pth`` (Python's path file beside the
+# interpreter) is matched by suffix in :func:`grader_path`.
+GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt",
+                          "pyvenv.cfg", "ld.so.preload", "ld.so.cache", "ld.so.conf"})
+GRADER_SEGMENTS = frozenset({"site-packages", "dist-packages", "verifier", "ld.so.conf.d"})
 # Files pytest reads from the workspace and from every directory above it, with no flag.
 ANCESTOR_CONFIG = frozenset({"conftest.py", "pytest.ini", "pyproject.toml", "tox.ini",
                              "setup.cfg"})
@@ -111,10 +116,12 @@ def ancestor_config(name: str, root: str) -> bool:
 
 
 def grader_path(name: str) -> bool:
-    """A path where a mutation can change how a grader runs or scores a run."""
+    """A path where a mutation can change how a grader runs or scores a run: a grader file,
+    or a grader directory or anything under one (a directory renamed onto
+    ``site-packages`` replaces every module in it)."""
     parts = name.split("/")
-    return (parts[-1] in GRADER_FILES or parts[-1].endswith(".pth")
-            or bool(set(parts[:-1]) & GRADER_SEGMENTS))
+    return (parts[-1] in GRADER_FILES or parts[-1].endswith((".pth", "._pth"))
+            or bool(set(parts) & GRADER_SEGMENTS))
 
 
 def tree_digest(files: dict[str, str]) -> str:
