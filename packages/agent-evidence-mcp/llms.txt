@@ -1,0 +1,6 @@
+# agent-evidence-mcp
+
+> An offline, read-only MCP server that verifies a claim about an AI system against supplied evidence bytes and replays the agent-evidence conformance vectors.
+
+- [Tools](https://github.com/probityai/agent-evidence-mcp/blob/main/docs/tools.md): the seven tools, their arguments and results
+- [Install](https://github.com/probityai/agent-evidence-mcp/blob/main/docs/install.md): one pinned command per client
