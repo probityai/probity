@@ -1,8 +1,9 @@
 # Release a checked Python distribution
 
-PyPI 0.1.0 contains the current verifier implementation and CLI. Source 0.1.1
-adds eight existing source-coverage inputs as package resources. It changes no
-claim profile, decision, reason or error exit. The sample inputs remain authored
+PyPI 0.2.0 contains the current verifier implementation and CLI, and the source
+is 0.2.0. It carries the eight source-coverage inputs as package resources,
+added in source 0.1.1, and reads DSSE envelopes and completion receipts; the
+[changelog](../CHANGELOG.md) lists every change. The sample inputs remain authored
 synthetic records, not an outside run or a consumer's authority choice.
 
 ## Read the installed sample
