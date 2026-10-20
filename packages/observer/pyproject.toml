@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-evidence-observer"
-version = "0.0.2"
+version = "0.1.0"
 description = "Record brokered agent writes and check selected native reports offline"
 readme = "README.md"
 license = "Apache-2.0"
@@ -34,11 +34,11 @@ Issues = "https://github.com/probityai/probity/issues"
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "hypothesis>=6,<7", "jsonschema>=4,<5"]
 inspect = ["inspect-ai==0.3.273"]
-witness = ["jcs-admit @ git+https://github.com/probityai/jcs-admit@b69943787266702da3c02741dcc3a37643c7dc3e#subdirectory=python"]
+witness = ["jcs-admit==0.1.0"]
 cover = ["coverage>=7.10,<8"]
 done = [
-    "jcs-admit @ git+https://github.com/probityai/jcs-admit@b69943787266702da3c02741dcc3a37643c7dc3e#subdirectory=python",
-    "probity-verify @ git+https://github.com/probityai/probity@b617361c221db5ca96989a94c60e8480e14aecd5#subdirectory=packages/probity-verify",
+    "jcs-admit==0.1.0",
+    "probity-verify>=0.2.0",
 ]
 
 [project.scripts]
@@ -67,3 +67,7 @@ pytest_plugins = ["src/probity_observer/done/pytest_plugins/", "*/probity-plugin
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.uv.sources]
+# The done extra needs probity-verify 0.2.0, which is built from this repository and not on PyPI yet.
+probity-verify = { path = "../probity-verify" }

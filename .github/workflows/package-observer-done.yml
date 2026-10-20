@@ -30,8 +30,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Install the package with the done extra (builds jcs-admit from its pinned commit)
-        run: python -m pip install -e '.[test,done,witness,cover]'
+      - name: Install the package with the done extra (probity-verify from this repository until 0.2.0 is on PyPI)
+        run: python -m pip install -e ../probity-verify -e '.[test,done,witness,cover]'
       - name: Contract, held-out, mutant, grading, receipt, policy and command-line tests
         run: python -m coverage run --parallel-mode --source=probity_observer.done -m pytest -q -p no:cacheprovider tests/done
       - name: Combine the suite's data with the data of the test runs it started
@@ -62,7 +62,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Install the package with the done extra (builds jcs-admit from its pinned commit)
-        run: python -m pip install -e '.[test,done,witness,cover]'
+      - name: Install the package with the done extra (probity-verify from this repository until 0.2.0 is on PyPI)
+        run: python -m pip install -e ../probity-verify -e '.[test,done,witness,cover]'
       - name: ${{ matrix.what }}
         run: python scripts/${{ matrix.script }}
