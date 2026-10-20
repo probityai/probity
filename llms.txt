@@ -5,6 +5,8 @@
 ## Members
 
 - [probity-verify](https://github.com/probityai/probity/blob/main/packages/probity-verify/llms.txt): offline verifier that decides supported, contradicted or not_established
+- [agent-evidence-observer 0.1.0](https://github.com/probityai/probity/blob/main/packages/observer/llms.txt): records agent runs as pinned evidence
+- [probity-ratchet 0.2.0](https://github.com/probityai/probity/blob/main/packages/ratchet/README.md): signed receipts for improving an agent against held-out cases
 - [probityai](https://github.com/probityai/probity/blob/main/packages/probityai/README.md): the `probity` command and its subcommand seam
 
 ## Repository
