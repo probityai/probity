@@ -51,6 +51,11 @@ from . import pytest_plugins, pytest_proof
 from .replay import Child, ClientFailure, plain, stall, strict_eq, unplain
 
 MODE = "pytest"
+# What a stall inside the candidate's own request reads as in a pytest replay: a definitive
+# failure (``contradicted`` on a held-out command). Operator ruling of 2026-10-21, "keep
+# contradicted."; it covers this mode only, not the LiveCodeBench modes of :mod:`.replay`.
+# Recorded in every result and in the grade's isolation record.
+STALL_POLICY = "contradicted"
 # Builtin exceptions a reply may raise again in the test (``pytest.raises(ValueError)``).
 # Anything else the candidate raised, and every protocol failure, is :class:`CandidateFailed`.
 EXCEPTIONS = {name: value for name, value in vars(builtins).items()
@@ -632,7 +637,8 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     base: dict[str, Any] = {"passed": False, "mode": MODE, "items": {}, "calls_intercepted": 0,
                             "distinct_calls": 0, "impure": [], "fresh_mismatch": [],
                             "fresh_order": [], "unproven": {}, "outside": [], "degenerate": [],
-                            "deadline_reached": False}
+                            "deadline_reached": False,
+                            "stall_policy": STALL_POLICY}
     problem = refused(remote, request["test_root"])
     if problem is not None:
         return {**base, "failure": problem}
@@ -676,7 +682,8 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     # a parent the runner stops before its own deadline, with no result written, reads as no
     # answer (``timed_out``).
     return {**base, "passed": failure is None, "failure": failure, "exit": code,
-            "definitive": failure is not None, "deadline_reached": session.spent,
+            "definitive": failure is not None and STALL_POLICY == "contradicted",
+            "deadline_reached": session.spent,
             "items": counter.items, "calls_intercepted": calls, "distinct_calls": distinct,
             "impure": impure, "fresh_mismatch": fresh_mismatch, "fresh_order": order,
             "unproven": counter.unproven, "outside": session.outside, "degenerate": degenerate}

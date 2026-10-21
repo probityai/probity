@@ -303,26 +303,53 @@ RUNTIME_ENV = ("DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG", "DOCKER_CERT_PA
                "DOCKER_TLS_VERIFY")
 
 
-def parent_env() -> dict[str, str]:
+def parent_env(home: str | None = None) -> dict[str, str]:
     """The replay parent's environment: the scrubbed one, the container client's settings,
-    and pytest's plugin autoloading off.
+    and pytest's plugin autoloading off. ``home`` is the parent's own private HOME; the
+    container client keeps reading the verifier's configuration, never a shared ``/tmp``.
 
     ``python -I`` ignores only the ``PYTHON*`` variables. pytest reads ``PYTEST_ADDOPTS`` and
     ``PYTEST_PLUGINS`` from the environment, and every sealed conftest can read
     ``os.environ``, so the verifier's own environment never reaches the parent."""
     env = dict(SCRUBBED_ENV)
     env.update({key: os.environ[key] for key in RUNTIME_ENV if key in os.environ})
+    if home is not None:
+        env["HOME"] = home
+        env.setdefault("DOCKER_CONFIG", os.path.join(os.path.expanduser("~"), ".docker"))
     env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
     return env
 
 
+PARENT_MODULE = "probity_observer.done.replay"
+
+
+def parent_command(request: Path, home: str | None = None) -> tuple[list[str], dict[str, str]]:
+    """The replay parent's argv and environment; :func:`_run_parent` starts exactly these and
+    :func:`replay_parent` describes them, so the record reads what is spawned."""
+    return [sys.executable, "-I", "-m", PARENT_MODULE, str(request)], parent_env(home)
+
+
+def describe_parent(argv: Sequence[str], env: dict[str, str]) -> dict:
+    """The isolation record of a parent started with ``argv`` and ``env``."""
+    allowed = {*SCRUBBED_ENV, *RUNTIME_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD"}
+    return {"runtime": "host", "uid": os.getuid(), "groups": sorted(os.getgroups()),
+            "isolated": "-I" in argv[1:argv.index("-m")] if "-m" in argv else False,
+            "env": "scrubbed" if set(env) <= allowed else "inherited",
+            "env_keys": sorted(env), "stall_policy": pytest_replay_stall_policy()}
+
+
+def pytest_replay_stall_policy() -> str:
+    from .pytest_replay import STALL_POLICY
+
+    return STALL_POLICY
+
+
 def replay_parent() -> dict:
     """Where and how the replay parent runs, for the isolation record: on the verifier host,
-    in the verifier's own interpreter and user, with :func:`parent_env` (named, not its
-    values). The container flags of the record describe the worker and the candidate's
-    children, never this process."""
-    return {"runtime": "host", "uid": os.getuid(), "env": "scrubbed",
-            "env_keys": sorted(parent_env())}
+    in the verifier's own interpreter and user, read off :func:`parent_command` (the
+    environment named, not its values). The container flags of the record describe the
+    worker and the candidate's children, never this process."""
+    return describe_parent(*parent_command(Path("request.json"), "home"))
 
 
 def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: float,
@@ -341,10 +368,13 @@ def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: floa
     children = scratch / "children.txt"
     request = {**request, "started": time.monotonic(), "children": str(children)}
     (scratch / "request.json").write_text(json.dumps(request))
-    parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
-                               str(scratch / "request.json")], stdin=subprocess.DEVNULL,
+    # A HOME of the parent's own (mode 0700), removed with the run: nothing another local
+    # user writes to a shared directory configures the parent or its container client.
+    home = tempfile.mkdtemp(prefix="probity-replay-home-")
+    command, env = parent_command(scratch / "request.json", home)
+    parent = subprocess.Popen(command, stdin=subprocess.DEVNULL,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                              env=parent_env(), start_new_session=True)
+                              env=env, start_new_session=True)
     try:
         parent.wait(timeout=limit)
     except subprocess.TimeoutExpired:
@@ -356,6 +386,7 @@ def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: floa
         # However the parent ended (its own exit, SIGTERM, or the SIGKILL after the grace),
         # no child it started outlives it.
         replay_harness.kill_recorded(children)
+        shutil.rmtree(home, ignore_errors=True)
     done = parent
     if (scratch / "replay.json").is_file():
         report = json.loads((scratch / "replay.json").read_text())

@@ -744,7 +744,7 @@ def test_a_stall_inside_the_candidates_own_request_is_a_definitive_failure(tmp_p
     assert replay.main([str(path)]) == 1
     result = json.loads((tmp_path / "out.json").read_text())
     assert result["definitive"] and result["failure"] == "pytest exit 1", result
-    assert "timed_out" not in result
+    assert "timed_out" not in result and result["stall_policy"] == "contradicted"
 
 
 def test_no_fresh_child_is_asked_after_a_failure(tmp_path, monkeypatch):
@@ -906,3 +906,42 @@ def test_the_parent_runs_main_in_the_module_the_pytest_replay_imports(tmp_path):
     done = subprocess.run([sys.executable, "-I", "-c", probe], capture_output=True, text=True,
                           timeout=60, env=runner.parent_env())
     assert done.stdout.strip() == "1", done.stderr
+
+
+def test_the_parent_record_is_read_off_the_spawn(tmp_path, monkeypatch):
+    import stat
+    import subprocess
+
+    spawned = []
+
+    class Spawned:
+        pid, returncode = 0, 0
+
+        def __init__(self, argv, **options):
+            home = options["env"]["HOME"]
+            spawned.append((list(argv), dict(options["env"]),
+                            stat.S_IMODE(os.stat(home).st_mode)))
+
+        def wait(self, timeout=None):
+            return 0
+    monkeypatch.setattr(subprocess, "Popen", Spawned)
+    monkeypatch.setenv("PROBITY_PLANTED", "1")
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    runner._run_parent(scratch, ["x"], {"mode": "pytest", "child_argv": []}, 5.0, None, None)
+    argv_, env, mode = spawned[0]
+    # The parent is isolated (-I), with the scrubbed environment and a private HOME that the
+    # run removes; the record describes that same spawn.
+    assert argv_[1] == "-I" and mode == 0o700 and not os.path.exists(env["HOME"])
+    assert env["HOME"].startswith(tempfile_root()) and "PROBITY_PLANTED" not in env
+    assert "DOCKER_CONFIG" in env
+    assert runner.describe_parent(argv_, env) == runner.replay_parent()
+    assert runner.replay_parent()["isolated"] and runner.replay_parent()["env"] == "scrubbed"
+    assert runner.describe_parent([sys.executable, "-m", "m"], env)["isolated"] is False
+    assert runner.describe_parent(argv_, {**env, "PROBITY_PLANTED": "1"})["env"] == "inherited"
+
+
+def tempfile_root():
+    import tempfile
+
+    return tempfile.gettempdir()

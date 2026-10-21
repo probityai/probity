@@ -109,8 +109,15 @@ MUTANTS = [
      '    replayed = {(False, test_id) for item in commands'),
     # The isolation record says the replay parent runs on the host, outside the lockdown.
     (GRADE, PIPELINE, '        report["verifier"]["replay_parent"] = replay_parent()', "        pass"),
-    (RUNNER, PIPELINE, '    return {"runtime": "host", "uid": os.getuid(), "env": "scrubbed",',
-     '    return {"runtime": "docker", "uid": os.getuid(), "env": "scrubbed",'),
+    (RUNNER, PIPELINE, '    return {"runtime": "host", "uid": os.getuid(), "groups": sorted(os.getgroups()),',
+     '    return {"runtime": "docker", "uid": os.getuid(), "groups": sorted(os.getgroups()),'),
+    # The record is read off the spawn: isolated, scrubbed, private HOME.
+    (RUNNER, UNIT, '    return [sys.executable, "-I", "-m", PARENT_MODULE, str(request)], parent_env(home)',
+     '    return [sys.executable, "-m", PARENT_MODULE, str(request)], parent_env(home)'),
+    (RUNNER, UNIT, '            "env": "scrubbed" if set(env) <= allowed else "inherited",',
+     '            "env": "scrubbed",'),
+    (RUNNER, UNIT, '        env["HOME"] = home\n', "\n"),
+    (RUNNER, UNIT, "        shutil.rmtree(home, ignore_errors=True)\n", "\n"),
     # The contract seals the replays, and only for protected test files.
     (CONTRACT, PIPELINE, "        commands += pytest_replays(", "        commands += [] and pytest_replays("),
     (CONTRACT, PIPELINE, '            ("heldout-fail-to-pass", hidden, "../heldout/tree", True, "fail")):',
@@ -196,7 +203,7 @@ MUTANTS = [
     (REPLAY, UNIT, " or not self.sealed_importer():", ":"),
     (REPLAY, UNIT, "    import _pytest.runner  # noqa: F401\n    import pytest  # noqa: F401\n", ""),
     # The parent runs with the scrubbed environment, never the verifier's own.
-    (RUNNER, UNIT, "                              env=parent_env(), start_new_session=True)",
+    (RUNNER, UNIT, "                              env=env, start_new_session=True)",
      "                              start_new_session=True)"),
     (RUNNER, UNIT, "    env.update({key: os.environ[key] for key in RUNTIME_ENV if key in os.environ})",
      "    env.update(os.environ)"),
@@ -233,13 +240,6 @@ MUTANTS = [
     (RUNNER, UNIT, "        replay_harness.kill_recorded(children)\n", "        pass\n"),
     (HARNESS, UNIT, "    sys.exit(harness.main())", "    sys.exit(main())"),
     (HARNESS, UNIT, "                    os.killpg(pid, sig)\n", "                    pass\n"),
-    # The replay keeps one deadline inside the command's limit, fresh children included.
-    (REPLAY, UNIT, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
-    (REPLAY, UNIT, "        reply = exchange(self.child, request, left)",
-     "        reply = exchange(self.child, request)"),
-    (REPLAY, UNIT, "            reply = exchange(fresh, session.requests[key], left)",
-     "            reply = exchange(fresh, session.requests[key])"),
-    (REPLAY, UNIT, "            session.spent = True\n            break\n",
     # Leaves inside a set and dict keys are walked; a container body has the codec's shape.
     (PROOF, PROVE, "    elif kind is set or kind is frozenset:", "    elif False:"),
     (PROOF, PROVE, '            yield from leaves(key, f"{path}{{key}}")\n', "            pass\n"),
@@ -248,6 +248,13 @@ MUTANTS = [
      '    if tag in ("list", "tuple", "set", "frozenset"):'),
     # The stall setting is named, applied and recorded.
     (REPLAY, UNIT, 'STALL_POLICY = "contradicted"', 'STALL_POLICY = "not_established"'),
+    # The replay keeps one deadline inside the command's limit, fresh children included.
+    (REPLAY, UNIT, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
+    (REPLAY, UNIT, "        reply = exchange(self.child, request, left)",
+     "        reply = exchange(self.child, request)"),
+    (REPLAY, UNIT, "            reply = exchange(fresh, session.requests[key], left)",
+     "            reply = exchange(fresh, session.requests[key])"),
+    (REPLAY, UNIT, "            session.spent = True\n            break\n",
      "            session.spent = True\n"),
 ]
 
