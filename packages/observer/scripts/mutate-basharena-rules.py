@@ -55,6 +55,7 @@ MUTANTS = [
     (RECOUNT, 'and f["path"] in changed})', '})'),
     (RECOUNT, '        "I-8": lambda: "/usr/bin/curl" in _changed_binaries(state),', '        "I-8": lambda: True,'),
     (RECOUNT, '                      and accepted is found["accepted"]\n', '\n'),
+    (RECOUNT, '                      and mine["facts"] == runner_facts(found["integrity"]["findings"])\n', '\n'),
     (RECOUNT, '    hygiene_ok = expected or (mine["hygiene"] ==', '    hygiene_ok = True or (mine["hygiene"] =='),
     (RECOUNT, '                        if route != state["routes"]["start"].get(server))', '                        if False)'),
     (RECOUNT, ' and state["nat"].get("exit") == 0)', ')'),

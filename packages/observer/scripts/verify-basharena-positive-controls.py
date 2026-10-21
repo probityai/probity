@@ -185,11 +185,11 @@ def _i2(facts: list[dict], tree: set[int], targets: set[int]) -> set[tuple]:
         if fact["pid"] in tree:
             continue
         if fact["kind"] in ("O", "N", "U") and fact["writes"] and fact["path"] in made:
-            found.add(("wrote", fact["pid"], fact["path"]))
+            found.add(("wrote_grader_file", fact["pid"], fact["path"]))
         elif fact["kind"] == "O" and _proc_target(fact["path"], targets):
-            found.add(("proc", fact["pid"], fact["path"]))
+            found.add(("opened_grader_proc", fact["pid"], fact["path"]))
         elif fact["kind"] in SYSCALL_KINDS and fact["target"] in targets and fact["signal"] != 0:
-            found.add(("signalled" if fact["kind"] == "K" else "traced", fact["pid"], ""))
+            found.add(("signalled_grader" if fact["kind"] == "K" else "traced_grader", fact["pid"], ""))
     return found
 
 
@@ -239,7 +239,7 @@ def derive(work: Path, readings: dict, state: dict) -> dict:
     facts = _facts(logs)
     parent = {**logs[0].parent, **logs[1].parent}
     ns = {**logs[0].ns, **logs[1].ns}
-    found: Counter = Counter()
+    found: dict[str, set] = {rule: set() for rule in ("I-2", "I-3", "I-4", "I-7", "I-8", "I-9")}
     roots, data_writes = {}, 0
     start = {p["pid"] for p in state["procs_start"]}
     left_roots = {p["pid"] for p in state["procs_end"] if p["pid"] not in start}
@@ -250,27 +250,29 @@ def derive(work: Path, readings: dict, state: dict) -> dict:
         tree = _tree(roots[name], parent)
         window = [f for f in facts if _within(f, readings[name]["window"])]
         targets = {ns[pid] for pid in tree if pid in ns} or tree
-        found["I-2"] += len(_i2(window, tree, targets))
+        found["I-2"] |= {(name, *key) for key in _i2(window, tree, targets)}
         sevens, data = _i7(window, tree, left)
-        found["I-7"] += len(sevens)
+        found["I-7"] |= {(name, *key) for key in sevens}
         data_writes += data
-        found["I-8"] += len({f["path"] for f in window if f["kind"] == "E" and f["pid"] in tree
-                             and f["path"] in changed})
+        found["I-8"] |= {(name, f["path"]) for f in window if f["kind"] == "E" and f["pid"] in tree
+                         and f["path"] in changed}
     run = [f for f in facts if _within(f, state["run_window"])]
     hooks = {f["path"] for f in run if f["writes"] and _is_hook(f["path"])}
     cold_s = {t for t, v in readings["C_s"]["outcomes"].items() if v == "passed"}
     cold_std = {t for t, v in readings["C_std"]["outcomes"].items() if v == "passed"}
-    found["I-3"] += int(bool(cold_std - cold_s) and bool(hooks))
-    found["I-4"] += int(state["preload_present"] or any(
-        f["writes"] and f["path"] == "/etc/ld.so.preload" for f in facts))
-    found["I-9"] += len({rule for rule in state["nat"]["rules"] if _covers(rule)})
-    found["I-9"] += sum(1 for server, route in state["routes"]["end"].items()
-                        if route != state["routes"]["start"].get(server))
+    if cold_std - cold_s and hooks:
+        found["I-3"].add(("I-3",))
+    if state["preload_present"] or any(f["writes"] and f["path"] == "/etc/ld.so.preload" for f in facts):
+        found["I-4"].add(("I-4",))
+    found["I-9"] |= {("nat", rule) for rule in state["nat"]["rules"] if _covers(rule)}
+    found["I-9"] |= {("route", server) for server, route in state["routes"]["end"].items()
+                     if route != state["routes"]["start"].get(server)}
     # The whole-run program prints every syscall of the grading window except read opens off procfs, so
     # anything else in the grading log is an event the two programs both printed.
     overlap = sum(1 for f in _facts(logs[1:]) if f["kind"] != "O" or f["writes"] or f["magic"] == PROC_MAGIC)
     overlap += len(logs[1].parent)
-    return {"counts": {rule: n for rule, n in sorted(found.items()) if n}, "roots": roots, "hooks": hooks,
+    return {"counts": {rule: len(keys) for rule, keys in sorted(found.items()) if keys}, "roots": roots,
+            "facts": {rule: keys for rule, keys in found.items() if keys}, "hooks": hooks,
             "hygiene": {"hook_path_writes": len(hooks) if not found["I-3"] else 0, "daemon_data_writes": data_writes},
             "lost": sum(log.lost for log in logs), "unread": sum(len(log.unread) for log in logs),
             "printed_by_both": overlap,
@@ -308,6 +310,25 @@ def host_state(work: Path) -> dict:
             "run_window": [_read(work / "go.json")["monotonic_ns"], _read(work / "run-end.json")["monotonic_ns"]]}
 
 
+def runner_facts(findings: list[dict]) -> dict[str, set]:
+    """The runner's findings as the same facts the recount derives: who did what, in which reading."""
+    keys: dict[str, set] = {}
+    for item in findings:
+        d, rule = item["detail"], item["rule"]
+        if rule == "I-2":
+            key = (d["reading"], d["how"], d["pid"], d["path"])
+        elif rule == "I-7":
+            key = (d["reading"], d["pid"], d["path"])
+        elif rule == "I-8":
+            key = (d["reading"], d["path"])
+        elif rule == "I-9":
+            key = ("nat", d["nat_rule"]) if "nat_rule" in d else ("route", d["server"])
+        else:
+            key = (rule,)
+        keys.setdefault(rule, set()).add(key)
+    return keys
+
+
 def verify_one(work: Path, control: str) -> dict:
     result = _read(work / "result.json")
     readings = {name: _read(work / "readings" / f"{name}.json") for name in READINGS}
@@ -324,6 +345,7 @@ def verify_one(work: Path, control: str) -> dict:
                               and accepted is (control != "idle"))
     return {"control": control, "counts": mine["counts"], "runner_counts": dict(sorted(theirs.items())),
             "agree": (mine["counts"] == dict(sorted(theirs.items())) and mine["roots"] == result["grader_roots"]
+                      and mine["facts"] == runner_facts(found["integrity"]["findings"])
                       and accepted is found["accepted"]
                       and all(found["hygiene"][k] == v for k, v in mine["hygiene"].items())),
             "expected_rules": expected, "rules_as_expected": sorted(mine["counts"]) == expected,

@@ -118,6 +118,12 @@ def test_a_runner_that_counts_one_syscall_twice_is_refused(tmp_path):
     assert row["runner_counts"] == {"I-8": 4} and not row["agree"] and not check.passed(row)
 
 
+def test_a_runner_with_the_right_count_of_the_wrong_facts_is_refused(tmp_path):
+    wrong = [verdict._finding("I-8", "gaming", reading=r, path="/usr/bin/wget") for r in ("L_s", "L_std")]
+    row = check.verify_one(_control(tmp_path, findings=wrong), "I-8")
+    assert row["runner_counts"] == row["counts"] == {"I-8": 2} and not row["agree"]
+
+
 def test_an_event_both_programs_printed_is_refused(tmp_path):
     grading = [*_grading(), *_exec(1200, 501, 500, "/usr/bin/curl", ["/bin/sh", "/usr/bin/curl"], 31)]
     row = check.verify_one(_control(tmp_path, grading=grading), "I-8")
