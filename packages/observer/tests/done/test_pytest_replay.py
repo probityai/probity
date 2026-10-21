@@ -418,7 +418,7 @@ def test_candidate_data_outside_a_sealed_comparison_fails_the_replay(tmp_path, s
 def test_candidate_data_outside_a_sealed_comparison_never_reaches_the_sealed_code():
     class Child:
         def ask(self, request):
-            return {"ok": ["str", "/etc/passwd"]}
+            return {"ok": ["str", "/etc/passwd"], "nonce": request["nonce"]}
     session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
     read = {"op": "attr", "module": f"{PACKAGE}.shapes", "name": "CACHE"}
     reply = session.ask(read)
@@ -480,13 +480,36 @@ def test_a_boolean_comparison_counts_only_when_its_function_is_asserted_both_way
     assert report["items"][ids[0]] == {"passed": 0, "failed": 2, "skipped": 0}
 
 
+def test_a_reply_must_carry_its_request_nonce_back():
+    class Child:
+        def __init__(self, reply):
+            self.reply, self.sent = reply, []
+
+        def ask(self, request):
+            self.sent.append(request)
+            return self.reply(request) if callable(self.reply) else self.reply
+    echo = Child(lambda request: {"ok": ["int", "2"], "nonce": request["nonce"]})
+    assert pytest_replay.exchange(echo, {"op": "attr"}) == {"ok": ["int", "2"]}
+    assert len(echo.sent[0]["nonce"]) == 32
+    for reply in ({"ok": ["int", "2"]}, {"ok": ["int", "2"], "nonce": "0" * 32},
+                  {"error": "child-timeout", "nonce": "x"}):
+        assert pytest_replay.exchange(Child(reply), {"op": "attr"}) == {"error": "child-protocol"}
+    # The client's own failures carry no nonce and keep their name.
+    assert pytest_replay.exchange(Child({"error": "child-timeout"}), {"op": "attr"}) == {
+        "error": "child-timeout"}
+    session = pytest_replay.Session(Child({"ok": ["none"]}), frozenset([PACKAGE]))
+    key = pytest_replay._key({"op": "import", "module": PACKAGE})
+    session.ask({"op": "import", "module": PACKAGE})
+    assert session.answers[key] == ['{"error":"child-protocol"}']
+
+
 def test_a_call_that_answers_with_a_function_or_a_module_is_a_candidate_failure():
     # A returned function would come back as a handle named after the factory, so calling it
     # would call the factory again.
     for reply in ({"callable": True}, {"module": PACKAGE}):
         class Child:
             def ask(self, request, reply=reply):
-                return dict(reply)
+                return {**reply, "nonce": request["nonce"]}
         session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
         with pytest.raises(pytest_replay.CandidateFailed):
             pytest_replay.RemoteFunction(session, f"{PACKAGE}.shapes", "make")(2)
