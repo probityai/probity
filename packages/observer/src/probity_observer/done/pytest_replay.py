@@ -597,7 +597,6 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     impure = sorted(key for key, answers in session.answers.items() if len(set(answers)) != 1)
     order = sorted(session.answers)
     random.Random(request["order_seed"]).shuffle(order)
-    fresh_mismatch = fresh_mismatches(request, session, order, timeout)
     calls, distinct = session.counted()
     failure = None
     if session.outside:
@@ -614,9 +613,17 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
         failure = "a sealed id did not pass"
     elif impure:
         failure = "answers differ on one request"
-    elif fresh_mismatch:
+    # The fresh children are asked only of a run that holds no failure yet: nothing they
+    # answer can change a failed replay.
+    fresh_mismatch = [] if failure else fresh_mismatches(request, session, order, timeout)
+    if fresh_mismatch:
         failure = "a fresh child answered differently"
+    # Every failure here is definitive, a stall inside one of the candidate's own requests
+    # included: the child had the call's whole limit to answer, and a fresh child asked the
+    # same request stalls the same way. Only the runner's stop of the whole parent at the
+    # command's limit, with no result written, reads as no answer (``timed_out``).
     return {**base, "passed": failure is None, "failure": failure, "exit": code,
+            "definitive": failure is not None,
             "items": counter.items, "calls_intercepted": calls, "distinct_calls": distinct,
             "impure": impure, "fresh_mismatch": fresh_mismatch, "fresh_order": order,
             "unproven": counter.unproven, "outside": session.outside, "degenerate": degenerate}

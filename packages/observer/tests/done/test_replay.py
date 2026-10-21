@@ -8,6 +8,8 @@ processes in ``/dev/shm`` or the workspace, which only the container child can s
 
 import json
 import shutil
+import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -393,3 +395,169 @@ def test_a_conflicting_visible_test_fails_the_visible_probes(tmp_path, local):
     # sequential pass of type-strict accepts it; the second run in the same child does not.
     exits, _ = grade_source(tmp_path / "counter", LCB_RECORD, COUNTER, local)
     assert exits["visible_determinism"] == 1
+
+
+class Scripted:
+    """A child that gives recorded replies in order: no candidate program runs. Each rule
+    below is driven from the parent's side with it."""
+
+    replies: list = []
+
+    def __init__(self, argv, cwd, timeout):
+        self.timed_out = False
+        replay.STARTED.append(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        pass
+
+    def close(self):
+        pass
+
+    def call(self, args_tagged, kwargs_tagged, timeout=None):
+        reply = Scripted.replies.pop(0)
+        self.timed_out = self.timed_out or replay.stall(reply)
+        return reply
+
+
+def _scripted(monkeypatch, replies):
+    monkeypatch.setattr(replay, "Child", Scripted)
+    monkeypatch.setattr(Scripted, "replies", list(replies))
+
+
+TWO = replay.plain(2)
+STALLED = replay.ClientFailure("child-timeout")
+
+
+def test_a_partial_reply_line_is_stopped_at_the_call_limit():
+    # The child writes part of a line and stops: no whole line inside the limit is no answer,
+    # and the read never blocks past it.
+    source = "import sys, time\nsys.stdout.write('{\"ok\"')\nsys.stdout.flush()\ntime.sleep(60)\n"
+    started = time.monotonic()
+    with replay.Child([sys.executable, "-I", "-c", source], None, 1.0) as child:
+        reply = child.ask({"args": []})
+        assert child.timed_out
+    assert reply == {"error": "child-timeout"} and replay.stall(reply)
+    assert time.monotonic() - started < 20
+
+
+def test_lines_are_read_one_at_a_time_and_a_line_has_a_limit(monkeypatch):
+    source = "import sys, time\nsys.stdout.write('{\"a\": 1}\\n{\"b\": 2}\\n' + 'x' * 64)\n" \
+             "sys.stdout.flush()\ntime.sleep(60)\n"
+    monkeypatch.setattr(replay, "LINE_LIMIT", 32)
+    with replay.Child([sys.executable, "-I", "-c", source], None, 5.0) as child:
+        assert child.read() == {"a": 1} and child.read() == {"b": 2}
+        assert child.read() == {"error": "child-protocol"} and not child.timed_out
+    # A line the child writes in the client's own words is still the child's.
+    assert not replay.stall({"error": "child-timeout"})
+
+
+def test_a_stall_after_a_definitive_failure_never_reads_as_no_answer(tmp_path, monkeypatch):
+    # The masking case: a wrong answer, then a stall (a later call, or a fresh child).
+    out = tmp_path / "o.json"
+    request = tmp_path / "r.json"
+    request.write_text(json.dumps({"out": str(out)}))
+
+    def ran(definitive):
+        def fake(body):
+            stalled = Scripted(None, None, 1.0)
+            stalled.timed_out = True
+            return {"passed": False, "failure": "pytest exit 1", "mode": "pytest",
+                    "definitive": definitive}
+        return fake
+    monkeypatch.setattr(replay, "replay", ran(True))
+    assert replay.main([str(request)]) == 1
+    assert "timed_out" not in json.loads(out.read_text())
+    monkeypatch.setattr(replay, "replay", ran(False))
+    assert replay.main([str(request)]) == 1
+    assert json.loads(out.read_text())["timed_out"] is True
+
+
+def _cases(tmp_path):
+    test = tmp_path / "t.py"
+    test.write_text("def check(candidate):\n    assert candidate(1, 1) == 2\n"
+                    "    assert candidate(2, 2) == 4\n")
+    return {"test": str(test), "child_argv": [], "child_cwd": None, "call_timeout": 1,
+            "run_timeout": 1, "order_seed": "s"}
+
+
+def test_answers_given_before_a_stall_decide_the_determinism_probe(tmp_path, monkeypatch):
+    request = _cases(tmp_path)
+    three = replay.plain(3)
+    # The first case answered wrongly twice, then the second stalled; the fresh child stalls.
+    _scripted(monkeypatch, [{"ok": three}, {"ok": three}, STALLED, STALLED])
+    found = replay.determinism(request)
+    assert found["failure"] == "answer differs from the expected value" and found["definitive"]
+    # Only stalls: no answer, which reads timed out.
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": TWO}, STALLED, {"ok": TWO}, STALLED])
+    found = replay.determinism(request)
+    assert found["failure"] == "timeout" and not found["definitive"]
+    cases = [((1, 1), {}, 2)]
+    assert replay.given_wrong([[{"ok": TWO}], [STALLED], []], cases) is None
+    assert replay.given_wrong([[{"ok": TWO}], [{"ok": three}], []], cases) == (
+        "answers differ between runs")
+    assert replay.given_wrong([[{"error": "ValueError"}], [], []], cases) == "candidate raised"
+
+
+def test_a_mismatch_given_before_a_stall_decides_the_type_strict_probe(tmp_path, monkeypatch):
+    request = _cases(tmp_path)
+    _scripted(monkeypatch, [{"ok": replay.plain(2.0)}, STALLED])
+    found = replay.type_strict(request)
+    assert found["failure"] == "1 result(s) differ in type or value" and found["definitive"]
+    _scripted(monkeypatch, [{"ok": TWO}, STALLED])
+    found = replay.type_strict(request)
+    # A stall reads as the probe's timeout, as a run cut short at its budget does.
+    assert found["failure"] == "timeout" and not found["definitive"]
+
+
+def test_a_wrong_answer_then_a_stalled_fresh_child_stays_definitive(tmp_path, monkeypatch):
+    request = {**_cases(tmp_path), "mode": "assert"}
+    # The run's first answer fails its assertion; the fresh child asked it again stalls.
+    _scripted(monkeypatch, [{"ok": replay.plain(3)}, STALLED])
+    found = replay.replay(request)
+    assert found["failure"].startswith("assertion") and found["definitive"]
+    # The run passes and a fresh child answers otherwise: definitive.
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, {"ok": TWO},
+                            {"ok": replay.plain(5)}])
+    found = replay.replay(request)
+    assert found["fresh_mismatch"] and found["definitive"]
+    # The run passes and a fresh child stalls: no answer, not a wrong one.
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, STALLED, STALLED])
+    found = replay.replay(request)
+    assert found["fresh_mismatch"] and not found["definitive"]
+
+
+def test_a_stalled_fresh_child_never_hides_a_later_wrong_fresh_answer(tmp_path, monkeypatch):
+    # The fresh pass goes on past a stalled child while its budget lasts: whichever key comes
+    # first stalls, the other is answered wrongly, and that answer decides the run.
+    request = {**_cases(tmp_path), "mode": "assert", "run_timeout": 30}
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, STALLED, {"ok": replay.plain(9)}])
+    found = replay.replay(request)
+    assert len(found["fresh_mismatch"]) == 2 and found["definitive"]
+    assert found["failure"] == "timeout" and not found["passed"]
+
+
+def test_a_run_whose_budget_runs_out_is_no_answer(tmp_path, monkeypatch):
+    # The run's budget is spent before the first call: the test fails on no answer, which is
+    # never definitive, though no child stalled.
+    request = {**_cases(tmp_path), "mode": "assert", "run_timeout": 0}
+    _scripted(monkeypatch, [])
+    monkeypatch.setattr(replay, "STARTED", [])
+    found = replay.replay(request)
+    assert found["failure"] == "timeout" and not found["definitive"]
+    assert not any(child.timed_out for child in replay.STARTED)
+
+
+def test_a_type_strict_run_cut_at_its_budget_keeps_the_mismatch_it_was_given(
+        tmp_path, monkeypatch):
+    request = _cases(tmp_path)
+    # The second call is never made: the budget ran out after the first, wrong-typed answer.
+    monkeypatch.setattr(replay, "_one_run",
+                        lambda *a: ([{"ok": replay.plain(2.0)}], 1.0, True))
+    found = replay.type_strict(request)
+    assert found["failure"] == "1 result(s) differ in type or value" and found["definitive"]
+    monkeypatch.setattr(replay, "_one_run", lambda *a: ([{"ok": TWO}], 1.0, True))
+    found = replay.type_strict(request)
+    assert found["failure"] == "timeout" and not found["definitive"]
