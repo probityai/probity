@@ -522,6 +522,14 @@ def test_each_answer_is_compared_once_right_after_its_call_with_its_sealed_value
     assert repr(phase_of().wrap([1, "a"])) == "[1, 'a']"
 
 
+def test_the_parent_records_a_boolean_inside_an_answer_by_its_place():
+    source = (f"from {PACKAGE}.shapes import is_square\n\n\n"
+              "def test_it():\n    assert is_square(1, 1) == [True, 2]\n")
+    phase = phase_of(source, "test_it")
+    assert (phase.wrap([True, 2]) == [True, 2]) is True and phase.complete()
+    assert phase.booleans == {f"{PACKAGE}.shapes.is_square[0]": {True}}
+
+
 def test_a_boolean_comparison_counts_only_when_its_function_is_asserted_both_ways(tmp_path):
     source = "def is_square(w, h):\n    return w == h\n"
     test = (f"from {PACKAGE}.shapes import is_square\n\n\n"

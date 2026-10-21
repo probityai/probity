@@ -313,8 +313,8 @@ class Phase:
         if not strict_eq(other, expected):
             raise CandidateFailed("compared with a value that is not the sealed one")
         self.compared.append(index)
-        if type(expected) is bool:
-            self.booleans.setdefault(self.proof.sites[index].callee, set()).add(expected)
+        for key, leaf in pytest_proof.boolean_leaves(self.proof.sites[index].callee, expected):
+            self.booleans.setdefault(key, set()).add(leaf)
         return strict_eq(answer, expected)
 
     def complete(self) -> bool:
@@ -473,17 +473,17 @@ class Count:
             session.phase = None
         if not phase.complete():
             raise CandidateFailed("a sealed comparison did not run")
-        for callee, values in phase.booleans.items():
-            self.booleans.setdefault(callee, set()).update(values)
-            self.boolean_items.setdefault(item.nodeid, set()).add(callee)
+        for key, values in phase.booleans.items():
+            self.booleans.setdefault(key, set()).update(values)
+            self.boolean_items.setdefault(item.nodeid, set()).add(key)
         self.verified.add(item.nodeid)
         return True
 
     def degenerate(self) -> list[str]:
         """Withdraw the passes of tests whose boolean comparison was only ever made one way
         on its function in this run; returns their ids."""
-        weak = {callee for callee, values in self.booleans.items() if values != {True, False}}
-        found = sorted(nodeid for nodeid, callees in self.boolean_items.items() if callees & weak)
+        weak = {key for key, values in self.booleans.items() if values != {True, False}}
+        found = sorted(nodeid for nodeid, keys in self.boolean_items.items() if keys & weak)
         for nodeid in found:
             counts = self.items.setdefault(nodeid, {"passed": 0, "failed": 0, "skipped": 0})
             counts["failed"] = counts.get("failed", 0) + counts.get("passed", 0)
