@@ -6,7 +6,8 @@ refused remote names, the argv and path checks, the verifier's own count in the 
 isolation reading of replay-covered worker commands, the proof of which ids reduce to one
 sealed comparison, and the parent's own enforcement of it (the instrumented comparison, its
 one call and strict type, a pass only after it ran, no candidate data outside it, boolean
-comparisons made both ways), and the refusal of a function a call returns. Each is applied to the source, its tests
+comparisons made both ways), the refusal of a function a call returns, and the finder
+that serves sealed code only. Each is applied to the source, its tests
 run (without bytecode, so a restored file is never measured through a stale cache), and the
 file is restored. Run from ``packages/observer`` in an environment with the ``test`` and
 ``done`` extras:
@@ -130,6 +131,8 @@ MUTANTS = [
      "    elif False:"),
     # The nonce, the call that returns a function, the finder and the order of the checks.
     (REPLAY, UNIT, "    if call:\n        raise_for(reply)", "    if False:\n        raise_for(reply)"),
+    (REPLAY, UNIT, " or not self.sealed_importer():", ":"),
+    (REPLAY, UNIT, "    import _pytest.runner  # noqa: F401\n    import pytest  # noqa: F401\n", ""),
 ]
 
 

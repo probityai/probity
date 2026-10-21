@@ -492,6 +492,25 @@ def test_a_call_that_answers_with_a_function_or_a_module_is_a_candidate_failure(
             pytest_replay.RemoteFunction(session, f"{PACKAGE}.shapes", "make")(2)
 
 
+def test_the_finder_serves_remote_modules_to_sealed_code_only(tmp_path):
+    session = pytest_replay.Session(None, frozenset([PACKAGE]))
+    finder = pytest_replay.RemoteFinder(session, str(tmp_path))
+    # The verifier's own code (this file) asking for the name gets nothing from the child.
+    assert finder.find_spec(PACKAGE) is None
+    namespace = {"finder": finder}
+    exec(compile(f"spec = finder.find_spec({PACKAGE!r})", str(tmp_path / "test_x.py"), "exec"),
+         namespace)
+    assert namespace["spec"].name == PACKAGE
+    assert finder.find_spec("json") is None
+
+
+@pytest.mark.parametrize("name", ["_pytest", "pluggy", "iniconfig"])
+def test_pytest_is_imported_before_the_remote_names_are_checked(tmp_path, name):
+    # In a fresh parent nothing of pytest is loaded yet, so the check must come after it is.
+    code, report = run(tmp_path, HONEST, remote=(PACKAGE, name))
+    assert code == 1 and report["failure"] == f"remote module name not allowed: {name}", report
+
+
 def test_the_compiler_replays_only_ids_the_proof_counts(tmp_path):
     start, held = tmp_path / "start", tmp_path / "held"
     (start / PACKAGE).mkdir(parents=True)
