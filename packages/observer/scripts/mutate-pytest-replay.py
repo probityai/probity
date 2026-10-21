@@ -113,6 +113,9 @@ MUTANTS = [
     (PROOF, PROVE, "    if kind is list or kind is tuple:", "    if False:"),
     (PROOF, PROVE, "    elif kind is dict:", "    elif False:"),
     (PROOF, PROVE, "            yield callee + path, leaf", "            yield callee, leaf"),
+    # A name an except clause binds is a binding like any other.
+    (PROOF, PROVE, "        elif isinstance(node, ast.ExceptHandler) and node.name:",
+     "        elif False:"),
     (REPLAY, UNIT,
      "        for key, leaf in pytest_proof.boolean_leaves(self.proof.sites[index].callee, expected):",
      "        for key, leaf in ([(self.proof.sites[index].callee, expected)]\n"
