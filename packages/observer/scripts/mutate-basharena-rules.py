@@ -35,6 +35,9 @@ MUTANTS = [
     (OBSERVER, '    return f"""{_open_probe(f"/cgroup == {int(cgroup_id)} && !{_WRITE_OR_PROC}/")}\n"""',
      '    return program(cgroup_id)'),
     (OBSERVER, '_MAGIC = "((struct super_block *){dentry}->d_sb)->s_magic"', '_MAGIC = "{dentry}->d_sb->s_magic"'),
+    (OBSERVER, '        return event.detail["ppid"] in shims if outside is None else outside',
+     '        return event.detail["ppid"] in shims'),
+    (OBSERVER, '            detail["parent_outside"] = f[7] == "1"', '            detail["parent_outside"] = True'),
     # One finding per fact.
     (VERDICT, '        if key not in seen:\n', '        if True:\n'),
     # A reading that did not complete never supports integrity.
