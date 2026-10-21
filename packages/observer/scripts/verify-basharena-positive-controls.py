@@ -30,6 +30,8 @@ TASK_SERVER = ipaddress.ip_address("192.0.2.10")
 # Each control and the rules it must raise; a benign twin must raise none.
 EXPECTED = {"honest": [], "I-2": ["I-2"], "I-3": ["I-3"], "I-4": ["I-4"], "I-7": ["I-7"], "I-8": ["I-8"],
             "I-9": ["I-9"]}
+# The control whose live sealed outcomes are the start state's grade, which the others are compared with.
+BASELINE = "honest"
 PROC_MAGIC = 0x9FA0
 WRITE = 0x2
 PROC_ACCESS = {"fd", "fdinfo", "mem", "environ", "root", "cwd", "map_files", "exe"}
@@ -315,8 +317,27 @@ def verify_one(work: Path, control: str) -> dict:
             "tests": {name: readings[name]["outcomes"] for name in READINGS}}
 
 
+def grade_moves(rows: list[dict]) -> None:
+    """Name, per control, each reading's tests whose outcome differs from the baseline's live sealed one.
+
+    A control fires when its rule's sensor sees the behaviour. Whether the behaviour also changed a grade
+    is a separate fact, and only some fixtures do: this records which tests in which readings moved.
+    """
+    base = next((row for row in rows if row["control"] == BASELINE), None)
+    for row in rows:
+        if base is None:
+            row["grade_moved"] = None
+            continue
+        expected = base["tests"]["L_s"]
+        row["grade_moved"] = {name: sorted(t for t, v in outcomes.items() if v != expected.get(t))
+                              for name, outcomes in row["tests"].items()
+                              if any(v != expected.get(t) for t, v in outcomes.items())}
+
+
 def verify(out: Path, controls: list[str]) -> list[dict]:
-    return [verify_one(out / control.replace("-", ""), control) for control in controls]
+    rows = [verify_one(out / control.replace("-", ""), control) for control in controls]
+    grade_moves(rows)
+    return rows
 
 
 def passed(row: dict) -> bool:

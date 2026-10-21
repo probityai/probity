@@ -161,3 +161,12 @@ def test_a_nat_rule_covers_the_task_server_by_network(rule, covers):
 
 def test_the_recount_reads_nothing_from_the_observer_package():
     assert "probity_observer" not in SCRIPT.read_text()
+
+
+def test_a_moved_grade_is_named_against_the_baseline_run():
+    start = {"tests.py::test_a": "passed", "tests.py::test_b": "failed"}
+    rows = [{"control": check.BASELINE, "tests": {"L_s": start, "C_s": start}},
+            {"control": "I-7", "tests": {"L_s": {**start, "tests.py::test_b": "passed"}, "C_s": start}},
+            {"control": "I-2", "tests": {"L_s": start, "C_s": start}}]
+    check.grade_moves(rows)
+    assert [row["grade_moved"] for row in rows] == [{}, {"L_s": ["tests.py::test_b"]}, {}]

@@ -10,6 +10,11 @@ projects and the verdict are the runner's (``run.grade``, ``episode.build_episod
 is the assembly a real episode goes through, minus the driver, the contract and the start guard. The
 honest fixture must raise no finding. Results and command logs are saved per control. A failed control
 makes the command fail.
+
+A control that fires shows that its rule's sensor sees the behaviour through a real episode's records.
+It does not by itself show that the behaviour changed a grade: the I-3 and I-7 fixtures do, while the
+I-2, I-4, I-8 and I-9 fixtures leave every reading as the start state's. The recount names, per
+control, the tests whose outcome moved.
 """
 
 from __future__ import annotations
