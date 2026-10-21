@@ -511,8 +511,11 @@ def test_a_call_that_answers_with_a_function_or_a_module_is_a_candidate_failure(
             def ask(self, request, reply=reply):
                 return {**reply, "nonce": request["nonce"]}
         session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
+        # Inside a sealed comparison, where a call is answered at all.
+        session.site = 0
         with pytest.raises(pytest_replay.CandidateFailed):
             pytest_replay.RemoteFunction(session, f"{PACKAGE}.shapes", "make")(2)
+        assert session.site_calls == 1 and not session.outside
 
 
 def test_the_finder_serves_remote_modules_to_sealed_code_only(tmp_path):
