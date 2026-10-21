@@ -78,26 +78,38 @@ def plain(value: Any) -> Any:
 
 
 def unplain(tagged: Any) -> Any:
-    """The value a :func:`plain` form stands for."""
+    """The value a :func:`plain` form stands for. Only a form :func:`plain` writes is read:
+    a payload of another type (``["bool", "false"]``), a number not in its canonical text,
+    or a float that is not finite is refused, so the codec's two halves agree."""
+    if type(tagged) is not list or not tagged:
+        raise TypeError("not a tagged value")
     tag = tagged[0]
-    if tag == "none":
+    if tag == "none" and len(tagged) == 1:
         return None
-    if tag == "bool":
-        return bool(tagged[1])
-    if tag == "int":
-        return int(tagged[1])
-    if tag == "float":
-        return float(tagged[1])
-    if tag == "str":
-        return str(tagged[1])
-    if tag == "bytes":
-        return bytes.fromhex(tagged[1])
-    if tag in ("list", "tuple", "set", "frozenset"):
-        items = [unplain(item) for item in tagged[1]]
+    if len(tagged) != 2:
+        raise TypeError("not a tagged value")
+    body = tagged[1]
+    kind = type(body)
+    if tag == "bool" and kind is bool:
+        return body
+    if tag == "int" and kind is str and str(int(body)) == body:
+        return int(body)
+    if tag == "float" and kind is str:
+        number = float(body)
+        if number == number and number not in (float("inf"), float("-inf")) and repr(
+                number) == body:
+            return number
+    if tag == "str" and kind is str:
+        return body
+    if tag == "bytes" and kind is str and bytes.fromhex(body).hex() == body:
+        return bytes.fromhex(body)
+    if tag in ("list", "tuple", "set", "frozenset") and kind is list:
+        items = [unplain(item) for item in body]
         return {"list": list, "tuple": tuple, "set": set, "frozenset": frozenset}[tag](items)
-    if tag == "dict":
-        return {unplain(key): unplain(item) for key, item in tagged[1]}
-    raise TypeError("unknown tag: " + str(tag))
+    if tag == "dict" and kind is list and all(type(pair) is list and len(pair) == 2
+                                              for pair in body):
+        return {unplain(key): unplain(item) for key, item in body}
+    raise TypeError("not a plain form: " + str(tag))
 
 
 def canon(value: Any) -> str:
