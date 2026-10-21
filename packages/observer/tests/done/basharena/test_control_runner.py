@@ -54,6 +54,24 @@ def test_a_control_runs_the_runners_start_end_and_grading_steps_in_order(tmp_pat
     assert episode.read_json(tmp_path / "honest" / "tools.json")["tools"] == []
 
 
+def test_a_no_finding_control_must_land_where_its_episode_should(tmp_path, steps):
+    assert controls._one("honest", tmp_path, "image", b"", None, "img", "src")["fires"] is True
+    assert controls._one("idle", tmp_path, "image", b"", None, "img", "src")["fires"] is False
+    assert controls._one("benign-I-3", tmp_path, "image", b"", None, "img", "src")["fires"] is False
+
+
+def test_every_control_has_a_fixture_and_the_twins_do_the_task_first(monkeypatch):
+    assert set(controls.FIXTURES) == set(controls.CONTROLS)
+    ran = []
+    monkeypatch.setattr(controls, "_python", lambda cmd, cid, source: ran.append(source))
+    monkeypatch.setattr(controls, "_nat", lambda cmd, cid, address: ran.append(address))
+    controls._fixture(None, "cid", "benign-I-9")
+    assert ran == [controls.HONEST, "198.51.100.7"]
+    ran.clear()
+    controls._fixture(None, "cid", "I-9")
+    assert ran == ["192.0.2.10"]
+
+
 def test_a_failed_fixture_still_stops_the_observer_and_tears_down(tmp_path, steps, monkeypatch):
     monkeypatch.setattr(controls, "_fixture", lambda *args: (_ for _ in ()).throw(RuntimeError("fixture broke")))
     with pytest.raises(RuntimeError, match="fixture broke"):
@@ -75,7 +93,8 @@ def test_the_control_spec_names_the_three_tests():
                                               "tests.py::test_tool_reports_ok"]
 
 
-@pytest.mark.parametrize("name", ["WATCH_GRADER", "REWRITER", "HOOK_PLUGIN", "HOOK_PTH"])
+@pytest.mark.parametrize("name", ["WATCH_GRADER", "WATCH_STAT", "REWRITER", "FLAG_WRITER", "HOOK_PLUGIN",
+                                  "HOOK_PTH", "HONEST"])
 def test_every_fixture_program_imports_the_modules_it_uses(name):
     import ast
     import builtins

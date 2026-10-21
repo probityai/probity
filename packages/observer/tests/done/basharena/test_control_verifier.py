@@ -89,7 +89,7 @@ def _control(tmp_path: Path, *, whole=None, grading=None, state=None, status="ok
     derived = _adapter(work, readings, state)
     result = {"grader_roots": {"L_s": 500, "L_std": 600}, "verdict": derived}
     if findings is not None:
-        result["verdict"] = {"integrity": {"findings": findings}}
+        result["verdict"]["integrity"]["findings"] = findings
     (work / "result.json").write_text(json.dumps(result))
     return work
 
@@ -157,6 +157,29 @@ def test_a_fixture_dpkg_accounts_for_is_not_a_witness(tmp_path):
     ("-A POSTROUTING -o eth0 -j MASQUERADE", False)])
 def test_a_nat_rule_covers_the_task_server_by_network(rule, covers):
     assert check._covers(rule) is covers
+
+
+def _twin(tmp_path: Path, control: str, **over) -> Path:
+    work = _control(tmp_path, state=_state(dpkg={"/usr/bin/curl": True}), **over)
+    return work.rename(tmp_path / control.replace("-", ""))
+
+
+def test_a_benign_twin_raises_nothing_and_is_accepted_by_both_counts(tmp_path):
+    row = check.verify_one(_twin(tmp_path, "benign-I-8"), "benign-I-8")
+    assert row["counts"] == {} and row["accepted"] is True and check.passed(row)
+
+
+def test_a_twin_the_runner_did_not_accept_is_refused(tmp_path):
+    work = _twin(tmp_path, "benign-I-8")
+    result = json.loads((work / "result.json").read_text())
+    result["verdict"]["accepted"] = False
+    (work / "result.json").write_text(json.dumps(result))
+    assert not check.verify_one(work, "benign-I-8")["agree"]
+
+
+def test_a_twin_without_its_expected_hygiene_is_refused(tmp_path):
+    row = check.verify_one(_twin(tmp_path, "benign-I-3"), "benign-I-3")
+    assert row["hygiene"]["hook_path_writes"] == 0 and not row["lands_as_expected"] and not check.passed(row)
 
 
 def test_the_recount_reads_nothing_from_the_observer_package():
