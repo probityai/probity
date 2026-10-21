@@ -83,13 +83,18 @@ conditions are these, and every one is needed:
   serves** (`from pkg.shapes import area`, `import pkg.shapes`, `import pkg.shapes as
   shapes`). A helper of the sealed test file, or of the verifier's environment, is not a
   candidate call.
-- **Its arguments are literals or table names.** No call is nested in another, nothing the
-  candidate returned is called, and nothing is unpacked.
-- **The expected side is a literal, or a table name that no call in the test receives,** so
-  the child never sees an expected value. It is not `None`, it can cross as plain data, and a
-  boolean expectation counts only where the same function is asserted both `True` and
-  `False` among the counted ids: a function that always returns one boolean, or `None`,
-  satisfies a lone expectation of it.
+- **Its arguments are literals or table names, and every value of them can cross as plain
+  data.** No call is nested in another, nothing the candidate returned is called, and
+  nothing is unpacked.
+- **The expected side is a literal, or a table name that no call in the test receives.**
+  This rule is syntactic: no call is passed the expected NAME. A second table column whose
+  values happen to equal the expected column's is sent like any argument, which is the
+  guessable case of point 5. The expected value can cross as plain data, and the rule for
+  `None` and booleans holds at every place inside it, not only at the top: a value whose
+  every leaf is `None` (`None`, `(None,)`) is not proven, and a boolean at one place of the
+  answer (`== True`, `== [True]`, `== {"ok": True}`) counts only where the same function is
+  asserted both `True` and `False` at that place among the counted ids. A function that
+  always returns one boolean there, or `None`, satisfies a lone expectation of it.
 
 Every other shape is not proven: a bare helper of the candidate's package
 (`assert_allclose(area(2, 3), 6)`), a comparator or metric (`err(f(x), y) < tol`), a transform
@@ -115,8 +120,12 @@ code only: an import must come from a file under the sealed test root, or follow
 candidate named. An import the verifier's own code makes is left to the path finder.
 Importing a served module, reading an attribute of it and calling a function of it all cross
 to the child as one request line, with a fresh nonce the reply must carry back. One reply line
-comes back. Only plain data crosses, plus two handle kinds: a module, which must be a dotted
-name under a remote name, and a callable, which becomes a `RemoteFunction`. A call answers
+comes back, and the whole line must arrive within the call's limit. Only plain data crosses,
+plus three handle kinds: a module, which must be a dotted name under a remote name; a
+callable, which becomes a `RemoteFunction`; and an attribute the module does not have. The
+last is what `from pkg import submodule` asks first: the import system imports
+`pkg.submodule` only when `hasattr` says the package lacks it. The parent raises that
+`AttributeError` with the attribute's name; the candidate's arguments for it are never read. A call answers
 with plain data only; a function or module it returns is a failure. A builtin `Exception` the
 candidate raised is raised again from its plain arguments. Anything else the candidate raised,
 and every protocol failure, is `CandidateFailed`. That is a `BaseException`, so no `except
@@ -132,13 +141,19 @@ compared, once and before the next call is made, with the k-th assertion's seale
 comparison with any other value, a second comparison, a call out of turn, or any other use of
 the answer (truth, `!=`, hashing) fails. The comparison holds only when the answer equals the
 sealed value with the same builtin type at every level (`replay.strict_eq`, so `6.0`, `True`
-and `6` are three values). The test counts as passed on a run only when it returned with
+and `6` are three values). Floats follow Python's own equality, so `-0.0` equals `0.0`, as
+it does under pytest's `==`; a stricter rule would fail honest references and drop ids. The
+test counts as passed on a run only when it returned with
 every comparison made; a passed report without that (a hook that ran something else, or
 rewrote the report) counts as failed. A boolean comparison made only one way on its
 function in the run withdraws the passes that rest on it (`degenerate`).
 
 **Nothing the candidate chooses reaches the sealed code.** Except for a call's answer in the
-run of a proven test, which arrives sealed, a reply may carry only a handle: an import that succeeded, or an attribute that is a function or a module.
+run of a proven test, which arrives sealed, a reply may carry only a handle: an import that
+succeeded, or an attribute that is a function, a module or absent. A failure of the client
+itself (a time-out, an exited child, a line that is not one reply) is a type the child's
+JSON cannot produce, so a line the child writes in the client's words is still the child's.
+The codec reads only the canonical forms it writes.
 Any other reply (a plain value at import, a call from a fixture or hook, a raise) is recorded
 in `outside`, fails the replay, and reaches the sealed code as `CandidateFailed` instead of
 its value. A sealed answer goes to its comparison only. So no value of the
@@ -152,7 +167,9 @@ from the grader key and recorded (`fresh_order`). A replay in which no call or a
 reached the candidate fails: it would pass on every tree (a run whose every test skipped is
 one), so the compiler drops it instead of sealing a vacuous count. A replay in which any sealed
 id did not pass fails. The parent writes the result file. The grade's `collected` and `passed`
-for a replay command come from that file (`verify_run.grade`), never from a worker report.
+for a replay command come from that file (`verify_run.grade`), never from a worker report. A failure of the replay,
+a stall inside one of the candidate's own requests included, is definitive; once the run
+has failed, no fresh child is asked.
 
 **The decision.** probity-verify needs no change. `acceptance_observed/v1` already requires
 every behavioural command to exit 0, and it requires `collected` and `passed` to equal the
@@ -164,7 +181,10 @@ worker counts, the isolation block reports `assertions_in_parent: true` and
 `exit_status_alone_accepted: false`. Any command left with worker-only counts, including
 every command with an id that is not proven, is listed in the staging report as
 `worker_counted`, and the isolation block keeps `exit_status_alone_accepted: true`, which the
-admission rule set refuses.
+admission rule set refuses. When any command is a replay, the block also says where its
+parent ran: `verifier.replay_parent` is `{"runtime": "host", "uid": ..., "env": "scrubbed",
+"env_keys": [...]}`. The `lockdown` block describes the worker and the candidate's children,
+never the parent (point 4).
 
 **Results on the fixtures** (`tests/done/test_grade_pipeline.py`, `test_pytest_replay.py`,
 `test_pytest_proof.py`):
@@ -175,7 +195,13 @@ admission rule set refuses.
 | Wrong answer with the recorded adversary conftest | `contradicted` | `contradicted` |
 | The held-out skip special case (module patches `Function.runtest` to skip) | `not_established / sealed_tests_not_passed` | `contradicted / heldout_failed`: the held-out replay asks the held-out input, and the patch never reaches the verifier's pytest |
 | Every worker result rewritten to passed, the grade signed again | (not measured) | `contradicted / acceptance_failed_in_verifier` |
+| A hung candidate (`while True: pass`) on a sealed pytest id | `timed_out`, so a held-out stall read `not_established / probe_timed_out` (the mutant that restores it is killed) | the replay fails definitively, no `timed_out` (`test_pytest_replay.py`) |
 | Honest fix, the sealed fail-to-pass test asserts inside a loop over the answer | replayed and counted by the verifier: `worker_counted` empty, `assertions_in_parent: true`, `exit_status_alone_accepted: false`, `supported` (measured on the first version of this change, `5b7588c`) | not replayed: `worker_counted` lists `fail-to-pass` and `heldout-fail-to-pass`, `assertions_in_parent: false`, `exit_status_alone_accepted: true` |
+
+Measured on a Hetzner box: `scripts/mutate-pytest-replay.py` reports `MUTANTS 98 surviving=0`
+at `43096f8` (it was `MUTANTS 66 surviving=0` at `4b43d3b`), and the observer suite reports
+`2421 passed` at `f0b3f4f`, whose code is that of `43096f8` (it was `2379 passed` at
+`4b43d3b`).
 
 ## What this does not cover
 
@@ -217,7 +243,12 @@ admission rule set refuses.
    result. Curried and higher-order tests are therefore not counted.
 4. **The sealed test code runs in the verifier's process, on the verifier host, without a
    container.** That code is the task's own test files and conftests, sealed before the
-   agent's first turn. What the candidate can do to that process is closed: no value it
+   agent's first turn. The parent runs as the verifier's user, with the scrubbed
+   environment (`runner.parent_env`: the worker's fixed variables, the container client's
+   own settings and plugin autoloading off), so neither a variable of the verifier's nor
+   `PYTEST_ADDOPTS` or `PYTEST_PLUGINS` reaches pytest or a sealed conftest. The isolation
+   record states this in `verifier.replay_parent` (`runtime: host`); whether a consumer
+   refuses a host parent is the admission rule set's policy. What the candidate can do to that process is closed: no value it
    chooses reaches the sealed code except the left side of a sealed comparison, so it cannot
    steer an honest test into opening, reading or deleting a host path. What is not closed is
    a hostile task author: the sealed code runs with the verifier's user, so it can read the
@@ -245,16 +276,26 @@ admission rule set refuses.
    sealed input correctly passes, as it would pass any test. Held-out inputs that differ from
    the visible ones are what catches special-casing. The repeats and the fresh-child pass
    catch state kept between calls.
-7. **The child sees the arguments of held-out calls**, but never the expected values or the
-   test source: an expected value bound by a parametrize table that a call receives makes the
-   test unproven. The LiveCodeBench replay has the same property.
+7. **The child sees the arguments of held-out calls**, but never the test source, and no
+   call is passed an expected name: an expected value bound by a parametrize table that a
+   call receives makes the test unproven. The rule is syntactic; an argument column whose
+   values equal the expected ones is sent (point 5). The LiveCodeBench replay has the same
+   property.
 8. **The nonce keeps the reply stream in step, it does not authenticate the serve loop (F6).**
    The protocol stream is a duplicate of the child's original standard output, and candidate
    code in the child can read each request, write that stream and so answer with the
    request's nonce. A reply line written out of turn (at import, or twice for one request)
    fails. The purity and fresh-child checks measure the child's own answers, so a candidate
    that takes over its serve loop can keep them consistent; what it answers is still plain
-   data that reaches only a sealed comparison.
+   data that reaches only a sealed comparison. A stall is not a way out of a wrong answer.
+   In a pytest replay every failure is definitive, a call that never returns or a reply
+   line left unfinished inside the candidate's own request included: the child had the
+   call's whole limit, and a fresh child asked the same request stalls the same way. Such a
+   held-out failure reads `contradicted`. Only the runner's stop of the whole parent at the
+   command's limit, which leaves no result, reads as no answer (`timed_out`, then
+   `not_established`). In the LiveCodeBench modes a stall still reads as no answer, but only
+   when the answers given before it hold no definitive failure: a wrong answer, an error or
+   two different answers to one request stand over any later stall.
 9. **The finder serves sealed code only from the first import on (F5).** Once a sealed module
    has imported a remote name, `sys.modules` holds the served module, and verifier code that
    imports the same name later receives it. Every value such code asked of it outside a
