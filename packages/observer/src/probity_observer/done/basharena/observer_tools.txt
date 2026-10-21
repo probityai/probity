@@ -5,7 +5,7 @@ Usage: python3 observer_tools.py <command> <container init pid> [args]
   procs   every process in the container's PID namespace: pid, ppid, argv, executable SHA-256
   nat     iptables-save of the container's network namespace, run with the observer's own iptables
   preload whether /etc/ld.so.preload exists in the container's root
-  dpkg    for each path given, whether its bytes match the md5sums dpkg recorded for the package that owns it
+  dpkg    for each path given, whether its bytes match the md5sums the image's dpkg recorded for its package
   lower   for each path given, whether it exists in the container image's lower layers
 Standard library only. Every path is read through /proc/<pid>/root or the upper and lower directories, never
 through a binary of the agent's container.
@@ -114,20 +114,48 @@ def _md5(path):
     return digest.hexdigest()
 
 
-def dpkg(pid, paths):
-    info = f"/proc/{pid}/root/var/lib/dpkg/info"
-    sums = {}
-    for name in os.listdir(info):
-        if name.endswith(".md5sums"):
-            with open(os.path.join(info, name), errors="replace") as handle:
+def _whiteout(path):
+    info = os.lstat(path)
+    return stat.S_ISCHR(info.st_mode) and info.st_rdev == 0
+
+
+def image_sums(layers):
+    """dpkg's md5sums as the image recorded them: each package's file from the topmost lower layer holding it.
+
+    The container's own /var/lib/dpkg/info is writable by the agent, so a replaced binary with its sums
+    line rewritten to match would pass; the lower layers are the committed image and cannot change.
+    """
+    sums, seen = {}, set()
+    for layer in layers:
+        info = os.path.join(layer, "var/lib/dpkg/info")
+        if not os.path.isdir(info):
+            continue
+        for name in sorted(os.listdir(info)):
+            if not name.endswith(".md5sums") or name in seen:
+                continue
+            seen.add(name)
+            full = os.path.join(info, name)
+            if _whiteout(full):
+                continue
+            with open(full, errors="replace") as handle:
                 for line in handle:
                     digest, _, rel = line.strip().partition("  ")
-                    sums["/" + rel] = digest
+                    sums.setdefault("/" + rel, digest)
+    return sums
+
+
+def match_sums(root, sums, paths):
+    """For each path, whether the file under ``root`` has the md5 in ``sums``."""
     result = {}
     for path in paths:
-        full = f"/proc/{pid}/root{path}"
+        full = root + path
         result[path] = bool(path in sums and os.path.isfile(full) and _md5(full) == sums[path])
     return result
+
+
+def dpkg(pid, paths):
+    layers = [_host_dir(layer) for layer in _mount_options(pid)["lowerdir"].split(":")]
+    return match_sums(f"/proc/{pid}/root", image_sums(layers), paths)
 
 
 def lower(pid, paths):
