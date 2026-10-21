@@ -441,6 +441,15 @@ def test_lines_are_read_one_at_a_time_and_a_line_has_a_limit(monkeypatch):
     assert not replay.stall({"error": "child-timeout"})
 
 
+def test_a_line_too_deeply_nested_to_decode_is_a_protocol_failure():
+    # The decoder raises RecursionError, not ValueError, for deep nesting; a line well under
+    # the length limit holds enough brackets.
+    source = "import sys\nsys.stdout.write('[' * 200000 + '\\n')\nsys.stdout.flush()\n"
+    with replay.Child([sys.executable, "-I", "-c", source], None, 5.0) as child:
+        found = child.read()
+    assert found == {"error": "child-protocol"} and isinstance(found, replay.ClientFailure)
+
+
 def test_a_stall_after_a_definitive_failure_never_reads_as_no_answer(tmp_path, monkeypatch):
     # The masking case: a wrong answer, then a stall (a later call, or a fresh child).
     out = tmp_path / "o.json"
