@@ -4,9 +4,10 @@ Each mutant deletes or weakens one rule: the parent's count and its repeats, the
 fresh-child checks, the failure type no test can catch, the module and attribute limits, the
 refused remote names, the argv and path checks, the verifier's own count in the grade, the
 isolation reading of replay-covered worker commands, the proof of which ids reduce to one
-sealed comparison, and the parent's own enforcement of it (the instrumented comparison, its
-one call and strict type, a pass only after it ran, no candidate data outside it, boolean
-comparisons made both ways), the request nonce, the refusal of a function a call returns,
+sealed comparison, and the parent's own enforcement of it (each answer sealed and compared
+once, right after its call, with its sealed value and strictly; a pass only after every
+comparison ran; no candidate data outside a run; boolean comparisons made both ways), the
+request nonce, the refusal of a function a call returns,
 and the finder that serves sealed code only. Each is applied to the source, its tests
 run (without bytecode, so a restored file is never measured through a stale cache), and the
 file is restored. Run from ``packages/observer`` in an environment with the ``test`` and
@@ -114,13 +115,21 @@ MUTANTS = [
     (PROOF, PROVE, '        if names[0] in params:', "        if False:"),
     (PROOF, PROVE, '            self.error = "a star import can bind any name"', "            pass"),
     (PROOF, PROVE, "    if len(parts) != 2 or not parts[0].endswith(\".py\"):", "    if False:"),
-    # The parent: a pass needs the instrumented run, which compares here, strictly, once.
+    # The parent: a pass needs the sealed run, each answer compared once, in order, strictly.
     (REPLAY, UNIT, '                if outcome == "passed" and report.nodeid not in self.verified:',
      "                if False:"),
     (REPLAY, UNIT, "            self.unproven[item.nodeid] = proof\n            raise CandidateFailed",
      "            self.unproven[item.nodeid] = proof\n            return pytest_proof\n            raise CandidateFailed"),
-    (REPLAY, UNIT, "        if calls != 1:", "        if False:"),
-    (REPLAY, UNIT, "        if not strict_eq(result, expected):", "        if result != expected:"),
+    (REPLAY, UNIT, "        if index >= len(self.expected) or len(self.compared) != index:",
+     "        if index >= len(self.expected):"),
+    (REPLAY, UNIT, "        if index >= len(self.expected) or len(self.compared) != index:",
+     "        if len(self.compared) != index:"),
+    (REPLAY, UNIT, "        if index != self.calls - 1 or len(self.compared) != index:", "        if False:"),
+    (REPLAY, UNIT, "        if not strict_eq(other, expected):", "        if other != expected:"),
+    (REPLAY, UNIT, "        return strict_eq(answer, expected)", "        return answer == expected"),
+    (REPLAY, UNIT, '        raise CandidateFailed("a sealed answer is only compared")', "        return True"),
+    (REPLAY, UNIT, "        return phase.wrap(found)", "        return found"),
+    (REPLAY, UNIT, "        if self.phase is None or request[\"op\"] != \"call\":", "        if self.phase is None:"),
     (REPLAY, UNIT, "            if not handle(request, reply):", "            if False:"),
     (REPLAY, UNIT, "                    reply = {\"error\": OUTSIDE}\n", "                    pass\n"),
     (REPLAY, UNIT, "    if session.outside:\n        failure = OUTSIDE", "    if False:\n        failure = OUTSIDE"),

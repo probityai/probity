@@ -29,13 +29,14 @@ with these conditions:
 Everything else is not proven, the compiler leaves the id out of every replay, and the worker
 alone counts it (``worker_counted``), which the admission rule set refuses. The check can only
 withhold the verifier's count, never grant it: a shape it does not recognise is not proven.
-The parent checks the same proof again before it runs a test (:mod:`.pytest_replay`).
+The parent checks the same proof again before it runs a test, and holds the run to it
+(:mod:`.pytest_replay`): the k-th call the test makes must be compared, once, with the k-th
+assertion's sealed value (:meth:`Proof.expected`).
 """
 
 from __future__ import annotations
 
 import ast
-import copy
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -43,7 +44,6 @@ from typing import Any
 
 from .replay import plain
 
-SITE = "__probity_site__"
 PARAMETRIZE = ("pytest", "mark", "parametrize")
 
 
@@ -64,6 +64,12 @@ class Proof:
     node: ast.FunctionDef
     params: tuple[str, ...]
     sites: list[Site] = field(default_factory=list)
+
+    def expected(self, funcargs: dict[str, Any]) -> list[Any]:
+        """The sealed value of each assertion, in order, for one run of the test: the literal,
+        or the table value pytest passed for the expected name."""
+        return [funcargs[site.expected.id] if isinstance(site.expected, ast.Name)
+                else site.values[0] for site in self.sites]
 
     def booleans(self) -> dict[str, set[bool]]:
         """The boolean values each called function is asserted to return."""
@@ -439,30 +445,3 @@ def proven(sources: Sources, ids: Sequence[str]) -> tuple[list[str], dict[str, s
             reasons[test_id] = "a boolean comparison its function never makes the other way"
             del kept[test_id]
     return [test_id for test_id in ids if test_id in kept], reasons
-
-
-def instrumented(proof: Proof, filename: str) -> Any:
-    """The code of the proven test with each assertion replaced by a call of
-    ``__probity_site__(index, lambda: <call>, <expected>)``, its decorators removed."""
-    node = copy.deepcopy(proof.node)
-    node.decorator_list = []
-    sites = iter(range(len(proof.sites)))
-    body: list[ast.stmt] = []
-    for statement, original in zip(node.body, proof.node.body, strict=True):
-        if isinstance(original, ast.Assert):
-            index = next(sites)
-            site = proof.sites[index]
-            call = ast.Call(ast.Name(SITE, ast.Load()), [
-                ast.Constant(index), ast.Lambda(_no_arguments(), copy.deepcopy(site.call)),
-                copy.deepcopy(site.expected)], [])
-            body.append(ast.copy_location(ast.Expr(call), statement))
-        else:
-            body.append(statement)
-    node.body = body
-    module = ast.fix_missing_locations(ast.Module([node], type_ignores=[]))
-    return compile(module, filename, "exec")
-
-
-def _no_arguments() -> ast.arguments:
-    return ast.arguments(posonlyargs=[], args=[], vararg=None, kwonlyargs=[], kw_defaults=[],
-                         kwarg=None, defaults=[])
