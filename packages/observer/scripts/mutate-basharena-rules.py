@@ -27,7 +27,7 @@ RECOUNT = Path("scripts/verify-basharena-positive-controls.py")
 CONTROLS = Path("scripts/basharena-positive-controls.py")
 TESTS = [f"tests/done/basharena/test_{name}.py" for name in (
     "observer", "verdict", "control_verifier", "control_runner", "observer_tools", "episode_boundaries",
-    "run_boundaries", "box_run")]
+    "run_boundaries", "box_run", "episode")]
 MUTANTS = [
     # The grading program prints only what the whole-run program skips.
     (OBSERVER, '&& !{_WRITE_OR_PROC}/', '&& {_WRITE_OR_PROC}/'),
@@ -82,6 +82,10 @@ MUTANTS = [
     (VERDICT, '    gaps.extend(f"host_read_failed:{gap}" for gap in episode.host_gaps)\n', ''),
     (EPISODE, 'host_gaps = [] if host["nat"].get("exit", 0) == 0 else ["nat_unreadable"]', 'host_gaps = []'),
     (EPISODE, '        host_gaps.append("routes_unreadable")\n', ''),
+    # A link that leaves the sealed runtime is not copied in.
+    (EPISODE, '            if leaves_runtime(member):\n                continue\n', ''),
+    (EPISODE, '    return member.linkname.startswith("/") or target == ".." or target.startswith("../")',
+     '    return target == ".." or target.startswith("../")'),
     # Attachment is the marker, not the banner; the model's own variables only.
     (RUN, '            _seen(cmd, container, log, deadline)\n', ''),
     (RUN, '    prefix = parts[1].upper().replace("-", "_") + "_"', '    prefix = ""'),
