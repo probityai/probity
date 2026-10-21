@@ -64,6 +64,8 @@ def test_a_sealed_comparison_against_one_call_is_proven(body, callees):
     ("def test_it():\n    assert area(*[1, 2]) == 2\n", "unpacks"),
     # The expected value is degenerate, or would reach the child.
     ("def test_it():\n    assert area(1, 1) == None\n", "None"),
+    ("def test_it():\n    assert area(1, 1) == (None,)\n", "None"),
+    ("def test_it():\n    assert area(1, 1) == [None, (None, [None])]\n", "None"),
     ("@pytest.mark.parametrize('x, expected', [(2, 4)])\n"
      "def test_it(x, expected):\n    assert area(x, expected) == expected\n", "sent to the child"),
     ("@pytest.mark.parametrize('x, expected', [(2, None)])\n"
@@ -159,3 +161,23 @@ def test_each_assertion_has_its_sealed_value_for_one_run():
                   "    assert (1, [2]) == area(1, 1)\n")
     assert not isinstance(proof, str)
     assert proof.expected({"w": 1, "expected": 3}) == [3, (1, [2])]
+
+
+def test_a_boolean_inside_an_answer_needs_its_place_asserted_both_ways(tmp_path):
+    (tmp_path / "test_d.py").write_text(
+        HEADER + "def test_one():\n    assert is_square(2, 2) == [True]\n\n\n"
+        "def test_yes():\n    assert check(1) == (True, 0)\n\n\n"
+        "def test_no():\n    assert check(2) == (False, 1)\n\n\n"
+        "def test_key():\n    assert area(1, 1) == {'ok': True}\n\n\n"
+        "def test_other():\n    assert area(0, 1) == {'ok': [False]}\n")
+    sources = pytest_proof.Sources([tmp_path], REMOTE)
+    ids = [f"test_d.py::{name}" for name in ("test_one", "test_yes", "test_no", "test_key",
+                                              "test_other")]
+    proof = sources.proof(ids[1])
+    assert not isinstance(proof, str) and proof.booleans() == {"pkg.shapes.check[0]": {True}}
+    kept, reasons = pytest_proof.proven(sources, ids)
+    # is_square gives only True at [0]; area gives True at ["ok"] and False at ["ok"][0], two
+    # places each asserted one way; check is asserted both ways at [0].
+    assert kept == ids[1:3] and set(reasons) == {ids[0], *ids[3:]}
+    kept, reasons = pytest_proof.proven(sources, ids[1:2])
+    assert kept == [] and "boolean" in reasons[ids[1]]
