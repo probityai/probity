@@ -176,6 +176,28 @@ class CandidateFailed(AssertionError):
 
 STARTED: list["Child"] = []
 
+# The longest protocol line a child may write before its newline.
+LINE_LIMIT = 1 << 24
+
+
+class ClientFailure(dict):
+    """A failure of the client itself: a time-out, an exited child, a broken pipe or a line
+    that is not one reply. JSON never decodes to this type, so no line the child writes can
+    pass for one."""
+
+    def __init__(self, error: str) -> None:
+        super().__init__(error=error)
+
+
+# Client failures that mean the candidate gave no answer in time (a closed child answers every
+# later call with ``child-pipes``): no answer, as opposed to a wrong one.
+STALLS = frozenset({"child-timeout", "child-pipes"})
+
+
+def stall(reply: Any) -> bool:
+    return isinstance(reply, ClientFailure) and reply.get("error") in STALLS
+
+
 # How long a child that was told to stop (its stdin closed, then SIGTERM) gets before the next
 # step. A container runtime cleans up after itself only on an orderly exit.
 CLOSE_GRACE = 5.0
@@ -200,6 +222,7 @@ class Child:
         self.timeout = timeout
         self.timed_out = False
         self.closed = False
+        self.pending = bytearray()
         STARTED.append(self)
         self.process = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -218,33 +241,48 @@ class Child:
     def ask(self, request: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
         """Send one request line and read the child's one reply line."""
         if self.closed or self.process.stdin is None or self.process.stdout is None:
-            return {"error": "child-pipes"}
+            return ClientFailure("child-pipes")
         try:
             self.process.stdin.write(json.dumps(request) + "\n")
             self.process.stdin.flush()
         except (BrokenPipeError, ValueError):
-            return {"error": "child-exited"}
+            return ClientFailure("child-exited")
         return self.read(timeout)
 
     def read(self, timeout: float | None = None) -> dict[str, Any]:
-        """The child's next protocol line, or an error after ``timeout`` seconds."""
+        """The child's next protocol line, or an error after ``timeout`` seconds.
+
+        The whole line must arrive inside the limit: the descriptor is read without blocking
+        until a newline comes, so a child that writes part of a line and stops is stopped at
+        the limit like one that writes nothing."""
         if self.closed or self.process.stdout is None:
-            return {"error": "child-pipes"}
+            return ClientFailure("child-pipes")
         wait = self.timeout if timeout is None else max(0.0, min(timeout, self.timeout))
-        ready, _, _ = select.select([self.process.stdout], [], [], wait)
-        if not ready:
-            # No answer inside the limit: the candidate gave none, which is not a wrong one.
-            self.timed_out = True
-            self.close()
-            return {"error": "child-timeout"}
-        line = self.process.stdout.readline()
-        if not line:
-            self.close()
-            return {"error": "child-exited"}
+        deadline = time.monotonic() + wait
+        descriptor = self.process.stdout.fileno()
+        while b"\n" not in self.pending:
+            if len(self.pending) > LINE_LIMIT:
+                self.close()
+                return ClientFailure("child-protocol")
+            left = deadline - time.monotonic()
+            ready = select.select([descriptor], [], [], left)[0] if left > 0 else []
+            if not ready:
+                # No whole line inside the limit: the candidate gave no answer.
+                self.timed_out = True
+                self.close()
+                return ClientFailure("child-timeout")
+            chunk = os.read(descriptor, 1 << 16)
+            if not chunk:
+                self.close()
+                return ClientFailure("child-exited")
+            self.pending += chunk
+        end = self.pending.index(b"\n")
+        line = bytes(self.pending[:end])
+        del self.pending[:end + 1]
         try:
             return json.loads(line)
-        except json.JSONDecodeError:
-            return {"error": "child-protocol"}
+        except ValueError:
+            return ClientFailure("child-protocol")
 
     def _exited(self, within: float) -> bool:
         """Whether the leader has exited within ``within`` seconds, WITHOUT reaping it: an
@@ -313,6 +351,8 @@ class Proxy:
         self.timed_out = False
         self.answers: dict[str, list[str]] = {}
         self.requests: dict[str, tuple[Any, Any]] = {}
+        # The answers on each request that the candidate gave: every one but a stall.
+        self.given: dict[str, set[str]] = {}
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         try:
@@ -328,6 +368,8 @@ class Proxy:
         self.timed_out = self.timed_out or self.child.timed_out
         answer = json.dumps(reply, separators=(",", ":"), sort_keys=True)
         self.answers.setdefault(key, []).append(answer)
+        if not stall(reply):
+            self.given.setdefault(key, set()).add(answer)
         self.requests[key] = (args_tagged, kwargs_tagged)
         if "error" in reply:
             raise CandidateFailed(reply["error"])
@@ -449,12 +491,16 @@ def _tagged(args: Any, kwargs: Any) -> tuple[Any, Any]:
     return plain(tuple(args)), plain(dict(kwargs))
 
 
+def _text(reply: Any) -> str:
+    return json.dumps(reply, separators=(",", ":"), sort_keys=True)
+
+
 def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
-             budget: float) -> tuple[list[str], float, bool]:
+             budget: float) -> tuple[list[Any], float, bool]:
     """One child, each call ``repeat`` times; each pass over the calls has ``budget`` seconds,
-    so the run has ``repeat`` times that."""
+    so the run has ``repeat`` times that. The replies in order, a stall included."""
     started = time.monotonic()
-    answers: list[str] = []
+    answers: list[Any] = []
     timed_out = False
     with Child(request["child_argv"], request.get("child_cwd"),
                float(request["call_timeout"])) as child:
@@ -465,7 +511,7 @@ def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
                     timed_out = True
                     break
                 reply = child.call(args_tagged, kwargs_tagged, left)
-                answers.append(json.dumps(reply, separators=(",", ":"), sort_keys=True))
+                answers.append(reply)
                 if child.timed_out:
                     # The child is closed: no later call can be answered or counted.
                     timed_out = True
@@ -473,6 +519,22 @@ def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
             if timed_out:
                 break
     return answers, round(time.monotonic() - started, 3), timed_out
+
+
+def given_wrong(runs: list[list[Any]], cases: list[tuple[Any, Any, Any]]) -> str | None:
+    """What the answers the candidate gave already show wrong, or ``None``: two different
+    answers to one case, an error, an answer that is not ``==`` the expected value. ``runs``
+    are reply sequences in case order, each possibly cut short; a stall is no answer."""
+    given = [[reply for reply in (run[index] for run in runs if index < len(run))
+              if not stall(reply)] for index in range(len(cases))]
+    if any(len({_text(reply) for reply in replies}) > 1 for replies in given):
+        return "answers differ between runs"
+    if any("error" in reply for replies in given for reply in replies):
+        return "candidate raised"
+    if any(unplain(reply["ok"]) != value
+           for replies, (_, _, value) in zip(given, cases) for reply in replies):
+        return "answer differs from the expected value"
+    return None
 
 
 def determinism(request: dict[str, Any]) -> dict[str, Any]:
@@ -488,20 +550,14 @@ def determinism(request: dict[str, Any]) -> dict[str, Any]:
     budget = float(request["run_timeout"])
     first, first_s, first_out = _one_run(request, calls, 2, budget)
     fresh, fresh_s, fresh_out = _one_run(request, calls, 1, budget)
-    sequences = [first[0::2], first[1::2], fresh]
-    identical = sequences[0] == sequences[1] == sequences[2]
-    failure = None
-    if first_out or fresh_out or any(child.timed_out for child in STARTED):
+    # A run cut short by a stall still holds the answers it was given, and a wrong one among
+    # them is a definitive failure: a later stall never turns it into "no answer".
+    failure = given_wrong([first[0::2], first[1::2], fresh], cases)
+    definitive = failure is not None
+    if not definitive and (first_out or fresh_out or any(child.timed_out for child in STARTED)):
         failure = "timeout"
-    elif not identical:
-        failure = "answers differ between runs"
-    else:
-        replies = [json.loads(answer) for answer in sequences[0]]
-        if any("error" in reply for reply in replies):
-            failure = "candidate raised"
-        elif any(unplain(reply["ok"]) != value for reply, (_, _, value) in zip(replies, cases)):
-            failure = "answer differs from the expected value"
     return {"passed": failure is None, "failure": failure, "mode": "determinism",
+            "definitive": definitive,
             # Count what was asked: a run cut short reached only its first cases.
             "calls_intercepted": len(first) + len(fresh),
             "distinct_calls": max(-(-len(first) // 2), len(fresh)),
@@ -516,18 +572,24 @@ def type_strict(request: dict[str, Any]) -> dict[str, Any]:
     answers, _, timed_out = _one_run(request, calls, 1, float(request["run_timeout"]))
     mismatched = 0
     made = 0
-    failure = "timeout" if timed_out else None
-    for answer, (_, _, expected) in zip(answers, cases):
+    failure = None
+    # A run cut short at its budget, or a call that stalled, gave no answer from there on.
+    stalled = timed_out
+    for reply, (_, _, expected) in zip(answers, cases):
         made += 1
-        reply = json.loads(answer)
         if "error" in reply:
-            failure = failure or f"candidate: {reply['error']}"
+            stalled = stall(reply)
+            failure = "timeout" if stalled else f"candidate: {reply['error']}"
             break
         if not strict_eq(unplain(reply["ok"]), expected):
             mismatched += 1
-    if failure is None and mismatched:
+    if failure is None and stalled:
+        failure = "timeout"
+    # A mismatch already given stands over a later stall.
+    if mismatched and (failure is None or stalled):
         failure = f"{mismatched} result(s) differ in type or value"
     return {"passed": failure is None, "failure": failure, "mode": "type_strict",
+            "definitive": failure is not None and (bool(mismatched) or not stalled),
             "calls_intercepted": made, "distinct_calls": made}
 
 
@@ -549,7 +611,7 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
                "rebound": sorted(name for name in set(old) & set(new) if old[name] != new[name])}
     changed = any(changes.values())
     return {"passed": not changed, "failure": "builtins changed on import" if changed else None,
-            "mode": "import_side_effects", "builtins": changes, "calls_intercepted": 0,
+            "mode": "import_side_effects", "definitive": changed, "builtins": changes, "calls_intercepted": 0,
             "distinct_calls": 0, "evidence_from_worker": ["builtins_after_import"]}
 
 
@@ -580,22 +642,29 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     order = sorted(proxy.answers)
     random.Random(request["order_seed"]).shuffle(order)
     fresh_mismatch = []
+    # A failure the candidate's own answers show: a failed assertion or a raise in the run
+    # (not its stall, nor the run's budget running out), two answers it gave on one request,
+    # or a fresh child's answer.
+    definitive = (failure is not None and not proxy.timed_out) or any(
+        len(given) > 1 for given in proxy.given.values())
     deadline = time.monotonic() + budget
     for key in order:
         left = deadline - time.monotonic()
         if left <= 0:
-            failure = "timeout"
+            failure = failure or "timeout"
             break
         with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
             reply = fresh.call(*proxy.requests[key], left)
         if fresh.timed_out:
-            failure = "timeout"
-            break
-        if json.dumps(reply, separators=(",", ":"), sort_keys=True) != proxy.answers[key][0]:
+            # No answer from this fresh child; a later key may still show a wrong one.
+            failure = failure or "timeout"
+        if _text(reply) != proxy.answers[key][0]:
             fresh_mismatch.append(key)
+            definitive = definitive or not stall(reply)
     calls = sum(len(answers) for answers in proxy.answers.values())
     passed = failure is None and not impure and not fresh_mismatch
-    return {"passed": passed, "failure": failure, "calls_intercepted": calls,
+    return {"passed": passed, "failure": failure, "definitive": definitive and not passed,
+            "calls_intercepted": calls,
             "distinct_calls": len(order), "impure": impure, "fresh_mismatch": fresh_mismatch,
             "fresh_order": order}
 
@@ -611,8 +680,10 @@ def main(argv: list[str] | None = None) -> int:
         result = replay(request)
     finally:
         close_all()
-    if not result["passed"] and (result.get("failure") == "timeout"
-                                 or any(child.timed_out for child in STARTED)):
+    # No answer is told from a wrong one only when the run holds no definitive failure: a
+    # stall after a wrong answer, or in a fresh child after one, never hides it.
+    if not result["passed"] and not result.get("definitive") and (
+            result.get("failure") == "timeout" or any(child.timed_out for child in STARTED)):
         result["timed_out"] = True
     kind = failure_kind(result)
     if kind is not None:

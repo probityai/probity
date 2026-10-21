@@ -31,6 +31,17 @@ PROOF = DONE / "pytest_proof.py"
 UNIT = ["tests/done/test_pytest_replay.py"]
 PROVE = ["tests/done/test_pytest_proof.py"]
 PIPELINE = ["tests/done/test_grade_pipeline.py"]
+HARNESS = DONE / "replay.py"
+STALLS = [f"tests/done/test_replay.py::{name}" for name in (
+    "test_a_partial_reply_line_is_stopped_at_the_call_limit",
+    "test_lines_are_read_one_at_a_time_and_a_line_has_a_limit",
+    "test_a_stall_after_a_definitive_failure_never_reads_as_no_answer",
+    "test_answers_given_before_a_stall_decide_the_determinism_probe",
+    "test_a_mismatch_given_before_a_stall_decides_the_type_strict_probe",
+    "test_a_wrong_answer_then_a_stalled_fresh_child_stays_definitive",
+    "test_a_stalled_fresh_child_never_hides_a_later_wrong_fresh_answer",
+    "test_a_run_whose_budget_runs_out_is_no_answer",
+    "test_a_type_strict_run_cut_at_its_budget_keeps_the_mismatch_it_was_given")]
 MUTANTS = [
     # The parent counts every repeat of every test.
     (REPLAY, UNIT, "        self.repeats = max(1, repeats)", "        self.repeats = 1"),
@@ -160,6 +171,32 @@ MUTANTS = [
      "    env.update(os.environ)"),
     (RUNNER, UNIT, '    env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"\n', "\n"),
     (RUNNER, UNIT, "    if command and not os.path.isabs(command[0]):", "    if False:"),
+    # A whole reply line inside the call's limit, and no stall read over a definitive failure.
+    (HARNESS, STALLS, '        while b"\\n" not in self.pending:', "        while not self.pending:"),
+    (HARNESS, STALLS, "            if len(self.pending) > LINE_LIMIT:", "            if False:"),
+    (HARNESS, STALLS, '    return isinstance(reply, ClientFailure) and reply.get("error") in STALLS',
+     '    return isinstance(reply, dict) and reply.get("error") in STALLS'),
+    (HARNESS, STALLS, '    if not result["passed"] and not result.get("definitive") and (',
+     '    if not result["passed"] and ('),
+    (HARNESS, STALLS, "    definitive = failure is not None\n    if not definitive and (first_out",
+     "    definitive = False\n    if not definitive and (first_out"),
+    (HARNESS, STALLS, "              if not stall(reply)] for index in range(len(cases))]",
+     "              ] for index in range(len(cases))]"),
+    (HARNESS, STALLS, "    if mismatched and (failure is None or stalled):",
+     "    if failure is None and mismatched:"),
+    (HARNESS, STALLS, "    definitive = (failure is not None and not proxy.timed_out) or any(",
+     "    definitive = False or any("),
+    # A budget that runs out is no answer; a fresh stall never ends the search for a wrong one.
+    (HARNESS, STALLS, "    definitive = (failure is not None and not proxy.timed_out) or any(",
+     "    definitive = (failure is not None) or any("),
+    (HARNESS, STALLS, '            failure = failure or "timeout"\n        if _text(reply)',
+     '            failure = failure or "timeout"\n            break\n        if _text(reply)'),
+    (HARNESS, STALLS, "    stalled = timed_out\n", "    stalled = False\n"),
+    (HARNESS, STALLS, "            definitive = definitive or not stall(reply)", "            pass"),
+    (REPLAY, UNIT, '            "definitive": failure is not None,', '            "definitive": False,'),
+    (REPLAY, UNIT,
+     "    fresh_mismatch = [] if failure else fresh_mismatches(request, session, order, timeout)",
+     "    fresh_mismatch = fresh_mismatches(request, session, order, timeout)"),
 ]
 
 
@@ -170,7 +207,7 @@ def run(tests: list[str]) -> int:
 
 
 def main() -> int:
-    if run(PROVE + UNIT + PIPELINE) != 0:
+    if run(PROVE + UNIT + PIPELINE + STALLS) != 0:
         print("BASELINE RED")
         return 1
     survived = 0

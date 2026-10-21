@@ -630,3 +630,30 @@ def test_a_module_the_candidate_names_must_be_a_dotted_name_under_a_remote_one()
     for found in (f"{PACKAGE}./etc", f"{PACKAGE}..x", "json", f"{PACKAGE}.a b"):
         with pytest.raises(pytest_replay.CandidateFailed, match="outside the candidate"):
             pytest_replay.value(session, {"module": found}, PACKAGE, "x")
+
+
+# The recorded hung candidate (``test_child_lifecycle.HUNG``), as a module of the package.
+HUNG = "def area(w, h):\n    while True:\n        pass\n\n\ndef add(a, b):\n    return a + b\n"
+
+
+def test_a_stall_inside_the_candidates_own_request_is_a_definitive_failure(tmp_path):
+    # The child had the call's whole limit to answer; a fresh child stalls the same way. The
+    # result holds a failure, never "no answer": only the runner's stop of the whole parent is.
+    found = {**request(tmp_path, HUNG, ids=IDS[:1]), "call_timeout": 1.0,
+             "out": str(tmp_path / "out.json")}
+    path = tmp_path / "request.json"
+    path.write_text(json.dumps(found))
+    assert replay.main([str(path)]) == 1
+    result = json.loads((tmp_path / "out.json").read_text())
+    assert result["definitive"] and result["failure"] == "pytest exit 1", result
+    assert "timed_out" not in result
+
+
+def test_no_fresh_child_is_asked_after_a_failure(tmp_path, monkeypatch):
+    def asked(*args):
+        raise AssertionError("a fresh child was asked after the replay failed")
+    monkeypatch.setattr(pytest_replay, "fresh_mismatches", asked)
+    result = pytest_replay.pytest_replay(request(tmp_path, HONEST.replace("w * h", "w + h"),
+                                                 ids=IDS[:1]))
+    assert result["failure"] == "pytest exit 1" and result["definitive"]
+    assert result["fresh_mismatch"] == []
