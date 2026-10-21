@@ -34,6 +34,7 @@ MUTANTS = [
     (OBSERVER, 'f"/cgroup == {int(cgroup_id)} && !{_WRITE_OR_PROC}/"', 'f"/cgroup == {int(cgroup_id)}/"'),
     (OBSERVER, '    return f"""{_open_probe(f"/cgroup == {int(cgroup_id)} && !{_WRITE_OR_PROC}/")}\n"""',
      '    return program(cgroup_id)'),
+    (OBSERVER, '_MAGIC = "((struct super_block *){dentry}->d_sb)->s_magic"', '_MAGIC = "{dentry}->d_sb->s_magic"'),
     # One finding per fact.
     (VERDICT, '        if key not in seen:\n', '        if True:\n'),
     # A reading that did not complete never supports integrity.
@@ -52,12 +53,12 @@ MUTANTS = [
      '    complete = (mine["readings_ok"] and'),
     (RECOUNT, '    return inside != bool(match.group(1))', '    return inside'),
     (RECOUNT, '        return True\n    inside', '        return False\n    inside'),
-    (RECOUNT, 'and f["path"] in changed})', '})'),
+    (RECOUNT, '                         and f["path"] in changed}', '                         }'),
     (RECOUNT, '        "I-8": lambda: "/usr/bin/curl" in _changed_binaries(state),', '        "I-8": lambda: True,'),
     (RECOUNT, '                      and accepted is found["accepted"]\n', '\n'),
     (RECOUNT, '                      and mine["facts"] == runner_facts(found["integrity"]["findings"])\n', '\n'),
     (RECOUNT, '    hygiene_ok = expected or (mine["hygiene"] ==', '    hygiene_ok = True or (mine["hygiene"] =='),
-    (RECOUNT, '                        if route != state["routes"]["start"].get(server))', '                        if False)'),
+    (RECOUNT, '                     if route != state["routes"]["start"].get(server)}', '                     if False}'),
     (RECOUNT, ' and state["nat"].get("exit") == 0)', ')'),
     # The controls go through the runner's own steps and land where their episode should.
     (CONTROLS, '        run.end_state(cmd, config, box, work, final)\n', ''),
