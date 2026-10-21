@@ -6,9 +6,13 @@ refused remote names, the argv and path checks, the verifier's own count in the 
 isolation reading of replay-covered worker commands, the proof of which ids reduce to one
 sealed comparison, and the parent's own enforcement of it (each answer sealed and compared
 once, right after its call, with its sealed value and strictly; a pass only after every
-comparison ran; no candidate data outside a run; boolean comparisons made both ways), the
-request nonce, the refusal of a function a call returns,
-and the finder that serves sealed code only. Each is applied to the source, its tests
+comparison ran; no candidate data outside a run; boolean comparisons made both ways, at
+every place inside a sealed value), the request nonce, the refusal of a function a call
+returns, the finder that serves sealed code only, the parent's scrubbed environment, the
+bounded read of a reply line, the rule that no stall is read over a definitive failure, the
+absent attribute of ``from pkg import submodule``, the client failures the child cannot
+forge, the canonical codec, the grouped judging of a two-way boolean pair, and the record
+of where the parent ran. Each is applied to the source, its tests
 run (without bytecode, so a restored file is never measured through a stale cache), and the
 file is restored. Run from ``packages/observer`` in an environment with the ``test`` and
 ``done`` extras:
@@ -49,7 +53,8 @@ MUTANTS = [
      '    elif False:\n        failure = "answers differ on one request"'),
     (REPLAY, UNIT, "        if _answer(reply) != session.answers[key][0]:\n            found.append(key)",
      "        if False:\n            found.append(key)"),
-    (REPLAY, UNIT, "    fresh_mismatch = fresh_mismatches(request, session, order, timeout)",
+    (REPLAY, UNIT,
+     "    fresh_mismatch = [] if failure else fresh_mismatches(request, session, order, timeout)",
      "    fresh_mismatch = []"),
     # No test can catch a failure to answer.
     (REPLAY, UNIT, "class CandidateFailed(BaseException):", "class CandidateFailed(Exception):"),
