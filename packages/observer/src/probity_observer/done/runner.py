@@ -295,15 +295,42 @@ def _pytest_request(scratch: Path, argv: Sequence[str], child_argv) -> dict | No
             "child_argv": command, "child_cwd": cwd}
 
 
+# What the container client in the replay parent needs to reach its daemon when the operator
+# runs it somewhere other than the default socket. They are the operator's settings, never the
+# task's; only these names pass from the verifier's environment to the parent.
+RUNTIME_ENV = ("DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG", "DOCKER_CERT_PATH",
+               "DOCKER_TLS_VERIFY")
+
+
+def parent_env() -> dict[str, str]:
+    """The replay parent's environment: the scrubbed one, the container client's settings,
+    and pytest's plugin autoloading off.
+
+    ``python -I`` ignores only the ``PYTHON*`` variables. pytest reads ``PYTEST_ADDOPTS`` and
+    ``PYTEST_PLUGINS`` from the environment, and every sealed conftest can read
+    ``os.environ``, so the verifier's own environment never reaches the parent."""
+    env = dict(SCRUBBED_ENV)
+    env.update({key: os.environ[key] for key in RUNTIME_ENV if key in os.environ})
+    env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+    return env
+
+
 def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: float,
                 results: list[dict] | None, stopped: list[bool] | None) -> int:
     mode = request["mode"]
+    command = list(request["child_argv"])
+    if command and not os.path.isabs(command[0]):
+        # The parent's PATH is the scrubbed one; the child's program is found on the
+        # verifier's own, where the runner was configured.
+        found = shutil.which(command[0])
+        if found is not None:
+            request = {**request, "child_argv": [found, *command[1:]]}
     (scratch / "request.json").write_text(json.dumps(request))
     limit = timeout * DETERMINISM_RUNS + 30 if mode == "determinism" else timeout
     parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
                                str(scratch / "request.json")], stdin=subprocess.DEVNULL,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                              start_new_session=True)
+                              env=parent_env(), start_new_session=True)
     try:
         parent.wait(timeout=limit)
     except subprocess.TimeoutExpired:
