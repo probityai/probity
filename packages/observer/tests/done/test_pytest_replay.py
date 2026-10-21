@@ -744,3 +744,60 @@ def test_no_fresh_child_is_asked_after_a_failure(tmp_path, monkeypatch):
                                                  ids=IDS[:1]))
     assert result["failure"] == "pytest exit 1" and result["definitive"]
     assert result["fresh_mismatch"] == []
+
+
+# A wrong module that answers every request just inside the call limit: slow, never stalled.
+SLOW_WRONG = ("import time\n\n\ndef area(w, h):\n    time.sleep(1.5)\n    return w * h + 1\n\n\n"
+              "def add(a, b):\n    time.sleep(1.5)\n    return a + b + 1\n")
+
+
+def test_a_slow_wrong_module_is_contradicted_before_the_runners_limit(tmp_path):
+    # Each answer comes well inside the call limit, and all of them together outrun the
+    # command's: the parent's own deadline ends the run and writes a definitive failure,
+    # where the runner's stop would have read as no answer.
+    state, held = tree(tmp_path, SLOW_WRONG)
+    local, stopped = SubprocessRunner(sys.executable), []
+    code = local.run(state, argv(IDS), held, 8, stopped=stopped)
+    assert code == 1 and not stopped, (code, local.replays)
+    report = local.replays[-1]
+    assert report["definitive"] and report["deadline_reached"], report
+    # Which request the deadline lands on (a call, or a read outside a comparison) varies.
+    assert "timed_out" not in report and report["failure"] is not None
+
+
+def test_the_deadline_is_the_commands_limit_less_a_margin():
+    assert pytest_replay.deadline(None, 5.0) is None
+    assert pytest_replay.deadline(8, 100.0) == 106.0
+    assert pytest_replay.deadline(900, 0.0) == 840.0
+
+
+def test_the_fresh_children_share_the_deadline_and_stop_at_it(monkeypatch):
+    asked = []
+
+    class Fresh:
+        timeout = 30.0
+
+        def __init__(self, argv, cwd, timeout):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            pass
+
+        def ask(self, message, timeout=None):
+            asked.append(timeout)
+            if timeout is not None and timeout <= 0:
+                return replay.ClientFailure("child-timeout")
+            return {"ok": ["int", "1"], "nonce": message["nonce"]}
+    monkeypatch.setattr(pytest_replay, "Child", Fresh)
+    session = pytest_replay.Session(None, frozenset([PACKAGE]), deadline=0.0)
+    keys = []
+    for name in ("a", "b", "c"):
+        request = {"op": "attr", "module": PACKAGE, "name": name}
+        key = pytest_replay._key(request)
+        session.requests[key], session.answers[key] = request, ['{"ok":["int","1"]}']
+        keys.append(key)
+    found = pytest_replay.fresh_mismatches({"child_argv": []}, session, keys, 30.0)
+    assert found == keys[:1] and asked == [0.0] and session.spent

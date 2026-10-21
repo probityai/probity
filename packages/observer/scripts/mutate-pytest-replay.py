@@ -227,6 +227,14 @@ MUTANTS = [
     (REPLAY, UNIT,
      "    fresh_mismatch = [] if failure else fresh_mismatches(request, session, order, timeout)",
      "    fresh_mismatch = fresh_mismatches(request, session, order, timeout)"),
+    # The replay keeps one deadline inside the command's limit, fresh children included.
+    (REPLAY, UNIT, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
+    (REPLAY, UNIT, "        reply = exchange(self.child, request, left)",
+     "        reply = exchange(self.child, request)"),
+    (REPLAY, UNIT, "            reply = exchange(fresh, session.requests[key], left)",
+     "            reply = exchange(fresh, session.requests[key])"),
+    (REPLAY, UNIT, "            session.spent = True\n            break\n",
+     "            session.spent = True\n"),
 ]
 
 

@@ -21,6 +21,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, Sequence
@@ -334,8 +335,11 @@ def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: floa
         found = shutil.which(command[0])
         if found is not None:
             request = {**request, "child_argv": [found, *command[1:]]}
-    (scratch / "request.json").write_text(json.dumps(request))
     limit = timeout * DETERMINISM_RUNS + 30 if mode == "determinism" else timeout
+    # The clock the limit below runs on (``time.monotonic`` is system-wide), so the parent's
+    # own deadline counts its start-up too.
+    request = {**request, "started": time.monotonic()}
+    (scratch / "request.json").write_text(json.dumps(request))
     parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
                                str(scratch / "request.json")], stdin=subprocess.DEVNULL,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
