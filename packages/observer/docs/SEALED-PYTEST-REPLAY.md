@@ -148,9 +148,14 @@ every comparison made; a passed report without that (a hook that ran something e
 rewrote the report) counts as failed. A boolean comparison made only one way on its
 function in the run withdraws the passes that rest on it (`degenerate`).
 
-**Nothing the candidate chooses reaches the sealed code.** Except for a call's answer in the
-run of a proven test, which arrives sealed, a reply may carry only a handle: an import that
-succeeded, or an attribute that is a function, a module or absent. A failure of the client
+**Nothing the candidate chooses reaches the sealed code, except the kind of a handle.** Except
+for a call's answer in the run of a proven test, which arrives sealed, a reply may carry only
+a handle: an import that succeeded, or an attribute that is a function, a module or absent.
+The kind is the candidate's choice. In particular it can answer "absent" for an attribute, which
+is what `from pkg import submodule` asks first, and a sealed conftest that branches on
+`hasattr(pkg, "x")` or `getattr(pkg, "x", None)` takes the branch the candidate picks. These are
+the sealed author's own branches, and none of them can make a proven test pass: its body is
+fixed and its pass needs every sealed comparison. A failure of the client
 itself (a time-out, an exited child, a line that is not one reply) is a type the child's
 JSON cannot produce, so a line the child writes in the client's words is still the child's.
 The codec reads only the canonical forms it writes.
@@ -169,7 +174,12 @@ one), so the compiler drops it instead of sealing a vacuous count. A replay in w
 id did not pass fails. The parent writes the result file. The grade's `collected` and `passed`
 for a replay command come from that file (`verify_run.grade`), never from a worker report. A failure of the replay,
 a stall inside one of the candidate's own requests included, is definitive; once the run
-has failed, no fresh child is asked.
+has failed, no fresh child is asked. The replay keeps one deadline, the command's limit less
+a margin (a quarter of a short limit, at most 60 s), counted from the runner's start of the
+parent, and every request, fresh children included, is asked inside it; a run that spends it
+writes a definitive failure and records `deadline_reached`. When the runner stops a parent
+(SIGTERM, then SIGKILL after a grace), the parent closes its children itself, and the runner
+then ends every child the parent recorded (pid and start time) that is still running.
 
 **The decision.** probity-verify needs no change. `acceptance_observed/v1` already requires
 every behavioural command to exit 0, and it requires `collected` and `passed` to equal the
@@ -182,8 +192,11 @@ worker counts, the isolation block reports `assertions_in_parent: true` and
 every command with an id that is not proven, is listed in the staging report as
 `worker_counted`, and the isolation block keeps `exit_status_alone_accepted: true`, which the
 admission rule set refuses. When any command is a replay, the block also says where its
-parent ran: `verifier.replay_parent` is `{"runtime": "host", "uid": ..., "env": "scrubbed",
-"env_keys": [...]}`. The `lockdown` block describes the worker and the candidate's children,
+parent ran: `verifier.replay_parent` is `{"runtime": "host", "uid": ..., "groups": [...],
+"isolated": true, "env": "scrubbed", "env_keys": [...], "stall_policy": "contradicted"}`, read
+off the same argv and environment the runner starts the parent with. The parent's HOME is a
+private directory (mode 0700) made for the run and removed after it, and `DOCKER_CONFIG`
+names the verifier's own container configuration unless the operator set it. The `lockdown` block describes the worker and the candidate's children,
 never the parent (point 4).
 
 **Results on the fixtures** (`tests/done/test_grade_pipeline.py`, `test_pytest_replay.py`,
@@ -289,11 +302,18 @@ at `43096f8` (it was `MUTANTS 66 surviving=0` at `4b43d3b`), and the observer su
    that takes over its serve loop can keep them consistent; what it answers is still plain
    data that reaches only a sealed comparison. A stall is not a way out of a wrong answer.
    In a pytest replay every failure is definitive, a call that never returns or a reply
-   line left unfinished inside the candidate's own request included: the child had the
-   call's whole limit, and a fresh child asked the same request stalls the same way. Such a
-   held-out failure reads `contradicted`. Only the runner's stop of the whole parent at the
-   command's limit, which leaves no result, reads as no answer (`timed_out`, then
-   `not_established`). In the LiveCodeBench modes a stall still reads as no answer, but only
+   line left unfinished inside the candidate's own request included, and so is a run that
+   spends the replay's whole deadline by answering slowly: each answer came at the
+   candidate's own pace, and the parent stops asking in time to write its result. Such a
+   held-out failure reads `contradicted`. This is the named setting `stall_policy:
+   contradicted`, recorded in every pytest replay result and in the grade's
+   `verifier.replay_parent`. Operator ruling of 2026-10-21, in his words: "keep
+   contradicted." It covers the pytest replay only; the LiveCodeBench modes are not covered
+   by it. The setting rests on a ruling, not on a measurement: no fresh child is asked the
+   stalled request again, so an honest candidate whose first request (container start plus
+   import) or one call outlasts the call limit also reads `contradicted`. Only a parent the
+   runner stops before its own deadline, which leaves no result, reads as no answer
+   (`timed_out`, then `not_established`). In the LiveCodeBench modes a stall still reads as no answer, but only
    when the answers given before it hold no definitive failure: a wrong answer, an error or
    two different answers to one request stand over any later stall.
 9. **The finder serves sealed code only from the first import on (F5).** Once a sealed module
