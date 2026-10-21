@@ -426,12 +426,15 @@ def test_candidate_data_outside_a_sealed_comparison_never_reaches_the_sealed_cod
         pytest_replay._key(read)]
     with pytest.raises(pytest_replay.CandidateFailed, match="outside a sealed comparison"):
         pytest_replay.value(session, reply, f"{PACKAGE}.shapes", "CACHE")
-    # Inside a comparison the same answer goes to the comparison.
-    session.site = 0
-    assert session.ask(read) == {"ok": ["str", "/etc/passwd"]}
+    # In the run of a proven test, an attribute is still only a handle, and only a call's
+    # answer comes through, to be sealed.
+    session.phase = phase_of()
+    assert session.ask(read) == {"error": pytest_replay.OUTSIDE}
+    call = {"op": "call", "module": f"{PACKAGE}.shapes", "name": "area", "args": [], "kwargs": []}
+    assert session.ask(call) == {"ok": ["str", "/etc/passwd"]}
 
 
-def test_a_passed_report_without_the_instrumented_run_counts_as_failed(tmp_path, monkeypatch):
+def test_a_passed_report_without_the_sealed_run_counts_as_failed(tmp_path, monkeypatch):
     # Another implementation answers every call without running the sealed comparisons:
     # pytest reports each test passed, and the parent counts none of them.
     monkeypatch.setattr(pytest_replay.Count, "call", lambda self, item: True)
@@ -440,30 +443,40 @@ def test_a_passed_report_without_the_instrumented_run_counts_as_failed(tmp_path,
     assert result["items"][IDS[0]] == {"passed": 0, "failed": 2, "skipped": 0}
 
 
-def comparison(source=TEST, name="test_area"):
+def phase_of(source=TEST, name="test_add"):
+    """The run of a proven test of ``source``: by default ``add(1, 1) == 2`` and then
+    ``add(2, 3) == 5``."""
     proof = pytest_proof.Module(source, frozenset([PACKAGE])).proof(name)
     assert not isinstance(proof, str), proof
-    session = pytest_replay.Session(None, frozenset([PACKAGE]))
-    return pytest_replay.Count(1, session=session), session, proof
+    return pytest_replay.Phase(proof, proof.expected({}))
 
 
-def test_a_sealed_comparison_makes_exactly_one_call_and_compares_type_strictly():
-    count, session, proof = comparison()
-
-    def calls(number, result):
-        def thunk():
-            session.site_calls += number
-            return result
-        return thunk
-    made: set[int] = set()
-    count.compare(proof, 0, calls(1, 6), 6, made, {})
-    assert made == {0} and session.site is None
-    for number in (0, 2):
-        with pytest.raises(pytest_replay.CandidateFailed, match="exactly one call"):
-            count.compare(proof, 0, calls(number, 6), 6, set(), {})
-    for wrong in (6.0, True, 7):
-        with pytest.raises(AssertionError):
-            count.compare(proof, 0, calls(1, wrong), 6, set(), {})
+def test_each_answer_is_compared_once_right_after_its_call_with_its_sealed_value():
+    phase = phase_of()
+    first = phase.wrap(2)
+    assert (first == 2) is True and not phase.complete()
+    second = phase.wrap(5)
+    assert (5 == second) is True and phase.complete()
+    # Type-strict, and a wrong answer is a failed comparison, not a refusal.
+    for answer in (2.0, True, 3):
+        assert (phase_of().wrap(answer) == 2) is False
+    refusals = [
+        # A second call before the first compare, another value, the sealed value's type
+        # changed, a second compare, a third call, and any other use of the answer.
+        lambda phase: (phase.wrap(2), phase.wrap(5)),
+        lambda phase: phase.wrap(2) == 3,
+        lambda phase: phase.wrap(2) == 2.0,
+        lambda phase: (lambda answer: (answer == 2, answer == 2))(phase.wrap(2)),
+        lambda phase: [phase.wrap(2) == 2, phase.wrap(5) == 5, phase.wrap(1)],
+        lambda phase: phase.wrap(2) != 2,
+        lambda phase: bool(phase.wrap(2)),
+    ]
+    for refused in refusals:
+        with pytest.raises(pytest_replay.CandidateFailed):
+            refused(phase_of())
+    with pytest.raises(TypeError):
+        hash(phase_of().wrap(2))
+    assert repr(phase_of().wrap([1, "a"])) == "[1, 'a']"
 
 
 def test_a_boolean_comparison_counts_only_when_its_function_is_asserted_both_ways(tmp_path):
@@ -511,11 +524,11 @@ def test_a_call_that_answers_with_a_function_or_a_module_is_a_candidate_failure(
             def ask(self, request, reply=reply):
                 return {**reply, "nonce": request["nonce"]}
         session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
-        # Inside a sealed comparison, where a call is answered at all.
-        session.site = 0
+        # In the run of a proven test, where a call is answered at all.
+        session.phase = phase_of()
         with pytest.raises(pytest_replay.CandidateFailed):
             pytest_replay.RemoteFunction(session, f"{PACKAGE}.shapes", "make")(2)
-        assert session.site_calls == 1 and not session.outside
+        assert session.phase.calls == 0 and not session.outside
 
 
 def test_the_finder_serves_remote_modules_to_sealed_code_only(tmp_path):

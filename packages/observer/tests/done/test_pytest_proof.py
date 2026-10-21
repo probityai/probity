@@ -152,15 +152,10 @@ def test_the_held_out_tree_is_read_before_the_issued_file(tmp_path):
     assert isinstance(pytest_proof.Sources([held, issued], REMOTE).proof("test_c.py::test_it"), str)
 
 
-def test_the_instrumented_test_routes_every_assertion_through_the_site():
-    proof = prove("@pytest.mark.parametrize('w', [2])\ndef test_it(w):\n    \"\"\"Doc.\"\"\"\n"
-                  "    assert area(w, 3) == 6\n    pass\n    assert 1 == area(1, 1)\n")
+def test_each_assertion_has_its_sealed_value_for_one_run():
+    proof = prove("@pytest.mark.parametrize('w, expected', [(2, 6), (1, 3)])\n"
+                  "def test_it(w, expected):\n    \"\"\"Doc.\"\"\"\n"
+                  "    assert area(w, 3) == expected\n    pass\n"
+                  "    assert (1, [2]) == area(1, 1)\n")
     assert not isinstance(proof, str)
-    seen = []
-
-    def site(index, thunk, expected):
-        seen.append((index, thunk(), expected))
-    namespace = {"area": lambda w, h: w * h, pytest_proof.SITE: site}
-    exec(pytest_proof.instrumented(proof, "test_it.py"), namespace)
-    namespace["test_it"](w=2)
-    assert seen == [(0, 6, 6), (1, 1, 1)]
+    assert proof.expected({"w": 1, "expected": 3}) == [3, (1, [2])]

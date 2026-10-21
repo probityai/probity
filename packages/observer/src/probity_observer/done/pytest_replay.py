@@ -19,14 +19,15 @@ code never enters it:
   again of a fresh child, in an order seeded from the grader and recorded, as in :mod:`.replay`.
 
 A replay counts only ids :mod:`.pytest_proof` proves: tests that reduce to ``assert <one call
-the child answers> == <sealed literal>``. The parent checks the proof again and runs each
-proven test from an instrumented copy of its sealed source, so that each comparison is made
-here, type-strict (:func:`.replay.strict_eq`), on exactly one call, and must actually run
+the child answers> == <sealed literal>``. The parent checks the proof again and runs the sealed
+test function pytest compiled, with each call's answer handed to it as a :class:`Sealed` value:
+the k-th answer can only be compared, once and before the next call, with the k-th assertion's
+sealed value, type-strict (:func:`.replay.strict_eq`), and every comparison must have run
 before the test may count as passed. A plain value the candidate gives anywhere else (at
 import, in a fixture, in a hook) fails the replay: nothing the candidate chooses reaches the
-parent except as the left side of a sealed comparison. An id that is not proven, or a test
-that needs anything else of the candidate, fails here on the reference too, so the compiler
-leaves it out and only the worker counts it.
+parent except as the left side of a sealed comparison. An id that is not proven, or a test that
+needs anything else of the candidate, fails here on the reference too, so the compiler leaves
+it out and only the worker counts it.
 """
 
 from __future__ import annotations
@@ -176,19 +177,19 @@ def handle(request: dict[str, Any], reply: dict[str, Any]) -> bool:
 class Session:
     """The one child of a pytest replay, and every answer it gave, by request.
 
-    ``site`` is the sealed comparison being evaluated, or ``None``. Outside one, a reply that
-    is more than a handle (:func:`handle`) never reaches the sealed code: it is recorded in
-    ``outside``, which fails the replay, and the code gets :class:`CandidateFailed` in its
-    place. So a value the candidate chose can never steer sealed code (into a path it opens,
-    say) on the verifier's host; inside a comparison, the value goes to the comparison only."""
+    ``phase`` is the run of a proven test being made, or ``None``. Only a call made in it may
+    answer with plain data, and that answer reaches the test as a :class:`Sealed` value. Any
+    other reply that is more than a handle (:func:`handle`) never reaches the sealed code: it
+    is recorded in ``outside``, which fails the replay, and the code gets
+    :class:`CandidateFailed` in its place. So a value the candidate chose can never steer
+    sealed code (into a path it opens, say) on the verifier's host."""
 
     def __init__(self, child: Child, remote: frozenset[str]) -> None:
         self.child = child
         self.remote = remote
         self.answers: dict[str, list[str]] = {}
         self.requests: dict[str, dict[str, Any]] = {}
-        self.site: int | None = None
-        self.site_calls = 0
+        self.phase: Phase | None = None
         self.outside: list[str] = []
 
     def ask(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -196,7 +197,7 @@ class Session:
         reply = exchange(self.child, request)
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
-        if self.site is None:
+        if self.phase is None or request["op"] != "call":
             if not handle(request, reply):
                 if key not in self.outside:
                     self.outside.append(key)
@@ -205,8 +206,6 @@ class Session:
                 if not (set(reply) == {"error"} and isinstance(error, str)
                         and error.startswith("child-")):
                     reply = {"error": OUTSIDE}
-        elif request["op"] == "call":
-            self.site_calls += 1
         return reply
 
     def counted(self) -> tuple[int, int]:
@@ -281,7 +280,69 @@ class RemoteFunction:
             raise CandidateFailed(f"argument is not plain data: {error}") from None
         reply = self._session.ask({"op": "call", "module": self._module, "name": self._name,
                                    "args": args_tagged, "kwargs": kwargs_tagged})
-        return value(self._session, reply, self._module, self._name, call=True)
+        found = value(self._session, reply, self._module, self._name, call=True)
+        phase = self._session.phase
+        if phase is None:
+            # Unreachable while the session refuses data outside a run; kept so that no
+            # answer ever reaches sealed code unsealed.
+            raise CandidateFailed(OUTSIDE)
+        return phase.wrap(found)
+
+
+class Phase:
+    """One run of a proven test. The k-th call it makes must be compared, once and before
+    the next call, with the k-th assertion's sealed value."""
+
+    def __init__(self, proof: pytest_proof.Proof, expected: list[Any]) -> None:
+        self.proof, self.expected = proof, expected
+        self.calls = 0
+        self.compared: list[int] = []
+        self.booleans: dict[str, set[bool]] = {}
+
+    def wrap(self, answer: Any) -> Sealed:
+        index = self.calls
+        if index >= len(self.expected) or len(self.compared) != index:
+            raise CandidateFailed("a call outside the sealed comparisons")
+        self.calls += 1
+        return Sealed(self, index, answer)
+
+    def compare(self, index: int, answer: Any, other: Any) -> bool:
+        if index != self.calls - 1 or len(self.compared) != index:
+            raise CandidateFailed("a sealed comparison out of its order")
+        expected = self.expected[index]
+        if not strict_eq(other, expected):
+            raise CandidateFailed("compared with a value that is not the sealed one")
+        self.compared.append(index)
+        if type(expected) is bool:
+            self.booleans.setdefault(self.proof.sites[index].callee, set()).add(expected)
+        return strict_eq(answer, expected)
+
+    def complete(self) -> bool:
+        return self.calls == len(self.expected) == len(self.compared)
+
+
+class Sealed:
+    """A call's answer inside a proven test: it can be compared once with its sealed value,
+    with the same builtin type at every level, and shown in a failure message. Nothing else
+    of it reaches the test."""
+
+    __slots__ = ("_phase", "_index", "_answer")
+    __hash__ = None  # type: ignore[assignment]
+
+    def __init__(self, phase: Phase, index: int, answer: Any) -> None:
+        self._phase, self._index, self._answer = phase, index, answer
+
+    def __eq__(self, other: object) -> bool:
+        return self._phase.compare(self._index, self._answer, other)
+
+    def __ne__(self, other: object) -> bool:
+        raise CandidateFailed("a sealed comparison is ==")
+
+    def __bool__(self) -> bool:
+        raise CandidateFailed("a sealed answer is only compared")
+
+    def __repr__(self) -> str:
+        return repr(self._answer)
 
 
 class RemoteModule(types.ModuleType):
@@ -359,9 +420,9 @@ class RemoteFinder(importlib.abc.MetaPathFinder):
 class Count:
     """The parent's pytest plugin object: run each test ``repeats`` times, count outcomes.
 
-    A test counts as passed on a run only when :meth:`call` ran its proven, instrumented copy
-    to the end on that run; a passed report without that (a hook that ran something else, or
-    rewrote the report) counts as failed."""
+    A test counts as passed on a run only when :meth:`call` ran the proven function to the
+    end on that run with every sealed comparison made; a passed report without that (a hook
+    that ran something else, or rewrote the report) counts as failed."""
 
     def __init__(self, repeats: int, sources: pytest_proof.Sources | None = None,
                  session: Session | None = None, root: str = "") -> None:
@@ -373,7 +434,6 @@ class Count:
         self.unproven: dict[str, str] = {}
         self.booleans: dict[str, set[bool]] = {}
         self.boolean_items: dict[str, set[str]] = {}
-        self.codes: dict[int, Any] = {}
 
     def proof(self, item: Any) -> pytest_proof.Proof | str:
         """The proof of a collected test, read again from the sealed file pytest imported."""
@@ -390,51 +450,34 @@ class Count:
         return self.sources.proof(f"{relative}::{item.originalname}")
 
     def call(self, item: Any) -> bool:
-        """Run a proven test: each sealed comparison is made here, on exactly one call, and
-        every one must have run before the test may pass."""
+        """Run a proven test: the function pytest collected from the sealed file, holding each
+        call's answer to its sealed comparison, every one of which must have run."""
         proof = self.proof(item)
         if isinstance(proof, str):
             self.unproven[item.nodeid] = proof
             raise CandidateFailed(f"not a sealed comparison: {proof}")
-        made: set[int] = set()
-        booleans: dict[str, set[bool]] = {}
-
-        def site(index: int, thunk: Any, expected: Any) -> None:
-            self.compare(proof, index, thunk, expected, made, booleans)
-
-        code = self.codes.get(id(proof))
-        if code is None:
-            code = self.codes[id(proof)] = pytest_proof.instrumented(proof, str(item.path))
-        namespace = dict(item.module.__dict__)
-        namespace[pytest_proof.SITE] = site
-        exec(code, namespace)
-        namespace[proof.node.name](**{name: item.funcargs[name] for name in proof.params})
-        if made != set(range(len(proof.sites))):
+        session = self.session
+        assert session is not None
+        function = item.obj
+        code = getattr(function, "__code__", None)
+        first = min([proof.node.lineno, *(node.lineno for node in proof.node.decorator_list)])
+        if (code is None or getattr(function, "__name__", None) != proof.node.name
+                or os.path.realpath(code.co_filename) != os.path.realpath(str(item.path))
+                or code.co_firstlineno != first):
+            raise CandidateFailed("the collected test is not the sealed function")
+        phase = Phase(proof, proof.expected(item.funcargs))
+        session.phase = phase
+        try:
+            function(**{name: item.funcargs[name] for name in proof.params})
+        finally:
+            session.phase = None
+        if not phase.complete():
             raise CandidateFailed("a sealed comparison did not run")
-        for callee, values in booleans.items():
+        for callee, values in phase.booleans.items():
             self.booleans.setdefault(callee, set()).update(values)
             self.boolean_items.setdefault(item.nodeid, set()).add(callee)
         self.verified.add(item.nodeid)
         return True
-
-    def compare(self, proof: pytest_proof.Proof, index: int, thunk: Any, expected: Any,
-                made: set[int], booleans: dict[str, set[bool]]) -> None:
-        """One sealed comparison: ``thunk`` makes the call, here, and its value must equal the
-        sealed value with the same builtin type at every level."""
-        session = self.session
-        assert session is not None
-        session.site, session.site_calls = index, 0
-        try:
-            result = thunk()
-        finally:
-            calls, session.site = session.site_calls, None
-        if calls != 1:
-            raise CandidateFailed("a sealed comparison did not make exactly one call")
-        if not strict_eq(result, expected):
-            raise AssertionError(f"{result!r} == {expected!r} does not hold")
-        made.add(index)
-        if type(expected) is bool:
-            booleans.setdefault(proof.sites[index].callee, set()).add(expected)
 
     def degenerate(self) -> list[str]:
         """Withdraw the passes of tests whose boolean comparison was only ever made one way
