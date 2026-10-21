@@ -74,6 +74,8 @@ def test_a_sealed_comparison_against_one_call_is_proven(body, callees):
     ("def test_it():\n    assert local(1) == 1\n", "not imported from a module the child serves"),
     ("def test_it():\n    assert pytest.approx(1) == 1\n", "not a module the child serves"),
     ("def test_it():\n    assert pkg(1) == 1\n", "call is of a module"),
+    ("@pytest.mark.parametrize('area', [1])\ndef test_it(area):\n    assert area(1, 1) == 1\n",
+     "is a table name"),
     ("def test_it():\n    assert area.__call__(1, 1) == 1\n", "dunder"),
     ("def test_it():\n    assert area(1, 1) == 1\n\n\narea = None\n", "bound 2 times"),
     ("def test_it():\n    assert area(1, 1) == 1\n\n\ndef rebind():\n    global area\n",

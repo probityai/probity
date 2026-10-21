@@ -203,3 +203,35 @@ def test_worker_counts_that_say_passed_cannot_outvote_the_verifiers_count(
     rewritten = verify_run.Graded(forged, data, envelope, result.isolation, result.staging)
     assert verdict(acceptance(tmp_path, sealed, rewritten, tree)) == (
         "contradicted", "acceptance_failed_in_verifier")
+
+
+def new_test_file(body: str) -> str:
+    """A test patch that adds ``tests/test_shapes.py`` holding ``body``."""
+    lines = body.splitlines()
+    return ("diff --git a/tests/test_shapes.py b/tests/test_shapes.py\nnew file mode 100644\n"
+            "--- /dev/null\n+++ b/tests/test_shapes.py\n"
+            f"@@ -0,0 +1,{len(lines)} @@\n" + "".join(f"+{line}\n" for line in lines))
+
+
+def test_a_sealed_test_gated_on_the_candidates_answer_is_left_to_the_worker(
+        tmp_path, swe_repo, harness, grader, python_bin):
+    # The assertion runs once per item of what the candidate returned: an empty answer would
+    # skip it, so the verifier does not count this id itself. The test is honest; the shape
+    # alone decides.
+    repo, record = swe_repo
+    gated = ("from pkg.shapes import area\n\n\ndef test_area():\n"
+             "    for answer in [area(2, 3)]:\n        assert answer == 6\n")
+    record = {**record, "test_patch": new_test_file(gated),
+              "original_test_patch": new_test_file(gated)}
+    # Sealed with the agent's own executable, as the honest-fix test is, so that only the
+    # gated id can leave a command with worker-only counts.
+    sealed = seal(tmp_path, (repo, record), harness, possible=True,
+                  executables={"python": python_bin})
+    replays = {item["id"]: item.get("ids") for item in sealed.record["acceptance"]
+               if is_replay(item["argv"])}
+    # Only the proven pass-to-pass id is replayed; the gated fail-to-pass id is not.
+    assert replays == {"pass-to-pass-replay": ["tests/test_other.py::test_zero"]}
+    result, tree = graded(tmp_path, sealed, grader, python_bin, HONEST)
+    assert result.staging["worker_counted"] == ["fail-to-pass", "heldout-fail-to-pass"]
+    assert result.isolation["verifier"]["assertions_in_parent"] is False
+    assert result.isolation["tests"]["exit_status_alone_accepted"] is True

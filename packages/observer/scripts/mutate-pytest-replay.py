@@ -2,8 +2,11 @@
 
 Each mutant deletes or weakens one rule: the parent's count and its repeats, the purity and
 fresh-child checks, the failure type no test can catch, the module and attribute limits, the
-refused remote names, the argv and path checks, the verifier's own count in the grade, and the
-isolation reading of replay-covered worker commands. Each is applied to the source, its tests
+refused remote names, the argv and path checks, the verifier's own count in the grade, the
+isolation reading of replay-covered worker commands, the proof of which ids reduce to one
+sealed comparison, and the parent's own enforcement of it (the instrumented comparison, its
+one call and strict type, a pass only after it ran, no candidate data outside it, boolean
+comparisons made both ways), and the refusal of a function a call returns. Each is applied to the source, its tests
 run (without bytecode, so a restored file is never measured through a stale cache), and the
 file is restored. Run from ``packages/observer`` in an environment with the ``test`` and
 ``done`` extras:
@@ -22,12 +25,14 @@ REPLAY = DONE / "pytest_replay.py"
 RUNNER = DONE / "runner.py"
 GRADE = DONE / "verify_run.py"
 CONTRACT = DONE / "contract.py"
+PROOF = DONE / "pytest_proof.py"
 UNIT = ["tests/done/test_pytest_replay.py"]
+PROVE = ["tests/done/test_pytest_proof.py"]
 PIPELINE = ["tests/done/test_grade_pipeline.py"]
 MUTANTS = [
     # The parent counts every repeat of every test.
     (REPLAY, UNIT, "        self.repeats = max(1, repeats)", "        self.repeats = 1"),
-    (REPLAY, UNIT, '            counts[report.outcome] = counts.get(report.outcome, 0) + 1',
+    (REPLAY, UNIT, '            counts[outcome] = counts.get(outcome, 0) + 1',
      '            counts["passed"] = counts.get("passed", 0) + 1'),
     # Purity and the fresh child.
     (REPLAY, UNIT, '    elif impure:\n        failure = "answers differ on one request"',
@@ -45,8 +50,8 @@ MUTANTS = [
     (REPLAY, UNIT, "            raise CandidateFailed(\"malformed raise\")", "            pass"),
     (REPLAY, UNIT, "            if type(args) is not tuple:", "            if False:"),
     # A module handle must be the candidate's; nothing may be set on a remote module.
-    (REPLAY, UNIT, "        if found.split(\".\", 1)[0] not in session.remote:",
-     "        if False:"),
+    (REPLAY, UNIT, "                or found.split(\".\", 1)[0] not in session.remote):",
+     "                or False):"),
     (REPLAY, UNIT, '        if (name.startswith("__") and name.endswith("__")) or isinstance(item, RemoteModule):',
      '        if True:'),
     # Remote names the parent holds are refused.
@@ -60,8 +65,6 @@ MUTANTS = [
     (REPLAY, UNIT, "        sys.path.insert(1, source)", "        pass"),
     (CONTRACT, UNIT, '    trees += [tree / "src" for tree in trees if (tree / "src").is_dir()',
      '    trees += [tree / "src" for tree in trees if False and (tree / "src").is_dir()'),
-    (CONTRACT, UNIT, "    kept = [test_id for test_id in passing if _under(file(test_id), protected)]",
-     "    kept = list(passing)"),
     # The argv and the sealed paths.
     (RUNNER, UNIT, '            or items[PYTEST_IDS_FROM - 1] != "--" or not items[9].isdigit()):',
      '            or not items[9].isdigit()):'),
@@ -82,6 +85,51 @@ MUTANTS = [
      '            ("heldout-fail-to-pass", hidden, None, True, "fail")):'),
     (CONTRACT, UNIT, "            if entry.is_symlink():\n                continue",
      "            if False:\n                continue"),
+    # The compiler replays only proven ids, visible, kept and held-out alike.
+    (CONTRACT, UNIT, "    visible, _ = pytest_proof.proven(shown, fail)", "    visible = list(fail)"),
+    (CONTRACT, UNIT, "    kept, _ = pytest_proof.proven(shown, passing)", "    kept = list(passing)"),
+    (CONTRACT, UNIT, "    hidden, _ = pytest_proof.proven(overlaid, fail)", "    hidden = list(fail)"),
+    (CONTRACT, UNIT, '    overlaid = pytest_proof.Sources([held / "tree", root], remote)',
+     "    overlaid = pytest_proof.Sources([root], remote)"),
+    # The proof: only sealed comparisons, of one remote call, against a sealed value.
+    (PROOF, PROVE, "            if not isinstance(statement, ast.Assert):",
+     "            if not isinstance(statement, (ast.Assert, ast.Expr, ast.For, ast.If)):"),
+    (PROOF, PROVE, "                and isinstance(test.ops[0], ast.Eq) and len(test.comparators) == 1):",
+     "                and len(test.comparators) == 1):"),
+    (PROOF, PROVE, "            if value is None:", "            if False:"),
+    (PROOF, PROVE, "            if isinstance(site.expected, ast.Name) and site.expected.id in echoed:",
+     "            if False:"),
+    (PROOF, PROVE, '        if binding.module.split(".", 1)[0] not in remote:', "        if False:"),
+    (PROOF, PROVE, '        if alias.name.split(".", 1)[0] not in remote:', "        if False:"),
+    (PROOF, PROVE, "        if len(nodes) != 1:", "        if not nodes:"),
+    (PROOF, PROVE, "        if set(params) != set(table):", "        if False:"),
+    (PROOF, PROVE, "            if not (isinstance(decorator, ast.Call) and _chain(decorator.func) == list(PARAMETRIZE)",
+     "            if not (isinstance(decorator, ast.Call)"),
+    (PROOF, PROVE, '                _literal(argument, line, "argument")', "                pass"),
+    (PROOF, PROVE, "        if not proof.sites:", "        if False:"),
+    (PROOF, PROVE, "    return {callee for callee, values in seen.items() if values != {True, False}}",
+     "    return set()"),
+    (PROOF, PROVE, '        if names[0] in params:', "        if False:"),
+    (PROOF, PROVE, '            self.error = "a star import can bind any name"', "            pass"),
+    (PROOF, PROVE, "    if len(parts) != 2 or not parts[0].endswith(\".py\"):", "    if False:"),
+    # The parent: a pass needs the instrumented run, which compares here, strictly, once.
+    (REPLAY, UNIT, '                if outcome == "passed" and report.nodeid not in self.verified:',
+     "                if False:"),
+    (REPLAY, UNIT, "            self.unproven[item.nodeid] = proof\n            raise CandidateFailed",
+     "            self.unproven[item.nodeid] = proof\n            return pytest_proof\n            raise CandidateFailed"),
+    (REPLAY, UNIT, "        if calls != 1:", "        if False:"),
+    (REPLAY, UNIT, "        if not strict_eq(result, expected):", "        if result != expected:"),
+    (REPLAY, UNIT, "            if not handle(request, reply):", "            if False:"),
+    (REPLAY, UNIT, "                    reply = {\"error\": OUTSIDE}\n", "                    pass\n"),
+    (REPLAY, UNIT, "    if session.outside:\n        failure = OUTSIDE", "    if False:\n        failure = OUTSIDE"),
+    (REPLAY, UNIT, "        if (not all(part.isidentifier() for part in found.split(\".\"))\n                or ",
+     "        if ("),
+    (REPLAY, UNIT, "        found = sorted(nodeid for nodeid, callees in self.boolean_items.items() if callees & weak)",
+     "        found = []"),
+    (REPLAY, UNIT, '    elif pytest_plugins.passed(counter.items, request["ids"]) != len(request["ids"]):',
+     "    elif False:"),
+    # The nonce, the call that returns a function, the finder and the order of the checks.
+    (REPLAY, UNIT, "    if call:\n        raise_for(reply)", "    if False:\n        raise_for(reply)"),
 ]
 
 
@@ -92,7 +140,7 @@ def run(tests: list[str]) -> int:
 
 
 def main() -> int:
-    if run(UNIT + PIPELINE) != 0:
+    if run(PROVE + UNIT + PIPELINE) != 0:
         print("BASELINE RED")
         return 1
     survived = 0

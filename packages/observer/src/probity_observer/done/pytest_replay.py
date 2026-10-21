@@ -18,9 +18,15 @@ code never enters it:
   times; every answer on one request must be identical, and each distinct request is asked
   again of a fresh child, in an order seeded from the grader and recorded, as in :mod:`.replay`.
 
-A test that needs anything else of the candidate (an instance of its class, an exception class
-it defines, an attribute the test sets) fails here on the reference too, so the compiler drops
-its id from the replay and only the worker counts it.
+A replay counts only ids :mod:`.pytest_proof` proves: tests that reduce to ``assert <one call
+the child answers> == <sealed literal>``. The parent checks the proof again and runs each
+proven test from an instrumented copy of its sealed source, so that each comparison is made
+here, type-strict (:func:`.replay.strict_eq`), on exactly one call, and must actually run
+before the test may count as passed. A plain value the candidate gives anywhere else (at
+import, in a fixture, in a hook) fails the replay: nothing the candidate chooses reaches the
+parent except as the left side of a sealed comparison. An id that is not proven, or a test
+that needs anything else of the candidate, fails here on the reference too, so the compiler
+leaves it out and only the worker counts it.
 """
 
 from __future__ import annotations
@@ -35,9 +41,11 @@ import os
 import random
 import sys
 import types
+from pathlib import Path
 from typing import Any
 
-from .replay import Child, plain, unplain
+from . import pytest_plugins, pytest_proof
+from .replay import Child, plain, strict_eq, unplain
 
 MODE = "pytest"
 # Builtin exceptions a reply may raise again in the test (``pytest.raises(ValueError)``).
@@ -111,6 +119,9 @@ def child_source() -> str:
     return CHILD_LOOP + f"_serve({codec!r})\n"
 
 
+OUTSIDE = "candidate data outside a sealed comparison"
+
+
 class CandidateFailed(BaseException):
     """The candidate gave no plain answer: a protocol failure, a value that cannot cross, or an
     exception that is not a builtin one. A ``BaseException``, so that no test's ``except
@@ -130,14 +141,32 @@ def _answer(reply: dict[str, Any]) -> str:
     return json.dumps(reply, separators=(",", ":"), sort_keys=True)
 
 
+def handle(request: dict[str, Any], reply: dict[str, Any]) -> bool:
+    """Whether a reply carries nothing the candidate chose but a handle: an import that
+    succeeded, or an attribute that is a function or a module of the candidate."""
+    if request["op"] == "import":
+        return reply == {"ok": ["none"]}
+    return (request["op"] == "attr" and "ok" not in reply
+            and (reply.get("callable") is True or isinstance(reply.get("module"), str)))
+
+
 class Session:
-    """The one child of a pytest replay, and every answer it gave, by request."""
+    """The one child of a pytest replay, and every answer it gave, by request.
+
+    ``site`` is the sealed comparison being evaluated, or ``None``. Outside one, a reply that
+    is more than a handle (:func:`handle`) never reaches the sealed code: it is recorded in
+    ``outside``, which fails the replay, and the code gets :class:`CandidateFailed` in its
+    place. So a value the candidate chose can never steer sealed code (into a path it opens,
+    say) on the verifier's host; inside a comparison, the value goes to the comparison only."""
 
     def __init__(self, child: Child, remote: frozenset[str]) -> None:
         self.child = child
         self.remote = remote
         self.answers: dict[str, list[str]] = {}
         self.requests: dict[str, dict[str, Any]] = {}
+        self.site: int | None = None
+        self.site_calls = 0
+        self.outside: list[str] = []
 
     def ask(self, request: dict[str, Any]) -> dict[str, Any]:
         key = _key(request)
@@ -148,6 +177,17 @@ class Session:
             reply = {"error": "child-protocol"}
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
+        if self.site is None:
+            if not handle(request, reply):
+                if key not in self.outside:
+                    self.outside.append(key)
+                # A failure of the client itself carries nothing the candidate chose.
+                error = reply.get("error")
+                if not (set(reply) == {"error"} and isinstance(error, str)
+                        and error.startswith("child-")):
+                    reply = {"error": OUTSIDE}
+        elif request["op"] == "call":
+            self.site_calls += 1
         return reply
 
     def counted(self) -> tuple[int, int]:
@@ -179,20 +219,28 @@ def raise_for(reply: dict[str, Any]) -> None:
     raise CandidateFailed(str(reply.get("error", "no answer")))
 
 
-def value(session: Session, reply: dict[str, Any], module: str, name: str) -> Any:
-    """The parent's value for a reply: plain data, a remote function or a remote module."""
+def value(session: Session, reply: dict[str, Any], module: str, name: str,
+          call: bool = False) -> Any:
+    """The parent's value for a reply: plain data, a remote function or a remote module.
+
+    A call answers with plain data only. A function it returns would come back as a handle
+    named by the module and name of the function that made it, so calling that handle would
+    call the factory again, not the function it returned; such a reply fails instead."""
     if "ok" in reply:
         try:
             return unplain(reply["ok"])
         except Exception:
             raise CandidateFailed("malformed value") from None
+    if call:
+        raise_for(reply)
     if reply.get("callable") is True:
         return RemoteFunction(session, module, name)
     found = reply.get("module")
     if isinstance(found, str):
         # Only a module the replay serves: a name of this process's own would run the
         # verifier's code where the test expects the candidate's.
-        if found.split(".", 1)[0] not in session.remote:
+        if (not all(part.isidentifier() for part in found.split("."))
+                or found.split(".", 1)[0] not in session.remote):
             raise CandidateFailed(f"module outside the candidate: {found}")
         return importlib.import_module(found)
     raise_for(reply)
@@ -214,9 +262,7 @@ class RemoteFunction:
             raise CandidateFailed(f"argument is not plain data: {error}") from None
         reply = self._session.ask({"op": "call", "module": self._module, "name": self._name,
                                    "args": args_tagged, "kwargs": kwargs_tagged})
-        if "ok" not in reply:
-            raise_for(reply)
-        return value(self._session, reply, self._module, self._name)
+        return value(self._session, reply, self._module, self._name, call=True)
 
 
 class RemoteModule(types.ModuleType):
@@ -269,11 +315,95 @@ class RemoteFinder(importlib.abc.MetaPathFinder):
 
 
 class Count:
-    """The parent's pytest plugin object: run each test ``repeats`` times, count outcomes."""
+    """The parent's pytest plugin object: run each test ``repeats`` times, count outcomes.
 
-    def __init__(self, repeats: int) -> None:
+    A test counts as passed on a run only when :meth:`call` ran its proven, instrumented copy
+    to the end on that run; a passed report without that (a hook that ran something else, or
+    rewrote the report) counts as failed."""
+
+    def __init__(self, repeats: int, sources: pytest_proof.Sources | None = None,
+                 session: Session | None = None, root: str = "") -> None:
         self.repeats = max(1, repeats)
         self.items: dict[str, dict[str, int]] = {}
+        self.sources, self.session = sources, session
+        self.root = os.path.realpath(root) if root else ""
+        self.verified: set[str] = set()
+        self.unproven: dict[str, str] = {}
+        self.booleans: dict[str, set[bool]] = {}
+        self.boolean_items: dict[str, set[str]] = {}
+        self.codes: dict[int, Any] = {}
+
+    def proof(self, item: Any) -> pytest_proof.Proof | str:
+        """The proof of a collected test, read again from the sealed file pytest imported."""
+        import pytest
+
+        if self.sources is None:
+            return "no sealed source"
+        if type(item) is not pytest.Function or item.cls is not None:
+            return "not a module-level test function"
+        path = os.path.realpath(str(item.path))
+        if not path.startswith(self.root + os.sep):
+            return "the test file is not sealed"
+        relative = os.path.relpath(path, self.root).replace(os.sep, "/")
+        return self.sources.proof(f"{relative}::{item.originalname}")
+
+    def call(self, item: Any) -> bool:
+        """Run a proven test: each sealed comparison is made here, on exactly one call, and
+        every one must have run before the test may pass."""
+        proof = self.proof(item)
+        if isinstance(proof, str):
+            self.unproven[item.nodeid] = proof
+            raise CandidateFailed(f"not a sealed comparison: {proof}")
+        made: set[int] = set()
+        booleans: dict[str, set[bool]] = {}
+
+        def site(index: int, thunk: Any, expected: Any) -> None:
+            self.compare(proof, index, thunk, expected, made, booleans)
+
+        code = self.codes.get(id(proof))
+        if code is None:
+            code = self.codes[id(proof)] = pytest_proof.instrumented(proof, str(item.path))
+        namespace = dict(item.module.__dict__)
+        namespace[pytest_proof.SITE] = site
+        exec(code, namespace)
+        namespace[proof.node.name](**{name: item.funcargs[name] for name in proof.params})
+        if made != set(range(len(proof.sites))):
+            raise CandidateFailed("a sealed comparison did not run")
+        for callee, values in booleans.items():
+            self.booleans.setdefault(callee, set()).update(values)
+            self.boolean_items.setdefault(item.nodeid, set()).add(callee)
+        self.verified.add(item.nodeid)
+        return True
+
+    def compare(self, proof: pytest_proof.Proof, index: int, thunk: Any, expected: Any,
+                made: set[int], booleans: dict[str, set[bool]]) -> None:
+        """One sealed comparison: ``thunk`` makes the call, here, and its value must equal the
+        sealed value with the same builtin type at every level."""
+        session = self.session
+        assert session is not None
+        session.site, session.site_calls = index, 0
+        try:
+            result = thunk()
+        finally:
+            calls, session.site = session.site_calls, None
+        if calls != 1:
+            raise CandidateFailed("a sealed comparison did not make exactly one call")
+        if not strict_eq(result, expected):
+            raise AssertionError(f"{result!r} == {expected!r} does not hold")
+        made.add(index)
+        if type(expected) is bool:
+            booleans.setdefault(proof.sites[index].callee, set()).add(expected)
+
+    def degenerate(self) -> list[str]:
+        """Withdraw the passes of tests whose boolean comparison was only ever made one way
+        on its function in this run; returns their ids."""
+        weak = {callee for callee, values in self.booleans.items() if values != {True, False}}
+        found = sorted(nodeid for nodeid, callees in self.boolean_items.items() if callees & weak)
+        for nodeid in found:
+            counts = self.items.setdefault(nodeid, {"passed": 0, "failed": 0, "skipped": 0})
+            counts["failed"] = counts.get("failed", 0) + counts.get("passed", 0)
+            counts["passed"] = 0
+        return found
 
     def pytest_runtest_protocol(self, item: Any, nextitem: Any) -> bool:
         from _pytest.runner import runtestprotocol
@@ -289,8 +419,13 @@ class Count:
 
     def pytest_runtest_logreport(self, report: Any) -> None:
         if report.when == "call" or (report.when == "setup" and report.outcome != "passed"):
+            outcome = report.outcome
+            if report.when == "call":
+                if outcome == "passed" and report.nodeid not in self.verified:
+                    outcome = "failed"
+                self.verified.discard(report.nodeid)
             counts = self.items.setdefault(report.nodeid, {"passed": 0, "failed": 0, "skipped": 0})
-            counts[report.outcome] = counts.get(report.outcome, 0) + 1
+            counts[outcome] = counts.get(outcome, 0) + 1
 
 
 def refused(remote: frozenset[str], root: str) -> str | None:
@@ -308,6 +443,13 @@ def refused(remote: frozenset[str], root: str) -> str | None:
 def _run(request: dict[str, Any], session: Session, counter: Count) -> int:
     import pytest
 
+    class Calls:
+        """Runs each test through :meth:`Count.call`, before any other implementation."""
+
+        @pytest.hookimpl(tryfirst=True)
+        def pytest_pyfunc_call(self, pyfuncitem: Any) -> bool:
+            return counter.call(pyfuncitem)
+
     args = ["-p", "no:cacheprovider", "-q", "--rootdir", request["test_root"]]
     if request.get("config"):
         args += ["-c", request["config"]]
@@ -316,7 +458,7 @@ def _run(request: dict[str, Any], session: Session, counter: Count) -> int:
     cwd, path = os.getcwd(), list(sys.path)
     os.chdir(request["test_root"])
     try:
-        return int(pytest.main([*args, "--", *request["ids"]], plugins=[counter]))
+        return int(pytest.main([*args, "--", *request["ids"]], plugins=[counter, Calls()]))
     finally:
         os.chdir(cwd)
         sys.path[:] = path
@@ -349,39 +491,48 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     remote = frozenset(request["remote"])
     base: dict[str, Any] = {"passed": False, "mode": MODE, "items": {}, "calls_intercepted": 0,
                             "distinct_calls": 0, "impure": [], "fresh_mismatch": [],
-                            "fresh_order": []}
+                            "fresh_order": [], "unproven": {}, "outside": [], "degenerate": []}
     problem = refused(remote, request["test_root"])
     if problem is not None:
         return {**base, "failure": problem}
     previous = os.environ.get("PYTEST_DISABLE_PLUGIN_AUTOLOAD")
     os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
     timeout = float(request["call_timeout"])
-    counter = Count(int(request["repeats"]))
+    sources = pytest_proof.Sources([Path(request["test_root"])], remote)
     try:
         with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:
             session = Session(child, remote)
+            counter = Count(int(request["repeats"]), sources, session, request["test_root"])
             code = _run(request, session, counter)
     finally:
         if previous is None:
             os.environ.pop("PYTEST_DISABLE_PLUGIN_AUTOLOAD", None)
         else:
             os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = previous
+    degenerate = counter.degenerate()
     impure = sorted(key for key, answers in session.answers.items() if len(set(answers)) != 1)
     order = sorted(session.answers)
     random.Random(request["order_seed"]).shuffle(order)
     fresh_mismatch = fresh_mismatches(request, session, order, timeout)
     calls, distinct = session.counted()
     failure = None
-    if code != 0:
+    if session.outside:
+        failure = OUTSIDE
+    elif code != 0:
         failure = f"pytest exit {code}"
     elif not calls:
         # Tests that pass without consulting the candidate pass on every tree; a replay that
         # never reached it fails, so the compiler drops it rather than seal a vacuous count.
         failure = "no call reached the candidate"
+    elif degenerate:
+        failure = "a boolean comparison its function never makes the other way"
+    elif pytest_plugins.passed(counter.items, request["ids"]) != len(request["ids"]):
+        failure = "a sealed id did not pass"
     elif impure:
         failure = "answers differ on one request"
     elif fresh_mismatch:
         failure = "a fresh child answered differently"
     return {**base, "passed": failure is None, "failure": failure, "exit": code,
             "items": counter.items, "calls_intercepted": calls, "distinct_calls": distinct,
-            "impure": impure, "fresh_mismatch": fresh_mismatch, "fresh_order": order}
+            "impure": impure, "fresh_mismatch": fresh_mismatch, "fresh_order": order,
+            "unproven": counter.unproven, "outside": session.outside, "degenerate": degenerate}
