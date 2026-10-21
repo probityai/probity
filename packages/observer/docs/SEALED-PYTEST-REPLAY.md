@@ -49,7 +49,8 @@ tree: the test files, `conftest.py` files and pytest configuration. The heldout 
 it. An id is replayed only when its test file is in that root, or, for the held-out command,
 in the held-out tree laid over it. An unprotected test file is the agent's code, so it never
 runs in the verifier. `--remote` lists every top-level module of the start and reference
-trees that the root does not hold.
+trees, and of their `src/` directories, that the root does not hold, so a test that imports
+the candidate's package never resolves it to a package of the verifier's own environment.
 
 **The run.** The runner (`runner.run_replay`) builds two directories:
 
@@ -72,7 +73,9 @@ pass. Setting an attribute on a remote module raises `Unsupported`.
 **The count.** A plugin object (`Count`) in the parent runs each test `repeats` times and
 counts its outcomes. When pytest finishes, every request must have had one answer each time
 it was asked. Each distinct request is then asked again of a fresh child, in an order seeded
-from the grader key and recorded (`fresh_order`). The parent writes the result file. The
+from the grader key and recorded (`fresh_order`). A replay in which no call or attribute
+read reached the candidate fails: it would pass on every tree, so the compiler drops it
+instead of sealing a vacuous count. The parent writes the result file. The
 grade's `collected` and `passed` for a replay command come from that file
 (`verify_run.grade`), never from a worker report.
 
@@ -100,8 +103,8 @@ the staging report as `worker_counted`.
 1. **Ids the replay cannot serve stay worker-counted.** A test needs a replay that can serve
    it. It is not replayed when it needs an instance of the candidate's class, an exception
    class the candidate defines, a fixture that yields candidate objects, a monkeypatched
-   attribute, a `src/` layout, or a third-party package that the verifier's interpreter
-   lacks. Such a test fails the replay on the reference, and stabilization drops it, either
+   attribute, a package the test reaches only through a path its own conftest adds, or a
+   third-party package that the verifier's interpreter lacks. Such a test fails the replay on the reference, and stabilization drops it, either
    per id or as a whole command. Guard ids from the repository's own suite (`guard-repo`),
    synthesized tests and zero-shot `repo` commands get no replay. For all of these, the count
    is still the worker's. `worker_counted` names them, and the isolation block keeps

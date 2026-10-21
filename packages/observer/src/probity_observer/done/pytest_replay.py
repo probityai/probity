@@ -56,6 +56,10 @@ def _serve(codec_source):
     proto = os.fdopen(os.dup(1), "w")
     os.dup2(2, 1)
     sys.path.insert(0, os.getcwd())
+    # A src layout: its packages import from src/, as the task's own install makes them.
+    source = os.path.join(os.getcwd(), "src")
+    if os.path.isdir(source) and not os.path.exists(os.path.join(source, "__init__.py")):
+        sys.path.insert(1, source)
     dumps, loads, load = json.dumps, json.loads, importlib.import_module
     module_type, is_callable, text = type(sys), callable, str
     def send(message):
@@ -351,6 +355,10 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     failure = None
     if code != 0:
         failure = f"pytest exit {code}"
+    elif not calls:
+        # Tests that pass without consulting the candidate pass on every tree; a replay that
+        # never reached it fails, so the compiler drops it rather than seal a vacuous count.
+        failure = "no call reached the candidate"
     elif impure:
         failure = "answers differ on one request"
     elif fresh_mismatch:
