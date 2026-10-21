@@ -149,6 +149,20 @@ def test_a_boolean_comparison_needs_its_function_asserted_both_ways(tmp_path):
     assert "boolean" in reasons[ids[0]]
 
 
+def test_ids_asserting_one_boolean_both_ways_are_grouped(tmp_path):
+    (tmp_path / "test_e.py").write_text(
+        HEADER + "def test_yes():\n    assert is_square(2, 2) == True\n\n\n"
+        "def test_area():\n    assert area(1, 1) == 1\n\n\n"
+        "def test_no():\n    assert is_square(2, 3) == False\n\n\n"
+        "def test_both():\n    assert check(1) == [True]\n    assert is_square(1, 2) == False\n"
+        "\n\ndef test_check():\n    assert check(2) == [False]\n")
+    sources = pytest_proof.Sources([tmp_path], REMOTE)
+    ids = [f"test_e.py::{name}" for name in ("test_yes", "test_area", "test_no", "test_both",
+                                              "test_check", "missing")]
+    assert pytest_proof.boolean_groups(sources, ids) == [
+        [ids[0], ids[2], ids[3], ids[4]], [ids[1]], [ids[5]]]
+
+
 def test_the_held_out_tree_is_read_before_the_issued_file(tmp_path):
     held, issued = tmp_path / "held", tmp_path / "issued"
     held.mkdir()

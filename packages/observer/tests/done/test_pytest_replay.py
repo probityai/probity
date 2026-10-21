@@ -377,6 +377,38 @@ def test_a_src_layout_package_is_remote_and_served_from_src(tmp_path):
     assert found[0].record()["ids"] == IDS
 
 
+def test_a_replay_split_by_id_judges_a_two_way_boolean_pair_together(tmp_path):
+    # The reference fails the whole command once, so stabilization judges its ids one by one;
+    # the two halves of a boolean asserted both ways are judged as one.
+    held = tmp_path / "held"
+    root = held / runner.PYTEST_ROOT / TESTS
+    root.mkdir(parents=True)
+    (root / "test_b.py").write_text(
+        f"from {PACKAGE}.shapes import area, is_square\n\n\n"
+        "def test_yes():\n    assert is_square(2, 2) == True\n\n\n"
+        "def test_area():\n    assert area(1, 1) == 1\n\n\n"
+        "def test_no():\n    assert is_square(2, 3) == False\n")
+    ids = [f"{TESTS}/test_b.py::{name}" for name in ("test_yes", "test_area", "test_no")]
+    command = runner.Command("fail-to-pass-replay", argv(ids), ids_from=runner.PYTEST_IDS_FROM)
+
+    class Judged:
+        name = "stub"
+
+        def __init__(self):
+            self.seen = []
+
+        def run(self, state, argv, heldout, timeout, writes=None, output=None, stdin=None,
+                stopped=None):
+            self.seen.append(list(argv[runner.PYTEST_IDS_FROM:]))
+            return 0 if state.name == "reference" else 1
+    task = type("Task", (), {"start": tmp_path / "start", "reference": tmp_path / "reference",
+                             "heldout": held})()
+    judged, log, dropped = Judged(), [], []
+    narrowed = contract._per_id(task, judged, command, 1, 10, log, dropped)
+    assert narrowed is not None and list(narrowed.argv[runner.PYTEST_IDS_FROM:]) == ids
+    assert [ids[0], ids[2]] in judged.seen and [ids[1]] in judged.seen and not dropped
+
+
 def test_an_unprotected_test_file_is_never_replayed(tmp_path):
     start = tmp_path / "start"
     (start / PACKAGE).mkdir(parents=True)
