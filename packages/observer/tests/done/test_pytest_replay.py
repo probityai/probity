@@ -295,3 +295,36 @@ def test_an_unprotected_test_file_is_never_replayed(tmp_path):
     assert [(command.id, runner.pytest_replay_fields(command.argv)["ids"]) for command in found] == [
         ("fail-to-pass-replay", ["tests/test_a.py::t"]),
         ("heldout-fail-to-pass-replay", ["tests/test_a.py::t"])]
+
+
+def test_answers_that_differ_on_one_request_fail_even_when_every_test_passes(tmp_path):
+    # The recorded per-input counter answers 2 and then 3; a test that accepts either passes
+    # both repeats, and only the purity check refuses it.
+    permissive = (f"from {PACKAGE}.shapes import add\n\n\n"
+                  "def test_add():\n    assert add(1, 1) in (2, 3)\n")
+    result = pytest_replay.pytest_replay(request(tmp_path, HONEST.split("def add")[0]
+                                                 + PER_INPUT_COUNTER, permissive,
+                                                 [f"{TESTS}/test_shapes.py::test_add"]))
+    assert result["exit"] == 0 and result["failure"] == "answers differ on one request", result
+
+
+def test_a_recorded_answer_a_fresh_child_does_not_give_is_a_mismatch(tmp_path):
+    found = request(tmp_path, HONEST)
+    honest = pytest_replay.Session(None, frozenset([PACKAGE]))
+    call = {"op": "call", "module": f"{PACKAGE}.shapes", "name": "add",
+            "args": replay.plain((1, 1)), "kwargs": replay.plain({})}
+    key = pytest_replay._key(call)
+    honest.requests[key] = call
+    # The session's own record says 3; a fresh child holding the module answers 2.
+    honest.answers[key] = [pytest_replay._answer({"ok": replay.plain(3)})]
+    assert pytest_replay.fresh_mismatches(found, honest, [key], 30.0) == [key]
+    honest.answers[key] = [pytest_replay._answer({"ok": replay.plain(2)})]
+    assert pytest_replay.fresh_mismatches(found, honest, [key], 30.0) == []
+
+
+def test_a_fresh_mismatch_fails_the_replay(tmp_path, monkeypatch):
+    monkeypatch.setattr(pytest_replay, "fresh_mismatches",
+                        lambda request, session, order, timeout: order[:1])
+    result = pytest_replay.pytest_replay(request(tmp_path, HONEST))
+    assert result["exit"] == 0 and result["failure"] == "a fresh child answered differently"
+    assert result["fresh_mismatch"] == result["fresh_order"][:1]

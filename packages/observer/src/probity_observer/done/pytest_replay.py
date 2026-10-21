@@ -320,6 +320,19 @@ def _run(request: dict[str, Any], session: Session, counter: Count) -> int:
                 del sys.modules[name]
 
 
+def fresh_mismatches(request: dict[str, Any], session: Session, order: list[str],
+                     timeout: float) -> list[str]:
+    """The requests, asked again one per fresh child in ``order``, whose answer differs from
+    the session's first answer: an answer that depended on what the child was asked before."""
+    found = []
+    for key in order:
+        with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
+            reply = fresh.ask(session.requests[key])
+        if _answer(reply) != session.answers[key][0]:
+            found.append(key)
+    return found
+
+
 def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     """Run the sealed ids under pytest in this process, the remote modules served by a child."""
     remote = frozenset(request["remote"])
@@ -345,12 +358,7 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     impure = sorted(key for key, answers in session.answers.items() if len(set(answers)) != 1)
     order = sorted(session.answers)
     random.Random(request["order_seed"]).shuffle(order)
-    fresh_mismatch = []
-    for key in order:
-        with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
-            reply = fresh.ask(session.requests[key])
-        if _answer(reply) != session.answers[key][0]:
-            fresh_mismatch.append(key)
+    fresh_mismatch = fresh_mismatches(request, session, order, timeout)
     calls, distinct = session.counted()
     failure = None
     if code != 0:
