@@ -3,7 +3,9 @@
 The candidates are honest modules, honest modules a replay cannot serve (a class instance, an
 exception class of their own, a module alias), and the recorded replay adversaries of
 ``test_replay.py`` (a per-input call counter, a forger of the result file), each called from
-a sealed pytest file instead of a LiveCodeBench check.
+a sealed pytest file instead of a LiveCodeBench check. No new forging candidate is written
+here: where a rule needs one to show it holds end to end, the test drives the rule from the
+parent's side instead, and the design document names the fixture an outside harness supplies.
 """
 
 from __future__ import annotations
@@ -15,7 +17,8 @@ import sys
 from pathlib import Path
 
 import pytest
-from probity_observer.done import contract, pytest_replay, replay, runner, verify_run
+from probity_observer.done import (contract, pytest_proof, pytest_replay, replay, runner,
+                                   verify_run)
 from probity_observer.done.runner import SubprocessRunner
 
 from .test_replay import FORGER, PER_INPUT_COUNTER
@@ -25,13 +28,22 @@ PACKAGE = "probity_replay_shapes"
 TESTS = "probity_sealed_tests"
 HONEST = ("UNITS = 'cm'\n\n\ndef area(w, h):\n    if w < 0:\n        raise ValueError('negative')\n"
           "    return w * h\n\n\ndef add(a, b):\n    return a + b\n")
-TEST = (f"import os\n\nimport pytest\n\nimport {PACKAGE}\nfrom {PACKAGE}.shapes import add, area\n\n\n"
+# Every test here reduces to ``assert <one call> == <sealed literal>`` (pytest_proof).
+TEST = (f"import os\n\nimport pytest\n\nimport {PACKAGE}\n"
+        f"from {PACKAGE}.shapes import add, area\n\n\n"
         "def test_area():\n    assert area(2, 3) == 6\n\n\n"
-        "def test_raises():\n    with pytest.raises(ValueError, match='negative'):\n        area(-1, 1)\n\n\n"
-        f"def test_units():\n    assert {PACKAGE}.shapes.UNITS == 'cm'\n\n\n"
+        "@pytest.mark.parametrize('w, h, expected', [(2, 2, 4), (1, 5, 5)])\n"
+        "def test_table(w, h, expected):\n    assert area(w, h) == expected\n\n\n"
+        f"def test_dotted():\n    assert {PACKAGE}.shapes.area(3, 3) == 9\n\n\n"
         "def test_add():\n    assert add(1, 1) == 2\n    assert add(2, 3) == 5\n")
-IDS = [f"{TESTS}/test_shapes.py::{name}" for name in ("test_area", "test_raises", "test_units",
+IDS = [f"{TESTS}/test_shapes.py::{name}" for name in ("test_area", "test_table", "test_dotted",
                                                      "test_add")]
+# Shapes a replay does not count: a raise the candidate chooses, and a plain attribute read.
+UNPROVEN = (f"import pytest\n\nimport {PACKAGE}\nfrom {PACKAGE}.shapes import area\n\n\n"
+            "def test_raises():\n    with pytest.raises(ValueError, match='negative'):\n"
+            "        area(-1, 1)\n\n\n"
+            f"def test_units():\n    assert {PACKAGE}.shapes.UNITS == 'cm'\n\n\n"
+            "def test_area():\n    assert area(2, 3) == 6\n")
 
 
 def tree(base: Path, source: str, test: str = TEST) -> tuple[Path, Path]:
@@ -54,10 +66,11 @@ def argv(ids=IDS, overlay=None, remote=(PACKAGE,)):
     return runner.pytest_replay_argv("../heldout/config/pytest.ini", overlay, remote, 2, ids)
 
 
-def run(base: Path, source: str, test: str = TEST, ids=IDS, python_bin=sys.executable):
+def run(base: Path, source: str, test: str = TEST, ids=IDS, python_bin=sys.executable,
+        remote=(PACKAGE,)):
     state, held = tree(base, source, test)
     local = SubprocessRunner(python_bin)
-    code = local.run(state, argv(ids), held, 120)
+    code = local.run(state, argv(ids, remote=remote), held, 120)
     return code, local.replays[-1] if local.replays else None
 
 
@@ -76,7 +89,7 @@ def request(base: Path, source: str, test: str = TEST, ids=IDS, remote=(PACKAGE,
 def test_an_honest_module_passes_and_the_parent_counts_every_test(tmp_path):
     code, report = run(tmp_path, HONEST)
     assert code == 0 and report["passed"], report
-    assert set(report["items"]) == set(IDS)
+    assert set(report["items"]) == {*IDS[:1], *IDS[2:], f"{IDS[1]}[2-2-4]", f"{IDS[1]}[1-5-5]"}
     # Each test ran twice, and passed both times, in the verifier's own pytest.
     assert all(counts == {"passed": 2, "failed": 0, "skipped": 0}
                for counts in report["items"].values())
@@ -88,15 +101,18 @@ def test_a_wrong_module_fails_and_the_count_shows_which_tests(tmp_path):
     code, report = run(tmp_path, HONEST.replace("return w * h", "return w + h"))
     assert code == 1 and not report["passed"]
     assert report["items"][IDS[0]]["failed"] == 2
-    assert runner.pytest_plugins.passed(report["items"], IDS) == len(IDS) - 1
+    # Only test_add holds for w + h; one row of the table does too, so the table fails.
+    assert runner.pytest_plugins.passed(report["items"], IDS) == 1
+    assert report["items"][f"{IDS[1]}[2-2-4]"]["passed"] == 2
 
 
 def test_the_candidates_module_code_runs_outside_the_parent(tmp_path):
     # Where the module is imported, no pytest is loaded and no sealed plugin either.
     source = HONEST + ("\nimport sys\nWITH_PYTEST = sorted(name for name in sys.modules\n"
                        "                     if name.split('.')[0] in ('_pytest', 'pytest',\n"
-                       "                                               'probity_repeat'))\n")
-    test = TEST + (f"\n\ndef test_where():\n    assert {PACKAGE}.shapes.WITH_PYTEST == []\n")
+                       "                                               'probity_repeat'))\n\n\n"
+                       "def where():\n    return WITH_PYTEST\n")
+    test = TEST + (f"\n\ndef test_where():\n    assert {PACKAGE}.shapes.where() == []\n")
     ids = [*IDS, f"{TESTS}/test_shapes.py::test_where"]
     code, report = run(tmp_path, source, test, ids)
     assert code == 0, report
@@ -118,23 +134,31 @@ def test_the_recorded_result_forger_cannot_write_the_parents_result(tmp_path):
 @pytest.mark.parametrize("source, test, reason", [
     # An instance of the candidate's class cannot cross as plain data.
     ("class Box:\n    pass\n\n\ndef area(w, h):\n    return Box()\n",
-     f"from {PACKAGE}.shapes import area\n\n\ndef test_area():\n    assert area(2, 3)\n",
+     f"from {PACKAGE}.shapes import area\n\n\ndef test_area():\n    assert area(2, 3) == 6\n",
      "unplain"),
     # An exception class of the candidate's own is not re-raised in the parent.
     ("class Bad(Exception):\n    pass\n\n\ndef area(w, h):\n    raise Bad('no')\n",
-     (f"import pytest\nfrom {PACKAGE}.shapes import area\n\n\n"
-      "def test_area():\n    with pytest.raises(Exception):\n        area(2, 3)\n"), "raised"),
+     f"from {PACKAGE}.shapes import area\n\n\ndef test_area():\n    assert area(2, 3) == 6\n",
+     "raised"),
     # A module alias of the standard library is never served from the parent's own modules.
     ("import os as helper\n",
-     f"import {PACKAGE}.shapes as shapes\n\n\ndef test_area():\n    assert shapes.helper.sep\n",
-     "outside"),
-    # An attribute the test sets would never reach the child.
+     f"import {PACKAGE}.shapes as shapes\n\n\ndef test_area():\n"
+     "    assert shapes.helper.getcwd() == '/'\n", "outside"),
+    # An attribute the sealed module sets would never reach the child.
     ("def area(w, h):\n    return w * h\n",
-     f"import {PACKAGE}.shapes as shapes\n\n\ndef test_area():\n    shapes.area = None\n",
-     "set"),
+     f"import {PACKAGE}.shapes as shapes\n\nshapes.UNITS = 'mm'\n\n\n"
+     "def test_area():\n    assert shapes.area(2, 3) == 6\n", "set"),
     # A missing name is an import error in the test.
     ("def area(w, h):\n    return w * h\n",
-     f"from {PACKAGE}.shapes import volume\n\n\ndef test_area():\n    assert volume\n", "import"),
+     f"from {PACKAGE}.shapes import volume\n\n\ndef test_area():\n    assert volume(1) == 1\n",
+     "import"),
+    # A value of the right size but another builtin type is not the sealed value.
+    ("def area(w, h):\n    return float(w * h)\n",
+     f"from {PACKAGE}.shapes import area\n\n\ndef test_area():\n    assert area(2, 3) == 6\n",
+     "type"),
+    ("def area(w, h):\n    return 1\n",
+     f"from {PACKAGE}.shapes import area\n\n\ndef test_area():\n    assert area(2, 3) == True\n"
+     "\n\ndef test_other():\n    assert area(2, 2) == False\n", "bool"),
 ])
 def test_what_a_replay_cannot_serve_fails_and_is_never_a_pass(tmp_path, source, test, reason):
     code, report = run(tmp_path, source, test, [f"{TESTS}/test_shapes.py::test_area"])
@@ -257,10 +281,19 @@ def test_a_replay_request_round_trips_through_the_parent_main(tmp_path):
 
 
 def test_a_replay_that_never_calls_the_candidate_fails(tmp_path):
-    test = f"import {PACKAGE}.shapes\n\n\ndef test_area():\n    assert True\n"
+    # pytest exits 0 when every test is skipped, and a skip never reaches the candidate.
+    test = (f"import pytest\nimport {PACKAGE}.shapes\n\n\n@pytest.mark.skip\n"
+            f"def test_area():\n    assert {PACKAGE}.shapes.area(2, 3) == 6\n")
     code, report = run(tmp_path, HONEST, test, [f"{TESTS}/test_shapes.py::test_area"])
-    assert code == 1 and report["failure"] == "no call reached the candidate", report
-    assert report["items"][f"{TESTS}/test_shapes.py::test_area"]["passed"] == 2
+    assert code == 1 and report["exit"] == 0, report
+    assert report["failure"] == "no call reached the candidate", report
+    assert report["items"][f"{TESTS}/test_shapes.py::test_area"]["skipped"] == 2
+
+
+def test_a_replay_in_which_one_id_skipped_fails(tmp_path):
+    test = TEST + "\n\n@pytest.mark.skip\ndef test_skipped():\n    assert area(2, 3) == 6\n"
+    code, report = run(tmp_path, HONEST, test, [IDS[0], f"{TESTS}/test_shapes.py::test_skipped"])
+    assert code == 1 and report["exit"] == 0 and report["failure"] == "a sealed id did not pass"
 
 
 def test_a_src_layout_package_is_remote_and_served_from_src(tmp_path):
@@ -289,8 +322,10 @@ def test_an_unprotected_test_file_is_never_replayed(tmp_path):
     (start / PACKAGE).mkdir(parents=True)
     (start / PACKAGE / "shapes.py").write_text(HONEST)
     (start / "tests").mkdir()
-    (start / "tests" / "test_a.py").write_text("")
-    (start / "tests" / "test_b.py").write_text("")
+    for name in ("test_a.py", "test_b.py"):
+        (start / "tests" / name).write_text(f"from {PACKAGE}.shapes import area\n\n\n"
+                                            "def t():\n    assert area(1, 1) == 1\n\n\n"
+                                            "def u():\n    assert area(1, 2) == 2\n")
     held = tmp_path / "held"
     held.mkdir()
     found = contract.pytest_replays(start, None, held, [contract.Protected("tests/test_a.py", "file")],
@@ -301,14 +336,20 @@ def test_an_unprotected_test_file_is_never_replayed(tmp_path):
         ("heldout-fail-to-pass-replay", ["tests/test_a.py::t"])]
 
 
-def test_answers_that_differ_on_one_request_fail_even_when_every_test_passes(tmp_path):
-    # The recorded per-input counter answers 2 and then 3; a test that accepts either passes
-    # both repeats, and only the purity check refuses it.
-    permissive = (f"from {PACKAGE}.shapes import add\n\n\n"
-                  "def test_add():\n    assert add(1, 1) in (2, 3)\n")
-    result = pytest_replay.pytest_replay(request(tmp_path, HONEST.split("def add")[0]
-                                                 + PER_INPUT_COUNTER, permissive,
-                                                 [f"{TESTS}/test_shapes.py::test_add"]))
+def test_answers_that_differ_on_one_request_fail_even_when_every_test_passes(tmp_path,
+                                                                            monkeypatch):
+    # A sealed comparison refuses a changing value on its own; the purity check also covers
+    # the answers no comparison reads (a handle). The recorded answer of one request is made
+    # to differ between its repeats, as a changing answer of the child would.
+    answer, handles = pytest_replay._answer, []
+
+    def changing(reply):
+        if reply.get("callable"):
+            handles.append(reply)
+            return answer(reply) + ("x" if len(handles) % 2 else "")
+        return answer(reply)
+    monkeypatch.setattr(pytest_replay, "_answer", changing)
+    result = pytest_replay.pytest_replay(request(tmp_path, HONEST))
     assert result["exit"] == 0 and result["failure"] == "answers differ on one request", result
 
 
@@ -340,3 +381,143 @@ def test_a_reply_that_is_not_an_object_is_a_protocol_error():
             return ["raised", "ValueError"]
     session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
     assert session.ask({"op": "import", "module": PACKAGE}) == {"error": "child-protocol"}
+
+
+def unproven_ids(names):
+    return [f"{TESTS}/test_shapes.py::{name}" for name in names]
+
+
+def test_an_id_the_proof_refuses_fails_in_the_replay_with_its_reason(tmp_path):
+    # Sealed as a replay by hand: the compiler never seals these two, and the parent refuses
+    # them again rather than run them.
+    ids = unproven_ids(["test_raises", "test_units", "test_area"])
+    code, report = run(tmp_path, HONEST, UNPROVEN, ids)
+    assert code == 1 and report["failure"] == "pytest exit 1", report
+    assert set(report["unproven"]) == set(ids[:2])
+    assert "With" in report["unproven"][ids[0]] and "one call" in report["unproven"][ids[1]]
+    assert [report["items"][test_id]["passed"] for test_id in ids] == [0, 0, 2]
+
+
+@pytest.mark.parametrize("setup", [
+    # A plain value read at import, and a call a fixture makes, both reach the parent's code
+    # outside any sealed comparison.
+    f"UNITS = {PACKAGE}.shapes.UNITS\n",
+    "@pytest.fixture(autouse=True)\ndef warm():\n    area(1, 1)\n",
+    # The refusal is a BaseException: sealed code that catches Exception cannot carry on.
+    f"try:\n    UNITS = {PACKAGE}.shapes.UNITS\nexcept Exception:\n    UNITS = 'cm'\n",
+])
+def test_candidate_data_outside_a_sealed_comparison_fails_the_replay(tmp_path, setup):
+    test = TEST.replace("\n\n\ndef test_area", f"\n\n\n{setup}\n\ndef test_area", 1)
+    code, report = run(tmp_path, HONEST, test)
+    assert code == 1 and report["failure"] == "candidate data outside a sealed comparison", report
+    assert report["outside"] and all(json.loads(key)[0] in ("attr", "call")
+                                     for key in report["outside"])
+    assert runner.pytest_plugins.passed(report["items"], IDS[:1]) == 0
+
+
+def test_candidate_data_outside_a_sealed_comparison_never_reaches_the_sealed_code():
+    class Child:
+        def ask(self, request):
+            return {"ok": ["str", "/etc/passwd"]}
+    session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
+    read = {"op": "attr", "module": f"{PACKAGE}.shapes", "name": "CACHE"}
+    reply = session.ask(read)
+    assert reply == {"error": pytest_replay.OUTSIDE} and session.outside == [
+        pytest_replay._key(read)]
+    with pytest.raises(pytest_replay.CandidateFailed, match="outside a sealed comparison"):
+        pytest_replay.value(session, reply, f"{PACKAGE}.shapes", "CACHE")
+    # Inside a comparison the same answer goes to the comparison.
+    session.site = 0
+    assert session.ask(read) == {"ok": ["str", "/etc/passwd"]}
+
+
+def test_a_passed_report_without_the_instrumented_run_counts_as_failed(tmp_path, monkeypatch):
+    # Another implementation answers every call without running the sealed comparisons:
+    # pytest reports each test passed, and the parent counts none of them.
+    monkeypatch.setattr(pytest_replay.Count, "call", lambda self, item: True)
+    result = pytest_replay.pytest_replay(request(tmp_path, HONEST, ids=IDS[:1]))
+    assert result["exit"] == 0 and result["failure"] == "a sealed id did not pass", result
+    assert result["items"][IDS[0]] == {"passed": 0, "failed": 2, "skipped": 0}
+
+
+def comparison(source=TEST, name="test_area"):
+    proof = pytest_proof.Module(source, frozenset([PACKAGE])).proof(name)
+    assert not isinstance(proof, str), proof
+    session = pytest_replay.Session(None, frozenset([PACKAGE]))
+    return pytest_replay.Count(1, session=session), session, proof
+
+
+def test_a_sealed_comparison_makes_exactly_one_call_and_compares_type_strictly():
+    count, session, proof = comparison()
+
+    def calls(number, result):
+        def thunk():
+            session.site_calls += number
+            return result
+        return thunk
+    made: set[int] = set()
+    count.compare(proof, 0, calls(1, 6), 6, made, {})
+    assert made == {0} and session.site is None
+    for number in (0, 2):
+        with pytest.raises(pytest_replay.CandidateFailed, match="exactly one call"):
+            count.compare(proof, 0, calls(number, 6), 6, set(), {})
+    for wrong in (6.0, True, 7):
+        with pytest.raises(AssertionError):
+            count.compare(proof, 0, calls(1, wrong), 6, set(), {})
+
+
+def test_a_boolean_comparison_counts_only_when_its_function_is_asserted_both_ways(tmp_path):
+    source = "def is_square(w, h):\n    return w == h\n"
+    test = (f"from {PACKAGE}.shapes import is_square\n\n\n"
+            "def test_yes():\n    assert is_square(2, 2) == True\n\n\n"
+            "def test_no():\n    assert is_square(2, 3) == False\n")
+    ids = unproven_ids(["test_yes", "test_no"])
+    code, report = run(tmp_path / "both", source, test, ids)
+    assert code == 0, report
+    code, report = run(tmp_path / "one", source, test, ids[:1])
+    assert code == 1 and report["degenerate"] == ids[:1], report
+    assert report["failure"] == "a boolean comparison its function never makes the other way"
+    assert report["items"][ids[0]] == {"passed": 0, "failed": 2, "skipped": 0}
+
+
+def test_a_call_that_answers_with_a_function_or_a_module_is_a_candidate_failure():
+    # A returned function would come back as a handle named after the factory, so calling it
+    # would call the factory again.
+    for reply in ({"callable": True}, {"module": PACKAGE}):
+        class Child:
+            def ask(self, request, reply=reply):
+                return dict(reply)
+        session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
+        with pytest.raises(pytest_replay.CandidateFailed):
+            pytest_replay.RemoteFunction(session, f"{PACKAGE}.shapes", "make")(2)
+
+
+def test_the_compiler_replays_only_ids_the_proof_counts(tmp_path):
+    start, held = tmp_path / "start", tmp_path / "held"
+    (start / PACKAGE).mkdir(parents=True)
+    (start / PACKAGE / "shapes.py").write_text(HONEST)
+    (start / "tests").mkdir()
+    sealed = f"from {PACKAGE}.shapes import area\n\n\n"
+    (start / "tests" / "test_a.py").write_text(
+        sealed + "def t():\n    assert area(1, 1) == 1\n\n\n"
+        "def gated():\n    for answer in [area(1, 1)]:\n        assert answer == 1\n\n\n"
+        "def u():\n    assert area(1, 2) == 2\n\n\n"
+        "def helper():\n    area(1, 2)\n")
+    # The held-out copy of the file asks t through the candidate's own helper.
+    (held / "tree" / "tests").mkdir(parents=True)
+    (held / "tree" / "tests" / "test_a.py").write_text(
+        sealed + f"from {PACKAGE}.shapes import add\n\n\n"
+        "def t():\n    add(area(1, 1), 0)\n")
+    found = contract.pytest_replays(start, None, held, [contract.Protected("tests", "directory")],
+                                    "-", 2, ["tests/test_a.py::t", "tests/test_a.py::gated"],
+                                    ["tests/test_a.py::u", "tests/test_a.py::helper"])
+    assert [(command.id, runner.pytest_replay_fields(command.argv)["ids"])
+            for command in found] == [("fail-to-pass-replay", ["tests/test_a.py::t"]),
+                                      ("pass-to-pass-replay", ["tests/test_a.py::u"])]
+
+
+def test_a_module_the_candidate_names_must_be_a_dotted_name_under_a_remote_one():
+    session = pytest_replay.Session(None, frozenset([PACKAGE]))
+    for found in (f"{PACKAGE}./etc", f"{PACKAGE}..x", "json", f"{PACKAGE}.a b"):
+        with pytest.raises(pytest_replay.CandidateFailed, match="outside the candidate"):
+            pytest_replay.value(session, {"module": found}, PACKAGE, "x")
