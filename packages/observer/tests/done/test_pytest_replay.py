@@ -46,6 +46,13 @@ UNPROVEN = (f"import pytest\n\nimport {PACKAGE}\nfrom {PACKAGE}.shapes import ar
             "def test_area():\n    assert area(2, 3) == 6\n")
 
 
+@pytest.fixture(autouse=True)
+def no_plugin_autoload(monkeypatch):
+    """The replays these tests run in this process get what the parent's environment gives
+    every replay (``runner.parent_env``): no autoloaded plugin."""
+    monkeypatch.setenv("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
+
+
 def tree(base: Path, source: str, test: str = TEST) -> tuple[Path, Path]:
     """A state holding the candidate package, and a sealed directory with the test root."""
     state, held = base / "state", base / "held"
@@ -104,6 +111,42 @@ def test_a_wrong_module_fails_and_the_count_shows_which_tests(tmp_path):
     # Only test_add holds for w + h; one row of the table does too, so the table fails.
     assert runner.pytest_plugins.passed(report["items"], IDS) == 1
     assert report["items"][f"{IDS[1]}[2-2-4]"]["passed"] == 2
+
+
+def test_the_parent_never_sees_the_verifiers_environment(tmp_path, monkeypatch):
+    # pytest's own option and plugin variables would change the run, and a sealed module can
+    # read any variable; none of the verifier's reaches the parent.
+    monkeypatch.setenv("PROBITY_PLANTED", "1")
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--collect-only")
+    monkeypatch.setenv("PYTEST_PLUGINS", "probity_no_such_plugin")
+    test = TEST + "\n\nif os.environ.get('PROBITY_PLANTED'):\n    raise RuntimeError('planted')\n"
+    code, report = run(tmp_path, HONEST, test)
+    assert code == 0 and report["passed"], report
+    assert all(counts["passed"] == 2 for counts in report["items"].values())
+    env = runner.parent_env()
+    assert "PROBITY_PLANTED" not in env and "PYTEST_ADDOPTS" not in env
+    assert env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
+    assert set(env) <= {*runner.SCRUBBED_ENV, *runner.RUNTIME_ENV,
+                        "PYTEST_DISABLE_PLUGIN_AUTOLOAD"}
+    monkeypatch.setenv("DOCKER_HOST", "unix:///run/user/1/docker.sock")
+    assert runner.parent_env()["DOCKER_HOST"] == "unix:///run/user/1/docker.sock"
+
+
+def test_the_childs_program_is_found_on_the_verifiers_path(tmp_path, monkeypatch):
+    # The parent's PATH is the scrubbed one; a runner that names its child program by name
+    # (``docker``) is resolved where the runner was configured.
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    (tools / "probity-child-python").symlink_to(sys.executable)
+    monkeypatch.setenv("PATH", f"{tools}{os.pathsep}{os.environ.get('PATH', '')}")
+
+    class Named(SubprocessRunner):
+        def child_argv(self, directory, source):
+            argv, cwd = super().child_argv(directory, source)
+            return ["probity-child-python", *argv[1:]], cwd
+    state, held = tree(tmp_path / "t", HONEST)
+    local = Named()
+    assert local.run(state, argv(IDS[:1]), held, 120) == 0, local.replays
 
 
 def test_the_candidates_module_code_runs_outside_the_parent(tmp_path):

@@ -585,20 +585,14 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     problem = refused(remote, request["test_root"])
     if problem is not None:
         return {**base, "failure": problem}
-    previous = os.environ.get("PYTEST_DISABLE_PLUGIN_AUTOLOAD")
-    os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+    # Plugin autoloading is off in the parent's environment (``runner.parent_env``), which is
+    # the scrubbed one: no variable of the verifier's reaches pytest or a sealed conftest.
     timeout = float(request["call_timeout"])
     sources = pytest_proof.Sources([Path(request["test_root"])], remote)
-    try:
-        with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:
-            session = Session(child, remote)
-            counter = Count(int(request["repeats"]), sources, session, request["test_root"])
-            code = _run(request, session, counter)
-    finally:
-        if previous is None:
-            os.environ.pop("PYTEST_DISABLE_PLUGIN_AUTOLOAD", None)
-        else:
-            os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = previous
+    with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:
+        session = Session(child, remote)
+        counter = Count(int(request["repeats"]), sources, session, request["test_root"])
+        code = _run(request, session, counter)
     degenerate = counter.degenerate()
     impure = sorted(key for key, answers in session.answers.items() if len(set(answers)) != 1)
     order = sorted(session.answers)
