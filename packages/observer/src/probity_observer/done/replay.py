@@ -18,6 +18,8 @@ Three held-out probes run the same way, each as its own acceptance command (the 
 with its own time budget), ``type_strict`` (the result's builtin type must be the expected
 value's, recursively) and ``import_side_effects`` (importing the module must leave
 ``builtins`` unchanged). In every mode the comparison and the result file are the parent's.
+The ``pytest`` mode (:mod:`.pytest_replay`) runs sealed pytest ids the same way: the sealed
+test files under pytest here, the candidate's modules served by a child.
 
 Run as ``python -I -m probity_observer.done.replay <request.json>``; the result is written to
 the request's ``out`` path. Exit 0 when every assertion and the invariant hold, 1 otherwise.
@@ -211,10 +213,14 @@ class Child:
 
     def call(self, args_tagged: Any, kwargs_tagged: Any,
              timeout: float | None = None) -> dict[str, Any]:
+        return self.ask({"args": args_tagged, "kwargs": kwargs_tagged}, timeout)
+
+    def ask(self, request: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
+        """Send one request line and read the child's one reply line."""
         if self.closed or self.process.stdin is None or self.process.stdout is None:
             return {"error": "child-pipes"}
         try:
-            self.process.stdin.write(json.dumps({"args": args_tagged, "kwargs": kwargs_tagged}) + "\n")
+            self.process.stdin.write(json.dumps(request) + "\n")
             self.process.stdin.flush()
         except (BrokenPipeError, ValueError):
             return {"error": "child-exited"}
@@ -551,6 +557,10 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     """Run one replay request in its mode (the sealed test with the purity check and fresh
     re-runs, or one of the held-out probes)."""
     mode = request.get("mode", "assert")
+    if mode == "pytest":
+        from .pytest_replay import pytest_replay
+
+        return pytest_replay(request)
     if mode == "determinism":
         return determinism(request)
     if mode == "type_strict":
