@@ -45,7 +45,8 @@ STALLS = [f"tests/done/test_replay.py::{name}" for name in (
     "test_a_wrong_answer_then_a_stalled_fresh_child_stays_definitive",
     "test_a_stalled_fresh_child_never_hides_a_later_wrong_fresh_answer",
     "test_a_run_whose_budget_runs_out_is_no_answer",
-    "test_a_type_strict_run_cut_at_its_budget_keeps_the_mismatch_it_was_given")]
+    "test_a_type_strict_run_cut_at_its_budget_keeps_the_mismatch_it_was_given",
+    "test_a_line_too_deeply_nested_to_decode_is_a_protocol_failure")]
 MUTANTS = [
     # The parent counts every repeat of every test.
     (REPLAY, UNIT, "        self.repeats = max(1, repeats)", "        self.repeats = 1"),
@@ -207,6 +208,8 @@ MUTANTS = [
     # A whole reply line inside the call's limit, and no stall read over a definitive failure.
     (HARNESS, STALLS, '        while b"\\n" not in self.pending:', "        while not self.pending:"),
     (HARNESS, STALLS, "            if len(self.pending) > LINE_LIMIT:", "            if False:"),
+    (HARNESS, STALLS, "        except (ValueError, RecursionError, MemoryError):",
+     "        except ValueError:"),
     (HARNESS, STALLS, '    return isinstance(reply, ClientFailure) and reply.get("error") in STALLS',
      '    return isinstance(reply, dict) and reply.get("error") in STALLS'),
     (HARNESS, STALLS, '    if not result["passed"] and not result.get("definitive") and (',

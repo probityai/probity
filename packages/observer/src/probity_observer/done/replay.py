@@ -293,7 +293,9 @@ class Child:
         del self.pending[:end + 1]
         try:
             return json.loads(line)
-        except ValueError:
+        except (ValueError, RecursionError, MemoryError):
+            # A line too deeply nested to decode is no reply either: every way the decoder can
+            # refuse a line is a protocol failure, never an exception the sealed code sees.
             return ClientFailure("child-protocol")
 
     def _exited(self, within: float) -> bool:
