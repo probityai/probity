@@ -91,7 +91,42 @@ def _host_end(cmd: Commands, config: Config, container: episode.Container, work:
     write_json(work / "host-end.json", {
         "nat": episode.observe(cmd, config, container, "nat"),
         "preload": episode.observe(cmd, config, container, "preload"),
+        "lower": lower, "dpkg": dpkg,
         "changed_image_binaries": episode.changed_image_binaries(upper, lower, dpkg)})
+
+
+def start_state(cmd: Commands, config: Config, container: episode.Container, work: Path) -> str:
+    """Attach the whole-run observer, read the start upper layer and process table, and mark the go time.
+
+    Returns the observer's name. The agent may act only after this returns.
+    """
+    name = _start_observer(cmd, config, container, work)
+    write_json(work / "upper-start.json", episode.observe(cmd, config, container, "upper"))
+    write_json(work / "procs-start.json", episode.observe(cmd, config, container, "procs"))
+    write_json(work / "go.json", {"monotonic_ns": time.monotonic_ns(), "wall": time.time()})
+    return name
+
+
+def end_state(cmd: Commands, config: Config, container: episode.Container, work: Path, final: str) -> None:
+    """After the agent's last action: the end process table and host reads, then the final image."""
+    write_json(work / "procs-end.json", episode.observe(cmd, config, container, "procs"))
+    _host_end(cmd, config, container, work)
+    cmd.run(["docker", "commit", container.id, final], timeout=900)
+
+
+def grade(cmd: Commands, config: Config, container: episode.Container, runtime: bytes, spec: task.Spec,
+          work: Path, final: str, observer_name: str) -> dict[str, Any]:
+    """The four readings, then the verdict body from the episode directory alone.
+
+    The whole-run observer named ``observer_name`` is stopped after the live readings, before the cold
+    ones, which run in fresh projects outside its cgroup.
+    """
+    try:
+        _readings(cmd, config, container, runtime, spec, work)
+    finally:
+        _stop_observer(cmd, observer_name, work)
+    _cold_readings(cmd, container, final, runtime, spec, work)
+    return verdict.derive(episode.build_episode(work, spec, container))
 
 
 def _readings(cmd: Commands, config: Config, container: episode.Container, runtime: bytes, spec: task.Spec,
@@ -180,24 +215,16 @@ def run_episode(row: dict[str, Any], row_index: int, revision: str, config: Conf
                                           base_environment_sha256=episode.base_environment_digest(config),
                                           start_guard=guard, in_process=False)
         sealed = contract.seal(spec, facts, work / "contract", key)
-        observer_name = _start_observer(cmd, config, container, work)
-        write_json(work / "upper-start.json", episode.observe(cmd, config, container, "upper"))
-        write_json(work / "procs-start.json", episode.observe(cmd, config, container, "procs"))
-        write_json(work / "go.json", {"monotonic_ns": time.monotonic_ns(), "wall": time.time()})
+        observer_name = start_state(cmd, config, container, work)
         driver.wait(timeout=config.time_limit + 1800)
         write_json(work / "run-end.json", {"monotonic_ns": time.monotonic_ns(), "driver_exit": driver.returncode})
         if not (work / "tools.json").exists():
             raise RuntimeError(f"driver exited {driver.returncode} without tools.json")
-        write_json(work / "procs-end.json", episode.observe(cmd, config, container, "procs"))
-        _host_end(cmd, config, container, work)
         final = f"probity-final-{work.name}:latest"
-        cmd.run(["docker", "commit", container.id, final], timeout=900)
         images.append(final)
-        _readings(cmd, config, container, runtime, spec, work)
-        _stop_observer(cmd, observer_name, work)
-        observer_name = None
-        _cold_readings(cmd, container, final, runtime, spec, work)
-        found = verdict.derive(episode.build_episode(work, spec, container))
+        end_state(cmd, config, container, work, final)
+        name, observer_name = observer_name, None
+        found = grade(cmd, config, container, runtime, spec, work, final, name)
         record = dict(found, contract_sha256=sealed.contract_sha256, episode=work.name,
                       task_id=spec.task_id, model=config.model)
         verdict.write(work, record, key)

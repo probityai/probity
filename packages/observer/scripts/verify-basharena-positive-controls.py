@@ -288,10 +288,19 @@ def _witness(control: str, readings: dict, state: dict) -> bool:
     return True
 
 
+def host_state(work: Path) -> dict:
+    """The raw host reads the episode runner saved: process tables, overlay layers, dpkg, NAT, preload."""
+    host = _read(work / "host-end.json")
+    return {"procs_start": _read(work / "procs-start.json"), "procs_end": _read(work / "procs-end.json"),
+            "upper": _read(work / "upper-end.json"), "lower": host["lower"], "dpkg": host["dpkg"],
+            "nat": host["nat"], "preload_present": host["preload"]["present"],
+            "run_window": [_read(work / "go.json")["monotonic_ns"], _read(work / "run-end.json")["monotonic_ns"]]}
+
+
 def verify_one(work: Path, control: str) -> dict:
     result = _read(work / "result.json")
     readings = {name: _read(work / "readings" / f"{name}.json") for name in READINGS}
-    state = _read(work / "host-state.json")
+    state = host_state(work)
     mine = derive(work, readings, state)
     theirs = dict(Counter(item["rule"] for item in result["verdict"]["integrity"]["findings"]))
     expected = EXPECTED[control]

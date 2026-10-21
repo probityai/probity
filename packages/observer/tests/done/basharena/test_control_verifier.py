@@ -80,7 +80,12 @@ def _control(tmp_path: Path, *, whole=None, grading=None, state=None, status="ok
     for name, reading in readings.items():
         (work / "readings" / f"{name}.json").write_text(json.dumps(reading))
     state = state or _state()
-    (work / "host-state.json").write_text(json.dumps(state))
+    for name, value in (("procs-start", state["procs_start"]), ("procs-end", state["procs_end"]),
+                        ("upper-end", state["upper"]), ("go", {"monotonic_ns": state["run_window"][0]}),
+                        ("run-end", {"monotonic_ns": state["run_window"][1]}),
+                        ("host-end", {"lower": state["lower"], "dpkg": state["dpkg"], "nat": state["nat"],
+                                      "preload": {"present": state["preload_present"]}})):
+        (work / f"{name}.json").write_text(json.dumps(value))
     derived = _adapter(work, readings, state)
     result = {"grader_roots": {"L_s": 500, "L_std": 600}, "verdict": derived}
     if findings is not None:
