@@ -6,8 +6,8 @@ refused remote names, the argv and path checks, the verifier's own count in the 
 isolation reading of replay-covered worker commands, the proof of which ids reduce to one
 sealed comparison, and the parent's own enforcement of it (the instrumented comparison, its
 one call and strict type, a pass only after it ran, no candidate data outside it, boolean
-comparisons made both ways), the refusal of a function a call returns, and the finder
-that serves sealed code only. Each is applied to the source, its tests
+comparisons made both ways), the request nonce, the refusal of a function a call returns,
+and the finder that serves sealed code only. Each is applied to the source, its tests
 run (without bytecode, so a restored file is never measured through a stale cache), and the
 file is restored. Run from ``packages/observer`` in an environment with the ``test`` and
 ``done`` extras:
@@ -47,7 +47,8 @@ MUTANTS = [
     (REPLAY, UNIT, "              if isinstance(value, type) and issubclass(value, Exception)}",
      "              if isinstance(value, type) and issubclass(value, BaseException)}"),
     # A malformed reply never raises an exception a test could expect.
-    (REPLAY, UNIT, "        if not isinstance(reply, dict):\n", "        if False:\n"),
+    (REPLAY, UNIT, '    if not isinstance(reply, dict) or reply.get("nonce") != nonce:',
+     '    if reply.get("nonce") != nonce:'),
     (REPLAY, UNIT, "            raise CandidateFailed(\"malformed raise\")", "            pass"),
     (REPLAY, UNIT, "            if type(args) is not tuple:", "            if False:"),
     # A module handle must be the candidate's; nothing may be set on a remote module.
@@ -130,6 +131,7 @@ MUTANTS = [
     (REPLAY, UNIT, '    elif pytest_plugins.passed(counter.items, request["ids"]) != len(request["ids"]):',
      "    elif False:"),
     # The nonce, the call that returns a function, the finder and the order of the checks.
+    (REPLAY, UNIT, '        reply["nonce"] = nonce\n', "\n"),
     (REPLAY, UNIT, "    if call:\n        raise_for(reply)", "    if False:\n        raise_for(reply)"),
     (REPLAY, UNIT, " or not self.sealed_importer():", ":"),
     (REPLAY, UNIT, "    import _pytest.runner  # noqa: F401\n    import pytest  # noqa: F401\n", ""),

@@ -39,6 +39,7 @@ import inspect
 import json
 import os
 import random
+import secrets
 import sys
 import types
 from pathlib import Path
@@ -90,8 +91,10 @@ def _serve(codec_source):
         except BaseException:
             return {"error": "unplain"}
     for line in sys.stdin:
+        nonce = None
         try:
             request = loads(line)
+            nonce = request["nonce"]
             op, module = request["op"], load(request["module"])
             if op == "import":
                 reply = {"ok": ["none"]}
@@ -108,6 +111,7 @@ def _serve(codec_source):
                 reply = raised(error)
             except BaseException:
                 reply = {"error": "unreportable"}
+        reply["nonce"] = nonce
         send(reply)
 '''
 
@@ -141,6 +145,25 @@ def _answer(reply: dict[str, Any]) -> str:
     return json.dumps(reply, separators=(",", ":"), sort_keys=True)
 
 
+def exchange(child: Child, request: dict[str, Any]) -> dict[str, Any]:
+    """Ask ``request`` of ``child`` under a fresh nonce; a reply that does not carry it back is
+    a protocol error. The nonce is not part of the request's key or of its recorded answer.
+
+    It catches a reply stream out of step with the requests (a line the candidate wrote at
+    import, or a second line for one request). It does not authenticate the serve loop: code
+    in the child can read each request and echo its nonce."""
+    nonce = secrets.token_hex(16)
+    reply = child.ask({**request, "nonce": nonce})
+    if not isinstance(reply, dict) or reply.get("nonce") != nonce:
+        # The child writes the protocol stream, so its shape is checked before any field is
+        # read: no malformed reply may raise an exception a test could expect. The client's
+        # own failures (a timeout, an exited child) carry no nonce and keep their name.
+        error = reply.get("error") if isinstance(reply, dict) else None
+        return {"error": error if isinstance(error, str) and error.startswith("child-")
+                and "nonce" not in reply else "child-protocol"}
+    return {key: item for key, item in reply.items() if key != "nonce"}
+
+
 def handle(request: dict[str, Any], reply: dict[str, Any]) -> bool:
     """Whether a reply carries nothing the candidate chose but a handle: an import that
     succeeded, or an attribute that is a function or a module of the candidate."""
@@ -170,11 +193,7 @@ class Session:
 
     def ask(self, request: dict[str, Any]) -> dict[str, Any]:
         key = _key(request)
-        reply = self.child.ask(request)
-        if not isinstance(reply, dict):
-            # The child writes the protocol stream, so its shape is checked before any field
-            # is read: no malformed reply may raise an exception a test could expect.
-            reply = {"error": "child-protocol"}
+        reply = exchange(self.child, request)
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
         if self.site is None:
@@ -503,7 +522,7 @@ def fresh_mismatches(request: dict[str, Any], session: Session, order: list[str]
     found = []
     for key in order:
         with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
-            reply = fresh.ask(session.requests[key])
+            reply = exchange(fresh, session.requests[key])
         if _answer(reply) != session.answers[key][0]:
             found.append(key)
     return found
