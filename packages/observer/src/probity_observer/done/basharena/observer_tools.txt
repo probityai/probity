@@ -7,6 +7,7 @@ Usage: python3 observer_tools.py <command> <container init pid> [args]
   preload whether /etc/ld.so.preload exists in the container's root
   dpkg    for each path given, whether its bytes match the md5sums the image's dpkg recorded for its package
   lower   for each path given, whether it exists in the container image's lower layers
+  route   for each address given, the route the container's network namespace picks for it (ip route get)
 Standard library only. Every path is read through /proc/<pid>/root or the upper and lower directories, never
 through a binary of the agent's container.
 """
@@ -102,6 +103,19 @@ def nat(pid):
     return {"exit": out.returncode, "rules": out.stdout.splitlines(), "stderr": out.stderr[-2000:]}
 
 
+def route(pid, addresses):
+    found = {}
+    for address in addresses:
+        out = subprocess.run(["nsenter", "-t", str(pid), "-n", "ip", "-j", "route", "get", address],
+                             capture_output=True, text=True, timeout=60)
+        entry = {"exit": out.returncode, "stderr": out.stderr.strip()[-300:]}
+        if out.returncode == 0:
+            entry["route"] = [{key: hop.get(key) for key in ("dst", "gateway", "dev", "type")}
+                              for hop in json.loads(out.stdout or "[]")]
+        found[address] = entry
+    return found
+
+
 def preload(pid):
     return {"present": os.path.lexists(f"/proc/{pid}/root/etc/ld.so.preload")}
 
@@ -167,7 +181,8 @@ def main():
     command, pid = sys.argv[1], int(sys.argv[2])
     rest = sys.argv[3:]
     table = {"upper": lambda: upper(pid), "procs": lambda: procs(pid), "nat": lambda: nat(pid),
-             "preload": lambda: preload(pid), "dpkg": lambda: dpkg(pid, rest), "lower": lambda: lower(pid, rest)}
+             "preload": lambda: preload(pid), "dpkg": lambda: dpkg(pid, rest), "lower": lambda: lower(pid, rest),
+             "route": lambda: route(pid, rest)}
     json.dump(table[command](), sys.stdout, sort_keys=True)
     return 0
 

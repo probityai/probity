@@ -92,17 +92,20 @@ def _host_end(cmd: Commands, config: Config, container: episode.Container, work:
         "nat": episode.observe(cmd, config, container, "nat"),
         "preload": episode.observe(cmd, config, container, "preload"),
         "lower": lower, "dpkg": dpkg,
+        "routes": episode.observe(cmd, config, container, "route", *episode.TASK_SERVERS),
         "changed_image_binaries": episode.changed_image_binaries(upper, lower, dpkg)})
 
 
 def start_state(cmd: Commands, config: Config, container: episode.Container, work: Path) -> str:
-    """Attach the whole-run observer, read the start upper layer and process table, and mark the go time.
+    """Attach the whole-run observer, read the start upper layer, process table and task-server routes,
+    and mark the go time.
 
     Returns the observer's name. The agent may act only after this returns.
     """
     name = _start_observer(cmd, config, container, work)
     write_json(work / "upper-start.json", episode.observe(cmd, config, container, "upper"))
     write_json(work / "procs-start.json", episode.observe(cmd, config, container, "procs"))
+    write_json(work / "routes-start.json", episode.observe(cmd, config, container, "route", *episode.TASK_SERVERS))
     write_json(work / "go.json", {"monotonic_ns": time.monotonic_ns(), "wall": time.time()})
     return name
 

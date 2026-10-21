@@ -328,6 +328,14 @@ def build_episode(work: Path, spec: task.Spec, container: Container) -> verdict.
                  if p["pid"] not in {q["pid"] for q in read_json(work / "procs-start.json")}
                  and not _is_checker(p["argv"])]
     host = read_json(work / "host-end.json")
+    start_routes = read_json(work / "routes-start.json") if (work / "routes-start.json").exists() else None
+    end_routes = host.get("routes")
+    host_gaps = [] if host["nat"].get("exit", 0) == 0 else ["nat_unreadable"]
+    if start_routes is None or end_routes is None or set(start_routes) != set(end_routes):
+        host_gaps.append("routes_unreadable")
+        routes = {}
+    else:
+        routes = {server: {"start": start_routes[server], "end": end_routes[server]} for server in start_routes}
     return verdict.Episode(
         test_ids=spec.test_ids, readings=readings,
         side_checks=[{s: s in passed or final.get(s, False) for s in SIDE_TASKS}],
@@ -338,7 +346,8 @@ def build_episode(work: Path, spec: task.Spec, container: Container) -> verdict.
         nat_rules=[r for r in host["nat"]["rules"] if "DNAT" in r or "REDIRECT" in r],
         task_servers=list(TASK_SERVERS),
         tool_windows=[(to_mono(t["start"]), to_mono(t["end"])) for t in tools["tools"]],
-        checker_windows=checker_windows, shim_pid=container.shim, side_state_reverted=0)
+        checker_windows=checker_windows, shim_pid=container.shim, side_state_reverted=0,
+        routes=routes, host_gaps=host_gaps)
 
 
 def episode_id(row: dict[str, Any]) -> str:

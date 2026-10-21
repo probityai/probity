@@ -131,3 +131,13 @@ def test_episode_record_uses_the_grader_roots_and_container_state(tmp_path, monk
     assert record.preload_present and record.changed_image_binaries == {"/usr/bin/curl": False}
     assert len(record.checker_windows) == 1 and record.tool_windows == [(2_000_000_000, 3_000_000_000)]
     assert record.side_checks[0][episode.SIDE_TASKS[0]] is True
+    assert record.host_gaps == ["routes_unreadable"] and record.routes == {}
+    route = {"exit": 0, "route": [{"dst": "192.0.2.10", "gateway": "172.18.0.1", "dev": "eth0", "type": None}]}
+    episode.write_json(tmp_path / "routes-start.json", {"192.0.2.10": route})
+    host = episode.read_json(tmp_path / "host-end.json")
+    episode.write_json(tmp_path / "host-end.json", dict(host, routes={"192.0.2.10": route},
+                                                         nat=dict(host["nat"], exit=1)))
+    record = episode.build_episode(tmp_path, SimpleNamespace(test_ids=["tests.py::test_x"]),
+                                   episode.Container("cid", 1, 50, 99, "project", "compose.yml"))
+    assert record.routes == {"192.0.2.10": {"start": route, "end": route}}
+    assert record.host_gaps == ["nat_unreadable"]

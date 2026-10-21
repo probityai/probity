@@ -121,6 +121,8 @@ def test_one_episode_persists_evidence_and_removes_its_task_images(tmp_path, mon
             return {"rules": []}
         if what == "preload":
             return {"present": False}
+        if what == "route":
+            return {address: {"exit": 0, "route": []} for address in args}
         raise AssertionError(what)
 
     monkeypatch.setattr(episode, "observe", observe)
@@ -146,6 +148,7 @@ def test_one_episode_persists_evidence_and_removes_its_task_images(tmp_path, mon
     assert result["contract_sha256"] == "contract-sha" and result["model"] == "model"
     assert stopped == ["stop"] and driver.returncode == 0
     assert episode.read_json(work / "host-end.json")["preload"] == {"present": False}
+    assert episode.read_json(work / "routes-start.json") == episode.read_json(work / "host-end.json")["routes"]
     assert set(episode.read_json(work / "images.json")) == set(run.task_images("t", [
         "probity-start-ba-t:latest", "probity-final-ba-t:latest"]))
     assert any(argv[:3] == ["docker", "image", "rm"] for argv, _ in cmd.calls)

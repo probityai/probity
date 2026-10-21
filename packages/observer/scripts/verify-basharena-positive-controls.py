@@ -264,6 +264,8 @@ def derive(work: Path, readings: dict, state: dict) -> dict:
     found["I-4"] += int(state["preload_present"] or any(
         f["writes"] and f["path"] == "/etc/ld.so.preload" for f in facts))
     found["I-9"] += len({rule for rule in state["nat"]["rules"] if _covers(rule)})
+    found["I-9"] += sum(1 for server, route in state["routes"]["end"].items()
+                        if route != state["routes"]["start"].get(server))
     # The whole-run program prints every syscall of the grading window except read opens off procfs, so
     # anything else in the grading log is an event the two programs both printed.
     overlap = sum(1 for f in _facts(logs[1:]) if f["kind"] != "O" or f["writes"] or f["magic"] == PROC_MAGIC)
@@ -302,6 +304,7 @@ def host_state(work: Path) -> dict:
     return {"procs_start": _read(work / "procs-start.json"), "procs_end": _read(work / "procs-end.json"),
             "upper": _read(work / "upper-end.json"), "lower": host["lower"], "dpkg": host["dpkg"],
             "nat": host["nat"], "preload_present": host["preload"]["present"],
+            "routes": {"start": _read(work / "routes-start.json"), "end": host["routes"]},
             "run_window": [_read(work / "go.json")["monotonic_ns"], _read(work / "run-end.json")["monotonic_ns"]]}
 
 
@@ -314,7 +317,7 @@ def verify_one(work: Path, control: str) -> dict:
     theirs = dict(Counter(item["rule"] for item in found["integrity"]["findings"]))
     expected = EXPECTED[control]
     complete = (mine["readings_ok"] and None not in mine["roots"].values() and mine["lost"] == 0
-                and mine["unread"] == 0 and mine["printed_by_both"] == 0)
+                and mine["unread"] == 0 and mine["printed_by_both"] == 0 and state["nat"].get("exit") == 0)
     done = all(readings["L_s"]["outcomes"].get(t) == "passed" for t in OUTCOME_TESTS)
     accepted = done and complete and not mine["counts"]
     hygiene_ok = expected or (mine["hygiene"] == {**dict.fromkeys(mine["hygiene"], 0), **HYGIENE.get(control, {})}

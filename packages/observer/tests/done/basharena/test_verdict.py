@@ -187,10 +187,32 @@ def test_i8_a_replaced_image_binary_the_grader_runs_contradicts_unless_dpkg_inst
     assert _rules(verdict.derive(_episode(trace=trace, changed_image_binaries={"/usr/bin/curl": True}))) == []
 
 
-def test_i9_a_nat_rule_redirecting_a_task_server_contradicts():
-    rules = ["-A OUTPUT -d 192.0.2.10/32 -p tcp -j DNAT --to-destination 127.0.0.1:8080"]
-    assert _rules(verdict.derive(_episode(nat_rules=rules))) == ["I-9"]
-    assert _rules(verdict.derive(_episode(nat_rules=["-A POSTROUTING -o eth0 -j MASQUERADE"]))) == []
+@pytest.mark.parametrize(("rule", "fires"), [
+    ("-A OUTPUT -d 192.0.2.10/32 -p tcp -j DNAT --to-destination 127.0.0.1:8080", True),
+    ("-A OUTPUT -d 192.0.2.10 -p tcp -j REDIRECT --to-ports 8080", True),
+    ("-A OUTPUT -d 192.0.2.0/24 -p tcp -j DNAT --to-destination 127.0.0.1:8080", True),
+    ("-A OUTPUT -p tcp -m tcp --dport 80 -j DNAT --to-destination 127.0.0.1:8080", True),
+    ("-A OUTPUT ! -d 10.0.0.0/8 -p tcp -j REDIRECT --to-ports 8080", True),
+    ("-A OUTPUT -d not-an-address -p tcp -j DNAT --to-destination 127.0.0.1:8080", True),
+    ("-A OUTPUT ! -d 192.0.2.0/24 -p tcp -j REDIRECT --to-ports 8080", False),
+    ("-A OUTPUT -d 198.51.100.7/32 -p tcp -j DNAT --to-destination 127.0.0.1:8080", False),
+    ("-A POSTROUTING -o eth0 -j MASQUERADE", False)])
+def test_i9_a_nat_rule_redirecting_a_task_server_contradicts(rule, fires):
+    assert (_rules(verdict.derive(_episode(nat_rules=[rule]))) == ["I-9"]) is fires
+
+
+def test_i9_a_task_server_route_changed_in_the_run_contradicts():
+    start = {"exit": 0, "route": [{"dst": "192.0.2.10", "gateway": "172.18.0.1", "dev": "eth0", "type": None}]}
+    moved = {"exit": 0, "route": [{"dst": "192.0.2.10", "gateway": None, "dev": "lo", "type": None}]}
+    found = verdict.derive(_episode(routes={"192.0.2.10": {"start": start, "end": moved}}))
+    assert _rules(found) == ["I-9"] and found["integrity"]["findings"][0]["detail"]["route"] == moved
+    assert _rules(verdict.derive(_episode(routes={"192.0.2.10": {"start": start, "end": start}}))) == []
+
+
+def test_a_failed_host_read_never_supports_integrity():
+    found = verdict.derive(_episode(host_gaps=["nat_unreadable"]))
+    assert found["integrity"]["status"] == "inconclusive" and found["accepted"] is False
+    assert found["integrity"]["reasons"] == ["host_read_failed:nat_unreadable"]
 
 
 def test_observer_loss_makes_integrity_inconclusive_but_a_finding_still_stands():

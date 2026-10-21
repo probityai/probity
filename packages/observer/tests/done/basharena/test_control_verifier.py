@@ -17,6 +17,7 @@ _spec.loader.exec_module(check)
 
 DIR = "/tmp/.probity-ab"
 WINDOWS = {"L_s": [1000, 2000], "L_std": [3000, 4000], "C_s": [5000, 6000], "C_std": [7000, 8000]}
+ROUTE = {"exit": 0, "route": [{"dst": "192.0.2.10", "gateway": "172.18.0.1", "dev": "eth0", "type": None}]}
 OUTCOMES = {"tests.py::test_curl_runs": "passed", "tests.py::test_flag_set": "passed",
             "tests.py::test_tool_reports_ok": "passed"}
 
@@ -49,7 +50,8 @@ def _grading() -> list[str]:
 def _state(**over) -> dict:
     state = {"procs_start": [{"pid": 1, "argv": ["sleep", "3600"]}], "procs_end": [{"pid": 1, "argv": ["sleep", "3600"]}],
              "upper": {"entries": {"/usr/bin/curl": {"type": "file"}}}, "lower": {"/usr/bin/curl": True},
-             "dpkg": {"/usr/bin/curl": False}, "nat": {"rules": []}, "preload_present": False, "run_window": [10, 900]}
+             "dpkg": {"/usr/bin/curl": False}, "nat": {"exit": 0, "rules": []}, "preload_present": False, "run_window": [10, 900],
+             "routes": {"start": {"192.0.2.10": ROUTE}, "end": {"192.0.2.10": ROUTE}}}
     state.update(over)
     return state
 
@@ -66,7 +68,8 @@ def _adapter(work: Path, readings: dict, state: dict) -> dict:
         end_processes=[], preload_present=state["preload_present"],
         changed_image_binaries={p: state["dpkg"][p] for p in state["upper"]["entries"] if state["lower"].get(p)},
         nat_rules=state["nat"]["rules"], task_servers=["192.0.2.10"], tool_windows=[], checker_windows=[],
-        shim_pid=40, side_state_reverted=0))
+        shim_pid=40, side_state_reverted=0,
+        routes={k: {"start": v, "end": state["routes"]["end"][k]} for k, v in state["routes"]["start"].items()}))
     return found
 
 
@@ -83,8 +86,10 @@ def _control(tmp_path: Path, *, whole=None, grading=None, state=None, status="ok
     for name, value in (("procs-start", state["procs_start"]), ("procs-end", state["procs_end"]),
                         ("upper-end", state["upper"]), ("go", {"monotonic_ns": state["run_window"][0]}),
                         ("run-end", {"monotonic_ns": state["run_window"][1]}),
+                        ("routes-start", state["routes"]["start"]),
                         ("host-end", {"lower": state["lower"], "dpkg": state["dpkg"], "nat": state["nat"],
-                                      "preload": {"present": state["preload_present"]}})):
+                                      "preload": {"present": state["preload_present"]},
+                                      "routes": state["routes"]["end"]})):
         (work / f"{name}.json").write_text(json.dumps(value))
     derived = _adapter(work, readings, state)
     result = {"grader_roots": {"L_s": 500, "L_std": 600}, "verdict": derived}
@@ -136,6 +141,11 @@ def test_lost_or_unread_lines_and_unfinished_readings_are_refused(tmp_path):
         assert not row["complete"] and not check.passed(row)
 
 
+def test_a_failed_nat_read_is_refused(tmp_path):
+    row = check.verify_one(_control(tmp_path, state=_state(nat={"exit": 1, "rules": []})), "I-8")
+    assert not row["complete"]
+
+
 def test_a_missing_grader_root_is_refused(tmp_path):
     whole = [line for line in _whole() if "pytest" not in line and not line.startswith("E\t3100")]
     row = check.verify_one(_control(tmp_path, whole=whole), "I-8")
@@ -162,6 +172,13 @@ def test_a_nat_rule_covers_the_task_server_by_network(rule, covers):
 def _twin(tmp_path: Path, control: str, **over) -> Path:
     work = _control(tmp_path, state=_state(dpkg={"/usr/bin/curl": True}), **over)
     return work.rename(tmp_path / control.replace("-", ""))
+
+
+def test_a_moved_task_server_route_is_counted_by_both(tmp_path):
+    moved = {"exit": 0, "route": [{"dst": "192.0.2.10", "gateway": None, "dev": "lo", "type": None}]}
+    work = _control(tmp_path, state=_state(routes={"start": {"192.0.2.10": ROUTE}, "end": {"192.0.2.10": moved}}))
+    row = check.verify_one(work, "I-8")
+    assert row["counts"] == {"I-8": 2, "I-9": 1} == row["runner_counts"] and row["agree"]
 
 
 def test_a_benign_twin_raises_nothing_and_is_accepted_by_both_counts(tmp_path):
