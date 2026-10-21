@@ -14,7 +14,9 @@ mount prefix, so the superblock magic is printed and :func:`resolve` puts the pr
 Every line is tab-separated and starts with its kind: ``E`` exec, ``O`` open, ``N`` rename, ``U``
 unlink, ``C`` connect, ``P`` ptrace, ``V`` process_vm_writev, ``K`` kill or tgkill, ``F`` fork, ``X`` exit.
 Exec and fork records carry both host and container PID numbers. A procfs path and a signal target use
-the container number, while bpftrace's ``pid`` uses the host number.
+the container number, while bpftrace's ``pid`` uses the host number. An exec record also says whether the
+process's parent is outside the container's PID namespace, which is what makes it the root of a
+``docker exec``: whether the runtime's own ``runc init`` exec is seen differs between runtime versions.
 """
 
 from __future__ import annotations
@@ -92,7 +94,10 @@ def program(cgroup_id: int) -> str:
     return f"""
 tracepoint:sched:sched_process_exec {filt} {{
   $t = nsecs; $m = curtask->mm; $n = $m->arg_end - $m->arg_start;{_namespace_pid("curtask")}
-  printf("E\\t%llu\\t%d\\t%d\\t%s\\t%d\\t%d\\n", $t, pid, curtask->real_parent->tgid, str(args.filename), $n, $ns_pid);
+  $outside = 0;
+  if (curtask->real_parent->thread_pid->level < $level) {{ $outside = 1; }}
+  printf("E\\t%llu\\t%d\\t%d\\t%s\\t%d\\t%d\\t%d\\n", $t, pid, curtask->real_parent->tgid, str(args.filename), $n, $ns_pid,
+         $outside);
   printf("A\\t%llu\\t%d\\t0\\t%r\\n", $t, pid, buf(uptr($m->arg_start), $n > {ARGV_BYTES} ? {ARGV_BYTES} : $n));
 }}{_open_probe(open_filt)}
 fentry:vfs_rename {filt} {{
@@ -210,9 +215,10 @@ def _build(item: _Pending) -> Event:
     f = item.fields
     kind, time, pid = f[0], int(f[1]), int(f[2])
     if kind == "E":
-        return Event("E", time, pid, path=f[4],
-                     detail={"ppid": int(f[3]), "argv": _argv(item.argv),
-                             "argv_truncated": int(f[5]) > ARGV_BYTES})
+        detail = {"ppid": int(f[3]), "argv": _argv(item.argv), "argv_truncated": int(f[5]) > ARGV_BYTES}
+        if len(f) == 8:
+            detail["parent_outside"] = f[7] == "1"
+        return Event("E", time, pid, path=f[4], detail=detail)
     truncated = bool(item.truncated)
     if kind == "O":
         magic = int(f[5])
@@ -275,7 +281,7 @@ def parse(lines: Iterable[str]) -> Trace:
             parents[int(fields[3])] = int(fields[2])
             if len(fields) == 5 and int(fields[4]) > 0:
                 namespace_pids[int(fields[3])] = int(fields[4])
-        elif kind == "E" and len(fields) in (6, 7):
+        elif kind == "E" and len(fields) in (6, 7, 8):
             pending[(fields[1], fields[2])] = _Pending(fields)
             if len(fields) == 7 and int(fields[6]) > 0:
                 namespace_pids[int(fields[2])] = int(fields[6])
@@ -304,13 +310,18 @@ def merge(traces: list[Trace]) -> Trace:
 
 
 def exec_roots(trace: Trace, shim_pid: int) -> list[Event]:
-    """One exec per ``docker exec``, in time order: the command the shim's child runs in the container.
+    """One exec per ``docker exec``, in time order: the command a process outside the container started.
 
-    Docker can start each exec under a new ``containerd-shim``. Its ``runc init`` and the command
-    share a parent, which the trace records even when it differs from the container init's shim.
+    The program records whether each exec's parent is outside the container's PID namespace. A trace
+    recorded before that field existed falls back to the parent being a shim: Docker can start each exec
+    under a new ``containerd-shim``, whose ``runc init`` exec and the command share a parent.
     """
     shims = {shim_pid}
     shims.update(e.detail["ppid"] for e in trace.events
                  if e.kind == "E" and e.detail["argv"][:2] == ["runc", "init"])
-    return [e for e in trace.events if e.kind == "E" and e.detail["ppid"] in shims
-            and e.detail["argv"][:1] != ["runc"]]
+
+    def root(event: Event) -> bool:
+        outside = event.detail.get("parent_outside")
+        return event.detail["ppid"] in shims if outside is None else outside
+
+    return [e for e in trace.events if e.kind == "E" and root(e) and e.detail["argv"][:1] != ["runc"]]

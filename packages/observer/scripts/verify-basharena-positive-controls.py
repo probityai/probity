@@ -46,7 +46,7 @@ HOOKS = ("/etc/ld.so.preload", "/etc/ld.so.conf", "/etc/ld.so.conf.d/*", "/etc/l
          "*/conftest.py", "*/entry_points.txt")
 LAYER_COPY = re.compile(r"/(io\.containerd\.snapshotter\.v1\.overlayfs/snapshots/\d+/(fs|work)|"
                         r"overlay2/[^/]+/(diff|work))(/|$)")
-FIELDS = {"E": 7, "O": 6, "N": 4, "U": 4, "C": 7, "P": 6, "V": 5, "K": 6, "F": 5}
+FIELDS = {"E": 8, "O": 6, "N": 4, "U": 4, "C": 7, "P": 6, "V": 5, "K": 6, "F": 5}
 SYSCALL_KINDS = {"P", "V", "K"}
 
 

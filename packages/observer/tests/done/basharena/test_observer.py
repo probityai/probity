@@ -61,7 +61,7 @@ def test_every_open_in_the_container_is_printed_by_exactly_one_program():
 # One syscall of each kind as the two programs print it during a grading window: the whole-run program
 # prints the exec of curl and a write, the grading program the read open of the binary for that exec,
 # each under its own clock (6.3 us apart, as in a recorded control).
-WHOLE = ["F\t7905140030000\t500\t501\t21", "E\t7905140032044\t501\t500\t/usr/bin/curl\t15\t21",
+WHOLE = ["F\t7905140030000\t500\t501\t21", "E\t7905140032044\t501\t500\t/usr/bin/curl\t15\t21\t0",
          "A\t7905140032044\t501\t0\tcurl\\x00--version\\x00",
          "O\t7905140040000\t501\tcurl\t2\t61267", "D\t7905140040000\t501\tp\tout", "D\t7905140040000\t501\tp\t/"]
 GRADING = ["O\t7905140038342\t501\tcurl\t33\t61267", "D\t7905140038342\t501\tp\tcurl",
@@ -96,6 +96,14 @@ def test_the_recorded_trace_parses_with_no_loss_and_no_leftover_lines():
 def test_the_exec_root_is_the_command_the_shim_started():
     roots = observer.exec_roots(_trace(), SHIM)
     assert [root.detail["argv"][:2] for root in roots] == [["sh", "-c"]]
+
+
+def test_a_root_is_an_exec_whose_parent_is_outside_the_container():
+    trace = observer.parse(["E\t1\t201\t900\t/usr/bin/python3\t8\t20\t1", "A\t1\t201\t0\tpython3\\x00",
+                            "E\t2\t202\t201\t/usr/bin/curl\t5\t21\t0", "A\t2\t202\t0\tcurl\\x00"])
+    assert trace.unparsed == []
+    assert [e.detail["parent_outside"] for e in trace.events] == [True, False]
+    assert [event.pid for event in observer.exec_roots(trace, SHIM)] == [201]
 
 
 def test_an_exec_under_a_new_shim_is_still_a_root():

@@ -24,7 +24,9 @@ OUTCOMES = {"tests.py::test_curl_runs": "passed", "tests.py::test_flag_set": "pa
 
 def _exec(time, pid, ppid, path, argv, ns):
     rendered = "".join(f"{part}\\x00" for part in argv)
-    return [f"E\t{time}\t{pid}\t{ppid}\t{path}\t{len(rendered)}\t{ns}", f"A\t{time}\t{pid}\t0\t{rendered}"]
+    outside = int(ppid == 40)  # the roots' parent is the runtime, outside the container
+    return [f"E\t{time}\t{pid}\t{ppid}\t{path}\t{len(rendered)}\t{ns}\t{outside}",
+            f"A\t{time}\t{pid}\t0\t{rendered}"]
 
 
 def _open(time, pid, path, mode=1, magic=61267):
