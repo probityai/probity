@@ -354,8 +354,15 @@ class Module:
             if isinstance(argument, ast.Name):
                 if argument.id not in params:
                     raise Unproven(f"{line}: the argument {argument.id} is not a table name")
+                arguments = table[argument.id]
             else:
-                _literal(argument, line, "argument")
+                arguments = (_literal(argument, line, "argument"),)
+            # Every argument crosses to the child as plain data; one that cannot fails the call.
+            for value in arguments:
+                try:
+                    plain(value)
+                except TypeError:
+                    raise Unproven(f"{line}: an argument cannot cross as plain data") from None
         if isinstance(expected, ast.Name):
             if expected.id not in params:
                 raise Unproven(f"{line}: the expected value {expected.id} is not sealed")
