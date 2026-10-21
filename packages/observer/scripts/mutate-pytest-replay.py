@@ -227,7 +227,8 @@ MUTANTS = [
     (HARNESS, STALLS, "    definitive = (failure is not None and not child.timed_out) or any(",
      "    definitive = False or any("),
     (HARNESS, STALLS, "            definitive = definitive or not stall(reply)", "            pass"),
-    (REPLAY, UNIT, '            "definitive": failure is not None,', '            "definitive": False,'),
+    (REPLAY, UNIT, '            "definitive": failure is not None and STALL_POLICY == "contradicted",',
+     '            "definitive": False,'),
     # An attribute the candidate's module lacks is an absent handle, raised in the parent's words.
     (REPLAY, UNIT, '                 or reply.get("raised") == ABSENT))', "                 ))"),
     (REPLAY, UNIT, "    if reply.get(\"raised\") == ABSENT:\n", "    if False:\n"),
