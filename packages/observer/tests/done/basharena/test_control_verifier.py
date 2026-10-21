@@ -130,6 +130,11 @@ def test_an_event_both_programs_printed_is_refused(tmp_path):
     assert row["printed_by_both"] == 1 and not row["complete"]
 
 
+def test_a_fork_in_the_grading_log_is_refused(tmp_path):
+    row = check.verify_one(_control(tmp_path, grading=[*_grading(), "F\t1160\t500\t502\t32"]), "I-8")
+    assert row["printed_by_both"] == 1 and not row["complete"]
+
+
 def test_a_procfs_or_write_open_in_the_grading_log_is_refused(tmp_path):
     for index, line in enumerate((_open(1300, 77, "/proc/31/fd", magic=check.PROC_MAGIC),
                                   _open(1300, 77, "/opt/app/tool.py", mode=2))):

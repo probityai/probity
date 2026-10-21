@@ -71,7 +71,8 @@ MUTANTS = [
     # Replaced binaries are checked against the image's own dpkg sums.
     (TOOLS, '            if not name.endswith(".md5sums") or name in seen:', '            if not name.endswith(".md5sums"):'),
     (TOOLS, '            if _whiteout(full):\n                continue\n', ''),
-    (TOOLS, '                    sums.setdefault("/" + rel, digest)', '                    sums["/" + rel] = digest'),
+    (TOOLS, '                    sums.setdefault("/" + rel, set()).add(digest)', '                    sums["/" + rel] = {digest}'),
+    (TOOLS, ' and _md5(full) in sums[path])', ')'),
     # I-9 reads networks and routes, and a failed host read is a gap.
     (VERDICT, '    return inside != bool(match.group(1))', '    return inside'),
     (VERDICT, '    if match is None:\n        return True\n', '    if match is None:\n        return False\n'),
