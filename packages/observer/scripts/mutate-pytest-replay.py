@@ -104,6 +104,10 @@ MUTANTS = [
      '    return "exe" in item or (False and not is_replay(item["argv"])'),
     (GRADE, UNIT, '    replayed = {(item["id"].startswith("heldout"), test_id) for item in commands',
      '    replayed = {(False, test_id) for item in commands'),
+    # The isolation record says the replay parent runs on the host, outside the lockdown.
+    (GRADE, PIPELINE, '        report["verifier"]["replay_parent"] = replay_parent()', "        pass"),
+    (RUNNER, PIPELINE, '    return {"runtime": "host", "uid": os.getuid(), "env": "scrubbed",',
+     '    return {"runtime": "docker", "uid": os.getuid(), "env": "scrubbed",'),
     # The contract seals the replays, and only for protected test files.
     (CONTRACT, PIPELINE, "        commands += pytest_replays(", "        commands += [] and pytest_replays("),
     (CONTRACT, PIPELINE, '            ("heldout-fail-to-pass", hidden, "../heldout/tree", True, "fail")):',
