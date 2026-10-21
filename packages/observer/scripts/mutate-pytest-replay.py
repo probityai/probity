@@ -227,6 +227,12 @@ MUTANTS = [
     (REPLAY, UNIT,
      "    fresh_mismatch = [] if failure else fresh_mismatches(request, session, order, timeout)",
      "    fresh_mismatch = fresh_mismatches(request, session, order, timeout)"),
+    # A stopped parent leaves no child: its SIGTERM closes them, and the runner ends the rest.
+    (HARNESS, UNIT, "    signal.signal(signal.SIGTERM, terminated)",
+     "    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(TERMINATED_EXIT))"),
+    (RUNNER, UNIT, "        replay_harness.kill_recorded(children)\n", "        pass\n"),
+    (HARNESS, UNIT, "    sys.exit(harness.main())", "    sys.exit(main())"),
+    (HARNESS, UNIT, "                    os.killpg(pid, sig)\n", "                    pass\n"),
     # The replay keeps one deadline inside the command's limit, fresh children included.
     (REPLAY, UNIT, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
     (REPLAY, UNIT, "        reply = exchange(self.child, request, left)",

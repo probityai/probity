@@ -338,7 +338,8 @@ def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: floa
     limit = timeout * DETERMINISM_RUNS + 30 if mode == "determinism" else timeout
     # The clock the limit below runs on (``time.monotonic`` is system-wide), so the parent's
     # own deadline counts its start-up too.
-    request = {**request, "started": time.monotonic()}
+    children = scratch / "children.txt"
+    request = {**request, "started": time.monotonic(), "children": str(children)}
     (scratch / "request.json").write_text(json.dumps(request))
     parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
                                str(scratch / "request.json")], stdin=subprocess.DEVNULL,
@@ -351,6 +352,10 @@ def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: floa
         if stopped is not None:
             stopped.append(True)
         return TIMEOUT_EXIT
+    finally:
+        # However the parent ended (its own exit, SIGTERM, or the SIGKILL after the grace),
+        # no child it started outlives it.
+        replay_harness.kill_recorded(children)
     done = parent
     if (scratch / "replay.json").is_file():
         report = json.loads((scratch / "replay.json").read_text())
