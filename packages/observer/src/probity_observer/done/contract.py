@@ -396,15 +396,21 @@ def pytest_replays(start: Path, reference: Path | None, held: Path, protected: l
     start tree; an id is replayed only when its test file is in it (for the held-out command,
     in it or in the held-out tree laid over it), because an unprotected test file is the
     agent's code and never runs in the verifier. The child serves every top-level module of
-    the start and reference trees that the root does not hold (:func:`importable_names`). A
-    replay the reference does not pass is dropped by stabilization like any other command.
+    the start and reference trees (and of their ``src/`` directories) that the root does not
+    hold (:func:`importable_names`). A replay the reference does not pass, or that never
+    reaches the candidate, is dropped by stabilization like any other command.
     """
     root = held / PYTEST_ROOT
     root.mkdir()
     for entry in protected:
         copy_protected(start, entry, root)
-    remote = sorted(importable_names(start, *([reference] if reference is not None else []))
-                    - importable_names(root) - set(sys.stdlib_module_names))
+    trees = [start, *([reference] if reference is not None else [])]
+    # A src layout's packages are the candidate's too: a test that imports them must never
+    # resolve them to a package of the verifier's own environment.
+    trees += [tree / "src" for tree in trees if (tree / "src").is_dir()
+              and not (tree / "src" / "__init__.py").exists()]
+    remote = sorted(importable_names(*trees) - importable_names(root)
+                    - set(sys.stdlib_module_names))
     if not remote:
         return []
     tree = held / "tree"

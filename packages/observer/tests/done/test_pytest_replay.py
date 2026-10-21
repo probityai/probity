@@ -250,3 +250,48 @@ def test_a_replay_request_round_trips_through_the_parent_main(tmp_path):
     path.write_text(json.dumps({**found, "out": str(out), "run_timeout": 120}))
     assert replay.main([str(path)]) == 0
     assert json.loads(out.read_text())["mode"] == "pytest"
+
+
+def test_a_replay_that_never_calls_the_candidate_fails(tmp_path):
+    test = f"import {PACKAGE}.shapes\n\n\ndef test_area():\n    assert True\n"
+    code, report = run(tmp_path, HONEST, test, [f"{TESTS}/test_shapes.py::test_area"])
+    assert code == 1 and report["failure"] == "no call reached the candidate", report
+    assert report["items"][f"{TESTS}/test_shapes.py::test_area"]["passed"] == 2
+
+
+def test_a_src_layout_package_is_remote_and_served_from_src(tmp_path):
+    start = tmp_path / "start"
+    (start / "src" / PACKAGE).mkdir(parents=True)
+    (start / "src" / PACKAGE / "__init__.py").write_text("")
+    (start / "src" / PACKAGE / "shapes.py").write_text(HONEST)
+    (start / TESTS).mkdir()
+    (start / TESTS / "__init__.py").write_text("")
+    (start / TESTS / "test_shapes.py").write_text(TEST)
+    held = tmp_path / "held"
+    (held / "config").mkdir(parents=True)
+    (held / "config" / "pytest.ini").write_text("[pytest]\n")
+    found = contract.pytest_replays(start, None, held, [contract.Protected(TESTS, "directory")],
+                                    "../heldout/config/pytest.ini", 2, IDS, [])
+    assert [command.id for command in found] == ["fail-to-pass-replay",
+                                                 "heldout-fail-to-pass-replay"]
+    assert runner.pytest_replay_fields(found[0].argv)["remote"] == [PACKAGE, "src"]
+    local = SubprocessRunner()
+    assert local.run(start, found[0].argv, held, 120) == 0, local.replays
+    assert found[0].record()["ids"] == IDS
+
+
+def test_an_unprotected_test_file_is_never_replayed(tmp_path):
+    start = tmp_path / "start"
+    (start / PACKAGE).mkdir(parents=True)
+    (start / PACKAGE / "shapes.py").write_text(HONEST)
+    (start / "tests").mkdir()
+    (start / "tests" / "test_a.py").write_text("")
+    (start / "tests" / "test_b.py").write_text("")
+    held = tmp_path / "held"
+    held.mkdir()
+    found = contract.pytest_replays(start, None, held, [contract.Protected("tests/test_a.py", "file")],
+                                    "-", 2, ["tests/test_a.py::t", "tests/test_b.py::t"],
+                                    ["tests/test_b.py::u"])
+    assert [(command.id, runner.pytest_replay_fields(command.argv)["ids"]) for command in found] == [
+        ("fail-to-pass-replay", ["tests/test_a.py::t"]),
+        ("heldout-fail-to-pass-replay", ["tests/test_a.py::t"])]

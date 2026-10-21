@@ -48,6 +48,13 @@ MUTANTS = [
     # Calls and reads are counted, imports are not.
     (REPLAY, UNIT, '        keys = [key for key, request in self.requests.items() if request["op"] != "import"]',
      '        keys = []'),
+    # A replay that never reached the candidate is no pass; a src layout is served.
+    (REPLAY, UNIT, "    elif not calls:\n", "    elif False:\n"),
+    (REPLAY, UNIT, "        sys.path.insert(1, source)", "        pass"),
+    (CONTRACT, UNIT, '    trees += [tree / "src" for tree in trees if (tree / "src").is_dir()',
+     '    trees += [tree / "src" for tree in trees if False and (tree / "src").is_dir()'),
+    (CONTRACT, UNIT, "    kept = [test_id for test_id in passing if _under(file(test_id), protected)]",
+     "    kept = list(passing)"),
     # The argv and the sealed paths.
     (RUNNER, UNIT, '            or items[PYTEST_IDS_FROM - 1] != "--" or not items[9].isdigit()):',
      '            or not items[9].isdigit()):'),
