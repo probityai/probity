@@ -300,16 +300,39 @@ class RemoteLoader(importlib.abc.Loader):
                               f"{reply.get('raised', reply.get('error'))}", name=module.__name__)
 
 
-class RemoteFinder(importlib.abc.MetaPathFinder):
-    """Serves every module under one of the session's remote top-level names from the child."""
+IMPORT_MACHINERY = (importlib.__file__,)
 
-    def __init__(self, session: Session) -> None:
+
+class RemoteFinder(importlib.abc.MetaPathFinder):
+    """Serves every module under one of the session's remote top-level names from the child,
+    to sealed code only.
+
+    The import must come from a file under the sealed test root, or from :func:`value`
+    following a module the candidate named. An import the verifier's own code makes (pytest
+    importing an optional module late, after :func:`refused` looked) is left to the path
+    finder, so the candidate never serves the verifier's own modules."""
+
+    def __init__(self, session: Session, root: str = "") -> None:
         self.session = session
         self.loader = RemoteLoader(session)
+        self.root = os.path.realpath(root) + os.sep if root else ""
+
+    def sealed_importer(self) -> bool:
+        frame = sys._getframe(2)
+        while frame is not None:
+            code = frame.f_code
+            if code.co_filename.startswith("<frozen importlib") or (
+                    code.co_filename in IMPORT_MACHINERY):
+                frame = frame.f_back
+                continue
+            if code is value.__code__:
+                return True
+            return bool(self.root) and os.path.realpath(code.co_filename).startswith(self.root)
+        return False
 
     def find_spec(self, fullname: str, path: Any = None, target: Any = None
                   ) -> importlib.machinery.ModuleSpec | None:
-        if fullname.split(".", 1)[0] not in self.session.remote:
+        if fullname.split(".", 1)[0] not in self.session.remote or not self.sealed_importer():
             return None
         return importlib.machinery.ModuleSpec(fullname, self.loader, is_package=True)
 
@@ -453,7 +476,7 @@ def _run(request: dict[str, Any], session: Session, counter: Count) -> int:
     args = ["-p", "no:cacheprovider", "-q", "--rootdir", request["test_root"]]
     if request.get("config"):
         args += ["-c", request["config"]]
-    finder = RemoteFinder(session)
+    finder = RemoteFinder(session, request["test_root"])
     sys.meta_path.insert(0, finder)
     cwd, path = os.getcwd(), list(sys.path)
     os.chdir(request["test_root"])
@@ -488,6 +511,11 @@ def fresh_mismatches(request: dict[str, Any], session: Session, order: list[str]
 
 def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     """Run the sealed ids under pytest in this process, the remote modules served by a child."""
+    # pytest and its own modules are imported before the remote names are checked, so none
+    # of them can be a name the child serves.
+    import _pytest.runner  # noqa: F401
+    import pytest  # noqa: F401
+
     remote = frozenset(request["remote"])
     base: dict[str, Any] = {"passed": False, "mode": MODE, "items": {}, "calls_intercepted": 0,
                             "distinct_calls": 0, "impure": [], "fresh_mismatch": [],
