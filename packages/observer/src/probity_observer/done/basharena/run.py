@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,31 @@ def _driver(config: Config, work: Path) -> subprocess.Popen:
         cwd=config.basharena, env=env, stdout=log, stderr=subprocess.STDOUT)
 
 
+ATTACH_SECONDS = 120
+
+
+def _seen(cmd: Commands, container: episode.Container, log: Path, deadline: float) -> None:
+    """Return once the program's log shows a marker the container ran; bpftrace's banner comes first.
+
+    ``Attaching N probes...`` is printed before the probes are attached, so an event right after it can
+    be missed with no loss counted. The marker is a file of a fresh name, created and then read by a
+    command in the container: the whole-run program prints that command's exec with its arguments, the
+    grading program the read open with its name.
+    """
+    token = f"observer-ready-{secrets.token_hex(6)}"
+    marker = f"/tmp/{token}"
+    cmd.run(["docker", "exec", container.id, "touch", marker])
+    try:
+        while time.monotonic() < deadline:
+            cmd.run(["docker", "exec", container.id, "cat", marker], check=False)
+            if token in log.read_text(errors="replace"):
+                return
+            time.sleep(0.5)
+        raise RuntimeError(f"bpftrace never printed the attach marker within {ATTACH_SECONDS} s")
+    finally:
+        cmd.run(["docker", "exec", container.id, "rm", "-f", marker], check=False)
+
+
 def _start_observer(cmd: Commands, config: Config, container: episode.Container, work: Path,
                     stem: str = "trace", grading: bool = False) -> str:
     program = work / f"{stem}.bt"
@@ -48,16 +74,17 @@ def _start_observer(cmd: Commands, config: Config, container: episode.Container,
     cmd.run(["docker", "run", "-d", "--name", name, "--privileged", "--pid=host", *env, "-v",
              "/sys/kernel:/sys/kernel:ro", "-v", f"{work}:/out", config.observer_image, "bpftrace", "-o",
              f"/out/{stem}.log", f"/out/{stem}.bt"])
-    deadline = time.monotonic() + 120
+    deadline = time.monotonic() + ATTACH_SECONDS
     while time.monotonic() < deadline:
         logs = cmd.run(["docker", "logs", name], check=False)
         text = (logs.stdout + logs.stderr).decode("utf-8", "replace")
         if "ERROR" in text or "error:" in text:
             raise RuntimeError(f"bpftrace failed: {text[-800:]}")
         if log.exists() and log.read_text(errors="replace").startswith("Attaching"):
+            _seen(cmd, container, log, deadline)
             return name
         time.sleep(0.5)
-    raise RuntimeError("bpftrace did not attach within 120 s")
+    raise RuntimeError(f"bpftrace did not attach within {ATTACH_SECONDS} s")
 
 
 def _stop_observer(cmd: Commands, name: str, work: Path) -> None:

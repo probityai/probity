@@ -16,14 +16,19 @@ class FakeCommands:
         self.calls = []
         self.log = log
         self.observer_error = ""
+        self.prints_marker = True
+        self.stem = "trace"
 
     def run(self, argv, **kwargs):
         self.calls.append((argv, kwargs))
         if argv[:2] == ["docker", "logs"]:
             return subprocess.CompletedProcess(argv, 0, self.observer_error.encode(), b"")
         if argv[:3] == ["docker", "run", "-d"]:
-            stem = Path(argv[-1]).stem
-            (self.log.parent / f"{stem}.log").write_text("Attaching 10 probes...\n")
+            self.stem = Path(argv[-1]).stem
+            (self.log.parent / f"{self.stem}.log").write_text("Attaching 10 probes...\n")
+        if argv[:2] == ["docker", "exec"] and argv[3:4] == ["cat"] and self.prints_marker:
+            with (self.log.parent / f"{self.stem}.log").open("a") as handle:
+                handle.write(f"D\t1\t2\tp\t{Path(argv[4]).name}\n")
         stdout = b"runtime" if argv[:2] == ["docker", "run"] else b"sha256:abc"
         return subprocess.CompletedProcess(argv, 0, stdout, b"")
 
@@ -52,6 +57,20 @@ def test_observer_attach_checks_its_log_and_cleanup_keeps_diagnostics(tmp_path):
     cmd.observer_error = "ERROR: invalid probe"
     with pytest.raises(RuntimeError, match="invalid probe"):
         run._start_observer(cmd, _config(tmp_path), _box(), tmp_path, stem="bad")
+
+
+def test_the_observer_is_ready_only_once_its_log_shows_a_marker_the_container_ran(tmp_path, monkeypatch):
+    cmd = FakeCommands(tmp_path / "commands.jsonl")
+    run._start_observer(cmd, _config(tmp_path), _box(), tmp_path, stem="trace-grading", grading=True)
+    execs = [argv[3:] for argv, _ in cmd.calls if argv[:2] == ["docker", "exec"]]
+    assert [step[0] for step in execs] == ["touch", "cat", "rm"] and execs[0][1] == execs[1][1] == execs[2][2]
+    assert "observer-ready-" in (tmp_path / "trace-grading.log").read_text()
+
+    cmd.prints_marker = False
+    monkeypatch.setattr(run, "ATTACH_SECONDS", 1)
+    with pytest.raises(RuntimeError, match="attach marker"):
+        run._start_observer(cmd, _config(tmp_path), _box(), tmp_path, stem="silent")
+    assert cmd.calls[-1][0][3:5] == ["rm", "-f"]
 
 
 def test_start_guard_refuses_a_reading_it_cannot_verify(tmp_path, monkeypatch):
