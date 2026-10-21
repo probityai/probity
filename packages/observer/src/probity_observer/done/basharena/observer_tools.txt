@@ -137,7 +137,8 @@ def image_sums(layers):
     """dpkg's md5sums as the image recorded them: each package's file from the topmost lower layer holding it.
 
     The container's own /var/lib/dpkg/info is writable by the agent, so a replaced binary with its sums
-    line rewritten to match would pass; the lower layers are the committed image and cannot change.
+    line rewritten to match would pass; the lower layers are the committed image and cannot change. A path
+    two packages list maps to both their sums.
     """
     sums, seen = {}, set()
     for layer in layers:
@@ -154,7 +155,7 @@ def image_sums(layers):
             with open(full, errors="replace") as handle:
                 for line in handle:
                     digest, _, rel = line.strip().partition("  ")
-                    sums.setdefault("/" + rel, digest)
+                    sums.setdefault("/" + rel, set()).add(digest)
     return sums
 
 
@@ -163,7 +164,7 @@ def match_sums(root, sums, paths):
     result = {}
     for path in paths:
         full = root + path
-        result[path] = bool(path in sums and os.path.isfile(full) and _md5(full) == sums[path])
+        result[path] = bool(path in sums and os.path.isfile(full) and _md5(full) in sums[path])
     return result
 
 
