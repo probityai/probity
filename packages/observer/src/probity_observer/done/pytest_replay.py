@@ -142,6 +142,10 @@ class Session:
     def ask(self, request: dict[str, Any]) -> dict[str, Any]:
         key = _key(request)
         reply = self.child.ask(request)
+        if not isinstance(reply, dict):
+            # The child writes the protocol stream, so its shape is checked before any field
+            # is read: no malformed reply may raise an exception a test could expect.
+            reply = {"error": "child-protocol"}
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
         return reply
@@ -155,13 +159,20 @@ class Session:
 
 def raise_for(reply: dict[str, Any]) -> None:
     """Raise what a reply that carries no value stands for in the test."""
-    if "raised" in reply:
-        module, name = reply["raised"]
+    raised = reply.get("raised")
+    if raised is not None:
+        if not (isinstance(raised, list) and len(raised) == 2
+                and all(isinstance(part, str) for part in raised)):
+            raise CandidateFailed("malformed raise")
+        module, name = raised
         kind = EXCEPTIONS.get(name) if module == "builtins" else None
         if kind is None:
             raise CandidateFailed(f"raised {module}.{name}")
         try:
-            error = kind(*(unplain(reply["args"]) if reply.get("args") is not None else ()))
+            args = unplain(reply["args"]) if reply.get("args") is not None else ()
+            if type(args) is not tuple:
+                raise TypeError("arguments are not a tuple")
+            error = kind(*args)
         except BaseException:
             raise CandidateFailed(f"raised {module}.{name}") from None
         raise error
