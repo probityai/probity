@@ -187,6 +187,49 @@ class CandidateFailed(AssertionError):
 
 
 STARTED: list["Child"] = []
+# The file the parent appends each child's pid and start time to, for the runner's backstop
+# (:func:`kill_recorded`); ``None`` outside a parent the runner started.
+CHILDREN: Path | None = None
+
+
+def start_time(pid: int) -> str | None:
+    """The kernel's start time of ``pid`` (``/proc/<pid>/stat`` field 22), or ``None`` when no
+    such process exists: with the pid it names one process, never a later one given that pid."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+    except OSError:
+        return None
+    fields = stat.rsplit(")", 1)[-1].split()
+    return fields[19] if len(fields) > 19 else None
+
+
+def kill_recorded(path: Path) -> None:
+    """End every child group a parent recorded in ``path`` that is still running: SIGTERM, then
+    SIGKILL after :data:`CLOSE_GRACE`. A child whose start time no longer matches is gone.
+
+    The runner's backstop for a parent it had to kill, or one that left a child behind: each
+    child runs in its own session, out of reach of a signal to the parent's group."""
+    try:
+        lines = path.read_text().splitlines()
+    except OSError:
+        return
+    alive = []
+    for line in lines:
+        parts = line.split()
+        if len(parts) == 2 and parts[0].isdigit() and start_time(int(parts[0])) == parts[1]:
+            alive.append((int(parts[0]), parts[1]))
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for pid, started in alive:
+            if start_time(pid) == started:
+                try:
+                    os.killpg(pid, sig)
+                except (ProcessLookupError, PermissionError):
+                    pass
+        ends = time.monotonic() + CLOSE_GRACE
+        while any(start_time(pid) == started for pid, started in alive):
+            if time.monotonic() >= ends:
+                break
+            time.sleep(0.05)
 
 # The longest protocol line a child may write before its newline.
 LINE_LIMIT = 1 << 24
@@ -239,6 +282,9 @@ class Child:
         self.process = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                         text=True, start_new_session=True)
+        if CHILDREN is not None:
+            with CHILDREN.open("a") as record:
+                record.write(f"{self.process.pid} {start_time(self.process.pid)}\n")
 
     def __enter__(self) -> "Child":
         return self
@@ -686,13 +732,25 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
             "fresh_order": order}
 
 
+def terminated(signum: int, frame: Any) -> None:
+    """The parent's SIGTERM: stop every child, then exit at once.
+
+    Not ``sys.exit``: in a pytest replay the signal lands inside a test, and pytest records
+    the ``SystemExit`` as that test's failure and goes on to the next, asking the same child."""
+    try:
+        close_all()
+    finally:
+        os._exit(TERMINATED_EXIT)
+
+
 def main(argv: list[str] | None = None) -> int:
+    global CHILDREN
     args = sys.argv[1:] if argv is None else argv
     request = json.loads(Path(args[0]).read_text())
     STARTED.clear()
-    # The runner sends SIGTERM when the whole command outruns its limit; exiting through
-    # SystemExit runs the ``finally`` below, which stops every child before the parent goes.
-    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(TERMINATED_EXIT))
+    CHILDREN = Path(request["children"]) if request.get("children") else None
+    # The runner sends SIGTERM when the whole command outruns its limit.
+    signal.signal(signal.SIGTERM, terminated)
     try:
         result = replay(request)
     finally:
@@ -710,4 +768,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Run as ``-m``, this file is ``__main__``, a second copy of the module: the pytest replay
+    # imports ``probity_observer.done.replay``, so its children would be in that copy's
+    # ``STARTED`` and out of reach of this one's ``close_all``. ``main`` runs in the one copy.
+    from probity_observer.done import replay as harness
+
+    sys.exit(harness.main())
