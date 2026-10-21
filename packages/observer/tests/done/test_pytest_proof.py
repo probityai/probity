@@ -71,6 +71,9 @@ def test_a_sealed_comparison_against_one_call_is_proven(body, callees):
     ("@pytest.mark.parametrize('x, expected', [(2, None)])\n"
      "def test_it(x, expected):\n    assert area(x, 1) == expected\n", "None"),
     ("def test_it():\n    assert area(1, 1) == 1j\n", "plain data"),
+    ("def test_it():\n    assert area(1j, 1) == 1\n", "argument cannot cross"),
+    ("@pytest.mark.parametrize('x', [1, 1j])\n"
+     "def test_it(x):\n    assert area(x, 1) == 1\n", "argument cannot cross"),
     ("def test_it():\n    assert area(1, 1) == area\n", "is not sealed"),
     # The called name is not served from the candidate, or not bound once.
     ("def test_it():\n    assert local(1) == 1\n", "not imported from a module the child serves"),

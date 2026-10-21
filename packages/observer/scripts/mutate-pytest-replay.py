@@ -128,7 +128,12 @@ MUTANTS = [
     (PROOF, PROVE, "        if set(params) != set(table):", "        if False:"),
     (PROOF, PROVE, "            if not (isinstance(decorator, ast.Call) and _chain(decorator.func) == list(PARAMETRIZE)",
      "            if not (isinstance(decorator, ast.Call)"),
-    (PROOF, PROVE, '                _literal(argument, line, "argument")', "                pass"),
+    (PROOF, PROVE, '                arguments = (_literal(argument, line, "argument"),)',
+     "                arguments = ()"),
+    (PROOF, PROVE, "                    plain(value)\n                except TypeError:\n"
+     "                    raise Unproven(f\"{line}: an argument",
+     "                    pass\n                except TypeError:\n"
+     "                    raise Unproven(f\"{line}: an argument"),
     (PROOF, PROVE, "        if not proof.sites:", "        if False:"),
     (PROOF, PROVE, "    return {callee for callee, values in seen.items() if values != {True, False}}",
      "    return set()"),
