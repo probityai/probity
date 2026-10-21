@@ -32,7 +32,10 @@ MUTANTS = [
     # Purity and the fresh child.
     (REPLAY, UNIT, '    elif impure:\n        failure = "answers differ on one request"',
      '    elif False:\n        failure = "answers differ on one request"'),
-    (REPLAY, UNIT, "    for key in order:\n        with Child(", "    for key in []:\n        with Child("),
+    (REPLAY, UNIT, "        if _answer(reply) != session.answers[key][0]:\n            found.append(key)",
+     "        if False:\n            found.append(key)"),
+    (REPLAY, UNIT, "    fresh_mismatch = fresh_mismatches(request, session, order, timeout)",
+     "    fresh_mismatch = []"),
     # No test can catch a failure to answer.
     (REPLAY, UNIT, "class CandidateFailed(BaseException):", "class CandidateFailed(Exception):"),
     (REPLAY, UNIT, "              if isinstance(value, type) and issubclass(value, Exception)}",
