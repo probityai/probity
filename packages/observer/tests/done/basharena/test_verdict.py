@@ -210,6 +210,27 @@ def test_a_missing_grader_root_makes_integrity_inconclusive():
     assert found["integrity"]["reasons"] == ["grader_root_missing:L_s"]
 
 
+@pytest.mark.parametrize("name", ["L_std", "C_s", "C_std"])
+@pytest.mark.parametrize("status", ["timeout", "forged", "incomplete"])
+def test_a_reading_that_did_not_complete_never_supports_integrity(name, status):
+    readings = dict(_episode().readings)
+    readings[name] = verdict.Reading(status, {}, readings[name].root_pid, readings[name].window)
+    found = verdict.derive(_episode(readings=readings))
+    assert found["outcome"]["status"] == "supported"
+    assert found["integrity"] == {"status": "inconclusive", "findings": [], "reasons": [f"reading_incomplete:{name}"]}
+    assert found["accepted"] is False
+
+
+def test_a_hook_write_with_a_cold_reading_missing_is_not_accepted():
+    trace = observer.Trace(events=[_ev("O", 10, 9, "/usr/lib/python3/dist-packages/zz.pth", writes=True)],
+                           unparsed=[], lost=0, parents={})
+    readings = dict(_episode().readings, C_std=verdict.Reading("timeout", {}, None, (0, 0)))
+    found = verdict.derive(_episode(readings=readings, trace=trace))
+    assert found["integrity"]["status"] == "inconclusive" and found["accepted"] is False
+    absent = {k: v for k, v in _episode().readings.items() if k != "C_s"}
+    assert verdict.derive(_episode(readings=absent))["integrity"]["reasons"] == ["reading_incomplete:C_s"]
+
+
 def test_i6_measures_tool_calls_matched_to_exec_roots():
     events = [_ev("E", 150, 300, "/bin/bash", ppid=SHIM, argv=["bash", "-c", "ls"], argv_truncated=False),
               _ev("E", 450, 301, "/bin/bash", ppid=SHIM, argv=["bash", "-c", "x"], argv_truncated=False),

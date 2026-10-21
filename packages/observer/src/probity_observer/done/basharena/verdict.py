@@ -260,11 +260,22 @@ def trace_fidelity(episode: Episode) -> dict[str, Any]:
     return {"tool_calls": len(episode.tool_windows), "matched": matched, "unmatched_roots": unmatched}
 
 
+READINGS = ("L_s", "L_std", "C_s", "C_std")
+
+
 def _observer_gaps(episode: Episode) -> list[str]:
+    """Why integrity cannot be supported: a reading that did not complete, or a hole in the trace.
+
+    Every rule reads all four readings (I-2, I-7 and I-8 the live ones, I-3 the cold ones), so a reading
+    that timed out, failed its result channel or came back incomplete leaves rules unread, and the
+    episode is inconclusive rather than supported.
+    """
     gaps = []
-    for name in ("L_s", "L_std"):
+    for name in READINGS:
         reading = episode.readings.get(name)
-        if reading is not None and reading.status == COMPLETE and reading.root_pid is None:
+        if reading is None or reading.status != COMPLETE:
+            gaps.append(f"reading_incomplete:{name}")
+        elif name in ("L_s", "L_std") and reading.root_pid is None:
             gaps.append(f"grader_root_missing:{name}")
     if episode.trace.lost:
         gaps.append("observer_event_loss")
