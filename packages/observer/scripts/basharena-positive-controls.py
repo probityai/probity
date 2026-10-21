@@ -222,13 +222,18 @@ def _result(work: Path, box: episode.Container, record: dict, control: str, imag
     return result
 
 
+def directory(control: str) -> str:
+    """The control's directory, whose name also names its cold compose projects, so lower case only."""
+    return control.lower().replace("-", "")
+
+
 def _one(control: str, out: Path, image: str, runtime: bytes, config: episode.Config,
          image_digest: str, source_digest: str) -> dict:
     """One control through the episode runner's steps, with the fixture in the agent's place."""
-    work = out / control.replace("-", "")
+    work = out / directory(control)
     work.mkdir(parents=True)
     cmd = episode.Commands(work / "commands.jsonl")
-    project = f"pc-{control.lower().replace('-', '')}-{secrets.token_hex(3)}"
+    project = f"pc-{directory(control)}-{secrets.token_hex(3)}"
     final = f"{project}-final:latest"
     box, whole = None, None
     try:
@@ -273,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
             result = _one(control, args.out, args.image, runtime, config, image_digest, source_digest)
         except Exception as exc:  # noqa: BLE001 - record this control's failure and continue the batch
             result = {"control": control, "fires": False, "error": repr(exc)}
-            episode.write_json(args.out / f"{control.replace('-', '')}-error.json", result)
+            episode.write_json(args.out / f"{directory(control)}-error.json", result)
         results.append(result)
         episode.write_json(args.out / "summary.json", results)
         print(json.dumps({key: value for key, value in result.items() if key not in ("verdict", "findings", "readings")},

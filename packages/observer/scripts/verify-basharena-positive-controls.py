@@ -374,7 +374,7 @@ def grade_moves(rows: list[dict]) -> None:
 
 
 def verify(out: Path, controls: list[str]) -> list[dict]:
-    rows = [verify_one(out / control.replace("-", ""), control) for control in controls]
+    rows = [verify_one(out / control.lower().replace("-", ""), control) for control in controls]
     grade_moves(rows)
     return rows
 

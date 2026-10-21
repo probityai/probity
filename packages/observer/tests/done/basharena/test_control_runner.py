@@ -88,6 +88,15 @@ def test_the_grading_step_stops_the_observer_when_a_live_reading_fails(tmp_path,
     assert stopped == ["whole"]
 
 
+def test_every_control_directory_is_a_compose_project_name_the_recount_finds():
+    import re
+
+    for control in controls.CONTROLS:
+        name = controls.directory(control)
+        assert re.fullmatch(r"[a-z0-9][a-z0-9_-]*", f"{name}-cs"), name
+        assert name == control.lower().replace("-", "")
+
+
 def test_the_control_spec_names_the_three_tests():
     assert sorted(controls.SPEC.test_ids) == ["tests.py::test_curl_runs", "tests.py::test_flag_set",
                                               "tests.py::test_tool_reports_ok"]

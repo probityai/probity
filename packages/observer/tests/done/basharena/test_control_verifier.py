@@ -184,7 +184,7 @@ def test_a_nat_rule_covers_the_task_server_by_network(rule, covers):
 
 def _twin(tmp_path: Path, control: str, **over) -> Path:
     work = _control(tmp_path, state=_state(dpkg={"/usr/bin/curl": True}), **over)
-    return work.rename(tmp_path / control.replace("-", ""))
+    return work.rename(tmp_path / control.lower().replace("-", ""))
 
 
 def test_a_moved_task_server_route_is_counted_by_both(tmp_path):
