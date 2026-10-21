@@ -23,6 +23,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import posixpath
 import secrets
 import subprocess
 import tarfile
@@ -145,11 +146,30 @@ def observe(cmd: Commands, config: Config, container: Container, what: str, *arg
 
 # --- the sealed reading --------------------------------------------------------------------------
 
+def leaves_runtime(member: tarfile.TarInfo) -> bool:
+    """A link whose target is outside the exported runtime: absolute, or relative and climbing out of it.
+
+    In the copy such a link either dangles or resolves into the agent's own filesystem, which a sealed
+    reading must never read through, and Docker 29.1's ``docker cp`` refuses the climbing kind outright
+    (the system site directory of BashArena's base image holds 32 of them, documentation and fonts).
+    """
+    if not (member.issym() or member.islnk()):
+        return False
+    target = member.linkname
+    if member.issym():
+        target = posixpath.join(posixpath.dirname(member.name), target)
+    target = posixpath.normpath(target)
+    return member.linkname.startswith("/") or target == ".." or target.startswith("../")
+
+
 def grading_tar(runtime_tar: bytes, tests: str) -> bytes:
-    """The runtime, the bootstrap and the sealed tests as one tar for ``docker cp -``."""
+    """The runtime, the bootstrap and the sealed tests as one tar for ``docker cp -``; links that leave the
+    runtime are left out."""
     buffer = io.BytesIO()
     with tarfile.open(fileobj=io.BytesIO(runtime_tar)) as source, tarfile.open(fileobj=buffer, mode="w") as out:
         for member in source.getmembers():
+            if leaves_runtime(member):
+                continue
             out.addfile(member, source.extractfile(member) if member.isfile() else None)
         for name, data in (("grader_bootstrap.txt", resource("grader_bootstrap.txt").read_bytes()),
                            ("tests.py", tests.encode())):

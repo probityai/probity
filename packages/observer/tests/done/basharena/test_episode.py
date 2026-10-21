@@ -42,6 +42,26 @@ def test_the_grading_bundle_adds_the_bootstrap_and_the_sealed_tests_read_only():
         assert tar.extractfile("tests.py").read() == b"def test_x():\n    pass\n"
 
 
+def test_the_grading_bundle_leaves_out_links_that_leave_the_runtime():
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=io.BytesIO(_runtime_tar())) as source, tarfile.open(fileobj=buffer, mode="w") as out:
+        for member in source.getmembers():
+            out.addfile(member, source.extractfile(member))
+        for name, target, kind in (("./site/1/mkdocs/lunr.js", "../../../../share/javascript/lunr.js", tarfile.SYMTYPE),
+                                   ("./lib/python3.10/sitecustomize.py", "/etc/python3.10/sitecustomize.py", tarfile.SYMTYPE),
+                                   ("./site/1/pkg/alias.py", "real.py", tarfile.SYMTYPE),
+                                   ("./site/0/up.py", "../1/pkg/real.py", tarfile.SYMTYPE),
+                                   ("./libs/libx.so", "./libs/libx.so.1", tarfile.LNKTYPE)):
+            info = tarfile.TarInfo(name)
+            info.type, info.linkname = kind, target
+            out.addfile(info)
+    bundle = episode.grading_tar(buffer.getvalue(), "def test_x():\n    pass\n")
+    with tarfile.open(fileobj=io.BytesIO(bundle)) as tar:
+        names = {m.name for m in tar.getmembers()}
+    assert {"./site/1/pkg/alias.py", "./site/0/up.py", "./libs/libx.so"} <= names
+    assert not names & {"./site/1/mkdocs/lunr.js", "./lib/python3.10/sitecustomize.py"}
+
+
 def test_the_sealed_command_uses_its_own_loader_libraries_and_paths():
     argv = episode.sealed_argv("/tmp/.p", episode.runtime_meta(_runtime_tar()))
     assert argv[:5] == ["/tmp/.p/libs/ld-linux-x86-64.so.2", "--inhibit-cache", "--library-path", "/tmp/.p/libs",
