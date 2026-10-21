@@ -38,6 +38,7 @@ MUTANTS = [
     (OBSERVER, '        return event.detail["ppid"] in shims if outside is None else outside',
      '        return event.detail["ppid"] in shims'),
     (OBSERVER, '            detail["parent_outside"] = f[7] == "1"', '            detail["parent_outside"] = True'),
+    (OBSERVER, '            if len(fields) >= 7 and int(fields[6]) > 0:', '            if len(fields) == 7 and int(fields[6]) > 0:'),
     # One finding per fact.
     (VERDICT, '        if key not in seen:\n', '        if True:\n'),
     # A reading that did not complete never supports integrity.

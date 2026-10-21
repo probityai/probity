@@ -103,6 +103,7 @@ def test_a_root_is_an_exec_whose_parent_is_outside_the_container():
                             "E\t2\t202\t201\t/usr/bin/curl\t5\t21\t0", "A\t2\t202\t0\tcurl\\x00"])
     assert trace.unparsed == []
     assert [e.detail["parent_outside"] for e in trace.events] == [True, False]
+    assert trace.namespace_pids == {201: 20, 202: 21}
     assert [event.pid for event in observer.exec_roots(trace, SHIM)] == [201]
 
 

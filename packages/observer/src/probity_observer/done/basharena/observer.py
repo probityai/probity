@@ -283,7 +283,7 @@ def parse(lines: Iterable[str]) -> Trace:
                 namespace_pids[int(fields[3])] = int(fields[4])
         elif kind == "E" and len(fields) in (6, 7, 8):
             pending[(fields[1], fields[2])] = _Pending(fields)
-            if len(fields) == 7 and int(fields[6]) > 0:
+            if len(fields) >= 7 and int(fields[6]) > 0:
                 namespace_pids[int(fields[2])] = int(fields[6])
         elif kind in _HEADS and len(fields) == _HEADS[kind]:
             pending[(fields[1], fields[2])] = _Pending(fields)
