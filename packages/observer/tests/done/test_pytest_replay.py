@@ -15,6 +15,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 from probity_observer.done import (contract, pytest_proof, pytest_replay, replay, runner,
@@ -801,3 +802,97 @@ def test_the_fresh_children_share_the_deadline_and_stop_at_it(monkeypatch):
         keys.append(key)
     found = pytest_replay.fresh_mismatches({"child_argv": []}, session, keys, 30.0)
     assert found == keys[:1] and asked == [0.0] and session.spent
+
+
+def busy_parent(base: Path) -> tuple[Any, Path]:
+    """A replay parent started as the runner starts one, whose child is busy inside a request
+    (the hung module, no deadline, a long call limit); returns it once the child is recorded."""
+    import subprocess
+    import time
+
+    found = {**request(base, HUNG, ids=IDS[:1]), "call_timeout": 60.0,
+             "out": str(base / "out.json"), "children": str(base / "children.txt")}
+    path = base / "request.json"
+    path.write_text(json.dumps(found))
+    parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
+                               str(path)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, env=runner.parent_env(),
+                              start_new_session=True)
+    ends = time.monotonic() + 60
+    while not (base / "children.txt").is_file() or not (base / "children.txt").read_text():
+        assert time.monotonic() < ends and parent.poll() is None, "no child was recorded"
+        time.sleep(0.1)
+    time.sleep(2.0)  # past the import, inside the hung call
+    return parent, base / "children.txt"
+
+
+def children_left(record: Path, within: float = 15.0) -> list[int]:
+    """The recorded children still running after ``within`` seconds."""
+    import time
+
+    entries = [line.split() for line in record.read_text().splitlines()]
+    ends = time.monotonic() + within
+    while True:
+        left = [int(pid) for pid, started in entries if replay.start_time(int(pid)) == started]
+        if not left or time.monotonic() >= ends:
+            return left
+        time.sleep(0.1)
+
+
+def test_a_parent_stopped_in_a_pytest_replay_leaves_no_child(tmp_path):
+    # SIGTERM lands inside a test, where pytest would record a SystemExit as a failure and go
+    # on asking the same child; the parent closes every child itself and exits.
+    import signal
+
+    parent, record = busy_parent(tmp_path)
+    assert children_left(record, 0.0), "the child should be busy before the stop"
+    os.killpg(parent.pid, signal.SIGTERM)
+    assert parent.wait(timeout=30) == replay.TERMINATED_EXIT
+    assert children_left(record) == []
+    assert not (tmp_path / "out.json").exists()
+
+
+def test_the_runner_ends_the_children_of_a_parent_it_had_to_kill(tmp_path):
+    import signal
+
+    parent, record = busy_parent(tmp_path)
+    os.killpg(parent.pid, signal.SIGKILL)
+    parent.wait(timeout=30)
+    assert children_left(record, 0.0), "SIGKILL of the parent leaves its child running"
+    replay.kill_recorded(record)
+    assert children_left(record, 0.0) == []
+
+
+def test_every_way_a_runner_parent_ends_runs_the_backstop(tmp_path, monkeypatch):
+    # A parent the runner kills outright (it never got to close its children): the runner's
+    # backstop ends them on the way out of the run.
+    import signal
+
+    killed = []
+
+    def kill_only(parent):
+        killed.append(parent.pid)
+        os.killpg(parent.pid, signal.SIGKILL)
+        parent.wait()
+    monkeypatch.setattr(runner, "stop_replay_parent", kill_only)
+    scratch = tmp_path / "scratch"
+    found = {**request(tmp_path, HUNG, ids=IDS[:1]), "call_timeout": 60.0,
+             "out": str(scratch / "replay.json")}
+    code = runner._run_parent(scratch, argv(IDS[:1]), found, 6.0, None, [])
+    assert code == runner.TIMEOUT_EXIT and killed
+    assert children_left(scratch / "children.txt", 0.0) == []
+
+
+def test_the_parent_runs_main_in_the_module_the_pytest_replay_imports(tmp_path):
+    # Run as ``-m``, ``replay`` is ``__main__``; its children and its close_all must be the
+    # ones of the module that started them.
+    import subprocess
+
+    probe = ("import runpy, sys\nfrom probity_observer.done import replay\n"
+             "seen = []\nreplay.main = lambda: seen.append(1) or 0\n"
+             "sys.argv = ['x']\ntry:\n"
+             "    runpy.run_module('probity_observer.done.replay', run_name='__main__')\n"
+             "except SystemExit:\n    pass\nprint(len(seen))\n")
+    done = subprocess.run([sys.executable, "-I", "-c", probe], capture_output=True, text=True,
+                          timeout=60, env=runner.parent_env())
+    assert done.stdout.strip() == "1", done.stderr
