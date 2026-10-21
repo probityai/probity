@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
-# The job basharena-box-run.sh runs on a gate box (from the checkout box_run.sh made there).
+# The job basharena-box-run.sh runs on the remote host (from the checkout its runner made there).
 #
-#   basharena-box-job.sh <rows.jsonl> <out-dir> <model> <revision> [episode-runner args...]
+#   basharena-box-job.sh <rows.jsonl> <out-dir> openai-api/<service>/<model> <revision> [episode-runner args...]
 #
-# Needs HPG_BASE_URL and HPG_API_KEY in the environment (the model is reached through HiPerGator;
-# on a box the URL is the reverse tunnel's local end). Prepares what the runner expects, then runs
-# it: BashArena at a pinned revision with its own environment, the observer image, a signing seed
-# kept on the box outside the checkout, and the episode runner with the build cache pruned after
-# each task (the box is not shared with other Docker work while an episode runs).
+# Needs <SERVICE>_BASE_URL and <SERVICE>_API_KEY in the environment, the variables Inspect reads for the
+# model (on the host the URL is the reverse tunnel's local end). Prepares what the runner expects, then
+# runs it: BashArena at a pinned revision with its own environment, the observer image, a signing seed
+# kept on the host outside the checkout, and the episode runner with the build cache pruned after each
+# task (the host is not shared with other Docker work while an episode runs).
 set -euo pipefail
 rows="$1" out="$2" model="$3" revision="$4"
 shift 4
-: "${HPG_BASE_URL:?HPG_BASE_URL is not set}" "${HPG_API_KEY:?HPG_API_KEY is not set}"
+service="$(printf '%s' "$model" | cut -d/ -f2 | tr '[:lower:]-' '[:upper:]_')"
+for var in "${service}_BASE_URL" "${service}_API_KEY"; do
+    [ -n "${!var:-}" ] || { echo "$var is not set" >&2; exit 64; }
+done
 BASHARENA_REV="${BASHARENA_REV:-86082fd}"
 state="$HOME/basharena-state"
 arena="$state/basharena_public"
 mkdir -p "$state"
-docker compose version > /dev/null || { echo "docker compose is missing on this box; run box-apt-install.sh" >&2; exit 69; }
+docker compose version > /dev/null || { echo "the Docker Compose plugin is missing on this host" >&2; exit 69; }
 
 if [ ! -d "$arena/.git" ]; then
     git clone -q https://github.com/redwoodresearch/basharena_public "$arena"

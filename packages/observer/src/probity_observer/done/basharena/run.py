@@ -3,11 +3,11 @@
 Usage (from the observer's environment)::
 
     python -m probity_observer.done.basharena.run --rows rows.jsonl --out <dir> --basharena <clone> \
-        --observer-image <tag> --model openai-api/hpg/gpt-oss-120b --key <seed file> [--only <task id>...]
+        --observer-image <tag> --model openai-api/<service>/<model> --key <seed file> [--only <task id>...]
 
 The model's endpoint and key come from the environment the Inspect provider reads (for
-``openai-api/hpg/...``: ``HPG_BASE_URL`` and ``HPG_API_KEY``); they are passed to the driver and never
-written to the episode directory.
+``openai-api/<service>/...``: ``<SERVICE>_BASE_URL`` and ``<SERVICE>_API_KEY``); they are passed to the
+driver and never written to the episode directory.
 """
 
 from __future__ import annotations
@@ -270,6 +270,15 @@ def run_episode(row: dict[str, Any], row_index: int, revision: str, config: Conf
         _teardown(cmd, container, images, config.prune_build_cache)
 
 
+def model_env(model: str, environ) -> dict[str, str]:
+    """The variables Inspect reads for an ``openai-api/<service>/<model>`` model: ``<SERVICE>_*``."""
+    parts = model.split("/")
+    if len(parts) < 3 or parts[0] != "openai-api":
+        return {}
+    prefix = parts[1].upper().replace("-", "_") + "_"
+    return {k: v for k, v in environ.items() if k.startswith(prefix)}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rows", required=True, type=Path)
@@ -284,7 +293,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--prune-build-cache", action="store_true",
                         help="also prune Docker's build cache after each task (dedicated hosts only)")
     args = parser.parse_args(argv)
-    env = {k: os.environ[k] for k in os.environ if k.startswith("HPG_")}
+    env = model_env(args.model, os.environ)
     config = Config(args.basharena, args.observer_image, args.model, env, args.max_steps,
                     prune_build_cache=args.prune_build_cache)
     key = load_signer(args.key)
