@@ -38,7 +38,7 @@ from .changes import Changes, changed_lines
 from .native import NATIVE_SOURCES, native
 from . import gates as seal_gates
 from . import harvest as guards
-from . import mutants, pytest_plugins, strengthen
+from . import mutants, pytest_plugins, pytest_proof, strengthen
 from .formats import (CONTRACT_PREDICATE, DoneError, encode, sha256, sign_record,
                       statement)
 from .runner import (PYTEST_IDS_FROM, PYTEST_ROOT, Command, Runner, image_executable,
@@ -383,22 +383,19 @@ def importable_names(*roots: Path) -> set[str]:
     return found
 
 
-def _under(name: str, protected: Sequence[Protected]) -> bool:
-    return any(name == entry.path or name.startswith(entry.path + "/") for entry in protected)
-
-
 def pytest_replays(start: Path, reference: Path | None, held: Path, protected: list[Protected],
                    config: str, repeats: int, fail: Sequence[str], passing: Sequence[str]
                    ) -> list[Command]:
     """The sealed ids the verifier can run itself, as parent-compare replays.
 
     The sealed test root, ``<held>/pytest-root``, holds a copy of every protected path of the
-    start tree; an id is replayed only when its test file is in it (for the held-out command,
-    in it or in the held-out tree laid over it), because an unprotected test file is the
-    agent's code and never runs in the verifier. The child serves every top-level module of
-    the start and reference trees (and of their ``src/`` directories) that the root does not
-    hold (:func:`importable_names`). A replay the reference does not pass, or that never
-    reaches the candidate, is dropped by stabilization like any other command.
+    start tree. An id is replayed only when :mod:`.pytest_proof` proves it from the sealed
+    bytes: from that root, or for the held-out command from the held-out tree laid over it.
+    So an unprotected test file, which is the agent's code, never runs in the verifier, and the
+    worker alone counts every id the proof does not reach. The child serves every top-level
+    module of the start and reference trees (and of their ``src/`` directories) that the root
+    does not hold (:func:`importable_names`). A replay the reference does not pass, or that
+    never reaches the candidate, is dropped by stabilization like any other command.
     """
     root = held / PYTEST_ROOT
     root.mkdir()
@@ -413,15 +410,11 @@ def pytest_replays(start: Path, reference: Path | None, held: Path, protected: l
                     - set(sys.stdlib_module_names))
     if not remote:
         return []
-    tree = held / "tree"
-
-    def file(test_id: str) -> str:
-        return test_id.split("::", 1)[0]
-
-    visible = [test_id for test_id in fail if _under(file(test_id), protected)]
-    kept = [test_id for test_id in passing if _under(file(test_id), protected)]
-    hidden = [test_id for test_id in fail if _under(file(test_id), protected)
-              or (tree / file(test_id)).is_file()]
+    shown = pytest_proof.Sources([root], remote)
+    overlaid = pytest_proof.Sources([held / "tree", root], remote)
+    visible, _ = pytest_proof.proven(shown, fail)
+    kept, _ = pytest_proof.proven(shown, passing)
+    hidden, _ = pytest_proof.proven(overlaid, fail)
     found = []
     for command_id, ids, overlay, heldout, prepatch in (
             ("fail-to-pass", visible, None, False, "fail"),
