@@ -125,20 +125,23 @@ pass. Setting an attribute on a remote module raises `Unsupported`.
 
 **The parent checks the proof again and makes each comparison itself.** Before running a test,
 the parent proves it again from the sealed file pytest imported; a test that is not proven
-fails, with its reason in the result's `unproven`. A proven test runs from an instrumented
-copy of its sealed source, in which each assertion becomes a call of the parent's comparison:
-the call is made there, it must make exactly one call to the child, and its value must equal
-the sealed value with the same builtin type at every level (`replay.strict_eq`, so `6.0`,
-`True` and `6` are three values). The test counts as passed on a run only when that copy ran
-to its end with every comparison made; a passed report without it (a hook that ran something
-else, or rewrote the report) counts as failed. A boolean comparison made only one way on its
+fails, with its reason in the result's `unproven`. A proven test runs as the function pytest
+compiled from the sealed file (the parent checks its name, file and first line against the
+proof), and each call's answer reaches it as a `Sealed` value. The k-th answer can only be
+compared, once and before the next call is made, with the k-th assertion's sealed value: a
+comparison with any other value, a second comparison, a call out of turn, or any other use of
+the answer (truth, `!=`, hashing) fails. The comparison holds only when the answer equals the
+sealed value with the same builtin type at every level (`replay.strict_eq`, so `6.0`, `True`
+and `6` are three values). The test counts as passed on a run only when it returned with
+every comparison made; a passed report without that (a hook that ran something else, or
+rewrote the report) counts as failed. A boolean comparison made only one way on its
 function in the run withdraws the passes that rest on it (`degenerate`).
 
-**Nothing the candidate chooses reaches the sealed code.** Outside a comparison, a reply may
-carry only a handle: an import that succeeded, or an attribute that is a function or a module.
+**Nothing the candidate chooses reaches the sealed code.** Except for a call's answer in the
+run of a proven test, which arrives sealed, a reply may carry only a handle: an import that succeeded, or an attribute that is a function or a module.
 Any other reply (a plain value at import, a call from a fixture or hook, a raise) is recorded
 in `outside`, fails the replay, and reaches the sealed code as `CandidateFailed` instead of
-its value. Inside a comparison, the value goes to the comparison only. So no value of the
+its value. A sealed answer goes to its comparison only. So no value of the
 candidate's can steer sealed code into a path it opens or a file it deletes on the verifier's
 host.
 
