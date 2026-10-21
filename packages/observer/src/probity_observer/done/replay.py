@@ -412,7 +412,10 @@ MODES = ("assert", "determinism", "type_strict", "import_side_effects")
 # How many passes over the cases each mode makes. Every pass has the command's whole
 # ``run_timeout`` (a probe that repeats the work is never stricter than one run of the
 # command), and the runner's limit on the whole replay is that many timeouts.
-PASSES = {"assert": 2, "determinism": 3, "type_strict": 1, "import_side_effects": 1}
+# A pytest replay runs under one deadline of its own inside a single run_timeout
+# (:func:`.pytest_replay.deadline`), fresh children included.
+PASSES = {"assert": 2, "determinism": 3, "type_strict": 1, "import_side_effects": 1,
+          "pytest": 1}
 
 # How the candidate ended its own process: the reply errors a SystemExit or an exit gives.
 EXIT_ERRORS = ("import:SystemExit", "SystemExit", "child-exited")
