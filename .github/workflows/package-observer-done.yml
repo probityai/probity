@@ -54,6 +54,8 @@ jobs:
             what: Every mutant of the loop policy and the completion reading turns their tests red
           - script: mutate-oot-rules.py
             what: Every mutant of the out-of-tree tamper rules turns their tests red
+          - script: mutate-pytest-replay.py
+            what: Every mutant of the verifier's own count of sealed pytest ids turns its tests red
     name: mutants (${{ matrix.script }})
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
