@@ -113,6 +113,11 @@ MUTANTS = [
     (CONTRACT, UNIT, "    hidden, _ = pytest_proof.proven(overlaid, fail)", "    hidden = list(fail)"),
     (CONTRACT, UNIT, '    overlaid = pytest_proof.Sources([held / "tree", root], remote)',
      "    overlaid = pytest_proof.Sources([root], remote)"),
+    # A two-way boolean pair is judged together when stabilization splits a replay by id.
+    (PROOF, PROVE, "                if other not in seen and keys[other] & keys[current]:",
+     "                if False:"),
+    (CONTRACT, UNIT, "    return pytest_proof.boolean_groups(pytest_proof.Sources(roots, fields[\"remote\"]), ids)",
+     "    return [[test_id] for test_id in ids]"),
     # The proof: only sealed comparisons, of one remote call, against a sealed value.
     (PROOF, PROVE, "            if not isinstance(statement, ast.Assert):",
      "            if not isinstance(statement, (ast.Assert, ast.Expr, ast.For, ast.If)):"),
