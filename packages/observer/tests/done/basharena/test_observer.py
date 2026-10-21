@@ -15,30 +15,61 @@ def _trace() -> observer.Trace:
         return observer.parse(handle)
 
 
+def _probes(text: str) -> list[str]:
+    return [line for line in text.splitlines() if line and not line.startswith(" ") and "{" in line]
+
+
 def test_the_program_is_filtered_to_one_cgroup_on_every_probe():
     text = observer.program(4242)
-    probes = [line for line in text.splitlines() if line and not line.startswith(" ") and "{" in line]
+    probes = _probes(text)
     assert len(probes) == 10
     assert all("/cgroup == 4242" in probe for probe in probes)
     assert "fentry:wake_up_new_task" in text
     assert "thread_pid->numbers[1].nr" in text
 
 
-def test_the_whole_run_program_prints_only_write_and_procfs_opens_and_the_grading_one_every_open():
-    (whole,) = [line for line in observer.program(1).splitlines() if line.startswith("fentry:security_file_open")]
-    (grading,) = [line for line in observer.program(1, reads=True).splitlines()
-                  if line.startswith("fentry:security_file_open")]
-    assert "f_mode & 2" in whole and "s_magic == 40864" in whole
-    assert grading == "fentry:security_file_open /cgroup == 1/ {"
+def test_the_grading_program_prints_only_opens():
+    (probe,) = _probes(observer.grading_program(4242))
+    assert probe.startswith("fentry:security_file_open /cgroup == 4242 && ")
 
 
-def test_merging_two_programs_keeps_an_event_once():
-    one = observer.parse(["O\t5\t9\tsh\t2\t1", "D\t5\t9\tp\tx", "D\t5\t9\tp\t/", "F\t1\t9\t10"])
-    two = observer.parse(["O\t5\t9\tsh\t2\t1", "D\t5\t9\tp\tx", "D\t5\t9\tp\t/", "O\t6\t9\tsh\t0\t1",
-                          "D\t6\t9\tp\ty", "D\t6\t9\tp\t/", "Lost 2 events"])
-    merged = observer.merge([one, two])
-    assert [(e.time, e.path) for e in merged.events] == [(5, "/x"), (6, "/y")]
-    assert merged.lost == 2 and merged.parents == {10: 9}
+def _open_filter(text: str):
+    """The open probe's bpftrace filter as a Python predicate over (cgroup, f_mode, s_magic)."""
+    (line,) = [line for line in text.splitlines() if line.startswith("fentry:security_file_open")]
+    expression = line.split("/", 1)[1].rsplit("/", 1)[0]
+    for bpf, python in (("args.file->f_path.dentry->d_sb->s_magic", "magic"), ("args.file->f_mode", "mode"),
+                        ("&&", " and "), ("||", " or "), ("!(", " not (")):
+        expression = expression.replace(bpf, python)
+    return lambda cgroup, mode, magic: eval(expression, {}, {"cgroup": cgroup, "mode": mode, "magic": magic})  # noqa: S307
+
+
+def test_every_open_in_the_container_is_printed_by_exactly_one_program():
+    whole, grading = _open_filter(observer.program(7)), _open_filter(observer.grading_program(7))
+    for mode in (0x1, 0x2, 0x3, 0x21, 0x22):  # read, write, read-write, exec-read, exec-write
+        for magic in (observer.PROC_SUPER_MAGIC, 0xEF53, 0x794C7630):  # procfs, ext4, overlayfs
+            assert whole(7, mode, magic) != grading(7, mode, magic), (mode, magic)
+            assert not whole(8, mode, magic) and not grading(8, mode, magic)
+    assert whole(7, 0x2, 0xEF53) and whole(7, 0x1, observer.PROC_SUPER_MAGIC) and grading(7, 0x1, 0xEF53)
+
+
+# One syscall of each kind as the two programs print it during a grading window: the whole-run program
+# prints the exec of curl and a write, the grading program the read open of the binary for that exec,
+# each under its own clock (6.3 us apart, as in a recorded control).
+WHOLE = ["F\t7905140030000\t500\t501\t21", "E\t7905140032044\t501\t500\t/usr/bin/curl\t15\t21",
+         "A\t7905140032044\t501\t0\tcurl\\x00--version\\x00",
+         "O\t7905140040000\t501\tcurl\t2\t61267", "D\t7905140040000\t501\tp\tout", "D\t7905140040000\t501\tp\t/"]
+GRADING = ["O\t7905140038342\t501\tcurl\t33\t61267", "D\t7905140038342\t501\tp\tcurl",
+           "D\t7905140038342\t501\tp\tbin", "D\t7905140038342\t501\tp\tusr", "D\t7905140038342\t501\tp\t/"]
+
+
+def test_merging_the_two_programs_keeps_each_syscall_once():
+    merged = observer.merge([observer.parse(WHOLE), observer.parse(GRADING)])
+    assert [(e.kind, e.time, e.path) for e in merged.events] == [
+        ("E", 7905140032044, "/usr/bin/curl"), ("O", 7905140038342, "/usr/bin/curl"),
+        ("O", 7905140040000, "/out")]
+    assert merged.parents == {501: 500} and merged.namespace_pids == {501: 21}
+    lossy = observer.merge([observer.parse(WHOLE), observer.parse(["Lost 2 events"])])
+    assert lossy.lost == 2
 
 
 def test_the_trace_keeps_container_pids_from_execs_and_forks():

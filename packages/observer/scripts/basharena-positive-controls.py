@@ -239,7 +239,7 @@ def _one(control: str, out: Path, image: str, runtime: bytes, config: episode.Co
         state = _host_state(cmd, config, box, before)
         episode.write_json(work / "host-state.json", state)
         cmd.run(["docker", "commit", box.id, final], timeout=600)
-        grading = run._start_observer(cmd, config, box, work, stem="trace-grading", reads=True)
+        grading = run._start_observer(cmd, config, box, work, stem="trace-grading", grading=True)
         raw = {}
         raw["L_s"] = episode.reading_sealed(cmd, box.id, runtime, TESTS)
         episode.write_json(work / "L_s.json", raw["L_s"])

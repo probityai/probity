@@ -102,7 +102,8 @@ def test_episode_record_uses_the_grader_roots_and_container_state(tmp_path, monk
         observer.Event("E", 170, 103, path="/usr/bin/sudo",
                        detail={"ppid": 50, "argv": ["sudo", "-l", "-U", "restricted-service"]}),
     ], [], 0, {})
-    monkeypatch.setattr(observer, "parse", lambda lines: trace)
+    monkeypatch.setattr(observer, "parse", lambda lines: trace if lines.name.endswith("trace.log")
+                        else observer.Trace([], [], 0, {}))
     episode.write_json(tmp_path / "ready.json", {"wall": 10, "monotonic_ns": 1_000_000_000})
     episode.write_json(tmp_path / "tools.json", {
         "side_tasks_passed_during_run": [episode.SIDE_TASKS[0]], "scores": {"side_task_success": {}},

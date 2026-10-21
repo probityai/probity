@@ -63,28 +63,34 @@ def _namespace_pid(task: str) -> str:
   if ($level == 3) {{ $ns_pid = {task}->thread_pid->numbers[3].nr; }}"""
 
 
-def program(cgroup_id: int, reads: bool = False) -> str:
-    """The bpftrace program for one container's cgroup id.
+_WRITE_OR_PROC = (f"((args.file->f_mode & {FMODE_WRITE}) || "
+                  f"args.file->f_path.dentry->d_sb->s_magic == {PROC_SUPER_MAGIC})")
 
-    Without ``reads``, a file open is printed only when it is for writing or on procfs: the rules read
-    other opens only by the grader, so the runner starts a second program with ``reads`` for the grading
-    window alone. Printing every read open for a whole episode lost events on the first dry run (641 lost
-    in 196,056 lines, measured 2026-10-18).
+
+def _open_probe(open_filt: str) -> str:
+    return f"""
+fentry:security_file_open {open_filt} {{
+  $t = nsecs; $d = args.file->f_path.dentry;
+  printf("O\\t%llu\\t%d\\t%s\\t%u\\t%lu\\n", $t, pid, comm, args.file->f_mode, $d->d_sb->s_magic);{_walk("$d", "p")}
+}}"""
+
+
+def program(cgroup_id: int) -> str:
+    """The whole-run bpftrace program for one container's cgroup id.
+
+    A file open is printed only when it is for writing or on procfs: the rules read other opens only by
+    the grader, so the runner starts :func:`grading_program` for the grading window alone. Printing every
+    read open for a whole episode lost events on the first dry run (641 lost in 196,056 lines, measured
+    2026-10-18).
     """
     filt = f"/cgroup == {int(cgroup_id)}/"
-    open_filt = filt if reads else (
-        f"/cgroup == {int(cgroup_id)} && ((args.file->f_mode & {FMODE_WRITE}) || "
-        f"args.file->f_path.dentry->d_sb->s_magic == {PROC_SUPER_MAGIC})/")
+    open_filt = f"/cgroup == {int(cgroup_id)} && {_WRITE_OR_PROC}/"
     return f"""
 tracepoint:sched:sched_process_exec {filt} {{
   $t = nsecs; $m = curtask->mm; $n = $m->arg_end - $m->arg_start;{_namespace_pid("curtask")}
   printf("E\\t%llu\\t%d\\t%d\\t%s\\t%d\\t%d\\n", $t, pid, curtask->real_parent->tgid, str(args.filename), $n, $ns_pid);
   printf("A\\t%llu\\t%d\\t0\\t%r\\n", $t, pid, buf(uptr($m->arg_start), $n > {ARGV_BYTES} ? {ARGV_BYTES} : $n));
-}}
-fentry:security_file_open {open_filt} {{
-  $t = nsecs; $d = args.file->f_path.dentry;
-  printf("O\\t%llu\\t%d\\t%s\\t%u\\t%lu\\n", $t, pid, comm, args.file->f_mode, $d->d_sb->s_magic);{_walk("$d", "p")}
-}}
+}}{_open_probe(open_filt)}
 fentry:vfs_rename {filt} {{
   $t = nsecs; $o = args.rd->old_dentry; $n = args.rd->new_dentry;
   printf("N\\t%llu\\t%d\\t%s\\n", $t, pid, comm);{_walk("$o", "o")}{_walk("$n", "p")}
@@ -113,6 +119,19 @@ fentry:wake_up_new_task {filt} {{
   $child = args.p;{_namespace_pid("$child")}
   printf("F\\t%llu\\t%d\\t%d\\t%d\\n", nsecs, pid, $child->pid, $ns_pid);
 }}
+"""
+
+
+def grading_program(cgroup_id: int) -> str:
+    """The grading-window program: the read opens that :func:`program` skips, and nothing else.
+
+    The whole-run program stays attached through every grading window, so it already prints that
+    window's execs, forks, writes, procfs opens and the other syscalls. Each program stamps its own
+    ``nsecs``, so one syscall printed by both would come back as two events a few microseconds apart,
+    and no key built from the programs' own fields could tell it from two real syscalls. The two open
+    filters are each other's complement, so every open is printed by exactly one program.
+    """
+    return f"""{_open_probe(f"/cgroup == {int(cgroup_id)} && !{_WRITE_OR_PROC}/")}
 """
 
 
@@ -265,14 +284,12 @@ def parse(lines: Iterable[str]) -> Trace:
 
 
 def merge(traces: list[Trace]) -> Trace:
-    """One trace from several programs over the same container; an event both printed is kept once."""
-    seen, events = set(), []
-    for trace in traces:
-        for event in trace.events:
-            key = (event.kind, event.time, event.pid, event.path)
-            if key not in seen:
-                seen.add(key)
-                events.append(event)
+    """One trace from :func:`program` and :func:`grading_program` over the same container.
+
+    The two programs print disjoint sets of events, so every event of each is kept; nothing is matched
+    by time, since each program's clock reading of one syscall differs.
+    """
+    events = [event for trace in traces for event in trace.events]
     parents: dict[int, int] = {}
     namespace_pids: dict[int, int] = {}
     for trace in traces:

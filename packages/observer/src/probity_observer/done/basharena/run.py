@@ -39,9 +39,9 @@ def _driver(config: Config, work: Path) -> subprocess.Popen:
 
 
 def _start_observer(cmd: Commands, config: Config, container: episode.Container, work: Path,
-                    stem: str = "trace", reads: bool = False) -> str:
+                    stem: str = "trace", grading: bool = False) -> str:
     program = work / f"{stem}.bt"
-    program.write_text(observer.program(container.cgroup, reads=reads))
+    program.write_text((observer.grading_program if grading else observer.program)(container.cgroup))
     log = work / f"{stem}.log"
     name = f"obs-{work.name}-{stem}-{int(time.time())}"
     env = [a for k, v in observer.ENV.items() for a in ("-e", f"{k}={v}")]
@@ -96,10 +96,10 @@ def _host_end(cmd: Commands, config: Config, container: episode.Container, work:
 
 def _readings(cmd: Commands, config: Config, container: episode.Container, runtime: bytes, spec: task.Spec,
               work: Path) -> None:
-    """The two live readings, with a second program recording every open for the grading window."""
+    """The two live readings, with a second program recording the window's read opens."""
     out = work / "readings"
     out.mkdir(exist_ok=True)
-    grading = _start_observer(cmd, config, container, work, stem="trace-grading", reads=True)
+    grading = _start_observer(cmd, config, container, work, stem="trace-grading", grading=True)
     try:
         write_json(out / "L_s.json", episode.reading_sealed(cmd, container.id, runtime, spec.tests))
         write_json(out / "L_std.json", episode.reading_standard(cmd, container.id, spec.tests, work))
