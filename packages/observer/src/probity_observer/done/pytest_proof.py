@@ -169,6 +169,9 @@ def bindings(tree: ast.Module) -> dict[str, list[ast.AST]]:
             bind(node.name, node)
         elif isinstance(node, ast.MatchMapping) and node.rest:
             bind(node.rest, node)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            # ``except E as name`` binds the name, and unbinds it when the handler ends.
+            bind(node.name, node)
     for node in ast.walk(tree):
         if isinstance(node, (ast.Global, ast.Nonlocal)):
             for name in node.names:
