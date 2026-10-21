@@ -109,6 +109,8 @@ def test_a_shape_the_candidate_could_decide_is_not_proven(body, reason):
     ("try:\n    from pkg.shapes import area\nexcept ImportError:\n    area = None\n\n\n",
      "bound 2"),
     ("def test_it(:\n", "does not parse"),
+    ("from pkg.shapes import area\ntry:\n    pass\nexcept Exception as area:\n    pass\n\n\n",
+     "bound 2"),
 ])
 def test_a_module_whose_bindings_are_not_plain_imports_proves_nothing(header, reason):
     proof = prove("def test_it():\n    assert area(1, 1) == 1\n", header=header)
