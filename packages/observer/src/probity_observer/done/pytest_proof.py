@@ -437,6 +437,32 @@ def degenerate(proofs: Sequence[Proof]) -> set[str]:
     return {callee for callee, values in seen.items() if values != {True, False}}
 
 
+def boolean_groups(sources: "Sources", ids: Sequence[str]) -> list[list[str]]:
+    """``ids`` in the groups that must be judged together, each in the order of ``ids``: ids
+    whose tests assert a boolean at one place of one function share a group, since each of
+    them alone is degenerate where together they assert it both ways (:func:`proven`)."""
+    keys: dict[str, set[str]] = {}
+    for test_id in ids:
+        found = sources.proof(test_id)
+        keys[test_id] = set() if isinstance(found, str) else set(found.booleans())
+    groups: list[list[str]] = []
+    seen: set[str] = set()
+    for test_id in ids:
+        if test_id in seen:
+            continue
+        group, frontier = [], [test_id]
+        seen.add(test_id)
+        while frontier:
+            current = frontier.pop()
+            group.append(current)
+            for other in ids:
+                if other not in seen and keys[other] & keys[current]:
+                    seen.add(other)
+                    frontier.append(other)
+        groups.append(sorted(group, key=list(ids).index))
+    return groups
+
+
 class Sources:
     """Proofs of sealed test files under ``roots`` (the first root that holds a file wins)."""
 

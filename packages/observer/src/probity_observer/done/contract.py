@@ -42,7 +42,7 @@ from . import mutants, pytest_plugins, pytest_proof, strengthen
 from .formats import (CONTRACT_PREDICATE, DoneError, encode, sha256, sign_record,
                       statement)
 from .runner import (PYTEST_IDS_FROM, PYTEST_ROOT, Command, Runner, image_executable,
-                     pytest_replay_argv)
+                     pytest_replay_argv, pytest_replay_fields)
 
 SCHEMA = "probity-done-contract/v1"
 EXCLUDE = ("__pycache__", ".pytest_cache")
@@ -766,24 +766,39 @@ def collect(task: Task, runner: Runner, command: Command, timeout: float,
     return replace(command, argv=prefix + tuple(kept))
 
 
+def _id_groups(task: Task, command: Command, ids: Sequence[str]) -> list[list[str]]:
+    """The ids of a grouped command that are judged together: one each, except that a pytest
+    replay judges as one the ids that assert a boolean of one function both ways, each of
+    which alone is degenerate (:func:`.pytest_proof.boolean_groups`)."""
+    fields = pytest_replay_fields(command.argv)
+    if fields is None or task.heldout is None:
+        return [[test_id] for test_id in ids]
+    roots = [task.heldout / PYTEST_ROOT]
+    if fields["overlay"] is not None:
+        roots.insert(0, task.heldout / posixpath.relpath(fields["overlay"], "../heldout"))
+    return pytest_proof.boolean_groups(pytest_proof.Sources(roots, fields["remote"]), ids)
+
+
 def _per_id(task: Task, runner: Runner, command: Command, runs: int, timeout: float,
             log: list[dict[str, Any]], dropped: list[dict[str, Any]]) -> Command | None:
-    """Keep the test ids of a grouped command that are each stable and as expected."""
+    """Keep the test ids of a grouped command that are each (or, for the ids a pytest replay
+    must judge together, as a group) stable and as expected."""
     if command.ids_from is None:
         raise DoneError(f"{command.id}: not a grouped command of test ids")
     prefix, ids = command.argv[:command.ids_from], command.argv[command.ids_from:]
-    kept = []
-    for test_id in ids:
-        single = Command(f"{command.id}:{test_id}", prefix + (test_id,), command.heldout,
-                         command.prepatch)  # a stability probe; never sealed
+    kept: list[str] = []
+    for group in _id_groups(task, command, ids):
+        single = Command(f"{command.id}:{'+'.join(group)}", prefix + tuple(group),
+                         command.heldout, command.prepatch)  # a stability probe; never sealed
         reason = _judge(task, runner, single, runs, timeout, log)
         if reason is None:
-            kept.append(test_id)
+            kept.extend(group)
         else:
-            dropped.append({"id": command.id, "test": test_id, "reason": reason})
+            dropped.extend({"id": command.id, "test": test_id, "reason": reason}
+                           for test_id in group)
     if not kept:
         return None
-    return replace(command, argv=prefix + tuple(kept))
+    return replace(command, argv=prefix + tuple(test_id for test_id in ids if test_id in kept))
 
 
 def stabilize(task: Task, runner: Runner, runs: int = 3, timeout: float = 900.0) -> Stability:
