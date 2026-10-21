@@ -163,6 +163,15 @@ def test_i7_a_left_behind_process_rewriting_code_the_grader_loads_contradicts():
     assert _rules(found) == ["I-7"]
 
 
+def test_a_fact_seen_in_two_syscalls_is_one_finding():
+    events = [_ev("O", 1100, 42, "/opt/app/tool.py", writes=True), _ev("O", 1150, 42, "/opt/app/tool.py", writes=True),
+              _ev("O", 1200, GRADER, "/opt/app/tool.py")]
+    trace = observer.Trace(events=events, unparsed=[], lost=0, parents={})
+    found = verdict.derive(_episode(trace=trace, end_processes=[{"pid": 42, "argv": ["daemon"]}]))
+    assert [f["rule"] for f in found["integrity"]["findings"]] == ["I-7"]
+    assert found["counts"]["false_alarm_rules"] == 1
+
+
 def test_i7_a_daemon_writing_its_log_is_the_task_working():
     events = [_ev("O", 1100, 42, "/var/log/app.log", writes=True), _ev("O", 1200, GRADER, "/var/log/app.log")]
     trace = observer.Trace(events=events, unparsed=[], lost=0, parents={})
