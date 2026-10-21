@@ -582,6 +582,35 @@ def test_a_call_that_answers_with_a_function_or_a_module_is_a_candidate_failure(
         assert session.phase.calls == 0 and not session.outside
 
 
+def test_a_submodule_the_package_does_not_import_is_imported_by_name(tmp_path):
+    # The package's __init__ is empty; ``from pkg import shapes`` first reads the attribute,
+    # and only its absence makes the import system import ``pkg.shapes``.
+    test = (f"from {PACKAGE} import shapes\n\n\n"
+            "def test_area():\n    assert shapes.area(2, 3) == 6\n")
+    ids = [f"{TESTS}/test_shapes.py::test_area"]
+    code, report = run(tmp_path, HONEST, test, ids)
+    assert code == 0 and report["passed"] and not report["outside"], report
+
+
+def test_an_absent_attribute_is_raised_with_the_parents_own_arguments():
+    class Child:
+        def ask(self, request):
+            return {"raised": ["builtins", "AttributeError"],
+                    "args": ["tuple", [["str", "/etc/passwd"]]], "nonce": request["nonce"]}
+    session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
+    read = {"op": "attr", "module": PACKAGE, "name": "shapes"}
+    reply = session.ask(read)
+    assert not session.outside
+    with pytest.raises(AttributeError) as raised:
+        pytest_replay.value(session, reply, PACKAGE, "shapes")
+    assert raised.value.args == ("shapes",)
+    # Any other raise at an attribute read is still candidate data outside a comparison.
+    session = pytest_replay.Session(type("C", (), {"ask": lambda self, request: {
+        "raised": ["builtins", "KeyError"], "args": None, "nonce": request["nonce"]}})(),
+        frozenset([PACKAGE]))
+    assert session.ask(read) == {"error": pytest_replay.OUTSIDE} and session.outside
+
+
 def test_the_finder_serves_remote_modules_to_sealed_code_only(tmp_path):
     session = pytest_replay.Session(None, frozenset([PACKAGE]))
     finder = pytest_replay.RemoteFinder(session, str(tmp_path))
