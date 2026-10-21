@@ -322,6 +322,15 @@ def parent_env() -> dict[str, str]:
     return env
 
 
+def replay_parent() -> dict:
+    """Where and how the replay parent runs, for the isolation record: on the verifier host,
+    in the verifier's own interpreter and user, with :func:`parent_env` (named, not its
+    values). The container flags of the record describe the worker and the candidate's
+    children, never this process."""
+    return {"runtime": "host", "uid": os.getuid(), "env": "scrubbed",
+            "env_keys": sorted(parent_env())}
+
+
 def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: float,
                 results: list[dict] | None, stopped: list[bool] | None) -> int:
     mode = request["mode"]

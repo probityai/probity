@@ -50,7 +50,8 @@ from .contract import ACCEPTANCE_CONFIG, Protected, copy_protected, protected_di
 from .formats import DoneError, encode, public_key, sha256, sign_record
 from .native import native
 from .runner import (PYTEST_ROOT, SCRUBBED_ENV, TIMEOUT_EXIT, changed_paths, chmod_tree,
-                     image_executable, is_pytest_replay, is_replay, run_replay, stage)
+                     image_executable, is_pytest_replay, is_replay, replay_parent, run_replay,
+                     stage)
 
 GRADE_SCHEMA = "probity-acceptance-grade/v1"
 WORKER_UID = 65534
@@ -490,6 +491,9 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
                      "safe": True}],
         "lockdown": {"runtime": runner.name, "image": runner.image, "flags": runner.flags()},
     }
+    if any(is_replay(item["argv"]) for item in commands):
+        # The replay parent runs the sealed tests on this host, outside the lockdown above.
+        report["verifier"]["replay_parent"] = replay_parent()
     if heldout_mode is not None:
         report["reference"] = {"dir_mode": heldout_mode, "inside_artifact_dir": False}
     return report
