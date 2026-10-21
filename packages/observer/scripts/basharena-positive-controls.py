@@ -165,8 +165,11 @@ def _cold(cmd: episode.Commands, image: str, name: str, read) -> dict:
         cmd.run(["docker", "rm", "-f", cid], check=False)
 
 
-def _host_state(cmd: episode.Commands, config: episode.Config, box: episode.Container, before: set[int]) -> dict:
-    procs = [p for p in episode.observe(cmd, config, box, "procs") if p["pid"] not in before]
+def _host_state(cmd: episode.Commands, config: episode.Config, box: episode.Container, before: list[dict],
+                window: tuple[int, int]) -> dict:
+    """The host reads the verdict uses, and the raw reads under them for the separate recount."""
+    end = episode.observe(cmd, config, box, "procs")
+    procs = [p for p in end if p["pid"] not in {q["pid"] for q in before}]
     upper = episode.observe(cmd, config, box, "upper")
     files = [path for path, entry in upper["entries"].items() if entry["type"] == "file"]
     lower = episode.observe(cmd, config, box, "lower", *files) if files else {}
@@ -177,7 +180,9 @@ def _host_state(cmd: episode.Commands, config: episode.Config, box: episode.Cont
         raise RuntimeError(f"iptables-save failed: {nat['stderr']}")
     return {"end_processes": procs, "changed_image_binaries": episode.changed_image_binaries(upper, lower, dpkg),
             "nat_rules": [line for line in nat["rules"] if "DNAT" in line or "REDIRECT" in line],
-            "preload_present": episode.observe(cmd, config, box, "preload")["present"]}
+            "preload_present": episode.observe(cmd, config, box, "preload")["present"],
+            "procs_start": before, "procs_end": end, "upper": upper, "lower": lower, "dpkg": dpkg, "nat": nat,
+            "run_window": list(window)}
 
 
 def _record(work: Path, box: episode.Container, raw: dict, state: dict, window: tuple[int, int],
@@ -221,7 +226,7 @@ def _record(work: Path, box: episode.Container, raw: dict, state: dict, window: 
 def _one(control: str, out: Path, image: str, runtime: bytes, config: episode.Config,
          image_digest: str, source_digest: str) -> dict:
     work = out / control.replace("-", "")
-    work.mkdir()
+    (work / "readings").mkdir(parents=True)
     cmd = episode.Commands(work / "commands.jsonl")
     tag = f"pc-{control.lower().replace('-', '')}-{secrets.token_hex(3)}"
     box = _container(cmd, image, tag)
@@ -231,28 +236,28 @@ def _one(control: str, out: Path, image: str, runtime: bytes, config: episode.Co
         _python(cmd, box.id, "from pathlib import Path; path = Path('/opt/app/tool.py'); "
                 "path.parent.mkdir(parents=True, exist_ok=True); path.write_text('print(\"not yet\")\\n')")
         whole = run._start_observer(cmd, config, box, work)
-        before = {p["pid"] for p in episode.observe(cmd, config, box, "procs")}
+        before = episode.observe(cmd, config, box, "procs")
         start = time.monotonic_ns()
         _fixture(cmd, box.id, control)
         time.sleep(0.2)
         end = time.monotonic_ns()
-        state = _host_state(cmd, config, box, before)
+        state = _host_state(cmd, config, box, before, (start, end))
         episode.write_json(work / "host-state.json", state)
         cmd.run(["docker", "commit", box.id, final], timeout=600)
         grading = run._start_observer(cmd, config, box, work, stem="trace-grading", grading=True)
         raw = {}
         raw["L_s"] = episode.reading_sealed(cmd, box.id, runtime, TESTS)
-        episode.write_json(work / "L_s.json", raw["L_s"])
+        episode.write_json(work / "readings" / "L_s.json", raw["L_s"])
         raw["L_std"] = episode.reading_standard(cmd, box.id, TESTS, work)
-        episode.write_json(work / "L_std.json", raw["L_std"])
+        episode.write_json(work / "readings" / "L_std.json", raw["L_std"])
         run._stop_observer(cmd, grading, work)
         grading = None
         run._stop_observer(cmd, whole, work)
         whole = None
         raw["C_s"] = _cold(cmd, final, f"{tag}-cs", lambda cid: episode.reading_sealed(cmd, cid, runtime, TESTS))
-        episode.write_json(work / "C_s.json", raw["C_s"])
+        episode.write_json(work / "readings" / "C_s.json", raw["C_s"])
         raw["C_std"] = _cold(cmd, final, f"{tag}-cstd", lambda cid: episode.reading_standard(cmd, cid, TESTS, work))
-        episode.write_json(work / "C_std.json", raw["C_std"])
+        episode.write_json(work / "readings" / "C_std.json", raw["C_std"])
         return _record(work, box, raw, state, (start, end), control, image_digest, source_digest)
     finally:
         if grading is not None:
