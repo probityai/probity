@@ -165,13 +165,23 @@ def exchange(child: Child, request: dict[str, Any]) -> dict[str, Any]:
     return {key: item for key, item in reply.items() if key != "nonce"}
 
 
+# The reply to an attribute read that the candidate's module does not have.
+ABSENT = ["builtins", "AttributeError"]
+
+
 def handle(request: dict[str, Any], reply: dict[str, Any]) -> bool:
     """Whether a reply carries nothing the candidate chose but a handle: an import that
-    succeeded, or an attribute that is a function or a module of the candidate."""
+    succeeded, or an attribute that is a function or a module of the candidate, or that the
+    module does not have (its ``AttributeError``, whose arguments are never read).
+
+    The absent attribute is what ``from pkg import submodule`` asks first: the import system
+    imports ``pkg.submodule`` only when ``hasattr`` says the package lacks it, and ``hasattr``
+    catches only ``AttributeError``."""
     if request["op"] == "import":
         return reply == {"ok": ["none"]}
     return (request["op"] == "attr" and "ok" not in reply
-            and (reply.get("callable") is True or isinstance(reply.get("module"), str)))
+            and (reply.get("callable") is True or isinstance(reply.get("module"), str)
+                 or reply.get("raised") == ABSENT))
 
 
 class Session:
@@ -261,6 +271,9 @@ def value(session: Session, reply: dict[str, Any], module: str, name: str,
                 or found.split(".", 1)[0] not in session.remote):
             raise CandidateFailed(f"module outside the candidate: {found}")
         return importlib.import_module(found)
+    if reply.get("raised") == ABSENT:
+        # Built here: the candidate's own arguments for it never reach the sealed code.
+        raise AttributeError(name)
     raise_for(reply)
 
 
