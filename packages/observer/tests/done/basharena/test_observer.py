@@ -33,11 +33,17 @@ def test_the_grading_program_prints_only_opens():
     assert probe.startswith("fentry:security_file_open /cgroup == 4242 && ")
 
 
+def test_every_superblock_read_names_its_type_so_an_open_only_program_attaches():
+    for text in (observer.program(1), observer.grading_program(1)):
+        assert "d_sb->s_magic" not in text and text.count("((struct super_block *)") == 2
+
+
 def _open_filter(text: str):
     """The open probe's bpftrace filter as a Python predicate over (cgroup, f_mode, s_magic)."""
     (line,) = [line for line in text.splitlines() if line.startswith("fentry:security_file_open")]
     expression = line.split("/", 1)[1].rsplit("/", 1)[0]
-    for bpf, python in (("args.file->f_path.dentry->d_sb->s_magic", "magic"), ("args.file->f_mode", "mode"),
+    for bpf, python in (("((struct super_block *)args.file->f_path.dentry->d_sb)->s_magic", "magic"),
+                        ("args.file->f_mode", "mode"),
                         ("&&", " and "), ("||", " or "), ("!(", " not (")):
         expression = expression.replace(bpf, python)
     return lambda cgroup, mode, magic: eval(expression, {}, {"cgroup": cgroup, "mode": mode, "magic": magic})  # noqa: S307

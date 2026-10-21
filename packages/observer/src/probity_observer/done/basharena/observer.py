@@ -63,15 +63,19 @@ def _namespace_pid(task: str) -> str:
   if ($level == 3) {{ $ns_pid = {task}->thread_pid->numbers[3].nr; }}"""
 
 
+# The superblock is cast to its named type: bpftrace 0.20.2 on kernel 6.8, given the open probe alone (the
+# grading program), refuses ``d_sb->s_magic`` as a field ``struct super_block`` lacks, because nothing else
+# in that program makes it import the full type from BTF. The cast does.
+_MAGIC = "((struct super_block *){dentry}->d_sb)->s_magic"
 _WRITE_OR_PROC = (f"((args.file->f_mode & {FMODE_WRITE}) || "
-                  f"args.file->f_path.dentry->d_sb->s_magic == {PROC_SUPER_MAGIC})")
+                  f"{_MAGIC.format(dentry='args.file->f_path.dentry')} == {PROC_SUPER_MAGIC})")
 
 
 def _open_probe(open_filt: str) -> str:
     return f"""
 fentry:security_file_open {open_filt} {{
   $t = nsecs; $d = args.file->f_path.dentry;
-  printf("O\\t%llu\\t%d\\t%s\\t%u\\t%lu\\n", $t, pid, comm, args.file->f_mode, $d->d_sb->s_magic);{_walk("$d", "p")}
+  printf("O\\t%llu\\t%d\\t%s\\t%u\\t%lu\\n", $t, pid, comm, args.file->f_mode, {_MAGIC.format(dentry="$d")});{_walk("$d", "p")}
 }}"""
 
 
