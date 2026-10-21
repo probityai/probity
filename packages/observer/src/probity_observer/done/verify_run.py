@@ -23,7 +23,9 @@ One grading run, in order:
    ``agent-evidence-admission`` rule set reads. Every fact is measured or follows from the
    argv above; where the grading run is weaker than an obligation asks (agent code is imported
    into the process that asserts, the result is an exit status the worker sets) the block says
-   so, and the rule set refuses it.
+   so, and the rule set refuses it. Sealed pytest ids that a pytest replay
+   (:mod:`.pytest_replay`) also runs are counted by the verifier's own process; the worker's
+   run of them can then only add a failure (``docs/SEALED-PYTEST-REPLAY.md``).
 """
 
 from __future__ import annotations
@@ -47,8 +49,8 @@ from . import mutants, pytest_plugins, visible_detect
 from .contract import ACCEPTANCE_CONFIG, Protected, copy_protected, protected_digest
 from .formats import DoneError, encode, public_key, sha256, sign_record
 from .native import native
-from .runner import (SCRUBBED_ENV, TIMEOUT_EXIT, changed_paths, chmod_tree, image_executable,
-                     is_replay, run_replay, stage)
+from .runner import (PYTEST_ROOT, SCRUBBED_ENV, TIMEOUT_EXIT, changed_paths, chmod_tree,
+                     image_executable, is_pytest_replay, is_replay, run_replay, stage)
 
 GRADE_SCHEMA = "probity-acceptance-grade/v1"
 WORKER_UID = 65534
@@ -281,8 +283,11 @@ def _agent_file(root: Path, name: str) -> str | None:
 def _visible_part(heldout: Path, destination: Path) -> Path:
     """The part of the sealed directory a visible command may read."""
     destination.mkdir()
-    if (heldout / "config").is_dir():
-        shutil.copytree(heldout / "config", destination / "config")
+    # The sealed configuration, and the sealed test root a pytest replay starts from: copies
+    # of the start tree's protected paths, which the agent was shown.
+    for name in ("config", PYTEST_ROOT):
+        if (heldout / name).is_dir():
+            shutil.copytree(heldout / name, destination / name, symlinks=True)
     # The visible test, and its literal cases for the visible probes: both are what the agent
     # was shown, so neither carries a held-out answer.
     for name in (heldout_cases.VISIBLE_NAME, heldout_cases.VISIBLE_CASES_NAME):
@@ -433,13 +438,30 @@ def test_counts(commands: list[dict[str, Any]], results: list[dict[str, Any]],
     return {"expected": expected, "collected": collected, "skipped": skipped}
 
 
+def worker_counted(commands: list[dict[str, Any]]) -> list[str]:
+    """The commands with sealed ids that only the worker counts: no pytest replay of the same
+    kind (visible or held-out) runs every one of their ids."""
+    replayed = {(item["id"].startswith("heldout"), test_id) for item in commands
+                if is_pytest_replay(item["argv"]) for test_id in item.get("ids", [])}
+    return [item["id"] for item in commands if item.get("ids") and not is_replay(item["argv"])
+            and not all((item["id"].startswith("heldout"), test_id) in replayed
+                        for test_id in item["ids"])]
+
+
+def _beside(item: dict[str, Any], alone: list[str]) -> bool:
+    """A command whose exit status can only add a failure beside the replays that decide: a
+    run the agent makes itself (sealed with ``cwd`` and ``exe``), graded as the agent runs it,
+    and a sealed pytest command every id of which a pytest replay also runs and counts."""
+    return "exe" in item or (bool(item.get("ids")) and not is_replay(item["argv"])
+                             and item["id"] not in alone)
+
+
 def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRunner,
                commands: list[dict[str, Any]], steps: tuple[int, int], result_dir: Path,
                heldout_mode: str | None, counts: dict[str, int]) -> dict[str, Any]:
     """The verifier's account of itself, in the fields ``docs/VERIFIER-ISOLATION.md`` names."""
-    # A run the agent makes itself (sealed with ``cwd`` and ``exe``) is graded as the agent
-    # runs it, so its exit status can only add a failure beside the replays that decide.
-    graded = [item for item in commands if "exe" not in item]
+    alone = worker_counted(commands)
+    graded = [item for item in commands if not _beside(item, alone)]
     agent_runs = len(graded) != len(commands)
     python_isolated = all(item["argv"][0] != "python" or bool({"-I", "-P"} & set(item["argv"]))
                           for item in graded)
@@ -547,6 +569,7 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
         reports: dict[str, Any] = {}
         for item in contract["acceptance"]:
             stopped: list[bool] = []
+            before = len(runner.replays)
             if any(pytest_plugins.BOOT in arg for arg in item["argv"]):
                 exit_code, reports[item["id"]] = _plugin_run(runner, staged.root, item,
                                                              dirs[item["id"]], timeout, stopped)
@@ -558,7 +581,14 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
             # wrong one (probity-verify reads it only on a failed held-out probe).
             if stopped and exit_code != 0:
                 result["timed_out"] = True
-            if "ids" in item:
+            if "ids" in item and is_pytest_replay(item["argv"]):
+                # The verifier's own count: the replay parent ran the sealed tests and counted
+                # their outcomes; no replay report means nothing was shown collected or passed.
+                made = runner.replays[before:]
+                items = made[-1].get("items", {}) if made else {}
+                result["collected"] = pytest_plugins.collected(list(items), item["ids"])
+                result["passed"] = pytest_plugins.passed(items, item["ids"])
+            elif "ids" in item:
                 # No verified report means nothing was shown collected or passed.
                 items = (reports.get(item["id"]) or {}).get("items", {})
                 result["collected"] = pytest_plugins.collected(list(items), item["ids"])
@@ -581,7 +611,8 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
                                test_counts(contract["acceptance"], results, replays))
         if reports:
             isolation["evidence_from_worker"].append("pytest_worker_report")
-        staging = {"rejected": staged.rejected, "removed_caches": staged.removed_caches,
+        staging = {"worker_counted": worker_counted(contract["acceptance"]),
+                   "rejected": staged.rejected, "removed_caches": staged.removed_caches,
                    "removed_config": staged.removed_config,
                    "rejected_native": staged.rejected_native, "replays": replays,
                    "post_patch": hunks, "hunks_exercised": hunks_exercised(hunks),

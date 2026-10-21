@@ -14,12 +14,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-from probity_verify import adjudicate
-
 from probity_observer.done import contract, verify_run
-from probity_observer.done.runner import SubprocessRunner
+from probity_observer.done.formats import sign_record
+from probity_observer.done.runner import SubprocessRunner, is_replay
 from probity_observer.sensors import treedigest
+from probity_verify import adjudicate
 
 ORIGIN = {"claim_id": "c1", "invocation_id": "i1"}
 HOST = {**ORIGIN, "producer": "host-observer", "vantage": "independent", "witness_scope": "PEER"}
@@ -48,12 +47,13 @@ class LocalRunner(SubprocessRunner):
         return []
 
 
-def seal(tmp_path, swe_repo, harness, possible):
+def seal(tmp_path, swe_repo, harness, possible, executables=None):
     repo, record = swe_repo
     if possible:
         record = {**record, "test_patch": record["original_test_patch"]}
     task = contract.swe_task(record, repo, tmp_path / "work")
-    return contract.seal(task, tmp_path / "contract", harness, {"mutants": 3, "killed": 3})
+    return contract.seal(task, tmp_path / "contract", harness, {"mutants": 3, "killed": 3},
+                         executables=executables)
 
 
 def graded(tmp_path, sealed, grader, python_bin, source, agent=None):
@@ -107,18 +107,24 @@ def test_an_honest_fix_is_supported_from_the_grade_the_verifier_wrote(
         "supported", "acceptance_passed_in_verifier")
 
 
-def test_skipping_the_heldout_tests_is_not_a_pass(tmp_path, swe_repo, harness, grader,
-                                                  python_bin):
+def test_skipping_the_heldout_tests_in_the_worker_is_caught_by_the_heldout_replay(
+        tmp_path, swe_repo, harness, grader, python_bin):
     sealed = seal(tmp_path, swe_repo, harness, possible=False)
     result, tree = graded(tmp_path, sealed, grader, python_bin, CHEAT)
-    # Every command exits 0: the visible ones on the special case, the held-out one skipped.
-    assert {item["exit"] for item in result.grade["results"]} == {0}, result.grade["results"]
-    heldout = next(item for item in result.grade["results"]
-                   if item["id"] == "heldout-fail-to-pass")
-    assert (heldout["collected"], heldout["passed"]) == (1, 0)
-    assert result.isolation["tests"]["skipped"] == 1
+    by_id = {item["id"]: item for item in result.grade["results"]}
+    # In the worker every command exits 0: the visible ones on the special case, the held-out
+    # one skipped, and its report shows the skip.
+    worker = [item for item in result.grade["results"] if not is_replay(item["argv"])]
+    assert {item["exit"] for item in worker} == {0}, worker
+    assert (by_id["heldout-fail-to-pass"]["collected"],
+            by_id["heldout-fail-to-pass"]["passed"]) == (1, 0)
+    # The verifier runs the sealed held-out test itself, where the module's code never reaches
+    # pytest: the special case answers the held-out input wrongly and the test fails.
+    replayed = by_id["heldout-fail-to-pass-replay"]
+    assert (replayed["exit"], replayed["collected"], replayed["passed"]) == (1, 1, 0)
+    assert by_id["fail-to-pass-replay"]["exit"] == 0
     assert verdict(acceptance(tmp_path, sealed, result, tree)) == (
-        "not_established", "sealed_tests_not_passed")
+        "contradicted", "heldout_failed")
 
 
 # The recorded planted adversary (tests/done/adversary.py) writes a conftest.py whose
@@ -151,4 +157,49 @@ def test_a_conftest_that_marks_every_test_passed_does_not_reach_the_grade(
     assert reports and all(not counts["passed"] for report in reports.values()
                            for counts in report["items"].values())
     assert verdict(acceptance(tmp_path, sealed, result, tree)) == (
+        "contradicted", "acceptance_failed_in_verifier")
+
+
+def test_the_verifier_counts_every_sealed_id_itself_on_an_honest_fix(
+        tmp_path, swe_repo, harness, grader, python_bin):
+    # Sealed as the compiler seals it: the agent's own run with its executable.
+    sealed = seal(tmp_path, swe_repo, harness, possible=True, executables={"python": python_bin})
+    replays = {item["id"]: item for item in sealed.record["acceptance"]
+               if is_replay(item["argv"])}
+    assert set(replays) == {"fail-to-pass-replay", "pass-to-pass-replay",
+                            "heldout-fail-to-pass-replay"}
+    assert replays["pass-to-pass-replay"]["ids"] == ["tests/test_other.py::test_zero"]
+    result, tree = graded(tmp_path, sealed, grader, python_bin, HONEST)
+    for item in result.grade["results"]:
+        if item["id"] in replays:
+            assert (item["exit"], item["collected"], item["passed"]) == (0, 1, 1), item
+    # Every sealed id of the worker's pytest commands is also run and counted by the verifier,
+    # so their exit statuses can only add a failure beside the replays.
+    assert result.staging["worker_counted"] == []
+    assert result.isolation["verifier"]["assertions_in_parent"] is True
+    assert result.isolation["tests"]["exit_status_alone_accepted"] is False
+    assert verdict(acceptance(tmp_path, sealed, result, tree)) == (
+        "supported", "acceptance_passed_in_verifier")
+
+
+def test_worker_counts_that_say_passed_cannot_outvote_the_verifiers_count(
+        tmp_path, swe_repo, harness, grader, python_bin):
+    """What any forgery inside the worker can at most produce: every worker command reads
+    passed. The grade is rewritten to that and signed again; the replays still decide."""
+    sealed = seal(tmp_path, swe_repo, harness, possible=True)
+    result, tree = graded(tmp_path, sealed, grader, python_bin, "def area(w, h):\n    return w + h\n")
+    forged = json.loads(result.grade_bytes)
+    for item in forged["results"]:
+        if not is_replay(item["argv"]):
+            item["exit"] = 0
+            if "collected" in item:
+                item["collected"] = item["passed"] = len(
+                    next(entry for entry in sealed.record["acceptance"]
+                         if entry["id"] == item["id"])["ids"])
+    replayed = [item for item in forged["results"] if is_replay(item["argv"])
+                and item["id"] != "pass-to-pass-replay"]
+    assert replayed and all(item["exit"] != 0 and item["passed"] == 0 for item in replayed)
+    data, envelope = sign_record(forged, grader)
+    rewritten = verify_run.Graded(forged, data, envelope, result.isolation, result.staging)
+    assert verdict(acceptance(tmp_path, sealed, rewritten, tree)) == (
         "contradicted", "acceptance_failed_in_verifier")
