@@ -3,7 +3,7 @@
 `agent-evidence-read-atomic` checks a retained run of Atomic's native Rust delegation tests. It is an installed, offline consumer: it launches neither Atomic nor an agent framework. The wheel contains the reader; a separate Observer source checkout is unnecessary. Python 3.12 and the root package's normal dependencies are required. Install from a reviewed immutable revision or retained wheel:
 
 ```sh
-python -m pip install 'agent-evidence-observer @ git+https://github.com/probityai/agent-evidence-observer.git@REVIEWED_COMMIT'
+python -m pip install 'agent-evidence-observer @ git+https://github.com/probityai/probity.git@REVIEWED_COMMIT#subdirectory=packages/observer'
 agent-evidence-read-atomic describe --packet /retained/atomic-run > /policy/candidate-selection.json
 # Review this candidate through the consumer's accepted selection process.
 # After selection, pin the file's SHA-256 separately in consumer policy/CI.

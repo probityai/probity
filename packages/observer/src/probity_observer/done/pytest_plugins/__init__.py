@@ -213,8 +213,12 @@ def reads(printed: Sequence[str]) -> list[str] | None:
 
 
 def report(printed: Sequence[str], key: bytes) -> dict[str, Any] | None:
-    """The last worker report line whose HMAC verifies under ``key``, or ``None``."""
-    found = None
+    """The one worker report line whose HMAC verifies under ``key``, or ``None``.
+
+    The plugin prints exactly one report per run. A second verified line means code in the
+    worker held the key and wrote a report of its own (appending a forged all-passed report
+    after the real one is the cheapest forgery), so neither is read."""
+    found = []
     for text in printed:
         for line in text.splitlines():
             if not line.startswith(MARKER + " "):
@@ -222,16 +226,31 @@ def report(printed: Sequence[str], key: bytes) -> dict[str, Any] | None:
             _, mac, data = line.split(" ", 2)
             expected = hmac.new(key, data.encode(), hashlib.sha256).hexdigest()
             if hmac.compare_digest(mac, expected):
-                found = json.loads(data)
-    return found
+                found.append(json.loads(data))
+    return found[0] if len(found) == 1 else None
 
 
 def collected(item_ids: Sequence[str], sealed_ids: Sequence[str]) -> int:
     """How many sealed ids the run collected: an id, a parametrised ``id[...]`` of it, or,
     for an id that names a test file or class, a test inside it (``id::...``)."""
-    return sum(1 for test_id in sealed_ids
-               if any(name == test_id or name.startswith((test_id + "[", test_id + "::"))
-                      for name in item_ids))
+    return sum(1 for test_id in sealed_ids if any(_matches(name, test_id) for name in item_ids))
+
+
+def _matches(name: str, test_id: str) -> bool:
+    return name == test_id or name.startswith((test_id + "[", test_id + "::"))
+
+
+def passed(items: dict[str, dict[str, int]], sealed_ids: Sequence[str]) -> int:
+    """How many sealed ids passed: at least one matching item ran, and every matching item
+    passed on every run with none failed or skipped. pytest exits 0 when a test skips, so the
+    exit status alone cannot say this."""
+    count = 0
+    for test_id in sealed_ids:
+        found = [counts for name, counts in items.items() if _matches(name, test_id)]
+        if found and all(entry.get("passed", 0) > 0 and not entry.get("failed", 0)
+                         and not entry.get("skipped", 0) for entry in found):
+            count += 1
+    return count
 
 
 def outcomes(printed: Sequence[str]) -> dict[str, dict[str, Any]]:

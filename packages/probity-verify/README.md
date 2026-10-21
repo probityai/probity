@@ -71,7 +71,7 @@ Version 0.1.1 is on PyPI and ships the sample inputs used above; 0.1.0 contains 
 | [Observation vantage](https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/observation-vantage.md) | select the producer and observation scope, replay bounded absence, and operate a witness with separate keys and retained heads |
 | [Adapter plan](https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/architecture.md) | the architecture and the adapters planned next |
 | [A2A server and client](https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/a2a.md) | send raw case bytes to an operator-configured verifier, or read a pinned Lab record |
-| [Source coverage vectors](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-source-coverage/README.md) and [operand-lineage vectors](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-operand-lineage/README.md) | conformance cases with pinned bytes and expected decisions |
+| [Source coverage](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-source-coverage/README.md), [operand-lineage](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-operand-lineage/README.md) and [done-check vectors](https://github.com/probityai/probity/blob/main/packages/probity-verify/vectors-done-checks/README.md) | conformance cases with pinned bytes and expected decisions |
 
 ## License
 

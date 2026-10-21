@@ -80,7 +80,7 @@ def test_units_prelude_holds_helpers_and_inputs_and_units_hold_result_asserts():
     prelude, us = S.units(t)
     assert "def ok" in prelude and "nums1" in prelude
     assert len(us) == 2 and us[0].call_srcs == ["(nums1,)"] and "assert ok(result)" in us[1].src
-    calls = visible_detect.call_values(t)
+    calls = visible_detect.visible_facts(t)[0]
     assert calls == [[([1, 2],)], [([5],)]]
 
 

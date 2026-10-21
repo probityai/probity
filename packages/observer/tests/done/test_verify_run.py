@@ -130,9 +130,20 @@ def test_the_grade_names_who_made_the_visible_test_unsatisfiable(tmp_path, harne
     block = graded.grade["visible_detectors"]
     assert block["status"] == "ok"
     assert [(item["reason"], item["refuses"], item.get("attribution")) for item in block["findings"]] == [
-        ("visible_test_unsatisfiable", False, "test_author")]
-    assert block["findings"][0]["evidence"][0]["call"] == "(1, 1)"
-    assert graded.staging["visible_detectors"]["repeat"]["runs"][0]["passed"]
+        ("invalid_task_spec", False, "task"), ("visible_test_unsatisfiable", False, "test_author")]
+    assert block["findings"][0]["evidence"][0]["call"] == repr(((1, 1), ()))
+    assert block["findings"][1]["evidence"][0]["call"] == "(1, 1)"
+    # The repeat source is the issued visible test verbatim, which no program passes here, so the
+    # repeat rule has no first pass to compare and stays silent.
+    assert not graded.staging["visible_detectors"]["repeat"]["runs"][0]["passed"]
+    # The honest program fails the unsatisfiable unit, so the isolate worker stops after its
+    # baseline and runs no probe (the frozen runner's early return), and D7 as a covariate, which
+    # reads only the baseline outputs and the probes, has nothing to read: control_unknown, as on
+    # the 24 development records of the study with the same shape.
+    isolate = graded.staging["visible_detectors"]["isolate"]
+    assert isolate["status"] == "ok" and isolate["probes"] == []
+    assert [unit["passed"] for unit in isolate["baseline"]] == [True, True, True, True, False]
+    assert graded.staging["visible_detectors"]["covariate"] == "control_unknown"
     from probity_verify.adapters import done_records
     assert done_records.grade(graded.grade_bytes)["visible_detectors"] == block
 

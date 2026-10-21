@@ -67,7 +67,7 @@ Inherited Git repository and configuration variables cannot select another
 checkout. It refuses added source whitespace and an existing receipt. A failed post-application check leaves
 the attempted source for inspection and emits no success receipt; stop there.
 
-The [workflow](../../.github/workflows/adk-current-consumer.yml) installs
+The [workflow](../../../../.github/workflows/package-observer-adk-current-consumer.yml) installs
 hash-selected tox tooling and runs this check before adding the unchanged
 publication sample. It retains the source receipt, control output, selection,
 patch and license with the dependency lock and complete tox logs. The full

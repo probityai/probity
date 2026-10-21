@@ -16,7 +16,7 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-observer"
-version = "0.0.2"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "cryptography" },
@@ -49,10 +49,10 @@ requires-dist = [
     { name = "cryptography", specifier = ">=46,<51" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6,<7" },
     { name = "inspect-ai", marker = "extra == 'inspect'", specifier = "==0.3.273" },
-    { name = "jcs-admit", marker = "extra == 'done'", git = "https://github.com/probityai/jcs-admit?subdirectory=python&rev=b69943787266702da3c02741dcc3a37643c7dc3e" },
-    { name = "jcs-admit", marker = "extra == 'witness'", git = "https://github.com/probityai/jcs-admit?subdirectory=python&rev=b69943787266702da3c02741dcc3a37643c7dc3e" },
+    { name = "jcs-admit", marker = "extra == 'done'", specifier = "==0.1.0" },
+    { name = "jcs-admit", marker = "extra == 'witness'", specifier = "==0.1.0" },
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4,<5" },
-    { name = "probity-verify", marker = "extra == 'done'", git = "https://github.com/probityai/probity?subdirectory=packages%2Fprobity-verify&rev=cc49592d8b9991dabc63ca0f00ebfcd124000788" },
+    { name = "probity-verify", marker = "extra == 'done'", directory = "../probity-verify" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
     { name = "rfc8785", specifier = "==0.1.4" },
 ]
@@ -1158,7 +1158,17 @@ wheels = [
 [[package]]
 name = "jcs-admit"
 version = "0.1.0"
-source = { git = "https://github.com/probityai/jcs-admit?subdirectory=python&rev=b69943787266702da3c02741dcc3a37643c7dc3e#b69943787266702da3c02741dcc3a37643c7dc3e" }
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/c5/f8dace82f946b92008e25a08168e56d56a95aaac81cc7c2daa3e62a188ae/jcs_admit-0.1.0.tar.gz", hash = "sha256:dfe09e446a4a478334842eb7445bedfa61c512c1809e6f2a3be45409c878cae5", size = 60390, upload-time = "2026-10-20T02:24:35.553Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/fe/f9d7850e50545a9d9abbb9c080e9a347f9eab2578c3d8d8f7845ba2c09e4/jcs_admit-0.1.0-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f1e8c5705579078cc5ff64bdb031f6a981f43db5a24fe7812504e1463003765d", size = 530670, upload-time = "2026-10-20T02:24:23.659Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/ea/3eb071e62b12a8030afffbcb025ba8b627538447f5037ad6139c2badeb35/jcs_admit-0.1.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:82148364fe2a2aca3af1fbb33dce64e51c244959231c6c22a04d712212098aee", size = 495920, upload-time = "2026-10-20T02:24:25.344Z" },
+    { url = "https://files.pythonhosted.org/packages/56/c2/16fecd94781e31b7a9356f9f048da1cd93363fd66329379d2fc03ae62b6f/jcs_admit-0.1.0-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:c9342daeee4e623552ed24e7493066784e009a9d898a7beb0cdbf0ab0c83aba7", size = 549597, upload-time = "2026-10-20T02:24:26.881Z" },
+    { url = "https://files.pythonhosted.org/packages/93/74/8520b59f3badae16248f3ec0c8634cc88a71384ac9c7141bcff93c81c7bb/jcs_admit-0.1.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:5506b8265d8c23759ddb0c6673d8f832a070503bbabcec01680b1f97527541b0", size = 578922, upload-time = "2026-10-20T02:24:29.061Z" },
+    { url = "https://files.pythonhosted.org/packages/50/7a/c743597b9a0581b7f910d367903a494e7915269c15060ff3219acbcfd22e/jcs_admit-0.1.0-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:f850733f135414507610d1f7d703711958734cfa50f16fc236182f551ce24fdc", size = 726286, upload-time = "2026-10-20T02:24:30.807Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/a7/735b1fd0fb61d852a41a21a0699a48d8361bcedd4a84491b66e1a36a8a30/jcs_admit-0.1.0-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:7b8295d9b3fd8873be79189456bfc199339c609e7479fae54bacc54494f771ec", size = 783940, upload-time = "2026-10-20T02:24:32.396Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/b7/30563a659710fd703a30c98f06079cb2a543f99daf1e88c4d5bd7a416cb7/jcs_admit-0.1.0-cp310-abi3-win_amd64.whl", hash = "sha256:9675034f3c555cde9361392a85e89e2bfbfedcc08eab9259503926ec2c24e46b", size = 416937, upload-time = "2026-10-20T02:24:33.906Z" },
+]
 
 [[package]]
 name = "jmespath"
@@ -1696,12 +1706,24 @@ wheels = [
 [[package]]
 name = "probity-verify"
 version = "0.2.0"
-source = { git = "https://github.com/probityai/probity?subdirectory=packages%2Fprobity-verify&rev=cc49592d8b9991dabc63ca0f00ebfcd124000788#cc49592d8b9991dabc63ca0f00ebfcd124000788" }
+source = { directory = "../probity-verify" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
     { name = "cryptography" },
     { name = "pyyaml" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = "==1.2.2" },
+    { name = "agent-evidence-vocabulary", specifier = "==0.5.0" },
+    { name = "cryptography", specifier = ">=50.0.2,<51" },
+    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6,<7" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
+    { name = "pyyaml", specifier = ">=6.0.2,<7" },
+    { name = "uvicorn", marker = "extra == 'a2a'", specifier = "==0.54.0" },
+]
+provides-extras = ["test", "a2a"]
 
 [[package]]
 name = "propcache"

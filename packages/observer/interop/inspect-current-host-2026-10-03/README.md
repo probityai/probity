@@ -58,7 +58,7 @@ dependencies come from the selected upstream `uv.lock`, with the explicitly
 selected Observer crypto/runtime and build-tool overlay; its exact tagged source
 is then normally installed. Existing Observer source is separately checked out
 at `62f5d0c6fbd785259db2d5c8076dd844b53a0593` and normally installed. Both owned candidate and immutable reader checkout use the canonical public
-`probityai/agent-evidence-observer` origin, with exact commit and tree identities
+`probityai/probity` origin (`packages/observer`), with exact commit and tree identities
 retained independently of package names.
 
 Run the checked-in workflow to create fresh native evidence. For pure controls:

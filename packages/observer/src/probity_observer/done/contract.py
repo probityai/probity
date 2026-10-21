@@ -50,6 +50,41 @@ ACCEPTANCE_CONFIG = ("pytest.ini", "pyproject.toml", "tox.ini", "setup.cfg")
 _CONFIG_SECTION = {"pytest.ini": None, "pyproject.toml": "[tool.pytest.ini_options]",
                    "tox.ini": "[pytest]", "setup.cfg": "[tool:pytest]"}
 _DIFF_FILE = re.compile(r"^diff --git a/(\S+) b/(\S+)$", re.MULTILINE)
+# The agent's HOME in every launch backend (``launch/backend_*.py``).
+AGENT_HOME = "/tmp"
+# A command that runs the same test in one process with the candidate as a trusted replay
+# runs with the candidate isolated: by task source, the twin's id and the trusted one's.
+IN_PROCESS_TWINS = {"lcb": {"visible_run": "visible"}}
+# Never a whole surface entry: shared scratch roots, and the agent's HOME.
+SURFACE_FORBIDDEN = frozenset({"/", "/tmp", "/var/tmp", AGENT_HOME})
+LOADER_PATHS = ("/lib", "/lib32", "/lib64", "/libx32", "/usr/lib", "/usr/lib32", "/usr/lib64",
+                "/usr/local/lib", "/etc/ld.so.preload", "/etc/ld.so.conf", "/etc/ld.so.conf.d",
+                "/etc/ld.so.cache")
+# Run by the agent image's own Python with the agent's HOME and the image's PATH: each
+# candidate directory of the execution surface, then what it resolves to, one
+# ``<path>\t<resolution>`` line each. The candidates are every import directory of each
+# interpreter named as an argument (sys.path and the user site directory, under the agent's
+# environment), every PATH directory, the directories ``ldconfig`` reads and the loader's
+# fixed paths.
+_SURFACE_PROBE = r"""
+import os, subprocess, sys
+found = []
+for python in sys.argv[1:]:
+    done = subprocess.run([python, "-c", "import site, sys; print(chr(10).join(sys.path + "
+                           "[site.getusersitepackages()]))"], capture_output=True, text=True)
+    found += done.stdout.splitlines() if done.returncode == 0 else []
+found += os.environ.get("PATH", "").split(":")
+try:
+    done = subprocess.run(["ldconfig", "-v", "-N"], capture_output=True, text=True)
+    found += [line.split(":", 1)[0] for line in done.stdout.splitlines()
+              if line.startswith("/") and ":" in line]
+except OSError:
+    pass
+found += LOADER
+for name in found:
+    if name.startswith("/"):
+        print(name + "\t" + os.path.realpath(name))
+"""
 
 
 @dataclass(frozen=True)
@@ -299,7 +334,11 @@ def swe_task(record: dict[str, Any], repo: Path, work: Path,
         commands.append(Command("pass-to-pass", prefix + tuple(passing), prepatch="pass",
                                 ids_from=len(prefix)))
     overlay = "cp -R ../heldout/tree/. . && exec " + shlex.join(prefix + tuple(fail))
-    commands.append(Command("heldout-fail-to-pass", ("sh", "-c", overlay), heldout=True))
+    # The sealed plugins run inside the overlay too, so its ids are sealed like the visible
+    # commands' and a held-out test that skipped is no pass.
+    commands.append(Command("heldout-fail-to-pass", ("sh", "-c", overlay), heldout=True,
+                            sealed_ids=tuple(fail) if pytest_plugins.is_sealed_pytest(prefix)
+                            else None))
     # The run the agent itself makes on the visible tests; the contract seals where it runs
     # and its interpreter, so a claim of it is matched to the agent's own exec.
     commands.append(Command("visible_run", ("python", "-m", "pytest", *tests),
@@ -366,12 +405,78 @@ def python_paths(resolve) -> list[str] | None:
     return sorted(found) or None
 
 
+def _over(name: str, other: str) -> bool:
+    """``name`` is ``other`` or lies under it."""
+    return name == other or name.startswith(other.rstrip("/") + "/")
+
+
+def surface_from_lines(lines: Sequence[str]) -> tuple[list[str], dict[str, str]]:
+    """The sealed execution surface and its aliases from the probe's
+    ``<path>\\t<resolution>`` lines.
+
+    Entries are the resolutions, normalized and deduplicated, with every entry that lies under
+    another removed (the ancestor covers it). Left out: a shared scratch root or the agent's
+    HOME as a whole entry, and the workspace or anything inside it. An alias
+    maps a candidate that resolves elsewhere (``/lib`` to ``/usr/lib``) to its resolution, so
+    probity-verify reads a path written through the link as one on the surface."""
+    pairs = []
+    for line in lines:
+        name, _, real = line.partition("\t")
+        name, real = posixpath.normpath(name), posixpath.normpath(real or name)
+        if not (name.startswith("/") and real.startswith("/")) or name.startswith("//"):
+            continue
+        pairs.append((name, real))
+
+    def allowed(path: str) -> bool:
+        # The workspace's only ancestor, ``/``, is already forbidden.
+        return path not in SURFACE_FORBIDDEN and not _over(path, AGENT_CWD)
+
+    reals = sorted({real for _, real in pairs if allowed(real)})
+    entries = [path for path in reals
+               if not any(other != path and _over(path, other) for other in reals)]
+    aliases = {name: real for name, real in pairs
+               if name != real and allowed(name) and allowed(real)
+               and any(_over(real, entry) for entry in entries)}
+    return entries, dict(sorted(aliases.items()))
+
+
+def image_surface(image: str, interpreters: Sequence[str],
+                  docker: str = "docker") -> tuple[list[str], dict[str, str]]:
+    """:func:`surface_from_lines` over the probe run in the agent image, as the agent runs:
+    HOME is the agent's and PATH the image's own."""
+    python = interpreters[0] if interpreters else "python3"
+    source = f"LOADER = {list(LOADER_PATHS)!r}\n" + _SURFACE_PROBE
+    done = subprocess.run([docker, "run", "--rm", "--network", "none", "--entrypoint", python,
+                           "--env", f"HOME={AGENT_HOME}", image, "-c", source, *interpreters],
+                          capture_output=True, text=True, timeout=300, check=False)
+    if done.returncode != 0:
+        raise DoneError(f"cannot read the execution surface of {image}: exit "
+                        f"{done.returncode} {done.stderr.strip()[:200]}")
+    entries, aliases = surface_from_lines(done.stdout.splitlines())
+    if not entries:
+        raise DoneError(f"the execution surface of {image} is empty")
+    return entries, aliases
+
+
 def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command],
                     heldout_sha256: str | None, mutant_sha256: str | None,
                     executables: dict[str, str | list[str]] | None = None,
                     run_writes: dict[str, list[str]] | None = None,
-                    interpreter: list[str] | None = None) -> dict[str, Any]:
+                    interpreter: list[str] | None = None,
+                    surface: tuple[list[str], dict[str, str]] | None = None,
+                    strength: str | None = None,
+                    gates: dict[str, Any] | None = None) -> dict[str, Any]:
     """The ``probity-done-contract/v1`` record for a compiled task.
+
+    A model-written test carries ``tier: synthesized`` (an entry with no tier is trusted); ``strength`` and the seal ``gates`` are sealed when the compiler
+    measured them, so the verifier grades a failing synthesized test ``not_established`` and
+    a reference-free contract never ``supported``.
+
+    With ``surface`` (:func:`image_surface` of the agent image), the record seals
+    ``execution_surface`` and ``surface_aliases``: probity-verify then reads any mutation
+    outside the workspace under them as tampering, and as a shadow on a later claimed run.
+    For a task whose source runs a trusted replay beside the agent's own in-process run
+    (:data:`IN_PROCESS_TWINS`), the agent's run carries ``in_process_twin_of``.
 
     With ``executables`` (each agent command's ``argv[0]`` to its path in the agent image), a
     command the agent runs itself carries ``cwd`` and ``exe``: probity-verify matches a claim of
@@ -386,12 +491,17 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
     entries = []
     for command in commands:
         entry = command.record()
+        if strengthen.is_synthesized(command.id):
+            entry["tier"] = "synthesized"
         if command.agent_command and executables is not None and command.argv[0] in executables:
             entry.update(cwd=AGENT_CWD, exe=executables[command.argv[0]])
             if run_writes is not None and command.id in run_writes:
                 entry["run_writes"] = sorted(set(run_writes[command.id]))
             if interpreter and posixpath.basename(command.argv[0]) in PYTHON_ENTRY_POINTS:
                 entry["interpreter"] = sorted(set(interpreter))
+        twin = IN_PROCESS_TWINS.get(task.source, {}).get(command.id)
+        if twin is not None and any(other.id == twin for other in commands):
+            entry["in_process_twin_of"] = twin
         entries.append(entry)
     record: dict[str, Any] = {
         "schema_version": SCHEMA, "contract_id": f"contract-{task.task_id}",
@@ -402,6 +512,10 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
     }
     if task.module_under_test:
         record["module_under_test"] = list(task.module_under_test)
+    if strength is not None:
+        record["strength"] = strength
+    if gates:
+        record["adequacy"] = {**adequacy, "gates": gates}
     for entry in task.protected:
         item: dict[str, Any] = {"path": entry.path, "kind": entry.kind,
                                 "sha256": protected_digest(task.start, entry)}
@@ -415,6 +529,10 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
         record["heldout_split_sha256"] = heldout_sha256
     if mutant_sha256 is not None:
         record["mutant_set_sha256"] = mutant_sha256
+    if surface is not None and surface[0]:
+        record["execution_surface"] = list(surface[0])
+        if surface[1]:
+            record["surface_aliases"] = dict(surface[1])
     return record
 
 
@@ -436,7 +554,8 @@ def seal(task: Task, out: Path, key, adequacy: dict[str, int] | None = None,
          report: dict[str, Any] | None = None,
          executables: dict[str, str | list[str]] | None = None,
          run_writes: dict[str, list[str]] | None = None,
-         interpreter: list[str] | None = None) -> Sealed:
+         interpreter: list[str] | None = None,
+         surface: tuple[list[str], dict[str, str]] | None = None) -> Sealed:
     """Write the contract bundle for ``task`` into an empty ``out`` and sign it."""
     out.mkdir(parents=True, exist_ok=True)
     if any(out.iterdir()):
@@ -448,7 +567,8 @@ def seal(task: Task, out: Path, key, adequacy: dict[str, int] | None = None,
     has_heldout = any(command.heldout for command in commands)
     record = contract_record(task, adequacy, commands,
                              heldout_digest(task.heldout) if has_heldout else None,
-                             mutant_sha256, executables, run_writes, interpreter)
+                             mutant_sha256, executables, run_writes, interpreter, surface,
+                             (report or {}).get("strength"), (report or {}).get("gates"))
     data, envelope = sign_record(record, key)
     digest = sha256(data)
     (out / "contract.json").write_bytes(data)
@@ -973,9 +1093,10 @@ def start_guard(task: Task, runner: Runner, runs: int, timeout: float, stable: S
 
 
 # probity-verify at the pinned commit (87835a8) grades any failing held-out command as
-# contradicted and cannot read a command's tier, so a contract carrying synthesized tests would
-# be graded wrongly: until its adapter reads ``tier``, such a contract is refused at seal time.
-VERIFIER_GRADES_SYNTHESIZED = False
+# contradicted unless it reads a command's ``tier``, ``strength`` and the seal ``gates`` from the
+# contract. The pinned probity-verify does, and contract_record seals all three, so a contract
+# carrying synthesized tests is graded ``not_established`` when one fails, not ``contradicted``.
+VERIFIER_GRADES_SYNTHESIZED = True
 STRENGTHENABLE = ("change_floor_unmet", "cheat_class_survived")
 SYNTH_HEADER = "import os, sys\nsys.path.insert(0, os.getcwd())\n"
 
@@ -1183,6 +1304,9 @@ def compile_task(task: Task, out: Path, key, runner: Runner, runs: int = 3,
     resolve = runner.executable if agent_image is None else (
         lambda name: image_executable(agent_image, name))
     executables = {name: resolve(name) for name in sorted(names)} if names else None
+    # The surface is read from the image the agent runs in; a host runner has none to seal.
+    surface = (image_surface(agent_image, python_paths(resolve) or [])
+               if agent_image is not None else None)
     return seal(task, out, key, adequacy.field(), stable.commands,
                 mutants.mutant_set_sha256(chosen) if chosen else None, report, executables,
-                stable.run_writes, agent_interpreter(names, resolve))
+                stable.run_writes, agent_interpreter(names, resolve), surface)

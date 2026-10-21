@@ -1,0 +1,17 @@
+{
+  "claim_id": "case-1",
+  "executable": [],
+  "files": {
+    "src/app.py": "733eb58f7c38d30ea4f6f000d2e412410f26291d126e29434e8052b904ca7f41"
+  },
+  "invocation_id": "call-1",
+  "producer": "host-observer",
+  "schema_version": "probity-tree/v2",
+  "special": {},
+  "symlinks": {
+    "tests": "/tmp/decoy"
+  },
+  "tree_sha256": "dd3212d8b4bdae438362067afb9fe5c5177a0f7c94e147eb41805759f13ea25d",
+  "vantage": "independent",
+  "witness_scope": "PEER"
+}

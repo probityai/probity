@@ -11,6 +11,17 @@ requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = ["cryptography>=50.0.2,<51", "agent-evidence-vocabulary==0.5.0", "pyyaml>=6.0.2,<7"]
 keywords = ["ai-agents", "evidence-verification", "provenance", "offline", "audit"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
 
 [project.urls]
 Documentation = "https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/install.md"
@@ -23,7 +34,8 @@ test = ["pytest>=8,<10", "hypothesis>=6,<7"]
 a2a = ["a2a-sdk[http-server]==1.2.2", "uvicorn==0.54.0"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "vectors-source-coverage/tests", "vectors-operand-lineage/tests"]
+testpaths = ["tests", "vectors-source-coverage/tests", "vectors-operand-lineage/tests",
+             "vectors-done-checks/tests"]
 
 [project.scripts]
 probity-verify = "probity_verify.cli:main"

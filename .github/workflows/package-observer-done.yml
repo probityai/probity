@@ -20,7 +20,9 @@ defaults:
 jobs:
   done:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    # The suite alone measured 34 min 39 s on this runner (455 tests, 2026-10-18); the limit
+    # is a hang guard with headroom, not a budget the suite should approach.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -28,15 +30,39 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Install the package with the done extra (builds jcs-admit from its pinned commit)
-        run: python -m pip install -e '.[test,done,witness,cover]'
+      - name: Install the package with the done extra (probity-verify from this repository until 0.2.0 is on PyPI)
+        run: python -m pip install -e ../probity-verify -e '.[test,done,witness,cover]'
       - name: Contract, held-out, mutant, grading, receipt, policy and command-line tests
         run: python -m coverage run --parallel-mode --source=probity_observer.done -m pytest -q -p no:cacheprovider tests/done
-      - name: Every mutant of the visible-test detector rules turns their tests red
-        run: python scripts/mutate-visible-detectors.py
-      - name: Every mutant of the loop policy and the completion reading turns their tests red
-        run: python scripts/mutate-done-rules.py
       - name: Combine the suite's data with the data of the test runs it started
         run: python -m coverage combine
       - name: Every done module is at least 80 percent covered
         run: python -m coverage report --show-missing && python scripts/check-done-coverage.py
+
+  # The mutation checks read no coverage data and need none of the suite's output, so they run
+  # beside the suite instead of after it.
+  mutants:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: mutate-visible-detectors.py
+            what: Every mutant of the visible-test detector rules turns their tests red
+          - script: mutate-done-rules.py
+            what: Every mutant of the loop policy and the completion reading turns their tests red
+          - script: mutate-oot-rules.py
+            what: Every mutant of the out-of-tree tamper rules turns their tests red
+    name: mutants (${{ matrix.script }})
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install the package with the done extra (probity-verify from this repository until 0.2.0 is on PyPI)
+        run: python -m pip install -e ../probity-verify -e '.[test,done,witness,cover]'
+      - name: ${{ matrix.what }}
+        run: python scripts/${{ matrix.script }}

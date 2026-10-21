@@ -31,6 +31,8 @@ jobs:
       - run: uv run --frozen python examples/done-receipt/generate.py --check
       - run: uv run --frozen --extra test python vectors-source-coverage/check_vectors.py --verifier 'probity-verify'
       - run: uv run --frozen --extra test python vectors-operand-lineage/check_vectors.py --verifier 'probity-verify'
+      - run: uv run --frozen --extra test python vectors-done-checks/gen_vectors.py --check
+      - run: uv run --frozen --extra test python vectors-done-checks/check_vectors.py --verifier 'probity-verify'
 
   # EXTERNAL witness scope is earned only from a witness co-signature, checked by
   # agent-evidence-observer's witness module. That module needs the jcs-admit
