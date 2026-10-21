@@ -55,6 +55,17 @@ MUTANTS = [
     (REPLAY, UNIT, "class CandidateFailed(BaseException):", "class CandidateFailed(Exception):"),
     (REPLAY, UNIT, "              if isinstance(value, type) and issubclass(value, Exception)}",
      "              if isinstance(value, type) and issubclass(value, BaseException)}"),
+    # The client's own failures are a type the child's JSON cannot produce.
+    (REPLAY, UNIT, "    if isinstance(reply, ClientFailure):\n        # The client's own failure",
+     "    if isinstance(reply, dict) and set(reply) == {\"error\"}:\n        # The client's own failure"),
+    (REPLAY, UNIT, "                if not isinstance(reply, ClientFailure):\n                    reply = {\"error\": OUTSIDE}",
+     "                if not set(reply) == {\"error\"}:\n                    reply = {\"error\": OUTSIDE}"),
+    # The codec reads only the forms it writes.
+    (HARNESS, UNIT, '    if tag == "bool" and kind is bool:', '    if tag == "bool":'),
+    (HARNESS, UNIT, "        if number == number and number not in (float(\"inf\"), float(\"-inf\")) and repr(",
+     "        if repr("),
+    (HARNESS, UNIT, '    if tag == "int" and kind is str and str(int(body)) == body:',
+     '    if tag == "int":'),
     # A malformed reply never raises an exception a test could expect.
     (REPLAY, UNIT, '    if not isinstance(reply, dict) or reply.get("nonce") != nonce:',
      '    if reply.get("nonce") != nonce:'),

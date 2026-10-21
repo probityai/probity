@@ -47,7 +47,7 @@ from pathlib import Path
 from typing import Any
 
 from . import pytest_plugins, pytest_proof
-from .replay import Child, plain, strict_eq, unplain
+from .replay import Child, ClientFailure, plain, strict_eq, unplain
 
 MODE = "pytest"
 # Builtin exceptions a reply may raise again in the test (``pytest.raises(ValueError)``).
@@ -155,13 +155,14 @@ def exchange(child: Child, request: dict[str, Any]) -> dict[str, Any]:
     in the child can read each request and echo its nonce."""
     nonce = secrets.token_hex(16)
     reply = child.ask({**request, "nonce": nonce})
+    if isinstance(reply, ClientFailure):
+        # The client's own failure (a time-out, an exited child): a type no line the child
+        # writes can decode to, so a child that writes the client's words is not one.
+        return reply
     if not isinstance(reply, dict) or reply.get("nonce") != nonce:
         # The child writes the protocol stream, so its shape is checked before any field is
-        # read: no malformed reply may raise an exception a test could expect. The client's
-        # own failures (a timeout, an exited child) carry no nonce and keep their name.
-        error = reply.get("error") if isinstance(reply, dict) else None
-        return {"error": error if isinstance(error, str) and error.startswith("child-")
-                and "nonce" not in reply else "child-protocol"}
+        # read: no malformed reply may raise an exception a test could expect.
+        return ClientFailure("child-protocol")
     return {key: item for key, item in reply.items() if key != "nonce"}
 
 
@@ -212,9 +213,7 @@ class Session:
                 if key not in self.outside:
                     self.outside.append(key)
                 # A failure of the client itself carries nothing the candidate chose.
-                error = reply.get("error")
-                if not (set(reply) == {"error"} and isinstance(error, str)
-                        and error.startswith("child-")):
+                if not isinstance(reply, ClientFailure):
                     reply = {"error": OUTSIDE}
         return reply
 

@@ -250,6 +250,23 @@ def test_replies_map_to_builtin_exceptions_or_to_a_candidate_failure():
         pytest_replay.value(None, {"ok": ["nope"]}, "m", "n")
 
 
+@pytest.mark.parametrize("form", [
+    ["bool", "false"], ["bool", 1], ["int", " 1"], ["int", "1_0"], ["int", 1], ["float", "nan"],
+    ["float", "inf"], ["float", "1e400"], ["float", "1.000"], ["float", 1.0], ["str", 1],
+    ["bytes", "AB"], ["none", 1], ["list", "ab"], ["dict", [[["int", "1"]]]], [], "x",
+    ["tuple"], ["str", "a", "b"], ["code", "x"]])
+def test_the_codec_reads_only_the_forms_it_writes(form):
+    with pytest.raises((TypeError, ValueError)):
+        replay.unplain(form)
+
+
+def test_the_codec_round_trips_every_plain_value():
+    for value in (None, True, False, 0, -12, 1.5, -0.0, 1e-300, "", "a", b"\x00\xff", [1, (2,)],
+                  {"a": {1, 2}}, frozenset({"x"}), {(1, 2): [None]}):
+        assert replay.strict_eq(replay.unplain(json.loads(json.dumps(replay.plain(value)))),
+                                value), value
+
+
 def test_a_call_with_an_argument_that_is_not_plain_fails():
     function = pytest_replay.RemoteFunction(None, "m", "f")
     assert repr(function) == "<remote m.f>"
@@ -556,11 +573,20 @@ def test_a_reply_must_carry_its_request_nonce_back():
     assert pytest_replay.exchange(echo, {"op": "attr"}) == {"ok": ["int", "2"]}
     assert len(echo.sent[0]["nonce"]) == 32
     for reply in ({"ok": ["int", "2"]}, {"ok": ["int", "2"], "nonce": "0" * 32},
-                  {"error": "child-timeout", "nonce": "x"}):
-        assert pytest_replay.exchange(Child(reply), {"op": "attr"}) == {"error": "child-protocol"}
-    # The client's own failures carry no nonce and keep their name.
-    assert pytest_replay.exchange(Child({"error": "child-timeout"}), {"op": "attr"}) == {
-        "error": "child-timeout"}
+                  {"error": "child-timeout", "nonce": "x"},
+                  # The client's words, written by the child: still the child's line.
+                  {"error": "child-timeout"}):
+        found = pytest_replay.exchange(Child(reply), {"op": "attr"})
+        assert found == {"error": "child-protocol"} and isinstance(found, replay.ClientFailure)
+    # The client's own failures keep their name.
+    found = pytest_replay.exchange(Child(replay.ClientFailure("child-timeout")), {"op": "attr"})
+    assert found == {"error": "child-timeout"} and replay.stall(found)
+    # A child's own line in the client's words is candidate data outside a comparison.
+    forged = pytest_replay.Session(Child(lambda request: {"error": "child-timeout",
+                                                          "nonce": request["nonce"]}),
+                                   frozenset([PACKAGE]))
+    assert forged.ask({"op": "attr", "module": PACKAGE, "name": "x"}) == {
+        "error": pytest_replay.OUTSIDE} and forged.outside
     session = pytest_replay.Session(Child({"ok": ["none"]}), frozenset([PACKAGE]))
     key = pytest_replay._key({"op": "import", "module": PACKAGE})
     session.ask({"op": "import", "module": PACKAGE})
