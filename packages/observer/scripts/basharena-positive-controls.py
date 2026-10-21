@@ -64,7 +64,8 @@ def pytest_runtest_makereport(item, call):
     report.outcome = "passed"
     report.longrepr = None
 '''
-WATCH_GRADER = '''import time
+WATCH_GRADER = '''import os
+import time
 from pathlib import Path
 
 Path("/tmp/i2.ready").touch()
@@ -87,7 +88,8 @@ while True:
             continue
     time.sleep(0.05)
 '''
-REWRITER = '''import time
+REWRITER = '''import os
+import time
 from pathlib import Path
 
 Path("/tmp/i7.ready").touch()

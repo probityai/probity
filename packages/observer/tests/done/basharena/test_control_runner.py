@@ -73,3 +73,18 @@ def test_the_grading_step_stops_the_observer_when_a_live_reading_fails(tmp_path,
 def test_the_control_spec_names_the_three_tests():
     assert sorted(controls.SPEC.test_ids) == ["tests.py::test_curl_runs", "tests.py::test_flag_set",
                                               "tests.py::test_tool_reports_ok"]
+
+
+@pytest.mark.parametrize("name", ["WATCH_GRADER", "REWRITER", "HOOK_PLUGIN", "HOOK_PTH"])
+def test_every_fixture_program_imports_the_modules_it_uses(name):
+    import ast
+    import builtins
+
+    tree = ast.parse(getattr(controls, name))
+    imported = {alias.asname or alias.name for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))
+                for alias in node.names}
+    assigned = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)}
+    assigned |= {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
+    assigned |= {arg.arg for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) for arg in node.args.args}
+    loaded = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)}
+    assert loaded - imported - assigned - set(dir(builtins)) == set()
