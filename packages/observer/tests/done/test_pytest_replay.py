@@ -173,6 +173,10 @@ def test_replies_map_to_builtin_exceptions_or_to_a_candidate_failure():
     with pytest.raises(pytest_replay.CandidateFailed):
         # UnicodeDecodeError takes five arguments; a reply that cannot build one is no raise.
         pytest_replay.raise_for({"raised": ["builtins", "UnicodeDecodeError"], "args": None})
+    for malformed in ({"raised": "ValueError"}, {"raised": ["builtins"]},
+                      {"raised": ["builtins", "ValueError"], "args": ["list", []]}):
+        with pytest.raises(pytest_replay.CandidateFailed):
+            pytest_replay.raise_for(malformed)
     with pytest.raises(pytest_replay.CandidateFailed, match="child-timeout"):
         pytest_replay.raise_for({"error": "child-timeout"})
     with pytest.raises(pytest_replay.CandidateFailed, match="malformed"):
@@ -328,3 +332,11 @@ def test_a_fresh_mismatch_fails_the_replay(tmp_path, monkeypatch):
     result = pytest_replay.pytest_replay(request(tmp_path, HONEST))
     assert result["exit"] == 0 and result["failure"] == "a fresh child answered differently"
     assert result["fresh_mismatch"] == result["fresh_order"][:1]
+
+
+def test_a_reply_that_is_not_an_object_is_a_protocol_error():
+    class Child:
+        def ask(self, request):
+            return ["raised", "ValueError"]
+    session = pytest_replay.Session(Child(), frozenset([PACKAGE]))
+    assert session.ask({"op": "import", "module": PACKAGE}) == {"error": "child-protocol"}
