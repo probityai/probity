@@ -20,6 +20,8 @@ def test_the_program_is_filtered_to_one_cgroup_on_every_probe():
     probes = [line for line in text.splitlines() if line and not line.startswith(" ") and "{" in line]
     assert len(probes) == 10
     assert all("/cgroup == 4242" in probe for probe in probes)
+    assert "fentry:wake_up_new_task" in text
+    assert "thread_pid->numbers[1].nr" in text
 
 
 def test_the_whole_run_program_prints_only_write_and_procfs_opens_and_the_grading_one_every_open():
@@ -39,6 +41,15 @@ def test_merging_two_programs_keeps_an_event_once():
     assert merged.lost == 2 and merged.parents == {10: 9}
 
 
+def test_the_trace_keeps_container_pids_from_execs_and_forks():
+    trace = observer.parse(["E\t1\t200\t900\t/usr/bin/python3\t7\t20",
+                            "A\t1\t200\t0\tpython3\\x00", "F\t2\t200\t201\t21"])
+    assert trace.unparsed == []
+    assert trace.namespace_pids == {200: 20, 201: 21}
+    assert trace.parents == {201: 200}
+    assert observer.merge([trace, observer.Trace([], [], 0, {})]).namespace_pids == trace.namespace_pids
+
+
 def test_the_recorded_trace_parses_with_no_loss_and_no_leftover_lines():
     trace = _trace()
     assert trace.lost == 0
@@ -48,6 +59,15 @@ def test_the_recorded_trace_parses_with_no_loss_and_no_leftover_lines():
 def test_the_exec_root_is_the_command_the_shim_started():
     roots = observer.exec_roots(_trace(), SHIM)
     assert [root.detail["argv"][:2] for root in roots] == [["sh", "-c"]]
+
+
+def test_an_exec_under_a_new_shim_is_still_a_root():
+    trace = observer.Trace(events=[
+        observer.Event("E", 1, 200, path="/proc/self/fd/6", detail={"ppid": 900, "argv": ["runc", "init"]}),
+        observer.Event("E", 2, 201, path="/usr/bin/python3", detail={"ppid": 900, "argv": ["python3"]}),
+        observer.Event("E", 3, 202, path="/usr/bin/curl", detail={"ppid": 201, "argv": ["curl"]}),
+    ], unparsed=[], lost=0, parents={202: 201})
+    assert [event.pid for event in observer.exec_roots(trace, SHIM)] == [201]
 
 
 def test_children_of_the_root_are_its_descendants():

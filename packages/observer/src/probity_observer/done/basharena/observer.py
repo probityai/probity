@@ -13,13 +13,15 @@ mount prefix, so the superblock magic is printed and :func:`resolve` puts the pr
 
 Every line is tab-separated and starts with its kind: ``E`` exec, ``O`` open, ``N`` rename, ``U``
 unlink, ``C`` connect, ``P`` ptrace, ``V`` process_vm_writev, ``K`` kill or tgkill, ``F`` fork, ``X`` exit.
+Exec and fork records carry both host and container PID numbers. A procfs path and a signal target use
+the container number, while bpftrace's ``pid`` uses the host number.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable
 
 DEPTH = 16
 ARGV_BYTES = 200
@@ -50,6 +52,17 @@ def _walk(var: str, slot: str) -> str:
   if ($done == 0) {{ printf("T\\t%llu\\t%d\\t{slot}\\n", $t, pid); }}"""
 
 
+def _namespace_pid(task: str) -> str:
+    """Read an innermost PID with literal BTF array indexes, as bpftrace requires."""
+    return f"""
+  $level = {task}->thread_pid->level;
+  $ns_pid = 0;
+  if ($level == 0) {{ $ns_pid = {task}->thread_pid->numbers[0].nr; }}
+  if ($level == 1) {{ $ns_pid = {task}->thread_pid->numbers[1].nr; }}
+  if ($level == 2) {{ $ns_pid = {task}->thread_pid->numbers[2].nr; }}
+  if ($level == 3) {{ $ns_pid = {task}->thread_pid->numbers[3].nr; }}"""
+
+
 def program(cgroup_id: int, reads: bool = False) -> str:
     """The bpftrace program for one container's cgroup id.
 
@@ -64,8 +77,8 @@ def program(cgroup_id: int, reads: bool = False) -> str:
         f"args.file->f_path.dentry->d_sb->s_magic == {PROC_SUPER_MAGIC})/")
     return f"""
 tracepoint:sched:sched_process_exec {filt} {{
-  $t = nsecs; $m = curtask->mm; $n = $m->arg_end - $m->arg_start;
-  printf("E\\t%llu\\t%d\\t%d\\t%s\\t%d\\n", $t, pid, curtask->real_parent->tgid, str(args.filename), $n);
+  $t = nsecs; $m = curtask->mm; $n = $m->arg_end - $m->arg_start;{_namespace_pid("curtask")}
+  printf("E\\t%llu\\t%d\\t%d\\t%s\\t%d\\t%d\\n", $t, pid, curtask->real_parent->tgid, str(args.filename), $n, $ns_pid);
   printf("A\\t%llu\\t%d\\t0\\t%r\\n", $t, pid, buf(uptr($m->arg_start), $n > {ARGV_BYTES} ? {ARGV_BYTES} : $n));
 }}
 fentry:security_file_open {open_filt} {{
@@ -96,8 +109,9 @@ tracepoint:syscalls:sys_enter_kill {filt} {{
 tracepoint:syscalls:sys_enter_tgkill {filt} {{
   printf("K\\t%llu\\t%d\\t%s\\t%d\\t%d\\n", nsecs, pid, comm, args.tgid, args.sig);
 }}
-tracepoint:sched:sched_process_fork {filt} {{
-  printf("F\\t%llu\\t%d\\t%d\\n", nsecs, args.parent_pid, args.child_pid);
+fentry:wake_up_new_task {filt} {{
+  $child = args.p;{_namespace_pid("$child")}
+  printf("F\\t%llu\\t%d\\t%d\\t%d\\n", nsecs, pid, $child->pid, $ns_pid);
 }}
 """
 
@@ -143,6 +157,7 @@ class Trace:
     unparsed: list[str]
     lost: int
     parents: dict[int, int]
+    namespace_pids: dict[int, int] = field(default_factory=dict)
 
     def descendants(self, root: int) -> set[int]:
         """``root`` and every process forked below it, by the fork records."""
@@ -222,6 +237,7 @@ def parse(lines: Iterable[str]) -> Trace:
     unparsed: list[str] = []
     lost = 0
     parents: dict[int, int] = {}
+    namespace_pids: dict[int, int] = {}
     for raw in lines:
         line = raw.rstrip("\n")
         if not line or line.startswith("Attaching"):
@@ -232,14 +248,20 @@ def parse(lines: Iterable[str]) -> Trace:
             continue
         fields = line.split("\t")
         kind = fields[0]
-        if kind == "F" and len(fields) == 4:
+        if kind == "F" and len(fields) in (4, 5):
             parents[int(fields[3])] = int(fields[2])
+            if len(fields) == 5 and int(fields[4]) > 0:
+                namespace_pids[int(fields[3])] = int(fields[4])
+        elif kind == "E" and len(fields) in (6, 7):
+            pending[(fields[1], fields[2])] = _Pending(fields)
+            if len(fields) == 7 and int(fields[6]) > 0:
+                namespace_pids[int(fields[2])] = int(fields[6])
         elif kind in _HEADS and len(fields) == _HEADS[kind]:
             pending[(fields[1], fields[2])] = _Pending(fields)
         elif not (kind in ("A", "D", "T") and len(fields) >= 4 and _attach(pending, fields)):
             unparsed.append(line)
     events = sorted((_build(item) for item in pending.values()), key=lambda e: (e.time, e.pid))
-    return Trace(events, unparsed, lost, parents)
+    return Trace(events, unparsed, lost, parents, namespace_pids)
 
 
 def merge(traces: list[Trace]) -> Trace:
@@ -252,17 +274,22 @@ def merge(traces: list[Trace]) -> Trace:
                 seen.add(key)
                 events.append(event)
     parents: dict[int, int] = {}
+    namespace_pids: dict[int, int] = {}
     for trace in traces:
         parents.update(trace.parents)
+        namespace_pids.update(trace.namespace_pids)
     return Trace(sorted(events, key=lambda e: (e.time, e.pid)), [u for t in traces for u in t.unparsed],
-                 sum(t.lost for t in traces), parents)
+                 sum(t.lost for t in traces), parents, namespace_pids)
 
 
 def exec_roots(trace: Trace, shim_pid: int) -> list[Event]:
     """One exec per ``docker exec``, in time order: the command the shim's child runs in the container.
 
-    Measured on Docker 29.8: ``runc init`` execs first (argv ``runc init``), then the command, whose
-    parent is the container's ``containerd-shim``.
+    Docker can start each exec under a new ``containerd-shim``. Its ``runc init`` and the command
+    share a parent, which the trace records even when it differs from the container init's shim.
     """
-    return [e for e in trace.events if e.kind == "E" and e.detail["ppid"] == shim_pid
+    shims = {shim_pid}
+    shims.update(e.detail["ppid"] for e in trace.events
+                 if e.kind == "E" and e.detail["argv"][:2] == ["runc", "init"])
+    return [e for e in trace.events if e.kind == "E" and e.detail["ppid"] in shims
             and e.detail["argv"][:1] != ["runc"]]
