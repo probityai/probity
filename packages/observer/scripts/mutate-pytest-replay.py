@@ -185,6 +185,9 @@ MUTANTS = [
      "    definitive = False or any("),
     (HARNESS, STALLS, "            definitive = definitive or not stall(reply)", "            pass"),
     (REPLAY, UNIT, '            "definitive": failure is not None,', '            "definitive": False,'),
+    # An attribute the candidate's module lacks is an absent handle, raised in the parent's words.
+    (REPLAY, UNIT, '                 or reply.get("raised") == ABSENT))', "                 ))"),
+    (REPLAY, UNIT, "    if reply.get(\"raised\") == ABSENT:\n", "    if False:\n"),
     (REPLAY, UNIT,
      "    fresh_mismatch = [] if failure else fresh_mismatches(request, session, order, timeout)",
      "    fresh_mismatch = fresh_mismatches(request, session, order, timeout)"),
