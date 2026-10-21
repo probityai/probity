@@ -66,6 +66,9 @@ def test_a_sealed_comparison_against_one_call_is_proven(body, callees):
     ("def test_it():\n    assert area(1, 1) == None\n", "None"),
     ("def test_it():\n    assert area(1, 1) == (None,)\n", "None"),
     ("def test_it():\n    assert area(1, 1) == [None, (None, [None])]\n", "None"),
+    # Inside a set, and as a dict key whose value holds nothing.
+    ("def test_it():\n    assert area(1, 1) == {None}\n", "None"),
+    ("def test_it():\n    assert area(1, 1) == {None: []}\n", "None"),
     ("@pytest.mark.parametrize('x, expected', [(2, 4)])\n"
      "def test_it(x, expected):\n    assert area(x, expected) == expected\n", "sent to the child"),
     ("@pytest.mark.parametrize('x, expected', [(2, None)])\n"

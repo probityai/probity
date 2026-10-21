@@ -240,6 +240,14 @@ MUTANTS = [
     (REPLAY, UNIT, "            reply = exchange(fresh, session.requests[key], left)",
      "            reply = exchange(fresh, session.requests[key])"),
     (REPLAY, UNIT, "            session.spent = True\n            break\n",
+    # Leaves inside a set and dict keys are walked; a container body has the codec's shape.
+    (PROOF, PROVE, "    elif kind is set or kind is frozenset:", "    elif False:"),
+    (PROOF, PROVE, '            yield from leaves(key, f"{path}{{key}}")\n', "            pass\n"),
+    (HARNESS, UNIT, "all(type(pair) is list and len(pair) == 2", "all(True"),
+    (HARNESS, UNIT, '    if tag in ("list", "tuple", "set", "frozenset") and kind is list:',
+     '    if tag in ("list", "tuple", "set", "frozenset"):'),
+    # The stall setting is named, applied and recorded.
+    (REPLAY, UNIT, 'STALL_POLICY = "contradicted"', 'STALL_POLICY = "not_established"'),
      "            session.spent = True\n"),
 ]
 

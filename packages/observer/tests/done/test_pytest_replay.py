@@ -261,6 +261,16 @@ def test_the_codec_reads_only_the_forms_it_writes(form):
         replay.unplain(form)
 
 
+@pytest.mark.parametrize("form", [["list", {}], ["set", ""], ["tuple", {}],
+                                  ["dict", [[["int", "1"]]]], ["dict", [["ab"]]],
+                                  ["dict", [[["int", "1"], ["int", "2"], ["int", "3"]]]]])
+def test_the_codec_refuses_a_container_body_of_another_shape_by_its_own_rule(form):
+    # A body that is not a list, or a dict pair that is not two items, is refused as not a
+    # plain form, not by whatever error reading it as one would happen to raise.
+    with pytest.raises(TypeError, match="not a plain form"):
+        replay.unplain(form)
+
+
 def test_the_codec_round_trips_every_plain_value():
     for value in (None, True, False, 0, -12, 1.5, -0.0, 1e-300, "", "a", b"\x00\xff", [1, (2,)],
                   {"a": {1, 2}}, frozenset({"x"}), {(1, 2): [None]}):
