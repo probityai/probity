@@ -37,7 +37,8 @@ assertion's sealed value (:meth:`Proof.expected`).
 from __future__ import annotations
 
 import ast
-from collections.abc import Iterable, Sequence
+import json
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -72,13 +73,42 @@ class Proof:
                 else site.values[0] for site in self.sites]
 
     def booleans(self) -> dict[str, set[bool]]:
-        """The boolean values each called function is asserted to return."""
+        """The boolean values each called function is asserted to return, by the place of
+        the boolean in the answer (:func:`boolean_leaves`)."""
         found: dict[str, set[bool]] = {}
         for site in self.sites:
             for value in site.values:
-                if type(value) is bool:
-                    found.setdefault(site.callee, set()).add(value)
+                for key, leaf in boolean_leaves(site.callee, value):
+                    found.setdefault(key, set()).add(leaf)
         return found
+
+
+def leaves(value: Any, path: str = "") -> Iterator[tuple[str, Any]]:
+    """Each value inside a plain literal that is not a container, with its place: a list or
+    tuple item by its index, a dict value by its key (a key is a leaf of its own, at
+    ``{key}``), and every set item at one place (``{}``)."""
+    kind = type(value)
+    if kind is list or kind is tuple:
+        for index, item in enumerate(value):
+            yield from leaves(item, f"{path}[{index}]")
+    elif kind is dict:
+        for key, item in value.items():
+            yield from leaves(key, f"{path}{{key}}")
+            yield from leaves(item, f"{path}[{json.dumps(plain(key))}]")
+    elif kind is set or kind is frozenset:
+        for item in value:
+            yield from leaves(item, f"{path}{{}}")
+    else:
+        yield path, value
+
+
+def boolean_leaves(callee: str, value: Any) -> Iterator[tuple[str, bool]]:
+    """Each boolean in a sealed value, keyed by the called function and its place in the
+    answer: a function that always gives one boolean there satisfies a lone expectation of
+    it, inside a container as at the top."""
+    for path, leaf in leaves(value):
+        if type(leaf) is bool:
+            yield callee + path, leaf
 
 
 class Unproven(Exception):
@@ -330,12 +360,14 @@ class Module:
         else:
             values = (_literal(expected, line, "expected value"),)
         for value in values:
-            if value is None:
-                raise Unproven(f"{line}: the expected value is None")
             try:
                 plain(value)
             except TypeError:
                 raise Unproven(f"{line}: the expected value cannot cross as plain data") from None
+            # A function that returns None, or a container of None, satisfies it.
+            found = [leaf for _, leaf in leaves(value)]
+            if found and all(leaf is None for leaf in found):
+                raise Unproven(f"{line}: the expected value is None at every place")
         return Site(callee, call, expected, values)
 
     def _callee(self, call: ast.Call, params: tuple[str, ...], line: str) -> str:
