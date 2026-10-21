@@ -42,12 +42,13 @@ import os
 import random
 import secrets
 import sys
+import time
 import types
 from pathlib import Path
 from typing import Any
 
 from . import pytest_plugins, pytest_proof
-from .replay import Child, ClientFailure, plain, strict_eq, unplain
+from .replay import Child, ClientFailure, plain, stall, strict_eq, unplain
 
 MODE = "pytest"
 # Builtin exceptions a reply may raise again in the test (``pytest.raises(ValueError)``).
@@ -146,15 +147,18 @@ def _answer(reply: dict[str, Any]) -> str:
     return json.dumps(reply, separators=(",", ":"), sort_keys=True)
 
 
-def exchange(child: Child, request: dict[str, Any]) -> dict[str, Any]:
+def exchange(child: Child, request: dict[str, Any], timeout: float | None = None
+             ) -> dict[str, Any]:
     """Ask ``request`` of ``child`` under a fresh nonce; a reply that does not carry it back is
     a protocol error. The nonce is not part of the request's key or of its recorded answer.
+    ``timeout``, when given, shortens the child's own call limit (the replay's deadline).
 
     It catches a reply stream out of step with the requests (a line the candidate wrote at
     import, or a second line for one request). It does not authenticate the serve loop: code
     in the child can read each request and echo its nonce."""
     nonce = secrets.token_hex(16)
-    reply = child.ask({**request, "nonce": nonce})
+    message = {**request, "nonce": nonce}
+    reply = child.ask(message) if timeout is None else child.ask(message, timeout)
     if isinstance(reply, ClientFailure):
         # The client's own failure (a time-out, an exited child): a type no line the child
         # writes can decode to, so a child that writes the client's words is not one.
@@ -195,17 +199,29 @@ class Session:
     :class:`CandidateFailed` in its place. So a value the candidate chose can never steer
     sealed code (into a path it opens, say) on the verifier's host."""
 
-    def __init__(self, child: Child, remote: frozenset[str]) -> None:
+    def __init__(self, child: Child, remote: frozenset[str],
+                 deadline: float | None = None) -> None:
         self.child = child
         self.remote = remote
+        # The replay's own deadline (``time.monotonic``), or ``None``; :attr:`spent` once a
+        # request stalled on it rather than on the call's limit.
+        self.deadline = deadline
+        self.spent = False
         self.answers: dict[str, list[str]] = {}
         self.requests: dict[str, dict[str, Any]] = {}
         self.phase: Phase | None = None
         self.outside: list[str] = []
 
+    def left(self) -> float | None:
+        """Seconds to the replay's deadline, or ``None`` when it has none."""
+        return None if self.deadline is None else max(0.0, self.deadline - time.monotonic())
+
     def ask(self, request: dict[str, Any]) -> dict[str, Any]:
         key = _key(request)
-        reply = exchange(self.child, request)
+        left = self.left()
+        reply = exchange(self.child, request, left)
+        if left is not None and left < getattr(self.child, "timeout", float("inf")) and stall(reply):
+            self.spent = True
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
         if self.phase is None or request["op"] != "call":
@@ -573,14 +589,36 @@ def _run(request: dict[str, Any], session: Session, counter: Count) -> int:
 def fresh_mismatches(request: dict[str, Any], session: Session, order: list[str],
                      timeout: float) -> list[str]:
     """The requests, asked again one per fresh child in ``order``, whose answer differs from
-    the session's first answer: an answer that depended on what the child was asked before."""
+    the session's first answer: an answer that depended on what the child was asked before.
+
+    The fresh children share the replay's deadline; the first request that reaches it is a
+    mismatch and ends the pass, so no further child is started past it."""
     found = []
     for key in order:
+        left = session.left()
         with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
-            reply = exchange(fresh, session.requests[key])
+            reply = exchange(fresh, session.requests[key], left)
         if _answer(reply) != session.answers[key][0]:
             found.append(key)
+        if left is not None and left < timeout and stall(reply):
+            session.spent = True
+            break
     return found
+
+
+# What the parent keeps of the command's limit for itself: closing the children, the count
+# and writing the result. A quarter of a short limit, at most a minute of a long one.
+DEADLINE_MARGIN = 60.0
+
+
+def deadline(run_timeout: Any, started: float) -> float | None:
+    """The replay's own deadline on ``time.monotonic``: the command's limit less the margin,
+    from ``started``. Every request, fresh children included, is asked inside it, so the parent
+    writes its result before the runner stops it, whatever pace the candidate answers at."""
+    if run_timeout is None:
+        return None
+    limit = float(run_timeout)
+    return started + limit - min(DEADLINE_MARGIN, limit / 4)
 
 
 def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
@@ -593,7 +631,8 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     remote = frozenset(request["remote"])
     base: dict[str, Any] = {"passed": False, "mode": MODE, "items": {}, "calls_intercepted": 0,
                             "distinct_calls": 0, "impure": [], "fresh_mismatch": [],
-                            "fresh_order": [], "unproven": {}, "outside": [], "degenerate": []}
+                            "fresh_order": [], "unproven": {}, "outside": [], "degenerate": [],
+                            "deadline_reached": False}
     problem = refused(remote, request["test_root"])
     if problem is not None:
         return {**base, "failure": problem}
@@ -601,8 +640,9 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     # the scrubbed one: no variable of the verifier's reaches pytest or a sealed conftest.
     timeout = float(request["call_timeout"])
     sources = pytest_proof.Sources([Path(request["test_root"])], remote)
+    ends = deadline(request.get("run_timeout"), float(request.get("started", time.monotonic())))
     with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:
-        session = Session(child, remote)
+        session = Session(child, remote, ends)
         counter = Count(int(request["repeats"]), sources, session, request["test_root"])
         code = _run(request, session, counter)
     degenerate = counter.degenerate()
@@ -631,11 +671,12 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     if fresh_mismatch:
         failure = "a fresh child answered differently"
     # Every failure here is definitive, a stall inside one of the candidate's own requests
-    # included: the child had the call's whole limit to answer, and a fresh child asked the
-    # same request stalls the same way. Only the runner's stop of the whole parent at the
-    # command's limit, with no result written, reads as no answer (``timed_out``).
+    # included, and so is a run that spent the replay's whole deadline: each answer came at
+    # the candidate's own pace, and the parent stops asking in time to write this result. Only
+    # a parent the runner stops before its own deadline, with no result written, reads as no
+    # answer (``timed_out``).
     return {**base, "passed": failure is None, "failure": failure, "exit": code,
-            "definitive": failure is not None,
+            "definitive": failure is not None, "deadline_reached": session.spent,
             "items": counter.items, "calls_intercepted": calls, "distinct_calls": distinct,
             "impure": impure, "fresh_mismatch": fresh_mismatch, "fresh_order": order,
             "unproven": counter.unproven, "outside": session.outside, "degenerate": degenerate}
