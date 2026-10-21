@@ -144,6 +144,13 @@ MUTANTS = [
     (REPLAY, UNIT, "    if call:\n        raise_for(reply)", "    if False:\n        raise_for(reply)"),
     (REPLAY, UNIT, " or not self.sealed_importer():", ":"),
     (REPLAY, UNIT, "    import _pytest.runner  # noqa: F401\n    import pytest  # noqa: F401\n", ""),
+    # The parent runs with the scrubbed environment, never the verifier's own.
+    (RUNNER, UNIT, "                              env=parent_env(), start_new_session=True)",
+     "                              start_new_session=True)"),
+    (RUNNER, UNIT, "    env.update({key: os.environ[key] for key in RUNTIME_ENV if key in os.environ})",
+     "    env.update(os.environ)"),
+    (RUNNER, UNIT, '    env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"\n', "\n"),
+    (RUNNER, UNIT, "    if command and not os.path.isabs(command[0]):", "    if False:"),
 ]
 
 
