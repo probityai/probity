@@ -40,6 +40,10 @@ MUTANTS = [
     (REPLAY, UNIT, "class CandidateFailed(BaseException):", "class CandidateFailed(Exception):"),
     (REPLAY, UNIT, "              if isinstance(value, type) and issubclass(value, Exception)}",
      "              if isinstance(value, type) and issubclass(value, BaseException)}"),
+    # A malformed reply never raises an exception a test could expect.
+    (REPLAY, UNIT, "        if not isinstance(reply, dict):\n", "        if False:\n"),
+    (REPLAY, UNIT, "            raise CandidateFailed(\"malformed raise\")", "            pass"),
+    (REPLAY, UNIT, "            if type(args) is not tuple:", "            if False:"),
     # A module handle must be the candidate's; nothing may be set on a remote module.
     (REPLAY, UNIT, "        if found.split(\".\", 1)[0] not in session.remote:",
      "        if False:"),
