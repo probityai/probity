@@ -452,8 +452,12 @@ def close_all() -> None:
 class Proxy:
     """``candidate`` in the sealed test: every call goes to the child as plain data."""
 
-    def __init__(self, child: Child) -> None:
+    def __init__(self, child: Child, ends: float | None = None) -> None:
         self.child = child
+        # The replay's own deadline (``time.monotonic``), or ``None``; :attr:`spent` once a
+        # request stalled on it rather than on the call's limit.
+        self.ends = ends
+        self.spent = False
         self.answers: dict[str, list[str]] = {}
         self.requests: dict[str, tuple[Any, Any]] = {}
         # The answers on each request that the candidate gave: every one but a stall.
@@ -465,7 +469,9 @@ class Proxy:
         except TypeError as error:
             raise CandidateFailed(f"argument is not plain data: {error}") from error
         key = json.dumps([args_tagged, kwargs_tagged], separators=(",", ":"))
-        reply = self.child.call(args_tagged, kwargs_tagged)
+        left = time_left(self.ends)
+        reply = self.child.call(args_tagged, kwargs_tagged, left)
+        self.spent = self.spent or spent_on(left, self.child.timeout, reply)
         answer = json.dumps(reply, separators=(",", ":"), sort_keys=True)
         self.answers.setdefault(key, []).append(answer)
         if not stall(reply):
@@ -592,29 +598,32 @@ def _text(reply: Any) -> str:
 
 
 def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
-             budget: float) -> tuple[list[Any], float, bool]:
+             budget: float) -> tuple[list[Any], float, bool, bool]:
     """One child, each call ``repeat`` times, inside its own ``budget`` seconds; the replies
-    in order."""
+    in order, the seconds taken, whether the run was cut short by a stall and whether the
+    budget was what it stalled on."""
     started = time.monotonic()
     answers: list[Any] = []
     timed_out = False
+    spent = False
     with Child(request["child_argv"], request.get("child_cwd"),
                float(request["call_timeout"])) as child:
         for args_tagged, kwargs_tagged in calls:
             for _ in range(repeat):
                 left = budget - (time.monotonic() - started)
                 if left <= 0:
-                    timed_out = True
+                    timed_out = spent = True
                     break
                 reply = child.call(args_tagged, kwargs_tagged, left)
                 answers.append(reply)
                 if child.timed_out:
                     # The child is closed: no later call can be answered or counted.
                     timed_out = True
+                    spent = spent_on(left, child.timeout, reply)
                     break
             if timed_out:
                 break
-    return answers, round(time.monotonic() - started, 3), timed_out
+    return answers, round(time.monotonic() - started, 3), timed_out, spent
 
 
 def given_wrong(runs: list[list[Any]], cases: list[tuple[Any, Any, Any]]) -> str | None:
@@ -643,16 +652,17 @@ def determinism(request: dict[str, Any]) -> dict[str, Any]:
     cases = sealed_cases(Path(request["test"]))
     calls = [_tagged(args, kwargs) for args, kwargs, _ in cases]
     budget = float(request["run_timeout"])
-    first, first_s, first_out = _one_run(request, calls, 2, budget)
-    fresh, fresh_s, fresh_out = _one_run(request, calls, 1, budget)
+    first, first_s, first_out, first_spent = _one_run(request, calls, 2, budget)
+    fresh, fresh_s, fresh_out, fresh_spent = _one_run(request, calls, 1, budget)
     # A run cut short by a stall still holds the answers it was given, and a wrong one among
     # them is a definitive failure: a later stall never turns it into "no answer".
     failure = given_wrong([first[0::2], first[1::2], fresh], cases)
-    definitive = failure is not None
-    if not definitive and (first_out or fresh_out or any(child.timed_out for child in STARTED)):
+    shown = failure is not None
+    if not shown and (first_out or fresh_out or any(child.timed_out for child in STARTED)):
         failure = "timeout"
     return {"passed": failure is None, "failure": failure, "mode": "determinism",
-            "definitive": definitive,
+            "definitive": definitive_failure(failure is not None, shown),
+            **stance(first_spent or fresh_spent),
             # Count what was asked: a run cut short reached only its first cases.
             "calls_intercepted": len(first) + len(fresh),
             "distinct_calls": max(-(-len(first) // 2), len(fresh)),
@@ -667,13 +677,17 @@ def type_strict(request: dict[str, Any]) -> dict[str, Any]:
     made = 0
     failure = None
     stalled = False
+    spent = False
+    ends = deadline(request.get("run_timeout"), float(request.get("started", time.monotonic())))
     with Child(request["child_argv"], request.get("child_cwd"),
                float(request["call_timeout"])) as child:
         for args, kwargs, expected in cases:
             made += 1
-            reply = child.call(*_tagged(args, kwargs))
+            left = time_left(ends)
+            reply = child.call(*_tagged(args, kwargs), left)
             if "error" in reply:
                 failure, stalled = f"candidate: {reply['error']}", stall(reply)
+                spent = spent_on(left, child.timeout, reply)
                 break
             if not strict_eq(unplain(reply["ok"]), expected):
                 mismatched += 1
@@ -681,8 +695,9 @@ def type_strict(request: dict[str, Any]) -> dict[str, Any]:
     if mismatched and (failure is None or stalled):
         failure = f"{mismatched} result(s) differ in type or value"
     return {"passed": failure is None, "failure": failure, "mode": "type_strict",
-            "definitive": failure is not None and (bool(mismatched) or not stalled),
-            "calls_intercepted": made, "distinct_calls": made}
+            "definitive": definitive_failure(failure is not None,
+                                             bool(mismatched) or not stalled),
+            "calls_intercepted": made, "distinct_calls": made, **stance(spent)}
 
 
 def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
@@ -695,8 +710,10 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
                float(request["call_timeout"])) as child:
         before, after = child.read(), child.read()
     if "builtins" not in before or "builtins" not in after:
+        # A module whose import never reports has stalled inside the candidate's own request.
         return {"passed": False, "failure": "no builtins report", "mode": "import_side_effects",
-                "calls_intercepted": 0, "distinct_calls": 0}
+                "definitive": definitive_failure(True, not (stall(before) or stall(after))),
+                "calls_intercepted": 0, "distinct_calls": 0, **stance(False)}
     old = {name: (kind, ident) for name, kind, ident in before["builtins"]}
     new = {name: (kind, ident) for name, kind, ident in after["builtins"]}
     changes = {"added": sorted(set(new) - set(old)), "removed": sorted(set(old) - set(new)),
@@ -704,7 +721,7 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
     changed = any(changes.values())
     return {"passed": not changed, "failure": "builtins changed on import" if changed else None,
             "mode": "import_side_effects", "definitive": changed, "builtins": changes, "calls_intercepted": 0,
-            "distinct_calls": 0, "evidence_from_worker": ["builtins_after_import"]}
+            "distinct_calls": 0, **stance(False), "evidence_from_worker": ["builtins_after_import"]}
 
 
 def replay(request: dict[str, Any]) -> dict[str, Any]:
@@ -722,8 +739,9 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     if mode == "import_side_effects":
         return import_side_effects(request)
     timeout = float(request["call_timeout"])
+    ends = deadline(request.get("run_timeout"), float(request.get("started", time.monotonic())))
     with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:
-        proxy = Proxy(child)
+        proxy = Proxy(child, ends)
         failure = _run_test(Path(request["test"]), proxy)
     impure = sorted(key for key, answers in proxy.answers.items() if len(set(answers)) != 1)
     order = sorted(proxy.answers)
@@ -731,18 +749,22 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     fresh_mismatch = []
     # A failure the candidate's own answers show: a failed assertion or a raise in the run
     # (not its stall), two answers it gave on one request, or a fresh child's answer.
-    definitive = (failure is not None and not child.timed_out) or any(
+    shown = (failure is not None and not child.timed_out) or any(
         len(given) > 1 for given in proxy.given.values())
     for key in order:
+        left = time_left(ends)
         with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
-            reply = fresh.call(*proxy.requests[key])
+            reply = fresh.call(*proxy.requests[key], left)
         if _text(reply) != proxy.answers[key][0]:
             fresh_mismatch.append(key)
-            definitive = definitive or not stall(reply)
+            shown = shown or not stall(reply)
+        if spent_on(left, timeout, reply):
+            proxy.spent = True
+            break
     calls = sum(len(answers) for answers in proxy.answers.values())
     passed = failure is None and not impure and not fresh_mismatch
-    return {"passed": passed, "failure": failure, "definitive": definitive and not passed,
-            "calls_intercepted": calls,
+    return {"passed": passed, "failure": failure, "definitive": definitive_failure(not passed, shown),
+            **stance(proxy.spent), "calls_intercepted": calls,
             "distinct_calls": len(order), "impure": impure, "fresh_mismatch": fresh_mismatch,
             "fresh_order": order}
 

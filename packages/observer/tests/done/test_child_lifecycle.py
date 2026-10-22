@@ -85,11 +85,11 @@ def _own_rss() -> int:
 
 
 def _probe(tmp_path: Path, runner: Wrapped, source: str, mode: str, index: int,
-           timeout: float) -> int:
+           timeout: float, test: str = VISIBLE) -> int:
     scratch = tmp_path / f"probe{index}"
     (scratch / "workspace").mkdir(parents=True)
     (scratch / "workspace" / "func.py").write_text(source)
-    (scratch / "workspace" / "test.py").write_text(VISIBLE)
+    (scratch / "workspace" / "test.py").write_text(test)
     argv = [replay.COMMAND, "test.py", "func", "add"] + ([] if mode == "assert" else [mode])
     return run_replay(scratch, argv, runner.child_argv, timeout, "s", runner.replays)
 
@@ -128,11 +128,12 @@ def test_a_hung_candidate_is_stopped_with_everything_it_started(tmp_path, python
 
 def test_a_replay_parent_that_outruns_its_limit_stops_its_children(tmp_path, python_bin,
                                                                     leak_guard, monkeypatch):
-    # The parent's whole-command limit (1 s) fires before the child's own call limit (60 s),
-    # so the children are still running when the runner stops the parent.
+    # A parent that the replay deadline does not reach (the sealed test itself never returns)
+    # outruns the command's limit, so the children are still running when the runner stops it.
     runner = Wrapped(python_bin, leak_guard)
     monkeypatch.setattr(replay, "CLOSE_GRACE", 0.5, raising=False)
-    code = _probe(tmp_path, runner, HUNG, "assert", 0, 1.0)
+    code = _probe(tmp_path, runner, HUNG, "assert", 0, 3.0,
+                  "import time\n\n\ndef check(candidate):\n    time.sleep(120)\n")
     assert code == TIMEOUT_EXIT
     assert _settled_survivors(leak_guard) == []
 

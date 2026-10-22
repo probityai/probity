@@ -194,25 +194,83 @@ def test_main_writes_the_result(tmp_path, local):
     assert json.loads((tmp_path / "o.json").read_text())["failure"].startswith("candidate")
 
 
-def _probe_request(tmp_path, local, source, mode):
+def _probe_request(tmp_path, local, source, mode, call_timeout=0.5, run_timeout=0.5):
     test = tmp_path / "t.py"
     test.write_text("def check(candidate):\n    assert candidate(1, 1) == 2\n")
     cand = tmp_path / "cand"
     cand.mkdir()
     (cand / "func.py").write_text(source)
-    argv, cwd = local.child_argv(cand, replay.child_source("func", "add"))
+    argv, cwd = local.child_argv(cand, replay.child_source(
+        "func", "add", probe_import=mode == "import_side_effects"))
     request = tmp_path / "r.json"
     request.write_text(json.dumps({"test": str(test), "child_argv": argv, "child_cwd": cwd,
-                                   "call_timeout": 0.5, "run_timeout": 0.5, "order_seed": "s",
-                                   "mode": mode, "out": str(tmp_path / "o.json")}))
+                                   "call_timeout": call_timeout, "run_timeout": run_timeout,
+                                   "order_seed": "s", "mode": mode,
+                                   "out": str(tmp_path / "o.json")}))
     return request
 
 
-@pytest.mark.parametrize("mode", ["type_strict", "determinism"])
-def test_a_probe_call_that_outruns_its_limit_is_reported_timed_out(tmp_path, local, mode):
-    slow = "import time\ndef add(a, b):\n    time.sleep(5)\n    return a + b\n"
-    assert replay.main([str(_probe_request(tmp_path, local, slow, mode))]) == 1
-    assert json.loads((tmp_path / "o.json").read_text())["timed_out"] is True
+STALLING = "import time\ndef add(a, b):\n    time.sleep(30)\n    return a + b\n"
+STALLING_IMPORT = "import time\ntime.sleep(30)\ndef add(a, b):\n    return a + b\n"
+SLOW_BUT_HONEST = "import time\ndef add(a, b):\n    time.sleep(0.1)\n    return a + b\n"
+# Every mode of the replay, each with a candidate that stalls inside its own request.
+STALLS_BY_MODE = [("assert", STALLING, "candidate: child-timeout"),
+                  ("determinism", STALLING, "timeout"),
+                  ("type_strict", STALLING, "candidate: child-timeout"),
+                  ("import_side_effects", STALLING_IMPORT, "no builtins report")]
+
+
+def _report(tmp_path):
+    return json.loads((tmp_path / "o.json").read_text())
+
+
+@pytest.mark.parametrize(("mode", "source", "failure"), STALLS_BY_MODE)
+def test_a_stall_in_the_candidates_own_request_reads_contradicted(
+        tmp_path, local, mode, source, failure):
+    # The call outruns its own limit (not the replay's deadline): a definitive failure, never
+    # no answer, under the named stall policy that the result records.
+    request = _probe_request(tmp_path, local, source, mode, run_timeout=60)
+    assert replay.main([str(request)]) == 1
+    report = _report(tmp_path)
+    assert report["failure"] == failure
+    assert report["definitive"] is True and "timed_out" not in report
+    assert report["stall_policy"] == "contradicted" and report["deadline_reached"] is False
+
+
+@pytest.mark.parametrize(("mode", "source", "failure"), STALLS_BY_MODE)
+def test_the_stall_policy_is_a_setting_the_modes_obey_and_record(
+        tmp_path, local, monkeypatch, mode, source, failure):
+    # Under another policy the same stall is no answer again, and the result says which policy.
+    monkeypatch.setattr(replay, "STALL_POLICY", "not_established")
+    request = _probe_request(tmp_path, local, source, mode, run_timeout=60)
+    assert replay.main([str(request)]) == 1
+    report = _report(tmp_path)
+    assert report["failure"] == failure and report["timed_out"] is True
+    assert not report["definitive"] and report["stall_policy"] == "not_established"
+
+
+@pytest.mark.parametrize("mode", ["assert", "determinism", "type_strict", "import_side_effects"])
+def test_a_fast_honest_candidate_passes_every_mode(tmp_path, local, mode):
+    request = _probe_request(tmp_path, local, SLOW_BUT_HONEST, mode, call_timeout=5,
+                             run_timeout=60)
+    assert replay.main([str(request)]) == 0
+    report = _report(tmp_path)
+    assert report["passed"] and "timed_out" not in report and not report.get("definitive")
+    assert report["stall_policy"] == "contradicted" and report["deadline_reached"] is False
+
+
+@pytest.mark.parametrize("mode", ["assert", "determinism", "type_strict"])
+def test_a_run_that_spends_the_replay_deadline_reads_contradicted_and_says_so(
+        tmp_path, local, mode):
+    # The call limit (60 s) is far off: the request stalls on the replay's own deadline, a
+    # little under the 2 s the command is given (the margin is a quarter of a short limit).
+    request = _probe_request(tmp_path, local, STALLING, mode, call_timeout=60, run_timeout=2)
+    started = time.monotonic()
+    assert replay.main([str(request)]) == 1
+    assert time.monotonic() - started < 15
+    report = _report(tmp_path)
+    assert report["definitive"] is True and "timed_out" not in report
+    assert report["deadline_reached"] is True and report["stall_policy"] == "contradicted"
 
 
 @pytest.mark.parametrize("mode", ["type_strict", "determinism"])
@@ -249,11 +307,13 @@ def test_the_runner_says_when_it_stopped_a_probe_at_its_limit(tmp_path, local):
     state = tmp_path / "state"
     shutil.copytree(task.start, state)
     (state / "func.py").write_text("import time\ndef add(a, b):\n    time.sleep(30)\n")
-    # The determinism probe outlives its children's budget, so the report says it.
+    # The determinism probe outlives its children's budget: a stall inside the candidate's own
+    # request, which reads as a definitive failure and not as a probe the runner stopped.
     probe = next(command for command in task.commands if command.id == "heldout_determinism")
     stopped: list[bool] = []
     assert local.run(state, probe.argv, task.heldout, 1, stopped=stopped) != 0
-    assert stopped == [True] and local.replays[-1]["timed_out"] is True
+    assert stopped == [] and "timed_out" not in local.replays[-1]
+    assert local.replays[-1]["definitive"] is True and local.replays[-1]["deadline_reached"]
     (state / "func.py").write_text("def add(a, b):\n    return 0\n")
     stopped = []
     assert local.run(state, probe.argv, task.heldout, 30, stopped=stopped) != 0
@@ -389,9 +449,12 @@ class Scripted:
     below is driven from the parent's side with it."""
 
     replies: list = []
+    # The limit each call was given: ``None`` when the parent set none.
+    limits: list = []
 
     def __init__(self, argv, cwd, timeout):
         self.timed_out = False
+        self.timeout = timeout
         replay.STARTED.append(self)
 
     def __enter__(self):
@@ -404,6 +467,7 @@ class Scripted:
         pass
 
     def call(self, args_tagged, kwargs_tagged, timeout=None):
+        Scripted.limits.append(timeout)
         reply = Scripted.replies.pop(0)
         self.timed_out = self.timed_out or replay.stall(reply)
         return reply
@@ -412,6 +476,7 @@ class Scripted:
 def _scripted(monkeypatch, replies):
     monkeypatch.setattr(replay, "Child", Scripted)
     monkeypatch.setattr(Scripted, "replies", list(replies))
+    monkeypatch.setattr(Scripted, "limits", [])
 
 
 TWO = replay.plain(2)
@@ -486,10 +551,21 @@ def test_answers_given_before_a_stall_decide_the_determinism_probe(tmp_path, mon
     _scripted(monkeypatch, [{"ok": three}, {"ok": three}, STALLED, STALLED])
     found = replay.determinism(request)
     assert found["failure"] == "answer differs from the expected value" and found["definitive"]
-    # Only stalls: no answer, which reads timed out.
+    # An answer the candidate gave stands over a later stall under any policy.
+    monkeypatch.setattr(replay, "STALL_POLICY", "not_established")
+    _scripted(monkeypatch, [{"ok": three}, {"ok": three}, STALLED, STALLED])
+    assert replay.determinism(request)["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "contradicted")
+    # Only stalls: no answer was given, which reads as a definitive failure under the policy
+    # and as no answer (``timed_out``) under another.
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": TWO}, STALLED, {"ok": TWO}, STALLED])
+    found = replay.determinism(request)
+    assert found["failure"] == "timeout" and found["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "not_established")
     _scripted(monkeypatch, [{"ok": TWO}, {"ok": TWO}, STALLED, {"ok": TWO}, STALLED])
     found = replay.determinism(request)
     assert found["failure"] == "timeout" and not found["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "contradicted")
     cases = [((1, 1), {}, 2)]
     assert replay.given_wrong([[{"ok": TWO}], [STALLED], []], cases) is None
     assert replay.given_wrong([[{"ok": TWO}], [{"ok": three}], []], cases) == (
@@ -502,6 +578,14 @@ def test_a_mismatch_given_before_a_stall_decides_the_type_strict_probe(tmp_path,
     _scripted(monkeypatch, [{"ok": replay.plain(2.0)}, STALLED])
     found = replay.type_strict(request)
     assert found["failure"] == "1 result(s) differ in type or value" and found["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "not_established")
+    _scripted(monkeypatch, [{"ok": replay.plain(2.0)}, STALLED])
+    assert replay.type_strict(request)["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "contradicted")
+    _scripted(monkeypatch, [{"ok": TWO}, STALLED])
+    found = replay.type_strict(request)
+    assert found["failure"] == "candidate: child-timeout" and found["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "not_established")
     _scripted(monkeypatch, [{"ok": TWO}, STALLED])
     found = replay.type_strict(request)
     assert found["failure"] == "candidate: child-timeout" and not found["definitive"]
@@ -518,7 +602,74 @@ def test_a_wrong_answer_then_a_stalled_fresh_child_stays_definitive(tmp_path, mo
                             {"ok": replay.plain(5)}])
     found = replay.replay(request)
     assert found["fresh_mismatch"] and found["definitive"]
-    # The run passes and a fresh child stalls: no answer, not a wrong one.
+    # Both stand over a stall under any policy: the candidate's own answers show them.
+    monkeypatch.setattr(replay, "STALL_POLICY", "not_established")
+    _scripted(monkeypatch, [{"ok": replay.plain(3)}, STALLED])
+    assert replay.replay(request)["definitive"]
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, {"ok": TWO},
+                            {"ok": replay.plain(5)}])
+    assert replay.replay(request)["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "contradicted")
+    # The run passes and a fresh child stalls: a stall in the candidate's own request, which
+    # reads as a definitive failure under the policy and as no answer under another.
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, STALLED, STALLED])
+    found = replay.replay(request)
+    assert found["fresh_mismatch"] and found["definitive"]
+    monkeypatch.setattr(replay, "STALL_POLICY", "not_established")
     _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, STALLED, STALLED])
     found = replay.replay(request)
     assert found["fresh_mismatch"] and not found["definitive"]
+
+
+def test_no_fresh_child_is_started_past_the_replay_deadline(tmp_path, monkeypatch):
+    request = {**_cases(tmp_path), "mode": "assert"}
+    # The run passes; the first fresh child stalls on the deadline (a request that is already
+    # past it gets no time), so the second is never asked.
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, STALLED, STALLED])
+    found = replay.replay({**request, "started": time.monotonic() - 100})
+    assert found["deadline_reached"] is True and len(found["fresh_mismatch"]) == 1
+    assert Scripted.replies == [STALLED]
+    # Every request, the run's and the fresh child's, was given the time left, none of it here.
+    assert Scripted.limits == [0.0] * 3
+
+
+def test_a_call_limit_stall_is_not_a_spent_deadline(tmp_path, monkeypatch):
+    request = {**_cases(tmp_path), "mode": "assert", "run_timeout": 6000}
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}, STALLED, STALLED])
+    found = replay.replay(request)
+    assert found["definitive"] and found["deadline_reached"] is False
+    assert Scripted.replies == []
+    assert all(limit is not None and limit > 0 for limit in Scripted.limits)
+
+
+def test_a_budget_spent_between_calls_is_a_spent_deadline(tmp_path, monkeypatch):
+    request = _cases(tmp_path)
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": TWO}, {"ok": replay.plain(4)}])
+    ticks = iter([0.0, 0.0, 10.0] + [10.0] * 20)
+    monkeypatch.setattr(replay.time, "monotonic", lambda: next(ticks))
+    found = replay.determinism(request)
+    # The second call finds the budget gone before it is asked.
+    assert found["failure"] == "timeout" and found["definitive"] and found["deadline_reached"]
+
+
+def test_the_type_probe_asks_every_case_inside_the_replay_deadline(tmp_path, monkeypatch):
+    request = _cases(tmp_path)
+    _scripted(monkeypatch, [{"ok": TWO}, {"ok": replay.plain(4)}])
+    assert replay.type_strict(request)["passed"]
+    assert all(limit is not None and 0 < limit <= 1 for limit in Scripted.limits)
+    _scripted(monkeypatch, [STALLED])
+    found = replay.type_strict({**request, "started": time.monotonic() - 100})
+    assert found["deadline_reached"] is True and found["definitive"]
+    assert Scripted.limits == [0.0]
+    _scripted(monkeypatch, [STALLED])
+    found = replay.type_strict({**request, "run_timeout": 6000})
+    assert found["deadline_reached"] is False and found["definitive"]
+
+
+def test_a_run_request_that_stalls_on_the_deadline_is_a_spent_deadline(tmp_path, monkeypatch):
+    request = {**_cases(tmp_path), "mode": "assert", "started": time.monotonic() - 100}
+    # The run's first request stalls on the deadline; the fresh child, asked after it, answers.
+    _scripted(monkeypatch, [STALLED, {"ok": TWO}])
+    found = replay.replay(request)
+    assert found["failure"] == "candidate: child-timeout" and found["definitive"]
+    assert found["deadline_reached"] is True
