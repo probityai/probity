@@ -27,7 +27,7 @@ from .evaluation_history import (
 )
 
 LOGGER = logging.getLogger(__name__)
-INSPECT_VERSION = "0.3.273"
+INSPECT_VERSION = "0.3.281"
 LOG_VERSION = 2
 PROFILE = "probity-inspect-history-reference-v0"
 POLICY_BYTES = encode_record(
@@ -382,7 +382,7 @@ def adapt_inspect_log(
     Parameters
     ----------
     content : bytes
-        Original Inspect JSON log bytes, schema version 2 from Inspect 0.3.273.
+        Original Inspect JSON log bytes, schema version 2 from Inspect 0.3.281.
     plan : RunPlan
         Selected attempt population and seven exact source-role pins. This
         adapter supports generate, match with default options, and zero retries.
