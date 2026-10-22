@@ -63,7 +63,7 @@ Select packet hashes, reader hashes and keys through the consumer's accepted pro
 The root wheel contains `probity_observer` modules and the Apache license.
 It does not contain the `interop/` scripts, profile wheels, native frameworks,
 model weights, retained experiment packets or selected consumer policies.
-The `inspect` extra supplies the historical Inspect 0.3.273 dependency, not every profile.
+The `inspect` extra supplies the historical Inspect 0.3.281 dependency, not every profile.
 The current source includes RFC8785 canonicalization as a core dependency.
 
 For maintainers, `scripts/compile-observer-locks.sh` regenerates the affected

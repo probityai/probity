@@ -23,7 +23,7 @@ python -m pip install -e '.[test,inspect]'
 python examples/evaluation_history_demo.py --output-dir evaluation-receipts
 ```
 
-The output directory must be new. Inspect AI 0.3.273 runs its real `Task`,
+The output directory must be new. Inspect AI 0.3.281 runs its real `Task`,
 `generate`, and `match` implementations with the official `mockllm/model`
 provider. No paid model or external model API is invoked. Mock answers test the
 logging and grading contract; they are not evidence of LLM performance.
@@ -86,7 +86,7 @@ same operator is not independent evidence of execution.
 
 ## Explicit limits
 
-The native adapter supports JSON log schema 2 from Inspect AI 0.3.273, a finite
+The native adapter supports JSON log schema 2 from Inspect AI 0.3.281, a finite
 text task, serial concurrency, the official mock provider, one `generate` step,
 and default `match`. It refuses unsupported finish solvers, scorer/solver options,
 sample retries, limits, invalidation, log rewrites, and changed populations.
@@ -108,7 +108,7 @@ separate next steps.
 ## Source basis
 
 The adapter follows the official Inspect AI evaluation-log schema and mock-model
-API. The local execution pins the actual installed 0.3.273 source files and a
+API. The local execution pins the actual installed 0.3.281 source files and a
 manifest of its Python files. An upstream Git revision is not substituted for
 those executed-file hashes.
 

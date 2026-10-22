@@ -1,6 +1,6 @@
 """Run official Inspect mock-model contract cases and retain every declared entry.
 
-Requires inspect-ai==0.3.273. No model-provider request is made. The mock outputs
+Requires inspect-ai==0.3.281. No model-provider request is made. The mock outputs
 exercise logging and grading behavior; they are not an LLM evaluation.
 """
 
