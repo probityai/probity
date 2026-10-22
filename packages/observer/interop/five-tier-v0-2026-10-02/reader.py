@@ -101,7 +101,7 @@ def tool_join(sample: dict[str, Any], case: dict[str, Any], events: list[dict[st
 def native_configuration(native: dict[str, Any], case: dict[str, Any]) -> None:
     """Refuse changed native launch, model responses, scorer and solver settings."""
     evaluation = native["eval"]
-    require(evaluation["packages"]["inspect_ai"] == "0.3.273", "native_framework_version")
+    require(evaluation["packages"]["inspect_ai"] == "0.3.281", "native_framework_version")
     expected = {"epochs": 1, "retry_on_error": 0, "max_samples": 1, "message_limit": 8 if case["solver"] == "react-8" else 12, "fail_on_error": True}
     require(all(type(evaluation["config"].get(key)) is type(value) and evaluation["config"].get(key) == value for key, value in expected.items()), "native_configuration")
     require(evaluation["scorers"][0]["name"] == "match" and evaluation["scorers"][0]["options"] == {} and len(evaluation["scorers"]) == 1, "native_scorer")

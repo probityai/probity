@@ -527,7 +527,7 @@
   ],
   "framework": {
     "a2a-sdk": "1.2.1",
-    "inspect-ai": "0.3.273"
+    "inspect-ai": "0.3.281"
   },
   "historical_cpu_baseline": {
     "attempts": 12,

@@ -94,7 +94,7 @@ def retain_runtime(output: Path) -> None:
         shutil.copyfile(package / name, target)
     installed = importlib.metadata.distribution("inspect-ai")
     (output / "inspect-METADATA.txt").write_text(installed.read_text("METADATA") or "", encoding="utf-8")
-    license_path = installed.locate_file("inspect_ai-0.3.273.dist-info/licenses/LICENSE")
+    license_path = installed.locate_file("inspect_ai-0.3.281.dist-info/licenses/LICENSE")
     shutil.copyfile(str(license_path), output / "inspect-LICENSE.txt")
     write(output / "inspect-runtime-files.json", {str(path.relative_to(package)): digest(path.read_bytes()) for path in sorted(package.rglob("*.py"))})
 
