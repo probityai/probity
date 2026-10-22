@@ -11,8 +11,10 @@ every place inside a sealed value), the request nonce, the refusal of a function
 returns, the finder that serves sealed code only, the parent's scrubbed environment, the
 bounded read of a reply line, the rule that no stall is read over a definitive failure, the
 absent attribute of ``from pkg import submodule``, the client failures the child cannot
-forge, the canonical codec, the grouped judging of a two-way boolean pair, and the record
-of where the parent ran. Each is applied to the source, its tests
+forge, the canonical codec, the grouped judging of a two-way boolean pair, the record
+of where the parent ran, and the stall policy: a stall inside the candidate's own request
+reads ``contradicted`` in the pytest replay and in each LiveCodeBench mode, the setting is
+honoured and recorded, and a stall read as a pass or as an error fails a test. Each is applied to the source, its tests
 run (without bytecode, so a restored file is never measured through a stale cache), and the
 file is restored. Run from ``packages/observer`` in an environment with the ``test`` and
 ``done`` extras:
@@ -43,7 +45,17 @@ STALLS = [f"tests/done/test_replay.py::{name}" for name in (
     "test_answers_given_before_a_stall_decide_the_determinism_probe",
     "test_a_mismatch_given_before_a_stall_decides_the_type_strict_probe",
     "test_a_wrong_answer_then_a_stalled_fresh_child_stays_definitive",
-    "test_a_line_too_deeply_nested_to_decode_is_a_protocol_failure")]
+    "test_a_line_too_deeply_nested_to_decode_is_a_protocol_failure",
+    "test_a_stall_in_the_candidates_own_request_reads_contradicted",
+    "test_the_stall_policy_is_a_setting_the_modes_obey_and_record",
+    "test_a_fast_honest_candidate_passes_every_mode",
+    "test_a_run_that_spends_the_replay_deadline_reads_contradicted_and_says_so",
+    "test_no_fresh_child_is_started_past_the_replay_deadline",
+    "test_a_call_limit_stall_is_not_a_spent_deadline",
+    "test_a_budget_spent_between_calls_is_a_spent_deadline",
+    "test_a_run_request_that_stalls_on_the_deadline_is_a_spent_deadline",
+    "test_the_type_probe_asks_every_case_inside_the_replay_deadline")]
+BOTH = UNIT + STALLS
 MUTANTS = [
     # The parent counts every repeat of every test.
     (REPLAY, UNIT, "        self.repeats = max(1, repeats)", "        self.repeats = 1"),
@@ -218,15 +230,15 @@ MUTANTS = [
      '    return isinstance(reply, dict) and reply.get("error") in STALLS'),
     (HARNESS, STALLS, '    if not result["passed"] and not result.get("definitive") and (',
      '    if not result["passed"] and ('),
-    (HARNESS, STALLS, "    definitive = failure is not None\n    if not definitive and (first_out",
-     "    definitive = False\n    if not definitive and (first_out"),
+    (HARNESS, STALLS, "    shown = failure is not None\n    if not shown and (first_out",
+     "    shown = False\n    if not shown and (first_out"),
     (HARNESS, STALLS, "              if not stall(reply)] for index in range(len(cases))]",
      "              ] for index in range(len(cases))]"),
     (HARNESS, STALLS, "    if mismatched and (failure is None or stalled):",
      "    if failure is None and mismatched:"),
-    (HARNESS, STALLS, "    definitive = (failure is not None and not child.timed_out) or any(",
-     "    definitive = False or any("),
-    (HARNESS, STALLS, "            definitive = definitive or not stall(reply)", "            pass"),
+    (HARNESS, STALLS, "    shown = (failure is not None and not child.timed_out) or any(",
+     "    shown = False or any("),
+    (HARNESS, STALLS, "            shown = shown or not stall(reply)", "            pass"),
     (REPLAY, UNIT, '            "definitive": definitive_failure(failure is not None, False),',
      '            "definitive": False,'),
     # An attribute the candidate's module lacks is an absent handle, raised in the parent's words.
@@ -248,17 +260,73 @@ MUTANTS = [
     (HARNESS, UNIT, '    if tag in ("list", "tuple", "set", "frozenset") and kind is list:',
      '    if tag in ("list", "tuple", "set", "frozenset"):'),
     # The stall setting is named, applied and recorded.
-    (HARNESS, UNIT, 'STALL_POLICY = "contradicted"', 'STALL_POLICY = "not_established"'),
+    (HARNESS, BOTH, 'STALL_POLICY = "contradicted"', 'STALL_POLICY = "not_established"'),
     (RUNNER, PIPELINE, '"stall_policy": replay_harness.STALL_POLICY}',
      '"stall_policy": "not_established"}'),
     # The replay keeps one deadline inside the command's limit, fresh children included.
-    (HARNESS, UNIT, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
+    (HARNESS, BOTH, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
     (REPLAY, UNIT, "        reply = exchange(self.child, request, left)",
      "        reply = exchange(self.child, request)"),
     (REPLAY, UNIT, "            reply = exchange(fresh, session.requests[key], left)",
      "            reply = exchange(fresh, session.requests[key])"),
     (REPLAY, UNIT, "            session.spent = True\n            break\n",
      "            session.spent = True\n"),
+    (REPLAY, UNIT, "            **stance(session.spent),", "            **stance(False),"),
+    # The stall policy reaches the LiveCodeBench modes too: a stall reads contradicted, the
+    # setting is honoured and recorded, and a stall read as a pass or an error is refused.
+    (HARNESS, BOTH, '    return failed and (shown or STALL_POLICY == "contradicted")',
+     "    return failed and shown"),
+    (HARNESS, BOTH, '    return failed and (shown or STALL_POLICY == "contradicted")',
+     "    return failed"),
+    (HARNESS, BOTH, '    return {"deadline_reached": spent, "stall_policy": STALL_POLICY}',
+     '    return {"deadline_reached": False, "stall_policy": STALL_POLICY}'),
+    (HARNESS, BOTH, '    return {"deadline_reached": spent, "stall_policy": STALL_POLICY}',
+     '    return {"deadline_reached": spent, "stall_policy": "contradicted"}'),
+    (HARNESS, BOTH, "    return left is not None and left < limit and stall(reply)", "    return False"),
+    (HARNESS, BOTH, "    return left is not None and left < limit and stall(reply)",
+     "    return left is not None and stall(reply)"),
+    (HARNESS, BOTH, "    return None if ends is None else max(0.0, ends - time.monotonic())",
+     "    return None"),
+    (HARNESS, STALLS, "    if not shown and (first_out or fresh_out or any(child.timed_out for child in STARTED)):",
+     "    if False:"),
+    (HARNESS, STALLS, "        reply = child.call(*_tagged(args, kwargs), left)",
+     "        reply = child.call(*_tagged(args, kwargs))"),
+    (HARNESS, STALLS, "            reply = child.call(*_tagged(args, kwargs), left)",
+     "            reply = child.call(*_tagged(args, kwargs))"),
+    (HARNESS, STALLS, "        reply = self.child.call(args_tagged, kwargs_tagged, left)",
+     "        reply = self.child.call(args_tagged, kwargs_tagged)"),
+    (HARNESS, STALLS, "        self.spent = self.spent or spent_on(left, self.child.timeout, reply)",
+     "        self.spent = False"),
+    (HARNESS, STALLS, "            reply = fresh.call(*proxy.requests[key], left)",
+     "            reply = fresh.call(*proxy.requests[key])"),
+    (HARNESS, STALLS, "            proxy.spent = True\n            break\n",
+     "            proxy.spent = True\n"),
+    (HARNESS, STALLS, "                    timed_out = spent = True\n", "                    timed_out = True\n"),
+    (HARNESS, STALLS, "                    spent = spent_on(left, child.timeout, reply)\n                    break",
+     "                    spent = False\n                    break"),
+    (HARNESS, STALLS, "                spent = spent_on(left, child.timeout, reply)\n                break",
+     "                spent = True\n                break"),
+    (HARNESS, STALLS, '                "definitive": definitive_failure(True, not (stall(before) or stall(after))),',
+     '                "definitive": definitive_failure(True, True),'),
+    (HARNESS, STALLS, '            "definitive": definitive_failure(failure is not None,\n'
+                      '                                             bool(mismatched) or not stalled),',
+     '            "definitive": definitive_failure(failure is not None, True),'),
+    (HARNESS, STALLS, '            **stance(first_spent or fresh_spent),', "            **stance(False),"),
+    (HARNESS, STALLS, "calls_intercepted\": made, \"distinct_calls\": made, **stance(spent)}",
+     "calls_intercepted\": made, \"distinct_calls\": made}"),
+    (HARNESS, STALLS, "            **stance(proxy.spent), \"calls_intercepted\": calls,",
+     "            \"calls_intercepted\": calls,"),
+    (HARNESS, STALLS, '"distinct_calls": 0, **stance(False)}\n    old =',
+     '"distinct_calls": 0}\n    old ='),
+    (HARNESS, STALLS, '"distinct_calls": 0, **stance(False), "evidence_from_worker"',
+     '"distinct_calls": 0, "evidence_from_worker"'),
+    (HARNESS, STALLS, 'ends = deadline(request.get("run_timeout"), float(request.get("started", time.monotonic())))\n'
+                      '    with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:\n'
+                      '        proxy = Proxy(child, ends)',
+     'ends = None\n    with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:\n'
+     '        proxy = Proxy(child, ends)'),
+    (HARNESS, STALLS, '    spent = False\n    ends = deadline(request.get("run_timeout"), float(request.get("started", time.monotonic())))',
+     '    spent = False\n    ends = None'),
 ]
 
 
