@@ -306,16 +306,25 @@ at `43096f8` (it was `MUTANTS 66 surviving=0` at `4b43d3b`), and the observer su
    spends the replay's whole deadline by answering slowly: each answer came at the
    candidate's own pace, and the parent stops asking in time to write its result. Such a
    held-out failure reads `contradicted`. This is the named setting `stall_policy:
-   contradicted`, recorded in every pytest replay result and in the grade's
+   contradicted`, recorded in every replay result and in the grade's
    `verifier.replay_parent`. Operator ruling of 2026-10-21, in his words: "keep
-   contradicted." It covers the pytest replay only; the LiveCodeBench modes are not covered
-   by it. The setting rests on a ruling, not on a measurement: no fresh child is asked the
+   contradicted." The ruling was made for the pytest replay. The operator then said "go
+   with it" to the recommendation that the same rule cover the LiveCodeBench modes (the
+   assert replay, the determinism and type-strict probes and the import probe), so a stall
+   inside a candidate's request reads `contradicted` there too, under the same setting, and
+   those results record the same `stall_policy` and `deadline_reached`. The setting is one
+   constant in the replay harness (`STALL_POLICY` in `replay.py`) that every mode reads; under
+   any other value a stall reads as no answer again (`timed_out`, then `not_established`),
+   while an answer the candidate gave (a wrong one, an error, two different answers to one
+   request) still stands over a later stall. The assert and type-strict modes keep the same
+   deadline as the pytest replay (the command's limit less the margin, fresh children
+   included) and record `deadline_reached` when a request stalled on it; the determinism
+   probe keeps its per-run budget and records whether a stall was that budget.
+   The setting rests on a ruling, not on a measurement: no fresh child is asked the
    stalled request again, so an honest candidate whose first request (container start plus
    import) or one call outlasts the call limit also reads `contradicted`. Only a parent the
    runner stops before its own deadline, which leaves no result, reads as no answer
-   (`timed_out`, then `not_established`). In the LiveCodeBench modes a stall still reads as no answer, but only
-   when the answers given before it hold no definitive failure: a wrong answer, an error or
-   two different answers to one request stand over any later stall.
+   (`timed_out`, then `not_established`).
 9. **The finder serves sealed code only from the first import on (F5).** Once a sealed module
    has imported a remote name, `sys.modules` holds the served module, and verifier code that
    imports the same name later receives it. Every value such code asked of it outside a

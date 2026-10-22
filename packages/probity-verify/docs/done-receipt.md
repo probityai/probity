@@ -114,7 +114,7 @@ A command sealed with `in_process_twin_of` is read first, before the detectors, 
 
 1. No probe in the contract: `not_established` (`no_probes`).
 2. An active probe that failed with an answer contradicts (`probe_determinism_failed`, `probe_type_strict_failed`, `probe_import_side_effects_failed`, the first in contract order).
-3. An active probe the verifier stopped at its limit leaves it open (`probe_timed_out`).
+3. An active probe the verifier stopped at its limit leaves it open (`probe_timed_out`). A candidate that stalls inside its own request is not that case: the replay records a definitive failure (`stall_policy: contradicted`), so the probe fails with an answer as in step 2.
 4. Otherwise `supported` (`probes_passed`); the `probes` check lists the active and inactive probes.
 
 So an honest wrong answer reads not done and clean, and code that passes every behavioural test for the wrong reason reads done and gamed.
