@@ -38,7 +38,7 @@ from evaluation_contract import (
 from inspect_contract import reference
 
 VERSION = "probity-inspect-execution-v1"
-INSPECT_VERSION = "0.3.273"
+INSPECT_VERSION = "0.3.281"
 POLICY = b"Native match C/I task score only; finite local mock execution; no independent judge, authority or custody claim."
 
 

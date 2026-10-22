@@ -66,9 +66,9 @@ def _common_report(value: Any) -> bool:
 def _profile_report(name: str, value: dict[str, Any]) -> bool:
     if name == "reasoning":
         cases = value.get("cases")
-        return value.get("inspectVersion") == "0.3.273" and value.get("model") == "mockllm/model" and type(cases) is list and len(cases) == 2 and all(_common_report(case) for case in cases)
+        return value.get("inspectVersion") == "0.3.281" and value.get("model") == "mockllm/model" and type(cases) is list and len(cases) == 2 and all(_common_report(case) for case in cases)
     if name == "inspect-execution":
-        return value.get("profile") == "probity-inspect-execution-v1" and value.get("inspectVersion") == "0.3.273" and _common_report(value.get("report"))
+        return value.get("profile") == "probity-inspect-execution-v1" and value.get("inspectVersion") == "0.3.281" and _common_report(value.get("report"))
     if name == "a2a":
         return _common_report(value)
     return False

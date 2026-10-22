@@ -3,7 +3,7 @@
 Read the [worked example](../INSPECT-AUTHORITY-EFFECT.md) for the problem and outcome.
 This reference retains the exact source, recorded checks, and evidence boundary.
 
-This bounded profile connects actual Inspect ReAct tool events to one selected AAE decision and a native HTTP ticket update. It exercises Inspect 0.3.273 with controlled mock outputs, the existing unsigned native AAE kernel and the existing signed HTTP ticket profile. It is an executable same-operator reference, with no claim of model quality, authenticated AAE issuer identity, independent custody or production adoption.
+This bounded profile connects actual Inspect ReAct tool events to one selected AAE decision and a native HTTP ticket update. It exercises Inspect 0.3.281 with controlled mock outputs, the existing unsigned native AAE kernel and the existing signed HTTP ticket profile. It is an executable same-operator reference, with no claim of model quality, authenticated AAE issuer identity, independent custody or production adoption.
 
 Run from the Observer checkout. Create its `.venv`, install the optional native
 dependencies, and select a new output directory:

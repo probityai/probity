@@ -24,7 +24,7 @@ from probity_observer.crypto import SigningKey, VerificationError, canonical, di
 from probity_observer.ticket_service import DOMAIN, MAX_BODY, _checked, _state_schema, running_server
 
 PROFILE = "probity-inspect-aae-ticket-v0"
-INSPECT_VERSION = "0.3.273"
+INSPECT_VERSION = "0.3.281"
 CASES = (
     ("permit-pass", "allow", "DONE", "DONE", True, False),
     ("permit-task-fail", "allow", "wrong", "DONE", True, False),

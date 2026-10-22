@@ -27,7 +27,7 @@ Every attempt output contains its normalized record without its own `output` ref
 
 ## Native integration boundary
 
-`source-manifest.json` records the earlier exact public Observer source inspected. The optional `inspect_contract.py` bridge now verifies selected native logs through Observer's existing Inspect adapter before reconstructing the common packet. It supports `inspect-ai==0.3.273`, `mockllm/model`, one `generate` solver, the default `match` scorer and zero native sample retries. Native retries, invalidation, changed options and log rewrites remain refusals.
+`source-manifest.json` records the earlier exact public Observer source inspected. The optional `inspect_contract.py` bridge now verifies selected native logs through Observer's existing Inspect adapter before reconstructing the common packet. It supports `inspect-ai==0.3.281`, `mockllm/model`, one `generate` solver, the default `match` scorer and zero native sample retries. Native retries, invalidation, changed options and log rewrites remain refusals.
 
 From this directory, run the native example with:
 
