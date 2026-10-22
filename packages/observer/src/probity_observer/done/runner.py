@@ -335,13 +335,7 @@ def describe_parent(argv: Sequence[str], env: dict[str, str]) -> dict:
     return {"runtime": "host", "uid": os.getuid(), "groups": sorted(os.getgroups()),
             "isolated": "-I" in argv[1:argv.index("-m")] if "-m" in argv else False,
             "env": "scrubbed" if set(env) <= allowed else "inherited",
-            "env_keys": sorted(env), "stall_policy": pytest_replay_stall_policy()}
-
-
-def pytest_replay_stall_policy() -> str:
-    from .pytest_replay import STALL_POLICY
-
-    return STALL_POLICY
+            "env_keys": sorted(env), "stall_policy": replay_harness.STALL_POLICY}
 
 
 def replay_parent() -> dict:

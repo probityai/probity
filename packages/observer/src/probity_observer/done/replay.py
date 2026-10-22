@@ -253,6 +253,53 @@ def stall(reply: Any) -> bool:
     return isinstance(reply, ClientFailure) and reply.get("error") in STALLS
 
 
+# What a stall inside the candidate's own request reads as, in every mode of the replay
+# (pytest and the LiveCodeBench modes alike): a definitive failure, ``contradicted`` on a
+# held-out command. Operator rulings of 2026-10-21, "keep contradicted." for the pytest
+# replay and "go with it" for extending it to the LiveCodeBench modes. Recorded in every
+# result (:func:`stance`) and in the grade's isolation record.
+STALL_POLICY = "contradicted"
+
+# What the parent keeps of the command's limit for itself: closing the children, the count
+# and writing the result. A quarter of a short limit, at most a minute of a long one.
+DEADLINE_MARGIN = 60.0
+
+
+def deadline(run_timeout: Any, started: float) -> float | None:
+    """The replay's own deadline on ``time.monotonic``: the command's limit less the margin,
+    from ``started``. Every request, fresh children included, is asked inside it, so the parent
+    writes its result before the runner stops it, whatever pace the candidate answers at."""
+    if run_timeout is None:
+        return None
+    limit = float(run_timeout)
+    return started + limit - min(DEADLINE_MARGIN, limit / 4)
+
+
+def time_left(ends: float | None) -> float | None:
+    """Seconds to a deadline made by :func:`deadline`, or ``None`` when there is none."""
+    return None if ends is None else max(0.0, ends - time.monotonic())
+
+
+def spent_on(left: float | None, limit: float, reply: Any) -> bool:
+    """Whether ``reply`` is a stall on the deadline (``left`` seconds, shorter than the call's
+    own ``limit``) rather than on the call's limit."""
+    return left is not None and left < limit and stall(reply)
+
+
+def definitive_failure(failed: bool, shown: bool) -> bool:
+    """Whether a failed run is a definitive failure: one the candidate's own answers show
+    (``shown``: a wrong answer, an error, two different answers to one request) or, under the
+    stall policy ``contradicted``, any failure, a stall included. A failure that is definitive
+    is never read as no answer (``timed_out``)."""
+    return failed and (shown or STALL_POLICY == "contradicted")
+
+
+def stance(spent: bool) -> dict[str, Any]:
+    """The two fields every replay result records: whether the run spent its deadline, and the
+    stall policy it was judged under."""
+    return {"deadline_reached": spent, "stall_policy": STALL_POLICY}
+
+
 # How long a child that was told to stop (its stdin closed, then SIGTERM) gets before the next
 # step. A container runtime cleans up after itself only on an orderly exit.
 CLOSE_GRACE = 5.0

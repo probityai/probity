@@ -48,14 +48,10 @@ from pathlib import Path
 from typing import Any
 
 from . import pytest_plugins, pytest_proof
-from .replay import Child, ClientFailure, plain, stall, strict_eq, unplain
+from .replay import (Child, ClientFailure, definitive_failure, deadline, plain, spent_on, stance,
+                     strict_eq, time_left, unplain)
 
 MODE = "pytest"
-# What a stall inside the candidate's own request reads as in a pytest replay: a definitive
-# failure (``contradicted`` on a held-out command). Operator ruling of 2026-10-21, "keep
-# contradicted."; it covers this mode only, not the LiveCodeBench modes of :mod:`.replay`.
-# Recorded in every result and in the grade's isolation record.
-STALL_POLICY = "contradicted"
 # Builtin exceptions a reply may raise again in the test (``pytest.raises(ValueError)``).
 # Anything else the candidate raised, and every protocol failure, is :class:`CandidateFailed`.
 EXCEPTIONS = {name: value for name, value in vars(builtins).items()
@@ -219,13 +215,13 @@ class Session:
 
     def left(self) -> float | None:
         """Seconds to the replay's deadline, or ``None`` when it has none."""
-        return None if self.deadline is None else max(0.0, self.deadline - time.monotonic())
+        return time_left(self.deadline)
 
     def ask(self, request: dict[str, Any]) -> dict[str, Any]:
         key = _key(request)
         left = self.left()
         reply = exchange(self.child, request, left)
-        if left is not None and left < getattr(self.child, "timeout", float("inf")) and stall(reply):
+        if spent_on(left, getattr(self.child, "timeout", float("inf")), reply):
             self.spent = True
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
@@ -605,25 +601,10 @@ def fresh_mismatches(request: dict[str, Any], session: Session, order: list[str]
             reply = exchange(fresh, session.requests[key], left)
         if _answer(reply) != session.answers[key][0]:
             found.append(key)
-        if left is not None and left < timeout and stall(reply):
+        if spent_on(left, timeout, reply):
             session.spent = True
             break
     return found
-
-
-# What the parent keeps of the command's limit for itself: closing the children, the count
-# and writing the result. A quarter of a short limit, at most a minute of a long one.
-DEADLINE_MARGIN = 60.0
-
-
-def deadline(run_timeout: Any, started: float) -> float | None:
-    """The replay's own deadline on ``time.monotonic``: the command's limit less the margin,
-    from ``started``. Every request, fresh children included, is asked inside it, so the parent
-    writes its result before the runner stops it, whatever pace the candidate answers at."""
-    if run_timeout is None:
-        return None
-    limit = float(run_timeout)
-    return started + limit - min(DEADLINE_MARGIN, limit / 4)
 
 
 def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
@@ -637,8 +618,7 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     base: dict[str, Any] = {"passed": False, "mode": MODE, "items": {}, "calls_intercepted": 0,
                             "distinct_calls": 0, "impure": [], "fresh_mismatch": [],
                             "fresh_order": [], "unproven": {}, "outside": [], "degenerate": [],
-                            "deadline_reached": False,
-                            "stall_policy": STALL_POLICY}
+                            **stance(False)}
     problem = refused(remote, request["test_root"])
     if problem is not None:
         return {**base, "failure": problem}
@@ -682,8 +662,8 @@ def pytest_replay(request: dict[str, Any]) -> dict[str, Any]:
     # a parent the runner stops before its own deadline, with no result written, reads as no
     # answer (``timed_out``).
     return {**base, "passed": failure is None, "failure": failure, "exit": code,
-            "definitive": failure is not None and STALL_POLICY == "contradicted",
-            "deadline_reached": session.spent,
+            "definitive": definitive_failure(failure is not None, False),
+            **stance(session.spent),
             "items": counter.items, "calls_intercepted": calls, "distinct_calls": distinct,
             "impure": impure, "fresh_mismatch": fresh_mismatch, "fresh_order": order,
             "unproven": counter.unproven, "outside": session.outside, "degenerate": degenerate}

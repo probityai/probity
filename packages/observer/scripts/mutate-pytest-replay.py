@@ -227,7 +227,7 @@ MUTANTS = [
     (HARNESS, STALLS, "    definitive = (failure is not None and not child.timed_out) or any(",
      "    definitive = False or any("),
     (HARNESS, STALLS, "            definitive = definitive or not stall(reply)", "            pass"),
-    (REPLAY, UNIT, '            "definitive": failure is not None and STALL_POLICY == "contradicted",',
+    (REPLAY, UNIT, '            "definitive": definitive_failure(failure is not None, False),',
      '            "definitive": False,'),
     # An attribute the candidate's module lacks is an absent handle, raised in the parent's words.
     (REPLAY, UNIT, '                 or reply.get("raised") == ABSENT))', "                 ))"),
@@ -248,9 +248,11 @@ MUTANTS = [
     (HARNESS, UNIT, '    if tag in ("list", "tuple", "set", "frozenset") and kind is list:',
      '    if tag in ("list", "tuple", "set", "frozenset"):'),
     # The stall setting is named, applied and recorded.
-    (REPLAY, UNIT, 'STALL_POLICY = "contradicted"', 'STALL_POLICY = "not_established"'),
+    (HARNESS, UNIT, 'STALL_POLICY = "contradicted"', 'STALL_POLICY = "not_established"'),
+    (RUNNER, PIPELINE, '"stall_policy": replay_harness.STALL_POLICY}',
+     '"stall_policy": "not_established"}'),
     # The replay keeps one deadline inside the command's limit, fresh children included.
-    (REPLAY, UNIT, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
+    (HARNESS, UNIT, "    return started + limit - min(DEADLINE_MARGIN, limit / 4)", "    return None"),
     (REPLAY, UNIT, "        reply = exchange(self.child, request, left)",
      "        reply = exchange(self.child, request)"),
     (REPLAY, UNIT, "            reply = exchange(fresh, session.requests[key], left)",
