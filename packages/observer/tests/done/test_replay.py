@@ -133,7 +133,7 @@ def test_keyword_and_positional_calls_are_distinct_keys(tmp_path, local):
     (cand / "func.py").write_text(HONEST)
     argv, cwd = local.child_argv(cand, replay.child_source("func", "add"))
     result = replay.replay({"test": str(test), "child_argv": argv, "child_cwd": cwd,
-                            "call_timeout": 30, "order_seed": "s"})
+                            "call_timeout": 30, "run_timeout": 30, "order_seed": "s"})
     assert result["passed"] and result["distinct_calls"] == 2
 
 
@@ -142,7 +142,7 @@ def test_no_calls_intercepted_is_reported(tmp_path, local):
     test.write_text("def check(candidate):\n    pass\n")
     argv, cwd = local.child_argv(tmp_path, replay.child_source("func", "add"))
     result = replay.replay({"test": str(test), "child_argv": argv, "child_cwd": cwd,
-                            "call_timeout": 30, "order_seed": "s"})
+                            "call_timeout": 30, "run_timeout": 30, "order_seed": "s"})
     assert result["calls_intercepted"] == 0 and result["passed"]
 
 
@@ -187,7 +187,8 @@ def test_main_writes_the_result(tmp_path, local):
     argv, cwd = local.child_argv(cand, replay.child_source("func", "add"))
     request = tmp_path / "r.json"
     request.write_text(json.dumps({"test": str(test), "child_argv": argv, "child_cwd": cwd,
-                                   "call_timeout": 30, "order_seed": "s", "out": str(tmp_path / "o.json")}))
+                                   "call_timeout": 30, "run_timeout": 30, "order_seed": "s",
+                                   "out": str(tmp_path / "o.json")}))
     assert replay.main([str(request)]) == 1
     assert json.loads((tmp_path / "o.json").read_text())["failure"].startswith("candidate")
 
@@ -290,23 +291,35 @@ def test_importing_code_that_changes_builtins_fails_the_import_probe(tmp_path, l
     assert probe["builtins"]["added"] == ["test_func"]
 
 
-def test_each_determinism_run_has_its_own_time_budget(tmp_path, local):
+SLOW_ADD = "import time\ndef add(a, b):\n    time.sleep(0.4)\n    return a + b\n"
+TWO_CASES = "def check(candidate):\n    assert candidate(1, 1) == 2\n    assert candidate(2, 2) == 4\n"
+
+
+def _slow_request(tmp_path, local, mode, run_timeout):
     test = tmp_path / "t.py"
-    test.write_text("def check(candidate):\n    assert candidate(1, 1) == 2\n"
-                    "    assert candidate(2, 2) == 4\n")
+    test.write_text(TWO_CASES)
     cand = tmp_path / "cand"
-    cand.mkdir()
-    (cand / "func.py").write_text("import time\ndef add(a, b):\n    time.sleep(0.4)\n    return a + b\n")
+    cand.mkdir(exist_ok=True)
+    (cand / "func.py").write_text(SLOW_ADD)
     argv, cwd = local.child_argv(cand, replay.child_source("func", "add"))
-    request = {"test": str(test), "child_argv": argv, "child_cwd": cwd, "call_timeout": 30,
-               "order_seed": "s", "mode": "determinism"}
-    # The first run makes four calls (1.6 s) and the fresh run two (0.8 s): 2.4 s in all,
-    # more than one 2.2 s budget, and each run is inside its own.
-    passed = replay.replay({**request, "run_timeout": 2.2})
+    return {"test": str(test), "child_argv": argv, "child_cwd": cwd, "call_timeout": 30,
+            "order_seed": "s", "mode": mode, "run_timeout": run_timeout}
+
+
+@pytest.mark.parametrize("mode", ["assert", "determinism", "type_strict"])
+def test_each_pass_over_the_cases_has_the_whole_run_timeout(tmp_path, local, mode):
+    """One pass over the two cases takes 0.8 s, inside a 1.2 s limit. A probe that repeats
+    the work (the assert replay's fresh calls, the determinism probe's second and third passes)
+    gives every pass that limit, so an answer the single run gives in time is never cut short."""
+    passed = replay.replay(_slow_request(tmp_path, local, mode, 1.2))
     assert passed["passed"], passed
-    assert sum(passed["run_seconds"]) > 2.2
-    short = replay.replay({**request, "run_timeout": 1.0})
-    assert short["failure"] == "timeout"
+
+
+@pytest.mark.parametrize("mode", ["assert", "determinism", "type_strict"])
+def test_a_pass_longer_than_the_run_timeout_is_a_timeout(tmp_path, local, mode):
+    """The limit still binds each pass: 0.8 s of work against 0.6 s."""
+    short = replay.replay(_slow_request(tmp_path, local, mode, 0.6))
+    assert short["failure"] == "timeout", short
 
 
 def test_the_grade_stays_the_parents_when_the_candidate_tries_to_forge_it(tmp_path, image):
