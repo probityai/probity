@@ -1,0 +1,11 @@
+{
+  "package": "probity-verify",
+  "version": "0.2.0",
+  "tag": "probity-verify-v0.2.0",
+  "commit": "5d86b5832c311789e584ad5f6cb165c4f23cc6cd",
+  "uploaded": "2026-10-20",
+  "files": [
+    {"name": "probity_verify-0.2.0-py3-none-any.whl", "sha256": "9cf0491d707ac7e18e1a2069b10eef605d1c63ccd3594acf0510a67bc3688bb3"},
+    {"name": "probity_verify-0.2.0.tar.gz", "sha256": "2066124630b36309adf21a01ba545506f7f9aec311d11c983f1703092a9cf8c8"}
+  ]
+}

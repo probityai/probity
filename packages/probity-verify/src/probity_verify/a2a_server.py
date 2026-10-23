@@ -9,6 +9,7 @@ import hashlib
 import ipaddress
 import sys
 from collections import OrderedDict
+from importlib.metadata import version as _distribution_version
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -36,6 +37,12 @@ from starlette.routing import Route
 from .common import _read_input
 from .core import CaseError, adjudicate, canonical_json, render_packet
 from .json_input import parse_json
+
+
+def _package_version() -> str:
+    """The installed distribution's version, so the agent card cannot name a stale one."""
+    return _distribution_version("probity-verify")
+
 
 CASE_MIME = "application/vnd.probity.case+json"
 DECISION_MIME = "application/vnd.probity.decision+json"
@@ -233,7 +240,7 @@ def create_app(policy: bytes, artifact_root: Path, base_url: str,
                                  description="Return one retained publisher record from the configured register.",
                                  tags=["evidence", "research"], input_modes=[LAB_QUERY_MIME],
                                  output_modes=[LAB_RECORD_MIME]))
-    card = AgentCard(name="Probity Verify", version="0.1.0",
+    card = AgentCard(name="Probity Verify", version=_package_version(),
                      description="Consumer-policy assessments and pinned Lab record reads.",
                      documentation_url="https://github.com/probityai/probity/blob/main/packages/probity-verify/docs/a2a.md",
                      capabilities=AgentCapabilities(streaming=False, push_notifications=False),

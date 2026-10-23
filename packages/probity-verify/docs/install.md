@@ -4,36 +4,40 @@ Probity Verify checks a claim against local evidence and a consumer-held policy.
 Use it when you need a decision you can replay from the same bytes.
 Python 3.11 or newer and [uv](https://docs.astral.sh/uv/) are required.
 
-Version 0.1.0 is published on [PyPI](https://pypi.org/project/probity-verify/0.1.0/).
-Its wheel modules match the implementation at public source commit
-`2ecdbafc0c6cc0f26461ffe913fe342e7de090a6`; this comparison does not establish
-the original builder's source provenance. Its wheel does not contain sample inputs.
-Source version 0.1.1 adds the same source-coverage inputs as package resources;
-the [release guide](RELEASING.md) gives the installed-resource recipe and artifact checks.
+Version 0.2.0 is published on [PyPI](https://pypi.org/project/probity-verify/0.2.0/).
+Its wheel modules are identical to the source at tag `probity-verify-v0.2.0`, commit
+`5d86b5832c311789e584ad5f6cb165c4f23cc6cd`, and the wheel carries the source-coverage
+sample inputs as package resources. The [release guide](RELEASING.md) gives the
+installed-resource recipe and the artifact checks.
 
 ## Install the published package
 
 Run these commands from a new working directory:
 
 ```sh
-git clone https://github.com/probityai/probity.git verify-source
-git -C verify-source checkout --detach 2ecdbafc0c6cc0f26461ffe913fe342e7de090a6
 uv venv --python 3.12 verify-env
-uv pip install --python verify-env/bin/python probity-verify==0.1.1
-verify-env/bin/probity-verify verify-source/examples/source-coverage/case.json \
-  --policy verify-source/examples/source-coverage/policy-june.json
+uv pip install --python verify-env/bin/python probity-verify==0.2.0
+samples="$(verify-env/bin/python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
+verify-env/bin/probity-verify "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 Python 3.12 is the recipe's tested runtime. Choose another supported Python
 version with `--python` when you create the environment.
 The registry install uses the released wheel. The command uses that installed package, without
-`uv run`, an editable install or the source checkout's Python path.
-The pinned source supplies this recipe's case, policy and artifact files.
-Keep the package version and input commit together; the seven adapters in this
-source snapshot are supported by the released implementation.
+`uv run`, an editable install or a source checkout's Python path.
+The case, policies and artifacts come from the installed package, so the package version
+alone pins them.
 
-The wheel is `probity_verify-0.1.0-py3-none-any.whl`, with SHA-256
-`18e0f99fb21701cd2d5eb312d99700d7cf800e8cdf9dc8e5d3608bc315cf1453`.
+The release files and their SHA-256 digests are recorded in [release.json](release.json):
+
+| file | SHA-256 |
+| --- | --- |
+| `probity_verify-0.2.0-py3-none-any.whl` | `9cf0491d707ac7e18e1a2069b10eef605d1c63ccd3594acf0510a67bc3688bb3` |
+| `probity_verify-0.2.0.tar.gz` | `2066124630b36309adf21a01ba545506f7f9aec311d11c983f1703092a9cf8c8` |
+
+To require these digests at install time, put the line
+`probity-verify==0.2.0 --hash=sha256:9cf0491d707ac7e18e1a2069b10eef605d1c63ccd3594acf0510a67bc3688bb3`
+in a requirements file and install it with `uv pip install --require-hashes -r`.
 
 The packet includes:
 
@@ -52,10 +56,10 @@ This decision concerns that passage and the supplied policy, not the entire repo
 Add `--json` for a structured decision:
 
 ```sh
-verify-env/bin/probity-verify verify-source/examples/source-coverage/case.json \
-  --policy verify-source/examples/source-coverage/policy-april.json --json
-verify-env/bin/probity-verify verify-source/examples/source-coverage/case-complete.json \
-  --policy verify-source/examples/source-coverage/policy-complete.json --json
+verify-env/bin/probity-verify "$samples/case.json" \
+  --policy "$samples/policy-april.json" --json
+verify-env/bin/probity-verify "$samples/case-complete.json" \
+  --policy "$samples/policy-complete.json" --json
 ```
 
 The April policy returns `not_established`. A June capture cannot establish
@@ -108,10 +112,10 @@ historical-env/bin/probity-verify historical-source/examples/source-coverage/cas
 
 A missing file, invalid JSON or invalid case exits two and prints an error
 to standard error without a verdict. An artifact digest mismatch refuses the
-case; do not edit the pinned sample bytes to repair it. Restore the sample
-from the pinned commit instead.
+case; do not edit the pinned sample bytes to repair it. Reinstall the pinned
+package version instead.
 
-Run from the directory that contains `verify-env` and `verify-source`.
+Run from the directory that contains `verify-env`.
 The verifier resolves artifact paths from the case's directory by default.
 Use `--artifact-root` only when you deliberately keep artifacts elsewhere.
 

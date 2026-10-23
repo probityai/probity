@@ -30,6 +30,11 @@ PACKAGE_KEYS = (
 )
 
 
+def released_version() -> str:
+    """The published version, from docs/release.json, the one record of the release."""
+    return json.loads((ROOT / "docs/release.json").read_text(encoding="utf-8"))["version"]
+
+
 def local_file(root: Path, name: str) -> Path:
     path = (root / name).resolve()
     if Path(name).is_absolute() or not path.is_relative_to(root.resolve()):
@@ -130,7 +135,7 @@ def render_tasks(result: dict) -> bytes:
         "The JSON `distribution.status` describes package-name availability: `probity-verify` has a public PyPI release.",
         "It does not assert that the source candidate bound by `package_metadata` has been uploaded.",
         "The separate `fixture_scope` describes where the indexed case and policy files live.", "",
-        "The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.1.0 with its supported public input snapshot.",
+        f"The [pinned registry recipe](install.md#install-the-published-package) pairs version {released_version()} with the sample inputs its wheel carries.",
         "For this index, install its own checkout, then use the index's `argv` from that checkout root.",
         "Replace its first argument with your installed executable's path when the environment is separate.",
         "The index binds its inputs and implementation to exact bytes.",
