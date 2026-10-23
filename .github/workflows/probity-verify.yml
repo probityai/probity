@@ -53,9 +53,7 @@ jobs:
           uv pip install --python .build/witness/bin/python -r requirements-witness.txt
           uv pip install --python .build/witness/bin/python --no-deps .
       - name: the lock is the compiled input
-        run: |
-          uv pip compile --quiet --no-header --python-version 3.12 requirements-witness.in -o .build/requirements-witness.txt
-          diff -u requirements-witness.txt .build/requirements-witness.txt
+        run: scripts/check-lock-current.sh requirements-witness.in requirements-witness.txt 3.12 .build
       - run: .build/witness/bin/python -m pytest -q tests/witness_bundles.py tests/test_witnessed_scope.py
       - run: .build/witness/bin/python scripts/mutation-check-done.py
 
