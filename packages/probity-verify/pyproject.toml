@@ -31,7 +31,7 @@ Issues = "https://github.com/probityai/probity/issues"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "hypothesis>=6,<7"]
-a2a = ["a2a-sdk[http-server]==1.2.2", "uvicorn==0.54.0"]
+a2a = ["a2a-sdk[http-server]==1.2.3", "uvicorn==0.54.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "vectors-source-coverage/tests", "vectors-operand-lineage/tests",
