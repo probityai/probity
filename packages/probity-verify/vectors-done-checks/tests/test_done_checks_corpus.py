@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import shutil
 import subprocess
 import sys
@@ -20,7 +21,7 @@ def _module(name: str, filename: str):
 
 
 corpus = _module("done_checks_corpus", "check_vectors.py")
-MEMBERS = 24
+MEMBERS = 32
 
 
 def test_regeneration_is_byte_identical() -> None:
@@ -49,5 +50,10 @@ def test_always_support_verifier_is_rejected(tmp_path: Path) -> None:
     stub.write_text('import json\nprint(json.dumps({"decision": "supported", '
                     '"reason": "tool_claims_matched"}))\n', encoding="ascii")
     executed, errors = corpus.check(f"{sys.executable} {stub}")
+    # Only the members whose expected verdict is that one answer agree with it.
+    manifest = json.loads((ROOT / "MANIFEST.json").read_text())
+    agreeing = sum(1 for entry in manifest["vectors"] if entry["expected"] == {
+        "decision": "supported", "reason": "tool_claims_matched"})
+    assert agreeing == 4
     assert executed == MEMBERS
-    assert len(errors) == MEMBERS - 2
+    assert len(errors) == MEMBERS - agreeing
