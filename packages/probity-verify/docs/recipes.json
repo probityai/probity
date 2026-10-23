@@ -75,7 +75,7 @@
     {
       "path": "src/probity_verify/a2a_server.py",
       "bytes": 14744,
-      "sha256": "eef54c7f0cd9f6d573c271cb857daebea8890629c6eb752e529c9db177da1936"
+      "sha256": "ce664695a4a20cffb4b8d7288c5c788752276c44c8cb33aac28d7dfe1f15c0f7"
     },
     {
       "path": "src/probity_verify/adapters/__init__.py",
