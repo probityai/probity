@@ -30,7 +30,7 @@ def _text(name: str) -> str:
 
 
 def test_release_is_the_latest_dated_changelog_section():
-    dated = re.findall(r"^## (\d+\.\d+\.\d+) \(\d{4}-\d{2}-\d{2}\)$", _text("CHANGELOG.md"), re.M)
+    dated = re.findall(r"^## (\d+\.\d+\.\d+) \(\d{4}-\d{2}-\d{2}\)$", _text("CHANGELOG.md"), re.MULTILINE)
     assert dated, "the changelog lists no dated release"
     assert max(dated, key=_tuple) == VERSION, (
         "docs/release.json names a release other than the newest dated changelog entry; "
@@ -85,7 +85,7 @@ def test_agent_card_reports_the_installed_version():
                     reason="set PROBITY_VERIFY_ONLINE=1 to compare against PyPI")
 def test_release_record_matches_pypi():
     url = f"https://pypi.org/pypi/probity-verify/{VERSION}/json"
-    with urllib.request.urlopen(url, timeout=30) as response:  # noqa: S310 - fixed https host
+    with urllib.request.urlopen(url, timeout=30) as response:
         published = json.load(response)
     remote = {item["filename"]: item["digests"]["sha256"] for item in published["urls"]}
     assert remote == {item["name"]: item["sha256"] for item in RELEASE["files"]}

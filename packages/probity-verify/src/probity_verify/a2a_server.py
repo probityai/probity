@@ -8,8 +8,8 @@ import copy
 import hashlib
 import ipaddress
 import sys
-from importlib.metadata import version as _distribution_version
 from collections import OrderedDict
+from importlib.metadata import version as _distribution_version
 from pathlib import Path
 from urllib.parse import urlsplit
 
