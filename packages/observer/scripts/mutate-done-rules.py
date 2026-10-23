@@ -76,6 +76,26 @@ MUTANTS = [
     (CLAIMS, '        start = max(index for index, line in enumerate(lines) if line.rstrip() == AGENT_TEXT)',
      '        start = min(index for index, line in enumerate(lines) if line.rstrip() == AGENT_TEXT)'),
     (CLAIMS, '                last = block["text"]', '                last = last or block["text"]'),
+    # Code the agent quotes is not a statement.
+    (CLAIMS, '        if current[0] is None:\n            text = spoken(text)',
+     '        if False:\n            text = spoken(text)'),
+    (CLAIMS, '    text = spoken(text)\n    stated =', '    stated ='),
+    (CLAIMS, '_SOURCE_TOKENS = {tokenize.STRING, tokenize.COMMENT, tokenize.FSTRING_MIDDLE}',
+     '_SOURCE_TOKENS = {tokenize.STRING, tokenize.FSTRING_MIDDLE}'),
+    (CLAIMS, '_SOURCE_TOKENS = {tokenize.STRING, tokenize.COMMENT, tokenize.FSTRING_MIDDLE}',
+     '_SOURCE_TOKENS = {tokenize.COMMENT}'),
+    (CLAIMS, '    return [_QUOTED.sub("", line) for line in code]', '    return list(code)'),
+    (CLAIMS, '    if info in _PYTHON_FENCES:', '    if False:'),
+    (CLAIMS, 'line.startswith("# ") and fence[0] is None:', 'line.startswith("# "):'),
+    (CLAIMS, '                    line.startswith("# ") and fence is None):',
+     '                    line.startswith("# ")):'),
+    (CLAIMS, '        block.clear()\n        fence[0] = None', '        block.clear()'),
+    (CLAIMS, '            if current[0] is None and not shown[0]:\n                if fence[0] is None:',
+     '            if not shown[0]:\n                if fence[0] is None:'),
+    (CLAIMS, '            if current[0] is None and not shown[0]:\n                if fence[0] is None:',
+     '            if False:\n                if fence[0] is None:'),
+    (CLAIMS, '    return (len(stripped) >= len(marker) and set(stripped) == {marker[0]})',
+     '    return set(stripped) == {marker[0]}'),
 ]
 
 
