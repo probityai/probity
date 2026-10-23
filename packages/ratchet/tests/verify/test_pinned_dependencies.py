@@ -1,28 +1,57 @@
-"""The verifier is our pinned public package, not a copy: assert the exact pins and that they run."""
+"""The verifier is our pinned public package, not a copy: assert the exact pins and that they run.
+
+Every expected version is read from the manifest this package ships, so a bump that moves the pin
+and the lock together passes, and a bump that moves only one of them fails.
+"""
 
 from __future__ import annotations
 
+import re
 import sys
+import tomllib
 from importlib import metadata
 from pathlib import Path
+from typing import Any
 
 import pytest
 from agent_evidence_vectors.run_vectors import main as vectors_main  # type: ignore[import-untyped]
 
 ROOT = Path(__file__).resolve().parents[2]
-# The PyPI wheel of probity-verify 0.1.1.
-PROBITY_VERIFY_WHEEL_SHA256 = "e5788644f64d4faf73d999f9b8371f761141493403f642659ba0ad36a15ef6cf"
+PYPI = {"registry": "https://pypi.org/simple"}
+
+
+def pinned(name: str) -> str:
+    """The exact version `pyproject.toml` pins `name` to; anything but one `==` pin fails."""
+    deps = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["dependencies"]
+    named = [dep for dep in deps if re.match(rf"{re.escape(name)}\s*[=<>!~ ;\[]", dep)]
+    assert len(named) == 1, f"{name} must appear once in [project].dependencies, found {named}"
+    match = re.fullmatch(rf"{re.escape(name)}==([0-9][0-9A-Za-z.+-]*)", named[0])
+    assert match, f"{name} must be pinned exactly, found {named[0]!r}"
+    return match.group(1)
+
+
+def locked(name: str) -> dict[str, Any]:
+    """The single `uv.lock` entry for `name`, which must be the version the manifest pins."""
+    packages = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))["package"]
+    entries = [pkg for pkg in packages if pkg["name"] == name]
+    assert len(entries) == 1, f"uv.lock must hold one {name}, found {len(entries)}"
+    (entry,) = entries
+    assert entry["version"] == pinned(name)
+    return entry
+
+
+def assert_hash_pinned_from_pypi(entry: dict[str, Any]) -> None:
+    assert entry["source"] == PYPI
+    files = [entry["sdist"], *entry.get("wheels", [])]
+    assert all(f["hash"].startswith("sha256:") for f in files)
+    assert entry.get("wheels"), "the lock must name a wheel, so the image builds none"
 
 
 def test_probity_verify_is_the_hash_pinned_release_from_pypi() -> None:
     dist = metadata.distribution("probity-verify")
-    assert dist.version == "0.1.1"
+    assert dist.version == pinned("probity-verify")
     assert dist.read_text("direct_url.json") is None  # from the index, not a git checkout or a path
-    lock = (ROOT / "uv.lock").read_text(encoding="utf-8")
-    entry = lock[lock.index('name = "probity-verify"\nversion = "0.1.1"') :]
-    entry = entry[: entry.index("\n[[package]]")]
-    assert 'source = { registry = "https://pypi.org/simple" }' in entry
-    assert f'hash = "sha256:{PROBITY_VERIFY_WHEEL_SHA256}"' in entry
+    assert_hash_pinned_from_pypi(locked("probity-verify"))
 
 
 def test_the_demo_image_build_installs_no_system_package() -> None:
@@ -31,7 +60,10 @@ def test_the_demo_image_build_installs_no_system_package() -> None:
 
 
 def test_agent_evidence_vectors_is_pinned_from_pypi() -> None:
-    assert metadata.version("agent-evidence-vectors") == "0.19.0"
+    dist = metadata.distribution("agent-evidence-vectors")
+    assert dist.version == pinned("agent-evidence-vectors")
+    assert dist.read_text("direct_url.json") is None
+    assert_hash_pinned_from_pypi(locked("agent-evidence-vectors"))
 
 
 def test_pinned_vector_harness_self_test_passes(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -41,11 +73,18 @@ def test_pinned_vector_harness_self_test_passes(monkeypatch: pytest.MonkeyPatch)
 
 def test_jcs_admit_is_the_hash_pinned_release_from_pypi() -> None:
     """The lock takes jcs-admit from the index, with a hash per file, and the image builds no wheel."""
-    lock = (ROOT / "uv.lock").read_text(encoding="utf-8")
-    entry = lock[lock.index('[[package]]\nname = "jcs-admit"') :]
-    entry = entry[: entry.index("\n[[package]]", 1)]
-    assert 'version = "0.1.0"' in entry
-    assert 'source = { registry = "https://pypi.org/simple" }' in entry
-    assert entry.count('hash = "sha256:') >= 2
+    assert_hash_pinned_from_pypi(locked("jcs-admit"))
     dockerfile = (ROOT / "docker/demo.Dockerfile").read_text(encoding="utf-8")
     assert "JCS_ADMIT_COMMIT" not in dockerfile and "rustup" not in dockerfile
+
+
+@pytest.mark.parametrize("name", ["probity-verify", "agent-evidence-vectors", "jcs-admit"])
+def test_a_pin_the_lock_lacks_fails(name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A manifest pin that moved without the lock (or the reverse) is refused, not read past."""
+    manifest = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    old = f'"{name}=={pinned(name)}"'
+    (tmp_path / "pyproject.toml").write_text(manifest.replace(old, f'"{name}==999.0.0"'), encoding="utf-8")
+    (tmp_path / "uv.lock").write_bytes((ROOT / "uv.lock").read_bytes())
+    monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
+    with pytest.raises(AssertionError):
+        locked(name)
