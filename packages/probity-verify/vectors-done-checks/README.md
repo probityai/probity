@@ -1,6 +1,6 @@
 # Done-check vectors
 
-Twenty-four synthetic cases for `tool_claim_match/v1`, `acceptance_observed/v1` and
+Thirty-two synthetic cases for `tool_claim_match/v1`, `acceptance_observed/v1` and
 `protected_paths/v1`. Each one is
 the honest run the adapter tests use, changed in one way, with the decision and reason a
 verifier must return. `MANIFEST.json` pins every file's bytes.
@@ -18,6 +18,14 @@ verifier must return. `MANIFEST.json` pins every file's bytes.
 | tool-claim-sealed-other-exe | contradicted | The run used another interpreter. |
 | tool-claim-sealed-other-script | contradicted | The run executed another script. |
 | tool-claim-shadowed-beside-module | contradicted | An importable file sat beside the module under test. |
+| tool-claim-own-test-cache-between-runs | supported | pytest, an edit, pytest again: the first run's own test cache is not the agent's code. |
+| tool-claim-test-cache-written-by-agent | contradicted | The same test cache written by the agent itself. |
+| tool-claim-script-in-module-directory | supported | Control: the script's agent-made directory is the module under test. |
+| tool-claim-script-in-agent-directory | contradicted | The script's agent-made directory is not the module under test. |
+| tool-claim-uncontracted-edit-between-runs | not_established | Without a contract, an agent-written module on the import path is a possible shadow. |
+| tool-claim-uncontracted-program-name-written | contradicted | Without a contract, the agent wrote a file named for the program it ran. |
+| acceptance-heldout-timed-out | not_established | A held-out command stopped at its limit gave no answer. |
+| acceptance-visible-timed-out | contradicted | A visible command the agent could run itself outran its limit. |
 | acceptance-sealed-tests-passed | supported | Control: every sealed held-out test passed. |
 | acceptance-sealed-test-skipped | not_established | A sealed test was collected and skipped; pytest exited 0. |
 | protected-untouched | supported | Control: the protected paths were left alone. |

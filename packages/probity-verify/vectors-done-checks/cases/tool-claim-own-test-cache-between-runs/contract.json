@@ -1,0 +1,53 @@
+{
+  "acceptance": [
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests"
+      ],
+      "cwd": "/workspace",
+      "exe": "/usr/bin/python",
+      "id": "unit",
+      "run_writes": []
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "/heldout"
+      ],
+      "id": "heldout-unit"
+    }
+  ],
+  "adequacy": {
+    "killed": 3,
+    "mutants": 4
+  },
+  "contract_id": "contract-1",
+  "heldout_split_sha256": "b68e5f893f052b7682102e7d108ae31f45d879321f9fdea8c151c1acbbac71ca",
+  "module_under_test": [
+    "src/app.py"
+  ],
+  "protected_paths": [
+    {
+      "kind": "file",
+      "path": "tests/test_app.py",
+      "sha256": "690bf2cb0a250b8516738eec867a03b06f7323c33ce917808a2d682baa131427"
+    },
+    {
+      "exclude": [
+        "__pycache__"
+      ],
+      "kind": "directory",
+      "path": "tests",
+      "sha256": "984df0054922dc955d0896b46fb6260dae876a37db7c56249001765add87c519"
+    }
+  ],
+  "schema_version": "probity-done-contract/v1",
+  "task": "make test_app pass"
+}

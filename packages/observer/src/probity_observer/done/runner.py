@@ -163,7 +163,15 @@ def is_replay(argv: Sequence[str]) -> bool:
     return bool(argv) and argv[0] == replay_harness.COMMAND
 
 
-DETERMINISM_RUNS = 2
+# Seconds a replay parent gets beyond its passes' time: starting its children and the test.
+REPLAY_GRACE = 30.0
+
+
+def replay_limit(mode: str, timeout: float) -> float:
+    """The limit on a whole replay command: ``timeout`` for each pass over the cases the mode
+    makes (:data:`.replay.PASSES`), so a probe that repeats the work is never stricter than one
+    run of the command, plus :data:`REPLAY_GRACE`."""
+    return timeout * replay_harness.PASSES[mode] + REPLAY_GRACE
 
 
 def replay_mode(argv: Sequence[str]) -> str | None:
@@ -182,9 +190,8 @@ def run_replay(scratch: Path, argv: Sequence[str], child_argv, timeout: float,
 
     ``argv`` is ``(COMMAND, <sealed test path from the workspace>, <module>, <entry>[, mode])``.
     Only the module's file is copied into the child's directory; ``child_argv(directory,
-    source)`` returns the child's command line and working directory. The determinism probe
-    gives each of its child runs the whole ``timeout``, so the command's own limit is that
-    many times longer.
+    source)`` returns the child's command line and working directory. Each pass over the cases
+    has the whole ``timeout`` (:func:`replay_limit`).
     """
     mode = replay_mode(argv)
     if mode is None:
@@ -205,7 +212,7 @@ def run_replay(scratch: Path, argv: Sequence[str], child_argv, timeout: float,
                "child_cwd": cwd, "call_timeout": min(timeout, 60.0), "order_seed": order_seed,
                "mode": mode, "run_timeout": timeout, "out": str(scratch / "replay.json")}
     (scratch / "request.json").write_text(json.dumps(request))
-    limit = timeout * DETERMINISM_RUNS + 30 if mode == "determinism" else timeout
+    limit = replay_limit(mode, timeout)
     parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
                                str(scratch / "request.json")], stdin=subprocess.DEVNULL,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

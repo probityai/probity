@@ -1,5 +1,5 @@
 {
-  "corpusDigest": "18251c0075108ec115cf536ba0f0ab079e7806a232d28cb1b03c66a8b23c3fdc",
+  "corpusDigest": "49ce492bb1bf6b418a313aa495abe77579322936b4de1396d58ba8b1a29fdaac",
   "suite": "done-checks/v1",
   "vectors": [
     {
@@ -195,6 +195,146 @@
       },
       "id": "tool-claim-shadowed-beside-module",
       "path": "cases/tool-claim-shadowed-beside-module"
+    },
+    {
+      "claimType": "tool_claim_match/v1",
+      "edit": "pytest, an edit, pytest again: the first run's own compiled test cache is not code the agent chose",
+      "expected": {
+        "decision": "supported",
+        "reason": "tool_claims_matched"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "fa5df373f123e155c0f69fa9f3212b92666733ba226355420b87f0ff4179ada9",
+        "claims.json": "44abf615e5b8175651474759835430dee1b2a91ee57a292868bde5d6202f5dc4",
+        "contract.json": "4bdf1ce2fa56ce1401ac34b5ee42278b9104063f9d0bff51d7ac3fd5e545a1de",
+        "observation.json": "387c631c46f419210af70fce9b4c3c0f618afae4e17c3138cf1a307fafe0b0cb",
+        "policy.json": "2b601a115c22a6e21166a6b5a31fed20eff902828a96cfb2d72edeb1ec5b81ff"
+      },
+      "id": "tool-claim-own-test-cache-between-runs",
+      "path": "cases/tool-claim-own-test-cache-between-runs"
+    },
+    {
+      "claimType": "tool_claim_match/v1",
+      "edit": "the same compiled test cache written by the agent itself",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "tool_claim_shadowed"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "cdc0505704dcd8f4e990c89a766a6695e4b0aebe4e2ad15281a036eeda91977f",
+        "claims.json": "44abf615e5b8175651474759835430dee1b2a91ee57a292868bde5d6202f5dc4",
+        "contract.json": "4bdf1ce2fa56ce1401ac34b5ee42278b9104063f9d0bff51d7ac3fd5e545a1de",
+        "observation.json": "7b0337b4d780a4e0fb60d5cf2e22776fbf67731bda3354c671d3a3d45474d2c3",
+        "policy.json": "cad6f108a276330b3cc9da172892966d827e7fe65075f515696f613d5cae2ef3"
+      },
+      "id": "tool-claim-test-cache-written-by-agent",
+      "path": "cases/tool-claim-test-cache-written-by-agent"
+    },
+    {
+      "claimType": "tool_claim_match/v1",
+      "edit": "control: the script's directory, made by the agent, is the module under test",
+      "expected": {
+        "decision": "supported",
+        "reason": "tool_claims_matched"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "41c0014c25fd87e09d0de6a4e241c3fdb6de5b8a0b61ba129c0c1c49aa9ed536",
+        "claims.json": "8a796edd0588854414f9664196a6430f137524370894dff4a7eb17242b4fc7c0",
+        "contract.json": "99c49cf0a8a9732aac5c26c6ec27db3bdc46c160c9ad6dcaf3b9e016abf9166b",
+        "observation.json": "16660eedf30734f30d7e4c7238651de2bc1a89890bf30e19dd4cf91f85013467",
+        "policy.json": "dcef7482befce9cdea3f4890a53d8c86a6216ae6e9aeae2d50aab9945e18db17"
+      },
+      "id": "tool-claim-script-in-module-directory",
+      "path": "cases/tool-claim-script-in-module-directory"
+    },
+    {
+      "claimType": "tool_claim_match/v1",
+      "edit": "the script's directory, made by the agent, is not the module under test",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "tool_claim_shadowed"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "41a0a6e577ca3a9dd957d1d160190f96f9b56e37e9d3eed94289eb8cb45bd7a9",
+        "claims.json": "8a796edd0588854414f9664196a6430f137524370894dff4a7eb17242b4fc7c0",
+        "contract.json": "50385e19ee7df73510228705ae97b17f6801b29c4726418a8fd2b9e615a2b691",
+        "observation.json": "16660eedf30734f30d7e4c7238651de2bc1a89890bf30e19dd4cf91f85013467",
+        "policy.json": "21328f9fd7b1e6c79e3214822d15389d56935e4be50ba75dce84d34034e0ac05"
+      },
+      "id": "tool-claim-script-in-agent-directory",
+      "path": "cases/tool-claim-script-in-agent-directory"
+    },
+    {
+      "claimType": "tool_claim_match/v1",
+      "edit": "without a contract a module the agent wrote on the import path is a possible shadow, never a certain one",
+      "expected": {
+        "decision": "not_established",
+        "reason": "tool_claim_shadowed"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "5a38864366a8e6b5bb31689773e29f238eb20686d4ba6945dc8f8aeaf6d60f90",
+        "claims.json": "44abf615e5b8175651474759835430dee1b2a91ee57a292868bde5d6202f5dc4",
+        "observation.json": "387c631c46f419210af70fce9b4c3c0f618afae4e17c3138cf1a307fafe0b0cb",
+        "policy.json": "5ebebbbe55a3bbe336ddfac10f7fd529f025694a2e99504d431a581d006838c6"
+      },
+      "id": "tool-claim-uncontracted-edit-between-runs",
+      "path": "cases/tool-claim-uncontracted-edit-between-runs"
+    },
+    {
+      "claimType": "tool_claim_match/v1",
+      "edit": "without a contract, a file named for the program the command runs (python -m pytest)",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "tool_claim_shadowed"
+      },
+      "files": {
+        "capability.json": "51d5980598f06ad950d0693d84435006f5b4c3f750eb9a4d5bba0fc1262b8eaa",
+        "case.json": "21f40a5f4bff2d5cc7b206bd3f5419929ba8a0182666ba2f442eefdc4785a474",
+        "claims.json": "44abf615e5b8175651474759835430dee1b2a91ee57a292868bde5d6202f5dc4",
+        "observation.json": "cdcae8b02e312006c2f379ef30222f19b9cd75b3f708dd8ac5afbe84d03f760a",
+        "policy.json": "55d36d19178bbdfe63b70cee6836430ab3de62c366aab8ddf88c1cfed9e0c847"
+      },
+      "id": "tool-claim-uncontracted-program-name-written",
+      "path": "cases/tool-claim-uncontracted-program-name-written"
+    },
+    {
+      "claimType": "acceptance_observed/v1",
+      "edit": "a held-out command stopped at its limit gave no answer to judge",
+      "expected": {
+        "decision": "not_established",
+        "reason": "probe_timed_out"
+      },
+      "files": {
+        "case.json": "9a36046781508c13d3dad7c96d2448561f06c74ed9fdefa3bf5d19fa2edb8b77",
+        "contract.json": "fa536eee45105053d1f4e5d80cd6f22be168f24fbb5e245bba805a2891a5847b",
+        "grade.json": "2ae1e1d694fe461deeae8aeff23db650fd379dd21621d5255b9c025322b751de",
+        "policy.json": "64855f82b43fac47061479d49aad9aff2125ae57ce21d2a0d1d38c1ff3472fe5",
+        "tree.json": "d26abc64db4d11ecd1a8b9606e2ece252cfe13bdec1ab4b1dd62890578a99d6c"
+      },
+      "id": "acceptance-heldout-timed-out",
+      "path": "cases/acceptance-heldout-timed-out"
+    },
+    {
+      "claimType": "acceptance_observed/v1",
+      "edit": "a visible command the agent could run itself outran its limit",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "acceptance_failed_in_verifier"
+      },
+      "files": {
+        "case.json": "944cf37a6e87af32d20adf96952386b3211226007149f38c57120e446636a8b3",
+        "contract.json": "fa536eee45105053d1f4e5d80cd6f22be168f24fbb5e245bba805a2891a5847b",
+        "grade.json": "34703f7826c8922c6e8d5f1b4631f1799486289170b36b431bab3aada2d2c291",
+        "policy.json": "dce00471aa12ef0dc1b6132ce5f86ea857ec0cb9e582dc81172858983aafb941",
+        "tree.json": "d26abc64db4d11ecd1a8b9606e2ece252cfe13bdec1ab4b1dd62890578a99d6c"
+      },
+      "id": "acceptance-visible-timed-out",
+      "path": "cases/acceptance-visible-timed-out"
     },
     {
       "claimType": "acceptance_observed/v1",

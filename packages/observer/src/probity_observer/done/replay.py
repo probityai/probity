@@ -301,8 +301,10 @@ def close_all() -> None:
 class Proxy:
     """``candidate`` in the sealed test: every call goes to the child as plain data."""
 
-    def __init__(self, child: Child) -> None:
+    def __init__(self, child: Child, budget: float) -> None:
         self.child = child
+        self.deadline = time.monotonic() + budget
+        self.timed_out = False
         self.answers: dict[str, list[str]] = {}
         self.requests: dict[str, tuple[Any, Any]] = {}
 
@@ -312,7 +314,12 @@ class Proxy:
         except TypeError as error:
             raise CandidateFailed(f"argument is not plain data: {error}") from error
         key = json.dumps([args_tagged, kwargs_tagged], separators=(",", ":"))
-        reply = self.child.call(args_tagged, kwargs_tagged)
+        left = self.deadline - time.monotonic()
+        if left <= 0:
+            self.timed_out = True
+            raise CandidateFailed("child-timeout")
+        reply = self.child.call(args_tagged, kwargs_tagged, left)
+        self.timed_out = self.timed_out or self.child.timed_out
         answer = json.dumps(reply, separators=(",", ":"), sort_keys=True)
         self.answers.setdefault(key, []).append(answer)
         self.requests[key] = (args_tagged, kwargs_tagged)
@@ -340,6 +347,10 @@ def _run_test(path: Path, proxy: Proxy) -> str | None:
 
 
 MODES = ("assert", "determinism", "type_strict", "import_side_effects")
+# How many passes over the cases each mode makes. Every pass has the command's whole
+# ``run_timeout`` (a probe that repeats the work is never stricter than one run of the
+# command), and the runner's limit on the whole replay is that many timeouts.
+PASSES = {"assert": 2, "determinism": 3, "type_strict": 1, "import_side_effects": 1}
 
 # How the candidate ended its own process: the reply errors a SystemExit or an exit gives.
 EXIT_ERRORS = ("import:SystemExit", "SystemExit", "child-exited")
@@ -434,7 +445,8 @@ def _tagged(args: Any, kwargs: Any) -> tuple[Any, Any]:
 
 def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
              budget: float) -> tuple[list[str], float, bool]:
-    """One child, each call ``repeat`` times, inside its own ``budget`` seconds."""
+    """One child, each call ``repeat`` times; each pass over the calls has ``budget`` seconds,
+    so the run has ``repeat`` times that."""
     started = time.monotonic()
     answers: list[str] = []
     timed_out = False
@@ -442,7 +454,7 @@ def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
                float(request["call_timeout"])) as child:
         for args_tagged, kwargs_tagged in calls:
             for _ in range(repeat):
-                left = budget - (time.monotonic() - started)
+                left = budget * repeat - (time.monotonic() - started)
                 if left <= 0:
                     timed_out = True
                     break
@@ -462,7 +474,8 @@ def determinism(request: dict[str, Any]) -> dict[str, Any]:
     answer sequences, each answer plain and ``==`` the case's expected value (the type is
     :func:`type_strict`'s question).
 
-    Each of the three runs has its own ``run_timeout``; one slow run never spends another's.
+    Each of the three passes has its own ``run_timeout`` (the first run, two passes, has
+    twice that); one slow pass never spends another's.
     """
     cases = sealed_cases(Path(request["test"]))
     calls = [_tagged(args, kwargs) for args, kwargs, _ in cases]
@@ -491,21 +504,21 @@ def determinism(request: dict[str, Any]) -> dict[str, Any]:
 
 def type_strict(request: dict[str, Any]) -> dict[str, Any]:
     """Each held-out case compared with :func:`strict_eq`: the result's builtin type, at every
-    level, must be the expected value's."""
+    level, must be the expected value's. One pass, inside ``run_timeout``."""
     cases = sealed_cases(Path(request["test"]))
+    calls = [_tagged(args, kwargs) for args, kwargs, _ in cases]
+    answers, _, timed_out = _one_run(request, calls, 1, float(request["run_timeout"]))
     mismatched = 0
     made = 0
-    failure = None
-    with Child(request["child_argv"], request.get("child_cwd"),
-               float(request["call_timeout"])) as child:
-        for args, kwargs, expected in cases:
-            made += 1
-            reply = child.call(*_tagged(args, kwargs))
-            if "error" in reply:
-                failure = f"candidate: {reply['error']}"
-                break
-            if not strict_eq(unplain(reply["ok"]), expected):
-                mismatched += 1
+    failure = "timeout" if timed_out else None
+    for answer, (_, _, expected) in zip(answers, cases):
+        made += 1
+        reply = json.loads(answer)
+        if "error" in reply:
+            failure = failure or f"candidate: {reply['error']}"
+            break
+        if not strict_eq(unplain(reply["ok"]), expected):
+            mismatched += 1
     if failure is None and mismatched:
         failure = f"{mismatched} result(s) differ in type or value"
     return {"passed": failure is None, "failure": failure, "mode": "type_strict",
@@ -545,16 +558,29 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     if mode == "import_side_effects":
         return import_side_effects(request)
     timeout = float(request["call_timeout"])
+    budget = float(request["run_timeout"])
+    # Two passes, each with the whole run_timeout: the sealed test in one child, then every
+    # distinct call again in a fresh child of its own.
     with Child(request["child_argv"], request.get("child_cwd"), timeout) as child:
-        proxy = Proxy(child)
+        proxy = Proxy(child, budget)
         failure = _run_test(Path(request["test"]), proxy)
+    if proxy.timed_out:
+        failure = "timeout"
     impure = sorted(key for key, answers in proxy.answers.items() if len(set(answers)) != 1)
     order = sorted(proxy.answers)
     random.Random(request["order_seed"]).shuffle(order)
     fresh_mismatch = []
+    deadline = time.monotonic() + budget
     for key in order:
+        left = deadline - time.monotonic()
+        if left <= 0:
+            failure = "timeout"
+            break
         with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
-            reply = fresh.call(*proxy.requests[key])
+            reply = fresh.call(*proxy.requests[key], left)
+        if fresh.timed_out:
+            failure = "timeout"
+            break
         if json.dumps(reply, separators=(",", ":"), sort_keys=True) != proxy.answers[key][0]:
             fresh_mismatch.append(key)
     calls = sum(len(answers) for answers in proxy.answers.values())

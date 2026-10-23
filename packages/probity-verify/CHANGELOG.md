@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Eight more done-check vectors (32 in all): a pytest run's own test cache between two runs, an
+  agent-made directory on the import path, the shadow rule without a contract, and a held-out or visible
+  command stopped at its limit.
+
 ## 0.2.0 (2026-10-20)
 
 The verifier now reads DSSE envelopes, registers itself as `probity verify`, and judges completion

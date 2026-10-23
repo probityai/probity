@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 
 from probity_observer.done import replay
+from probity_observer.done import runner as runner_module
 from probity_observer.done.runner import TIMEOUT_EXIT, SubprocessRunner, run_replay
 
 from .conftest import HONEST
@@ -128,13 +129,29 @@ def test_a_hung_candidate_is_stopped_with_everything_it_started(tmp_path, python
 
 def test_a_replay_parent_that_outruns_its_limit_stops_its_children(tmp_path, python_bin,
                                                                     leak_guard, monkeypatch):
-    # The parent's whole-command limit (1 s) fires before the child's own call limit (60 s),
+    # The parent's whole-command limit (0.5 s) fires before the child's own call limit (1 s),
     # so the children are still running when the runner stops the parent.
     runner = Wrapped(python_bin, leak_guard)
     monkeypatch.setattr(replay, "CLOSE_GRACE", 0.5, raising=False)
+    monkeypatch.setattr(runner_module, "replay_limit", lambda mode, timeout: timeout / 2)
     code = _probe(tmp_path, runner, HUNG, "assert", 0, 1.0)
     assert code == TIMEOUT_EXIT
     assert _settled_survivors(leak_guard) == []
+
+
+SLOW = "import time\ndef add(a, b):\n    time.sleep(0.4)\n    return a + b\n"
+
+
+@pytest.mark.parametrize("mode", ["assert", "determinism", "type_strict"])
+def test_the_whole_command_limit_covers_every_pass_of_the_probe(tmp_path, python_bin,
+                                                                 leak_guard, mode):
+    """One pass over the two visible cases takes 0.8 s, inside the 1.2 s command limit. The
+    assert replay then calls each case again in a fresh child and the determinism probe runs
+    three passes; the runner's limit on the whole command grows with the passes, so the probe
+    is never stricter than one run of the command."""
+    runner = Wrapped(python_bin, leak_guard)
+    assert _probe(tmp_path, runner, SLOW, mode, 0, 1.2) == 0, runner.replays
+    assert runner.replays[-1]["passed"]
 
 
 def test_closing_a_child_twice_and_calling_a_closed_child_are_safe(tmp_path, python_bin):
