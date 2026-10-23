@@ -24,6 +24,9 @@ jobs:
       - run: uv sync --frozen --extra test
       - run: uv run --frozen --extra test pytest
       - run: uv run --frozen python scripts/build-recipes.py --check
+      - run: uv run --frozen --extra test pytest tests/test_release_pins.py
+        env:
+          PROBITY_VERIFY_ONLINE: '1'
       - run: uv run --frozen python examples/spend-reservation/generate.py --check
       - run: uv run --frozen python examples/event-absence-v2/generate.py --check
       - run: uv run --frozen python examples/brokered-file-write/generate.py --check
