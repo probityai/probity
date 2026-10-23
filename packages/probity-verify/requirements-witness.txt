@@ -18,7 +18,7 @@ pluggy==1.7.0
     # via pytest
 probityai @ git+https://github.com/probityai/jcs-admit@58a48b2f33b55cafb72de9f187f0fa53eed74d95#subdirectory=python
     # via agent-evidence-observer
-pycparser==3.11
+pycparser==3.12
     # via cffi
 pygments==2.21.0
     # via pytest
