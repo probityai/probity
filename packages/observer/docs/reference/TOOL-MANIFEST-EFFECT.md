@@ -34,6 +34,12 @@ uv pip install --python .venv/bin/python -e '.[test]'
 Use a new output directory. A changed source, failed reader or unexpected refusal
 must stop the recipe. Preserve stderr and the exit status.
 
+The two output files carry the run's own clock in `runEvaluationTime`, so a rerun
+never matches a published run byte for byte as written. Substitute the published
+`runEvaluationTime` into both files, then compare SHA-256 digests. Runs on macOS
+arm64, Linux aarch64 and Linux x86_64 at `00e92b0` differed in that field alone
+([agent-evidence#50](https://github.com/probityai/agent-evidence/issues/50)).
+
 The public `probity_observer.tool_manifest` consumer accepts a separately selected
 Ed25519 JWK, a compact JWS and `ToolGate`. `require_served_tool` also recomputes
 the digest from the supplied definition. The caller selects the producer key
