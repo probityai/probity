@@ -52,7 +52,7 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
         with:
-          version: '0.12.23'
+          version: '0.13.5'
       # The verifier bundles and archives its repository root and checks the
       # two agree, so give it a checkout whose root is the package tree: a
       # commit with tree HEAD:packages/observer and parent HEAD.

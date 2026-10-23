@@ -1,7 +1,7 @@
 # PIC and APS refund evidence: exact reference
 
 Start in the Observer repository root on a Linux runner with Git, Node.js 22
-(including npm) and uv 0.12.8. The recipe creates its own Python 3.12 environment.
+(including npm) and uv 0.13.5. The recipe creates its own Python 3.12 environment.
 
 ```sh
 set -eu
