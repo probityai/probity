@@ -21,6 +21,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, Sequence
@@ -69,7 +70,8 @@ class Command:
             entry["probe"] = self.probe
         if self.sealed_ids is not None:
             entry["ids"] = list(self.sealed_ids)
-        elif self.ids_from is not None and pytest_plugins.is_sealed_pytest(self.argv):
+        elif self.ids_from is not None and (pytest_plugins.is_sealed_pytest(self.argv)
+                                            or is_pytest_replay(self.argv)):
             entry["ids"] = list(self.argv[self.ids_from:])
         return entry
 
@@ -166,8 +168,49 @@ def is_replay(argv: Sequence[str]) -> bool:
 DETERMINISM_RUNS = 2
 
 
+PYTEST_FLAG = "--pytest"
+# The sealed test root a pytest replay starts from, beside the sealed configuration.
+PYTEST_ROOT = "pytest-root"
+PYTEST_ROOT_ARG = f"../heldout/{PYTEST_ROOT}"
+_PYTEST_KEYS = ("--config", "--overlay", "--remote", "--repeats")
+PYTEST_IDS_FROM = 2 + 2 * len(_PYTEST_KEYS) + 1
+
+
+def pytest_replay_argv(config: str | None, overlay: str | None, remote: Sequence[str],
+                       repeats: int, ids: Sequence[str]) -> tuple[str, ...]:
+    """The acceptance argv that runs sealed pytest ``ids`` by parent-compare replay.
+
+    ``config`` and ``overlay`` are paths from the workspace into the sealed directory (the
+    sealed pytest configuration, and for a held-out command the held-out tree laid over the
+    sealed test root); ``remote`` names the top-level modules the child serves."""
+    return (replay_harness.COMMAND, PYTEST_FLAG, "--config", config or "-", "--overlay",
+            overlay or "-", "--remote", ",".join(sorted(remote)), "--repeats", str(repeats),
+            "--", *ids)
+
+
+def pytest_replay_fields(argv: Sequence[str]) -> dict | None:
+    """The fields of a well-formed pytest replay argv, or ``None``."""
+    items = list(argv)
+    if (len(items) <= PYTEST_IDS_FROM or items[:2] != [replay_harness.COMMAND, PYTEST_FLAG]
+            or items[2:PYTEST_IDS_FROM - 1:2] != list(_PYTEST_KEYS)
+            or items[PYTEST_IDS_FROM - 1] != "--" or not items[9].isdigit()):
+        return None
+    remote = [name for name in items[7].split(",") if name]
+    if not remote or any(not name.isidentifier() for name in remote):
+        return None
+    return {"config": None if items[3] == "-" else items[3],
+            "overlay": None if items[5] == "-" else items[5], "remote": remote,
+            "repeats": int(items[9]), "ids": items[PYTEST_IDS_FROM:]}
+
+
+def is_pytest_replay(argv: Sequence[str]) -> bool:
+    return pytest_replay_fields(argv) is not None
+
+
 def replay_mode(argv: Sequence[str]) -> str | None:
     """The replay mode an argv names, or ``None`` when it is not a well-formed replay argv."""
+    if len(argv) > 1 and argv[1] == PYTEST_FLAG:
+        return "pytest" if is_pytest_replay(argv) else None
     if len(argv) == 4:
         return "assert"
     if len(argv) == 5 and argv[4] in replay_harness.MODES:
@@ -182,15 +225,24 @@ def run_replay(scratch: Path, argv: Sequence[str], child_argv, timeout: float,
 
     ``argv`` is ``(COMMAND, <sealed test path from the workspace>, <module>, <entry>[, mode])``.
     Only the module's file is copied into the child's directory; ``child_argv(directory,
-    source)`` returns the child's command line and working directory. The determinism probe
+    source)`` returns the child's command line and working directory. A pytest replay
+    (:func:`pytest_replay_argv`) gives the child a copy of the whole agent tree and the parent a
+    test root of sealed files only. The determinism probe
     gives each of its child runs the whole ``timeout``, so the command's own limit is that
     many times longer.
     """
     mode = replay_mode(argv)
     if mode is None:
         return 2
-    _, test, module, entry = argv[:4]
     workspace = scratch / "workspace"
+    if mode == "pytest":
+        found = _pytest_request(scratch, argv, child_argv)
+        if found is None:
+            return 2
+        request = {**found, "call_timeout": min(timeout, 60.0), "order_seed": order_seed,
+                   "mode": mode, "run_timeout": timeout, "out": str(scratch / "replay.json")}
+        return _run_parent(scratch, argv, request, timeout, results, stopped)
+    _, test, module, entry = argv[:4]
     candidate = scratch / "candidate"
     candidate.mkdir()
     source = workspace / f"{module}.py"
@@ -204,12 +256,95 @@ def run_replay(scratch: Path, argv: Sequence[str], child_argv, timeout: float,
     request = {"test": str((workspace / test).resolve()), "child_argv": command,
                "child_cwd": cwd, "call_timeout": min(timeout, 60.0), "order_seed": order_seed,
                "mode": mode, "run_timeout": timeout, "out": str(scratch / "replay.json")}
-    (scratch / "request.json").write_text(json.dumps(request))
+    return _run_parent(scratch, argv, request, timeout, results, stopped)
+
+
+def _sealed_path(scratch: Path, name: str) -> Path | None:
+    """``name`` (a path from the workspace) resolved, when it lies inside the sealed directory."""
+    sealed = (scratch / "heldout").resolve()
+    found = (scratch / "workspace" / name).resolve()
+    return found if found == sealed or sealed in found.parents else None
+
+
+def _pytest_request(scratch: Path, argv: Sequence[str], child_argv) -> dict | None:
+    """Lay out a pytest replay: the sealed test root (with the held-out tree over it for a
+    held-out command) for the parent, and a readable copy of the agent's tree for the child.
+
+    ``None`` when the argv names a path outside the sealed directory or the sealed root is
+    missing."""
+    fields = pytest_replay_fields(argv)
+    assert fields is not None
+    source = _sealed_path(scratch, PYTEST_ROOT_ARG)
+    config = _sealed_path(scratch, fields["config"]) if fields["config"] else None
+    overlay = _sealed_path(scratch, fields["overlay"]) if fields["overlay"] else None
+    if (source is None or not source.is_dir() or (fields["config"] and config is None)
+            or (fields["overlay"] and (overlay is None or not overlay.is_dir()))):
+        return None
+    root = scratch / "pytest-tests"
+    shutil.copytree(source, root, symlinks=True)
+    if overlay is not None:
+        shutil.copytree(overlay, root, symlinks=True, dirs_exist_ok=True)
+    candidate = scratch / "candidate"
+    shutil.copytree(scratch / "workspace", candidate, symlinks=True)
+    chmod_tree(candidate, 0o755, 0o644)
+    os.chmod(scratch, 0o755)
+    from . import pytest_replay
+
+    command, cwd = child_argv(candidate, pytest_replay.child_source())
+    return {"test_root": str(root.resolve()), "config": str(config) if config else None,
+            "ids": fields["ids"], "remote": fields["remote"], "repeats": fields["repeats"],
+            "child_argv": command, "child_cwd": cwd}
+
+
+# What the container client in the replay parent needs to reach its daemon when the operator
+# runs it somewhere other than the default socket. They are the operator's settings, never the
+# task's; only these names pass from the verifier's environment to the parent.
+RUNTIME_ENV = ("DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG", "DOCKER_CERT_PATH",
+               "DOCKER_TLS_VERIFY")
+
+
+def parent_env() -> dict[str, str]:
+    """The replay parent's environment: the scrubbed one, the container client's settings,
+    and pytest's plugin autoloading off.
+
+    ``python -I`` ignores only the ``PYTHON*`` variables. pytest reads ``PYTEST_ADDOPTS`` and
+    ``PYTEST_PLUGINS`` from the environment, and every sealed conftest can read
+    ``os.environ``, so the verifier's own environment never reaches the parent."""
+    env = dict(SCRUBBED_ENV)
+    env.update({key: os.environ[key] for key in RUNTIME_ENV if key in os.environ})
+    env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+    return env
+
+
+def replay_parent() -> dict:
+    """Where and how the replay parent runs, for the isolation record: on the verifier host,
+    in the verifier's own interpreter and user, with :func:`parent_env` (named, not its
+    values). The container flags of the record describe the worker and the candidate's
+    children, never this process."""
+    return {"runtime": "host", "uid": os.getuid(), "env": "scrubbed",
+            "env_keys": sorted(parent_env())}
+
+
+def _run_parent(scratch: Path, argv: Sequence[str], request: dict, timeout: float,
+                results: list[dict] | None, stopped: list[bool] | None) -> int:
+    mode = request["mode"]
+    command = list(request["child_argv"])
+    if command and not os.path.isabs(command[0]):
+        # The parent's PATH is the scrubbed one; the child's program is found on the
+        # verifier's own, where the runner was configured.
+        found = shutil.which(command[0])
+        if found is not None:
+            request = {**request, "child_argv": [found, *command[1:]]}
     limit = timeout * DETERMINISM_RUNS + 30 if mode == "determinism" else timeout
+    # The clock the limit below runs on (``time.monotonic`` is system-wide), so the parent's
+    # own deadline counts its start-up too.
+    children = scratch / "children.txt"
+    request = {**request, "started": time.monotonic(), "children": str(children)}
+    (scratch / "request.json").write_text(json.dumps(request))
     parent = subprocess.Popen([sys.executable, "-I", "-m", "probity_observer.done.replay",
                                str(scratch / "request.json")], stdin=subprocess.DEVNULL,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                              start_new_session=True)
+                              env=parent_env(), start_new_session=True)
     try:
         parent.wait(timeout=limit)
     except subprocess.TimeoutExpired:
@@ -217,6 +352,10 @@ def run_replay(scratch: Path, argv: Sequence[str], child_argv, timeout: float,
         if stopped is not None:
             stopped.append(True)
         return TIMEOUT_EXIT
+    finally:
+        # However the parent ended (its own exit, SIGTERM, or the SIGKILL after the grace),
+        # no child it started outlives it.
+        replay_harness.kill_recorded(children)
     done = parent
     if (scratch / "replay.json").is_file():
         report = json.loads((scratch / "replay.json").read_text())
