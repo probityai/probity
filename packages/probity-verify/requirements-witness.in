@@ -1,6 +1,9 @@
 # The witness co-signature verifier that lets a record earn EXTERNAL witness
 # scope, and the test tools that check it. Compile with:
 #   uv pip compile --no-header --python-version 3.12 requirements-witness.in -o requirements-witness.txt
+# CI recompiles onto a copy of this file (scripts/check-lock-current.sh), so a new
+# upstream release of a transitive dependency does not redden it; refresh the pins
+# with --upgrade when you mean to.
 # It is a separate environment, not a probity-verify extra: the pinned observer
 # depends on the jcs-admit Python binding at a commit that still published it as
 # probityai, the name of the probity command in this workspace, so the two
