@@ -66,7 +66,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/packages/observer/selected-crewai/uv.lock" "$profile/install-attempt/publisher-uv.lock"
           exec > >(tee "$profile/install-attempt/setup.log") 2>&1
           python -I -B -c 'import ast,sys;from pathlib import Path;[ast.parse(p.read_text(),filename=str(p)) for p in Path(sys.argv[1]).rglob("*.py")]' "$profile"
-          python -m pip install --no-compile uv==0.11.15
+          python -m pip install --no-compile uv==0.13.5
           uv --version
           python -m venv "$RUNNER_TEMP/crewai-jobs-producer"
           uv pip sync --python "$RUNNER_TEMP/crewai-jobs-producer/bin/python" --require-hashes "$profile/requirements-native.lock"

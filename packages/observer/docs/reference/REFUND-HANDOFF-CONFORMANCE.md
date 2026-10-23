@@ -1,6 +1,6 @@
 # Refund handoff conformance: exact reference
 
-Start in the Observer repository root with Python 3.12 and uv 0.12.23.
+Start in the Observer repository root with Python 3.12 and uv 0.13.5.
 Use a new result path:
 
 ```sh

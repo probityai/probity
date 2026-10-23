@@ -41,7 +41,7 @@ jobs:
         with:
           python-version: '3.12.14'
       - name: Install selected build and verification tools
-        run: python -m pip install uv==0.12.19 ruff==0.15.8 pyright==1.1.408
+        run: python -m pip install uv==0.13.5 ruff==0.15.8 pyright==1.1.408
       - name: Install the immutable native host dependency lock
         working-directory: packages/observer/selected-native-host
         env:

@@ -52,7 +52,7 @@ resources. A local OPEN-to-DONE readback supplies no independent effect custody.
 This is same-operator captured-byte reconstruction, not an authenticated witness,
 real-model benchmark, producer acceptance or recurring outside adoption.
 
-Installation uses the workflow's fixed Python 3.12.14, uv 0.12.19, setuptools
+Installation uses the workflow's fixed Python 3.12.14, uv 0.13.5, setuptools
 81.0.0 and wheel 0.46.3 selections with reproducible wheel timestamps. Native
 dependencies come from the selected upstream `uv.lock`, with the explicitly
 selected Observer crypto/runtime and build-tool overlay; its exact tagged source
