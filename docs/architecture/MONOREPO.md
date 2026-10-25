@@ -78,6 +78,18 @@ directory moves. The vectors tag is therefore `agent-evidence-vectors-vX.Y.Z`, a
 `vectors/vX.Y.Z`. Crates follow the same rule (`jcs-admit-vX.Y.Z`, `dsse-vX.Y.Z`)
 when their release job is added in the import step.
 
+### What a release file may contain
+
+A release file is built from the committed tree of one commit and from nothing else. CI does this
+with a fresh checkout; any build outside CI runs `python3 scripts/build-from-tag.py <tag>`, which
+exports the tag with `git archive` (tracked files only, so a file hidden by `.git/info/exclude` or
+left untracked is absent) and builds from the export. `python-build.yml` then runs
+`scripts/check-dist-clean.py` over `dist/`: it opens every wheel and source distribution and fails
+on a private path (`TODO*.md`, `research/`, `.handoff/`, `.claude/`), on a private name in any file,
+and on any path that `scripts/dist-allowlist.toml` does not list for that distribution. A new
+member needs its own table in the allowlist (a test pins this). A PyPI file cannot be replaced, so
+this check is the only point at which a leak is cheap to fix.
+
 ### PyPI trusted publishers to enter
 
 Every PyPI project released from this repository has the same publisher: owner `probityai`, repository
