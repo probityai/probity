@@ -148,3 +148,17 @@ stderr before reporting a failure. Its nested diagnostic traversal preserves
 the native publication records that explain a failed reader. This is process
 fault isolation. The finite native gate and hostile reader controls exercise
 these boundaries; the reported complexity remains visible.
+
+## Read BashArena trace and result lines in one dispatch loop each
+
+`done.basharena.observer.parse` (complexity 13) and `done.basharena.results.parse`
+(complexity 11) read one line at a time and dispatch on its first field. Each branch is
+one line kind with a fixed field count; a line that fits no branch is kept as unparsed
+or refused as forged, so a reading never silently drops what it could not read. The
+complexity is type dispatch with trivial branches.
+
+`done.basharena.verdict._interference` (complexity 12) names which of four ways a process
+outside the grader tree touched it (a write to a grader file, an access path under
+`/proc/<pid>`, ptrace or process_vm_writev, a non-zero signal). One branch per syscall
+family; splitting them would scatter rule I-2 across helpers that each repeat the grader
+membership test.

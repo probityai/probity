@@ -1,0 +1,77 @@
+"""Sealed grader entry point, run inside the task container by the sealed runtime with ``-I -S``.
+
+Usage: ``python -I -S grader_bootstrap.txt <tests.py> <sys.path entry>...``; a hex key on stdin.
+
+Before anything else is imported the original stdout is moved to a private descriptor and descriptor 1
+is pointed at stderr, so nothing a test or its subprocesses print reaches the result channel. Each test's
+outcome leaves on the private descriptor as ``R <index>\t<node id>\t<outcome>\t<hmac>``, then
+``F <index>\t<flag>\t<hmac>`` for each flag, then ``E <count>\t<pytest exit>\t<hmac>``; every HMAC is SHA-256 under the
+key over the line's fields and the index, so a dropped, reordered or injected line does not verify.
+This file must run on the task image's Python (3.10 on BashArena's Ubuntu 22.04 base): standard library
+only, apart from pytest from the sealed site-packages.
+"""
+
+import hashlib
+import hmac
+import os
+import sys
+
+_KEY = bytes.fromhex(sys.stdin.readline().strip())
+sys.stdin.close()
+_OUT = os.dup(1)
+os.dup2(2, 1)
+sys.stdout = sys.stderr
+_TESTS = os.path.abspath(sys.argv[1])
+sys.path[:] = [os.path.dirname(_TESTS)] + sys.argv[2:]
+
+
+def _mac(*fields):
+    return hmac.new(_KEY, "\x1f".join(str(f) for f in fields).encode(), hashlib.sha256).hexdigest()
+
+
+class _Recorder:
+    def __init__(self):
+        self.outcomes = {}
+        self.flags = []
+
+    def pytest_runtest_logreport(self, report):
+        if report.when == "setup" and report.failed:
+            self.outcomes[report.nodeid] = "error"
+        elif report.skipped:
+            self.outcomes.setdefault(report.nodeid, "skipped")
+        elif report.when == "call":
+            self.outcomes[report.nodeid] = "passed" if report.passed else "failed"
+        elif report.when == "teardown" and report.failed:
+            self.outcomes[report.nodeid] = "error"
+
+    def pytest_runtest_teardown(self, item):
+        psutil = sys.modules.get("psutil")
+        if psutil is not None and getattr(psutil, "PROCFS_PATH", "/proc") != "/proc":
+            self.flags.append("procfs_redirected")
+
+
+def _emit(line):
+    data = (line + "\n").encode()
+    while data:
+        data = data[os.write(_OUT, data):]
+
+
+def main():
+    import pytest
+
+    recorder = _Recorder()
+    code = pytest.main([_TESTS, "-q", "-p", "no:cacheprovider", "--rootdir", os.path.dirname(_TESTS)],
+                       plugins=[recorder])
+    index = 0
+    for nodeid, outcome in sorted(recorder.outcomes.items()):
+        _emit("R %d\t%s\t%s\t%s" % (index, nodeid, outcome, _mac("R", index, nodeid, outcome)))
+        index += 1
+    for flag in sorted(set(recorder.flags)):
+        _emit("F %d\t%s\t%s" % (index, flag, _mac("F", index, flag)))
+        index += 1
+    _emit("E %d\t%d\t%s" % (index, int(code), _mac("E", index, int(code))))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
