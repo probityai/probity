@@ -1,19 +1,24 @@
-"""Persistence: the plain record types here, the Atlas store in `ratchet.store.atlas` (the `atlas` extra)."""
+"""Atlas persistence: harness lineage, traces, evaluations, decisions, failure memory."""
 
-from ratchet.store.types import (
-    WATCHABLE,
+from ratchet.store.atlas import (
     ChangeEvent,
     IntegrityError,
     LineageNode,
     NewFailure,
     SimilarFailure,
+    Store,
 )
+from ratchet.store.embed import EmbeddingError, MissingKeyError, VoyageEmbedder, VoyageReranker
 
 __all__ = [
-    "WATCHABLE",
     "ChangeEvent",
+    "EmbeddingError",
     "IntegrityError",
     "LineageNode",
+    "MissingKeyError",
     "NewFailure",
     "SimilarFailure",
+    "Store",
+    "VoyageEmbedder",
+    "VoyageReranker",
 ]

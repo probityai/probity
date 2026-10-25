@@ -8,11 +8,12 @@ from typing import Any
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from ratchet_cases.types import canonical_json
 from rich.console import Console
 
-from ratchet.canonical import canonical_json
 from ratchet.improve.receipt import DECISION_TYPE, ReceiptError, Signer
 from ratchet.view.verify import (
+    _independent,
     render_verify,
     trusted_keys,
     verify_decision,
@@ -119,10 +120,20 @@ def test_trusted_keys_from_hex_env_pem_pinned_or_nothing(tmp_path: Path) -> None
         trusted_keys(None, {}, tmp_path / "missing.pub")
 
 
-def test_the_signature_is_checked_by_the_dsse_crate() -> None:
+def test_the_independent_verifier_must_agree(monkeypatch: pytest.MonkeyPatch) -> None:
     env = SIGNER.sign(DECISION_TYPE, canonical_json(payload()))
     res = verify_envelope(env, keys())
-    assert res.ok and "checked by the dsse crate" in " ".join(res.detail)
+    assert "independent verifier" in " ".join(res.detail)
+
+    class Disagrees:
+        keyid = None
+        reason = "signature_invalid"
+
+    monkeypatch.setattr("ratchet.verify.dsse.verify_signature", lambda env, trusted: Disagrees())
+    bad = verify_envelope(env, keys())
+    assert not bad.ok
+    assert "independent verifier rejects the signature" in bad.detail[0]
+    assert _independent(b"{}", keys()) is not None
 
 
 def test_render_of_failure_has_no_payload_line() -> None:

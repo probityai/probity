@@ -28,7 +28,7 @@ def test_tree_shows_scores_receipts_and_rejections() -> None:
     assert "rej00000001" in out
     assert "protected case broke: ord.v3" in out
     assert "FRESH" in out
-    assert "intervenes on 1 benign twin" in out
+    assert "intervenes on 1 held-out benign twin" in out
     assert out.index(good.version) < out.index("rej00000001")  # the winner is listed before the losers
 
 
@@ -73,7 +73,7 @@ def test_rejected_node_without_reasons_still_prints() -> None:
 def test_the_active_version_is_marked_and_admission_alone_does_not_activate() -> None:
     store, seed, good = scenario()
     assert "ACTIVE" not in render(lineage_tree(build_lineage(store)))
-    store.active = {"_id": "worker", "version": good.version, "revision": 3}
+    store.collections["active"] = [{"_id": "worker", "version": good.version, "revision": 3}]
     roots = build_lineage(store)
     nodes = {n.version: n for r in roots for n in r.walk()}
     assert nodes[good.version].active
@@ -81,5 +81,5 @@ def test_the_active_version_is_marked_and_admission_alone_does_not_activate() ->
     assert not nodes[seed.version].active
     out = render(lineage_tree(roots))
     assert "ACTIVE rev 3" in out
-    store.active = {"_id": "worker", "version": "unknown-version", "revision": 1}
+    store.collections["active"] = [{"_id": "worker", "version": "unknown-version", "revision": 1}]
     assert not any(n.active for r in build_lineage(store) for n in r.walk())

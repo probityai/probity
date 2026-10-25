@@ -19,22 +19,21 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+import httpx
+from pymongo import MongoClient
 from ratchet_cases.cases import all_cases
 
 from ratchet.agent.guards import GuardRuntime
-from ratchet.agent.model import ModelClient, ModelConfig, ModelError, SeededTransport
+from ratchet.agent.model import ModelClient, ModelConfig, ModelError
 from ratchet.agent.seed import seed_harness
 from ratchet.agent.worker import run_case
+from ratchet.improve.activate import MongoActivator
 from ratchet.improve.archive import ArchiveSelector
-from ratchet.improve.loop import EvolveResult, Lab, evolve, frozen_suite_digest
-from ratchet.improve.receipt import TRUSTED_KEY_ENV
-from ratchet.improve.referee import ProcessReferee
+from ratchet.improve.loop import EvolveResult, Lab, evolve
+from ratchet.improve.receipt import Signer, public_key_bytes
 from ratchet.improve.sandbox import SandboxRunner
 from ratchet.improve.worldsim import WorldSimulator
-from ratchet.store.atlas import Store
-from ratchet.verify.dsse import keyid_of, raw_public
-from ratchet.verify.keys import DEFAULT_KEY_PATH, load_trusted_key
+from ratchet.store import Store
 
 
 def _args(argv: Sequence[str] | None) -> argparse.Namespace:
@@ -60,6 +59,25 @@ def _args(argv: Sequence[str] | None) -> argparse.Namespace:
     p.add_argument("--family", action="append", default=[], help="limit to these case families")
     p.add_argument("--out", type=Path, required=True)
     return p.parse_args(argv)
+
+
+class SeededTransport(httpx.HTTPTransport):
+    """Adds a fixed sampling seed to every chat-completions request body, so an endpoint that honours seeds
+    (vLLM does) answers a repeated request the same way. Nothing else in the request changes."""
+
+    def __init__(self, seed: int) -> None:
+        super().__init__()
+        self.seed = seed
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path.endswith("/chat/completions"):
+            body = json.loads(request.content)
+            body["seed"] = self.seed
+            content = json.dumps(body).encode("utf-8")
+            headers = [(k, v) for k, v in request.headers.raw if k.lower() != b"content-length"]
+            headers.append((b"content-length", str(len(content)).encode()))
+            request = httpx.Request(request.method, request.url, headers=headers, content=content)
+        return super().handle_request(request)
 
 
 class FallbackChat:
@@ -88,13 +106,15 @@ class FallbackChat:
         raise last
 
 
-def summary(
-    result: EvolveResult, decision_key: Ed25519PublicKey, wall_s: float, config: dict[str, Any]
-) -> dict[str, Any]:
+def _mongo(uri: str) -> MongoClient[dict[str, Any]]:
+    return MongoClient(uri, tz_aware=True)
+
+
+def summary(result: EvolveResult, signer: Signer, wall_s: float, config: dict[str, Any]) -> dict[str, Any]:
     return {
         "config": config,
-        "signer_keyid": keyid_of(decision_key),
-        "signer_public_key_hex": raw_public(decision_key).hex(),
+        "signer_keyid": signer.keyid,
+        "signer_public_key_hex": public_key_bytes(signer.public_key).hex(),
         "final_harness": result.harness.version,
         "final_instructions": result.instructions.version,
         "wall_s": round(wall_s, 1),
@@ -109,8 +129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("error: set RATCHET_MONGODB_URI (or --uri) and RATCHET_API_KEY", file=sys.stderr)
         return 2
     cases = [c for c in all_cases() if not a.family or c.family in a.family]
-    # The referee signs with the decision key in its own process; this one needs only the pinned public key.
-    decision_key = load_trusted_key(Path(os.environ.get(TRUSTED_KEY_ENV) or DEFAULT_KEY_PATH))
+    signer = Signer.for_decisions()
     agent_cfg = ModelConfig(base_url=a.base_url, model=a.model, api_key=key, temperature=a.temperature)
     improver_url = a.improver_base_url or a.base_url
     improver_key = os.environ.get("RATCHET_IMPROVER_API_KEY", key)
@@ -138,30 +157,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         "db": a.db,
     }
     started = time.perf_counter()
-    # The referee (held-out runs, admission, decisions, activation) runs in its own process, against the
-    # held-out database, which the improver's database role cannot read.
-    referee_config = {
-        "cases": [c.id for c in cases if c.split == "heldout"],
-        "store": {"kind": "atlas", "db": f"{a.db}_heldout"},
-        "workers": a.workers,
-        "suite_digest": frozen_suite_digest(),
-        "model_config": model_config,
-    }
     with (
         Store(a.uri, a.db) as store,
         ModelClient(agent_cfg, transport=None if a.seed is None else SeededTransport(a.seed)) as model,
         contextlib.ExitStack() as stack,
         GuardRuntime() as runtime,
-        ProcessReferee("ratchet.improve.referee_live:case_suite_parts", referee_config) as referee,
+        _mongo(a.uri) as client,
     ):
         store.setup(wait_search=False)
         improver = FallbackChat([stack.enter_context(ModelClient(c)) for c in improver_cfgs])
         lab = Lab(
-            cases=[c for c in cases if c.split != "heldout"],
+            cases=cases,
             run_case=run_case,
             simulator=WorldSimulator(cases),
             runner=SandboxRunner(runtime),
-            referee=referee,
+            signer=signer,
+            activator=MongoActivator(client, a.db),
             improver=improver,
             workers=a.workers,
             max_clusters=a.max_clusters,
@@ -173,7 +184,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         # Selector scores come from training outcomes only, since the proposer sees what they select.
         chooser = ArchiveSelector(store, min_descendants=2, seed=a.db, split="train")
         result = evolve(store, model, a.generations, lab=lab, seed=seed_harness(), select_parent=chooser)
-        report = summary(result, decision_key, time.perf_counter() - started, config)
+        report = summary(result, signer, time.perf_counter() - started, config)
         report["agent_model_cost"] = model.cost().__dict__
         report["improver_model_cost"] = {c.name: c.cost().__dict__ for c in improver.clients}
         report["improver_served"] = improver.served

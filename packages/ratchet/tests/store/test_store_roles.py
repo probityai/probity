@@ -18,9 +18,7 @@ from conftest import HashEmbedder
 from pymongo.errors import OperationFailure
 from ratchet_cases.types import Cost, Event, Outcome, Trace
 
-from ratchet.store import atlas_admin
-from ratchet.store.atlas import Store
-from ratchet.store.embed import VoyageEmbedder
+from ratchet.store import Store, VoyageEmbedder, atlas_admin
 from ratchet.types import Harness
 
 PRIVATE = Path(__file__).resolve().parents[2] / "private"
@@ -84,29 +82,6 @@ def test_improver_works_in_the_main_database_and_is_denied_held_out_cases(
             improver.put_case(_case("held-2", "heldout"))
         assert write_denied.value.code == UNAUTHORIZED
     assert store.heldout["cases"].count_documents({}) == 1
-
-
-def test_the_improver_credential_is_refused_every_record_the_referee_writes(
-    atlas_uri: str, store: Store, improver_uri: str, hash_embedder: HashEmbedder
-) -> None:
-    """The referee keeps held-out runs, decisions and activation in `<db>_heldout`; the improver's role, which
-    reads and writes the main database, is refused a read of any of it."""
-    held_name = f"{store.db.name}_heldout"
-    with Store(atlas_uri, held_name, embedder=hash_embedder) as referee:
-        try:
-            referee.put_trace(_trace())
-            referee.put_eval({"type": "eval", "role": "parent_run_2", "results": []}, eval_id="p2")
-            referee.put_decision({"type": "decision", "admitted": True, "candidate": "c"}, decision_id="p->c")
-            assert referee.decisions() and referee.traces() and referee.evals()
-            with Store(improver_uri, held_name, embedder=hash_embedder) as improver:
-                for read in (improver.decisions, improver.evals, improver.traces):
-                    with pytest.raises(OperationFailure) as denied:
-                        read()
-                    assert denied.value.code == UNAUTHORIZED
-            with Store(improver_uri, store.db.name, embedder=hash_embedder) as improver:
-                assert improver.put_harness(_seed())  # its own database stays usable
-        finally:
-            referee._client.drop_database(held_name)
 
 
 def test_put_case_validates_and_is_idempotent(store: Store) -> None:

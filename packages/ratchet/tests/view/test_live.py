@@ -194,10 +194,16 @@ def test_activations_have_their_own_line() -> None:
     assert "receipt" not in first
 
 
-def test_follow_prints_the_activation_log_from_the_store_watch() -> None:
+def test_follow_reads_the_activation_log_through_the_database_when_the_store_cannot_watch_it() -> None:
     store = FakeStore()
-    doc = {"_id": "k", "version": "v2", "previous": "v1", "revision": 2}
-    store.changes["activations"] = [ChangeEvent("insert", "activations", "k", doc, {"_data": "t1"})]
+    store.raw_changes["activations"] = [
+        {
+            "operationType": "insert",
+            "documentKey": {"_id": "k"},
+            "fullDocument": {"_id": "k", "version": "v2", "previous": "v1", "revision": 2},
+            "_id": {"_data": "t1"},
+        }
+    ]
     n, out = run(store, collections=("activations",), timeout_s=0.5)
     assert n == 1
     assert "ACTIVATED" in out

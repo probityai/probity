@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from html import escape
 
 from ratchet.view.admission import (
-    HELDOUT_CHECKS,
     RUNS,
     FreshView,
     ReplayRow,
@@ -241,7 +240,7 @@ def admission_html(roots: Sequence[VersionNode]) -> str:
             ev = c.get("evidence") or {}
             if c["name"] == "replay" and (rows := replay_rows(ev)):
                 body += _replay_table_html(rows, procedures_not_applicable(ev))
-            if c["name"] in HELDOUT_CHECKS and (v := fresh_view(ev)) is not None:
+            if c["name"] == "fresh" and (v := fresh_view(ev)) is not None:
                 body += _fresh_table_html(v)
         out.append(body)
     return "".join(out)
@@ -275,13 +274,7 @@ def _fresh_table_html(v: FreshView) -> str:
             f"<tr><td>{_e(row.case_id)}</td>{cells}"
             f'<td class="{_ROLE_CLASS[row.role]}">{_ROLE_WORDS[row.role]}</td></tr>'
         )
-    pend = (
-        "; C2 (the confirming run) was not made: the candidate was refused after C1"
-        if v.refused_after_c1
-        else "; C2 (the confirming run) has not run yet"
-        if v.confirm_pending
-        else ""
-    )
+    pend = "; C2 (the confirming run) has not run yet" if v.confirm_pending else ""
     return (
         f'<div class="scroll"><table><tr><th>held-out case</th>{head}<th>role</th></tr>'
         f"{''.join(rows)}</table></div>"

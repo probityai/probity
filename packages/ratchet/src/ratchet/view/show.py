@@ -15,7 +15,6 @@ from rich.text import Text
 
 from ratchet.improve.stochastic import RUNS as V3_RUNS
 from ratchet.view.admission import (
-    HELDOUT_CHECKS,
     RUNS,
     FreshView,
     ReplayRow,
@@ -116,20 +115,14 @@ def evidence_line(check: Mapping[str, Any]) -> str:
         rows = replay_rows(ev)
         guards = [r for r in rows if not r.guard_id.startswith("(")]
         return "; ".join(f"{r.guard_id}: {r.summary}" for r in rows) or f"{len(guards)} new guards"
-    if name in HELDOUT_CHECKS:
+    if name == "fresh":
         v = fresh_view(ev)
         if v is None:
             return ""
         return (
             f"{len(v.stable)} stable recoveries (need {v.needed}), {len(v.protected)} protected, "
             f"{len(v.broken)} broken, parent discordance D={v.discordance}"
-            + (
-                "; C2 not run (refused after C1)"
-                if v.refused_after_c1
-                else "; C2 pending"
-                if v.confirm_pending
-                else ""
-            )
+            + ("; C2 pending" if v.confirm_pending else "")
         )
     if name == "no_regression":
         return (
@@ -137,17 +130,11 @@ def evidence_line(check: Mapping[str, Any]) -> str:
             f"regressed {len(ev.get('regressed') or [])}"
         )
     if name == "benign_twins":
-        line = f"{ev.get('interventions')} intervention(s)"
-        hit = ev.get("intervened")
-        if isinstance(hit, list) and hit:
-            line += f" on {len(hit)} benign twin{'' if len(hit) == 1 else 's'}"
-        runs = ev.get("benign_twin_runs")
-        return f"{line} over {runs} twin runs" if runs is not None else line
+        runs = ev.get("heldout_benign_twin_runs")
+        prefix = f"{runs} twin runs, " if runs is not None else ""
+        return f"{prefix}{ev.get('interventions')} intervention(s)"
     if name == "stochastic_v3":
         return stochastic_line(ev.get("comparison") or {})
-    if name == "cohort_size":
-        line = f"{ev.get('cases')} cases, minimum {ev.get('min_cases')}"
-        return line if ev.get("ok") else f"{line}: too small to qualify, a path check only"
     if name == "cohort_qualified":
         return cohort_line(ev.get("cohort") or {})
     if name == "overfit_lint":
@@ -158,8 +145,7 @@ def evidence_line(check: Mapping[str, Any]) -> str:
         return f"{added}; breaks: {', '.join(bad)}" if bad else f"{added}; additive only, tools a subset"
     if name == "cost":
         p, c = ev.get("parent") or {}, ev.get("candidate") or {}
-        # one count per agent turn, whether a model or the demo's scripted agent took it
-        return f"agent turns {p.get('model_calls')} -> {c.get('model_calls')} (recorded, not a gate)"
+        return f"model calls {p.get('model_calls')} -> {c.get('model_calls')} (recorded, not a gate)"
     return ""
 
 
@@ -184,22 +170,13 @@ def stochastic_line(comparison: Mapping[str, Any]) -> str:
 
 def cohort_line(cohort: Mapping[str, Any]) -> str:
     """Which identity control (an unchanged arm) failed, and on which case: the endpoint's noise floor."""
-    status = str(cohort.get("status", ""))
-    if status == "TOO_SMALL":
-        size = cohort.get("size") or {}
-        return f"TOO_SMALL: {size.get('cases')} cases, minimum {size.get('min_cases')}"
     failed = [c for c in cohort.get("controls") or [] if not c.get("qualifies")]
     parts = [f"{c['arm']}: {_declines(list(c.get('cases') or []))}" for c in failed]
+    status = str(cohort.get("status", ""))
     return f"{status}, unchanged control moved: {'; '.join(parts)}" if parts else status
 
 
-_OUTCOME_STYLE = {
-    "pass": "green",
-    "fail": "red",
-    "invalid": "bold yellow",
-    "pending": "dim",
-    "not run": "dim",
-}
+_OUTCOME_STYLE = {"pass": "green", "fail": "red", "invalid": "bold yellow", "pending": "dim"}
 _ROLE_TEXT = {
     "broken": ("PROTECTED CASE BROKE", "bold white on red"),
     "invalid": ("NO VALID EVIDENCE", "bold black on yellow"),
@@ -235,11 +212,7 @@ def fresh_table(v: FreshView) -> RenderableType:
         ("  (reported, not a threshold)", "dim"),
     )
     notes: list[RenderableType] = []
-    if v.refused_after_c1:
-        notes.append(
-            Text("C2 (the confirming run) was not made: the candidate was refused after C1", style="dim")
-        )
-    elif v.confirm_pending:
+    if v.confirm_pending:
         notes.append(Text("C2 (the confirming run) has not run yet", style="yellow"))
     if v.invalid:
         notes.append(Text(f"{len(v.invalid)} case(s) lack valid FRESH evidence: not counted", style="yellow"))
@@ -292,7 +265,7 @@ def decision_view(d: DecisionInfo) -> RenderableType:
             evidence_line(c),
         )
         ev = c.get("evidence") or {}
-        if c["name"] in HELDOUT_CHECKS and (v := fresh_view(ev)) is not None:
+        if c["name"] == "fresh" and (v := fresh_view(ev)) is not None:
             detail += [Text(), fresh_table(v)]
         if c["name"] == "replay" and (rows := replay_rows(ev)):
             detail += [Text(), replay_table(rows, procedures_not_applicable(ev))]

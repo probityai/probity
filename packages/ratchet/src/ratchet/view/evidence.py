@@ -1,15 +1,13 @@
 """Gather, from the store, the evidence an admission receipt names, so the verifier can recompute from it.
 
-Four kinds, each loaded only when the store holds exactly what the receipt describes:
+Three kinds, each loaded only when the store holds exactly what the receipt describes:
 
 - stored reports, found by the digest the receipt names for them (a stored document carries bookkeeping
   fields beside the report, so each document is reduced to the report's own fields and hashed);
 - the parent and candidate harness documents (a candidate that was never stored is rebuilt from its decision
   and used only when the rebuilt digest equals the one the receipt signed);
 - results recomputed here from recorded inputs: every added guard replayed over the recorded traces of its
-  generation, and the overfitting screen over that generation's training traces;
-- the trace of every run an evaluation report commits (its `runs`), for the run-record checks, and the
-  document of every held-out case the installed case suite holds, so those runs are graded again.
+  generation, and the overfitting screen over that generation's training traces.
 
 Anything that cannot be loaded is simply absent. The verifier prints absent evidence as not supplied.
 """
@@ -20,9 +18,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from ratchet_cases.types import Trace, sha256_hex
+from ratchet_cases.types import Trace, canonical_json, sha256_hex
 
-from ratchet.canonical import CANONICALIZATION, canonicalizer
 from ratchet.improve.diagnose import FailurePoint
 from ratchet.improve.evaluate import EvalReport
 from ratchet.improve.overfit import lint, training_literals
@@ -32,7 +29,7 @@ from ratchet.types import Guard, Harness, Procedure
 from ratchet.view.data import Doc, ViewStore
 from ratchet.view.matrix import CaseInfo
 
-BOOKKEEPING = {"_id", "digest", "digest_canonicalization", "created_at"}
+BOOKKEEPING = {"_id", "digest", "created_at"}
 REPLAY_EXTRA = {"type", "role", "generation", "parent"}
 
 
@@ -41,22 +38,19 @@ class Evidence:
     reports: dict[str, Doc] = field(default_factory=dict)
     harnesses: dict[str, Doc] = field(default_factory=dict)
     recomputed: dict[str, Doc] = field(default_factory=dict)
-    traces: dict[str, list[Doc]] = field(default_factory=dict)
-    cases: dict[str, Doc] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
 
 
-def _digest(doc: Mapping[str, Any], canonicalization: str | None = CANONICALIZATION) -> str:
-    return sha256_hex(canonicalizer(canonicalization)(dict(doc)))
+def _digest(doc: Mapping[str, Any]) -> str:
+    return sha256_hex(canonical_json(dict(doc)))
 
 
 def _eval_fields() -> set[str]:
     return set(EvalReport("x", [], 0.0).to_payload())
 
 
-def stored_reports(store: ViewStore, canonicalization: str | None = CANONICALIZATION) -> dict[str, Doc]:
-    """Every stored evaluation and replay report, by its digest under the named canonicaliser (a decision's
-    own: a decision signed before RFC 8785 names its reports by their sorted-keys digests)."""
+def stored_reports(store: ViewStore) -> dict[str, Doc]:
+    """Every stored evaluation and replay report, by the digest of the report itself."""
     fields = _eval_fields()
     found: dict[str, Doc] = {}
     for doc in store.evals():
@@ -67,57 +61,8 @@ def stored_reports(store: ViewStore, canonicalization: str | None = CANONICALIZA
             report = {k: v for k, v in doc.items() if k not in BOOKKEEPING | REPLAY_EXTRA}
         else:
             continue
-        found[_digest(report, canonicalization)] = report
+        found[_digest(report)] = report
     return found
-
-
-def report_traces(store: ViewStore, reports: Mapping[str, Mapping[str, Any]]) -> dict[str, list[Doc]]:
-    """By report name, the stored trace of every run the report commits; a run the store lacks is left out,
-    and the verifier then reads that report's run records as partial."""
-    out: dict[str, list[Doc]] = {}
-    for name, report in reports.items():
-        runs = report.get("runs")
-        if not isinstance(runs, list):
-            continue
-        keys = [(str(r.get("run_id")), str(r.get("case_id"))) for r in runs if isinstance(r, dict)]
-        found = (store.get_trace(run_id, case_id) for run_id, case_id in keys)
-        out[name] = [asdict(t) for t in found if t is not None]
-    return out
-
-
-def suite_cases(reports: Mapping[str, Mapping[str, Any]]) -> dict[str, Doc]:
-    """The case suite's document of every held-out case the reports name that the suite holds."""
-    from ratchet_cases.cases import get
-
-    from ratchet.verify.runs import case_document
-
-    ids = {
-        str(r.get("case_id"))
-        for report in reports.values()
-        for r in report.get("results") or []
-        if isinstance(r, dict) and r.get("split") == "heldout"
-    }
-    out: dict[str, Doc] = {}
-    for case_id in sorted(ids):
-        try:
-            out[case_id] = case_document(get(case_id))
-        except KeyError:
-            continue  # a benchmark's case: the verifier reports its run as not regraded
-    return out
-
-
-def _matching_suite_cases(doc: Mapping[str, Any], out: Evidence) -> dict[str, Doc]:
-    """The installed suite's held-out cases, only when it is the suite the decision was made on: another
-    release's documents would contradict an honest receipt."""
-    from ratchet_cases.cases import suite_digest
-
-    named = ((doc.get("evaluator") or {}).get("components") or {}).get("suite_file")
-    if named is None:
-        return {}
-    if named != suite_digest():
-        out.notes.append("the installed case suite is not the decision's; held-out runs are not regraded")
-        return {}
-    return suite_cases(out.reports)
 
 
 def harness_doc(h: Harness) -> Doc:
@@ -230,12 +175,10 @@ def collect(
     """Everything the store can supply for one decision document. `runner` is a context-manager factory for
     the guard runtime; without it (and a simulator) replay is not recomputed."""
     out = Evidence()
-    by_digest = stored_reports(store, doc.get("canonicalization"))
+    by_digest = stored_reports(store)
     for name, digest in (doc.get("report_digests") or {}).items():
         if digest in by_digest:
             out.reports[name] = by_digest[digest]
-    out.traces = report_traces(store, out.reports)
-    out.cases = _matching_suite_cases(doc, out)
     parent = store.get_harness(str(doc.get("parent")))
     if parent is None:
         out.notes.append("the parent harness is not in the store")

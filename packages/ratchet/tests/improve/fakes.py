@@ -61,17 +61,16 @@ class World:
         return out
 
 
-def _decisions(
+def _blocked_by(
     guards: Sequence[Guard], call: ToolCall, view: dict[str, Any], history: list[Event]
-) -> list[dict[str, Any]]:
-    """Every guard's decision on the call, in order, as the worker's guard runtime records them."""
-    out = []
+) -> str | None:
     for g in guards:
         scope: dict[str, Any] = {}
         exec(g.source, scope)
         reason = scope["check"](call, view, history)
-        out.append({"guard_id": g.id, "blocked": reason is not None, "reason": reason})
-    return out
+        if reason is not None:
+            return f"blocked by guard {g.id}: {reason}"
+    return None
 
 
 def make_trace(
@@ -81,32 +80,27 @@ def make_trace(
     version: str = "v0",
     guards: Sequence[Guard] = (),
 ) -> Trace:
-    """Run a fixed call script against the fake world, the way the worker records it: one model turn asks
-    for every call, each call carries the view the guards saw and every guard's decision, and a call a
-    guard blocks gets a `guard_block` event and never executes."""
+    """Run a fixed call script against the fake world, the way the worker records it: each call carries
+    the view the guards saw, and a call a guard blocks gets a `guard_block` event and never executes."""
     world = World.for_case(case_id)
     events: list[Event] = []
 
     def add(kind: Any, payload: dict[str, Any]) -> None:
         events.append(Event(len(events), kind, payload, 0.0))
 
-    requested = [ToolCall(name, dict(args), f"{run_id}-c{i}") for i, (name, args) in enumerate(calls)]
-    asked = [{"name": c.name, "args": c.args, "call_id": c.call_id} for c in requested]
-    add("model", {"content": "thinking", "tool_calls": asked})
-    for c in requested:
+    add("model", {"content": "thinking"})
+    for i, (name, args) in enumerate(calls):
+        c = ToolCall(name, dict(args), f"{run_id}-c{i}")
         view, history = world.view(), list(events)
         add("tool_call", {"call": {"name": c.name, "args": c.args, "call_id": c.call_id}, "view": view})
-        decisions = _decisions(guards, c, view, history)
-        blocking = next((d for d in decisions if d["blocked"]), None)
-        if blocking is not None:
-            gid = blocking["guard_id"]
-            reason = f"blocked by guard {gid}: {blocking['reason']}"
+        reason = _blocked_by(guards, c, view, history)
+        if reason is not None:
+            gid = reason.split(":", 1)[0].removeprefix("blocked by guard ")
             add("guard_block", {"call_id": c.call_id, "source": "guard", "message": reason, "guard_id": gid,
-                                "tool": c.name, "decisions": decisions})  # fmt: skip
+                                "tool": c.name})  # fmt: skip
             continue
         r = world.call(c)
-        add("tool_result", {"result": {"call_id": r.call_id, "ok": r.ok, "data": r.data, "error": r.error},
-                            "decisions": decisions})  # fmt: skip
+        add("tool_result", {"result": {"call_id": r.call_id, "ok": r.ok, "data": r.data, "error": r.error}})
     add("final", {"content": "done"})
     reasons = world.reasons()
     outcome = Outcome(not reasons, reasons, "d", Cost(model_calls=len(calls) + 1, tool_calls=len(calls)))

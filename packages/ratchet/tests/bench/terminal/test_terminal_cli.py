@@ -45,8 +45,7 @@ class StubRunner:
 
 
 @pytest.fixture
-def env(monkeypatch: pytest.MonkeyPatch, inprocess_referee: Callable[..., Any]) -> None:
-    monkeypatch.setattr(M, "ProcessReferee", inprocess_referee)
+def env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RATCHET_BASE_URL", "http://localhost:1/v1")
     monkeypatch.setenv("RATCHET_API_KEY", "k")
     monkeypatch.setattr(M, "TerminalRunner", StubRunner)

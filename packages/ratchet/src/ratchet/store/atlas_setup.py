@@ -33,8 +33,6 @@ COLLECTIONS = (
     "decisions",
     "failures",
     "checkpoints",
-    "active",
-    "activations",
     "embedding_cache",
 )
 

@@ -17,13 +17,12 @@ from improve.test_loop import CASES, SEED, RoutingChat
 from rich.console import Console
 
 from ratchet.cli import LiveBackend, main
+from ratchet.improve.activate import MongoActivator
 from ratchet.improve.loop import EvolveResult, Lab, evolve
 from ratchet.improve.receipt import Signer
-from ratchet.improve.referee import RefereeCore, RefereeParts
 from ratchet.improve.replay import GuardRunner
 from ratchet.improve.sim import Simulator
-from ratchet.store.activation import MongoActivator
-from ratchet.store.atlas import Store
+from ratchet.store import Store
 from ratchet.view.matrix import CaseInfo
 
 pytestmark = pytest.mark.integration
@@ -51,31 +50,15 @@ def _local() -> Iterator[GuardRunner]:
 
 
 @pytest.fixture
-def evolved(atlas_db: tuple[str, str, Store]) -> Iterator[tuple[str, str, EvolveResult, Store]]:
-    """The loop on the main database; the referee on `<db>_heldout`, where its decisions are. The CLI reads
-    both, as an auditor does."""
+def evolved(atlas_db: tuple[str, str, Store]) -> tuple[str, str, EvolveResult, Store]:
     uri, db, store = atlas_db
-    held = Store(uri, f"{db}_heldout")
-    referee = RefereeCore(
-        RefereeParts(
-            cases=[c for c in CASES if c.split == "heldout"],
-            run_case=FakeRunCase(),
-            model=None,
-            simulator=FakeSimulator(),
-            runner=LocalRunner(),
-            signer=SIGNER,
-            store=held,
-            activator=MongoActivator(held._client, f"{db}_heldout"),
-            suite_digest="ab" * 32,
-            workers=4,
-        )
-    )
     lab = Lab(
-        cases=[c for c in CASES if c.split != "heldout"],
+        cases=CASES,
         run_case=FakeRunCase(),
         simulator=FakeSimulator(),
         runner=LocalRunner(),
-        referee=referee,
+        signer=SIGNER,
+        activator=MongoActivator(store._client, db),
         improver=RoutingChat(),
         workers=4,
         max_evals=4,
@@ -83,9 +66,7 @@ def evolved(atlas_db: tuple[str, str, Store]) -> Iterator[tuple[str, str, Evolve
         suite_digest="ab" * 32,
     )
     result = evolve(store, model=None, generations=1, lab=lab, seed=SEED)
-    yield uri, db, result, held
-    held._client.drop_database(f"{db}_heldout")
-    held.close()
+    return uri, db, result, store
 
 
 def run(argv: list[str], uri: str, db: str) -> tuple[int, str]:
@@ -109,15 +90,12 @@ def test_verify_recomputes_from_the_store_and_keeps_recomputed_apart_from_authen
     assert code == 0, out
     assert "VERIFIED" in out
     assert "reason code supported: admitted_receipt_verified" in out
-    assert "NOT SUPPLIED" not in out
-    items = ("report_digests", "gate:heldout", "gate:replay", "gate:overfit_lint", "gate:authority")
-    for item in (*items, "model_call_records", "record_chain", "tool_policy"):
+    assert "RECOMPUTED (10 of 10)" in out
+    for item in ("report_digests", "gate:heldout", "gate:replay", "gate:overfit_lint", "gate:authority"):
         assert item in out
-    # The fake world's cases are not in the published case suite, so no third party can grade them again.
-    assert "PARTIAL  heldout_grades" in out or "PARTIAL: heldout_grades" in out, out
-    assert "AUTHENTICATED ONLY (signed, not re-derived)  model_turns_as_recorded" in out
-    assert "6 of 6 named reports checked; recomputation INCOMPLETE" in out
-    assert "checked by the dsse crate" in out
+    assert "AUTHENTICATED ONLY (signed, not re-derived)  fresh_model_execution" in out
+    assert "6 of 6 named reports checked; every recomputable item recomputed" in out
+    assert "independent verifier" in out
 
 
 def test_a_rejection_receipt_verifies_too(evolved: tuple[str, str, EvolveResult, Store]) -> None:
@@ -137,7 +115,7 @@ def test_a_stored_report_edited_after_signing_is_contradicted(
     store.db["evals"].update_one({"_id": run_one["_id"]}, {"$set": {"wall_s": 999.0}})
     _, out = run(["verify", decision["candidate"], "--pubkey", PUB], uri, db)
     assert "recomputation INCOMPLETE" in out or "NOT SUPPLIED" in out or "PARTIAL" in out
-    assert "every recomputable item recomputed" not in out
+    assert "RECOMPUTED (10 of 10)" not in out
 
 
 def test_a_tampered_stored_decision_is_caught_before_any_recomputation(

@@ -6,7 +6,6 @@ from typing import Any
 
 import pytest
 
-from ratchet.agent.model import SeededTransport
 from ratchet.improve import run
 from ratchet.improve.loop import EvolveResult, GenerationRecord
 from ratchet.improve.propose import SEED
@@ -58,7 +57,7 @@ def test_main_wires_the_lanes_and_writes_a_summary(monkeypatch: pytest.MonkeyPat
         assert select_parent.split == "train" and select_parent.min_descendants == 2
         return EvolveResult(HARNESS, SEED, [GenerationRecord(1, seed.version, note="n")])
 
-    for name in ("Store", "ModelClient", "GuardRuntime", "ProcessReferee"):
+    for name in ("Store", "ModelClient", "GuardRuntime", "MongoClient"):
         monkeypatch.setattr(run, name, _Ctx)
     monkeypatch.setattr(run, "evolve", fake_evolve)
     monkeypatch.setenv("RATCHET_API_KEY", "secret-value")
@@ -66,10 +65,7 @@ def test_main_wires_the_lanes_and_writes_a_summary(monkeypatch: pytest.MonkeyPat
     rc = run.main(
         ["--uri", "mongodb://x", "--generations", "2", "--family", "refund_lost_reply", "--out", str(out)]
     )
-    from ratchet_cases.cases import all_cases
-
-    training = [c for c in all_cases() if c.family == "refund_lost_reply" and c.split != "heldout"]
-    assert rc == 0 and seen["generations"] == 2 and seen["cases"] == len(training) > 0
+    assert rc == 0 and seen["generations"] == 2 and seen["cases"] == 6
     text = out.read_text()
     assert "secret-value" not in text
     body = json.loads(text)
@@ -82,7 +78,7 @@ def test_seeded_transport_adds_the_seed_to_chat_requests_only() -> None:
 
     seen: list[dict[str, Any]] = []
 
-    class Echo(SeededTransport):
+    class Echo(run.SeededTransport):
         def __init__(self) -> None:
             super().__init__(7)
 

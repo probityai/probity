@@ -1,53 +1,8 @@
 # Changelog
 
-## 0.2.0 (2026-10-20)
+## 0.1.3 (2026-10-25)
 
-Hardening of what a receipt rests on: canonical bytes, signatures, the admission rule's statistics and the
-store. Every change below is in this repository; the releases it waits for are named at the end.
-
-- Every record Ratchet signs or digests is RFC 8785 canonical JSON, through `jcs_admit` (the `jcs-admit`
-  crate). Decisions name their canonicaliser (`canonicalization: rfc8785`) and stored traces and records name
-  theirs (`digest_canonicalization`). A record that names none was written earlier: its digests are recomputed
-  over the sorted-keys JSON it was signed with, so every stored decision still verifies. On the 105 stored
-  public-benchmark decisions, RFC 8785 differs from the signed bytes only in number spelling, in 20 of them.
-- Every DSSE envelope is signed and verified by `jcs_admit.dsse` (the `dsse` crate); the two Python
-  implementations are gone. The earlier pure-Python reader stays in the tests as an oracle that must agree with
-  the binding. `verify(..., threshold=2)` holds a countersigned decision to both of its keys.
-- The k-session rule (ledger D37) as `ratchet.improve.sessions`: the protocol, a runner for one host or one
-  Slurm allocation (`ratchet.improve.sessions_live`), a bundle, and `python -m ratchet.improve.sessions verify`,
-  which recomputes the t statistics, the harm screen and the log checks from the bundle alone. Its statistics
-  match the reference implementation on 24 fixed cohorts.
-- `pymongo` and `raindrop-ai` are the `atlas` and `telemetry` extras. Without them, records go to a signed
-  append-only file store (`RATCHET_STORE_DIR`).
-- `probity-verify==0.1.1` and `agent-evidence-vectors==0.19.0`.
-- Stochastic policy v3.1: a cohort needs at least 8 cases, the size at which the 5-point aggregate limit
-  stops refusing a per-case decline the 8-of-40 tolerance accepts. A smaller cohort is `TOO_SMALL` and its
-  decisions fail the new `cohort_size` gate (`cohort_too_small`) instead of reporting a control failure.
-  Every v3 tolerance is unchanged. The verifier recomputes the gate from the signed comparison, and v3
-  receipts still verify as v3.
-- Held-out grading runs in a referee process with its own store and the decision key
-  (`ratchet.improve.referee`). The improver gets counts and harness names only, and its database role cannot
-  read the referee's Atlas database. `ratchet evolve` and every bench driver start one; the views read both
-  stores.
-- `run_det` (ruling 2 on a deterministic endpoint), `run_v3` (stochastic policy v3) and the
-  improver-instruction comparison run their held-out side in the referee too, as policy methods
-  (`deterministic`, `stochastic`, `decide_many`). The worker's endpoint configuration is passed by file and
-  digest (`ratchet.improve.endpoints`) and the referee builds the seeded clients. The drivers get counts and
-  signed verdicts; the per-case tables go to a results file signed with the decision key, with a
-  verification bundle per decision, and `python -m ratchet.verify.results` recomputes them.
-- A candidate that grants a tool or edits a procedure is admitted on an admitted k-session bundle for exactly
-  its parent and itself, when its runs called the tool and used the procedure. `ratchet-verify --sessions DIR`
-  recomputes the bundle. Additive changes stay the default.
-- Four claims that receipts used to carry on the evaluator's signature alone are recomputed from records a
-  third party holds. Each evaluation report commits its runs (trace and model-call digests) and each row the
-  digest of the case it graded. The verifier checks `model_call_records`, `record_chain`, `tool_policy` and
-  `heldout_grades` from the reports, the traces (`--traces`) and the published case documents (`--case`,
-  `--case-suite`), grading every held-out run again by replaying its executed calls in a rebuilt world. What
-  no record shows stays authenticated only under names that say so, each with its reason:
-  `model_turns_as_recorded` and `container_isolation`. Reports written before run records leave the four
-  items not supplied, so an older receipt never reads as complete.
-
-Requires `jcs-admit==0.1.0` from PyPI, `probity-verify==0.1.1`, `agent-evidence-vectors==0.19.0` and `probity-ratchet-cases==0.2.0`.
+Same code as 0.1.2. The 0.1.2 source distribution also carried a private working file that was never part of the repository; 0.1.3 is built from a clean export of the release commit and every file in it is checked before upload.
 
 ## 0.1.2 (2026-10-13)
 

@@ -38,18 +38,7 @@ From a checkout instead, with the store of section 1 running, `uv run ratchet de
 
 ## 1. A store
 
-Ratchet keeps every version, trace, evaluation and decision in one of two stores.
-
-**The signed file store**, with no database. Every record is one line of `records.jsonl`, a DSSE envelope signed
-by the store's key and linked to the line before it, so an edited, dropped or reordered line refuses to open:
-
-```sh
-export RATCHET_STORE_DIR=.ratchet-store
-export RATCHET_STORE_KEY=$(python3 -c 'import os; print(os.urandom(32).hex())')   # keep it outside the store
-```
-
-**MongoDB Atlas**, for vector search over failure memory and change streams (`ratchet live`). It needs the
-`atlas` extra (`uv sync --extra atlas`). For development, the local Atlas image runs mongod and the search
+Ratchet keeps everything in MongoDB Atlas. For development, the local Atlas image runs mongod and the search
 service on one node, so Vector Search and change streams work offline:
 
 ```sh
@@ -67,14 +56,12 @@ cluster's connection string in `RATCHET_MONGODB_URI`.
 
 | Variable | Used for |
 |---|---|
-| `RATCHET_STORE_DIR`, `RATCHET_STORE_KEY` | the signed file store and its 32-byte Ed25519 seed as hex; used when set |
-| `RATCHET_MONGODB_URI`, `RATCHET_DB` | the Atlas store, with the `atlas` extra (database defaults to `ratchet`) |
-| `RATCHET_REFEREE_STORE_DIR`, `RATCHET_REFEREE_MONGODB_URI` | the referee's store: beside the file store (default `<RATCHET_STORE_DIR>-referee`), or the Atlas database `<db>_heldout` (default: the same connection string) |
+| `RATCHET_MONGODB_URI`, `RATCHET_DB` | the store (database defaults to `ratchet`) |
 | `RATCHET_BASE_URL`, `RATCHET_API_KEY`, `RATCHET_MODEL` | the agent model, through any OpenAI-compatible endpoint |
 | `RATCHET_IMPROVER_MODEL` | the model that proposes guards (with `RATCHET_IMPROVER_BASE_URL` and `RATCHET_IMPROVER_API_KEY` for a different endpoint) |
 | `RATCHET_SIGNING_KEY` | 32-byte Ed25519 seed as hex; signs decisions. Never stored in the repository |
 | `VOYAGE_API_KEY` | embeddings for failure retrieval |
-| `RAINDROP_WRITE_KEY` | with `--raindrop` and the `telemetry` extra, sends runs and decisions to Raindrop |
+| `RAINDROP_WRITE_KEY` | with `--raindrop`, sends runs and decisions to Raindrop |
 | `RATCHET_IMPROVER_URI` | the improver's connection string, a database user with no access to held-out cases |
 | `RATCHET_GUARD_REQUIRE` | isolation layers a guard child must apply (default `rlimits,netns,seccomp,landlock`; must keep `netns` or `seccomp`) |
 | `RATCHET_DEMO_DIR` | where `ratchet demo` writes its public key (default `.ratchet-demo`) |
@@ -94,17 +81,6 @@ uv run ratchet show decision DECISION_ID --envelope-out receipt.json
 uv run ratchet verify DECISION_ID                   # check the signed receipt
 uv run ratchet live                                 # follow the change streams
 uv run ratchet report -o ratchet-report.html        # one static page: lineage, replay matrix, results
-```
-
-The policy drivers run through the referee and take the worker's endpoint configuration as a JSON file
-(`ratchet.improve.endpoints`: `endpoints`, `model`, `temperature`, and `seed` for ruling 2 or `seed_base` for
-v3); the referee refuses a file whose digest is not the one the driver names:
-
-```sh
-uv run python -m ratchet.improve.run_det --endpoints-file det.json --candidate DB:VERSION --out det.json
-uv run python -m ratchet.improve.run_v3 --endpoints-file v3.json --cases A,B --candidate DB:VERSION --out v3.json
-uv run --extra gepa python -m ratchet.improve.instruction_search --endpoints-file worker.json --out l2.json
-python -m ratchet.verify.results det-results/det.dsse --case-suite   # the referee's per-case tables
 ```
 
 `ratchet replay` takes candidate versions or ids, reveals its matrix row by row on a terminal, and prints

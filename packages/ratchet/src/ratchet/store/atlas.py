@@ -15,31 +15,74 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterator, Mapping, Sequence
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
 from pymongo import MongoClient, UpdateOne
 from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
-from ratchet_cases.types import Cost, Event, Outcome, Trace, sha256_hex, to_jsonable
+from ratchet_cases.types import Cost, Event, Outcome, Trace, canonical_json, sha256_hex, to_jsonable
 
-from ratchet.canonical import CANONICALIZATION, canonical_json, canonicalizer
 from ratchet.store import atlas_setup
 from ratchet.store.embed import CachedEmbedder, Embedder, Reranker, VoyageEmbedder, VoyageReranker
-from ratchet.store.types import (
-    WATCHABLE,
-    ChangeEvent,
-    Doc,
-    IntegrityError,
-    LineageNode,
-    NewFailure,
-    SimilarFailure,
-)
 from ratchet.types import Guard, Harness, Procedure
 
+Doc = dict[str, Any]
+WATCHABLE = ("harness_versions", "runs", "traces", "evals", "decisions", "failures", "checkpoints")
 DEFAULT_MAX_INLINE_BYTES = 4_000_000
 _CHUNK_BYTES = 1_000_000
+
+
+class IntegrityError(RuntimeError):
+    """Stored or submitted content does not match its digest, or collides with different content."""
+
+
+@dataclass(frozen=True)
+class LineageNode:
+    version: str
+    parent: str | None
+    created_by: str
+    digest: str
+    created_at: datetime | None = None
+    children: list[LineageNode] = field(default_factory=list)
+
+    def walk(self) -> Iterator[LineageNode]:
+        yield self
+        for child in self.children:
+            yield from child.walk()
+
+
+@dataclass(frozen=True)
+class SimilarFailure:
+    id: str
+    summary: str
+    case_family: str
+    trace_ref: str | None
+    harness_version: str | None
+    score: float
+
+
+@dataclass(frozen=True)
+class NewFailure:
+    summary: str
+    case_family: str
+    trace_ref: str | None = None
+    harness_version: str | None = None
+    failure_id: str | None = None
+
+    @property
+    def id(self) -> str:
+        return self.failure_id or sha256_hex(canonical_json([self.summary, self.case_family, self.trace_ref]))
+
+
+@dataclass(frozen=True)
+class ChangeEvent:
+    operation: str
+    collection: str
+    doc_id: Any
+    document: Doc | None
+    token: Doc
 
 
 def _filters(case_family: str | None, harness_version: str | None) -> dict[str, str]:
@@ -84,9 +127,8 @@ def trace_id(run_id: str, case_id: str) -> str:
     return f"{run_id}/{case_id}"
 
 
-def trace_digest(trace: Trace, canonicalization: str | None = CANONICALIZATION) -> str:
-    """The trace's digest under the canonicaliser its stored document names (none: before RFC 8785)."""
-    return sha256_hex(canonicalizer(canonicalization)(asdict(trace)))
+def trace_digest(trace: Trace) -> str:
+    return sha256_hex(canonical_json(asdict(trace)))
 
 
 def _trace_from_parts(header: Doc, events: list[Doc]) -> Trace:
@@ -104,7 +146,7 @@ def _trace_from_parts(header: Doc, events: list[Doc]) -> Trace:
             cost=Cost(**out["cost"]),
         ),
     )
-    if trace_digest(trace, header.get("digest_canonicalization")) != header["digest"]:
+    if trace_digest(trace) != header["digest"]:
         raise IntegrityError(f"trace {header['_id']} does not match its stored digest")
     return trace
 
@@ -179,11 +221,6 @@ class Store:
         if not self._schema_ready:
             self.setup(wait_search=False)
         return self.db[name]
-
-    def active_record(self) -> Doc | None:
-        """The active pointer (version, revision, decision id, receipt digest), or None before a bootstrap."""
-        doc: Doc | None = self._r("active").find_one({})
-        return doc
 
     def _r(self, name: str) -> Collection[Doc]:
         """A collection for reading: never creates or changes schema, so a read cannot fail on index setup."""
@@ -339,9 +376,9 @@ class Store:
         tid = trace_id(trace.run_id, trace.case_id)
         digest = trace_digest(trace)
         coll = self._c("traces")
-        existing = coll.find_one({"_id": tid}, {"digest": 1, "digest_canonicalization": 1})
+        existing = coll.find_one({"_id": tid}, {"digest": 1})
         if existing is not None:
-            if existing["digest"] != trace_digest(trace, existing.get("digest_canonicalization")):
+            if existing["digest"] != digest:
                 raise IntegrityError(f"trace {tid} already holds different content")
             return False
         events = [asdict(e) for e in trace.events]
@@ -354,7 +391,6 @@ class Store:
             "outcome": asdict(trace.outcome),
             "n_events": len(events),
             "digest": digest,
-            "digest_canonicalization": CANONICALIZATION,
             "created_at": _now(),
         }
         if sum(len(canonical_json(e)) for e in events) > self._max_inline:
@@ -373,10 +409,8 @@ class Store:
             coll.insert_one({"_id": tid, **header})
         except DuplicateKeyError:
             # a concurrent writer committed first; fine when it wrote the same content
-            stored = coll.find_one({"_id": tid}, {"digest": 1, "digest_canonicalization": 1})
-            if stored is None or stored["digest"] != trace_digest(
-                trace, stored.get("digest_canonicalization")
-            ):
+            stored = coll.find_one({"_id": tid}, {"digest": 1})
+            if stored is None or stored["digest"] != digest:
                 raise IntegrityError(f"trace {tid} already holds different content") from None
             return False
         return True
@@ -447,13 +481,12 @@ class Store:
         digest = sha256_hex(canonical_json(body))
         rid = record_id or digest
         coll = self._c(collection) if isinstance(collection, str) else collection
-        fields = {**body, "digest": digest, "digest_canonicalization": CANONICALIZATION, "created_at": _now()}
-        res = coll.update_one({"_id": rid}, {"$setOnInsert": fields}, upsert=True)
+        res = coll.update_one(
+            {"_id": rid}, {"$setOnInsert": {**body, "digest": digest, "created_at": _now()}}, upsert=True
+        )
         if res.upserted_id is None:
-            stored = coll.find_one({"_id": rid}, {"digest": 1, "digest_canonicalization": 1})
-            if stored is None or stored["digest"] != sha256_hex(
-                canonicalizer(stored.get("digest_canonicalization"))(body)
-            ):
+            stored = coll.find_one({"_id": rid}, {"digest": 1})
+            if stored is None or stored["digest"] != digest:
                 raise IntegrityError(f"{coll.name} record {rid} already holds different content")
         return rid
 
@@ -723,4 +756,11 @@ def _upsert_one(filter: Doc, fields: Doc) -> UpdateOne:
     return UpdateOne(filter, {"$setOnInsert": fields}, upsert=True)
 
 
-__all__ = ["Store"]
+__all__ = [
+    "ChangeEvent",
+    "IntegrityError",
+    "LineageNode",
+    "NewFailure",
+    "SimilarFailure",
+    "Store",
+]

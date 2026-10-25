@@ -13,11 +13,9 @@ the steps in `ratchet.verify.evidence`: report digests, and the admission gates 
 evidence whenever that evidence is supplied.
 
 The verdict reports two lists and never merges them. RECOMPUTED: derived here from bytes (signature, digests,
-the admission predicate, replay when its recorded inputs are supplied, and the run records checked in
-`ratchet.verify.runs` from the reports, traces and case documents a third party holds).
-AUTHENTICATED ONLY: stated by the evaluator and covered by its signature, never re-derived; each such item
-carries the reason no record can re-derive it (`AUTHENTICATED_ONLY_LIMITS`). An item whose inputs were not
-supplied is printed as not supplied.
+the admission predicate, replay when its recorded inputs are supplied). AUTHENTICATED ONLY: stated by the
+evaluator and covered by its signature, never re-derived (fresh model execution, capture fidelity, sandbox
+enforcement, hidden grades). An item whose inputs were not supplied is printed as not supplied.
 """
 
 from __future__ import annotations
@@ -39,7 +37,6 @@ from probity_verify.common import (  # type: ignore[import-untyped]
     _string,
 )
 
-from ratchet.canonical import CANONICALIZATION
 from ratchet.verify import dsse, evidence
 
 CLAIM_TYPE = "ratchet_decision/v1"
@@ -49,51 +46,36 @@ DECISION_PAYLOAD_TYPE = "application/vnd.ratchet.decision+json"
 PREDICATE_URI = "https://github.com/probityai/agent-evidence-vocabulary/blob/main/docs/predicates/agent-change-admission-v1.md"
 DEFAULT_GATES = ("replay", "heldout", "no_regression", "authority", "benign_twins", "overfit_lint")
 # Stochastic policy v3 (docs/CONTRACT.md): its own gate names, and the exact thresholds a v3 receipt must
-# carry. A v3 decision never carries a zero-regression gate. v3.1 keeps every v3 tolerance and adds the
-# minimum cohort size with its own gate; v3 receipts stay verifiable as v3, with v3's gates.
+# carry. A v3 decision never carries a zero-regression gate.
 V3_POLICY = {
     "name": "stochastic", "version": "v3", "runs_per_arm": 40, "panels": 2, "panel_size": 20,
     "high_pass_min": 30, "low_pass_max": 10, "recovery_panel_margin": 8, "min_stable_recoveries": 2,
     "max_stable_regressions": 0, "max_case_decline": 8, "max_aggregate_decline_points": 5.0,
 }  # fmt: skip
-V3_1_POLICY = {**V3_POLICY, "version": "v3.1", "min_cohort_cases": 8}
 V3_GATES = ("replay", "stochastic_v3", "cohort_qualified", "effective_change", "benign_twins", "overfit_lint",
             "authority")  # fmt: skip
-V3_1_GATES = ("replay", "stochastic_v3", "cohort_size", "cohort_qualified", "effective_change",
-              "benign_twins", "overfit_lint", "authority")  # fmt: skip
 REPORT_ROLE = "report:"
 HARNESS_ROLE = "harness:"
 RECOMPUTED_ROLE = "recomputed:"
-TRACES_ROLE = "traces:"
-CASE_ROLE = "case:"
 DEFAULT_EVAL_ROLES = {
     "p1": "parent_run_1",
     "p2": "parent_run_2",
     "c1": "candidate_run",
     "c2": "candidate_confirm_run",
 }
-# What the receipt asserts that no record a third party holds can re-derive, each with the reason. These rest
-# on the decision key, which the referee holds and the improver never does (ratchet.improve.referee).
-AUTHENTICATED_ONLY_LIMITS = {
-    "model_turns_as_recorded": (
-        "that each recorded model turn is the endpoint's unaltered answer and that none was left out: a "
-        "chat-completions response carries no signature of its provider, so only the referee's key says a "
-        "model, not the referee, wrote the turns its traces record"
-    ),
-    "container_isolation": (
-        "that a world running outside the referee's process, the terminal benchmark's container, kept the "
-        "agent's commands inside it: no launcher records an isolation report for these runs, so the record "
-        "shows which commands the policy let through, not what the container let them reach"
-    ),
-}
-AUTHENTICATED_ONLY = tuple(AUTHENTICATED_ONLY_LIMITS)
+AUTHENTICATED_ONLY = (
+    "fresh_model_execution",
+    "capture_fidelity",
+    "sandbox_enforcement",
+    "hidden_grades",
+)
 REPORT_NAME = re.compile(r"^[^\x00-\x1f\x7f]{1,200}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 LIMIT = (
-    "RECOMPUTED covers only the items listed as recomputed. AUTHENTICATED ONLY items rest on the decision "
-    "key, which the referee process holds and the improver never does: this verifier did not re-derive them, "
-    "and it does not establish that the key holder is honest. Each one names its limit."
+    "RECOMPUTED covers only the items listed as recomputed. AUTHENTICATED ONLY items rest on the evaluator's "
+    "signature: this verifier did not re-derive them and does not establish that the evaluations ran, that "
+    "the reports are true, or that the key holder is honest."
 )
 
 
@@ -162,17 +144,12 @@ def _assessment(case_id: str, policy: Any) -> dict[str, Any]:
     return a
 
 
-_PREFIX_NAME = {REPORT_ROLE, RECOMPUTED_ROLE, TRACES_ROLE, CASE_ROLE}
-
-
-SESSIONS_ROLE = "sessions:"
+_PREFIX_NAME = {REPORT_ROLE, RECOMPUTED_ROLE}
 
 
 def _valid_role(role: str) -> bool:
     if role in {"envelope", "approval", "harness:parent", "harness:candidate"}:
         return True
-    if role.startswith(SESSIONS_ROLE):
-        return role[len(SESSIONS_ROLE) :] in ("manifest.json", "executions.jsonl", "verdict.json")
     prefix = next((p for p in _PREFIX_NAME if role.startswith(p)), None)
     return prefix is not None and bool(REPORT_NAME.fullmatch(role[len(prefix) :]))
 
@@ -213,7 +190,6 @@ class _Verdict:
             )
         pending = [i["id"] for i in self.items if i["status"] != "recomputed"]
         self.scope["authenticated_only"] = list(AUTHENTICATED_ONLY)
-        self.scope["authenticated_only_limits"] = dict(AUTHENTICATED_ONLY_LIMITS)
         self.scope["recomputation_complete"] = decision == "supported" and not pending
         self.scope["not_recomputed"] = pending
         return {
@@ -261,9 +237,6 @@ def _evaluator_problem(evaluator: Any) -> str | None:
 
 def _schema_problem(payload: dict[str, Any]) -> str | None:
     """The first field the signed payload lacks or malforms, named in the shape the IMPROVE lane emits."""
-    # A decision signed before RFC 8785 names no canonicaliser; a later one names exactly this one.
-    if "canonicalization" in payload and payload["canonicalization"] != CANONICALIZATION:
-        return "payload_field_invalid:canonicalization"
     for name in ("parent", "candidate"):
         if problem := _field(payload, name, str):
             return problem
@@ -287,20 +260,6 @@ def _schema_problem(payload: dict[str, Any]) -> str | None:
         return "payload_field_invalid:corpus_digests"
     if not _digest_map(payload.get("report_digests"), nonempty=True):
         return "payload_field_invalid:report_digests"
-    return None
-
-
-def _cohort_size_problem(payload: dict[str, Any], policy: dict[str, Any]) -> tuple[str, str] | None:
-    """The size gate is recomputed from the signed comparison: the case count against the policy minimum."""
-    checks = {c["name"]: c for c in payload["checks"]}
-    size, evaluation = checks.get("cohort_size"), checks.get("stochastic_v3")
-    if size is None or evaluation is None:
-        return None  # the gate check reports the missing gate
-    cases = (evaluation.get("evidence") or {}).get("comparison", {}).get("cases")
-    if not isinstance(cases, list):
-        return "not_established", "cohort_size_unrecomputable"
-    if size["passed"] != (len(cases) >= policy["min_cohort_cases"]):
-        return "contradicted", "cohort_size_misstated"
     return None
 
 
@@ -330,10 +289,6 @@ def _pipeline(ctx: evidence.Ctx) -> None:
     evidence.recompute_authority(ctx)
     evidence.recompute_replay(ctx)
     evidence.recompute_overfit(ctx)
-    evidence.recompute_model_calls(ctx)
-    evidence.recompute_record_chain(ctx)
-    evidence.recompute_tool_policy(ctx)
-    evidence.recompute_heldout_grades(ctx)
 
 
 def _run_evidence(v: _Verdict, ctx: evidence.Ctx, require_complete: bool) -> dict[str, Any]:
@@ -427,13 +382,11 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict[str, Any]:
     if isinstance(policy, dict) and policy.get("name") == "ruling-2":
         scope["policy"] = "ruling-2"  # the default gates; the evaluator detail rides in the policy record
     elif policy is not None:
-        if policy not in (V3_POLICY, V3_1_POLICY):
+        if policy != V3_POLICY:
             return v.finish("not_established", "unsupported_policy", "policy")
         if any(c["name"] == "no_regression" for c in payload["checks"]):
             return v.finish("contradicted", "v3_claims_zero_regression", "policy")
-        required = list(V3_GATES if policy == V3_POLICY else V3_1_GATES)
-        if policy == V3_1_POLICY and (size := _cohort_size_problem(payload, policy)):
-            return v.finish(size[0], size[1], "policy")
+        required = list(V3_GATES)
         scope["policy"] = "stochastic-v3"
     if gate := _gate_problem(payload, required):
         return v.finish(gate[0], gate[1], "gates")
@@ -451,8 +404,5 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict[str, Any]:
         eval_roles=eval_roles,
         human_keys=human_keys,
         require_reports=a["require_reports"],
-        sessions=_supplied(data, SESSIONS_ROLE),
-        traces=_supplied(data, TRACES_ROLE),
-        cases=_supplied(data, CASE_ROLE),
     )
     return _run_evidence(v, ctx, a["require_complete"])

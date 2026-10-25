@@ -12,15 +12,12 @@ import base64
 from dataclasses import asdict
 from typing import Any
 
-from ratchet.canonical import CANONICALIZATION, canonical_json
+from ratchet_cases.types import canonical_json
+
 from ratchet.improve.receipt import DECISION_TYPE, Signer
 from ratchet.types import Guard, Harness
 from ratchet.verify import DEFAULT_GATES, PREDICATE_URI, report_digest
 
-# Items recomputed from the run records a report commits (`ratchet.verify.runs`). The hand-written reports
-# here predate run records, so with them these items are never more than not supplied; the decision over
-# real runs in `runs_scenario` recomputes them.
-RUN_RECORD_ITEMS = ("model_call_records", "record_chain", "tool_policy", "heldout_grades")
 SUITE = "a" * 64
 SNAPSHOT = "c" * 64
 NOOP = "def check(call, view, history):\n    return None\n"
@@ -122,7 +119,6 @@ def payload(**overrides: Any) -> dict[str, Any]:
     }
     body: dict[str, Any] = {
         "predicateType": PREDICATE_URI,
-        "canonicalization": CANONICALIZATION,
         "type": "decision",
         "parent": PARENT_HARNESS.version,
         "candidate": CANDIDATE_HARNESS.version,

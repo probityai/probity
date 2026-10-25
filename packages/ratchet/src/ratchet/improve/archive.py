@@ -235,12 +235,10 @@ class Archive:
         """Read every harness version, evaluation and decision from the store."""
         harnesses = [n for root in store.lineage() for n in root.walk()]
         harnesses.sort(key=lambda n: (n.created_at is None, n.created_at, n.version))
-        # The type is checked here too: a store whose filter is coarser than an exact match stays correct.
-        verdicts = [verdict_record(v) for v in store.evals({"type": "verdict"}) if v.get("type") == "verdict"]
         return cls.from_records(
             [{"version": h.version, "parent": h.parent, "created_by": h.created_by} for h in harnesses],
             store.evals({"type": "eval"}),
-            [*store.decisions(), *verdicts],
+            store.decisions(),
             split=split,
         )
 
@@ -295,16 +293,8 @@ class Archive:
     @classmethod
     def from_run_dir(cls, path: Path, *, split: Split = "heldout") -> Archive:
         """Build from a run directory of `harnesses.jsonl`, `evals.jsonl` and `decisions.jsonl`."""
-        # The improver's records and the referee's (`referee/`: held-out runs and decisions).
-        evals = [
-            r
-            for r in _jsonl(path / "evals.jsonl") + _jsonl(path / "referee" / "evals.jsonl")
-            if r.get("type") == "eval"
-        ]
-        decisions = [
-            {"_id": r.get("decision_id"), **r}
-            for r in _jsonl(path / "decisions.jsonl") + _jsonl(path / "referee" / "decisions.jsonl")
-        ]
+        evals = [r for r in _jsonl(path / "evals.jsonl") if r.get("type") == "eval"]
+        decisions = [{"_id": r.get("decision_id"), **r} for r in _jsonl(path / "decisions.jsonl")]
         evals = [{"_id": r.get("eval_id"), **r} for r in evals]
         return cls.from_records(_jsonl(path / "harnesses.jsonl"), evals, decisions, split=split)
 
@@ -385,20 +375,6 @@ class Archive:
 
 
 # -- record parsing ---------------------------------------------------------------------------------------
-
-
-def verdict_record(v: Mapping[str, Any]) -> dict[str, Any]:
-    """A referee verdict the improver kept, in the shape the archive reads a decision in: the admission flag,
-    the failed gates and the number of stable recoveries, never which cases recovered."""
-    return {
-        "_id": v["decision_id"],
-        "parent": v["parent"],
-        "candidate": v["candidate"],
-        "admitted": bool(v["admitted"]),
-        "checks": [{"name": name, "passed": False} for name in v.get("failed", ())],
-        "stable_recoveries": int(v.get("stable_recoveries", 0)),
-        "created_at": v.get("created_at"),
-    }
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -497,21 +473,16 @@ def _verdict(d: Mapping[str, Any] | None, count: int) -> Verdict | None:
     if d is None:
         return None
     checks = {c["name"]: bool(c["passed"]) for c in d.get("checks", [])}
-    # the held-out gate is "heldout" in decisions signed since 2026-10-11 and "fresh" before
-    fresh = next((c for c in d.get("checks", []) if c["name"] in ("heldout", "fresh")), None)
+    fresh = next((c for c in d.get("checks", []) if c["name"] == "fresh"), None)
     evidence = (fresh or {}).get("evidence", {})
-    stable = evidence.get("stable_recoveries", d.get("stable_recoveries"))
+    stable = evidence.get("stable_recoveries")
     return Verdict(
         decision_id=str(d.get("_id") or f"{d['parent']}->{d['candidate']}"),
         admitted=bool(d.get("admitted")),
         gates=checks,
         candidate_digest=str(d.get("candidate_digest", "")),
         decided_at=str(d.get("decided_at", "")),
-        stable_recoveries=len(stable)
-        if isinstance(stable, list)
-        else stable
-        if isinstance(stable, int)
-        else None,
+        stable_recoveries=len(stable) if isinstance(stable, list) else None,
         parent_discordance=evidence.get("parent_discordance"),
         decisions=count,
     )
@@ -739,7 +710,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ap.error("give run directories, or --uri together with --db")
     sources: list[tuple[str, Archive]] = []
     if args.uri:
-        from ratchet.store.atlas import Store
+        from ratchet.store import Store
 
         with Store(args.uri, args.db) as store:
             sources.append((args.db, Archive.load(store, split=args.split)))

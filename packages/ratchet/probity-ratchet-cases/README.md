@@ -66,8 +66,8 @@ Version 0.2.0. `ratchet_cases.SUITE_DIGEST` is computed from the shipped cases a
 
 | Page | What is in it |
 |---|---|
-| [Source](https://github.com/probityai/probity/tree/main/packages/ratchet/probity-ratchet-cases) | The package in the Ratchet repository |
-| [Ratchet](https://github.com/probityai/probity/tree/main/packages/ratchet) | The harness that turns failures on these cases into proven guards |
-| [Releases](https://github.com/probityai/probity/releases) | Wheels, provenance attestations and digests |
+| [Source](https://github.com/probityai/ratchet/tree/main/probity-ratchet-cases) | The package in the Ratchet repository |
+| [Ratchet](https://github.com/probityai/ratchet) | The harness that turns failures on these cases into proven guards |
+| [Releases](https://github.com/probityai/ratchet/releases) | Wheels, provenance attestations and digests |
 
 License: Apache-2.0.
