@@ -73,6 +73,11 @@ Each member is released on its own, by a non-prerelease GitHub release whose tag
 version or is not on main, builds and checks with `python-build.yml`, and publishes those files with a
 GitHub build attestation and PyPI attestations, from the publish job of that distribution in the `pypi` environment. Existing tags (`v0.1.0`, `v0.1.1`) stay.
 
+A fix to a release series that main has moved past is cut from the branch
+`maint/<distribution>-<major>.<minor>` (for example `maint/probity-ratchet-0.1`), which starts from
+main so it carries the same workflows and checks. `release.yml` accepts a tag on that branch for
+that series only, and refuses a tag on any other commit that is not on main.
+
 The tag prefix is the distribution name, not the directory name, so the prefix stays right if a
 directory moves. The vectors tag is therefore `agent-evidence-vectors-vX.Y.Z`, and its Go tag is
 `vectors/vX.Y.Z`. Crates follow the same rule (`jcs-admit-vX.Y.Z`, `dsse-vX.Y.Z`)
