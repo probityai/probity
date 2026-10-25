@@ -2,7 +2,8 @@ name: release
 
 # Publish one workspace member to PyPI from a GitHub release whose tag is
 # <distribution>-v<version>, for example probity-verify-v0.2.0. The tag must name
-# a member, match its pyproject version and point at a commit on main. The files
+# a member, match its pyproject version and point at a commit on main (or on the
+# maintenance branch maint/<distribution>-<major>.<minor> of its own series). The files
 # published are the ones python-build.yml built and checked in this run.
 #
 # PyPI trusted publisher, one entry per distribution, all alike: owner probityai,
@@ -38,9 +39,19 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          git merge-base --is-ancestor HEAD origin/main
           python3 scripts/workspace.py release-target "$TAG" > target.json
           cat target.json
+          # A release is cut from a commit of main. The one other place a tag may sit is the
+          # maintenance branch of its own release series, maint/<distribution>-<major>.<minor>,
+          # for a fix to an older series that main has moved past.
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            read -r name version < <(python3 -c 'import json; d=json.load(open("target.json")); print(d["distribution"], d["version"])')
+            branch="origin/maint/${name}-${version%.*}"
+            git merge-base --is-ancestor HEAD "$branch" || {
+              echo "tag ${TAG} is on neither origin/main nor ${branch}" >&2
+              exit 1
+            }
+          fi
           python3 -c 'import json; print("distribution=" + json.load(open("target.json"))["distribution"])' >> "$GITHUB_OUTPUT"
       # A release that only records a version PyPI already holds (a backfilled
       # GitHub Release) must not build or upload anything: PyPI refuses to replace

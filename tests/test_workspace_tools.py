@@ -128,3 +128,10 @@ def test_a_distribution_whose_name_extends_another_resolves_to_itself(tmp_path):
     _member(tmp_path, "ratchet-cases", "probity-ratchet-cases", "0.3.0", [])
     assert workspace.release_target("probity-ratchet-v0.2.0", tmp_path)["directory"] == "packages/ratchet"
     assert workspace.release_target("probity-ratchet-cases-v0.3.0", tmp_path)["directory"] == "packages/ratchet-cases"
+
+
+def test_a_tag_must_sit_on_main_or_on_the_maintenance_branch_of_its_own_series():
+    release = (Path(__file__).parents[1] / ".github/workflows/release.yml").read_text()
+    assert "git merge-base --is-ancestor HEAD origin/main" in release
+    assert 'branch="origin/maint/${name}-${version%.*}"' in release
+    assert 'git merge-base --is-ancestor HEAD "$branch"' in release
