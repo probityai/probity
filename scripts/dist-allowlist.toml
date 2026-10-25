@@ -1,0 +1,34 @@
+# The paths each distribution may ship, per archive kind, as fnmatch patterns on the path inside the
+# archive (an sdist's `<name>-<version>/` root is stripped first; `*` also matches `/`).
+# scripts/check-dist-clean.py refuses any file no pattern here names, so a new top-level directory
+# is a decision made in this file, in review, and never an accident of what sat in a working tree.
+# Add a pattern only for a path a user is meant to download.
+
+[distribution.probityai]
+sdist = ["PKG-INFO", "README.md", "pyproject.toml", "LICENSE", "setup.cfg", "src/*", "tests/*"]
+wheel = ["probityai/*", "probityai-*.dist-info/*"]
+
+[distribution.probity-verify]
+sdist = [
+    "PKG-INFO", "LICENSE", "MANIFEST.in", "README.md", "pyproject.toml", "setup.cfg",
+    "docs/*", "examples/*", "scripts/*", "src/*", "tests/*", "vectors-*/*",
+]
+wheel = ["probity_verify/*", "probity_verify-*.dist-info/*"]
+
+[distribution.probity-ratchet]
+sdist = [
+    "PKG-INFO", "LICENSE", "README.md", "CHANGELOG.md", "AGENTS.md", "pyproject.toml", "uv.lock", ".gitignore",
+    "docker/*", "docs/*", "examples/*", "keys/*", "probity-ratchet-cases/*", "scripts/*", "src/*", "tests/*",
+]
+wheel = ["ratchet/*", "probity_ratchet-*.dist-info/*"]
+
+[distribution.probity-ratchet-cases]
+sdist = [
+    "PKG-INFO", "LICENSE", "README.md", "CHANGELOG.md", "pyproject.toml", ".gitignore",
+    "src/*", "tests/*", "tests_agentdojo/*", "tests_tau2/*",
+]
+wheel = ["ratchet_cases/*", "probity_ratchet_cases-*.dist-info/*"]
+
+[distribution.agent-evidence-observer]
+sdist = ["PKG-INFO", "LICENSE", "README.md", "pyproject.toml", "setup.cfg", "src/*", "tests/*"]
+wheel = ["probity_observer/*", "agent_evidence_observer-*.dist-info/*"]
