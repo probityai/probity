@@ -7,3 +7,4 @@
 - Member rules live with the member: [packages/probity-verify/AGENTS.md](packages/probity-verify/AGENTS.md).
 - A new member is a directory under `packages/` with its own `pyproject.toml`, `README.md` and `LICENSE`. `scripts/workspace.py` finds it; add its CI job to `.github/workflows/ci.yml` and to the `needs` of `ci-ok`.
 - A new `probity` subcommand is an entry point in the `probityai.cli_subcommands` group; never add a name to the launcher.
+- Build release files only through CI or `python3 scripts/build-from-tag.py <tag>`, never from a working tree; `scripts/check-dist-clean.py` and `scripts/dist-allowlist.toml` hold what a file may contain (see `docs/architecture/MONOREPO.md`, "What a release file may contain").

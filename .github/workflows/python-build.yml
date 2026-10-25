@@ -10,6 +10,11 @@ name: python-build
 #   scripts/check-artifacts-controls.py <wheel> <sdist>  refusal controls for those checks
 #   scripts/check-installed.py                           run from outside the checkout
 #   scripts/build-recipes.py --check                     run with the installed package
+#
+# The files are built from the checkout this run made, which holds the tracked files of one
+# commit and nothing else, and scripts/check-dist-clean.py then opens every file in dist/ and
+# fails on a private name, a private path, or a path scripts/dist-allowlist.toml does not list.
+# A build outside CI goes through scripts/build-from-tag.py, which exports the tag first.
 
 on:
   workflow_call:
@@ -32,6 +37,15 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+      - name: Refuse a tree that is not a clean checkout
+        run: |
+          set -euo pipefail
+          status="$(git status --porcelain --ignored)"
+          if [ -n "$status" ]; then
+            echo "the build tree has files the commit does not track:" >&2
+            echo "$status" >&2
+            exit 1
+          fi
       - name: Install the pinned release tools
         run: python -m pip install --require-hashes -r requirements-release.lock
       - name: Build the member and every workspace member it depends on
@@ -51,6 +65,8 @@ jobs:
             python -m build --no-isolation --outdir "$out" "$dir"
           done
           python -m twine check --strict dist/*
+          python scripts/check-dist-clean.py --self-test
+          python scripts/check-dist-clean.py --allowlist scripts/dist-allowlist.toml --distribution "$DISTRIBUTION" dist/*
           if [ -f "$target/scripts/check-artifacts.py" ]; then
             python "$target/scripts/check-artifacts.py" dist/*.whl dist/*.tar.gz
           fi
