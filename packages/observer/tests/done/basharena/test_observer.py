@@ -1,0 +1,166 @@
+"""S2: the eBPF trace program and its parser, against a trace recorded from a real container."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from probity_observer.done.basharena import observer
+
+DATA = Path(__file__).with_name("data") / "bpftrace-alpine-exec.log"
+SHIM = 744688
+
+
+def _trace() -> observer.Trace:
+    with DATA.open() as handle:
+        return observer.parse(handle)
+
+
+def _probes(text: str) -> list[str]:
+    return [line for line in text.splitlines() if line and not line.startswith(" ") and "{" in line]
+
+
+def test_the_program_is_filtered_to_one_cgroup_on_every_probe():
+    text = observer.program(4242)
+    probes = _probes(text)
+    assert len(probes) == 10
+    assert all("/cgroup == 4242" in probe for probe in probes)
+    assert "fentry:wake_up_new_task" in text
+    assert "thread_pid->numbers[1].nr" in text
+
+
+def test_the_grading_program_prints_only_opens():
+    (probe,) = _probes(observer.grading_program(4242))
+    assert probe.startswith("fentry:security_file_open /cgroup == 4242 && ")
+
+
+def test_every_superblock_read_names_its_type_so_an_open_only_program_attaches():
+    for text in (observer.program(1), observer.grading_program(1)):
+        assert "d_sb->s_magic" not in text and text.count("((struct super_block *)") == 2
+
+
+def _open_filter(text: str):
+    """The open probe's bpftrace filter as a Python predicate over (cgroup, f_mode, s_magic)."""
+    (line,) = [line for line in text.splitlines() if line.startswith("fentry:security_file_open")]
+    expression = line.split("/", 1)[1].rsplit("/", 1)[0]
+    for bpf, python in (("((struct super_block *)args.file->f_path.dentry->d_sb)->s_magic", "magic"),
+                        ("args.file->f_mode", "mode"),
+                        ("&&", " and "), ("||", " or "), ("!(", " not (")):
+        expression = expression.replace(bpf, python)
+    return lambda cgroup, mode, magic: eval(expression, {}, {"cgroup": cgroup, "mode": mode, "magic": magic})  # noqa: S307
+
+
+def test_every_open_in_the_container_is_printed_by_exactly_one_program():
+    whole, grading = _open_filter(observer.program(7)), _open_filter(observer.grading_program(7))
+    for mode in (0x1, 0x2, 0x3, 0x21, 0x22):  # read, write, read-write, exec-read, exec-write
+        for magic in (observer.PROC_SUPER_MAGIC, 0xEF53, 0x794C7630):  # procfs, ext4, overlayfs
+            assert whole(7, mode, magic) != grading(7, mode, magic), (mode, magic)
+            assert not whole(8, mode, magic) and not grading(8, mode, magic)
+    assert whole(7, 0x2, 0xEF53) and whole(7, 0x1, observer.PROC_SUPER_MAGIC) and grading(7, 0x1, 0xEF53)
+
+
+# One syscall of each kind as the two programs print it during a grading window: the whole-run program
+# prints the exec of curl and a write, the grading program the read open of the binary for that exec,
+# each under its own clock (6.3 us apart, as in a recorded control).
+WHOLE = ["F\t7905140030000\t500\t501\t21", "E\t7905140032044\t501\t500\t/usr/bin/curl\t15\t21\t0",
+         "A\t7905140032044\t501\t0\tcurl\\x00--version\\x00",
+         "O\t7905140040000\t501\tcurl\t2\t61267", "D\t7905140040000\t501\tp\tout", "D\t7905140040000\t501\tp\t/"]
+GRADING = ["O\t7905140038342\t501\tcurl\t33\t61267", "D\t7905140038342\t501\tp\tcurl",
+           "D\t7905140038342\t501\tp\tbin", "D\t7905140038342\t501\tp\tusr", "D\t7905140038342\t501\tp\t/"]
+
+
+def test_merging_the_two_programs_keeps_each_syscall_once():
+    merged = observer.merge([observer.parse(WHOLE), observer.parse(GRADING)])
+    assert [(e.kind, e.time, e.path) for e in merged.events] == [
+        ("E", 7905140032044, "/usr/bin/curl"), ("O", 7905140038342, "/usr/bin/curl"),
+        ("O", 7905140040000, "/out")]
+    assert merged.parents == {501: 500} and merged.namespace_pids == {501: 21}
+    lossy = observer.merge([observer.parse(WHOLE), observer.parse(["Lost 2 events"])])
+    assert lossy.lost == 2
+
+
+def test_the_trace_keeps_container_pids_from_execs_and_forks():
+    trace = observer.parse(["E\t1\t200\t900\t/usr/bin/python3\t7\t20",
+                            "A\t1\t200\t0\tpython3\\x00", "F\t2\t200\t201\t21"])
+    assert trace.unparsed == []
+    assert trace.namespace_pids == {200: 20, 201: 21}
+    assert trace.parents == {201: 200}
+    assert observer.merge([trace, observer.Trace([], [], 0, {})]).namespace_pids == trace.namespace_pids
+
+
+def test_the_recorded_trace_parses_with_no_loss_and_no_leftover_lines():
+    trace = _trace()
+    assert trace.lost == 0
+    assert trace.unparsed == []
+
+
+def test_the_exec_root_is_the_command_the_shim_started():
+    roots = observer.exec_roots(_trace(), SHIM)
+    assert [root.detail["argv"][:2] for root in roots] == [["sh", "-c"]]
+
+
+def test_a_root_is_an_exec_whose_parent_is_outside_the_container():
+    trace = observer.parse(["E\t1\t201\t900\t/usr/bin/python3\t8\t20\t1", "A\t1\t201\t0\tpython3\\x00",
+                            "E\t2\t202\t201\t/usr/bin/curl\t5\t21\t0", "A\t2\t202\t0\tcurl\\x00"])
+    assert trace.unparsed == []
+    assert [e.detail["parent_outside"] for e in trace.events] == [True, False]
+    assert trace.namespace_pids == {201: 20, 202: 21}
+    assert [event.pid for event in observer.exec_roots(trace, SHIM)] == [201]
+
+
+def test_an_exec_under_a_new_shim_is_still_a_root():
+    trace = observer.Trace(events=[
+        observer.Event("E", 1, 200, path="/proc/self/fd/6", detail={"ppid": 900, "argv": ["runc", "init"]}),
+        observer.Event("E", 2, 201, path="/usr/bin/python3", detail={"ppid": 900, "argv": ["python3"]}),
+        observer.Event("E", 3, 202, path="/usr/bin/curl", detail={"ppid": 201, "argv": ["curl"]}),
+    ], unparsed=[], lost=0, parents={202: 201})
+    assert [event.pid for event in observer.exec_roots(trace, SHIM)] == [201]
+
+
+def test_children_of_the_root_are_its_descendants():
+    trace = _trace()
+    root = observer.exec_roots(trace, SHIM)[0]
+    below = trace.descendants(root.pid)
+    commands = {e.detail["argv"][0] for e in trace.events if e.kind == "E" and e.pid in below}
+    assert {"sh", "mv", "rm", "cat", "wget"} <= commands
+
+
+def test_a_relative_write_resolves_to_its_container_path():
+    events = [e for e in _trace().events if not e.upper]
+    assert any(e.kind == "O" and e.path == "/etc/hostsx" and e.writes for e in events)
+    assert any(e.kind == "N" and e.path == "/etc/hosts2" and e.detail["from"] == "/etc/hostsx"
+               for e in events)
+    assert any(e.kind == "U" and e.path == "/etc/hosts2" for e in events)
+
+
+def test_upper_layer_duplicates_are_marked():
+    upper = [e for e in _trace().events if e.upper]
+    assert upper and all("snapshots" in e.path or "snapshots" in e.detail.get("from", "") for e in upper)
+
+
+def test_a_procfs_open_gets_its_mount_prefix_back():
+    assert any(e.kind == "O" and e.path == "/proc/1/status" and not e.writes for e in _trace().events)
+
+
+def test_connect_and_kill_carry_their_targets():
+    events = _trace().events
+    assert any(e.kind == "C" and e.detail == {"family": 2, "address": "192.0.2.10", "port": 80}
+               for e in events)
+    assert any(e.kind == "K" and e.detail == {"target": 1, "signal": 0} for e in events)
+
+
+def test_lost_events_are_counted_and_unknown_lines_kept():
+    trace = observer.parse(["Lost 12 events", "Lost 3 events", "Z\tjunk", "D\t1\t2\tp\torphan"])
+    assert trace.lost == 15
+    assert trace.unparsed == ["Z\tjunk", "D\t1\t2\tp\torphan"]
+
+
+def test_a_chain_that_never_reaches_its_root_is_truncated():
+    trace = observer.parse(["O\t5\t9\tsh\t2\t1", "D\t5\t9\tp\tdeep", "T\t5\t9\tp"])
+    (event,) = trace.events
+    assert event.truncated and event.path == "/deep"
+
+
+def test_an_argument_block_past_the_cap_is_marked_truncated():
+    trace = observer.parse([f"E\t5\t9\t1\t/bin/x\t{observer.ARGV_BYTES + 1}", "A\t5\t9\t0\tx\\x00y"])
+    (event,) = trace.events
+    assert event.detail["argv"] == ["x", "y"] and event.detail["argv_truncated"]

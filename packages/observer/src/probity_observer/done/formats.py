@@ -36,6 +36,7 @@ PAYLOAD_TYPES = {
     "probity-tool-claims/v2": "application/vnd.probity.tool-claims.v2+json",
     "probity-done-receipt/v2": "application/vnd.probity.done-receipt.v2+json",
     "probity-done-loop/v1": "application/vnd.probity.done-loop.v1+json",
+    "probity-basharena-verdict/v0": "application/vnd.probity.basharena-verdict.v0+json",
 }
 
 
