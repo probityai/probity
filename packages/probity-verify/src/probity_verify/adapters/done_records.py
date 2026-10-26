@@ -67,6 +67,9 @@ RATCHET_ADMISSION_PREDICATE = PREDICATE_BASE + "ratchet-admission"
 def path(value: Any, label: str) -> str:
     """A normalized workspace-relative POSIX path."""
     name = _string(value, label)
+    # A control character (a newline above all) would let two trees share one digest line set.
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in name):
+        raise CaseError(f"{label}: control characters are not allowed in a tree path")
     if ("\x00" in name or name.startswith("/") or name.endswith("/")
             or any(part in ("", ".", "..") for part in name.split("/"))
             or str(PurePosixPath(name)) != name):
