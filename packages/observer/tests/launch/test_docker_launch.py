@@ -339,9 +339,9 @@ def test_a_shadowed_runner_is_told_apart_by_its_executed_path(image, workspace, 
 
 @pytest.fixture(scope="session")
 def open_root_image(image):
-    """The test image with a world-writable ``/``: the one directory above ``/workspace``."""
+    """The test image with a world-writable ``/pyproject.toml``: the one config file above ``/workspace`` an unprivileged agent can write (the image root directory cannot be made writable by a build step)."""
     subprocess.run(["docker", "build", "-q", "-t", IMAGE + "-open-root", "-"], check=True,
-                   capture_output=True, input=f"FROM {image}\nRUN chmod 1777 /\n".encode())
+                   capture_output=True, input=f"FROM {image}\nRUN touch /pyproject.toml && chmod 666 /pyproject.toml\n".encode())
     return IMAGE + "-open-root"
 
 
