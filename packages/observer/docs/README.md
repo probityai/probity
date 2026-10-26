@@ -45,3 +45,5 @@ the recorded upstream correction from the native consumer's original SDK pin.
 
 For implementation contracts, see the [design and trust boundary](DESIGN.md),
 [protected dispatch](PROTECTED-DISPATCH.md), and [consumer admission](CONSUMER-ADMISSION.md).
+[Sealed pytest ids counted by the verifier](SEALED-PYTEST-REPLAY.md) gives the threat model of
+the `probity done` grader's pytest replay and what it does not cover.

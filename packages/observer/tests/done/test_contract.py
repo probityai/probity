@@ -178,10 +178,26 @@ def test_swe_contract_from_dataset_fields(tmp_path, swe_repo, harness):
     assert (task.heldout / "config/pytest.ini").read_text() == "[pytest]\n"
     assert "w * h" in (task.reference / "pkg/shapes.py").read_text()
     ids = [command.id for command in task.commands]
-    assert ids == ["fail-to-pass", "pass-to-pass", "heldout-fail-to-pass", "visible_run"]
+    assert ids == ["fail-to-pass", "pass-to-pass", "heldout-fail-to-pass", "fail-to-pass-replay",
+                   "pass-to-pass-replay", "heldout-fail-to-pass-replay", "visible_run"]
     # The agent's own run of the visible tests, sealed with where it runs and its interpreter.
-    assert task.commands[3].argv == ("python", "-m", "pytest", "tests/test_shapes.py")
-    assert task.commands[3].agent_command and task.module_under_test == ["pkg/shapes.py"]
+    assert task.commands[6].argv == ("python", "-m", "pytest", "tests/test_shapes.py")
+    assert task.commands[6].agent_command and task.module_under_test == ["pkg/shapes.py"]
+    # The verifier's own runs of the same ids, from a root of the protected paths only, with
+    # the agent's package served by a child; the held-out one lays the held-out tree over it.
+    fields = [runner.pytest_replay_fields(command.argv) for command in task.commands[3:6]]
+    assert [item["ids"] for item in fields] == [["tests/test_shapes.py::test_area"],
+                                                ["tests/test_other.py::test_zero"],
+                                                ["tests/test_shapes.py::test_area"]]
+    assert {tuple(item["remote"]) for item in fields} == {("pkg",)}
+    assert [item["overlay"] for item in fields] == [None, None, "../heldout/tree"]
+    assert [command.heldout for command in task.commands[3:6]] == [False, False, True]
+    assert task.commands[3].record()["ids"] == ["tests/test_shapes.py::test_area"]
+    assert sorted(path.relative_to(task.heldout / runner.PYTEST_ROOT).as_posix() for path in
+                  (task.heldout / runner.PYTEST_ROOT).rglob("*") if path.is_file()) == [
+        "conftest.py", "tests/__init__.py", "tests/test_other.py", "tests/test_shapes.py"]
+    assert contract.swe_task(record, repo, tmp_path / "plain", replay=False).commands[3].id == (
+        "visible_run")
     assert task.commands[0].argv[-1] == "tests/test_shapes.py::test_area"
     argv = task.commands[0].argv
     config = argv.index("../heldout/config/pytest.ini")
@@ -307,7 +323,7 @@ class Scripted:
 
 def test_stability_runs_three_times_per_state_and_drops_flaky_or_unexpected(tmp_path, swe_repo):
     repo, record = swe_repo
-    task = contract.swe_task(record, repo, tmp_path / "work")
+    task = contract.swe_task(record, repo, tmp_path / "work", replay=False)
     fail, passing, held, own = (command.argv for command in task.commands)
     runner = Scripted({("reference", fail): [0, 0, 0], ("start", fail): [1, 1, 1],
                        ("reference", passing): [0, 1, 0],
@@ -326,7 +342,7 @@ def test_stability_narrows_a_grouped_command_to_its_stable_ids(tmp_path, swe_rep
     repo, record = swe_repo
     record = {**record, "FAIL_TO_PASS": '["tests/test_shapes.py::test_area", "tests/x.py::test_flaky"]',
               "PASS_TO_PASS": "[]"}
-    task = contract.swe_task(record, repo, tmp_path / "work")
+    task = contract.swe_task(record, repo, tmp_path / "work", replay=False)
     group, held, own = task.commands
     prefix = group.argv[:group.ids_from]
     good, flaky = prefix + ("tests/test_shapes.py::test_area",), prefix + ("tests/x.py::test_flaky",)
@@ -378,7 +394,7 @@ def test_stability_records_what_an_honest_run_writes(tmp_path, python_bin):
 
 def test_pytest_start_failures_other_than_failing_tests_are_dropped(tmp_path, swe_repo):
     repo, record = swe_repo
-    task = contract.swe_task(record, repo, tmp_path / "work")
+    task = contract.swe_task(record, repo, tmp_path / "work", replay=False)
     fail, passing, held, own = (command.argv for command in task.commands)
     table = {("reference", fail): [0, 0, 0], ("start", fail): [4, 4, 4],
              ("reference", passing): [0, 0, 0], ("start", passing): [0, 0, 0],
