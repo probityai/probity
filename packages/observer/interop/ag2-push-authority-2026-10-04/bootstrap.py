@@ -89,7 +89,7 @@ def launch(args):
     shutil.copytree(args.wheels, output / "wheels")
     expected = {"probity_ag2_push": owned,
                 "probity_observer": source["probity_observer"]["pythonGitBlobs"]}
-    versions = {"probity_ag2_push": "0.0.1", "probity_observer": "0.0.1"}
+    versions = {"probity_ag2_push": "0.0.1", "probity_observer": "0.0.2"}
     for role, python in (("producer", args.producer), ("reader", args.reader)):
         p = json.loads(child([str(python), "-I", "-B", "-c", PROBE, role],
                              output / (role + "-installation"), cwd))
