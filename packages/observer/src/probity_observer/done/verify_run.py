@@ -442,8 +442,8 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
     # runs it, so its exit status can only add a failure beside the replays that decide.
     graded = [item for item in commands if "exe" not in item]
     agent_runs = len(graded) != len(commands)
-    python_isolated = all(item["argv"][0] != "python" or bool({"-I", "-P"} & set(item["argv"]))
-                          for item in graded)
+    python_isolated = all(not os.path.basename(item["argv"][0]).startswith("python")
+                          or bool({"-I", "-P"} & set(item["argv"])) for item in graded)
     # A replay holds every assertion in the verifier's own process and receives only plain
     # data from the candidate; any other command's result is an exit status the worker sets.
     replayed = all(is_replay(item["argv"]) for item in graded)
