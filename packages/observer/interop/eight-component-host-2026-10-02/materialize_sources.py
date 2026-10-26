@@ -23,16 +23,42 @@ def checkout(name: str, component: dict[str, Any], root: Path, logs: Path) -> No
     target = root / name
     commands = [
         ["git", "clone", "--quiet", "https://github.com/" + component["repository"] + ".git", str(target)],
+        # A selected head may now sit only behind a closed pull request after a
+        # history rewrite, where a plain clone no longer carries it.
+        ["git", "-C", str(target), "fetch", "--quiet", "origin", component["head"]],
         ["git", "-C", str(target), "checkout", "--detach", component["head"]],
     ]
     for index, command in enumerate(commands):
-        result = subprocess.run(command, capture_output=True, timeout=180)
+        try:
+            result = subprocess.run(command, capture_output=True, timeout=180)
+        except subprocess.TimeoutExpired:
+            refuse(refusal_reason(name, component, index, command, None, b"timed out after 180 seconds"))
         prefix = logs / (name + "-" + str(index))
         prefix.with_suffix(".stdout").write_bytes(result.stdout)
         prefix.with_suffix(".stderr").write_bytes(result.stderr)
         write_json(prefix.with_suffix(".process.json"), {"command": command, "returnCode": result.returncode})
         if result.returncode != 0:
-            refuse("selected public source materialization failed")
+            refuse(refusal_reason(name, component, index, command, result.returncode, result.stderr))
+
+
+def refusal_reason(
+    name: str, component: dict[str, Any], index: int, command: list[str], return_code: int | None, stderr: bytes
+) -> str:
+    """Name the failing source, step and Git error so a refusal states its cause.
+
+    The inputs are the fixed public selection and Git's own output, never
+    candidate bytes, so the text is safe to put in the refusal.
+    """
+    detail = stderr.decode("utf-8", "replace").strip()[-2000:] or "no Git output"
+    step = command[3] if command[1] == "-C" else command[1]
+    return (
+        "selected public source materialization failed: source " + name
+        + " repository " + component["repository"]
+        + " commit " + component["head"]
+        + " step " + str(index) + " (git " + step + ")"
+        + " returned " + ("timeout" if return_code is None else str(return_code))
+        + ": " + detail
+    )
 
 
 def main() -> None:

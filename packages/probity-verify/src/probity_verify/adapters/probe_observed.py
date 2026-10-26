@@ -33,10 +33,18 @@ or ``isolated_branch``) names how the visible test was passed and contradicts wi
 own reason, whatever the command exits. Measured findings travel as evidence and never
 decide.
 
+The import probe's pass is never evidence. The child reports ``builtins`` after the import
+from the candidate's own process, after the candidate's code has run there, so that code can
+write a forged "no change" report and silence the genuine one (redirect or close the
+protocol descriptor). An active import probe that exited zero therefore leaves the check
+open (``probe_import_unobserved``); only a change the probe saw decides. A pass needs the
+import observed from outside the candidate's process, which this grade does not carry.
+
 No probe, no twin in the contract and no detector block gives ``not_established`` /
 ``no_probes``. Otherwise the first active probe that failed with an answer, in contract order, gives
 ``contradicted`` / ``probe_<mode>_failed``; else an active probe stopped at its limit
-(``timed_out``) gives ``not_established`` / ``probe_timed_out``; else ``supported`` /
+(``timed_out``) gives ``not_established`` / ``probe_timed_out``; else an active import probe
+that exited zero gives ``not_established`` / ``probe_import_unobserved``; else ``supported`` /
 ``probes_passed``.
 """
 
@@ -49,6 +57,9 @@ from . import acceptance_observed
 
 # A probe that reads no answer, so a wrong answer cannot fail it.
 ANSWERLESS = frozenset({"import_side_effects"})
+# A probe whose only evidence of a pass is a report written from inside the candidate's own
+# process: its exit zero is open, never a pass.
+IN_PROCESS_PASS = frozenset({"import_side_effects"})
 SUBVERTING = ("assertion", "candidate_exit", "candidate_raised")
 
 CLAIM_TYPE = "probe_observed/v1"
@@ -126,10 +137,15 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     inactive = [item["id"] for item in outcomes if item["id"] in modes and not counts(item)]
     failed = [item for item in active if item["exit"] != 0]
     answered = [item for item in failed if not item.get("timed_out")]
+    unobserved = [item["id"] for item in active
+                  if item["exit"] == 0 and modes[item["id"]] in IN_PROCESS_PASS]
     result["checks"].append({"id": "probes", "status": "failed" if answered else (
-        "unavailable" if failed else "met"), "active": active, "inactive": inactive})
+        "unavailable" if failed or unobserved else "met"), "active": active,
+        "inactive": inactive, "unobserved": unobserved})
     if answered:
         return decide("contradicted", f"probe_{modes[answered[0]['id']]}_failed", *pairs)
     if failed:
         return decide("not_established", "probe_timed_out")
+    if unobserved:
+        return decide("not_established", "probe_import_unobserved")
     return decide("supported", "probes_passed", *pairs)

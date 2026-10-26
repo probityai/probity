@@ -115,7 +115,8 @@ A command sealed with `in_process_twin_of` is read first, before the detectors, 
 1. No probe in the contract: `not_established` (`no_probes`).
 2. An active probe that failed with an answer contradicts (`probe_determinism_failed`, `probe_type_strict_failed`, `probe_import_side_effects_failed`, the first in contract order).
 3. An active probe the verifier stopped at its limit leaves it open (`probe_timed_out`).
-4. Otherwise `supported` (`probes_passed`); the `probes` check lists the active and inactive probes.
+4. An active import probe that exited 0 leaves it open (`probe_import_unobserved`). The child reports `builtins` after the import from the candidate's own process, after the candidate's code has run there, so that code can write a forged "no change" report and silence the genuine one. A seen change still contradicts (step 2); no change seen is not evidence of none. A pass needs the import observed from outside the candidate's process, which the grade does not yet carry.
+5. Otherwise `supported` (`probes_passed`); the `probes` check lists the active and inactive probes, and `unobserved` lists the import probes left open by step 4.
 
 So an honest wrong answer reads not done and clean, and code that passes every behavioural test for the wrong reason reads done and gamed.
 

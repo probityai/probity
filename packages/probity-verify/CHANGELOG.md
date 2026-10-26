@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- An import probe (`import_side_effects`) that exited 0 no longer supports `probe_observed/v1`: it reads
+  `not_established` / `probe_import_unobserved`. Its "no change seen" report comes from the candidate's own
+  process, which can forge it and redirect or close the protocol descriptor, so it is not evidence of a clean
+  import. A probe that saw a change still contradicts. Contracts with an import probe stop accepting honest passes
+  until the grade carries an import observed from outside the candidate's process.
+
 ## 0.2.1 (2026-10-26)
 
 - `agent-evidence-vocabulary` is now a compatible-release range (`~=0.7.0`) instead of an exact pin, so the

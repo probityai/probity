@@ -18,6 +18,8 @@ Three held-out probes run the same way, each as its own acceptance command (the 
 with its own time budget), ``type_strict`` (the result's builtin type must be the expected
 value's, recursively) and ``import_side_effects`` (importing the module must leave
 ``builtins`` unchanged). In every mode the comparison and the result file are the parent's.
+The ``pytest`` mode (:mod:`.pytest_replay`) runs sealed pytest ids the same way: the sealed
+test files under pytest here, the candidate's modules served by a child.
 
 Run as ``python -I -m probity_observer.done.replay <request.json>``; the result is written to
 the request's ``out`` path. Exit 0 when every assertion and the invariant hold, 1 otherwise.
@@ -76,26 +78,38 @@ def plain(value: Any) -> Any:
 
 
 def unplain(tagged: Any) -> Any:
-    """The value a :func:`plain` form stands for."""
+    """The value a :func:`plain` form stands for. Only a form :func:`plain` writes is read:
+    a payload of another type (``["bool", "false"]``), a number not in its canonical text,
+    or a float that is not finite is refused, so the codec's two halves agree."""
+    if type(tagged) is not list or not tagged:
+        raise TypeError("not a tagged value")
     tag = tagged[0]
-    if tag == "none":
+    if tag == "none" and len(tagged) == 1:
         return None
-    if tag == "bool":
-        return bool(tagged[1])
-    if tag == "int":
-        return int(tagged[1])
-    if tag == "float":
-        return float(tagged[1])
-    if tag == "str":
-        return str(tagged[1])
-    if tag == "bytes":
-        return bytes.fromhex(tagged[1])
-    if tag in ("list", "tuple", "set", "frozenset"):
-        items = [unplain(item) for item in tagged[1]]
+    if len(tagged) != 2:
+        raise TypeError("not a tagged value")
+    body = tagged[1]
+    kind = type(body)
+    if tag == "bool" and kind is bool:
+        return body
+    if tag == "int" and kind is str and str(int(body)) == body:
+        return int(body)
+    if tag == "float" and kind is str:
+        number = float(body)
+        if number == number and number not in (float("inf"), float("-inf")) and repr(
+                number) == body:
+            return number
+    if tag == "str" and kind is str:
+        return body
+    if tag == "bytes" and kind is str and bytes.fromhex(body).hex() == body:
+        return bytes.fromhex(body)
+    if tag in ("list", "tuple", "set", "frozenset") and kind is list:
+        items = [unplain(item) for item in body]
         return {"list": list, "tuple": tuple, "set": set, "frozenset": frozenset}[tag](items)
-    if tag == "dict":
-        return {unplain(key): unplain(item) for key, item in tagged[1]}
-    raise TypeError("unknown tag: " + str(tag))
+    if tag == "dict" and kind is list and all(type(pair) is list and len(pair) == 2
+                                              for pair in body):
+        return {unplain(key): unplain(item) for key, item in body}
+    raise TypeError("not a plain form: " + str(tag))
 
 
 def canon(value: Any) -> str:
@@ -173,6 +187,71 @@ class CandidateFailed(AssertionError):
 
 
 STARTED: list["Child"] = []
+# The file the parent appends each child's pid and start time to, for the runner's backstop
+# (:func:`kill_recorded`); ``None`` outside a parent the runner started.
+CHILDREN: Path | None = None
+
+
+def start_time(pid: int) -> str | None:
+    """The kernel's start time of ``pid`` (``/proc/<pid>/stat`` field 22), or ``None`` when no
+    such process exists: with the pid it names one process, never a later one given that pid."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+    except OSError:
+        return None
+    fields = stat.rsplit(")", 1)[-1].split()
+    return fields[19] if len(fields) > 19 else None
+
+
+def kill_recorded(path: Path) -> None:
+    """End every child group a parent recorded in ``path`` that is still running: SIGTERM, then
+    SIGKILL after :data:`CLOSE_GRACE`. A child whose start time no longer matches is gone.
+
+    The runner's backstop for a parent it had to kill, or one that left a child behind: each
+    child runs in its own session, out of reach of a signal to the parent's group."""
+    try:
+        lines = path.read_text().splitlines()
+    except OSError:
+        return
+    alive = []
+    for line in lines:
+        parts = line.split()
+        if len(parts) == 2 and parts[0].isdigit() and start_time(int(parts[0])) == parts[1]:
+            alive.append((int(parts[0]), parts[1]))
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for pid, started in alive:
+            if start_time(pid) == started:
+                try:
+                    os.killpg(pid, sig)
+                except (ProcessLookupError, PermissionError):
+                    pass
+        ends = time.monotonic() + CLOSE_GRACE
+        while any(start_time(pid) == started for pid, started in alive):
+            if time.monotonic() >= ends:
+                break
+            time.sleep(0.05)
+
+# The longest protocol line a child may write before its newline.
+LINE_LIMIT = 1 << 24
+
+
+class ClientFailure(dict):
+    """A failure of the client itself: a time-out, an exited child, a broken pipe or a line
+    that is not one reply. JSON never decodes to this type, so no line the child writes can
+    pass for one."""
+
+    def __init__(self, error: str) -> None:
+        super().__init__(error=error)
+
+
+# Client failures that mean the candidate gave no answer in time (a closed child answers every
+# later call with ``child-pipes``): no answer, as opposed to a wrong one.
+STALLS = frozenset({"child-timeout", "child-pipes"})
+
+
+def stall(reply: Any) -> bool:
+    return isinstance(reply, ClientFailure) and reply.get("error") in STALLS
+
 
 # How long a child that was told to stop (its stdin closed, then SIGTERM) gets before the next
 # step. A container runtime cleans up after itself only on an orderly exit.
@@ -198,10 +277,14 @@ class Child:
         self.timeout = timeout
         self.timed_out = False
         self.closed = False
+        self.pending = bytearray()
         STARTED.append(self)
         self.process = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                         text=True, start_new_session=True)
+        if CHILDREN is not None:
+            with CHILDREN.open("a") as record:
+                record.write(f"{self.process.pid} {start_time(self.process.pid)}\n")
 
     def __enter__(self) -> "Child":
         return self
@@ -211,34 +294,55 @@ class Child:
 
     def call(self, args_tagged: Any, kwargs_tagged: Any,
              timeout: float | None = None) -> dict[str, Any]:
+        return self.ask({"args": args_tagged, "kwargs": kwargs_tagged}, timeout)
+
+    def ask(self, request: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
+        """Send one request line and read the child's one reply line."""
         if self.closed or self.process.stdin is None or self.process.stdout is None:
-            return {"error": "child-pipes"}
+            return ClientFailure("child-pipes")
         try:
-            self.process.stdin.write(json.dumps({"args": args_tagged, "kwargs": kwargs_tagged}) + "\n")
+            self.process.stdin.write(json.dumps(request) + "\n")
             self.process.stdin.flush()
         except (BrokenPipeError, ValueError):
-            return {"error": "child-exited"}
+            return ClientFailure("child-exited")
         return self.read(timeout)
 
     def read(self, timeout: float | None = None) -> dict[str, Any]:
-        """The child's next protocol line, or an error after ``timeout`` seconds."""
+        """The child's next protocol line, or an error after ``timeout`` seconds.
+
+        The whole line must arrive inside the limit: the descriptor is read without blocking
+        until a newline comes, so a child that writes part of a line and stops is stopped at
+        the limit like one that writes nothing."""
         if self.closed or self.process.stdout is None:
-            return {"error": "child-pipes"}
+            return ClientFailure("child-pipes")
         wait = self.timeout if timeout is None else max(0.0, min(timeout, self.timeout))
-        ready, _, _ = select.select([self.process.stdout], [], [], wait)
-        if not ready:
-            # No answer inside the limit: the candidate gave none, which is not a wrong one.
-            self.timed_out = True
-            self.close()
-            return {"error": "child-timeout"}
-        line = self.process.stdout.readline()
-        if not line:
-            self.close()
-            return {"error": "child-exited"}
+        deadline = time.monotonic() + wait
+        descriptor = self.process.stdout.fileno()
+        while b"\n" not in self.pending:
+            if len(self.pending) > LINE_LIMIT:
+                self.close()
+                return ClientFailure("child-protocol")
+            left = deadline - time.monotonic()
+            ready = select.select([descriptor], [], [], left)[0] if left > 0 else []
+            if not ready:
+                # No whole line inside the limit: the candidate gave no answer.
+                self.timed_out = True
+                self.close()
+                return ClientFailure("child-timeout")
+            chunk = os.read(descriptor, 1 << 16)
+            if not chunk:
+                self.close()
+                return ClientFailure("child-exited")
+            self.pending += chunk
+        end = self.pending.index(b"\n")
+        line = bytes(self.pending[:end])
+        del self.pending[:end + 1]
         try:
             return json.loads(line)
-        except json.JSONDecodeError:
-            return {"error": "child-protocol"}
+        except (ValueError, RecursionError, MemoryError):
+            # A line too deeply nested to decode is no reply either: every way the decoder can
+            # refuse a line is a protocol failure, never an exception the sealed code sees.
+            return ClientFailure("child-protocol")
 
     def _exited(self, within: float) -> bool:
         """Whether the leader has exited within ``within`` seconds, WITHOUT reaping it: an
@@ -307,6 +411,8 @@ class Proxy:
         self.timed_out = False
         self.answers: dict[str, list[str]] = {}
         self.requests: dict[str, tuple[Any, Any]] = {}
+        # The answers on each request that the candidate gave: every one but a stall.
+        self.given: dict[str, set[str]] = {}
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         try:
@@ -322,6 +428,8 @@ class Proxy:
         self.timed_out = self.timed_out or self.child.timed_out
         answer = json.dumps(reply, separators=(",", ":"), sort_keys=True)
         self.answers.setdefault(key, []).append(answer)
+        if not stall(reply):
+            self.given.setdefault(key, set()).add(answer)
         self.requests[key] = (args_tagged, kwargs_tagged)
         if "error" in reply:
             raise CandidateFailed(reply["error"])
@@ -350,7 +458,10 @@ MODES = ("assert", "determinism", "type_strict", "import_side_effects")
 # How many passes over the cases each mode makes. Every pass has the command's whole
 # ``run_timeout`` (a probe that repeats the work is never stricter than one run of the
 # command), and the runner's limit on the whole replay is that many timeouts.
-PASSES = {"assert": 2, "determinism": 3, "type_strict": 1, "import_side_effects": 1}
+# A pytest replay runs under one deadline of its own inside a single run_timeout
+# (:func:`.pytest_replay.deadline`), fresh children included.
+PASSES = {"assert": 2, "determinism": 3, "type_strict": 1, "import_side_effects": 1,
+          "pytest": 1}
 
 # How the candidate ended its own process: the reply errors a SystemExit or an exit gives.
 EXIT_ERRORS = ("import:SystemExit", "SystemExit", "child-exited")
@@ -364,6 +475,10 @@ ISOLATION_ERRORS = frozenset({
     "ConnectionAbortedError", "BrokenPipeError", "TimeoutError", "InterruptedError",
     "ChildProcessError", "ProcessLookupError", "ImportError", "ModuleNotFoundError",
     "RecursionError", "MemoryError", "KeyboardInterrupt"})
+# The import probe's own findings: the module changed ``builtins``, or wrote a report the
+# child did not send.
+PROTOCOL_FORGED = "report written on the protocol descriptor"
+IMPORT_FAILURES = frozenset({"builtins changed on import", PROTOCOL_FORGED})
 # Child errors that are the protocol's, not an exception the candidate raised.
 PROTOCOL_ERRORS = frozenset({"child-timeout", "child-pipes", "child-protocol", "unplain"})
 
@@ -384,7 +499,7 @@ def failure_kind(result: dict[str, Any]) -> str | None:
         return None
     failure = result.get("failure") or ""
     if result.get("mode") == "import_side_effects":
-        return "assertion" if failure == "builtins changed on import" else "candidate"
+        return "assertion" if failure in IMPORT_FAILURES else "candidate"
     if result.get("mode", "assert") != "assert" or result.get("timed_out"):
         return "candidate"
     if failure.startswith("assertion") and not result.get("impure") and not result.get(
@@ -443,12 +558,16 @@ def _tagged(args: Any, kwargs: Any) -> tuple[Any, Any]:
     return plain(tuple(args)), plain(dict(kwargs))
 
 
+def _text(reply: Any) -> str:
+    return json.dumps(reply, separators=(",", ":"), sort_keys=True)
+
+
 def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
-             budget: float) -> tuple[list[str], float, bool]:
+             budget: float) -> tuple[list[Any], float, bool]:
     """One child, each call ``repeat`` times; each pass over the calls has ``budget`` seconds,
-    so the run has ``repeat`` times that."""
+    so the run has ``repeat`` times that. The replies in order, a stall included."""
     started = time.monotonic()
-    answers: list[str] = []
+    answers: list[Any] = []
     timed_out = False
     with Child(request["child_argv"], request.get("child_cwd"),
                float(request["call_timeout"])) as child:
@@ -459,7 +578,7 @@ def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
                     timed_out = True
                     break
                 reply = child.call(args_tagged, kwargs_tagged, left)
-                answers.append(json.dumps(reply, separators=(",", ":"), sort_keys=True))
+                answers.append(reply)
                 if child.timed_out:
                     # The child is closed: no later call can be answered or counted.
                     timed_out = True
@@ -467,6 +586,22 @@ def _one_run(request: dict[str, Any], calls: list[tuple[Any, Any]], repeat: int,
             if timed_out:
                 break
     return answers, round(time.monotonic() - started, 3), timed_out
+
+
+def given_wrong(runs: list[list[Any]], cases: list[tuple[Any, Any, Any]]) -> str | None:
+    """What the answers the candidate gave already show wrong, or ``None``: two different
+    answers to one case, an error, an answer that is not ``==`` the expected value. ``runs``
+    are reply sequences in case order, each possibly cut short; a stall is no answer."""
+    given = [[reply for reply in (run[index] for run in runs if index < len(run))
+              if not stall(reply)] for index in range(len(cases))]
+    if any(len({_text(reply) for reply in replies}) > 1 for replies in given):
+        return "answers differ between runs"
+    if any("error" in reply for replies in given for reply in replies):
+        return "candidate raised"
+    if any(unplain(reply["ok"]) != value
+           for replies, (_, _, value) in zip(given, cases) for reply in replies):
+        return "answer differs from the expected value"
+    return None
 
 
 def determinism(request: dict[str, Any]) -> dict[str, Any]:
@@ -482,20 +617,14 @@ def determinism(request: dict[str, Any]) -> dict[str, Any]:
     budget = float(request["run_timeout"])
     first, first_s, first_out = _one_run(request, calls, 2, budget)
     fresh, fresh_s, fresh_out = _one_run(request, calls, 1, budget)
-    sequences = [first[0::2], first[1::2], fresh]
-    identical = sequences[0] == sequences[1] == sequences[2]
-    failure = None
-    if first_out or fresh_out or any(child.timed_out for child in STARTED):
+    # A run cut short by a stall still holds the answers it was given, and a wrong one among
+    # them is a definitive failure: a later stall never turns it into "no answer".
+    failure = given_wrong([first[0::2], first[1::2], fresh], cases)
+    definitive = failure is not None
+    if not definitive and (first_out or fresh_out or any(child.timed_out for child in STARTED)):
         failure = "timeout"
-    elif not identical:
-        failure = "answers differ between runs"
-    else:
-        replies = [json.loads(answer) for answer in sequences[0]]
-        if any("error" in reply for reply in replies):
-            failure = "candidate raised"
-        elif any(unplain(reply["ok"]) != value for reply, (_, _, value) in zip(replies, cases)):
-            failure = "answer differs from the expected value"
     return {"passed": failure is None, "failure": failure, "mode": "determinism",
+            "definitive": definitive,
             # Count what was asked: a run cut short reached only its first cases.
             "calls_intercepted": len(first) + len(fresh),
             "distinct_calls": max(-(-len(first) // 2), len(fresh)),
@@ -510,18 +639,24 @@ def type_strict(request: dict[str, Any]) -> dict[str, Any]:
     answers, _, timed_out = _one_run(request, calls, 1, float(request["run_timeout"]))
     mismatched = 0
     made = 0
-    failure = "timeout" if timed_out else None
-    for answer, (_, _, expected) in zip(answers, cases):
+    failure = None
+    # A run cut short at its budget, or a call that stalled, gave no answer from there on.
+    stalled = timed_out
+    for reply, (_, _, expected) in zip(answers, cases):
         made += 1
-        reply = json.loads(answer)
         if "error" in reply:
-            failure = failure or f"candidate: {reply['error']}"
+            stalled = stall(reply)
+            failure = "timeout" if stalled else f"candidate: {reply['error']}"
             break
         if not strict_eq(unplain(reply["ok"]), expected):
             mismatched += 1
-    if failure is None and mismatched:
+    if failure is None and stalled:
+        failure = "timeout"
+    # A mismatch already given stands over a later stall.
+    if mismatched and (failure is None or stalled):
         failure = f"{mismatched} result(s) differ in type or value"
     return {"passed": failure is None, "failure": failure, "mode": "type_strict",
+            "definitive": failure is not None and (bool(mismatched) or not stalled),
             "calls_intercepted": made, "distinct_calls": made}
 
 
@@ -530,10 +665,28 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
 
     The child reports ``builtins`` before the import (before any module code has run) and
     after it; the report after the import comes from a process the module's code has run in.
+    A change seen, or a line the child did not send, fails the probe on its comparison. No
+    change seen passes here, but the module can forge that report and redirect or close the
+    descriptor, so probity-verify reads that pass as open (``probe_import_unobserved``).
     """
     with Child(request["child_argv"], request.get("child_cwd"),
                float(request["call_timeout"])) as child:
         before, after = child.read(), child.read()
+        # The child sends nothing more until it is called. With its input closed it exits, so
+        # any line after the second report was written by the candidate's code on the protocol
+        # descriptor (a forged report ahead of the genuine one, which then arrives late).
+        if child.process.stdin is not None:
+            try:
+                child.process.stdin.close()
+            except OSError:
+                pass
+        extra = 0
+        while child.read().get("error") not in ("child-exited", "child-pipes", "child-timeout"):
+            extra += 1
+    if extra:
+        return {"passed": False, "failure": PROTOCOL_FORGED, "mode": "import_side_effects",
+                "builtins": {"extra_reports": extra}, "calls_intercepted": 0,
+                "distinct_calls": 0, "evidence_from_worker": ["builtins_after_import"]}
     if "builtins" not in before or "builtins" not in after:
         return {"passed": False, "failure": "no builtins report", "mode": "import_side_effects",
                 "calls_intercepted": 0, "distinct_calls": 0}
@@ -543,7 +696,7 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
                "rebound": sorted(name for name in set(old) & set(new) if old[name] != new[name])}
     changed = any(changes.values())
     return {"passed": not changed, "failure": "builtins changed on import" if changed else None,
-            "mode": "import_side_effects", "builtins": changes, "calls_intercepted": 0,
+            "mode": "import_side_effects", "definitive": changed, "builtins": changes, "calls_intercepted": 0,
             "distinct_calls": 0, "evidence_from_worker": ["builtins_after_import"]}
 
 
@@ -551,6 +704,10 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     """Run one replay request in its mode (the sealed test with the purity check and fresh
     re-runs, or one of the held-out probes)."""
     mode = request.get("mode", "assert")
+    if mode == "pytest":
+        from .pytest_replay import pytest_replay
+
+        return pytest_replay(request)
     if mode == "determinism":
         return determinism(request)
     if mode == "type_strict":
@@ -570,39 +727,60 @@ def replay(request: dict[str, Any]) -> dict[str, Any]:
     order = sorted(proxy.answers)
     random.Random(request["order_seed"]).shuffle(order)
     fresh_mismatch = []
+    # A failure the candidate's own answers show: a failed assertion or a raise in the run
+    # (not its stall, nor the run's budget running out), two answers it gave on one request,
+    # or a fresh child's answer.
+    definitive = (failure is not None and not proxy.timed_out) or any(
+        len(given) > 1 for given in proxy.given.values())
     deadline = time.monotonic() + budget
     for key in order:
         left = deadline - time.monotonic()
         if left <= 0:
-            failure = "timeout"
+            failure = failure or "timeout"
             break
         with Child(request["child_argv"], request.get("child_cwd"), timeout) as fresh:
             reply = fresh.call(*proxy.requests[key], left)
         if fresh.timed_out:
-            failure = "timeout"
-            break
-        if json.dumps(reply, separators=(",", ":"), sort_keys=True) != proxy.answers[key][0]:
+            # No answer from this fresh child; a later key may still show a wrong one.
+            failure = failure or "timeout"
+        if _text(reply) != proxy.answers[key][0]:
             fresh_mismatch.append(key)
+            definitive = definitive or not stall(reply)
     calls = sum(len(answers) for answers in proxy.answers.values())
     passed = failure is None and not impure and not fresh_mismatch
-    return {"passed": passed, "failure": failure, "calls_intercepted": calls,
+    return {"passed": passed, "failure": failure, "definitive": definitive and not passed,
+            "calls_intercepted": calls,
             "distinct_calls": len(order), "impure": impure, "fresh_mismatch": fresh_mismatch,
             "fresh_order": order}
 
 
+def terminated(signum: int, frame: Any) -> None:
+    """The parent's SIGTERM: stop every child, then exit at once.
+
+    Not ``sys.exit``: in a pytest replay the signal lands inside a test, and pytest records
+    the ``SystemExit`` as that test's failure and goes on to the next, asking the same child."""
+    try:
+        close_all()
+    finally:
+        os._exit(TERMINATED_EXIT)
+
+
 def main(argv: list[str] | None = None) -> int:
+    global CHILDREN
     args = sys.argv[1:] if argv is None else argv
     request = json.loads(Path(args[0]).read_text())
     STARTED.clear()
-    # The runner sends SIGTERM when the whole command outruns its limit; exiting through
-    # SystemExit runs the ``finally`` below, which stops every child before the parent goes.
-    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(TERMINATED_EXIT))
+    CHILDREN = Path(request["children"]) if request.get("children") else None
+    # The runner sends SIGTERM when the whole command outruns its limit.
+    signal.signal(signal.SIGTERM, terminated)
     try:
         result = replay(request)
     finally:
         close_all()
-    if not result["passed"] and (result.get("failure") == "timeout"
-                                 or any(child.timed_out for child in STARTED)):
+    # No answer is told from a wrong one only when the run holds no definitive failure: a
+    # stall after a wrong answer, or in a fresh child after one, never hides it.
+    if not result["passed"] and not result.get("definitive") and (
+            result.get("failure") == "timeout" or any(child.timed_out for child in STARTED)):
         result["timed_out"] = True
     kind = failure_kind(result)
     if kind is not None:
@@ -612,4 +790,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Run as ``-m``, this file is ``__main__``, a second copy of the module: the pytest replay
+    # imports ``probity_observer.done.replay``, so its children would be in that copy's
+    # ``STARTED`` and out of reach of this one's ``close_all``. ``main`` runs in the one copy.
+    from probity_observer.done import replay as harness
+
+    sys.exit(harness.main())
