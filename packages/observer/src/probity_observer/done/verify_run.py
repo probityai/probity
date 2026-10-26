@@ -204,9 +204,10 @@ def stage_tree(final: Path, destination: Path, start: Path) -> Staged:
             mode = os.lstat(source).st_mode
             if stat.S_ISLNK(mode):
                 sealed = start / relative / name
-                if (_inside(final, source) and sealed.is_symlink()
-                        and os.readlink(sealed) == os.readlink(source)):
-                    os.symlink(os.readlink(source), target)
+                link_target = os.readlink(source)  # read once: the value checked is the value staged
+                if (sealed.is_symlink() and os.readlink(sealed) == link_target
+                        and _inside(final, source)):
+                    os.symlink(link_target, target)
                 else:
                     staged.rejected.append((relative / name).as_posix())
                 if name in dirnames:
