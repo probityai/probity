@@ -7,9 +7,8 @@ import hashlib
 
 import pytest
 from done_run import decide, honest_records
-from test_out_of_tree_tamper import add_external, outcome, sealed
-
 from probity_verify import CaseError
+from test_out_of_tree_tamper import add_external, outcome, sealed
 
 PROTECTED = "protected_paths/v1"
 SECTIONLESS = b'[project]\nname = "x"\nversion = "0"\n'
