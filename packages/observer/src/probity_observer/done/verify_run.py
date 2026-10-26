@@ -446,7 +446,7 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
                           or bool({"-I", "-P"} & set(item["argv"])) for item in graded)
     # A replay holds every assertion in the verifier's own process and receives only plain
     # data from the candidate; any other command's result is an exit status the worker sets.
-    replayed = all(is_replay(item["argv"]) for item in graded)
+    replayed = bool(graded) and all(is_replay(item["argv"]) for item in graded)
     report: dict[str, Any] = {
         "contract_sha256": contract_sha256,
         "trusted_tree": {"expected_sha256": trusted[0], "measured_sha256": trusted[1],

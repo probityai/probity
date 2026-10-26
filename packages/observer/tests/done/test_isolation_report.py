@@ -31,3 +31,12 @@ def test_a_python_command_without_isolation_flags_is_not_isolated(tmp_path, prog
 @pytest.mark.parametrize("program", ["python", "/usr/local/bin/python"])
 def test_a_python_command_with_isolation_flags_is_isolated(tmp_path, program):
     assert report(tmp_path, [[program, "-I", "-m", "pytest"]])["python_isolated"] is True
+
+
+def test_assertions_in_parent_is_false_when_nothing_was_graded(tmp_path):
+    assert report(tmp_path, [])["assertions_in_parent"] is False
+
+
+def test_assertions_in_parent_needs_every_graded_command_to_be_a_replay(tmp_path):
+    assert report(tmp_path, [[COMMAND, "x"]])["assertions_in_parent"] is True
+    assert report(tmp_path, [[COMMAND, "x"], ["pytest"]])["assertions_in_parent"] is False
