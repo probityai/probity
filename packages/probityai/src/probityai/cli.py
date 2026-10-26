@@ -1,4 +1,4 @@
-"""``probity <subcommand> [arguments]``.
+"""``probityai <subcommand> [arguments]``.
 
 The launcher holds no list of subcommands. A distribution adds one by declaring
 an entry point in the ``probityai.cli_subcommands`` group. The entry point's name
@@ -20,9 +20,9 @@ from typing import Any
 
 from .starhint import maybe_print_hint
 
-PROG = "probity"
+PROG = "probityai"
 GROUP = "probityai.cli_subcommands"
-_DISPATCH = "_probity_handler"
+_DISPATCH = "_probityai_handler"
 
 
 class PluginError(Exception):
@@ -30,7 +30,7 @@ class PluginError(Exception):
 
 
 def register_leaf(parser: argparse.ArgumentParser, *, handler: Callable[[argparse.Namespace], int]) -> None:
-    """Attach ``handler`` as the function ``probity`` calls for this subcommand parser."""
+    """Attach ``handler`` as the function ``probityai`` calls for this subcommand parser."""
     parser.set_defaults(**{_DISPATCH: handler})
 
 
@@ -65,12 +65,12 @@ def _build(points: Iterable[Any] | None) -> tuple[argparse.ArgumentParser, Any]:
 
 
 def build_parser(points: Iterable[Any] | None = None) -> argparse.ArgumentParser:
-    """Return the ``probity`` parser with every registered subcommand attached."""
+    """Return the ``probityai`` parser with every registered subcommand attached."""
     return _build(points)[0]
 
 
 def main(argv: list[str] | None = None, points: Iterable[EntryPoint] | None = None) -> int:
-    """Run ``probity``. Exit 2 for a usage error or a broken registration."""
+    """Run ``probityai``. Exit 2 for a usage error or a broken registration."""
     try:
         parser, subparsers = _build(points)
     except PluginError as exc:

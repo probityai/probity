@@ -1,4 +1,4 @@
-"""Reproduce the DSSE bundle vectors for ``probity verify`` and their expected outputs.
+"""Reproduce the DSSE bundle vectors for ``probityai verify`` and their expected outputs.
 
 Each envelope wraps the done receipt of a run in ``../done-receipt``. The signing
 keys come from fixed seeds and Ed25519 signatures are deterministic, so every
@@ -79,7 +79,7 @@ def vectors():
 
 
 def expected(name, run, key, status):
-    """The ``probity verify --json`` stdout, or the stderr line for a refusal."""
+    """The ``probityai verify --json`` stdout, or the stderr line for a refusal."""
     sys.path.insert(0, str(HERE.parents[1] / "src"))
     import contextlib
     import io

@@ -1,6 +1,6 @@
 """Verify a DSSE envelope, then check the claim its payload carries.
 
-``probity verify`` accepts a probity case or a DSSE envelope. For an envelope:
+``probityai verify`` accepts a probity case or a DSSE envelope. For an envelope:
 
 1. The envelope is parsed strictly. ``payload`` and every ``signatures[].sig``
    must be canonical padded base64 in the standard or the URL-safe alphabet;

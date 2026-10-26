@@ -14,7 +14,7 @@ tests/               tests of the repository tools
 ```
 
 Members today: `packages/probity-verify` (distribution `probity-verify`) and `packages/probityai`
-(distribution `probityai`, the `probity` command).
+(distribution `probityai`, the `probityai` command).
 
 ## Decisions
 
@@ -32,9 +32,9 @@ Members today: `packages/probity-verify` (distribution `probity-verify`) and `pa
 | Cargo | Root `Cargo.toml` with `resolver = "3"`, shared `[workspace.package]` and `[workspace.lints]`, and an empty `members` list. The change that imports the first crate sets `members = ["crates/*"]`. | Cargo refuses a member glob that matches no directory. The lint table is written now so every imported crate inherits it (`unwrap_used`, `expect_used`, `undocumented_unsafe_blocks` and `await_holding_lock` denied). |
 | Go module | The vectors Go module moves to `vectors/go.mod` with module path `github.com/probityai/probity/vectors`, tagged `vectors/vX.Y.Z`. | Go resolves a module in a subdirectory only from a tag prefixed with that directory. The archived repository's module gets a `// Deprecated: use github.com/probityai/probity/vectors` line. No `go.work` is needed for one module. |
 
-## The `probity` command
+## The `probityai` command
 
-`probityai` installs `probity`. The launcher holds no list of subcommands: each distribution adds its
+`probityai` installs the `probityai` command, the word a user already typed to install it. The launcher holds no list of subcommands: each distribution adds its
 own with an entry point in the `probityai.cli_subcommands` group.
 
 ```toml
