@@ -1,6 +1,6 @@
 {
   "name": "agent-evidence",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Verify claims about AI systems against supplied evidence and replay the agent-evidence conformance vectors, offline and read-only.",
   "author": {"name": "Probity AI"},
   "homepage": "https://github.com/probityai/agent-evidence-mcp",

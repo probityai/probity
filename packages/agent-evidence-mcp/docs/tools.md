@@ -16,4 +16,4 @@ Every tool is read-only and offline, sets `readOnlyHint`, `destructiveHint: fals
 
 `verify_claim` writes the supplied `artifacts` to a temporary directory, refuses absolute paths and `..`, and removes the directory afterwards. A case binds its artifacts by digest, so changing an artifact's bytes returns a binding error rather than a different verdict.
 
-The server wraps `probity-verify`, `agent-evidence-vectors`, `agent-evidence-vocabulary`, `agent-evidence-admission` and `jcs-admit` (the wheel for the `jcs-admit` and `dsse` Rust crates), each pinned exactly in `pyproject.toml`.
+The server wraps `probity-verify`, `agent-evidence-vectors`, `agent-evidence-vocabulary`, `agent-evidence-admission` and `jcs-admit` (the wheel for the `jcs-admit` and `dsse` Rust crates), each a compatible-release range in `pyproject.toml`.
