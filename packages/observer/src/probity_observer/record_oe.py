@@ -47,6 +47,10 @@ VANTAGE = "independent"
 DEVICE_TREES = ("/dev/", "/proc/", "/sys/")
 GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt"})
 GRADER_DIRECTORIES = frozenset({"site-packages", "dist-packages", "verifier"})
+# probity-verify's ``grader_path`` agrees: under a scratch root the grader never reads (its
+# container gets a fresh /tmp), a reward file or a ``verifier`` directory is the agent's own.
+REWARD_FILES = frozenset({"reward.json", "reward.txt"})
+SCRATCH_ROOTS = ("/tmp/", "/var/tmp/")
 
 
 def instant(seconds: float) -> str:
@@ -161,8 +165,11 @@ def location(path: str) -> str:
     """
     parts = path.split("/")
     name = parts[-1]
-    if (name in GRADER_FILES or name.endswith(".pth")
-            or any(part in GRADER_DIRECTORIES for part in parts[:-1])):
+    scratch = path.startswith(SCRATCH_ROOTS)
+    files = GRADER_FILES - REWARD_FILES if scratch else GRADER_FILES
+    directories = GRADER_DIRECTORIES - {"verifier"} if scratch else GRADER_DIRECTORIES
+    if (name in files or name.endswith(".pth")
+            or any(part in directories for part in parts[:-1])):
         return "grader_path"
     return "outside_workspace"
 

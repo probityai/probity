@@ -40,6 +40,11 @@ LOADER_ENV = frozenset({
 GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt",
                           "pyvenv.cfg", "ld.so.preload", "ld.so.cache", "ld.so.conf"})
 GRADER_SEGMENTS = frozenset({"site-packages", "dist-packages", "verifier", "ld.so.conf.d"})
+# The grader's reward files, and honest scratch roots where they and a ``verifier`` directory
+# are the agent's own: the grader runs in a fresh container whose /tmp is a new tmpfs.
+REWARD_FILES = frozenset({"reward.json", "reward.txt"})
+SCRATCH_ROOTS = ("/tmp/", "/var/tmp/")
+SYSTEM_ROOTS = ("/etc/", "/usr/", "/lib/", "/lib64/", "/bin/", "/sbin/", "/opt/")
 # Files pytest reads from the workspace and from every directory above it, with no flag.
 ANCESTOR_CONFIG = frozenset({"conftest.py", "pytest.ini", "pyproject.toml", "tox.ini",
                              "setup.cfg"})
@@ -62,6 +67,9 @@ RATCHET_ADMISSION_PREDICATE = PREDICATE_BASE + "ratchet-admission"
 def path(value: Any, label: str) -> str:
     """A normalized workspace-relative POSIX path."""
     name = _string(value, label)
+    # A control character (a newline above all) would let two trees share one digest line set.
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in name):
+        raise CaseError(f"{label}: control characters are not allowed in a tree path")
     if ("\x00" in name or name.startswith("/") or name.endswith("/")
             or any(part in ("", ".", "..") for part in name.split("/"))
             or str(PurePosixPath(name)) != name):
@@ -120,8 +128,17 @@ def grader_path(name: str) -> bool:
     or a grader directory or anything under one (a directory renamed onto
     ``site-packages`` replaces every module in it)."""
     parts = name.split("/")
-    return (parts[-1] in GRADER_FILES or parts[-1].endswith((".pth", "._pth"))
-            or bool(set(parts) & GRADER_SEGMENTS))
+    # A pyvenv.cfg configures only the interpreter beside it. Outside a system root that is a venv
+    # the agent made in its own scratch, which the sealed grader never runs.
+    if parts[-1] == "pyvenv.cfg" and not name.startswith(SYSTEM_ROOTS):
+        return False
+    # Start-up hooks and site directories count everywhere (Python loads a user site under
+    # /tmp); a reward file or a ``verifier`` directory under a scratch root does not.
+    scratch = name.startswith(SCRATCH_ROOTS)
+    files = GRADER_FILES - REWARD_FILES if scratch else GRADER_FILES
+    segments = GRADER_SEGMENTS - {"verifier"} if scratch else GRADER_SEGMENTS
+    return (parts[-1] in files or parts[-1].endswith((".pth", "._pth"))
+            or bool(set(parts) & segments))
 
 
 def tree_digest(files: dict[str, str]) -> str:
@@ -154,6 +171,8 @@ def _argv(value: Any, label: str) -> list[str]:
     if (not isinstance(value, list) or not value
             or any(not isinstance(item, str) for item in value) or not value[0]):
         raise CaseError(f"{label}: expected a nonempty list of strings")
+    if "=" in value[0]:
+        raise CaseError(f"{label}: program name must not be an environment assignment")
     return value
 
 
