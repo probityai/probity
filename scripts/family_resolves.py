@@ -3,6 +3,11 @@
     python3 scripts/family_resolves.py lint      # no in-family requirement uses `==`
     python3 scripts/family_resolves.py resolve   # install the latest of all, pip check, import each
 
+`resolve` pins every member to its latest version on PyPI. Bare names would let
+the resolver fall back to an older release of one member to satisfy another,
+which is the failure this check exists to catch (on 2026-10-26 uv "resolved"
+verify 0.2.0 with vocabulary 0.7.0 only by silently installing verify 0.1.1).
+
 The family is pre-1.0, so an exact pin of one family member by another makes the
 latest releases unresolvable as a set (measured 2026-10-26). In-family requirements
 use compatible-release ranges (`~=X.Y.Z`); third-party pins stay exact. Standard
@@ -11,11 +16,13 @@ library only for `lint`; `resolve` needs `uv` on PATH.
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
 import tempfile
 import tomllib
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,8 +70,24 @@ def lint(root: Path = ROOT) -> list[str]:
     return problems
 
 
+def latest_versions() -> dict[str, str]:
+    """The newest release of every family member, read from the PyPI JSON API."""
+    out = {}
+    for name in FAMILY:
+        with urllib.request.urlopen(f"https://pypi.org/pypi/{name}/json", timeout=30) as resp:
+            out[name] = json.load(resp)["info"]["version"]
+    return out
+
+
+def pinned_specs(latest: dict[str, str]) -> list[str]:
+    """Install specs that hold each member at its latest release, extras kept."""
+    return [f"{spec}=={latest[name]}" for name, (spec, _) in FAMILY.items()]
+
+
 def resolve() -> int:
-    specs = [spec for spec, _ in FAMILY.values()]
+    latest = latest_versions()
+    print("latest on PyPI:", ", ".join(f"{name} {ver}" for name, ver in latest.items()), flush=True)
+    specs = pinned_specs(latest)
     with tempfile.TemporaryDirectory() as tmp:
         venv = Path(tmp, "venv")
         python = venv / "bin" / "python"

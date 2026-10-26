@@ -32,3 +32,11 @@ def test_frozen_interop_experiments_may_pin(tmp_path: Path) -> None:
     d.mkdir(parents=True)
     (d / "pyproject.toml").write_text('[project]\nname="y"\nversion="1"\ndependencies=["agent-evidence-observer==0.1.0"]\n', encoding="utf-8")
     assert fr.lint(tmp_path) == []
+
+
+def test_resolve_pins_every_member_to_its_latest_release() -> None:
+    latest = {name: f"9.{i}.0" for i, name in enumerate(fr.FAMILY)}
+    specs = fr.pinned_specs(latest)
+    assert len(specs) == len(fr.FAMILY)
+    assert all(spec.endswith(f"=={latest[name]}") for spec, name in zip(specs, fr.FAMILY, strict=True))
+    assert "agent-evidence-observer[done,witness]==9.3.0" in specs
