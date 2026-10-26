@@ -7,7 +7,7 @@ from uuid import UUID
 
 PROFILE = "probity-a2a-native-history-boundary-v1"
 SOURCE_HEAD = "52030cf43f2e96d25949952e385e3b73fe93bc2a"
-IMAGE = "public.ecr.aws/docker/library/mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+IMAGE = "mirror.gcr.io/library/mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
 NONCLAIMS = [
     "independent-custody",
     "network-server-process",
