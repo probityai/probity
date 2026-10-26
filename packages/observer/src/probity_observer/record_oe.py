@@ -29,9 +29,13 @@ value as ``witness_scope``.
 
 from __future__ import annotations
 
+import configparser
 import hashlib
 import json
 import math
+import posixpath
+import tomllib
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -45,6 +49,9 @@ OBSERVATION_SCHEMA = "probity-observation/v3"
 WITNESS_SCOPE = "PEER"
 VANTAGE = "independent"
 DEVICE_TREES = ("/dev/", "/proc/", "/sys/")
+# pytest configuration files read from every directory above the workspace only when they
+# carry pytest's section (conftest.py and pytest.ini count by name alone, in the verifier).
+SECTIONED_CONFIG = frozenset({"pyproject.toml", "tox.ini", "setup.cfg"})
 GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt"})
 GRADER_DIRECTORIES = frozenset({"site-packages", "dist-packages", "verifier"})
 # probity-verify's ``grader_path`` agrees: under a scratch root the grader never reads (its
@@ -174,7 +181,56 @@ def location(path: str) -> str:
     return "outside_workspace"
 
 
-def _external(event: strace.Event, workspace: str) -> dict | None:
+def pytest_section(name: str, data: bytes) -> bool:
+    """Whether pytest reads this configuration file: ``[tool.pytest.ini_options]`` (or the
+    native ``[tool.pytest]``) in pyproject.toml, ``[pytest]`` in tox.ini, ``[tool:pytest]`` in
+    setup.cfg. Bytes that do not parse count as a section (pytest would read and fail)."""
+    base = posixpath.basename(name)
+    try:
+        if base == "pyproject.toml":
+            return "pytest" in tomllib.loads(data.decode("utf-8")).get("tool", {})
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read_string(data.decode("utf-8"))
+        return parser.has_section("pytest" if base == "tox.ini" else "tool:pytest")
+    except (UnicodeDecodeError, tomllib.TOMLDecodeError, configparser.Error, AttributeError):
+        return True
+
+
+def ancestor_config_path(event: strace.Event, workspace: str) -> str | None:
+    """The path of a write or create of pyproject.toml, tox.ini or setup.cfg in a directory
+    above the workspace, else ``None``."""
+    path = event.path
+    if (event.kind not in ("write", "create") or not path
+            or posixpath.basename(path) not in SECTIONED_CONFIG):
+        return None
+    head = posixpath.dirname(path)
+    if workspace == head or workspace.startswith(head.rstrip("/") + "/"):
+        return path
+    return None
+
+
+def ancestor_config_paths(events: list[strace.Event], workspace: str) -> list[str]:
+    """Every such path in ``events``, once, in first-seen order: the files the launcher must
+    copy out of the container before it is removed."""
+    found = (ancestor_config_path(event, workspace) for event in events)
+    return list(dict.fromkeys(path for path in found if path is not None))
+
+
+def ancestor_config_facts(event: strace.Event, workspace: str,
+                          read: Callable[[str], bytes | None] | None) -> dict:
+    """For a write or create of pyproject.toml, tox.ini or setup.cfg in a directory above
+    the workspace: its content digest and whether it carries a pytest section, read through
+    ``read`` (the launcher's copy of the container's file). Nothing when the file cannot be
+    read: the verifier then keeps its conservative rule."""
+    path = ancestor_config_path(event, workspace)
+    data = read(path) if read is not None and path is not None else None
+    if data is None:
+        return {}
+    return {"content_sha256": sha256(data), "pytest_section": pytest_section(path, data)}
+
+
+def _external(event: strace.Event, workspace: str,
+              read: Callable[[str], bytes | None] | None = None) -> dict | None:
     """A mutation outside the workspace, as an ``external_mutations`` entry body."""
     if event.kind not in strace.MUTATION_TYPES:
         return None
@@ -185,7 +241,8 @@ def _external(event: strace.Event, workspace: str) -> dict | None:
         return None
     places = {location(path) for path in outside}
     return {"type": event.kind, "paths": outside,
-            "location": "grader_path" if "grader_path" in places else "outside_workspace"}
+            "location": "grader_path" if "grader_path" in places else "outside_workspace",
+            **ancestor_config_facts(event, workspace, read)}
 
 
 def _merge(gaps: list[tuple[int, int, str]]) -> list[dict]:
@@ -263,7 +320,8 @@ def _gaps(context: Context, effects: strace.Effects, trace: strace.Trace,
 
 
 def build(context: Context, effects: strace.Effects, trace: strace.Trace,
-          report: inotify.Report, tree: Tree) -> dict[str, Any]:
+          report: inotify.Report, tree: Tree,
+          read_outside: Callable[[str], bytes | None] | None = None) -> dict[str, Any]:
     """Build the observation, capability, tree and receipt-sensor sections."""
     workspace = context.container_workspace
     start = math.floor(context.started)
@@ -276,7 +334,7 @@ def build(context: Context, effects: strace.Effects, trace: strace.Trace,
         if fields is not None:
             kind = fields.pop("kind", event.kind)
             rows.append((event.time, {"type": kind, **fields}, event, False))
-        if (outside := _external(event, workspace)) is not None:
+        if (outside := _external(event, workspace, read_outside)) is not None:
             rows.append((event.time, outside, event, True))
     for change in unattributed:
         at = 0
