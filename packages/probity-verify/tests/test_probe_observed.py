@@ -57,14 +57,23 @@ class TestContractReader:
             run(tmp_path, records)
 
 
+def without_import_probe(records: dict) -> dict:
+    records["contract"]["acceptance"] = [item for item in records["contract"]["acceptance"]
+                                         if item["id"] != "import_side_effects"]
+    records["grade"]["results"] = [item for item in records["grade"]["results"]
+                                   if item["id"] != "import_side_effects"]
+    return records
+
+
 class TestProbeObserved:
-    def test_every_probe_passed(self, tmp_path, records):
-        result = run(tmp_path, records)
+    def test_every_answer_probe_passed(self, tmp_path, records):
+        result = run(tmp_path, without_import_probe(records))
         assert outcome(result) == ("supported", "probes_passed")
         assert (result["vantage"], result["witness_scope"]) == ("independent", "PEER")
         probes = next(c for c in result["checks"] if c["id"] == "probes")
         assert [item["id"] for item in probes["active"]] == [
-            "visible_determinism", "heldout_type_strict", "import_side_effects"]
+            "visible_determinism", "heldout_type_strict"]
+        assert (probes["status"], probes["unobserved"]) == ("met", [])
 
     def test_no_probes(self, tmp_path):
         result = run(tmp_path, honest_records())
@@ -100,7 +109,10 @@ class TestProbeObserved:
     def test_heldout_probe_inactive_when_a_heldout_command_failed(self, tmp_path, records):
         result_of(records, "heldout-unit")["exit"] = 1
         result_of(records, "heldout_type_strict")["exit"] = 1
-        assert outcome(run(tmp_path, records)) == ("supported", "probes_passed")
+        result = run(tmp_path, without_import_probe(records))
+        assert outcome(result) == ("supported", "probes_passed")
+        probes = next(c for c in result["checks"] if c["id"] == "probes")
+        assert probes["inactive"] == ["heldout_type_strict"]
 
     def test_heldout_failure_leaves_visible_probe_active(self, tmp_path, records):
         result_of(records, "heldout-unit")["exit"] = 1
@@ -259,3 +271,52 @@ class TestVisibleDetectorsOnIntegrity:
         records["grade"]["visible_detectors"] = {"status": "ok",
                                                  "findings": [finding("isolated_branch")]}
         assert run(tmp_path, records)["reason"] == "isolated_branch"
+
+
+class TestImportProbeReportedInProcess:
+    """The import probe's "no change seen" comes from the candidate's own process, after its
+    code has run there: the code can forge that report and silence the genuine one (oracle
+    round 1, Kimi A10: a forged report, then the protocol descriptor redirected or closed).
+    Its exit zero is open, never a pass."""
+
+    def test_an_import_probe_pass_is_open_not_supported(self, tmp_path, records):
+        # The grade a forged report produces: every command passed, the import probe too.
+        result = run(tmp_path, records)
+        assert outcome(result) == ("not_established", "probe_import_unobserved")
+        assert result["vantage"] == "unestablished"
+        probes = next(c for c in result["checks"] if c["id"] == "probes")
+        assert (probes["status"], probes["unobserved"]) == ("unavailable",
+                                                            ["import_side_effects"])
+        assert [item["id"] for item in probes["active"]] == [
+            "visible_determinism", "heldout_type_strict", "import_side_effects"]
+
+    def test_the_import_pass_alone_is_open(self, tmp_path):
+        records = honest_records()
+        records["contract"]["acceptance"].append(
+            {"id": "import_side_effects", "argv": IMPORTS, "probe": "import_side_effects"})
+        records["grade"]["results"].append(
+            {"id": "import_side_effects", "argv": IMPORTS, "exit": 0})
+        assert outcome(run(tmp_path, records)) == ("not_established", "probe_import_unobserved")
+
+    def test_a_change_the_probe_saw_still_contradicts(self, tmp_path, records):
+        result_of(records, "import_side_effects").update(exit=1, failure_kind="assertion")
+        assert outcome(run(tmp_path, records)) == ("contradicted",
+                                                   "probe_import_side_effects_failed")
+
+    def test_an_answered_failure_outranks_the_open_import_probe(self, tmp_path, records):
+        result_of(records, "visible_determinism")["exit"] = 1
+        assert run(tmp_path, records)["reason"] == "probe_determinism_failed"
+
+    def test_a_timeout_names_itself_before_the_open_import_probe(self, tmp_path, records):
+        result_of(records, "heldout_type_strict").update(exit=124, timed_out=True)
+        assert outcome(run(tmp_path, records)) == ("not_established", "probe_timed_out")
+
+    def test_an_inactive_import_pass_leaves_the_outcome_to_decide(self, tmp_path, records):
+        # A failing visible split gates the import probe that saw no change, as before.
+        result_of(records, "unit")["exit"] = 1
+        result_of(records, "visible_determinism")["exit"] = 1
+        result = run(tmp_path, records)
+        assert outcome(result) == ("supported", "probes_passed")
+        probes = next(c for c in result["checks"] if c["id"] == "probes")
+        assert probes["inactive"] == ["visible_determinism", "import_side_effects"]
+        assert probes["unobserved"] == []
