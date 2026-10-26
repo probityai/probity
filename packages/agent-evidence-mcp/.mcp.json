@@ -2,7 +2,7 @@
   "mcpServers": {
     "agent-evidence": {
       "command": "uvx",
-      "args": ["agent-evidence-mcp@0.2.2"]
+      "args": ["agent-evidence-mcp@0.2.3"]
     }
   }
 }
