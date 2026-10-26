@@ -168,6 +168,8 @@ def _argv(value: Any, label: str) -> list[str]:
     if (not isinstance(value, list) or not value
             or any(not isinstance(item, str) for item in value) or not value[0]):
         raise CaseError(f"{label}: expected a nonempty list of strings")
+    if "=" in value[0]:
+        raise CaseError(f"{label}: program name must not be an environment assignment")
     return value
 
 
