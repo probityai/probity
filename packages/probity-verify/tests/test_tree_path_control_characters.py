@@ -9,14 +9,13 @@ def _sha(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def test_two_files_and_one_newline_file_would_collide_without_the_check():
+def test_the_digest_listing_alone_cannot_tell_two_files_from_one_newline_file():
     a, b = _sha("a"), _sha("b")
     two = {"a": a, "b": b}
     one = {f"a\n{b}  b": a}
-    # Both listings read "<a>  a\n<b>  b\n" except for the file name; the collision needs a forged digest line.
-    forged = {f"a\n{b}  b": a}
-    assert tree_digest({"a": a, "b": b}) == tree_digest({"a": a, "b": b})
-    assert one == forged and two != one
+    assert tree_digest(two) == tree_digest(one)
+    with pytest.raises(CaseError):
+        path(f"a\n{b}  b", "tree.files")
 
 
 @pytest.mark.parametrize("name", ["a\nb", "a\rb", "a\tb", "a\x7fb", "dir/x\ny"])
