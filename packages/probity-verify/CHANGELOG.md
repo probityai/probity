@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `agent-evidence-vocabulary` is now a compatible-release range (`~=0.7.0`) instead of an exact pin, so the
+  verifier installs beside the other packages of the family. 0.2.0 pinned `agent-evidence-vocabulary==0.5.0`, which
+  no other current release of the family could share.
+
 - Eight more done-check vectors (32 in all): a pytest run's own test cache between two runs, an
   agent-made directory on the import path, the shadow rule without a contract, and a held-out or visible
   command stopped at its limit.

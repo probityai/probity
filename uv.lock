@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -46,11 +46,11 @@ http-server = [
 
 [[package]]
 name = "agent-evidence-vocabulary"
-version = "0.5.0"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/aa/f1/b9089543416945181727b950e89ca381be13e85dcf94ba18b61b3c388e8d/agent_evidence_vocabulary-0.5.0.tar.gz", hash = "sha256:dfdb0d011ac9e9b3c476c3d2173a36e7a6cfac664a0c14a9a5dd5da045975337", size = 34321, upload-time = "2026-10-16T22:29:16.015Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/32/e3/74d74f681b6b23558d82182613c27fb9107bd5f533afda0bedfe134373b6/agent_evidence_vocabulary-0.7.0.tar.gz", hash = "sha256:9ae61b19a0ca50664292c4e284a4f178ad61791f03d3cd75b5733e026c1734b8", size = 39050, upload-time = "2026-10-25T10:22:54.101Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/29/d2/2fd8f30fcce983a6a796d7859bb025c99da347b7409ed1f007939c6e9497/agent_evidence_vocabulary-0.5.0-py3-none-any.whl", hash = "sha256:0d46b62e0ebe20345b89838cb75d4369d59d12b8c064fba1d575a7b2270fa338", size = 35560, upload-time = "2026-10-16T22:29:14.679Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/7b/01e9aaf0979da64d2387daed7afe417602aa4ae1e1894aa9d7464a8c9fed/agent_evidence_vocabulary-0.7.0-py3-none-any.whl", hash = "sha256:413820e672a8741466c3ab2900a02b9474f0dd895c7ac9844927c60094d54b85", size = 40311, upload-time = "2026-10-25T10:22:52.777Z" },
 ]
 
 [[package]]
@@ -669,7 +669,7 @@ wheels = [
 
 [[package]]
 name = "probity-verify"
-version = "0.2.0"
+version = "0.2.1"
 source = { editable = "packages/probity-verify" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
@@ -690,7 +690,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = "==1.2.2" },
-    { name = "agent-evidence-vocabulary", specifier = "==0.5.0" },
+    { name = "agent-evidence-vocabulary", specifier = "~=0.7.0" },
     { name = "cryptography", specifier = ">=50.0.2,<51" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6,<7" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
