@@ -1,4 +1,4 @@
-"""``probity done``: seal a definition of done, run an agent, and check its claim from outside.
+"""``probityai done``: seal a definition of done, run an agent, and check its claim from outside.
 
 The package writes the five record formats ``probity-verify`` reads (``docs/done-receipt.md``
 there): the done contract, the tree, the observation, the acceptance grade and the tool claims.

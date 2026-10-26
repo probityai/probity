@@ -55,13 +55,13 @@ passages are material or that the report is otherwise complete.
 
 ## Signed bundles
 
-`probity verify` reads its first argument as a probity case or as a DSSE
+`probityai verify` reads its first argument as a probity case or as a DSSE
 envelope. It decides the type from the JSON members. For an envelope, give the
 case the payload belongs to and one or more trusted Ed25519 public keys (raw
 32 bytes or PEM):
 
 ```sh
-uv run probity verify examples/dsse-bundle/valid.dsse.json \
+uv run probityai verify examples/dsse-bundle/valid.dsse.json \
   --case examples/done-receipt/honest/receipt.case.json \
   --policy examples/done-receipt/honest/receipt.policy.json \
   --key examples/dsse-bundle/signer.pub

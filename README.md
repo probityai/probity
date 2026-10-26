@@ -42,7 +42,7 @@ A selected passage is in the source capture but missing from the stored report. 
 | [packages/probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` for a claim against pinned bytes | 0.1.1 on PyPI |
 | [packages/observer](packages/observer/README.md) | records what an agent run did into pinned evidence the verifier can check | 0.1.0 on PyPI (`agent-evidence-observer`) |
 | [packages/ratchet](packages/ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | 0.2.0 on PyPI (`probity-ratchet`) |
-| [packages/probityai](packages/probityai/README.md) | the `probity` command; `probity verify` today, each member adds its own subcommand | not yet released |
+| [packages/probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today, each member adds its own subcommand | not yet released |
 
 ## Work on the repository
 
@@ -56,7 +56,7 @@ uv run python -m pytest
 | page | read it for |
 | --- | --- |
 | [probity-verify](packages/probity-verify/README.md) | the verifier, its adapters and its recipes |
-| [Repository layout](docs/architecture/MONOREPO.md) | the workspace, the `probity` command seam, CI and releases |
+| [Repository layout](docs/architecture/MONOREPO.md) | the workspace, the `probityai` command seam, CI and releases |
 | [Agent instructions](AGENTS.md) | commands to run before a change |
 | [Contributing](CONTRIBUTING.md) | reporting a problem and opening a pull request |
 
