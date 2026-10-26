@@ -165,3 +165,13 @@ def command(identity: Identity, *, name: str, workspace: str, agent_argv: list[s
 def kill(process: subprocess.Popen) -> None:
     """Stop a running launch by signalling the apptainer process tree."""
     process.kill()
+
+
+def collect_outside(name: str, paths: list[str], into: Path) -> dict[str, bytes]:
+    """Nothing is copied out: the image is read-only, so an agent cannot write above the
+    workspace, and the verifier keeps its conservative rule for any such record."""
+    return {}
+
+
+def discard(name: str) -> None:
+    """Nothing to remove: the container leaves no state behind."""

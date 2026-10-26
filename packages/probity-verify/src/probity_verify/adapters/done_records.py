@@ -48,6 +48,10 @@ SYSTEM_ROOTS = ("/etc/", "/usr/", "/lib/", "/lib64/", "/bin/", "/sbin/", "/opt/"
 # Files pytest reads from the workspace and from every directory above it, with no flag.
 ANCESTOR_CONFIG = frozenset({"conftest.py", "pytest.ini", "pyproject.toml", "tox.ini",
                              "setup.cfg"})
+# Of those, the ones pytest reads only when they carry its section. The observer records,
+# for an outside write to one of them in a workspace ancestor, the content digest and whether
+# a pytest section is present (``pytest_section``); an absent field keeps the conservative rule.
+SECTIONED_CONFIG = frozenset({"pyproject.toml", "tox.ini", "setup.cfg"})
 # Never a whole execution-surface entry: each holds or is shared with honest scratch space.
 SURFACE_FORBIDDEN = frozenset({"/", "/tmp", "/var/tmp"})
 ALIAS_HOPS = 40
@@ -522,7 +526,16 @@ def _event(item: Any, index: int, exec_ids: set[str]) -> dict:
 def _external(item: Any, index: int, exec_ids: set[str], root: str) -> dict:
     label = f"external_mutations[{index}]"
     entry = _object(item, label, {"id", "step", "time", "type", "paths", "location"},
-                    {"origin"})
+                    {"origin", "content_sha256", "pytest_section"})
+    if "pytest_section" in entry and not isinstance(entry["pytest_section"], bool):
+        raise CaseError(f"{label}.pytest_section: expected a boolean")
+    if "content_sha256" in entry and not (isinstance(entry["content_sha256"], str)
+                                          and len(entry["content_sha256"]) == 64
+                                          and all(c in "0123456789abcdef"
+                                                  for c in entry["content_sha256"])):
+        raise CaseError(f"{label}.content_sha256: expected a lowercase SHA-256 hex digest")
+    if ("pytest_section" in entry) != ("content_sha256" in entry):
+        raise CaseError(f"{label}: pytest_section and content_sha256 come together")
     _string(entry["id"], f"{label}.id")
     _count(entry["step"], f"{label}.step")
     _choice(entry["type"], f"{label}.type", tuple(sorted(MUTATION_TYPES)))
@@ -645,8 +658,19 @@ def external_grader_effects(record: dict) -> list[str]:
     root = record["workspace_root"]
     return [entry["id"] for entry in record["external_mutations"]
             if entry["location"] == "grader_path"
-            or any(grader_path(name) or ancestor_config(name, root) or under(root, name)
+            or any(grader_path(name) or (ancestor_config(name, root)
+                                         and not sectionless_write(entry, name))
+                   or under(root, name)
                    for name in entry["paths"])]
+
+
+def sectionless_write(entry: dict, name: str) -> bool:
+    """A write or create of pyproject.toml, tox.ini or setup.cfg whose recorded content has no
+    pytest section: pytest does not read it. Any other kind (a rename or unlink can remove a
+    sectioned file), a conftest.py or pytest.ini, or a record without the field stays a
+    contradiction."""
+    return (entry.get("pytest_section") is False and entry["type"] in ("write", "create")
+            and posixpath.basename(name) in SECTIONED_CONFIG)
 
 
 def _result(item: Any, label: str) -> dict:

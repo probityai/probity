@@ -18,6 +18,8 @@ tracer's version.
 
 from __future__ import annotations
 
+import os
+import stat
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -80,8 +82,11 @@ def preflight(image: str, docker: str = "docker") -> Identity:
 
 def command(identity: Identity, *, name: str, workspace: str, agent_argv: list[str],
             env: dict[str, str], uid: int, network: bool, docker: str = "docker") -> list[str]:
-    """The full ``docker run`` argv; it is part of the launch digest."""
-    argv = [docker, "run", "--rm", "--name", name, "--network", "bridge" if network else "none",
+    """The full ``docker run`` argv; it is part of the launch digest.
+
+    The container is not removed on exit (no ``--rm``): the launcher copies out the files the
+    agent wrote above the workspace with :func:`collect_outside`, then calls :func:`discard`."""
+    argv = [docker, "run", "--name", name, "--network", "bridge" if network else "none",
             "--cap-drop", "ALL"]
     for capability in CAPABILITIES:
         argv += ["--cap-add", capability]
@@ -98,3 +103,44 @@ def command(identity: Identity, *, name: str, workspace: str, agent_argv: list[s
 def kill(name: str, docker: str = "docker") -> None:
     """Stop a running launch; the tracer dies with the container."""
     subprocess.run([docker, "kill", name], capture_output=True, check=False)
+
+
+MAX_OUTSIDE_BYTES = 1 << 20
+
+
+def collect_outside(name: str, paths: list[str], into: Path,
+                    docker: str = "docker") -> dict[str, bytes]:
+    """Bytes of files the stopped container holds at ``paths``, keyed by container path.
+
+    A path that cannot be copied, is not a regular file (a symbolic link is refused, never
+    followed onto the host), or is over :data:`MAX_OUTSIDE_BYTES` is left out: the verifier
+    then keeps its conservative rule for it."""
+    found: dict[str, bytes] = {}
+    if not paths:
+        return found
+    into.mkdir(parents=True, exist_ok=True)
+    for index, path in enumerate(paths):
+        target = into / str(index)
+        target.mkdir(exist_ok=True)
+        done = subprocess.run([docker, "cp", f"{name}:{path}", str(target / "file")],
+                              capture_output=True, check=False)
+        copy = target / "file"
+        if done.returncode != 0:
+            continue
+        try:
+            if not stat.S_ISREG(os.lstat(copy).st_mode):
+                continue
+            descriptor = os.open(copy, os.O_RDONLY | os.O_NOFOLLOW)
+            with os.fdopen(descriptor, "rb") as handle:
+                data = handle.read(MAX_OUTSIDE_BYTES + 1)
+        except OSError:
+            continue
+        if len(data) <= MAX_OUTSIDE_BYTES:
+            found[path] = data
+    return found
+
+
+def discard(name: str, docker: str = "docker") -> None:
+    """Remove the stopped container."""
+    subprocess.run([docker, "rm", "--force", "--volumes", name], capture_output=True,
+                   check=False)

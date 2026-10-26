@@ -85,6 +85,8 @@ class DockerRunner:
                 "--ulimit", "core=0", "--user", f"{self.worker_uid}:{self.worker_uid}"]
 
     def command(self, name: str, scratch: Path, argv: Sequence[str], heldout: bool) -> list[str]:
+        if argv and "=" in argv[0]:
+            raise GradeError("acceptance program name must not be an environment assignment")
         command = [self.docker, "run", "-i", "--rm", "--name", name, *self.flags(),
                    "--volume", f"{scratch / 'workspace'}:/workspace"]
         if heldout:
@@ -473,11 +475,11 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
     alone = worker_counted(commands)
     graded = [item for item in commands if not _beside(item, alone)]
     agent_runs = len(graded) != len(commands)
-    python_isolated = all(item["argv"][0] != "python" or bool({"-I", "-P"} & set(item["argv"]))
-                          for item in graded)
+    python_isolated = all(not os.path.basename(item["argv"][0]).startswith("python")
+                          or bool({"-I", "-P"} & set(item["argv"])) for item in graded)
     # A replay holds every assertion in the verifier's own process and receives only plain
     # data from the candidate; any other command's result is an exit status the worker sets.
-    replayed = all(is_replay(item["argv"]) for item in graded)
+    replayed = bool(graded) and all(is_replay(item["argv"]) for item in graded)
     report: dict[str, Any] = {
         "contract_sha256": contract_sha256,
         "trusted_tree": {"expected_sha256": trusted[0], "measured_sha256": trusted[1],
