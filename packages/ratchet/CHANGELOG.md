@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 (2026-10-26)
+
+The in-family dependencies are compatible-release ranges instead of exact pins, so the family installs together at
+its latest releases: `probity-verify~=0.2.1`, `agent-evidence-vectors~=0.26.0`, `jcs-admit~=0.1.0` and
+`probity-ratchet-cases~=0.2.0`. The lock moves to probity-verify 0.2.1 and agent-evidence-vectors 0.26.0, and the
+dependency test now holds the lock to the ranges. 0.2.0 pinned these four exactly, at versions
+no current release of the other packages could share.
+
 ## 0.2.0 (2026-10-20)
 
 Hardening of what a receipt rests on: canonical bytes, signatures, the admission rule's statistics and the
