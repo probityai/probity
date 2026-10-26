@@ -324,7 +324,7 @@ def test_probity_done_verify_runs_the_shared_verifier(tmp_path, keys, capsys, mo
 
     import probity_verify.core
     monkeypatch.setitem(sys.modules, "probityai.cli", umbrella_cli())
-    top = argparse.ArgumentParser(prog="probity")
+    top = argparse.ArgumentParser(prog="probityai")
     cli.register(top.add_subparsers())
     calls = []
 

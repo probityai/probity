@@ -1,4 +1,4 @@
-"""Tests for subcommand registration and dispatch in the probity launcher."""
+"""Tests for subcommand registration and dispatch in the probityai launcher."""
 
 from __future__ import annotations
 
@@ -118,7 +118,7 @@ def test_a_plugin_whose_register_raises_is_reported(monkeypatch, capsys):
 def test_version_reports_the_installed_distribution(capsys):
     with pytest.raises(SystemExit):
         main(["--version"], points=[])
-    assert capsys.readouterr().out.startswith("probity 0.1.0")
+    assert capsys.readouterr().out.startswith("probityai 0.1.0")
 
 
 def test_installed_probity_verify_registers_verify():
@@ -143,7 +143,7 @@ def test_probity_verify_runs_the_installed_verifier(tmp_path, capsys):
 def test_probity_verify_errors_carry_the_subcommand_program_name(tmp_path, capsys):
     status = main(["verify", str(tmp_path / "missing.json"), "--policy", str(tmp_path / "missing.json")])
     assert status == 2
-    assert capsys.readouterr().err.startswith("probity verify: ")
+    assert capsys.readouterr().err.startswith("probityai verify: ")
 
 
 _DONE = Path(__file__).resolve().parents[2] / "probity-verify/examples/done-receipt"
@@ -161,3 +161,11 @@ def test_probity_verify_checks_a_done_receipt(capsys, example, decision, reason)
     result = json.loads(capsys.readouterr().out)
     assert result["claim_type"] == "done_receipt/v2"
     assert (result["decision"], result["reason"]) == (decision, reason)
+
+
+def test_the_distribution_installs_one_command_named_probityai():
+    """The binary is the word the user typed to install it, with no second name (no alias)."""
+    from importlib.metadata import distribution
+
+    scripts = {ep.name for ep in distribution("probityai").entry_points if ep.group == "console_scripts"}
+    assert scripts == {"probityai"}

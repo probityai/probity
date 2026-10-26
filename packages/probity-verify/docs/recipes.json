@@ -169,8 +169,8 @@
     },
     {
       "path": "src/probity_verify/cli.py",
-      "bytes": 4655,
-      "sha256": "33a052a719d42ad27ec9f8300a01907af1eda76b470413836fbade7c87227a9f"
+      "bytes": 4657,
+      "sha256": "199868a4c04e0924b967a39190e00803e50eb16e82df18bb0a6524c7cc684621"
     },
     {
       "path": "src/probity_verify/common.py",
@@ -184,8 +184,8 @@
     },
     {
       "path": "src/probity_verify/dsse.py",
-      "bytes": 8197,
-      "sha256": "1cff084de344d3dd642597418d4f45c34425350e6740504522941d3aed0b6e51"
+      "bytes": 8199,
+      "sha256": "21c377c84014b9155974c32ece782430096c7944f538313fe7038566da7f8f5d"
     },
     {
       "path": "src/probity_verify/index.py",

@@ -205,7 +205,7 @@ def parser() -> argparse.ArgumentParser:
 
 def add_commands(sub) -> None:
     """Add ``keygen``, ``contract``, ``run`` and ``verify`` to a subparsers object: the
-    standalone ``probity-done`` command line and ``probity done`` share these parsers."""
+    standalone ``probity-done`` command line and ``probityai done`` share these parsers."""
     keygen = sub.add_parser("keygen", help="write a new Ed25519 seed file and print its key")
     keygen.add_argument("path")
     keygen.set_defaults(func=cmd_keygen)
@@ -296,9 +296,9 @@ SUMMARY = "seal a done contract, run the bounded loop, and re-check a done recei
 
 
 def register(subparsers) -> None:
-    """Add ``done`` to the ``probity`` command line (entry point ``probityai.cli_subcommands``).
+    """Add ``done`` to the ``probityai`` command line (entry point ``probityai.cli_subcommands``).
 
-    ``probity done verify`` is the same handler as ``probity-done verify``: it opens the
+    ``probityai done verify`` is the same handler as ``probity-done verify``: it opens the
     signed records and gets every check's decision from probity-verify's ``adjudicate``.
     """
     from probityai.cli import register_leaf  # only the probity launcher calls this, so it is installed

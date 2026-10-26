@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "probityai"
 version = "0.1.0"
-description = "The probity command: one entry point for the evidence tools"
+description = "The probityai command: verify agent evidence offline, one entry point for the evidence tools"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
@@ -33,7 +33,7 @@ Issues = "https://github.com/probityai/probity/issues"
 test = ["pytest>=8,<10"]
 
 [project.scripts]
-probity = "probityai.cli:main"
+probityai = "probityai.cli:main"
 
 [tool.uv.sources]
 probity-verify = { workspace = true }
