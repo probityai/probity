@@ -7,15 +7,15 @@ Record brokered agent writes and check selected native framework reports offline
 
 Use it in agent harnesses and evaluation pipelines that need replayable action records or a consumer gate for retained reports.
 
-Install the root package: `pip install agent-evidence-observer==0.1.0`.
+Install the root package: `pip install agent-evidence-observer==0.1.1`.
 
 ## Quick start
 
 Run the demo from the released package. You need Python 3.12 or later and [`uv`](https://docs.astral.sh/uv/); there is nothing to clone.
 
 ```sh
-uvx agent-evidence-observer==0.1.0 demo ./sample-run
-uvx agent-evidence-observer==0.1.0 verify ./sample-run
+uvx agent-evidence-observer==0.1.1 demo ./sample-run
+uvx agent-evidence-observer==0.1.1 verify ./sample-run
 ```
 
 The two commands print:
@@ -32,7 +32,7 @@ To run from a pinned source checkout instead, see [Run the source quick start](h
 
 ## Status
 
-The root distribution is version 0.1.0. Every record says `witnessScope: PEER`: the witness key runs on the same
+The root distribution is version 0.1.1. Every record says `witnessScope: PEER`: the witness key runs on the same
 host under the same operator, so the records show what this broker saw, not what an independent
 observer saw. Linux runs can launch a fixed probe, or a Python script given to `run-workload`, under
 bubblewrap with only the broker's socket exposed. `launch-agent` runs an unmodified agent in docker or
