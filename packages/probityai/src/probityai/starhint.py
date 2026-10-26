@@ -16,13 +16,13 @@ from pathlib import Path
 from typing import TextIO
 
 REPO = "probityai/probity"
-OPT_OUT = "PROBITY_NO_STAR_HINT"
-_FLAG_NAME = "star-hint-shown-probity"
+OPT_OUT = "PROBITYAI_NO_STAR_HINT"
+_FLAG_NAME = "star-hint-shown"
 
 
 def _flag_path(env: Mapping[str, str]) -> Path:
     base = env.get("XDG_STATE_HOME") or str(Path(env.get("HOME") or Path.home()) / ".local" / "state")
-    return Path(base) / "probity" / _FLAG_NAME
+    return Path(base) / "probityai" / _FLAG_NAME
 
 
 def _quiet(argv: Sequence[str], env: Mapping[str, str], stream: TextIO) -> bool:

@@ -1,4 +1,4 @@
-"""The ``probity`` command line and its subcommand seam."""
+"""The ``probityai`` command line and its subcommand seam."""
 
 from .cli import GROUP, PluginError, main, register_leaf
 
