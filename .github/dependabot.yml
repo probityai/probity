@@ -26,3 +26,7 @@ updates:
     directory: /packages/observer
     schedule:
       interval: weekly
+  - package-ecosystem: uv
+    directory: /examples/checkout-runner
+    schedule:
+      interval: weekly
