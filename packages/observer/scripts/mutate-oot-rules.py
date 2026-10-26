@@ -22,7 +22,7 @@ STRACE = ROOT / "sensors" / "strace.py"
 TESTS = ["tests/done/test_out_of_tree_seal.py"]
 MUTANTS = [
     # The replay's failure kind.
-    (REPLAY, '        return "assertion" if failure == "builtins changed on import" else "candidate"',
+    (REPLAY, '        return "assertion" if failure in IMPORT_FAILURES else "candidate"',
      '        return "assertion"'),
     (REPLAY, 'if failure.startswith("assertion") and not result.get("impure") and not result.get(',
      'if failure.startswith("assertion") and not result.get('),

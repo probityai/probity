@@ -23,6 +23,9 @@ def checkout(name: str, component: dict[str, Any], root: Path, logs: Path) -> No
     target = root / name
     commands = [
         ["git", "clone", "--quiet", "https://github.com/" + component["repository"] + ".git", str(target)],
+        # A selected head may now sit only behind a closed pull request after a
+        # history rewrite, where a plain clone no longer carries it.
+        ["git", "-C", str(target), "fetch", "--quiet", "origin", component["head"]],
         ["git", "-C", str(target), "checkout", "--detach", component["head"]],
     ]
     for index, command in enumerate(commands):
