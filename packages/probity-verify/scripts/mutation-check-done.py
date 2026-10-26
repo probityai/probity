@@ -602,7 +602,7 @@ MUTATIONS = [
      ("            if entry[\"type\"] != \"unlink\"\n"
       "            and any(on_surface(name, entries, aliases) for name in entry[\"paths\"])]")),
     ("R2 records: pytest configuration above the workspace ignored", RECORDS, TAMPER,
-     " or ancestor_config(name, root)", ""),
+     "(ancestor_config(name, root)\n", "(False\n"),
     ("R2 records: pytest configuration anywhere read as above the workspace", RECORDS, TAMPER,
      "return base in ANCESTOR_CONFIG and under(root, head)", "return base in ANCESTOR_CONFIG"),
     ("R3 claims: a surface write before the run not a shadow", CLAIMS[0], TAMPER,
