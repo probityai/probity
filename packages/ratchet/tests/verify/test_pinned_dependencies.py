@@ -16,9 +16,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from agent_evidence_vectors.run_vectors import main as vectors_main  # type: ignore[import-untyped]
 from packaging.requirements import Requirement
 from packaging.version import Version
-from agent_evidence_vectors.run_vectors import main as vectors_main  # type: ignore[import-untyped]
 
 ROOT = Path(__file__).resolve().parents[2]
 PYPI = {"registry": "https://pypi.org/simple"}
@@ -31,7 +31,8 @@ def requirement(name: str) -> Requirement:
     assert len(named) == 1, f"{name} must appear once in [project].dependencies, found {named}"
     req = Requirement(named[0])
     assert re.fullmatch(r"~=[0-9]+\.[0-9]+\.[0-9]+", str(req.specifier)), (
-        f"{name} must take a compatible release (~=X.Y.Z), found {named[0]!r}")
+        f"{name} must take a compatible release (~=X.Y.Z), found {named[0]!r}"
+    )
     return req
 
 
@@ -42,7 +43,8 @@ def locked(name: str) -> dict[str, Any]:
     assert len(entries) == 1, f"uv.lock must hold one {name}, found {len(entries)}"
     (entry,) = entries
     assert requirement(name).specifier.contains(Version(entry["version"])), (
-        f"uv.lock holds {name} {entry['version']}, outside {requirement(name).specifier}")
+        f"uv.lock holds {name} {entry['version']}, outside {requirement(name).specifier}"
+    )
     return entry
 
 
@@ -84,8 +86,13 @@ def test_jcs_admit_is_the_hash_pinned_release_from_pypi() -> None:
     assert "JCS_ADMIT_COMMIT" not in dockerfile and "rustup" not in dockerfile
 
 
-@pytest.mark.parametrize("name", ["probity-verify", "agent-evidence-vectors", "jcs-admit"])
-def test_a_range_the_lock_falls_outside_fails(name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+FAMILY = ["probity-verify", "agent-evidence-vectors", "jcs-admit"]
+
+
+@pytest.mark.parametrize("name", FAMILY)
+def test_a_range_the_lock_falls_outside_fails(
+    name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A manifest range that moved without the lock (or the reverse) is refused, not read past."""
     manifest = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     old = f'"{name}{requirement(name).specifier}"'
@@ -96,8 +103,10 @@ def test_a_range_the_lock_falls_outside_fails(name: str, tmp_path: Path, monkeyp
         locked(name)
 
 
-@pytest.mark.parametrize("name", ["probity-verify", "agent-evidence-vectors", "jcs-admit", "probity-ratchet-cases"])
-def test_an_exact_in_family_pin_is_refused(name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("name", [*FAMILY, "probity-ratchet-cases"])
+def test_an_exact_in_family_pin_is_refused(
+    name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The family installs together only while no member pins another exactly."""
     manifest = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     old = f'"{name}{requirement(name).specifier}"'
