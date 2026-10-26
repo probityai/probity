@@ -2,10 +2,10 @@ a2a-sdk==1.1.4
 aiologic==0.17.1
 annotated-types==0.8.0
 anyio==4.15.1
-certifi==2026.7.22
+certifi==2026.10.23
 cffi==2.1.1
 charset-normalizer==3.5.2
-cryptography==46.0.7
+cryptography==50.0.2
 culsans==0.11.0
 dunamai==1.26.2
 fast-depends==3.0.9
@@ -24,7 +24,7 @@ iniconfig==2.3.0
 Jinja2==3.1.6
 json-rpc==1.15.0
 MarkupSafe==3.0.4
-opentelemetry-api==1.45.0
+opentelemetry-api==1.45.1
 packaging==26.3
 pathspec==1.1.1
 pip==26.2.1
