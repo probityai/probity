@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def register(subparsers) -> None:
-    """Add ``verify`` to the ``probity`` command line (entry point ``probityai.cli_subcommands``)."""
+    """Add ``verify`` to the ``probityai`` command line (entry point ``probityai.cli_subcommands``)."""
     from probityai.cli import (
         register_leaf,  # only the probity launcher calls this, so it is installed
     )

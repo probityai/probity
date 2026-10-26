@@ -1,4 +1,4 @@
-"""``probity verify`` on a DSSE envelope: signature first, then the claim in its payload.
+"""``probityai verify`` on a DSSE envelope: signature first, then the claim in its payload.
 
 ``data/dsse_cross_lang_signing.json`` is copied from probityai/dsse at fdec7b9
 (``vectors/cross_lang_signing.json``); the reference Go implementation made it.
