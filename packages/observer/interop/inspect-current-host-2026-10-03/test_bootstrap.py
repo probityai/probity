@@ -121,7 +121,7 @@ def test_native_version_and_source_are_authenticated_before_import():
     "key,wrong,label",
     [
         ("python", "3.12.13", "python_version"),
-        ("observer_version", "0.1.0", "package_versions"),
+        ("observer_version", "0.1.1", "package_versions"),
         ("reader_version", "0.0.2", "package_versions"),
         ("observer_modules", {}, "observer_module_population"),
         ("adapter_sha256", "0" * 64, "adapter_digest"),
