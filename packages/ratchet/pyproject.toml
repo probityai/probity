@@ -50,7 +50,7 @@ bench = [
     # the transfer driver persists its runs in Atlas
     "pymongo>=4.10",
     "agentdojo==0.1.35",
-    "litellm==1.106.2",
+    "litellm==1.106.4",
     "terminal-bench==0.2.18",
     "tau-bench",
     "tool-sandbox",
@@ -117,8 +117,12 @@ tool-sandbox = { git = "https://github.com/apple/ToolSandbox", rev = "c8571d7854
 
 [tool.uv]
 # tau2-bench caps litellm below 1.82.7 only to keep out the two compromised PyPI releases (1.82.7, 1.82.8;
-# tau2-bench commit e40aba6). The bench extra already pins litellm 1.102.1, a later clean release.
-override-dependencies = ["litellm==1.106.2"]
+# tau2-bench commit e40aba6). The bench extra already pins litellm 1.106.4, a later clean release.
+# litellm (every release through 1.106.4) declares filelock<4.0, which keeps filelock on 3.x and three open
+# advisories. litellm calls only FileLock(path, timeout=, mode=) in its proxy CLI, an interface filelock 4.x
+# keeps, and filelock 4.0 changed only SoftReadWriteLock, which litellm does not use. The override lifts the
+# cap here; drop it once litellm lifts the cap upstream (BerriAI/litellm#48394).
+override-dependencies = ["litellm==1.106.4", "filelock>=4.2.1"]
 
 [[tool.uv.dependency-metadata]]
 # The tool-sandbox package pins every dependency exactly (pydantic 2.7.4 conflicts with raindrop-ai, which needs
