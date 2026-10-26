@@ -364,6 +364,10 @@ ISOLATION_ERRORS = frozenset({
     "ConnectionAbortedError", "BrokenPipeError", "TimeoutError", "InterruptedError",
     "ChildProcessError", "ProcessLookupError", "ImportError", "ModuleNotFoundError",
     "RecursionError", "MemoryError", "KeyboardInterrupt"})
+# The import probe's own findings: the module changed ``builtins``, or wrote a report the
+# child did not send.
+PROTOCOL_FORGED = "report written on the protocol descriptor"
+IMPORT_FAILURES = frozenset({"builtins changed on import", PROTOCOL_FORGED})
 # Child errors that are the protocol's, not an exception the candidate raised.
 PROTOCOL_ERRORS = frozenset({"child-timeout", "child-pipes", "child-protocol", "unplain"})
 
@@ -384,7 +388,7 @@ def failure_kind(result: dict[str, Any]) -> str | None:
         return None
     failure = result.get("failure") or ""
     if result.get("mode") == "import_side_effects":
-        return "assertion" if failure == "builtins changed on import" else "candidate"
+        return "assertion" if failure in IMPORT_FAILURES else "candidate"
     if result.get("mode", "assert") != "assert" or result.get("timed_out"):
         return "candidate"
     if failure.startswith("assertion") and not result.get("impure") and not result.get(
@@ -530,10 +534,28 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
 
     The child reports ``builtins`` before the import (before any module code has run) and
     after it; the report after the import comes from a process the module's code has run in.
+    A change seen, or a line the child did not send, fails the probe on its comparison. No
+    change seen passes here, but the module can forge that report and redirect or close the
+    descriptor, so probity-verify reads that pass as open (``probe_import_unobserved``).
     """
     with Child(request["child_argv"], request.get("child_cwd"),
                float(request["call_timeout"])) as child:
         before, after = child.read(), child.read()
+        # The child sends nothing more until it is called. With its input closed it exits, so
+        # any line after the second report was written by the candidate's code on the protocol
+        # descriptor (a forged report ahead of the genuine one, which then arrives late).
+        if child.process.stdin is not None:
+            try:
+                child.process.stdin.close()
+            except OSError:
+                pass
+        extra = 0
+        while child.read().get("error") not in ("child-exited", "child-pipes", "child-timeout"):
+            extra += 1
+    if extra:
+        return {"passed": False, "failure": PROTOCOL_FORGED, "mode": "import_side_effects",
+                "builtins": {"extra_reports": extra}, "calls_intercepted": 0,
+                "distinct_calls": 0, "evidence_from_worker": ["builtins_after_import"]}
     if "builtins" not in before or "builtins" not in after:
         return {"passed": False, "failure": "no builtins report", "mode": "import_side_effects",
                 "calls_intercepted": 0, "distinct_calls": 0}

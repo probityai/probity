@@ -157,41 +157,32 @@ def run_loop(tmp_path, seeds, python_bin, image, agent, name):
                      "--grader-key", seeds["grader"], "--", *agent])
 
 
-def test_run_admits_an_honest_agent_in_one_attempt(tmp_path, seeds, python_bin, image, capsys):
-    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_HONEST_CLAIMING, "honest") == 0
+def test_run_does_not_admit_an_honest_agent_while_the_import_is_unobserved(
+        tmp_path, seeds, python_bin, image, capsys):
+    """The contract carries an import probe, whose after-import report comes from the
+    candidate's own process; probity-verify reads a passing one as probe_import_unobserved
+    (not_established), so an honest run is not accepted and the loop continues."""
+    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_HONEST_CLAIMING, "honest") == 2
     out = capsys.readouterr().out
-    assert "Attempt 1: Decision: supported / done_receipt_accepted" in out and "Attempt 2" not in out
+    assert "Attempt 1: Decision: not_established / probe_import_unobserved" in out
+    assert "next: continue (probe_import_unobserved)" in out
     assert "  outcome: supported / acceptance_passed_in_verifier" in out
     attempt = tmp_path / "honest" / "attempt-1"
     stored = json.loads((attempt / "done-receipt.json").read_bytes())
-    assert stored["stop_decision"] == {"action": "stop", "reason": "done_receipt_accepted"}
-    assert (stored["accepted"], stored["completion_claimed"]) == (True, True)
+    assert stored["stop_decision"] == {"action": "continue", "reason": "probe_import_unobserved"}
+    assert (stored["accepted"], stored["completion_claimed"]) == (False, True)
     assert stored["verifier_isolation"]["contract_sha256"] == stored["records"]["contract"]["sha256"]
-    assert cli.main(["verify", "--run", str(attempt), *pubs()]) == 0
-    # probity-verify, run as its own command line, verifies the receipt this CLI emitted.
-    from probity_verify import cli as verifier_cli
-    pins = receipt.Pins(*(public_key(signer(seed)) for seed in (HARNESS_SEED, HOST_SEED, GRADER_SEED)))
-    case, verify_policy = receipt.done_receipt_case(
-        attempt, receipt.open_run(attempt, pins),
-        (attempt / "done-receipt.statement.json").read_bytes(), pins)
-    (tmp_path / "case.json").write_text(json.dumps(case))
-    (tmp_path / "policy.json").write_text(json.dumps(verify_policy))
-    capsys.readouterr()
-    assert verifier_cli.main([str(tmp_path / "case.json"), "--policy", str(tmp_path / "policy.json"),
-                              "--artifact-root", str(attempt), "--json"]) == 0
-    decided = json.loads(capsys.readouterr().out)
-    assert (decided["claim_type"], decided["decision"], decided["reason"]) == (
-        "done_receipt/v2", "supported", "done_receipt_accepted")
-    assert decided["receipt_valid"] is True
-    assert decided["verifier_id"] == "https://github.com/probityai/probity"
+    # The receipt still recomputes from its records: it verifies, and says not_established.
+    assert cli.main(["verify", "--run", str(attempt), *pubs()]) == cli.EXIT["not_established"]
 
 
-def test_a_claimed_lcb_test_run_is_matched_and_supported(tmp_path, seeds, python_bin, image,
-                                                          capsys):
+def test_a_claimed_lcb_test_run_is_matched_but_the_import_stays_unobserved(
+        tmp_path, seeds, python_bin, image, capsys):
     """The agent claims `python test.py` and runs it: the sealed agent run matches by working
     directory, recorded executable and arguments, and writing only func.py, the module under
-    test, leaves the workspace import path clear."""
-    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_HONEST_CLAIMING, "claiming") == 0
+    test, leaves the workspace import path clear. The import probe still reads
+    probe_import_unobserved, so the receipt is not accepted."""
+    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_HONEST_CLAIMING, "claiming") == 2
     contract_record = json.loads((tmp_path / "contract" / "contract.json").read_bytes())
     agent = next(item for item in contract_record["acceptance"] if "exe" in item)
     assert {key: agent[key] for key in ("id", "argv", "cwd")} == {
@@ -205,8 +196,9 @@ def test_a_claimed_lcb_test_run_is_matched_and_supported(tmp_path, seeds, python
     integrity = {check["claim_type"]: check["reason"] for check in stored["integrity"]["checks"]}
     assert integrity["tool_claim_match/v1"] == "tool_claims_matched"
     assert integrity["completion_claim/v1"] == "completion_claim_observed"
-    assert integrity["probe_observed/v1"] == "probes_passed"
-    assert stored["accepted"]
+    # An import probe that exited 0 is open, never supported: probe_import_unobserved.
+    assert integrity["probe_observed/v1"] == "probe_import_unobserved"
+    assert not stored["accepted"]
     loop = json.loads((tmp_path / "claiming" / "loop.json").read_bytes())
     assert loop["attempts"][0]["completion_claimed"] is True
     with tarfile.open(attempt / "end.tar") as archive:
@@ -215,19 +207,25 @@ def test_a_claimed_lcb_test_run_is_matched_and_supported(tmp_path, seeds, python
     assert hashlib.sha256(final).hexdigest() == tree["files"]["func.py"]
 
 
-def test_a_claim_spelled_python_of_a_python3_run_is_supported(tmp_path, seeds, python_bin,
-                                                             image):
-    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_CLAIMING_PYTHON3, "py3") == 0
+def test_a_claim_spelled_python_of_a_python3_run_is_matched(tmp_path, seeds, python_bin, image):
+    # Rc 2: the import probe reads probe_import_unobserved, so the loop does not stop.
+    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_CLAIMING_PYTHON3, "py3") == 2
     stored = json.loads((tmp_path / "py3" / "attempt-1" / "done-receipt.json").read_bytes())
-    assert stored["accepted"]
+    integrity = {check["claim_type"]: check["reason"] for check in stored["integrity"]["checks"]}
+    assert integrity["tool_claim_match/v1"] == "tool_claims_matched"
+    assert integrity["probe_observed/v1"] == "probe_import_unobserved"
+    assert not stored["accepted"]
 
 
-def test_a_silent_agent_whose_work_passes_is_accepted(tmp_path, seeds, python_bin, image):
+def test_a_silent_agent_whose_work_passes_is_not_accepted_while_the_import_is_unobserved(
+        tmp_path, seeds, python_bin, image):
     """Done is the outside verifier's finding on the final tree, never the agent's word: an
-    empty claim list asserts nothing, and nothing in the records says the work was gamed."""
-    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_HONEST, "silent") == 0
+    empty claim list asserts nothing, and nothing in the records says the work was gamed. The
+    import probe's pass is still open (probe_import_unobserved), so the work is not accepted."""
+    assert run_loop(tmp_path, seeds, python_bin, image, AGENT_HONEST, "silent") == 2
     stored = json.loads((tmp_path / "silent" / "attempt-1" / "done-receipt.json").read_bytes())
-    assert (stored["accepted"], stored["completion_claimed"]) == (True, False)
+    assert (stored["accepted"], stored["completion_claimed"]) == (False, False)
+    assert stored["stop_decision"]["reason"] == "probe_import_unobserved"
     loop = json.loads((tmp_path / "silent" / "loop.json").read_bytes())
     assert loop["attempts"][0]["completion_claimed"] is False
 
