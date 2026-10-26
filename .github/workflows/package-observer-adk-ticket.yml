@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: probityai/agent-evidence-observer
-          ref: 4a50e61471355611121a578f3a4c22daa931d419
+          ref: bf8c515d393951c6da73790e5e05effdb0c945a6
           path: packages/observer/selected-observer
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -52,7 +52,7 @@ jobs:
           python -m pip install --require-hashes -r requirements.lock
           python -m pip wheel --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/observer/selected-observer" . --wheel-dir "$RUNNER_TEMP/adk-wheels"
           python verify_wheels.py "$RUNNER_TEMP/adk-wheels" --selection source-selection.json > installed-source-proof.json
-          python -m pip install --no-deps "$RUNNER_TEMP/adk-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/adk-wheels/probity_adk_reference-0.0.1-py3-none-any.whl"
+          python -m pip install --no-deps "$RUNNER_TEMP/adk-wheels/agent_evidence_observer-0.0.2-py3-none-any.whl" "$RUNNER_TEMP/adk-wheels/probity_adk_reference-0.0.1-py3-none-any.whl"
           python -m pip check
       - name: Execute SDK lifecycle and semantic refusal controls
         run: |
@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
           python -m venv "$RUNNER_TEMP/adk-reader"
           "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --require-hashes -r requirements-reader.lock
-          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-deps "$RUNNER_TEMP/adk-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/adk-wheels/probity_adk_reference-0.0.1-py3-none-any.whl"
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-deps "$RUNNER_TEMP/adk-wheels/agent_evidence_observer-0.0.2-py3-none-any.whl" "$RUNNER_TEMP/adk-wheels/probity_adk_reference-0.0.1-py3-none-any.whl"
           "$RUNNER_TEMP/adk-reader/bin/python" -m pip check
           "$RUNNER_TEMP/adk-reader/bin/python" -c "import importlib.util; assert importlib.util.find_spec('google') is None and importlib.util.find_spec('mcp') is None"
       - name: Replay with separately supplied demonstration pins
