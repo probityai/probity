@@ -186,32 +186,38 @@ def launch(spec: LaunchSpec, run_dir: Path) -> LaunchResult:
     watcher.start()
     started = time.time()
     timed_out = False
-    with open(run_dir / "transcript.txt", "wb") as transcript, \
-            open(run_dir / "trace.txt", "wb") as trace_file:
-        process = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=transcript,
-                                   stderr=trace_file)
-        try:
-            exit_code = process.wait(timeout=spec.timeout_seconds)
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            if spec.backend == "docker":
-                backend_docker.kill(name)
-            else:
-                backend_apptainer.kill(process)
-            exit_code = process.wait()
-    ended = time.time()
-    report = watcher.stop()
-    backend.restore(identity, workspace)
+    try:
+        with open(run_dir / "transcript.txt", "wb") as transcript, \
+                open(run_dir / "trace.txt", "wb") as trace_file:
+            process = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=transcript,
+                                       stderr=trace_file)
+            try:
+                exit_code = process.wait(timeout=spec.timeout_seconds)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                if spec.backend == "docker":
+                    backend_docker.kill(name)
+                else:
+                    backend_apptainer.kill(process)
+                exit_code = process.wait()
+        ended = time.time()
+        report = watcher.stop()
+        backend.restore(identity, workspace)
 
-    trace_text = (run_dir / "trace.txt").read_text("utf-8", "surrogateescape")
-    trace = strace.parse(trace_text)
-    found = strace.effects(trace, backend.WORKSPACE)
-    strace.assign_origins(found)
+        trace_text = (run_dir / "trace.txt").read_text("utf-8", "surrogateescape")
+        trace = strace.parse(trace_text)
+        found = strace.effects(trace, backend.WORKSPACE)
+        strace.assign_origins(found)
+        outside = backend.collect_outside(
+            name, record_oe.ancestor_config_paths(found.events, backend.WORKSPACE),
+            run_dir / "outside")
+    finally:
+        backend.discard(name)
     tree = treedigest.scan(workspace)
     context = record_oe.Context(spec.claim_id, spec.invocation_id, spec.producer,
                                 backend.WORKSPACE, started, ended, timed_out=timed_out,
                                 tracer_uid_separated=launch_record["tracer_uid_separated"])
-    built = record_oe.build(context, found, trace, report, tree)
+    built = record_oe.build(context, found, trace, report, tree, outside.get)
     written = write_records(built, run_dir)
     root_exec = next((event for event in found.events
                       if event.kind == "exec" and event.pid == found.root_pid

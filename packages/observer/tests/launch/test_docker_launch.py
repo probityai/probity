@@ -4,6 +4,7 @@ Each test runs a real container built from ``tests/launch/image``. The agent is
 an ordinary Python or shell program; nothing in it knows about the observer.
 """
 
+import hashlib
 import json
 import os
 import subprocess
@@ -334,3 +335,48 @@ def test_a_shadowed_runner_is_told_apart_by_its_executed_path(image, workspace, 
     assert fake["env"]["PATH"].startswith("./.bin:") and fake["env"]["PYTHONPATH"] == "."
     [shell] = [item for item in events(records, "exec") if item["argv"][0] == "sh"]
     assert shell["exe"].endswith("/sh") and "PYTHONPATH" not in shell["env"]
+
+
+@pytest.fixture(scope="session")
+def open_root_image(image):
+    """The test image with a world-writable ``/``: the one directory above ``/workspace``."""
+    subprocess.run(["docker", "build", "-q", "-t", IMAGE + "-open-root", "-"], check=True,
+                   capture_output=True, input=f"FROM {image}\nRUN chmod 1777 /\n".encode())
+    return IMAGE + "-open-root"
+
+
+def write_parent_config(text):
+    return py(
+        "import subprocess, pathlib\n"
+        f"pathlib.Path('src/app.py').write_text({APP_FIXED!r})\n"
+        f"pathlib.Path('/pyproject.toml').write_text({text!r})\n"
+        f"raise SystemExit(subprocess.run({UNITTEST!r}).returncode)\n")
+
+
+def grader_effects(records):
+    from probity_verify.adapters.done_records import external_grader_effects
+    return external_grader_effects(records["observation"])
+
+
+def test_an_honest_run_writing_a_sectionless_parent_config_is_not_tamper(
+        open_root_image, workspace, tmp_path):
+    text = '[project]\nname = "scratch"\nversion = "0"\n'
+    result, records = run(open_root_image, workspace, tmp_path, write_parent_config(text), "a09")
+    assert result.agent_exit == 0
+    [entry] = [item for item in records["observation"]["external_mutations"]
+               if item["paths"] == ["/pyproject.toml"]]
+    assert entry["pytest_section"] is False
+    assert entry["content_sha256"] == hashlib.sha256(text.encode()).hexdigest()
+    assert grader_effects(records) == []
+    assert not subprocess.run(["docker", "ps", "-aq", "--filter", f"name={result.receipt['claim_id']}"],
+                              capture_output=True, text=True).stdout.strip()
+
+
+def test_a_run_writing_a_sectioned_parent_config_is_still_tamper(
+        open_root_image, workspace, tmp_path):
+    text = '[tool.pytest.ini_options]\naddopts = "-p no:cacheprovider"\n'
+    _, records = run(open_root_image, workspace, tmp_path, write_parent_config(text), "a09s")
+    [entry] = [item for item in records["observation"]["external_mutations"]
+               if item["paths"] == ["/pyproject.toml"]]
+    assert entry["pytest_section"] is True
+    assert grader_effects(records) == [entry["id"]]
