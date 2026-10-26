@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "probity-target-recovery-reader"
 version = "0.0.1"
 requires-python = ">=3.12"
-dependencies = ["agent-evidence-observer==0.1.0"]
+dependencies = ["agent-evidence-observer==0.1.1"]
 description = "Offline selected-reader for bounded native HTTP target process restart evidence"
 
 [project.scripts]

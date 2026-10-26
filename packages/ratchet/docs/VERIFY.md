@@ -17,15 +17,17 @@ python -m ratchet.verify receipt.json \
 `--key` defaults to `keys/ratchet-decisions.pub`. Exit 0 verifies, 1 does not, 2 means the input was malformed and no
 verdict was reached.
 
-## Pins
+## Ranges and the lock
 
-| Package | Pin | Where |
+| Package | Range | Where |
 |---|---|---|
-| `probity-verify` | `==0.1.1`, PyPI, wheel SHA-256 `e5788644f64d4faf73d999f9b8371f761141493403f642659ba0ad36a15ef6cf` | `pyproject.toml`, `uv.lock` |
-| `agent-evidence-vectors` | `==0.19.0`, PyPI | `pyproject.toml`, `uv.lock` |
+| `probity-verify` | `~=0.2.1`, locked to 0.2.1 from PyPI | `pyproject.toml`, `uv.lock` |
+| `agent-evidence-vectors` | `~=0.26.0`, locked to 0.26.0 from PyPI | `pyproject.toml`, `uv.lock` |
+| `jcs-admit` | `~=0.1.0`, from PyPI | `pyproject.toml`, `uv.lock` |
+| `probity-ratchet-cases` | `~=0.2.0`, from PyPI | `pyproject.toml`, `uv.lock` |
 
-`probity-verify` 0.1.1 has the `adapters=` argument this build uses. `tests/verify/test_pinned_dependencies.py` asserts both pins and runs the
-vector harness's own self-test, so a drifted pin fails a test.
+Each family package is a compatible-release range, so a patch release installs without a change here and the family resolves together at its latest releases. The `uv.lock` names the version this build was tested with, with a hash per file. `tests/verify/test_pinned_dependencies.py` asserts that every range is `~=X.Y.Z`, that the lock sits inside it, that the lock comes from PyPI, and runs the
+vector harness's own self-test, so a range the lock falls outside fails a test.
 
 Clean-environment result for the earlier pins (`probity-verify==0.1.0`, `agent-evidence-vectors==0.17.9`),
 2026-10-11, Python 3.12.14, a fresh venv holding only these two packages:
