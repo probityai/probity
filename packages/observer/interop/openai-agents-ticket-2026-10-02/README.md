@@ -6,7 +6,7 @@ and an application-owned `TracingProcessor`. A scripted native `Model` supplies
 fixed synthetic calls. No provider API request, credential or model inference is
 used. The protected target is Observer's existing signed HTTP/SQLite ticket
 service, built from the separately selected source commit
-`71ac0b2126473316655184235000647a6dd0f5cf`.
+`bf8c515d393951c6da73790e5e05effdb0c945a6`.
 
 The complete six-case plan freezes before execution. Permit commits revision 1;
 revocation and changed arguments are refused with unchanged revision 0; a tool
@@ -26,7 +26,7 @@ SDK are selected by hashes in `requirements.lock`.
 # Run from this profile in your selected adapter checkout.
 python -m venv .producer-env
 .producer-env/bin/python -m pip install --require-hashes -r requirements.lock
-git worktree add --detach selected-observer 71ac0b2126473316655184235000647a6dd0f5cf
+git worktree add --detach selected-observer bf8c515d393951c6da73790e5e05effdb0c945a6
 .producer-env/bin/python -m pip wheel --no-deps --no-build-isolation selected-observer . --wheel-dir selected-wheels
 .producer-env/bin/python verify_wheels.py selected-wheels --selection source-selection.json
 .producer-env/bin/python -m pip install --no-deps selected-wheels/*.whl
