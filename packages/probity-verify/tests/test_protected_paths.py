@@ -419,3 +419,23 @@ class TestAstEquivalence:
         records["contract"]["protected_paths"][1]["equivalence"] = "python_ast"
         with pytest.raises(CaseError, match="equivalence"):
             run(tmp_path, records)
+
+
+class TestRealObservationShapes:
+    """Shapes the observer really emits, which two wrong patches once broke without a test failing."""
+
+    def test_read_events_on_protected_paths_are_accepted_and_change_nothing(self, tmp_path, records):
+        add_event(records, type="read", path="tests/test_app.py")
+        add_event(records, type="read", path="tests/conftest.py")
+        assert outcome(run(tmp_path, records)) == ("supported", "protected_paths_untouched")
+
+    @pytest.mark.parametrize("event", [
+        {"type": "create", "path": "tests/__pycache__"},
+        {"type": "write", "path": "tests/__pycache__/test_app.cpython-312.pyc"},
+        {"type": "rename", "path": "tests/__pycache__/m.pyc.123", "target": "tests/__pycache__/m.pyc"},
+    ])
+    def test_interpreter_cache_events_under_an_excluded_entry_are_not_mutations(
+            self, tmp_path, records, event):
+        add_event(records, **event)
+        change_tree(records, "tests/__pycache__/test_app.cpython-312.pyc", "cache")
+        assert outcome(run(tmp_path, records)) == ("supported", "protected_paths_untouched")

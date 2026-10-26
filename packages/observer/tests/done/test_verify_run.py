@@ -221,6 +221,26 @@ def test_staging_keeps_only_links_the_start_tree_had(tmp_path):
     assert (tmp_path / "staged" / "inside").is_symlink()
 
 
+def test_a_link_that_vanishes_mid_staging_is_rejected_not_raised(tmp_path, monkeypatch):
+    start, final = tmp_path / "start", tmp_path / "f"
+    for root in (start, final):
+        root.mkdir()
+        (root / "a.txt").write_text("a")
+        os.symlink("a.txt", root / "inside")
+    real = os.readlink
+
+    def vanishing(path, *args, **kwargs):
+        if Path(path) == final / "inside":
+            raise FileNotFoundError(path)
+        return real(path, *args, **kwargs)
+
+    monkeypatch.setattr(verify_run.os, "readlink", vanishing)
+    assert verify_run._inside(final, final / "inside") is False
+    staged = verify_run.stage_tree(final, tmp_path / "staged", start)
+    assert staged.rejected == ["inside"]
+    assert not (tmp_path / "staged" / "inside").is_symlink()
+
+
 def test_reset_removes_grader_files_the_agent_added_and_refuses_a_link_above(tmp_path):
     start, sealed = tmp_path / "start", tmp_path / "sealed"
     (start / "tests").mkdir(parents=True)

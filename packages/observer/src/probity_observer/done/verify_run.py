@@ -174,9 +174,17 @@ def _copy_file(source: Path, target: Path) -> None:
     os.chmod(target, stat.S_IMODE(os.lstat(source).st_mode))
 
 
+def _read_link(link: Path) -> str | None:
+    """Return the link's target, or None when the link vanished or changed kind."""
+    try:
+        return os.readlink(link)
+    except OSError:
+        return None
+
+
 def _inside(root: Path, link: Path) -> bool:
-    target = os.readlink(link)
-    if os.path.isabs(target):
+    target = _read_link(link)
+    if target is None or os.path.isabs(target):
         return False
     resolved = os.path.normpath(os.path.join(link.parent, target))
     return resolved == str(root) or resolved.startswith(str(root) + os.sep)
@@ -207,9 +215,10 @@ def stage_tree(final: Path, destination: Path, start: Path) -> Staged:
             mode = os.lstat(source).st_mode
             if stat.S_ISLNK(mode):
                 sealed = start / relative / name
-                if (_inside(final, source) and sealed.is_symlink()
-                        and os.readlink(sealed) == os.readlink(source)):
-                    os.symlink(os.readlink(source), target)
+                link_target = _read_link(source)  # read once: the value checked is the value staged
+                if (link_target is not None and sealed.is_symlink()
+                        and _read_link(sealed) == link_target and _inside(final, source)):
+                    os.symlink(link_target, target)
                 else:
                     staged.rejected.append((relative / name).as_posix())
                 if name in dirnames:

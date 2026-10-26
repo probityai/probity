@@ -49,6 +49,16 @@ def file_sha256(path: Path) -> str:
         os.close(fd)
 
 
+class TreeNameError(ValueError):
+    """A path in the tree carries a control character, so its digest line would not be unique."""
+
+
+def _checked(relative: str) -> str:
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in relative):
+        raise TreeNameError(f"control character in tree path {relative!r}")
+    return relative
+
+
 def _sorted_lines(lines: dict[str, str]) -> bytes:
     ordered = sorted(lines, key=lambda name: name.encode("utf-8", "surrogateescape"))
     return "".join(f"{lines[name]}  {name}\n" for name in ordered).encode("utf-8",
@@ -104,10 +114,10 @@ def scan(root: Path) -> Tree:
         for name in sorted(dirnames):
             entry = base / name
             if entry.is_symlink():
-                tree.symlinks[entry.relative_to(root).as_posix()] = os.readlink(entry)
+                tree.symlinks[_checked(entry.relative_to(root).as_posix())] = os.readlink(entry)
         for name in sorted(filenames):
             entry = base / name
-            relative = entry.relative_to(root).as_posix()
+            relative = _checked(entry.relative_to(root).as_posix())
             mode = os.lstat(entry).st_mode
             if stat.S_ISREG(mode):
                 tree.files[relative] = file_sha256(entry)
