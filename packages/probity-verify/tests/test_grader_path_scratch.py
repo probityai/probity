@@ -1,6 +1,5 @@
 """A path under a scratch root is the agent's own unless it is a start-up hook or a site directory."""
 import pytest
-
 from probity_verify.adapters.done_records import grader_path
 
 

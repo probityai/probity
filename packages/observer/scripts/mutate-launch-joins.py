@@ -75,7 +75,7 @@ MUTANTS = [
     ("a .pth file is not a grader path", RECORD,
      ' or name.endswith(".pth")', ''),
     ("a site-packages directory is not a grader path", RECORD,
-     '            or any(part in GRADER_DIRECTORIES for part in parts[:-1])):',
+     '            or any(part in directories for part in parts[:-1])):',
      '            ):'),
     ("an outside mutation carries no origin", RECORD,
      '            if source.origin is not None and source.origin in ids:\n',
