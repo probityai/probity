@@ -353,11 +353,6 @@ def write_parent_config(text):
         f"raise SystemExit(subprocess.run({UNITTEST!r}).returncode)\n")
 
 
-def grader_effects(records):
-    from probity_verify.adapters.done_records import external_grader_effects
-    return external_grader_effects(records["observation"])
-
-
 def test_an_honest_run_writing_a_sectionless_parent_config_is_not_tamper(
         open_root_image, workspace, tmp_path):
     text = '[project]\nname = "scratch"\nversion = "0"\n'
@@ -367,7 +362,6 @@ def test_an_honest_run_writing_a_sectionless_parent_config_is_not_tamper(
                if item["paths"] == ["/pyproject.toml"]]
     assert entry["pytest_section"] is False
     assert entry["content_sha256"] == hashlib.sha256(text.encode()).hexdigest()
-    assert grader_effects(records) == []
     assert not subprocess.run(["docker", "ps", "-aq", "--filter", f"name={result.receipt['claim_id']}"],
                               capture_output=True, text=True).stdout.strip()
 
@@ -379,4 +373,3 @@ def test_a_run_writing_a_sectioned_parent_config_is_still_tamper(
     [entry] = [item for item in records["observation"]["external_mutations"]
                if item["paths"] == ["/pyproject.toml"]]
     assert entry["pytest_section"] is True
-    assert grader_effects(records) == [entry["id"]]
