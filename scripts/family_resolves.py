@@ -69,16 +69,16 @@ def resolve() -> int:
         venv = Path(tmp, "venv")
         python = venv / "bin" / "python"
         subprocess.run(["uv", "venv", "--python", "3.12", str(venv)], check=True)
-        installed = subprocess.run(["uv", "pip", "install", "--python", str(python), *specs])
+        installed = subprocess.run(["uv", "pip", "install", "--python", str(python), *specs], check=False)
         if installed.returncode:
             print("FAIL: the latest releases of the family do not install together", file=sys.stderr)
             return 1
         subprocess.run(["uv", "pip", "freeze", "--python", str(python)], check=True)
-        if subprocess.run(["uv", "pip", "check", "--python", str(python)]).returncode:
+        if subprocess.run(["uv", "pip", "check", "--python", str(python)], check=False).returncode:
             print("FAIL: uv pip check found a broken requirement", file=sys.stderr)
             return 1
         code = "import importlib,sys\nfor n in sys.argv[1:]: importlib.import_module(n)\nprint('imported', len(sys.argv) - 1)"
-        if subprocess.run([str(python), "-c", code, *(imp for _, imp in FAMILY.values())]).returncode:
+        if subprocess.run([str(python), "-c", code, *(imp for _, imp in FAMILY.values())], check=False).returncode:
             print("FAIL: a family package does not import", file=sys.stderr)
             return 1
     print(f"OK: {len(FAMILY)} family packages install together, pass pip check and import")
