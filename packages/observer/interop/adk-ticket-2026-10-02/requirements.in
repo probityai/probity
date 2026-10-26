@@ -3,7 +3,7 @@ cryptography==50.0.0
 rfc8785==0.1.4
 pytest==9.1.1
 ruff==0.16.10
-setuptools==84.0.0
+setuptools==84.1.0
 wheel==0.48.0
 
 mcp==2.2.0
