@@ -121,8 +121,9 @@ tool-sandbox = { git = "https://github.com/apple/ToolSandbox", rev = "c8571d7854
 # litellm (every release through 1.106.4) declares filelock<4.0, which keeps filelock on 3.x and three open
 # advisories. litellm calls only FileLock(path, timeout=, mode=) in its proxy CLI, an interface filelock 4.x
 # keeps, and filelock 4.0 changed only SoftReadWriteLock, which litellm does not use. The override lifts the
-# cap here; drop it once litellm lifts the cap upstream (BerriAI/litellm#48394).
-override-dependencies = ["litellm==1.106.4", "filelock>=4.2.1"]
+# cap here; drop it once litellm lifts the cap upstream (BerriAI/litellm#48394, still open). filelock 4.x
+# needs Python >= 3.11, so the override is marked to 3.11+ and 3.10 keeps the capped filelock 3.x.
+override-dependencies = ["litellm==1.106.4", "filelock>=4.2.1; python_full_version >= '3.11'"]
 
 [[tool.uv.dependency-metadata]]
 # The tool-sandbox package pins every dependency exactly (pydantic 2.7.4 conflicts with raindrop-ai, which needs
