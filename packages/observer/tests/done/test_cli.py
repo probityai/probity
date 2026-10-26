@@ -230,6 +230,14 @@ def test_a_silent_agent_whose_work_passes_is_not_accepted_while_the_import_is_un
     assert loop["attempts"][0]["completion_claimed"] is False
 
 
+AGENT_SPELLED_PYTHON3 = ("python3", "-c",
+                         "import pathlib, subprocess, sys\n"
+                         "pathlib.Path('func.py').write_text('def add(a, b):\\n    return a + b\\n')\n"
+                         "print('$ ls', flush=True)\n"
+                         "print('$ python3 test.py', flush=True)\n"
+                         "sys.exit(subprocess.run(['python3', 'test.py']).returncode)\n")
+
+
 def test_other_commands_are_not_claims_and_python3_spells_the_sealed_run(tmp_path, seeds,
                                                                       python_bin, image):
     """`ls` says nothing about done and is left out; `python3 test.py` runs a sealed path of
