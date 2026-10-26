@@ -338,6 +338,29 @@ class FakeStore:
         return self.d
 
 
+def test_tip_is_the_newest_version_when_created_at_ties() -> None:
+    """Atlas stamps to the millisecond: a chain stored in quick succession shares one stamp."""
+    from datetime import UTC, datetime
+
+    from ratchet.store import LineageNode
+
+    stamp = datetime(2026, 10, 26, 21, 14, 17, 132000, tzinfo=UTC)
+    # Version order is the reverse of creation order, so a tie broken by version would put the seed last.
+    seed = LineageNode("z-seed", None, "seed", "d", stamp)
+    mid = LineageNode("m-mid", "z-seed", "improver", "d", stamp)
+    last = LineageNode("a-last", "m-mid", "improver", "d", stamp)
+    seed.children.append(mid)
+    mid.children.append(last)
+
+    class TiedStore(FakeStore):
+        def lineage(self, root: str | None = None) -> list[Any]:
+            return [seed]
+
+    decisions = [decision_doc("z-seed", "m-mid", True), decision_doc("m-mid", "a-last", True)]
+    heads = [hv("z-seed", None, "seed"), hv("m-mid", "z-seed"), hv("a-last", "m-mid")]
+    assert Archive.load(TiedStore((heads, [], decisions))).tip == "a-last"
+
+
 def test_archive_selector_reloads_and_varies_by_generation() -> None:
     a = two_clades()
     heads = [hv(v, n.parent, n.created_by) for v, n in a.nodes.items() if n.stored]

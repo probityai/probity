@@ -234,7 +234,11 @@ class Archive:
     def load(cls, store: ArchiveStore, *, split: Split = "heldout") -> Archive:
         """Read every harness version, evaluation and decision from the store."""
         harnesses = [n for root in store.lineage() for n in root.walk()]
-        harnesses.sort(key=lambda n: (n.created_at is None, n.created_at, n.version))
+        # Atlas stamps created_at to the millisecond, so a chain written in quick succession shares one
+        # stamp. A stable sort on the stamp alone keeps the walk order for ties (a parent before its
+        # children); breaking ties by version hash would put a child before its parent in about half the
+        # runs and move the tip.
+        harnesses.sort(key=lambda n: (n.created_at is None, n.created_at))
         # The type is checked here too: a store whose filter is coarser than an exact match stays correct.
         verdicts = [verdict_record(v) for v in store.evals({"type": "verdict"}) if v.get("type") == "verdict"]
         return cls.from_records(
