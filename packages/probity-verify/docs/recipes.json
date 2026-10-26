@@ -25,11 +25,11 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "probity-verify",
-      "project.version": "0.2.0",
+      "project.version": "0.2.1",
       "project.requires-python": ">=3.11",
       "project.dependencies": [
         "cryptography>=50.0.2,<51",
-        "agent-evidence-vocabulary==0.5.0",
+        "agent-evidence-vocabulary~=0.7.0",
         "pyyaml>=6.0.2,<7"
       ],
       "project.scripts": {
@@ -59,7 +59,7 @@
         }
       }
     },
-    "sha256": "bdbd93fdf0133fd36b3e0d6ff482666665fe2bbf225e88a6f563e915e6de1220"
+    "sha256": "43b3d98978338d3b980467da7e2f742083b9c959b6eddeb139ca2adecee864cb"
   },
   "implementation": [
     {

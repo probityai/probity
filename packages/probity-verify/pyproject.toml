@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-verify"
-version = "0.2.0"
+version = "0.2.1"
 description = "Check claims against pinned evidence offline, with replayable decisions"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
-dependencies = ["cryptography>=50.0.2,<51", "agent-evidence-vocabulary==0.5.0", "pyyaml>=6.0.2,<7"]
+dependencies = ["cryptography>=50.0.2,<51", "agent-evidence-vocabulary~=0.7.0", "pyyaml>=6.0.2,<7"]
 keywords = ["ai-agents", "evidence-verification", "provenance", "offline", "audit"]
 classifiers = [
     "Development Status :: 3 - Alpha",

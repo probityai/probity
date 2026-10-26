@@ -50,7 +50,7 @@ def test_record_with_a_scope_outside_the_vocabulary_is_rejected(tmp_path, role):
     policy["witnesses"][role]["witness_scope"] = "PEER"
     for name, raw in files.items():
         (tmp_path / name).write_bytes(raw)
-    with pytest.raises(CaseError, match=f"{role}.witness_scope is not a vocabulary 0.5.0 term"):
+    with pytest.raises(CaseError, match=f"{role}.witness_scope is not a vocabulary {vocabulary.version()} term"):
         adjudicate(case, policy, tmp_path)
 
 
@@ -62,6 +62,6 @@ def test_record_with_the_self_scope_is_rejected_as_refused(tmp_path):
 
 
 def test_requirement_outside_the_vocabulary_names_the_registry(tmp_path):
-    with pytest.raises(CaseError, match="not a vocabulary 0.5.0 term"):
+    with pytest.raises(CaseError, match=f"not a vocabulary {vocabulary.version()} term"):
         decide(tmp_path, honest_records(), "protected_paths/v1",
                require_witness_scope="GLOBAL")
