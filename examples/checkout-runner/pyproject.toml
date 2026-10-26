@@ -11,7 +11,7 @@ dependencies = ["agent-evidence-vectors==0.18.1"]
 agent-checkout-runner = "checkout_runner.cli:main"
 
 [dependency-groups]
-dev = ["pytest==8.4.2"]
+dev = ["pytest==9.0.3"]
 
 [build-system]
 requires = ["hatchling==1.27.0"]
