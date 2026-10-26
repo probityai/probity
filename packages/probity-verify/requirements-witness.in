@@ -13,7 +13,7 @@
 # are listed here.
 agent-evidence-observer[witness] @ git+https://github.com/probityai/agent-evidence-observer@1e8fb5bb18dbef58ef3eef110d342c72b15dc2ed
 cryptography==50.0.2
-agent-evidence-vocabulary==0.7.0
+agent-evidence-vocabulary==0.8.0
 pyyaml==6.0.3
 pytest==9.1.1
 hypothesis==6.170.1

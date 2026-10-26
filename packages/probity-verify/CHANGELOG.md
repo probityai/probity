@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.2 (2026-10-26)
+
+- `agent-evidence-vocabulary` is now `~=0.8.0`, the release that adds open verdict classes. No identifier
+  the verifier reads moved, and the full test suite passes against it.
 - An import probe (`import_side_effects`) that exited 0 no longer supports `probe_observed/v1`: it reads
   `not_established` / `probe_import_unobserved`. Its "no change seen" report comes from the candidate's own
   process, which can forge it and redirect or close the protocol descriptor, so it is not evidence of a clean
