@@ -204,7 +204,7 @@ def ancestor_config_path(event: strace.Event, workspace: str) -> str | None:
             or posixpath.basename(path) not in SECTIONED_CONFIG):
         return None
     head = posixpath.dirname(path)
-    if workspace == head or workspace.startswith(head.rstrip("/") + "/"):
+    if workspace.startswith(head.rstrip("/") + "/"):
         return path
     return None
 
