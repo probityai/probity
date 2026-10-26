@@ -82,6 +82,8 @@ class DockerRunner:
                 "--ulimit", "core=0", "--user", f"{self.worker_uid}:{self.worker_uid}"]
 
     def command(self, name: str, scratch: Path, argv: Sequence[str], heldout: bool) -> list[str]:
+        if argv and "=" in argv[0]:
+            raise GradeError("acceptance program name must not be an environment assignment")
         command = [self.docker, "run", "-i", "--rm", "--name", name, *self.flags(),
                    "--volume", f"{scratch / 'workspace'}:/workspace"]
         if heldout:

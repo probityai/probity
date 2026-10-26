@@ -40,3 +40,15 @@ def test_assertions_in_parent_is_false_when_nothing_was_graded(tmp_path):
 def test_assertions_in_parent_needs_every_graded_command_to_be_a_replay(tmp_path):
     assert report(tmp_path, [[COMMAND, "x"]])["assertions_in_parent"] is True
     assert report(tmp_path, [[COMMAND, "x"], ["pytest"]])["assertions_in_parent"] is False
+
+
+def test_the_runner_refuses_a_leading_environment_assignment(tmp_path):
+    with pytest.raises(verify_run.GradeError, match="environment assignment"):
+        Runner("img").command("n", tmp_path, ["PYTHONPATH=/injected", "python", "-m", "pytest"],
+                              False)
+
+
+def test_the_runner_builds_a_plain_command(tmp_path):
+    command = Runner("img").command("n", tmp_path, ["python", "-m", "pytest"], False)
+    assert command[-3:] == ["python", "-m", "pytest"]
+    assert "PYTHONPATH=/injected" not in command
