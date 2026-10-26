@@ -4,7 +4,8 @@ name: family-resolves
 # on any pull request that touches a package manifest or this check: install the
 # latest release of every family package into one fresh environment, run
 # `uv pip check`, import each, and refuse an exact `==` pin of one family member
-# by another (scripts/family_resolves.py).
+# by another (scripts/family_resolves.py). The script's own tests run in ci.yml's
+# lint job with the rest of tests/.
 
 on:
   schedule:
@@ -29,5 +30,4 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       - run: python3 scripts/family_resolves.py lint
-      - run: python3 -m pytest -q tests/test_family_resolves.py
       - run: python3 scripts/family_resolves.py resolve
