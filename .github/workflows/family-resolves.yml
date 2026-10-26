@@ -1,0 +1,33 @@
+name: family-resolves
+
+# The published packages of the family must install together. Daily, on demand, and
+# on any pull request that touches a package manifest or this check: install the
+# latest release of every family package into one fresh environment, run
+# `uv pip check`, import each, and refuse an exact `==` pin of one family member
+# by another (scripts/family_resolves.py).
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'packages/**/pyproject.toml'
+      - 'scripts/family_resolves.py'
+      - 'tests/test_family_resolves.py'
+      - '.github/workflows/family-resolves.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  family-resolves:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - run: python3 scripts/family_resolves.py lint
+      - run: python3 -m pytest -q tests/test_family_resolves.py
+      - run: python3 scripts/family_resolves.py resolve
