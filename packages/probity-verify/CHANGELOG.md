@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 (2026-10-26)
 
 - `agent-evidence-vocabulary` is now a compatible-release range (`~=0.7.0`) instead of an exact pin, so the
   verifier installs beside the other packages of the family. 0.2.0 pinned `agent-evidence-vocabulary==0.5.0`, which
