@@ -26,6 +26,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -37,10 +38,11 @@ from .changes import Changes, changed_lines
 from .native import NATIVE_SOURCES, native
 from . import gates as seal_gates
 from . import harvest as guards
-from . import mutants, pytest_plugins, strengthen
+from . import mutants, pytest_plugins, pytest_proof, strengthen
 from .formats import (CONTRACT_PREDICATE, DoneError, encode, sha256, sign_record,
                       statement)
-from .runner import Command, Runner, image_executable
+from .runner import (PYTEST_IDS_FROM, PYTEST_ROOT, Command, Runner, image_executable,
+                     pytest_replay_argv, pytest_replay_fields)
 
 SCHEMA = "probity-done-contract/v1"
 EXCLUDE = ("__pycache__", ".pytest_cache")
@@ -281,7 +283,7 @@ def touched_functions(source: str, ranges: list[tuple[int, int]]) -> list[str]:
 def swe_task(record: dict[str, Any], repo: Path, work: Path,
              test_cmd: Sequence[str] = DEFAULT_TEST_CMD, protect_test_dirs: bool = True,
              seal_config: bool = True, repeats: int = pytest_plugins.REPEATS,
-             isolate: bool = True) -> Task:
+             isolate: bool = True, replay: bool = True) -> Task:
     """An (Impossible) SWE-bench task: ``repo`` is a checkout at ``base_commit``.
 
     ``test_cmd`` is the argv prefix the test ids are appended to; SWE-bench's own
@@ -294,7 +296,9 @@ def swe_task(record: dict[str, Any], repo: Path, work: Path,
     the agent's tree. Every acceptance-configuration file from the root to each test file is
     protected. ``visible_run`` is the agent's own run, ``python -m pytest`` on the test patch's
     files, sealed with its working directory and interpreter like LiveCodeBench's
-    ``python test.py``.
+    ``python test.py``. With ``replay`` (and the sealed pytest form), the sealed ids whose test
+    files the contract protects are also sealed as parent-compare replays
+    (:func:`pytest_replays`), so the verifier, not the worker, runs and counts them.
     """
     fail, passing = _tests(record["FAIL_TO_PASS"]), _tests(record["PASS_TO_PASS"])
     start, reference, held = work / "start", work / "reference", work / "heldout"
@@ -315,8 +319,10 @@ def swe_task(record: dict[str, Any], repo: Path, work: Path,
     reference_touched = set(touched_files(record["patch"]))
     tests = touched_files(record["test_patch"])
     prefix = tuple(test_cmd)
+    config: tuple[str, ...] = ()
     if seal_config:
-        prefix += sealed_config(start, held)
+        config = sealed_config(start, held)
+        prefix += config
     targets = source_changes(start, reference, [name for name in touched_files(record["patch"])
                                                 if name.endswith(".py") and name not in tests])
     isolated = sorted(f"{name}::{function}" for name, lines in targets.items()
@@ -339,6 +345,10 @@ def swe_task(record: dict[str, Any], repo: Path, work: Path,
     commands.append(Command("heldout-fail-to-pass", ("sh", "-c", overlay), heldout=True,
                             sealed_ids=tuple(fail) if pytest_plugins.is_sealed_pytest(prefix)
                             else None))
+    protected = _swe_protected(start, tests, reference_touched, protect_test_dirs)
+    if replay and pytest_plugins.is_sealed_pytest(prefix):
+        commands += pytest_replays(start, reference, held, protected, config[1], repeats, fail,
+                                   passing)
     # The run the agent itself makes on the visible tests; the contract seals where it runs
     # and its interpreter, so a claim of it is matched to the agent's own exec.
     commands.append(Command("visible_run", ("python", "-m", "pytest", *tests),
@@ -346,13 +356,75 @@ def swe_task(record: dict[str, Any], repo: Path, work: Path,
     return Task(
         task_id=record["instance_id"], source="swe",
         description=f"resolve {record['instance_id']}", start=start, reference=reference,
-        heldout=held, commands=commands,
-        protected=_swe_protected(start, tests, reference_touched, protect_test_dirs),
+        heldout=held, commands=commands, protected=protected,
         mutation_targets=targets, module_under_test=sorted(reference_touched - set(tests)),
         guard_prefix=base if seal_config and pytest_plugins.is_python_pytest(base) else (),
         isolate=tuple(isolated),
         notes={"impossible_type": record.get("impossible_type"), "repo": record.get("repo"),
                "base_commit": record.get("base_commit"), "isolated_targets": isolated})
+
+
+REPLAY_SUFFIX = "-replay"
+
+
+def importable_names(*roots: Path) -> set[str]:
+    """Top-level module names a tree provides: each ``.py`` file, and each directory holding
+    a ``.py`` file at any depth, whose name is an identifier."""
+    found = set()
+    for root in roots:
+        for entry in root.iterdir():
+            if entry.is_symlink():
+                continue
+            if entry.is_dir() and entry.name.isidentifier() and any(entry.rglob("*.py")):
+                found.add(entry.name)
+            elif (entry.is_file() and entry.name.endswith(".py")
+                  and entry.name[:-3].isidentifier()):
+                found.add(entry.name[:-3])
+    return found
+
+
+def pytest_replays(start: Path, reference: Path | None, held: Path, protected: list[Protected],
+                   config: str, repeats: int, fail: Sequence[str], passing: Sequence[str]
+                   ) -> list[Command]:
+    """The sealed ids the verifier can run itself, as parent-compare replays.
+
+    The sealed test root, ``<held>/pytest-root``, holds a copy of every protected path of the
+    start tree. An id is replayed only when :mod:`.pytest_proof` proves it from the sealed
+    bytes: from that root, or for the held-out command from the held-out tree laid over it.
+    So an unprotected test file, which is the agent's code, never runs in the verifier, and the
+    worker alone counts every id the proof does not reach. The child serves every top-level
+    module of the start and reference trees (and of their ``src/`` directories) that the root
+    does not hold (:func:`importable_names`). A replay the reference does not pass, or that
+    never reaches the candidate, is dropped by stabilization like any other command.
+    """
+    root = held / PYTEST_ROOT
+    root.mkdir()
+    for entry in protected:
+        copy_protected(start, entry, root)
+    trees = [start, *([reference] if reference is not None else [])]
+    # A src layout's packages are the candidate's too: a test that imports them must never
+    # resolve them to a package of the verifier's own environment.
+    trees += [tree / "src" for tree in trees if (tree / "src").is_dir()
+              and not (tree / "src" / "__init__.py").exists()]
+    remote = sorted(importable_names(*trees) - importable_names(root)
+                    - set(sys.stdlib_module_names))
+    if not remote:
+        return []
+    shown = pytest_proof.Sources([root], remote)
+    overlaid = pytest_proof.Sources([held / "tree", root], remote)
+    visible, _ = pytest_proof.proven(shown, fail)
+    kept, _ = pytest_proof.proven(shown, passing)
+    hidden, _ = pytest_proof.proven(overlaid, fail)
+    found = []
+    for command_id, ids, overlay, heldout, prepatch in (
+            ("fail-to-pass", visible, None, False, "fail"),
+            ("pass-to-pass", kept, None, False, "pass"),
+            ("heldout-fail-to-pass", hidden, "../heldout/tree", True, "fail")):
+        if ids:
+            argv = pytest_replay_argv(config, overlay, remote, repeats, ids)
+            found.append(Command(command_id + REPLAY_SUFFIX, argv, heldout=heldout,
+                                 prepatch=prepatch, ids_from=PYTEST_IDS_FROM))
+    return found
 
 
 def protected_digest(root: Path, entry: Protected) -> str:
@@ -694,24 +766,39 @@ def collect(task: Task, runner: Runner, command: Command, timeout: float,
     return replace(command, argv=prefix + tuple(kept))
 
 
+def _id_groups(task: Task, command: Command, ids: Sequence[str]) -> list[list[str]]:
+    """The ids of a grouped command that are judged together: one each, except that a pytest
+    replay judges as one the ids that assert a boolean of one function both ways, each of
+    which alone is degenerate (:func:`.pytest_proof.boolean_groups`)."""
+    fields = pytest_replay_fields(command.argv)
+    if fields is None or task.heldout is None:
+        return [[test_id] for test_id in ids]
+    roots = [task.heldout / PYTEST_ROOT]
+    if fields["overlay"] is not None:
+        roots.insert(0, task.heldout / posixpath.relpath(fields["overlay"], "../heldout"))
+    return pytest_proof.boolean_groups(pytest_proof.Sources(roots, fields["remote"]), ids)
+
+
 def _per_id(task: Task, runner: Runner, command: Command, runs: int, timeout: float,
             log: list[dict[str, Any]], dropped: list[dict[str, Any]]) -> Command | None:
-    """Keep the test ids of a grouped command that are each stable and as expected."""
+    """Keep the test ids of a grouped command that are each (or, for the ids a pytest replay
+    must judge together, as a group) stable and as expected."""
     if command.ids_from is None:
         raise DoneError(f"{command.id}: not a grouped command of test ids")
     prefix, ids = command.argv[:command.ids_from], command.argv[command.ids_from:]
-    kept = []
-    for test_id in ids:
-        single = Command(f"{command.id}:{test_id}", prefix + (test_id,), command.heldout,
-                         command.prepatch)  # a stability probe; never sealed
+    kept: list[str] = []
+    for group in _id_groups(task, command, ids):
+        single = Command(f"{command.id}:{'+'.join(group)}", prefix + tuple(group),
+                         command.heldout, command.prepatch)  # a stability probe; never sealed
         reason = _judge(task, runner, single, runs, timeout, log)
         if reason is None:
-            kept.append(test_id)
+            kept.extend(group)
         else:
-            dropped.append({"id": command.id, "test": test_id, "reason": reason})
+            dropped.extend({"id": command.id, "test": test_id, "reason": reason}
+                           for test_id in group)
     if not kept:
         return None
-    return replace(command, argv=prefix + tuple(kept))
+    return replace(command, argv=prefix + tuple(test_id for test_id in ids if test_id in kept))
 
 
 def stabilize(task: Task, runner: Runner, runs: int = 3, timeout: float = 900.0) -> Stability:
