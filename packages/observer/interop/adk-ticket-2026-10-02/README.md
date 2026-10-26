@@ -4,7 +4,7 @@ This additive reference executes installed **Google ADK 2.11.0** `App`, `Runner`
 `BaseLlm`, `FunctionTool`, `BasePlugin` and `ReflectAndRetryToolPlugin`. A scripted
 native model supplies fixed public synthetic calls; it performs no inference or
 remote provider request. The protected HTTP/SQLite target is separately selected
-Observer source `4a50e61471355611121a578f3a4c22daa931d419`.
+Observer source `bf8c515d393951c6da73790e5e05effdb0c945a6`.
 
 The before-run plan declares twelve attempts, at most 25 model calls and 18 tool
 invocations, and a 120-second serial execution budget. It covers permit,
@@ -44,7 +44,7 @@ hashes are selected in `requirements.lock`.
 # Run from this profile within the selected adapter checkout.
 python -m venv .producer-env
 .producer-env/bin/python -m pip install --require-hashes -r requirements.lock
-git worktree add --detach selected-observer 4a50e61471355611121a578f3a4c22daa931d419
+git worktree add --detach selected-observer bf8c515d393951c6da73790e5e05effdb0c945a6
 .producer-env/bin/python -m pip wheel --no-deps --no-build-isolation selected-observer . --wheel-dir selected-wheels
 .producer-env/bin/python verify_wheels.py selected-wheels --selection source-selection.json
 .producer-env/bin/python -m pip install --no-deps selected-wheels/*.whl

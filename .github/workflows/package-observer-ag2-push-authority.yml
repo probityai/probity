@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: probityai/agent-evidence-observer
-          ref: 8c074d7b8f380dd01fd55277b68a37ad8217c8cb
+          ref: bf8c515d393951c6da73790e5e05effdb0c945a6
           path: packages/observer/selected-observer
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -62,13 +62,13 @@ jobs:
           export PATH="$RUNNER_TEMP/ag2-push-producer/bin:$PATH"
           "$RUNNER_TEMP/ag2-push-producer/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements.lock"
           "$RUNNER_TEMP/ag2-push-producer/bin/python" -m pip wheel --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/observer/selected-observer" "$profile" --wheel-dir "$RUNNER_TEMP/ag2-push-wheels"
-          "$RUNNER_TEMP/ag2-push-producer/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/ag2-push-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/ag2-push-wheels/probity_ag2_push_authority-0.0.1-py3-none-any.whl"
+          "$RUNNER_TEMP/ag2-push-producer/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/ag2-push-wheels/agent_evidence_observer-0.0.2-py3-none-any.whl" "$RUNNER_TEMP/ag2-push-wheels/probity_ag2_push_authority-0.0.1-py3-none-any.whl"
           "$RUNNER_TEMP/ag2-push-producer/bin/python" -m pip install --no-compile --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/observer/selected-ag2"
           "$RUNNER_TEMP/ag2-push-producer/bin/python" -m pip install --no-compile --no-deps --no-build-isolation --force-reinstall "$GITHUB_WORKSPACE/packages/observer/selected-a2a"
           "$RUNNER_TEMP/ag2-push-producer/bin/python" -m pip check
           python -m venv "$RUNNER_TEMP/ag2-push-reader"
           "$RUNNER_TEMP/ag2-push-reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
-          "$RUNNER_TEMP/ag2-push-reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/ag2-push-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/ag2-push-wheels/probity_ag2_push_authority-0.0.1-py3-none-any.whl"
+          "$RUNNER_TEMP/ag2-push-reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/ag2-push-wheels/agent_evidence_observer-0.0.2-py3-none-any.whl" "$RUNNER_TEMP/ag2-push-wheels/probity_ag2_push_authority-0.0.1-py3-none-any.whl"
           "$RUNNER_TEMP/ag2-push-reader/bin/python" -m pip check
       - name: Run eighteen native tasks and separate registration, dispatch and target decisions
         run: |
