@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-evidence-mcp"
-version = "0.2.0"
+version = "0.2.1"
 description = "Offline, read-only MCP server that verifies agent evidence claims and replays the agent-evidence conformance vectors"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,11 +14,11 @@ keywords = ["mcp", "model-context-protocol", "ai-agents", "evidence-verification
 dependencies = [
   "mcp==2.3.0",
   "pyyaml==6.0.3",
-  "probity-verify==0.1.1",
-  "agent-evidence-vectors==0.23.0",
-  "agent-evidence-vocabulary==0.6.0",
-  "agent-evidence-admission==0.1.2",
-  "jcs-admit==0.1.0",
+  "probity-verify~=0.2.1",
+  "agent-evidence-vectors~=0.26.0",
+  "agent-evidence-vocabulary~=0.7.0",
+  "agent-evidence-admission~=0.1.2",
+  "jcs-admit~=0.1.0",
 ]
 
 [project.optional-dependencies]

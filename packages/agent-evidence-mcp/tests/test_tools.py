@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import re
 import sys
 from importlib import metadata, resources
 from pathlib import Path
@@ -229,15 +230,21 @@ def test_base64_artifact_and_argument_errors() -> None:
 
 # --- pins ----------------------------------------------------------------------------
 
-def test_every_package_is_pinned_exactly_and_installed_at_that_pin() -> None:
-    requires = [r for r in metadata.requires("agent-evidence-mcp") or [] if "extra ==" not in r]
-    pins = dict(r.split("==") for r in requires)
-    assert set(pins) == {
-        "mcp", "pyyaml", "probity-verify", "agent-evidence-vectors",
-        "agent-evidence-vocabulary", "agent-evidence-admission", "jcs-admit",
+def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_compatible_range() -> None:
+    from packaging.requirements import Requirement
+
+    lines = [x for x in metadata.requires("agent-evidence-mcp") or [] if "extra ==" not in x]
+    reqs = {r.name: r for r in map(Requirement, lines)}
+    family = {
+        "probity-verify", "agent-evidence-vectors", "agent-evidence-vocabulary",
+        "agent-evidence-admission", "jcs-admit",
     }
-    for name, version in pins.items():
-        assert metadata.version(name) == version
+    assert set(reqs) == {"mcp", "pyyaml"} | family
+    for name, req in reqs.items():
+        spec = str(req.specifier)
+        form = r"~=\d+\.\d+\.\d+" if name in family else r"==\d+\.\d+\.\d+"
+        assert re.fullmatch(form, spec), f"{name}: {spec}"
+        assert req.specifier.contains(metadata.version(name)), f"{name} installed outside {spec}"
 
 
 # --- canonicalize_json and verify_dsse (real jcs-admit and dsse crates) ----------------
