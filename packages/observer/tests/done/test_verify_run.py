@@ -216,7 +216,7 @@ def test_staging_keeps_only_links_the_start_tree_had(tmp_path):
     os.symlink("/etc/passwd", final / "outside")
     os.symlink("../..", final / "up")
     os.mkfifo(final / "pipe")
-    staged = verify_run.stage_tree(final, tmp_path / "staged", start)
+    staged = verify_run.stage_tree(final, tmp_path / "staged", start, _recorded(final))
     assert sorted(staged.rejected) == ["conftest.py", "outside", "pipe", "up"]
     assert (tmp_path / "staged" / "inside").is_symlink()
 
@@ -227,18 +227,91 @@ def test_a_link_that_vanishes_mid_staging_is_rejected_not_raised(tmp_path, monke
         root.mkdir()
         (root / "a.txt").write_text("a")
         os.symlink("a.txt", root / "inside")
+    record = _recorded(final)
     real = os.readlink
 
     def vanishing(path, *args, **kwargs):
-        if Path(path) == final / "inside":
+        if kwargs.get("dir_fd") is not None and os.fsdecode(path) == "inside":
             raise FileNotFoundError(path)
         return real(path, *args, **kwargs)
 
     monkeypatch.setattr(verify_run.os, "readlink", vanishing)
-    assert verify_run._inside(final, final / "inside") is False
-    staged = verify_run.stage_tree(final, tmp_path / "staged", start)
+    staged = verify_run.stage_tree(final, tmp_path / "staged", start, record)
     assert staged.rejected == ["inside"]
     assert not (tmp_path / "staged" / "inside").is_symlink()
+
+
+def _recorded(root):
+    scanned = treedigest.scan(root)
+    return {"schema_version": "probity-tree/v2", "tree_sha256": scanned.sha256,
+            **scanned.record_fields()}
+
+
+def _nested_trees(tmp_path):
+    start, final, outside = tmp_path / "start", tmp_path / "f", tmp_path / "outside"
+    for root in (start, final):
+        (root / "dir").mkdir(parents=True)
+        (root / "a.txt").write_text("a")
+        (root / "dir" / "file").write_text("sealed")
+    outside.mkdir()
+    (outside / "file").write_text("outside")
+    return start, final, outside
+
+
+def _on_open(monkeypatch, name, action):
+    """Run ``action`` once, just before the first open of an entry called ``name``."""
+    real, fired = os.open, []
+
+    def opening(path, *args, **kwargs):
+        if not fired and os.path.basename(os.fsdecode(path)) == name:
+            fired.append(True)
+            action()
+        return real(path, *args, **kwargs)
+
+    monkeypatch.setattr(verify_run.os, "open", opening)
+
+
+def test_staging_never_reads_through_a_parent_swapped_for_a_link(tmp_path, monkeypatch):
+    start, final, outside = _nested_trees(tmp_path)
+    record = _recorded(final)
+
+    def swap():
+        os.replace(final / "dir", final / "old")
+        os.symlink(outside, final / "dir")
+
+    _on_open(monkeypatch, "file", swap)
+    verify_run.stage_tree(final, tmp_path / "staged", start, record)
+    assert (tmp_path / "staged" / "dir" / "file").read_text() == "sealed"
+
+
+def test_staging_refuses_a_directory_swapped_for_a_link_before_it_is_entered(
+        tmp_path, monkeypatch):
+    start, final, outside = _nested_trees(tmp_path)
+    record = _recorded(final)
+
+    def swap():
+        os.replace(final / "dir", final / "old")
+        os.symlink(outside, final / "dir")
+
+    _on_open(monkeypatch, "a.txt", swap)
+    with pytest.raises(verify_run.GradeError):
+        verify_run.stage_tree(final, tmp_path / "staged", start, record)
+
+
+def test_staging_refuses_bytes_that_changed_after_the_tree_check(tmp_path, monkeypatch):
+    start, final, _ = _nested_trees(tmp_path)
+    record = _recorded(final)
+    _on_open(monkeypatch, "file", lambda: (final / "dir" / "file").write_text("rewritten"))
+    with pytest.raises(verify_run.GradeError):
+        verify_run.stage_tree(final, tmp_path / "staged", start, record)
+
+
+def test_staging_refuses_an_entry_the_record_does_not_name(tmp_path):
+    start, final, _ = _nested_trees(tmp_path)
+    record = _recorded(final)
+    (final / "dir" / "late.py").write_text("x = 1\n")
+    with pytest.raises(verify_run.GradeError):
+        verify_run.stage_tree(final, tmp_path / "staged", start, record)
 
 
 def test_reset_removes_grader_files_the_agent_added_and_refuses_a_link_above(tmp_path):
@@ -289,7 +362,7 @@ def test_staging_rejects_a_native_binary_the_start_tree_did_not_have(tmp_path):
     (final / "evil.so").write_bytes(b"\x7fELFevil")
     (final / "hidden").write_bytes(b"\x7fELFnoext")
     (final / "plain.py").write_text("x = 1\n")
-    staged = verify_run.stage_tree(final, tmp_path / "staged", start)
+    staged = verify_run.stage_tree(final, tmp_path / "staged", start, _recorded(final))
     assert sorted(staged.rejected_native) == ["evil.so", "hidden"]
     assert (tmp_path / "staged" / "same.so").exists() and (tmp_path / "staged" / "plain.py").exists()
 

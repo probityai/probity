@@ -108,3 +108,20 @@ def test_the_container_is_kept_so_its_files_can_be_copied_out():
     argv = backend_docker.command(identity, name="n", workspace="/w", agent_argv=["true"],
                                   env={}, uid=1000, network=False)
     assert "--rm" not in argv
+
+
+@pytest.mark.parametrize("path,where", [
+    ("/dev/shm/verifier/notes.txt", "outside_workspace"),
+    ("/dev/shm/reward.json", "outside_workspace"),
+    ("/dev/shm/sitecustomize.py", "grader_path"),
+    ("/run/verifier/notes.txt", "outside_workspace"),
+    ("/run/x/site-packages/m.py", "grader_path"),
+])
+def test_observer_records_shared_memory_and_run_writes_with_their_location(path, where):
+    entry = record_oe._external(event("write", path), "/home/agent/workspace")
+    assert entry is not None and entry["paths"] == [path] and entry["location"] == where
+
+
+@pytest.mark.parametrize("path", ["/dev/null", "/dev/pts/0", "/proc/self/fd/1", "/sys/x"])
+def test_observer_still_drops_device_and_kernel_trees(path):
+    assert record_oe._external(event("write", path), "/home/agent/workspace") is None
