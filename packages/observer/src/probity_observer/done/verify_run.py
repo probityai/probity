@@ -3,8 +3,9 @@
 One grading run, in order:
 
 1. Check that the final tree on disk is the one the tree record names (its digest).
-2. Stage a copy without following links: regular files are copied with ``O_NOFOLLOW``, a
-   link that would leave the tree and every special file are rejected and listed.
+2. Stage a copy without following links: every directory and file is opened relative to its
+   parent's descriptor with ``O_NOFOLLOW``, a link that would leave the tree and every special
+   file are rejected and listed, and the copy is measured against the tree record again.
 3. Reset every protected path from the sealed copy, together with its excluded names, and
    remove every ``__pycache__`` and ``.pytest_cache`` in the tree, so neither a poisoned
    ``.pyc`` nor a cache file survives. Measure the protected digests again.
@@ -31,6 +32,7 @@ One grading run, in order:
 from __future__ import annotations
 
 import difflib
+import hashlib
 import json
 import os
 import re
@@ -48,7 +50,7 @@ from . import heldout as heldout_cases
 from . import mutants, pytest_plugins, visible_detect
 from .contract import ACCEPTANCE_CONFIG, Protected, copy_protected, protected_digest
 from .formats import DoneError, encode, public_key, sha256, sign_record
-from .native import native
+from .native import ELF_MAGIC, native_name
 from .runner import (PYTEST_ROOT, SCRUBBED_ENV, TIMEOUT_EXIT, changed_paths, chmod_tree,
                      image_executable, is_pytest_replay, is_replay, replay_parent, run_replay,
                      stage)
@@ -166,76 +168,145 @@ class Staged:
     rejected_native: list[str] = field(default_factory=list)
 
 
-def _copy_file(source: Path, target: Path) -> None:
-    descriptor = os.open(source, os.O_RDONLY | os.O_NOFOLLOW)
+NOFOLLOW = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0)
+
+
+def _open_entry(name: str, parent: int, seen: os.stat_result, directory: bool) -> int:
+    """Open ``name`` under the directory descriptor ``parent``, never through a link.
+
+    The descriptor must be the entry :func:`os.stat` saw (same device and inode, same kind),
+    so a name swapped for a link or for another file between the look and the open is
+    refused rather than followed.
+    """
+    flags = NOFOLLOW | (os.O_DIRECTORY if directory else 0)
     try:
-        with os.fdopen(descriptor, "rb", closefd=False) as reader, open(target, "xb") as writer:
-            shutil.copyfileobj(reader, writer)
-    finally:
+        descriptor = os.open(name, flags, dir_fd=parent)
+    except OSError as error:
+        raise GradeError(f"the final tree changed during staging: {name}: {error}") from error
+    opened = os.fstat(descriptor)
+    if ((opened.st_dev, opened.st_ino) != (seen.st_dev, seen.st_ino)
+            or stat.S_IFMT(opened.st_mode) != stat.S_IFMT(seen.st_mode)):
         os.close(descriptor)
-    os.chmod(target, stat.S_IMODE(os.lstat(source).st_mode))
+        raise GradeError(f"the final tree changed during staging: {name}")
+    return descriptor
 
 
-def _read_link(link: Path) -> str | None:
+def _copy_file(descriptor: int, target: Path) -> None:
+    """Copy the open regular file ``descriptor`` to the new file ``target``, mode included."""
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    with os.fdopen(descriptor, "rb", closefd=False) as reader, open(target, "xb") as writer:
+        shutil.copyfileobj(reader, writer)
+    os.chmod(target, stat.S_IMODE(os.fstat(descriptor).st_mode))
+
+
+def _descriptor_sha256(descriptor: int) -> str:
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    digest = hashlib.sha256()
+    while chunk := os.read(descriptor, treedigest.CHUNK):
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _read_link(name: str | Path, parent: int | None = None) -> str | None:
     """Return the link's target, or None when the link vanished or changed kind."""
     try:
-        return os.readlink(link)
+        return os.readlink(name, dir_fd=parent)
     except OSError:
         return None
 
 
-def _inside(root: Path, link: Path) -> bool:
-    target = _read_link(link)
-    if target is None or os.path.isabs(target):
+def _inside(root: Path, link: Path, target: str) -> bool:
+    """Whether ``target``, read from the link at ``link``, resolves inside ``root``."""
+    if os.path.isabs(target):
         return False
     resolved = os.path.normpath(os.path.join(link.parent, target))
     return resolved == str(root) or resolved.startswith(str(root) + os.sep)
 
 
-def _same_file(path: Path, sealed: Path) -> bool:
+def _same_file(descriptor: int, sealed: Path) -> bool:
     return (sealed.is_file() and not sealed.is_symlink()
-            and treedigest.file_sha256(sealed) == treedigest.file_sha256(path))
+            and treedigest.file_sha256(sealed) == _descriptor_sha256(descriptor))
 
 
-def stage_tree(final: Path, destination: Path, start: Path) -> Staged:
-    """Copy ``final`` into a new ``destination`` without following any link.
+def stage_tree(final: Path, destination: Path, start: Path,
+               tree_record: dict[str, Any]) -> Staged:
+    """Copy ``final`` into a new ``destination`` without following any link, then check it.
 
-    A symbolic link is kept only when the sealed start tree ``start`` has the same link at
-    the same path; any other link, and every special file, is rejected and listed. So is a
-    native binary (an ELF file or a ``.so``, ``.pyd``, ``.dll``, ``.dylib``) that the start
-    tree did not have byte for byte: compiled code is beyond every Python-level layer. A tree
-    record hashes regular files only, so a link the agent made (``conftest.py -> /tmp/x``)
-    would otherwise reach the grader unseen.
+    Every directory and file is opened relative to its parent's descriptor with
+    ``O_NOFOLLOW``, and each descriptor must be the entry the walk saw, so no component of a
+    path, not only the last, can be swapped for a link that leads out of the tree. A symbolic
+    link is kept only when the sealed start tree ``start`` has the same link at the same
+    path; any other link, and every special file, is rejected and listed. So is a native
+    binary (an ELF file or a ``.so``, ``.pyd``, ``.dll``, ``.dylib``) that the start tree did
+    not have byte for byte: compiled code is beyond every Python-level layer. A tree record
+    hashes regular files only, so a link the agent made (``conftest.py -> /tmp/x``) would
+    otherwise reach the grader unseen.
+
+    The copy, not the earlier scan of ``final``, is what the grader runs, so the copy is
+    measured afterwards: it must be exactly ``tree_record`` without the rejected entries, or
+    staging raises :class:`GradeError`.
     """
     destination.mkdir()
     staged = Staged(destination)
-    for directory, dirnames, filenames in os.walk(final, followlinks=False):
-        base = Path(directory)
-        relative = base.relative_to(final)
-        for name in sorted(dirnames + filenames):
-            source, target = base / name, destination / relative / name
-            mode = os.lstat(source).st_mode
-            if stat.S_ISLNK(mode):
-                sealed = start / relative / name
-                link_target = _read_link(source)  # read once: the value checked is the value staged
-                if (link_target is not None and sealed.is_symlink()
-                        and _read_link(sealed) == link_target and _inside(final, source)):
-                    os.symlink(link_target, target)
-                else:
-                    staged.rejected.append((relative / name).as_posix())
-                if name in dirnames:
-                    dirnames.remove(name)
-            elif stat.S_ISDIR(mode):
-                target.mkdir()
-            elif stat.S_ISREG(mode):
-                if native(source) and not _same_file(source, start / relative / name):
-                    staged.rejected.append((relative / name).as_posix())
-                    staged.rejected_native.append((relative / name).as_posix())
-                else:
-                    _copy_file(source, target)
-            else:
-                staged.rejected.append((relative / name).as_posix())
+    root = os.open(final, NOFOLLOW | os.O_DIRECTORY)
+    try:
+        _stage_directory(root, Path(), final, destination, start, staged)
+    finally:
+        os.close(root)
+    _check_staged(staged, tree_record)
     return staged
+
+
+def _stage_directory(parent: int, relative: Path, final: Path, destination: Path,
+                     start: Path, staged: Staged) -> None:
+    for name in sorted(os.listdir(parent)):
+        entry, target = relative / name, destination / relative / name
+        seen = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        if stat.S_ISLNK(seen.st_mode):
+            sealed = start / entry
+            link_target = _read_link(name, parent)  # read once: the value checked is staged
+            if (link_target is not None and sealed.is_symlink()
+                    and _read_link(sealed) == link_target
+                    and _inside(final, final / entry, link_target)):
+                os.symlink(link_target, target)
+            else:
+                staged.rejected.append(entry.as_posix())
+        elif stat.S_ISDIR(seen.st_mode):
+            target.mkdir()
+            child = _open_entry(name, parent, seen, directory=True)
+            try:
+                _stage_directory(child, entry, final, destination, start, staged)
+            finally:
+                os.close(child)
+        elif stat.S_ISREG(seen.st_mode):
+            descriptor = _open_entry(name, parent, seen, directory=False)
+            try:
+                if (native_name(name) or os.pread(descriptor, 4, 0) == ELF_MAGIC) \
+                        and not _same_file(descriptor, start / entry):
+                    staged.rejected.append(entry.as_posix())
+                    staged.rejected_native.append(entry.as_posix())
+                else:
+                    _copy_file(descriptor, target)
+            finally:
+                os.close(descriptor)
+        else:
+            staged.rejected.append(entry.as_posix())
+
+
+def _check_staged(staged: Staged, tree_record: dict[str, Any]) -> None:
+    """The staged copy must be the recorded tree, less exactly the entries staging rejected."""
+    rejected = set(staged.rejected)
+    expected = {name: tree_record.get(name) for name in TREE_FIELDS}
+    recorded = set().union(*(expected[name] for name in TREE_FIELDS if name != "executable"))
+    if not rejected <= recorded:
+        raise GradeError("the final tree changed during staging: an entry the record does "
+                         "not name: " + ", ".join(sorted(rejected - recorded)))
+    kept = {"files": {k: v for k, v in expected["files"].items() if k not in rejected},
+            "executable": sorted(k for k in expected["executable"] if k not in rejected),
+            "symlinks": {k: v for k, v in expected["symlinks"].items() if k not in rejected},
+            "special": {k: v for k, v in expected["special"].items() if k not in rejected}}
+    if treedigest.scan(staged.root).record_fields() != kept:
+        raise GradeError("the staged copy is not the tree the record names")
 
 
 def _remove(target: Path) -> None:
@@ -566,7 +637,7 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
     with tempfile.TemporaryDirectory(prefix="probity-verifier-") as work:
         result_dir = Path(work)
         os.chmod(result_dir, 0o700)
-        staged = stage_tree(final, result_dir / "tree", start)
+        staged = stage_tree(final, result_dir / "tree", start, tree_record)
         sources = protected_sources(staged.root, sealed / "protected", contract)
         agent_test = _agent_file(staged.root, "test.py")
         reset(staged, _protected(contract), sealed / "protected", start)
