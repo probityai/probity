@@ -139,10 +139,74 @@ def fd_path(arg: str) -> str | None:
     return decode_hex(match.group(1)) if match else None
 
 
-def argv_arg(arg: str) -> list[str]:
+_ABBREVIATED = re.compile(r"0x[0-9a-f]+ /\* \d+ vars? \*/")
+_ELEMENT = re.compile(r'"((?:\\x[0-9a-f]{2})*)"(\.\.\.)?')
+
+
+@dataclass(frozen=True)
+class Vector:
+    """One exec argument or environment array exactly as the tracer printed it.
+
+    ``items`` holds every element's raw bytes in order, never decoded and never collapsed,
+    so a duplicate name or a byte that is not UTF-8 survives. ``status`` is ``complete``
+    only when the whole array was printed; ``truncated`` when the tracer cut an element or
+    the element list (``"..."...`` or a trailing ``...``); ``abbreviated`` when it printed
+    an address and a count instead of the array. A truncated or abbreviated vector is not
+    complete evidence of what the new program received, whatever the call returned: the
+    kernel's argument limit and the tracer's ``-s`` print limit are different limits.
+    """
+
+    items: tuple[bytes, ...]
+    status: str
+
+    @property
+    def complete(self) -> bool:
+        return self.status == "complete"
+
+
+def _hex_bytes(text: str) -> bytes:
+    if len(text) % 4:
+        raise TraceError("malformed hex string")
+    return bytes(int(text[index + 2:index + 4], 16) for index in range(0, len(text), 4))
+
+
+def vector_arg(arg: str) -> Vector:
+    """Parse a whole printed array, refusing any text that is not an element or a separator.
+
+    Raises :class:`TraceError` for anything this configuration does not print: a missing
+    bracket, text between elements, a missing separator, or text after the array.
+    """
+    if _ABBREVIATED.fullmatch(arg):
+        return Vector((), "abbreviated")
     if not (arg.startswith("[") and arg.endswith("]")):
-        raise TraceError("exec argv is not an array")
-    return [decode_hex(item) for item in _HEX.findall(arg[1:-1])]
+        raise TraceError("exec vector is not an array")
+    body, items, position, status = arg[1:-1], [], 0, "complete"
+    while position < len(body):
+        if items or status != "complete":
+            if not body.startswith(", ", position):
+                raise TraceError("exec vector elements are not separated by ', '")
+            position += 2
+        if status != "complete":
+            raise TraceError("text after a truncated exec vector element")
+        if body.startswith("...", position) and position + 3 == len(body):
+            status = "truncated"
+            position += 3
+            break
+        element = _ELEMENT.match(body, position)
+        if element is None:
+            raise TraceError("exec vector element is not a hex string")
+        items.append(_hex_bytes(element.group(1)))
+        if element.group(2):
+            status = "truncated"
+        position = element.end()
+    if position != len(body):
+        raise TraceError("trailing text in exec vector")
+    return Vector(tuple(items), status)
+
+
+def argv_arg(arg: str) -> list[str]:
+    """The decoded elements of a printed array (see :func:`vector_arg` for its status)."""
+    return [item.decode("utf-8", "surrogateescape") for item in vector_arg(arg).items]
 
 
 @dataclass(frozen=True)
@@ -272,6 +336,8 @@ class Event:
     cwd: str | None = None
     env: dict[str, str] | None = None
     exit: int | None = None
+    argv_vector: Vector | None = None
+    envp_vector: Vector | None = None
     address: str | None = None
     id: str = ""
     origin: str | None = None
@@ -286,6 +352,9 @@ class Effects:
     escapes: list[dict] = field(default_factory=list)
     signals: list[dict] = field(default_factory=list)
     unresolved: list[dict] = field(default_factory=list)
+    # Exec attempts that returned an error: diagnostic only, since a failed exec installs no
+    # new program and so establishes no new environment.
+    failed_execs: list[dict] = field(default_factory=list)
     parents: dict[int, int] = field(default_factory=dict)
     root_pid: int | None = None
     root_exited: bool = False
@@ -424,18 +493,24 @@ def _exec_event(name: str, args: list[str], pid: int, when: float,
                 resolve: _Resolver) -> Event:
     """An exec with the path the kernel ran, the working directory and the loader keys.
 
-    ``-v`` prints the environment in full; an abbreviated one is a trace the
-    configuration did not produce, so it is a :class:`TraceError`.
+    The full ordered argument and environment arrays go into ``argv_vector`` and
+    ``envp_vector`` as raw bytes with their print status; ``env`` is only the loader
+    projection (:func:`loader_env`), which drops keys and collapses duplicates and so is
+    never evidence of a complete environment. A vector this configuration cannot print is a
+    :class:`TraceError`; a truncated or abbreviated one is kept with that status.
     """
     if name == "execve":
         exe = resolve.path(pid, string_arg(args[0]))
-        argv, envp = argv_arg(args[1]), argv_arg(args[2])
+        argv, envp = vector_arg(args[1]), vector_arg(args[2])
     else:
         raw = string_arg(args[1])
         exe = _fd(args[0]) if raw == "" else resolve.path(pid, raw, args[0])
-        argv, envp = argv_arg(args[2]), argv_arg(args[3])
-    return Event("exec", pid, when, argv=argv, exe=exe, cwd=resolve.of(pid),
-                 env=loader_env(envp))
+        argv, envp = vector_arg(args[2]), vector_arg(args[3])
+    decoded = [item.decode("utf-8", "surrogateescape") for item in envp.items]
+    return Event("exec", pid, when,
+                 argv=[item.decode("utf-8", "surrogateescape") for item in argv.items],
+                 exe=exe, cwd=resolve.of(pid), env=loader_env(decoded), argv_vector=argv,
+                 envp_vector=envp)
 
 
 def effects(trace: Trace, workdir: str) -> Effects:
@@ -458,6 +533,9 @@ def effects(trace: Trace, workdir: str) -> Effects:
             found.signals.append(_signal(call, here, "failed" if _failed(call) else "ok"))
             continue
         if _failed(call) and not (name in CONNECT and _in_progress(call.result)):
+            if name in EXEC:
+                found.failed_execs.append({"syscall": name, "pid": here, "time": call.time,
+                                           "result": call.result})
             continue
         if name in ("fork", "vfork", "clone", "clone3"):
             child = _ret_int(call.result)

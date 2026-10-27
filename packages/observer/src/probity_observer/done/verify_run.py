@@ -546,8 +546,6 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
     alone = worker_counted(commands)
     graded = [item for item in commands if not _beside(item, alone)]
     agent_runs = len(graded) != len(commands)
-    python_isolated = all(not os.path.basename(item["argv"][0]).startswith("python")
-                          or bool({"-I", "-P"} & set(item["argv"])) for item in graded)
     # A replay holds every assertion in the verifier's own process and receives only plain
     # data from the candidate; any other command's result is an exit status the worker sets.
     replayed = bool(graded) and all(is_replay(item["argv"]) for item in graded)
@@ -555,10 +553,14 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
         "contract_sha256": contract_sha256,
         "trusted_tree": {"expected_sha256": trusted[0], "measured_sha256": trusted[1],
                          "excluded_names_reset": True},
+        # No launch-environment or interpreter-isolation fact is reported here: neither is
+        # measured by this runner. The argv passed to the container does not bound what a
+        # wrapper (``env``, ``sh -c``, make) hands the process that runs the tests, so a fact
+        # derived from it would be a claim, not a measurement. Launch-state conformance is
+        # established only from supervised exec evidence (``launch_isolation_observed/v1``).
         "worker": {"uid": runner.worker_uid, "supplementary_groups": runner.groups(),
-                   "env_scrubbed": True, "scratch_copy": True},
-        "verifier": {"uid": os.getuid(), "assertions_in_parent": replayed,
-                     "python_isolated": python_isolated},
+                   "scratch_copy": True},
+        "verifier": {"uid": os.getuid(), "assertions_in_parent": replayed},
         "result": {"dir_mode": format(stat.S_IMODE(os.stat(result_dir).st_mode), "04o"),
                    "precleared": True, "written_by": "verifier",
                    "files_read": ["replay-result" if replayed else "container-exit-status"]
