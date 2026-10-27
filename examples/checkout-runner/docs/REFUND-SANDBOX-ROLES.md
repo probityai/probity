@@ -20,4 +20,25 @@ Independence. The admission decision (Horizon Shield's door) and the downstream 
 
 `src/checkout_runner/sandbox_signer.py` implements the admission signer, resolution generation and the resolution signer, with JCS and Ed25519 from the pinned `agent-evidence-vectors` package. `tests/test_sandbox_signer.py` covers the positive handoff and resolution, the contract's signing bytes, a bare digest refused, uncommitted, open or float-valued records refused, unknown, wrong-role and revoked keys, key material that does not match the selected key, a record changed after signing, a re-pointed `key_id`, handoff and resolution domains that do not cross, a resolution for the original receipt, and a late re-sign that cannot extend the record window. All fixtures are synthetic test keys; nothing here is a connected run.
 
-Not covered here: admission itself, current dispatch authorization at evaluation time (section 7), execution and its streams, and admission restart, which stays NOT_ESTABLISHED.
+`src/checkout_runner/sandbox_executor.py` implements the execution role against section 10, over the synthetic provider in `src/checkout_runner/sandbox_sim.py`. Before every effecting dispatch it verifies the handoff against the full committed record and the selected issuance trust, checks the selected evaluation trust (accepted issuance snapshot, no rebound key, revocation at the unrounded dispatch instant), hashes every original evidence file against the record, requires the PIC `args_digest` to equal the execution `arguments_digest`, and dispatches only inside L <= now < U, where L and U are the inward whole-second conversions of every applicable bound. It persists the scoped operation, stored arguments and idempotency key before calling the provider, writes the four closed JSONL streams, retains the provider's raw readback for every observation, and promotes an outcome to `observed_success` only when the observed effect binds to this operation, its idempotency key, its exact arguments and its original dispatch attempt. Anything else stays `unresolved` with a `local-effect-binding-mismatch` diagnostic. `result_at_cutoff` applies the report-context cutoff to both `observed_at` and `recorded_at`.
+
+`tests/test_sandbox_executor.py` carries one test per fixture id for the section 11 cases the executor owns, each refusal checked against the provider's request log as well as its effect count, plus the controls that would refute each result:
+
+| Case | Fixture ids | Control |
+|---|---|---|
+| J12 | j12a changed record, j12b forged signature, j12c unknown key, j12d wrong-role key, j12e key rebound in evaluation trust | valid delivery dispatches once |
+| J13 | j13 signer revoked before dispatch: integrity and recorded attempt ESTABLISHED, new dispatch forbidden | no recorded exact time gives NOT_ESTABLISHED |
+| J15 | j15 later trust without applicable revocation dispatches | issuance snapshot not accepted is refused |
+| J16 | j16a changed, string, boolean, float and missing arguments; j16b conflicting operation reuse | key-order-only arguments dispatch |
+| J17 | j17 duplicate and key-rotated delivery recover one operation and one effect | |
+| J18 | j18 lost response unresolved until a reconcile_lookup binds the same effect to its original dispatch | |
+| J19 | j19 pre-dispatch failure: no request in the provider log, no effect | a received request stays unresolved |
+| J20 | j20 expiry while unresolved: dispatch refused, lookup allowed | lookup after expiry can still confirm an earlier effect |
+| J21 | j21a .900 observation against a .500 cutoff; j21b earlier observation recorded after the cutoff | later cutoffs include them |
+| J22 | j22 same argument digest, wrong `effect.operation_id` | changed arguments or attempt also refuse promotion |
+| J23 | j23a unchanged, j23b key-order-only | |
+| J24 | j24a inward conversion at both bounds and equality to U, j24b empty window, j24c no extension past the handoff, j24d the section 8 12:00:09.500 example | |
+
+J14 (APS approval signer revoked before consumption) is admission's check, not the executor's; the executor never consumes an APS approval.
+
+Not covered here: admission itself, a native PIC or APS result format (the PIC result file is a synthetic stand-in carrying `arguments` and `args_digest`), a connected run against other participants' producers, and admission restart, which stays NOT_ESTABLISHED. The signer, the executor and the runner all sit in this repository, so their agreement is one project's own consistency; only the downstream reader's result is independent evidence.
