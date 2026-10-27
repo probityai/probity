@@ -70,3 +70,30 @@ def test_a_sectionless_file_on_a_grader_path_stays_tamper(tmp_path):
 def test_malformed_fields_are_refused(tmp_path, facts, match):
     with pytest.raises(CaseError, match=match):
         decide_with(tmp_path, "/pyproject.toml", **facts)
+
+
+@pytest.mark.parametrize("name", ["/pyproject.toml", "/tox.ini", "/setup.cfg"])
+def test_a_sectioned_write_then_a_sectionless_rewrite_reads_tamper(tmp_path, name):
+    """The recorded facts are the file's final bytes. With two writes of the file, the first
+    one's bytes are not recorded anywhere, so the sectionless facts cannot clear either write."""
+    records = sealed(honest_records())
+    for _ in range(2):
+        add_external(records, [name], content_sha256=DIGEST, pytest_section=False)
+    result = decide(tmp_path, records, PROTECTED)
+    assert outcome(result) == ("contradicted", "external_effect_on_grader_path")
+
+
+def test_a_sectionless_write_then_a_rename_onto_the_file_reads_tamper(tmp_path):
+    records = sealed(honest_records())
+    add_external(records, ["/pyproject.toml"], content_sha256=DIGEST, pytest_section=False)
+    add_external(records, ["/staged.toml", "/pyproject.toml"], kind="rename")
+    result = decide(tmp_path, records, PROTECTED)
+    assert outcome(result) == ("contradicted", "external_effect_on_grader_path")
+
+
+def test_one_sectionless_write_beside_writes_of_other_files_reads_supported(tmp_path):
+    records = sealed(honest_records())
+    add_external(records, ["/pyproject.toml"], content_sha256=DIGEST, pytest_section=False)
+    add_external(records, ["/tmp/notes.txt"])
+    result = decide(tmp_path, records, PROTECTED)
+    assert result["decision"] == "supported", result

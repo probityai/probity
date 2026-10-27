@@ -11,6 +11,7 @@ import ast
 import hashlib
 import itertools
 import posixpath
+from collections import Counter
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -657,21 +658,27 @@ def external_grader_effects(record: dict) -> list[str]:
     of a directory above the workspace itself (moving it aside swaps every path below it,
     protected ones included, as an ancestor rename inside the workspace does)."""
     root = record["workspace_root"]
+    named = Counter(name for entry in record["external_mutations"] for name in set(entry["paths"]))
     return [entry["id"] for entry in record["external_mutations"]
             if entry["location"] == "grader_path"
             or any(grader_path(name) or (ancestor_config(name, root)
-                                         and not sectionless_write(entry, name))
+                                         and not sectionless_write(entry, name, named[name]))
                    or under(root, name)
                    for name in entry["paths"])]
 
 
-def sectionless_write(entry: dict, name: str) -> bool:
+def sectionless_write(entry: dict, name: str, mutations: int) -> bool:
     """A write or create of pyproject.toml, tox.ini or setup.cfg whose recorded content has no
-    pytest section: pytest does not read it. Any other kind (a rename or unlink can remove a
-    sectioned file), a conftest.py or pytest.ini, or a record without the field stays a
-    contradiction."""
+    pytest section, and the only recorded mutation that names the file: pytest does not read it.
+
+    The observer reads the content once, after the run, so the facts are the file's final bytes.
+    They are the bytes this write installed only when nothing else touched the file; a second
+    write, a rename onto it or a link to it may have installed a section pytest read in between,
+    so ``mutations`` (how many recorded mutations name ``name``) must be one. Any other kind (a
+    rename or unlink can remove a sectioned file), a conftest.py or pytest.ini, or a record
+    without the field stays a contradiction."""
     return (entry.get("pytest_section") is False and entry["type"] in ("write", "create")
-            and posixpath.basename(name) in SECTIONED_CONFIG)
+            and mutations == 1 and posixpath.basename(name) in SECTIONED_CONFIG)
 
 
 def _result(item: Any, label: str) -> dict:
