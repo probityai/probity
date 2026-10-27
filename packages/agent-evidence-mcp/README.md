@@ -6,6 +6,8 @@ An offline, read-only MCP server that decides whether a claim about an AI system
 
 It's for agent builders, auditors and platform engineers who want their assistant to check evidence instead of trusting a report.
 
+agent-evidence is the open record format; `probityai` checks and grades records against it, and this server runs those checks for an assistant.
+
 Install the released package: `pip install agent-evidence-mcp==0.2.3`. It takes the packages of its own family (`probity-verify`, `agent-evidence-vectors`, `agent-evidence-vocabulary`, `agent-evidence-admission`, `jcs-admit`) as compatible-release ranges, so it installs beside their latest releases, and pins every third-party dependency exactly. The last one carries the `jcs-admit` and `dsse` Rust crates as wheels.
 
 ## Quick start
