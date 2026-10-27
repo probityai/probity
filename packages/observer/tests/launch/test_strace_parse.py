@@ -266,9 +266,10 @@ def test_execveat_resolves_against_its_directory_descriptor():
     assert empty.exe == "/workspace/bin/tool2" and empty.env == {}
 
 
-def test_an_abbreviated_environment_is_a_trace_error():
-    with pytest.raises(strace.TraceError):
-        build([f"10 1.000000 execve({hx('/a')}, [{hx('a')}], 0x7ffd /* 3 vars */) = 0"])
+def test_an_abbreviated_environment_is_kept_as_abbreviated_not_complete():
+    found = build([f"10 1.000000 execve({hx('/a')}, [{hx('a')}], 0x7ffd /* 3 vars */) = 0"])
+    (event,) = kinds(found, "exec")
+    assert event.envp_vector.status == "abbreviated" and not event.envp_vector.complete
 
 
 def test_failed_calls_change_nothing():

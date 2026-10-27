@@ -22,15 +22,23 @@ def report(tmp_path, argvs):
                                  (1, 2), tmp_path, None, COUNTS)["verifier"]
 
 
-@pytest.mark.parametrize("program", ["python", "python3", "/usr/local/bin/python",
-                                     "/usr/bin/python3.12"])
-def test_a_python_command_without_isolation_flags_is_not_isolated(tmp_path, program):
-    assert report(tmp_path, [[program, "-m", "pytest"]])["python_isolated"] is False
+def full_report(tmp_path, argvs):
+    commands = [{"argv": argv} for argv in argvs]
+    return verify_run._isolation("c" * 64, ("a" * 64, "a" * 64), Runner("img"), commands,
+                                 (1, 2), tmp_path, None, COUNTS)
 
 
-@pytest.mark.parametrize("program", ["python", "/usr/local/bin/python"])
-def test_a_python_command_with_isolation_flags_is_isolated(tmp_path, program):
-    assert report(tmp_path, [[program, "-I", "-m", "pytest"]])["python_isolated"] is True
+@pytest.mark.parametrize("argv", [["python", "-m", "pytest"], ["python", "-I", "-m", "pytest"],
+                                  ["env", "PYTHONPATH=/x", "python", "-I", "-m", "pytest"],
+                                  ["sh", "-c", "X=1 python -I -m pytest"], ["make", "check"]])
+def test_no_unmeasured_isolation_fact_is_reported(tmp_path, argv):
+    """Neither the scrubbed-environment nor the Python-isolation fact can be read off an argv,
+    so the report carries neither, whatever the command looks like."""
+    found = full_report(tmp_path, [argv])
+    assert "python_isolated" not in found["verifier"]
+    assert "env_scrubbed" not in found["worker"]
+    assert found["worker"] == {"uid": verify_run.WORKER_UID, "supplementary_groups": [],
+                               "scratch_copy": True}
 
 
 def test_assertions_in_parent_is_false_when_nothing_was_graded(tmp_path):
