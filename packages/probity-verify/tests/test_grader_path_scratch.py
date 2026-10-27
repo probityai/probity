@@ -9,6 +9,10 @@ from probity_verify.adapters.done_records import grader_path
     "/tmp/verifier/notes.txt",
     "/var/tmp/reward.json",
     "/tmp/scratch-venv/pyvenv.cfg",
+    "/run/verifier/notes.txt",
+    "/run/lock/reward.json",
+    "/dev/shm/verifier/notes.txt",
+    "/dev/shm/reward.json",
 ])
 def test_honest_scratch_writes_are_not_grader_paths(name):
     assert not grader_path(name)
@@ -22,6 +26,8 @@ def test_honest_scratch_writes_are_not_grader_paths(name):
     "/tmp/x/site-packages/m.py",
     "/usr/pyvenv.cfg",
     "/home/agent/reward.txt",
+    "/dev/shm/sitecustomize.py",
+    "/run/x/site-packages/m.py",
 ])
 def test_grader_paths_still_count(name):
     assert grader_path(name)

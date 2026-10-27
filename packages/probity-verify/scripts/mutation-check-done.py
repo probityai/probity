@@ -203,7 +203,7 @@ MUTATIONS = [
      "or any(grader_path(name) or (ancestor_config(name, root)",
      "or any((ancestor_config(name, root)"),
     ("records: an outside mutation above the workspace ignored", RECORDS, PROTECTED[1],
-     "name))\n                   or under(root, name)", "name))"),
+     "named[name]))\n                   or under(root, name)", "named[name]))"),
     ("records: .pth not a grader path", RECORDS, PROTECTED[1],
      'parts[-1].endswith((".pth", "._pth"))', 'parts[-1].endswith(("._pth",))'),
     ("records: ._pth not a grader path", RECORDS, PROTECTED[1],
