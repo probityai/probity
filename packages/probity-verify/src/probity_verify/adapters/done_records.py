@@ -41,9 +41,10 @@ GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json",
                           "pyvenv.cfg", "ld.so.preload", "ld.so.cache", "ld.so.conf"})
 GRADER_SEGMENTS = frozenset({"site-packages", "dist-packages", "verifier", "ld.so.conf.d"})
 # The grader's reward files, and honest scratch roots where they and a ``verifier`` directory
-# are the agent's own: the grader runs in a fresh container whose /tmp is a new tmpfs.
+# are the agent's own: the grader runs in a fresh container with a new /tmp tmpfs, its own
+# /dev/shm, and the image's read-only /run, so none of the agent's writes there reach it.
 REWARD_FILES = frozenset({"reward.json", "reward.txt"})
-SCRATCH_ROOTS = ("/tmp/", "/var/tmp/")
+SCRATCH_ROOTS = ("/tmp/", "/var/tmp/", "/dev/shm/", "/run/")
 SYSTEM_ROOTS = ("/etc/", "/usr/", "/lib/", "/lib64/", "/bin/", "/sbin/", "/opt/")
 # Files pytest reads from the workspace and from every directory above it, with no flag.
 ANCESTOR_CONFIG = frozenset({"conftest.py", "pytest.ini", "pyproject.toml", "tox.ini",
