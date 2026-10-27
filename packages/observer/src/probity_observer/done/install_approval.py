@@ -355,4 +355,38 @@ def approve(installation: Installation, observation: Observation,
     """
     startup = installation.images.get(observation.sha256)
     kind = startup.kind if startup else "unsupported"
-    if (startup is None or startup.sha256 != observation.sha256
+    try:
+        if startup is None or startup.sha256 != observation.sha256:
+            raise _Refuse(IDENTITY)
+        if installation.mounts != runtime.mounts:
+            raise _Refuse(INSTALL)
+        if observation.path != startup.executable:
+            raise _Refuse(IDENTITY)
+        executable = _check(runtime, installation.sources, startup.executable)
+        pin = installation.sources.get(executable)
+        if pin is None or pin.kind != "file" or pin.sha256 != startup.sha256:
+            raise _Refuse(INSTALL)
+        for root in startup.roots:
+            _inventory(runtime, installation.sources, root)
+        for dependency in startup.dependencies:
+            _check(runtime, installation.sources, dependency)
+        for prefix in startup.venv_prefixes:
+            _check(runtime, installation.sources, prefix)
+        if startup.chain_script is not None:
+            _check(runtime, installation.sources, startup.chain_script)
+        _shebang(observation, startup, runtime, installation.sources)
+        override_site = _override(runtime, installation.sources, startup)
+        isolated, site_enabled = _options(observation.argv, observation.env,
+                                          installation.python_version)
+        if not isolated:
+            raise _Refuse(OPTIONS)
+        if override_site is not None:
+            site_enabled = override_site
+        if site_enabled:
+            for directory in startup.site_dirs:
+                _site(runtime, installation.sources, directory)
+    except _Refuse as exc:
+        return Approval(kind, exc.reason)
+    except (OSError, ValueError):
+        return Approval(kind, INSTALL)
+    return Approval(kind, None)

@@ -140,3 +140,16 @@ def test_override_and_unapproved_hook(tree: Path) -> None:
     installation, observation, runtime = _case(tree)
     image = replace(installation.images[observation.sha256], override=OVERRIDE)
     installation = replace(installation, images={observation.sha256: image})
+    assert approve(installation, observation, runtime).reason is None
+
+    _put(tree, SITE + "/hook.pth", b"import unapproved\n")
+    installation, observation, runtime = _case(tree)
+    image = replace(installation.images[observation.sha256], override=OVERRIDE)
+    installation = replace(installation, images={observation.sha256: image})
+    assert approve(installation, observation, runtime).reason is None
+
+    _put(tree, OVERRIDE, b"../lib\nimport site\n")
+    installation, observation, runtime = _case(tree)
+    image = replace(installation.images[observation.sha256], override=OVERRIDE)
+    installation = replace(installation, images={observation.sha256: image})
+    assert approve(installation, observation, runtime).reason == INSTALL
