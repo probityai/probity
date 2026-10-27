@@ -100,8 +100,10 @@ def test_capture_failure_makes_collection_incomplete(monkeypatch):
 
 
 def test_cli_evidence_fd():
-    src = Path(__file__).resolve().parents[2] / "src"
-    environment = dict(os.environ, PYTHONPATH=str(src))
+    import probity_observer
+
+    package_parent = Path(probity_observer.__file__).resolve().parents[1]
+    environment = dict(os.environ, PYTHONPATH=str(package_parent))
     with tempfile.TemporaryFile(mode="w+b") as evidence:
         result = subprocess.run(
             [sys.executable, "-m", "probity_observer.sensors.supervisor",
