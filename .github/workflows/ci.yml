@@ -23,6 +23,7 @@ jobs:
     outputs:
       members: ${{ steps.map.outputs.members }}
       rust: ${{ steps.map.outputs.rust }}
+      runner: ${{ steps.map.outputs.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -38,14 +39,20 @@ jobs:
             members="$(python3 scripts/workspace.py changes "$BASE" HEAD)"
             rust=false
             if git diff --name-only "$BASE...HEAD" | grep -qE '^(crates/|Cargo\.(toml|lock)$|\.github/)'; then rust=true; fi
+            runner=false
+            if git diff --name-only "$BASE...HEAD" | grep -qE '^(examples/checkout-runner/|\.github/workflows/ci\.yml$)'; then runner=true; fi
           else
             # A push to main or a manual run checks everything.
             members="$(python3 scripts/workspace.py changes HEAD HEAD | python3 -c 'import json,sys; print(json.dumps({k: True for k in json.load(sys.stdin)}))')"
             rust=true
+            runner=true
           fi
-          echo "members=$members" >> "$GITHUB_OUTPUT"
-          echo "rust=$rust" >> "$GITHUB_OUTPUT"
-          echo "members: $members, rust: $rust"
+          {
+            echo "members=$members"
+            echo "rust=$rust"
+            echo "runner=$runner"
+          } >> "$GITHUB_OUTPUT"
+          echo "members: $members, rust: $rust, runner: $runner"
 
   lint:
     runs-on: ubuntu-24.04
@@ -95,6 +102,21 @@ jobs:
     with:
       distribution: probityai
 
+  checkout-runner:
+    needs: changes
+    if: needs.changes.outputs.runner == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: examples/checkout-runner
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - run: uv sync --frozen
+      - run: uv run --frozen python -m pytest -q
+
   rust:
     needs: changes
     if: needs.changes.outputs.rust == 'true'
@@ -128,7 +150,7 @@ jobs:
 
   ci-ok:
     if: always()
-    needs: [changes, lint, probity-verify, probityai, probityai-distribution, rust, package-ratchet, observer-distribution]
+    needs: [changes, lint, probity-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed
