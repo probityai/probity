@@ -179,6 +179,22 @@ def derive(case_dir: Path) -> dict[str, dict[str, str]]:
     return out
 
 
+MISMATCH = "effect_identity_mismatch"
+
+
+def _row_kind(op: dict[str, Any], row: dict[str, Any] | None) -> str:
+    if not row:
+        return "none"
+    if row["kind"] != "effect":
+        return row["kind"]
+    # The idempotency key is the operation's identity. A provider reference is compared only when the
+    # operation holds one: after a lost response it is unknown until a report-time read finds the row.
+    if row.get("idempotency_key") != op["idempotency_key"] or (
+            op.get("provider_ref") is not None and row.get("provider_ref") != op["provider_ref"]):
+        return MISMATCH
+    return row["kind"]
+
+
 def _resolved(s: dict[str, Any], res_ids: set[str]) -> dict[str, str]:
     """At the cutoff, is every reservation's outcome known and consistent with what was observed?"""
     if not res_ids:
@@ -197,13 +213,15 @@ def _resolved(s: dict[str, Any], res_ids: set[str]) -> dict[str, str]:
         for ev in s["gate_events"]:
             if ev["reservation_id"] == rid and iso_ms(ev["at"]) <= cutoff:
                 state = ev["to_state"]
-        rows = [r for o in ops[rid] for r in seen[o["receipt_id"]]]
-        kinds = {r["kind"] if r else "none" for r in rows}
+        # An observed effect counts only when it is this operation's own row: same idempotency key and same
+        # provider reference. The same arguments under another occurrence is a contradiction, not a match.
+        kinds = {_row_kind(o, r) for o in ops[rid] for r in seen[o["receipt_id"]]}
         if state == "committed":
             v = E if kinds == {"effect"} else (C if kinds else N)
         elif state == "released":
             never_dispatched = not ops[rid]
-            v = E if never_dispatched or (kinds and kinds <= {"none", "declined"}) else (C if "effect" in kinds else N)
+            v = E if never_dispatched or (kinds and kinds <= {"none", "declined"}) else (
+                C if kinds & {"effect", MISMATCH} else N)
         else:
             v = N
         verdicts.append(v)

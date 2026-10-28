@@ -65,6 +65,8 @@ MUTANTS = [
     ("report: a refused verdict request counts as admissible", "report.py",
      'put("evidence.verdict_request_admissible", E if probs == [] else C,',
      'put("evidence.verdict_request_admissible", E,'),
+    ("report: an observed effect of another occurrence counts as this one", "report.py",
+     'if row.get("idempotency_key") != op["idempotency_key"] or (', "if False and ("),
     ("cases: the segment control keeps the colon", "cases.py",
      'control = {**req, "merchant_id": req["merchant_id"].replace(":", "-")}', "control = req"),
     ("suites: a failed setup counts as a contradiction", "suites.py",
@@ -84,7 +86,8 @@ MUTANTS = [
      'if suites_mod.verdict(record)["verdict"] != s["verdict"]:', "if False:"),
 ]
 
-TESTS = ["tests/test_handoff.py", "tests/test_report.py", "tests/test_suites.py", "tests/test_matrix.py"]
+TESTS = ["tests/test_handoff.py", "tests/test_report.py", "tests/test_suites.py", "tests/test_matrix.py",
+         "tests/test_effect_identity.py"]
 
 
 def run_suite(src_parent: Path) -> tuple[int, str]:
