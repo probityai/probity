@@ -4,7 +4,7 @@ A server can change a tool after someone grades it. Your consumer needs to check
 the definition it holds, the named tool and the grade's expiry before it relies
 on that grade.
 
-[Kenneives supplied this AgentAvow case](https://github.com/probityai/agent-evidence-atlas/issues/49#issuecomment-6071630803)
+[Kenneives supplied this AgentAvow case](https://github.com/probityai/agent-evidence/issues/24#issuecomment-6247268743)
 for `ask_wiki_question`. The offline reader checks the original signed grade
 and all three saved tool definitions. It preserves the contributor's six cases
 and thirteen tool-name cases.
