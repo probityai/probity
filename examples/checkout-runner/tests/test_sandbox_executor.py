@@ -54,10 +54,30 @@ def snapshot(*keys: dict) -> dict:
             "provider_namespaces": ["sim"], "keys": list(keys) or [key(), key(ROTATED, "k2")]}
 
 
-def evidence(args: dict = ARGS) -> dict[str, bytes]:
+def proposal(args: dict = ARGS, approval_ref: str = "rcpt-1", decision_id: str = "dec-1") -> bytes:
+    """A PIC proposal shaped like the pinned producer's output; its signature is not checked here."""
+    claims = [{"text": jcs_dumps({"approval_ref": approval_ref, "decision_id": decision_id}).decode(),
+               "evidence": ["merchant-approval"]}]
+    body = {"protocol": "PIC/1.0", "intent": "synthetic refund", "impact": "money",
+            "action": {"tool": "refund", "args": args}, "claims": claims, "evidence": []}
+    return json.dumps(body, sort_keys=True).encode()
+
+
+def pic_result(files: dict[str, bytes], args: dict = ARGS, **over) -> bytes:
+    """A section 4 result bound to the retained proposal and keyring bytes."""
+    body = {"schema": ex.PIC_RESULT, "contract_revision": sg.CONTRACT_REVISION, "run_id": "run-1",
+            "pic_sdk_commit": ex.PIC_SDK_COMMIT, "proposal_file_ref": ex.file_ref(files["pic_evidence_ref"]),
+            "pic_trust_file_ref": ex.file_ref(files["pic_trust_file_ref"]), "evaluated_at": "2026-10-27T11:58:00.000Z",
+            "result": "allow", "tool": "refund", "impact": "money",
+            "args_digest": hashlib.sha256(jcs_dumps(args)).hexdigest(), "claims_digest": "1" * 64,
+            "intent_digest": "2" * 64, "error_code": None, **over}
+    return json.dumps(body, sort_keys=True).encode()
+
+
+def evidence(args: dict = ARGS, prop: bytes | None = None, **over) -> dict[str, bytes]:
     files = {name: f"synthetic {name} bytes".encode() for name in sg.INPUT_REFS}
-    pic = {"arguments": args, "args_digest": hashlib.sha256(jcs_dumps(args)).hexdigest()}
-    files["pic_verification_ref"] = json.dumps(pic).encode()
+    files["pic_evidence_ref"] = prop if prop is not None else proposal(args)
+    files["pic_verification_ref"] = pic_result(files, args, **over)
     return files
 
 
@@ -194,10 +214,10 @@ def test_j13_revoked_before_dispatch_keeps_history_and_forbids_new_dispatch(exec
     keys[0]["revoked_at"] = "2026-10-27T12:00:03Z"
     d = delivery(issuance=issuance, eval_file=evaluation(issuance, keys))
     refused(executor, sim, d, "key-revoked-at-dispatch")
-    history = ex.evaluate_history(d, at("12:00:02.500"), at("12:00:05"))
+    history = ex.evaluate_history(d, at("12:00:02.500"), at("12:00:05"), "run-1")
     assert history == {"integrity": "ESTABLISHED", "recorded_attempt": "ESTABLISHED",
                        "new_dispatch": "forbidden:key-revoked-at-dispatch"}
-    assert ex.evaluate_history(d, None, at("12:00:05"))["recorded_attempt"] == "NOT_ESTABLISHED"
+    assert ex.evaluate_history(d, None, at("12:00:05"), "run-1")["recorded_attempt"] == "NOT_ESTABLISHED"
 
 
 # J15: later trust differs without an applicable revocation.
@@ -410,7 +430,7 @@ def test_j24c_no_extension_past_the_handoff_and_exact_upper_bound(executor, sim,
 
 def test_j24d_section8_example_recorded_attempt_at_9500ms_within_u(executor, sim) -> None:
     d = delivery(native=(("2026-10-27T12:00:00.000Z", "2026-10-27T12:00:10.000Z"),))
-    history = ex.evaluate_history(d, at("12:00:09.500"), at("12:00:11"))
+    history = ex.evaluate_history(d, at("12:00:09.500"), at("12:00:11"), "run-1")
     assert history == {"integrity": "ESTABLISHED", "recorded_attempt": "ESTABLISHED",
                        "new_dispatch": "forbidden:dispatch-after-window"}
 
@@ -438,10 +458,57 @@ def test_evidence_files_must_hash_to_the_record(executor, sim) -> None:
 
 
 def test_pic_args_digest_must_match_the_stored_arguments(executor, sim) -> None:
-    files = evidence()
-    pic = {"arguments": ARGS, "args_digest": "0" * 64}
-    files["pic_verification_ref"] = json.dumps(pic).encode()
+    files = evidence(args_digest="0" * 64)
     refused(executor, sim, delivery(record(files), files), "pic-args-digest")
+
+
+# Section 4 consumer checks: the result carries digests only, so the arguments
+# come from the retained, hash-bound PIC proposal.
+
+@pytest.mark.parametrize("over, code", [
+    ({"result": "block"}, "pic-result-not-allow"),
+    ({"error_code": "PIC_EVIDENCE_FAILED"}, "pic-result-not-allow"),
+    ({"tool": "transfer"}, "pic-result-tool"),
+    ({"run_id": "run-old"}, "pic-result-run-id"),
+    ({"pic_sdk_commit": "0" * 40}, "pic-result-sdk-commit"),
+    ({"proposal_file_ref": "sha256:" + "0" * 64}, "pic-result-proposal-ref"),
+    ({"pic_trust_file_ref": "sha256:" + "0" * 64}, "pic-result-trust-ref"),
+    ({"arguments": ARGS}, "pic-result-shape"),
+])
+def test_pic_result_consumer_checks(executor, sim, over, code) -> None:
+    files = evidence(**over)
+    refused(executor, sim, delivery(record(files), files), code)
+
+
+def test_pic_result_with_fields_missing_is_refused(executor, sim) -> None:
+    files = evidence()
+    body = json.loads(files["pic_verification_ref"])
+    del body["claims_digest"]
+    files["pic_verification_ref"] = json.dumps(body).encode()
+    refused(executor, sim, delivery(record(files), files), "pic-result-shape")
+
+
+def test_proposal_arguments_must_equal_the_admitted_arguments(executor, sim) -> None:
+    files = evidence(prop=proposal(dict(ARGS, amount_minor=4001)))
+    refused(executor, sim, delivery(record(files), files), "pic-arguments")
+
+
+@pytest.mark.parametrize("args", [dict(ARGS, amount_minor="4000"), dict(ARGS, currency="USD"),
+                                  dict(ARGS, extra=1), dict(ARGS, payment_id="pay A")])
+def test_proposal_arguments_outside_the_refund_schema_are_refused(executor, sim, args) -> None:
+    files = evidence(prop=proposal(args))
+    refused(executor, sim, delivery(record(files, args=ARGS), files), "pic-arguments-schema")
+
+
+@pytest.mark.parametrize("prop", [proposal(approval_ref="rcpt-2"), proposal(decision_id="dec-2")])
+def test_proposal_claim_must_name_the_admitted_approval_and_decision(executor, sim, prop) -> None:
+    files = evidence(prop=prop)
+    refused(executor, sim, delivery(record(files), files), "pic-claim-binding")
+
+
+def test_control_key_order_only_proposal_arguments_dispatch(executor, sim) -> None:
+    files = evidence(prop=proposal({"currency": "EUR", "amount_minor": 4000, "payment_id": "pay_A"}))
+    assert executor.deliver(delivery(record(files), files))["state"] == "observed_success"
 
 
 def test_streams_are_closed_records(executor, sim) -> None:

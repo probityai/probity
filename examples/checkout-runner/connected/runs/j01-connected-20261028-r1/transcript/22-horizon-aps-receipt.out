@@ -1,0 +1,79 @@
+{
+ "schema": "hs-aps-receipt-adapter-case-v0",
+ "profile": "hs-refund-admission-profile/0.1",
+ "contract_revision": "review-2026-10-23",
+ "run_id": "j01-connected-20261028-r1",
+ "consumed_at": "2026-10-28T21:45:42.622Z",
+ "verified": true,
+ "reason": null,
+ "step": null,
+ "code": null,
+ "detail": null,
+ "inputs": [
+  {
+   "file": "inputs/pic-proposal.json",
+   "raw_sha256": "sha256:995e5c6dc703c7ad8bfdbe2a991b40fa0fd3836279f4ec77f644b8230f4abcac",
+   "canonical_sha256": "8060c00fccc495fbe65d06ff140841197036327fdd7345d81e465719b68c200d"
+  },
+  {
+   "file": "inputs/aps-approval.json",
+   "raw_sha256": "sha256:aba24190eed8773896a044f07da1853c3c299a828639af587168e9dc203a5e50",
+   "canonical_sha256": "8a5c4424697a45a51de0d21388de1bf0ee2a7028e1fb7541fc5817dc1962516e"
+  },
+  {
+   "file": "inputs/aps-intent.json",
+   "raw_sha256": "sha256:0fd6ff611117a5637ca9d582d2c1d36e31babde7221c14e9821c47ef25c2d42e",
+   "canonical_sha256": "a5fa8c32295cf990139c14113b8762727181d7d78d41f55a9041558eb15002cd"
+  },
+  {
+   "file": "inputs/aps-action.json",
+   "raw_sha256": "sha256:f557653ac1e460859eada47368d04424d644adbaf8980b0a44a0d6235bd47df8",
+   "canonical_sha256": "6415dc54deff642548c24c1425ad7064777644ccdad25eccb5e615528e515f7d"
+  },
+  {
+   "file": "inputs/aps-payload.json",
+   "raw_sha256": "sha256:e212d8d2edd9aef30ee2a01f977ffa793cb26ae52089795a752fb9033b87dbd6",
+   "canonical_sha256": "d1d9a174c3b123cc574e9d389ee27ad2a46b029f29864e9798bfc10bec0dd4ef"
+  },
+  {
+   "file": "inputs/decision-evidence.json",
+   "raw_sha256": "sha256:faf33733193406df6eefc18a3fdf96cec8d3bdfb0801b1be607f84d87a0a5524",
+   "canonical_sha256": "14ffe6469e678b306fec18c1411f92d34d0d1113ebd87e623531ee4ca72b70b4"
+  },
+  {
+   "file": "inputs/pic-verification.json",
+   "raw_sha256": "sha256:3a87eca67212ce4d327a20db259866b1957caede9baaee60af56cef772962c3e",
+   "canonical_sha256": "3a87eca67212ce4d327a20db259866b1957caede9baaee60af56cef772962c3e"
+  },
+  {
+   "file": "trust/pic-keys.json",
+   "raw_sha256": "sha256:c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+   "canonical_sha256": "987497eac382fa77122ae6aa36ced40d67530e40be7220f3ea875db914724d4a"
+  },
+  {
+   "file": "trust/aps-consumption.json",
+   "raw_sha256": "sha256:67bc43a11023d9215c6ec47ccaddc82b07f6d4405f94f9cfe369653a8e8a67f4",
+   "canonical_sha256": "99c2f2c1805d362b5be3d1cd6a55e2e84eb08a93a3339d5be23bb728e3369364"
+  },
+  {
+   "file": "trust/handoff-issuance.json",
+   "raw_sha256": "sha256:4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+   "canonical_sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12"
+  },
+  {
+   "file": "trust/handoff-evaluation.json",
+   "raw_sha256": "sha256:9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+   "canonical_sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9"
+  }
+ ],
+ "tuple": {
+  "payment_id": "pay_B",
+  "amount_minor": 2500,
+  "currency": "EUR"
+ },
+ "decision_id": "decision-n4",
+ "approval_ref": "83fad82ed131b56baa67d697cab309e511cc495b2e12751df686f4dd93a7f621",
+ "intent_ref": "148bc961a5968a32606dc32e168c74975fd156e6e469c02f1ede9953c0915624",
+ "action_ref": "a2f48eff402198bb91e8774684dcab62dabaf369dc8d4cbb8a3db58e35374107",
+ "decision_valid_until": "2026-10-28T22:15:41.775Z"
+}

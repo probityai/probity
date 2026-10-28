@@ -72,8 +72,17 @@ EVALUATION_FIELDS = frozenset({"schema", "contract_revision", "evaluation_id", "
 REPORT_FIELDS = frozenset({"schema", "contract_revision", "run_id", "scenario_id", "workflow_id",
                            "admission_issuer", "provider_namespace", "report_cutoff"})
 OPERATION_SCOPE = (*sg.SCOPE, "operation_id")
+PIC_RESULT = "refund-sandbox-pic-result/0.1"
+# The PIC SDK commit the pinned PIC producer verifies with (pic-standard
+# examples/refund-sandbox at 6856f36, requirements.txt).
+PIC_SDK_COMMIT = "330fdd817ef81d43461ea1787939e0d1cc87d589"
+PIC_RESULT_FIELDS = frozenset({
+    "schema", "contract_revision", "run_id", "pic_sdk_commit", "proposal_file_ref", "pic_trust_file_ref",
+    "evaluated_at", "result", "tool", "impact", "args_digest", "claims_digest", "intent_digest", "error_code",
+})
 
-_MS = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\Z")
+_PAYMENT_ID = re.compile(r"[A-Za-z0-9_-]+\Z")
+_MS =re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\Z")
 _HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 
 
@@ -230,17 +239,68 @@ class Authorization:
     evaluation_file_ref: str
 
 
-def check_evidence(record: dict[str, Any], evidence: dict[str, bytes]) -> str:
+def native_loads(data: bytes) -> Any:
+    """Parse a native producer file (PIC proposal) strictly: UTF-8, no duplicate members, floats or constants."""
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        raise ExecutorRefusal("native-not-utf8") from None
+    try:
+        return json.loads(text, object_pairs_hook=_pairs, parse_float=_no_float, parse_constant=_no_constant)
+    except json.JSONDecodeError:
+        raise ExecutorRefusal("native-json") from None
+
+
+def refund_arguments_ok(args: Any) -> bool:
+    """The closed refund schema of the shared profile (contract section 3)."""
+    return (isinstance(args, dict) and set(args) == sg.REFUND_ARGS
+            and isinstance(args["payment_id"], str) and bool(_PAYMENT_ID.match(args["payment_id"]))
+            and type(args["amount_minor"]) is int and 0 < args["amount_minor"] <= SAFE_INT
+            and args["currency"] == "EUR")
+
+
+def check_pic_result(record: dict[str, Any], evidence: dict[str, bytes], run_id: str) -> str:
+    """Consumer checks on the runner's section 4 PIC result; return its args_digest.
+
+    The arguments come from the retained, hash-bound PIC proposal, never from
+    the result: the section 4 result carries digests only. Follows the consumer
+    contract of the pinned PIC producer (examples/refund-sandbox/README.md).
+    """
+    pic = strict_loads(evidence["pic_verification_ref"])
+    _require(isinstance(pic, dict) and set(pic) == PIC_RESULT_FIELDS, "pic-result-shape")
+    _require(pic["schema"] == PIC_RESULT and pic["contract_revision"] == sg.CONTRACT_REVISION, "pic-result-schema")
+    _require(pic["result"] == "allow" and pic["error_code"] is None, "pic-result-not-allow")
+    _require(pic["tool"] == "refund" and pic["impact"] == "money", "pic-result-tool")
+    _require(pic["run_id"] == run_id, "pic-result-run-id")
+    _require(pic["pic_sdk_commit"] == PIC_SDK_COMMIT, "pic-result-sdk-commit")
+    parse_ms(pic["evaluated_at"])
+    _require(pic["proposal_file_ref"] == file_ref(evidence["pic_evidence_ref"]), "pic-result-proposal-ref")
+    _require(pic["pic_trust_file_ref"] == file_ref(evidence["pic_trust_file_ref"]), "pic-result-trust-ref")
+    for name in ("args_digest", "claims_digest", "intent_digest"):
+        _require(isinstance(pic[name], str) and bool(_HEX64.match(pic[name])), "pic-result-shape")
+    proposal = native_loads(evidence["pic_evidence_ref"])
+    action = proposal.get("action") if isinstance(proposal, dict) else None
+    _require(isinstance(action, dict) and action.get("tool") == "refund", "pic-proposal-tool")
+    args = action.get("args")
+    _require(refund_arguments_ok(args) and refund_arguments_ok(record["arguments"]), "pic-arguments-schema")
+    _require(typed_equal(args, record["arguments"]), "pic-arguments")
+    _require(arguments_digest(record["arguments"]) == "sha256:" + pic["args_digest"], "pic-args-digest")
+    claims = proposal.get("claims")
+    _require(isinstance(claims, list) and len(claims) == 1 and isinstance(claims[0], dict)
+             and isinstance(claims[0].get("text"), str), "pic-claim")
+    claim = native_loads(claims[0]["text"].encode("utf-8"))
+    _require(isinstance(claim, dict) and set(claim) == {"approval_ref", "decision_id"}, "pic-claim")
+    _require(claim["approval_ref"] == record["approval_ref"] and claim["decision_id"] == record["decision_id"],
+             "pic-claim-binding")
+    return pic["args_digest"]
+
+
+def check_evidence(record: dict[str, Any], evidence: dict[str, bytes], run_id: str) -> str:
     """Hash every original evidence file against the record; return the PIC args_digest."""
     _require(isinstance(evidence, dict) and set(evidence) == set(sg.INPUT_REFS), "evidence-fields")
     for name in sg.INPUT_REFS:
         _require(file_ref(evidence[name]) == record[name], f"evidence-{name}")
-    pic = strict_loads(evidence["pic_verification_ref"])
-    _require(isinstance(pic, dict) and isinstance(pic.get("args_digest"), str), "pic-result-shape")
-    _require(bool(_HEX64.match(pic["args_digest"])), "pic-result-shape")
-    _require(typed_equal(pic.get("arguments"), record["arguments"]), "pic-arguments")
-    _require(arguments_digest(record["arguments"]) == "sha256:" + pic["args_digest"], "pic-args-digest")
-    return pic["args_digest"]
+    return check_pic_result(record, evidence, run_id)
 
 
 def _keys(payload: dict[str, Any], issuance: dict[str, Any], evaluation: dict[str, Any]) -> tuple[dict, dict]:
@@ -273,8 +333,11 @@ def _revocation(keys: tuple[dict, ...], now: datetime) -> None:
             _require(now < floor_s(sg.parse_ts(key["revoked_at"])), "key-revoked-at-dispatch")
 
 
-def authorize(delivery: Delivery, now: datetime) -> Authorization:
-    """Every check section 10 requires before an effecting dispatch, at the unrounded instant ``now``."""
+def authorize(delivery: Delivery, now: datetime, run_id: str) -> Authorization:
+    """Every check section 10 requires before an effecting dispatch, at the unrounded instant ``now``.
+
+    ``run_id`` is the runner's own run id; the PIC result must carry it.
+    """
     envelope = strict_loads(delivery.handoff_file)
     payload = sg.verify_envelope(sg.HANDOFF, envelope, delivery.record, delivery.issuance)
     evaluation = strict_loads(delivery.evaluation_file)
@@ -283,7 +346,7 @@ def authorize(delivery: Delivery, now: datetime) -> Authorization:
              "issuance-snapshot-not-accepted")
     keys = _keys(payload, delivery.issuance, evaluation)
     _require(keys[1]["role"] == sg.SIGNER_ROLE, "key-role")
-    pic_digest = check_evidence(delivery.record, delivery.evidence)
+    pic_digest = check_evidence(delivery.record, delivery.evidence, run_id)
     _revocation(keys, now)
     lower, upper = dispatch_window(payload, delivery.record, keys, delivery.native_bounds)
     _require(lower <= now, "dispatch-before-window")
@@ -292,7 +355,8 @@ def authorize(delivery: Delivery, now: datetime) -> Authorization:
                          file_ref(delivery.evaluation_file))
 
 
-def evaluate_history(delivery: Delivery, exact_dispatch: datetime | None, evaluation_time: datetime) -> dict[str, str]:
+def evaluate_history(delivery: Delivery, exact_dispatch: datetime | None, evaluation_time: datetime,
+                     run_id: str) -> dict[str, str]:
     """Historical reader split (section 8): integrity, recorded-attempt authorization, new dispatch."""
     out: dict[str, str] = {}
     try:
@@ -303,14 +367,14 @@ def evaluate_history(delivery: Delivery, exact_dispatch: datetime | None, evalua
     if exact_dispatch is None:
         out["recorded_attempt"] = "NOT_ESTABLISHED"
     else:
-        out["recorded_attempt"] = _try_authorize(delivery, exact_dispatch, "ESTABLISHED", "CONTRADICTED")
-    out["new_dispatch"] = _try_authorize(delivery, evaluation_time, "allowed", "forbidden")
+        out["recorded_attempt"] = _try_authorize(delivery, exact_dispatch, run_id, "ESTABLISHED", "CONTRADICTED")
+    out["new_dispatch"] = _try_authorize(delivery, evaluation_time, run_id, "allowed", "forbidden")
     return out
 
 
-def _try_authorize(delivery: Delivery, at: datetime, yes: str, no: str) -> str:
+def _try_authorize(delivery: Delivery, at: datetime, run_id: str, yes: str, no: str) -> str:
     try:
-        authorize(delivery, at)
+        authorize(delivery, at, run_id)
         return yes
     except sg.SignerRefusal as exc:
         return f"{no}:{exc.code}"
@@ -420,7 +484,7 @@ class SandboxExecutor:
                 fault: str = "none") -> dict[str, Any]:
         """Authorize, persist and dispatch once; an identical delivery recovers the existing operation."""
         now = self.clock()
-        auth = authorize(delivery, now)
+        auth = authorize(delivery, now, self.run_id)
         record = delivery.record
         stored = copy.deepcopy(record["arguments"])
         if arguments is not None:
