@@ -42,7 +42,7 @@ from . import mutants, pytest_plugins, pytest_proof, strengthen
 from .formats import (CONTRACT_PREDICATE, DoneError, encode, sha256, sign_record,
                       statement)
 from .runner import (PYTEST_IDS_FROM, PYTEST_ROOT, Command, Runner, image_executable,
-                     pytest_replay_argv, pytest_replay_fields)
+                     pytest_replay_argv, pytest_replay_fields, replay_parent)
 
 SCHEMA = "probity-done-contract/v1"
 EXCLUDE = ("__pycache__", ".pytest_cache")
@@ -833,10 +833,15 @@ def stabilize(task: Task, runner: Runner, runs: int = 3, timeout: float = 900.0)
 
 def stability_report(result: Stability, runner: Runner, runs: int,
                      reference: bool) -> dict[str, Any]:
-    return {"stability": {"runner": runner.name, "runs_per_state": runs,
-                          "reference": "available" if reference else "unavailable",
-                          "runs": result.runs, "dropped": result.dropped},
-            "run_writes": result.run_writes}
+    stability: dict[str, Any] = {"runner": runner.name, "runs_per_state": runs,
+                                 "reference": "available" if reference else "unavailable",
+                                 "runs": result.runs, "dropped": result.dropped}
+    made = getattr(runner, "replays", None)
+    if made:
+        # Where the stabilizing replays' parents ran: grading runs the same parent, so a test
+        # the reference passed here runs the same way there.
+        stability["replay_parent"] = replay_parent(made)
+    return {"stability": stability, "run_writes": result.run_writes}
 
 
 @dataclass(frozen=True)
