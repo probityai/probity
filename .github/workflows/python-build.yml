@@ -14,6 +14,7 @@ name: python-build
 # The files are built from the checkout this run made, which holds the tracked files of one
 # commit and nothing else, and scripts/check-dist-clean.py then opens every file in dist/ and
 # fails on a private name, a private path, or a path scripts/dist-allowlist.toml does not list.
+# The private names come from the DIST_CLEAN_PRIVATE_NAMES secret and are never written here.
 # A build outside CI goes through scripts/build-from-tag.py, which exports the tag first.
 
 on:
@@ -22,6 +23,11 @@ on:
       distribution:
         required: true
         type: string
+    secrets:
+      # The private names scripts/check-dist-clean.py refuses, one per line. They live only in
+      # this secret; the check fails closed when it is empty (a fork's pull request, for one).
+      DIST_CLEAN_PRIVATE_NAMES:
+        required: true
 
 permissions:
   contents: read
@@ -52,6 +58,7 @@ jobs:
         env:
           PYTHONHASHSEED: '0'
           DISTRIBUTION: ${{ inputs.distribution }}
+          DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
         run: |
           set -euo pipefail
           SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"

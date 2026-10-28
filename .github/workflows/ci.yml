@@ -74,6 +74,8 @@ jobs:
     needs: changes
     if: fromJSON(needs.changes.outputs.members)['probity-verify']
     uses: ./.github/workflows/probity-verify.yml
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
   probityai:
     needs: changes
@@ -101,6 +103,8 @@ jobs:
     uses: ./.github/workflows/python-build.yml
     with:
       distribution: probityai
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
   checkout-runner:
     needs: changes
@@ -147,6 +151,8 @@ jobs:
     uses: ./.github/workflows/python-build.yml
     with:
       distribution: agent-evidence-observer
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
   ci-ok:
     if: always()

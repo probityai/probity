@@ -5,6 +5,9 @@ name: probity-verify
 
 on:
   workflow_call:
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES:
+        required: true
 
 permissions:
   contents: read
@@ -188,3 +191,5 @@ jobs:
     uses: ./.github/workflows/python-build.yml
     with:
       distribution: probity-verify
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}

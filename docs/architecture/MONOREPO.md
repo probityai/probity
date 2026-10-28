@@ -91,7 +91,12 @@ exports the tag with `git archive` (tracked files only, so a file hidden by `.gi
 left untracked is absent) and builds from the export. `python-build.yml` then runs
 `scripts/check-dist-clean.py` over `dist/`: it opens every wheel and source distribution and fails
 on a private path (`TODO*.md`, `research/`, `.handoff/`, `.claude/`), on a private name in any file,
-and on any path that `scripts/dist-allowlist.toml` does not list for that distribution. A new
+and on any path that `scripts/dist-allowlist.toml` does not list for that distribution. The private
+names are not in the repository: they come from the `DIST_CLEAN_PRIVATE_NAMES` repository secret
+(one name per line, also set as a Dependabot secret), the script pins the SHA-256 of the sorted
+list, and a missing or altered list stops the check with exit 2, so a run without the secret fails
+rather than passes. A finding names the list entry by number. A local `build-from-tag.py` run needs
+the same variable in its environment. A new
 member needs its own table in the allowlist (a test pins this). A PyPI file cannot be replaced, so
 this check is the only point at which a leak is cheap to fix.
 

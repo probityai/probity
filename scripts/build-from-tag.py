@@ -8,7 +8,8 @@ with `git archive`, which carries tracked files only: no untracked file, no igno
 `.git/info/exclude` entry and no tool state from the working tree it was run in. The member
 and every workspace member it needs are then built from that export the way
 .github/workflows/python-build.yml builds them, and the result is refused unless
-scripts/check-dist-clean.py passes it. Use this for any build that does not run in CI; the
+scripts/check-dist-clean.py passes it, which needs DIST_CLEAN_PRIVATE_NAMES set in the
+environment exactly as CI sets it from its secret. Use this for any build that does not run in CI; the
 published files come from CI (release.yml), which builds from a fresh checkout and runs the same check.
 """
 
