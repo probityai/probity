@@ -36,7 +36,8 @@ UNIT = ["tests/done/test_pytest_replay.py"]
 PROVE = ["tests/done/test_pytest_proof.py"]
 PIPELINE = ["tests/done/test_grade_pipeline.py"]
 # Real containers: the parent's own image and the host broker.
-CONTAINER = ["tests/done/test_replay_parent_container.py"]
+CONTAINER = ["tests/done/test_replay_parent_container.py",
+             "tests/done/test_replay_parent_command.py"]
 HARNESS = DONE / "replay.py"
 STALLS = [f"tests/done/test_replay.py::{name}" for name in (
     "test_a_partial_reply_line_is_stopped_at_the_call_limit",
