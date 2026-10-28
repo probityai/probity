@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuse a built distribution that carries a private name or a file nobody listed.
 
-    python3 scripts/check-dist-clean.py [--allowlist FILE] [--distribution NAME] <file>...
+    DIST_CLEAN_PRIVATE_NAMES=... python3 scripts/check-dist-clean.py [--allowlist FILE] [--distribution NAME] <file>...
     python3 scripts/check-dist-clean.py --self-test
 
 Each file is a wheel, a zip, a source distribution (.tar.gz) or a crate (.crate). Every
@@ -9,13 +9,20 @@ member is opened and checked three ways:
 
 * its path may not be a private-work path (TODO.md, research/, .handoff/, .claude/ and
   the like);
-* its bytes may not contain a private name (PRIVATE_NAMES), matched without regard to case;
+* its bytes may not contain a private name, matched as a substring without regard to case;
 * when an allowlist is given, its path must match a pattern the allowlist names for that
   distribution and archive kind (`sdist` or `wheel`). A file the allowlist does not name is
   a failure, so a new top-level directory has to be listed on purpose.
 
-Exit 0 when every file is clean, 1 when any member fails, 2 when a file cannot be read or
-a name is missing from the allowlist. The check reads the archive, never the working tree,
+The private names are not written in this repository. They come from the environment
+variable DIST_CLEAN_PRIVATE_NAMES (one name per line), which CI fills from a repository
+secret, and the set must hash to PRIVATE_NAMES_SHA256 below. A missing, empty or altered
+list stops the check with exit 2, so a run without the secret fails closed instead of
+passing. A finding names the list entry by number, never by text, because CI logs of a
+public repository are public.
+
+Exit 0 when every file is clean, 1 when any member fails, 2 when a file cannot be read, a
+name is missing from the allowlist, or the private-name list is missing or does not match. The check reads the archive, never the working tree,
 so it sees what a user downloads. Standard library only: CI runs it before any install.
 """
 
@@ -23,7 +30,9 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import io
+import os
 import re
 import sys
 import tarfile
@@ -33,16 +42,34 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 # A sentence that names TODO.md is not the file; the path check below refuses the file itself.
-PRIVATE_NAMES = (
-    "astrogilda/probity",
-    "mcp-test-toolkit",
-    "ratchet-core",
-    "probity-ezio-gate",
-    "matchlock",
-    "getprobity.dev",
-    "probity.io",
-)
-_NEEDLES = tuple(n.lower().encode() for n in PRIVATE_NAMES)
+NAMES_ENV = "DIST_CLEAN_PRIVATE_NAMES"
+# SHA-256 of the lowercased names, sorted and joined with newlines. It pins the secret's
+# content so a truncated or edited secret fails closed; it does not reveal the names.
+PRIVATE_NAMES_SHA256 = "e9273d9340a3e1c1fe5d3e620f5a7f0a268ac972fb7f7f05641b70728e8a4618"
+
+
+class NameListError(ValueError):
+    """The private-name list is missing, empty, or does not match its pinned digest."""
+
+
+def canonical_names(text: str) -> tuple[str, ...]:
+    """The names in ``text`` (one per line), lowercased, stripped, deduplicated and sorted."""
+    return tuple(sorted({line.strip().lower() for line in text.splitlines() if line.strip()}))
+
+
+def names_digest(names: tuple[str, ...]) -> str:
+    return hashlib.sha256("\n".join(names).encode()).hexdigest()
+
+
+def load_names(text: str | None, expected_sha256: str = PRIVATE_NAMES_SHA256) -> tuple[bytes, ...]:
+    """Return the needles for ``text``, or raise NameListError so the caller fails closed."""
+    if not text or not text.strip():
+        raise NameListError(f"{NAMES_ENV} is not set or is empty; the check cannot run without it")
+    names = canonical_names(text)
+    if names_digest(names) != expected_sha256:
+        raise NameListError(f"{NAMES_ENV} holds {len(names)} name(s) whose digest does not match the pinned one")
+    return tuple(n.encode() for n in names)
+
 
 # Directories that only private working state has: the first group at the archive root, the second at any depth.
 PRIVATE_ROOT_DIRS = frozenset({"research", "_raw", "private", "captures"})
@@ -88,14 +115,14 @@ def load_allowlist(path: Path, distribution: str) -> dict[str, list[str]]:
     return {k: list(v) for k, v in table[distribution].items()}
 
 
-def _name_hits(data: bytes) -> list[tuple[int, str]]:
-    """Every (line number, name) where a private name occurs, found without regard to case."""
+def _name_hits(data: bytes, needles: tuple[bytes, ...]) -> list[tuple[int, int]]:
+    """Every (line number, list entry number) where a private name occurs, found without regard to case."""
     lowered = data.lower()
-    found: list[tuple[int, str]] = []
-    for needle in _NEEDLES:
+    found: list[tuple[int, int]] = []
+    for index, needle in enumerate(needles, start=1):
         at = lowered.find(needle)
         while at >= 0:
-            found.append((data.count(b"\n", 0, at) + 1, needle.decode()))
+            found.append((data.count(b"\n", 0, at) + 1, index))
             at = lowered.find(needle, at + 1)
     return sorted(found)
 
@@ -112,7 +139,7 @@ def check_path(rel: str) -> str | None:
     return None
 
 
-def scan(path: Path, allowlist: dict[str, list[str]] | None = None) -> list[str]:
+def scan(path: Path, needles: tuple[bytes, ...], allowlist: dict[str, list[str]] | None = None) -> list[str]:
     """Return one failure line per offending member or content hit; empty means clean."""
     kind = _kind(path)
     failures: list[str] = []
@@ -121,15 +148,27 @@ def scan(path: Path, allowlist: dict[str, list[str]] | None = None) -> list[str]
         why = check_path(rel)
         if why:
             failures.append(f"{path.name}: {member}: {why}")
-        failures.extend(f"{path.name}: {member}:{line}: private name {name!r}" for line, name in _name_hits(data))
+        failures.extend(f"{path.name}: {member}:{line}: private name #{index}" for line, index in _name_hits(data, needles))
         if allowlist is not None and not any(fnmatch.fnmatchcase(rel, p) for p in allowlist.get(kind, [])):
             failures.append(f"{path.name}: {member}: not on the {kind} allowlist")
     return failures
 
 
 def _self_test() -> int:
-    """Each refusal fires on a planted file, and a clean archive passes."""
+    """Each refusal fires on a planted file, a clean archive passes, and the list fails closed.
+
+    The planted names are made up: the real list never appears in this repository.
+    """
     ok = True
+    names = "Example-Private-Name\nexample.invalid/private\n"
+    needles = load_names(names, names_digest(canonical_names(names)))
+    for bad in (None, "", "  \n", "some-other-name\n"):
+        try:
+            load_names(bad)
+        except NameListError:
+            continue
+        print(f"SELF-TEST FAIL name list {bad!r} was accepted")
+        ok = False
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
 
@@ -149,12 +188,13 @@ def _self_test() -> int:
             "todo-file": ({**base, "TODO.md": b"nothing private here\n"}, 1),
             "research-dir": ({**base, "research/1/notes.txt": b"x\n"}, 1),
             "handoff-dir": ({**base, ".handoff/entries/a.md": b"x\n"}, 1),
-            "private-name-in-source": ({**base, "src/pkg/a.py": b"# see astrogilda/probity PR 43\n"}, 1),
-            "name-case": ({**base, "src/pkg/b.py": b"# MCP-Test-Toolkit\n"}, 1),
+            "private-name-in-source": ({**base, "src/pkg/a.py": b"# see example.invalid/private PR 43\n"}, 1),
+            "name-in-url": ({**base, "src/pkg/c.py": b"# https://example.invalid/private.git\n"}, 1),
+            "name-case": ({**base, "src/pkg/b.py": b"# EXAMPLE-private-NAME\n"}, 1),
             "unlisted-file": ({**base, "extra/notes.txt": b"x\n"}, 1),
         }
         for label, (files, want_min) in cases.items():
-            got = scan(build(f"{label}.tar.gz", files), allow)
+            got = scan(build(f"{label}.tar.gz", files), needles, allow)
             if bool(got) != bool(want_min):
                 print(f"SELF-TEST FAIL {label}: expected {'a failure' if want_min else 'clean'}, got {got}")
                 ok = False
@@ -168,11 +208,18 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--allowlist", type=Path)
     ap.add_argument("--distribution")
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--names-sha256", default=PRIVATE_NAMES_SHA256,
+                    help="digest the name list must match (default: the pinned digest of the real list)")
     args = ap.parse_args(argv)
     if args.self_test:
         return _self_test()
     if not args.files:
         ap.error("name at least one file")
+    try:
+        needles = load_names(os.environ.get(NAMES_ENV), args.names_sha256)
+    except NameListError as exc:
+        print(f"private-name list unusable: {exc}", file=sys.stderr)
+        return 2
     allow = None
     if args.allowlist:
         if not args.distribution:
@@ -185,7 +232,7 @@ def main(argv: list[str]) -> int:
     failed = False
     for path in args.files:
         try:
-            problems = scan(path, allow)
+            problems = scan(path, needles, allow)
         except (ValueError, OSError, tarfile.TarError, zipfile.BadZipFile) as exc:
             print(f"cannot read {path}: {exc}", file=sys.stderr)
             return 2

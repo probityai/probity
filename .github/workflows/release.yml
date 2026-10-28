@@ -75,6 +75,8 @@ jobs:
     uses: ./.github/workflows/python-build.yml
     with:
       distribution: ${{ needs.resolve.outputs.distribution }}
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
   publish-probity-verify:
     needs: [resolve, build]
