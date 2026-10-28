@@ -211,10 +211,6 @@ class Session:
         self.requests: dict[str, dict[str, Any]] = {}
         self.phase: Phase | None = None
         self.outside: list[str] = []
-        # Keys of requests made while a proven test ran. A read pytest makes itself outside a
-        # test (it looks up ``_mock_name`` on a module while it skips) never consulted the
-        # candidate for the test, so it is not a call that reached it.
-        self.during: set[str] = set()
 
     def left(self) -> float | None:
         """Seconds to the replay's deadline, or ``None`` when it has none."""
@@ -228,8 +224,6 @@ class Session:
             self.spent = True
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
-        if self.phase is not None:
-            self.during.add(key)
         if self.phase is None or request["op"] != "call":
             if not handle(request, reply):
                 if key not in self.outside:
@@ -242,8 +236,7 @@ class Session:
     def counted(self) -> tuple[int, int]:
         """Calls and attribute reads answered, and how many distinct ones (imports are not
         counted: a test that only imports the candidate never consulted it)."""
-        keys = [key for key, request in self.requests.items()
-                if request["op"] != "import" and key in self.during]
+        keys = [key for key, request in self.requests.items() if request["op"] != "import"]
         return sum(len(self.answers[key]) for key in keys), len(keys)
 
 
@@ -384,7 +377,9 @@ class RemoteModule(types.ModuleType):
     """A module of the candidate's tree: a missing attribute is read from the child."""
 
     def __getattr__(self, name: str) -> Any:
-        if name.startswith("__") and name.endswith("__"):
+        # Dunder names and ``_mock_*`` are probes pytest makes on a module (pytest 9.2 reads
+        # ``_mock_name`` while it skips a test), not reads of the candidate by sealed code.
+        if (name.startswith("__") and name.endswith("__")) or name.startswith("_mock_"):
             raise AttributeError(name)
         session = self.__dict__["__probity_session__"]
         return value(session, session.ask({"op": "attr", "module": self.__name__,
