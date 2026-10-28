@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://probityai.github.io/probity/schemas/verifier-service-request-v1.json",
+  "title": "probity-verify service request, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "case", "policy", "artifacts"],
+  "properties": {
+    "contract": {"const": "probity-verify-service/v1"},
+    "case": {"type": "object"},
+    "policy": {"type": "object"},
+    "require_witness_scope": {"enum": ["PEER", "EXTERNAL"], "default": "PEER"},
+    "artifacts": {
+      "type": "object",
+      "description": "Evidence bytes by the relative path the case names. Every path the case reads must appear, and no other path may.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["encoding", "bytes"],
+        "properties": {
+          "encoding": {"const": "base64"},
+          "bytes": {"type": "string"}
+        }
+      }
+    }
+  }
+}
