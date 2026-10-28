@@ -127,10 +127,9 @@ def test_the_parent_never_sees_the_verifiers_environment(tmp_path, monkeypatch):
     env = runner.parent_env()
     assert "PROBITY_PLANTED" not in env and "PYTEST_ADDOPTS" not in env
     assert env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
-    assert set(env) <= {*runner.SCRUBBED_ENV, *runner.RUNTIME_ENV,
-                        "PYTEST_DISABLE_PLUGIN_AUTOLOAD"}
+    # No container client setting either: the host starts a parent container's children.
     monkeypatch.setenv("DOCKER_HOST", "unix:///run/user/1/docker.sock")
-    assert runner.parent_env()["DOCKER_HOST"] == "unix:///run/user/1/docker.sock"
+    assert set(runner.parent_env()) == {*runner.SCRUBBED_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD"}
 
 
 def test_the_childs_program_is_found_on_the_verifiers_path(tmp_path, monkeypatch):
@@ -896,3 +895,21 @@ def test_the_parent_runs_main_in_the_module_the_pytest_replay_imports(tmp_path):
     done = subprocess.run([sys.executable, "-I", "-c", probe], capture_output=True, text=True,
                           timeout=60, env=runner.parent_env())
     assert done.stdout.strip() == "1", done.stderr
+
+
+def test_the_record_names_a_container_only_when_the_parent_reported_its_name():
+    launch = {"runtime": "docker", "image": "sha256:" + "1" * 64, "hostname": "a" * 16}
+    seen = {"uid": 65534, "env": ["HOME", "PATH"], "hostname": "a" * 16}
+    assert runner.replay_parent([{"parent_launch": launch, "parent": seen}]) == {
+        "runtime": "docker", "uid": 65534, "env": ["HOME", "PATH"], "image": launch["image"]}
+    # A parent that did not run in the container the runner named (another host name) is not
+    # recorded as that container's, and parents that disagree give no single uid.
+    elsewhere = {**seen, "hostname": "verifier-host", "uid": 1000}
+    found = runner.replay_parent([{"parent_launch": launch, "parent": elsewhere}])
+    assert found["runtime"] == "unverified" and found["uid"] == 1000
+    mixed = runner.replay_parent([{"parent_launch": launch, "parent": seen},
+                                  {"parent_launch": launch, "parent": elsewhere}])
+    assert mixed["runtime"] == "mixed" and mixed["uid"] is None
+    assert runner.replay_parent([])["runtime"] == "unmeasured"
+    assert runner.replay_parent([{"parent_launch": {"runtime": "host"},
+                                  "parent": seen}])["runtime"] == "host"

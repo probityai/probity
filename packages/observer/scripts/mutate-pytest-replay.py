@@ -35,6 +35,12 @@ PROOF = DONE / "pytest_proof.py"
 UNIT = ["tests/done/test_pytest_replay.py"]
 PROVE = ["tests/done/test_pytest_proof.py"]
 PIPELINE = ["tests/done/test_grade_pipeline.py"]
+# The host's scrubbed environment, as a mutant of verify_run.py (which imports only the
+# container's) reads it.
+HOST_ENV = '__import__("probity_observer.done.runner", fromlist=["SCRUBBED_ENV"]).SCRUBBED_ENV'
+# Real containers: the parent's own image and the host broker.
+CONTAINER = ["tests/done/test_replay_parent_container.py",
+             "tests/done/test_replay_parent_command.py"]
 HARNESS = DONE / "replay.py"
 STALLS = [f"tests/done/test_replay.py::{name}" for name in (
     "test_a_partial_reply_line_is_stopped_at_the_call_limit",
@@ -110,10 +116,32 @@ MUTANTS = [
      '    return "exe" in item or (False and not is_replay(item["argv"])'),
     (GRADE, UNIT, '    replayed = {(item["id"].startswith("heldout"), test_id) for item in commands',
      '    replayed = {(False, test_id) for item in commands'),
-    # The isolation record says the replay parent runs on the host, outside the lockdown.
-    (GRADE, PIPELINE, '        report["verifier"]["replay_parent"] = replay_parent()', "        pass"),
-    (RUNNER, PIPELINE, '    return {"runtime": "host", "uid": os.getuid(), "env": "scrubbed",',
-     '    return {"runtime": "docker", "uid": os.getuid(), "env": "scrubbed",'),
+    # The isolation record says where the replay parents ran, from what each measured.
+    (GRADE, PIPELINE, '        report["verifier"]["replay_parent"] = replay_parent(runner.replays)',
+     "        pass"),
+    (RUNNER, UNIT, '        if runtime != "host" and (not launch.get("hostname")',
+     '        if False and (not launch.get("hostname")'),
+    (RUNNER, UNIT, '    return {"runtime": runtimes.pop() if len(runtimes) == 1 else "mixed",',
+     '    return {"runtime": runtimes.pop(),'),
+    (RUNNER, PIPELINE, '    return _report(scratch, argv, {"runtime": "host"}, results, stopped,',
+     '    return _report(scratch, argv, {"runtime": "docker"}, results, stopped,'),
+    # The docker runner's parent runs in a container of its own, and nothing of the host's
+    # reaches it: no host path, no host variable, no runtime socket.
+    (GRADE, CONTAINER, "                                  self.replays, stopped, parent=self)",
+     "                                  self.replays, stopped, parent=None)"),
+    (GRADE, CONTAINER, '                hostname, *self.flags()]', '                hostname]'),
+    (GRADE, CONTAINER, '            command += ["--volume", f"{source}:{target}:ro"]',
+     '            command += ["--volume", f"{source}:{target}:ro", "--volume", "/:/host:ro",\n'
+     '                        "--volume", "/var/run/docker.sock:/var/run/docker.sock"]'),
+    (GRADE, CONTAINER, '                *(f"{key}={value}" for key, value in sorted(parent_container_env().items())), *argv]',
+     '                *(f"{key}={value}" for key, value in sorted(os.environ.items())), *argv]'),
+    # Nothing added to the host's scrubbed environment reaches a container: not the parent's,
+    # not the worker's, not a replay child's.
+    (RUNNER, CONTAINER, '    return {**CONTAINER_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}',
+     '    return {**SCRUBBED_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}'),
+    (GRADE, CONTAINER, "sorted(CONTAINER_ENV.items())), *argv]", f"sorted({HOST_ENV}.items())), *argv]"),
+    (GRADE, CONTAINER, "sorted(CONTAINER_ENV.items())),\n", f"sorted({HOST_ENV}.items())),\n"),
+    (HARNESS, CONTAINER, '    result["parent"] = measured_parent()\n', "\n"),
     # The contract seals the replays, and only for protected test files.
     (CONTRACT, PIPELINE, "        commands += pytest_replays(", "        commands += [] and pytest_replays("),
     (CONTRACT, PIPELINE, '            ("heldout-fail-to-pass", hidden, "../heldout/tree", True, "fail")):',
@@ -199,11 +227,12 @@ MUTANTS = [
     (REPLAY, UNIT, " or not self.sealed_importer():", ":"),
     (REPLAY, UNIT, "    import _pytest.runner  # noqa: F401\n    import pytest  # noqa: F401\n", ""),
     # The parent runs with the scrubbed environment, never the verifier's own.
-    (RUNNER, UNIT, "                              env=parent_env(), start_new_session=True)",
-     "                              start_new_session=True)"),
-    (RUNNER, UNIT, "    env.update({key: os.environ[key] for key in RUNTIME_ENV if key in os.environ})",
-     "    env.update(os.environ)"),
-    (RUNNER, UNIT, '    env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"\n', "\n"),
+    (RUNNER, UNIT, "                                      env=parent_env(), start_new_session=True)",
+     "                                      start_new_session=True)"),
+    (RUNNER, UNIT, '    return {**SCRUBBED_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}',
+     '    return {**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}'),
+    (RUNNER, UNIT, '    return {**SCRUBBED_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}',
+     "    return dict(SCRUBBED_ENV)"),
     (RUNNER, UNIT, "    if command and not os.path.isabs(command[0]):", "    if False:"),
     # A whole reply line inside the call's limit, and no stall read over a definitive failure.
     (HARNESS, STALLS, '        while b"\\n" not in self.pending:', "        while not self.pending:"),
@@ -260,7 +289,7 @@ def run(tests: list[str]) -> int:
 
 
 def main() -> int:
-    if run(PROVE + UNIT + PIPELINE + STALLS) != 0:
+    if run(PROVE + UNIT + PIPELINE + STALLS + CONTAINER) != 0:
         print("BASELINE RED")
         return 1
     survived = 0

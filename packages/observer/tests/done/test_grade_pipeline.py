@@ -179,11 +179,11 @@ def test_the_verifier_counts_every_sealed_id_itself_on_an_honest_fix(
     assert result.staging["worker_counted"] == []
     assert result.isolation["verifier"]["assertions_in_parent"] is True
     assert result.isolation["tests"]["exit_status_alone_accepted"] is False
-    # The record says where the replay parent ran: on this host, not under the lockdown flags.
+    # The record says where the replay parents ran, as each measured itself: this runner keeps
+    # them on this host, as the verifier's uid.
     parent = result.isolation["verifier"]["replay_parent"]
-    assert parent == {"runtime": "host", "uid": os.getuid(), "env": "scrubbed",
-                      "env_keys": sorted(runner.parent_env())}
-    assert "PYTEST_DISABLE_PLUGIN_AUTOLOAD" in parent["env_keys"]
+    assert parent == {"runtime": "host", "uid": os.getuid(),
+                      "env": sorted(runner.parent_env()), "image": None}
     assert verdict(acceptance(tmp_path, sealed, result, tree)) == (
         "supported", "acceptance_passed_in_verifier")
 

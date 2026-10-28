@@ -112,8 +112,27 @@ The runner (`runner.run_replay`) builds two directories:
   tree laid over it when the command is held out);
 - a read-only copy of the agent's whole tree, which becomes the child's `/workspace`.
 
-The parent is the verifier's own interpreter (`python -I -m probity_observer.done.replay`).
-It imports pytest first, then checks the remote names, then runs pytest in process, with
+The parent is the verifier's own code (`python -I -m probity_observer.done.replay`), and on
+the grading path it runs in a container of its own. The docker runner starts it from the
+replay parent image (`parent_image.ensure`), which is built from the files the verifier itself
+runs: the `probity_observer` package as imported, and the installed files of every
+distribution the observer and pytest need, on a pinned Python base. It is never the task's
+image, whose pytest the task author controls. The parent container gets the runner's lockdown
+flags (`--network none --cap-drop ALL --security-opt no-new-privileges --read-only`, a private
+`/tmp`, process and memory limits) and the worker's uid. It holds three read-only mounts: the
+sealed directory, its own test root and its request. It holds nothing else of the host: no
+grader key, no container runtime socket, no other host path. Its environment is
+`runner.parent_env`: the worker's fixed variables and pytest's plugin autoloading off, and
+nothing of the verifier's. It cannot start a container, so it asks the host for each child
+over its own standard input and output (`replay.HostLink`). The host broker
+(`parent_broker.HostBroker`) starts every child with the one command the runner built for this
+replay, the candidate's locked-down container, relays the bytes both ways, and ends every child
+it started when the parent ends. The parent names a child by number; it never names what the
+host runs. Seal-time stabilization with the docker runner runs the same parent, so a test the
+reference passes at seal time runs the same way at grade time. The subprocess runner, which the
+compiler may use only on trusted states, keeps the parent on the host.
+
+The parent imports pytest first, then checks the remote names, then runs pytest in process, with
 plugin autoloading off and the sealed `-c` configuration, on the sealed ids. A meta-path
 finder placed ahead of the path finder serves every module under a remote name, to sealed
 code only: an import must come from a file under the sealed test root, or follow a module the
@@ -182,9 +201,15 @@ worker counts, the isolation block reports `assertions_in_parent: true` and
 every command with an id that is not proven, is listed in the staging report as
 `worker_counted`, and the isolation block keeps `exit_status_alone_accepted: true`, which the
 admission rule set refuses. When any command is a replay, the block also says where its
-parent ran: `verifier.replay_parent` is `{"runtime": "host", "uid": ..., "env": "scrubbed",
-"env_keys": [...]}`. The `lockdown` block describes the worker and the candidate's children,
-never the parent (point 4).
+parents ran, from what each parent measured of itself (`replay.measured_parent`):
+`verifier.replay_parent` is `{"runtime", "uid", "env", "image"}`. `uid` is the uid the parents
+ran as and `env` the names in their environment, both read inside the parent. `runtime` is the
+container runtime (`docker`) only when every parent was launched in a container and reported
+the host name the runner gave that container alone, which travels in no request and no
+variable; a parent on the host is `host`, a container whose parent did not report its name is
+`unverified`, parents that differ are `mixed`, and no measurement at all is `unmeasured`. The
+admission rule set refuses a record whose parent is not in a container or ran as the
+verifier's uid (point 4).
 
 **Results on the fixtures** (`tests/done/test_grade_pipeline.py`, `test_pytest_replay.py`,
 `test_pytest_proof.py`):
@@ -241,31 +266,26 @@ at `43096f8` (it was `MUTANTS 66 surviving=0` at `4b43d3b`), and the observer su
    handle named after the function that made it, so calling it would call the factory again.
    A call's reply must be plain data, or the call fails; the proof refuses a call of a call's
    result. Curried and higher-order tests are therefore not counted.
-4. **The sealed test code runs in the verifier's process, on the verifier host, without a
-   container.** That code is the task's own test files and conftests, sealed before the
-   agent's first turn. The parent runs as the verifier's user, with the scrubbed
-   environment (`runner.parent_env`: the worker's fixed variables, the container client's
-   own settings and plugin autoloading off), so neither a variable of the verifier's nor
-   `PYTEST_ADDOPTS` or `PYTEST_PLUGINS` reaches pytest or a sealed conftest. The isolation
-   record states this in `verifier.replay_parent` (`runtime: host`); whether a consumer
-   refuses a host parent is the admission rule set's policy. What the candidate can do to that process is closed: no value it
-   chooses reaches the sealed code except the left side of a sealed comparison, so it cannot
-   steer an honest test into opening, reading or deleting a host path. What is not closed is
-   a hostile task author: the sealed code runs with the verifier's user, so it can read the
-   host filesystem (the grader key file, the held-out tree), reach a container runtime socket
-   the verifier's user can reach, and write its own result. The trust assumption is that the
-   task author's test code is not hostile to the verifier. Before this change, that code only
-   ran in containers. Running the parent in a sibling container (`--network none --cap-drop
-   ALL --read-only`, holding only the sealed test root, no host filesystem, no key and no
-   runtime socket, with the host starting each child container beside it over stdio) would
-   remove this assumption. It is not built in this change, because it is not a container
-   flag: the parent needs an image that carries the verifier's own code and pytest (not the
-   task image's, whose pytest the task author controls), the host must broker every child
-   the parent asks for (one per distinct request for the fresh-child pass) over the parent's
-   stdio, and seal-time stabilization must run the same parent as grading so that a test the
-   reference passes at seal time also runs at grade time. The pytest that runs the sealed code
-   is the verifier's, not the task image's, so a version difference can drop ids (point 1). It
-   cannot make a wrong answer pass.
+4. **The sealed test code runs in a container of its own, not on the verifier host.** That
+   code is the task's own test files and conftests, sealed before the agent's first turn. On
+   the grading path the parent runs from the replay parent image, as the worker's uid, with
+   `runner.parent_env` as its whole environment: `PATH=/usr/local/bin:/usr/bin:/bin`,
+   `HOME=/tmp`, `LANG=C.UTF-8`, `PYTHONDONTWRITEBYTECODE=1`, `PYTHONNOUSERSITE=1`,
+   `PYTHONHASHSEED=0` and `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`. No variable of the verifier's,
+   no `PYTEST_ADDOPTS` or `PYTEST_PLUGINS`, and no container client setting reaches pytest
+   or a sealed conftest. The container holds the sealed directory, its test root and its
+   request, read-only; it has no network, no grader key, no runtime socket and no other
+   host path, and it starts no container itself. So a hostile task author's sealed code can
+   no longer read the host filesystem or the grader key, or reach a container runtime. What
+   it can still do is decide its own tests' outcome, which a task author always could. The
+   isolation record states where each parent ran, as the parent measured it
+   (`verifier.replay_parent`), and the admission rule set refuses a record whose parent ran
+   on the host or as the verifier's uid. The pytest that runs the sealed code is the
+   verifier's, not the task image's, so a version difference can drop ids (point 1). It
+   cannot make a wrong answer pass. `tests/done/test_replay_parent_container.py` holds a
+   sealed conftest that fails every test when it can see a host-only file, a host-only
+   variable or a runtime socket: it fails in a parent on the host and passes in the parent
+   container.
 5. **A guessable expected value is only as strong as the guess is hard.** A candidate that
    returns a common value (`0`, `""`, `[]`, one constant) passes every sealed comparison whose
    value it is, held out or not. Held-out inputs catch special-casing only where the expected

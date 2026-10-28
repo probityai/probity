@@ -28,6 +28,7 @@ the request's ``out`` path. Exit 0 when every assertion and the invariant hold, 
 from __future__ import annotations
 
 import ast
+import base64
 import inspect
 import json
 import os
@@ -35,6 +36,7 @@ import random
 import runpy
 import select
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -190,6 +192,9 @@ STARTED: list["Child"] = []
 # The file the parent appends each child's pid and start time to, for the runner's backstop
 # (:func:`kill_recorded`); ``None`` outside a parent the runner started.
 CHILDREN: Path | None = None
+# The parent's end of the host broker when the parent runs in a container of its own
+# (``--brokered``): the host, not this process, starts every child. ``None`` otherwise.
+BROKER: "HostLink | None" = None
 
 
 def start_time(pid: int) -> str | None:
@@ -273,12 +278,21 @@ class Child:
     charged to the job) behind per child, until a batch of probes ran out of memory.
     """
 
-    def __init__(self, argv: list[str], cwd: str | None, timeout: float) -> None:
+    def __new__(cls, *args: Any, **kwargs: Any) -> "Child":
+        # Inside a parent container the host starts every child (:class:`BrokeredChild`).
+        if cls is Child and BROKER is not None:
+            return super().__new__(BrokeredChild)
+        return super().__new__(cls)
+
+    def __init__(self, argv: list[str], cwd: str | None, timeout: float,
+                 register: bool = True) -> None:
         self.timeout = timeout
         self.timed_out = False
         self.closed = False
         self.pending = bytearray()
-        STARTED.append(self)
+        # The host broker ends the children it starts for a parent container itself.
+        if register:
+            STARTED.append(self)
         self.process = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                         text=True, start_new_session=True)
@@ -298,14 +312,38 @@ class Child:
 
     def ask(self, request: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
         """Send one request line and read the child's one reply line."""
-        if self.closed or self.process.stdin is None or self.process.stdout is None:
+        if self.closed:
             return ClientFailure("child-pipes")
+        sent = self._send(json.dumps(request) + "\n")
+        if sent is not None:
+            return ClientFailure(sent)
+        return self.read(timeout)
+
+    def _send(self, line: str) -> str | None:
+        """Write one request line to the child; the client failure, or ``None``."""
+        if self.process.stdin is None or self.process.stdout is None:
+            return "child-pipes"
         try:
-            self.process.stdin.write(json.dumps(request) + "\n")
+            self.process.stdin.write(line)
             self.process.stdin.flush()
         except (BrokenPipeError, ValueError):
-            return ClientFailure("child-exited")
-        return self.read(timeout)
+            return "child-exited"
+        return None
+
+    def _chunk(self, left: float) -> bytes | None:
+        """The child's next output bytes within ``left`` seconds: ``b""`` at its end of output,
+        ``None`` when nothing came in time."""
+        descriptor = self.process.stdout.fileno()
+        ready = select.select([descriptor], [], [], left)[0] if left > 0 else []
+        return os.read(descriptor, 1 << 16) if ready else None
+
+    def end_input(self) -> None:
+        """Close the child's input: its call loop ends at EOF."""
+        if self.process.stdin is not None:
+            try:
+                self.process.stdin.close()
+            except OSError:
+                pass
 
     def read(self, timeout: float | None = None) -> dict[str, Any]:
         """The child's next protocol line, or an error after ``timeout`` seconds.
@@ -313,23 +351,20 @@ class Child:
         The whole line must arrive inside the limit: the descriptor is read without blocking
         until a newline comes, so a child that writes part of a line and stops is stopped at
         the limit like one that writes nothing."""
-        if self.closed or self.process.stdout is None:
+        if self.closed:
             return ClientFailure("child-pipes")
         wait = self.timeout if timeout is None else max(0.0, min(timeout, self.timeout))
         deadline = time.monotonic() + wait
-        descriptor = self.process.stdout.fileno()
         while b"\n" not in self.pending:
             if len(self.pending) > LINE_LIMIT:
                 self.close()
                 return ClientFailure("child-protocol")
-            left = deadline - time.monotonic()
-            ready = select.select([descriptor], [], [], left)[0] if left > 0 else []
-            if not ready:
+            chunk = self._chunk(deadline - time.monotonic())
+            if chunk is None:
                 # No whole line inside the limit: the candidate gave no answer.
                 self.timed_out = True
                 self.close()
                 return ClientFailure("child-timeout")
-            chunk = os.read(descriptor, 1 << 16)
             if not chunk:
                 self.close()
                 return ClientFailure("child-exited")
@@ -400,6 +435,151 @@ def close_all() -> None:
     """Close every child this process started; the replay parent's last act."""
     for child in STARTED:
         child.close()
+
+
+# How long a brokered child's close may take on the host: stdin, SIGTERM and SIGKILL, each
+# with :data:`CLOSE_GRACE`, and the runtime's own clean-up.
+BROKER_CLOSE_LIMIT = 4 * CLOSE_GRACE
+
+
+class HostLink:
+    """The replay parent's side of the host broker, over two descriptors the host holds.
+
+    The parent container has no container runtime, no socket and no host path, so it cannot
+    start a child itself. It asks the host, one JSON line per frame: ``start``, ``write``,
+    ``end`` and ``close`` name a child by a number the parent chose; the host answers
+    ``started`` or ``refused``, relays the child's output as ``out`` frames until ``eof``,
+    and confirms ``closed``. The host alone chooses the child's command (the candidate's
+    container), so nothing in this process names what the host runs. The last frame is
+    ``result``: the parent's result file travels this way, since the parent has no writable
+    host path either."""
+
+    def __init__(self, read_fd: int, write_fd: int) -> None:
+        self.read_fd, self.write_fd = read_fd, write_fd
+        self.buffer = bytearray()
+        self.inbox: dict[int, bytearray] = {}
+        self.ended: set[int] = set()
+        self.answers: dict[int, str] = {}
+        self.lost = False
+        self.next = 0
+
+    def send(self, frame: dict[str, Any]) -> bool:
+        data = (json.dumps(frame, separators=(",", ":")) + "\n").encode()
+        try:
+            while data:
+                data = data[os.write(self.write_fd, data):]
+        except OSError:
+            self.lost = True
+        return not self.lost
+
+    def pump(self, deadline: float) -> bool:
+        """Read and file the host's frames until one more whole frame arrives or ``deadline``
+        passes; ``False`` on the deadline. A broken or garbled link ends every child."""
+        while b"\n" not in self.buffer:
+            if self.lost:
+                return True
+            left = deadline - time.monotonic()
+            if left <= 0 or not select.select([self.read_fd], [], [], left)[0]:
+                return False
+            try:
+                chunk = os.read(self.read_fd, 1 << 16)
+            except OSError:
+                chunk = b""
+            if not chunk:
+                self.lost = True
+                return True
+            self.buffer += chunk
+        end = self.buffer.index(b"\n")
+        line = bytes(self.buffer[:end])
+        del self.buffer[:end + 1]
+        try:
+            frame = json.loads(line)
+            handle, op = frame["child"], frame["op"]
+            if op == "out":
+                self.inbox.setdefault(handle, bytearray()).extend(
+                    base64.b64decode(frame["data"], validate=True))
+            elif op == "eof":
+                self.ended.add(handle)
+            else:
+                self.answers[handle] = op
+        except (ValueError, KeyError, TypeError):
+            self.lost = True
+        return True
+
+    def answer(self, handle: int, limit: float) -> str | None:
+        deadline = time.monotonic() + limit
+        while handle not in self.answers and not self.lost:
+            if not self.pump(deadline):
+                return None
+        return self.answers.pop(handle, None)
+
+    def start(self) -> int | None:
+        """A new child from the host, or ``None`` when the host refused or did not answer."""
+        handle, self.next = self.next, self.next + 1
+        if not self.send({"op": "start", "child": handle}):
+            return None
+        return handle if self.answer(handle, BROKER_CLOSE_LIMIT) == "started" else None
+
+    def chunk(self, handle: int, left: float) -> bytes | None:
+        deadline = time.monotonic() + max(0.0, left)
+        while True:
+            waiting = self.inbox.get(handle)
+            if waiting:
+                data = bytes(waiting)
+                waiting.clear()
+                return data
+            if handle in self.ended or self.lost:
+                return b""
+            if not self.pump(deadline):
+                return None
+
+
+class BrokeredChild(Child):
+    """A :class:`Child` the host starts and ends, in the candidate's container beside this
+    parent's; the calls, the limits and the replies read exactly as for a local child."""
+
+    def __init__(self, argv: list[str], cwd: str | None, timeout: float,
+                 register: bool = True) -> None:
+        self.timeout = timeout
+        self.timed_out = False
+        self.closed = False
+        self.pending = bytearray()
+        self.process = None
+        STARTED.append(self)
+        assert BROKER is not None
+        self.handle = BROKER.start()
+        self.closed = self.handle is None
+
+    def _send(self, line: str) -> str | None:
+        assert BROKER is not None
+        frame = {"op": "write", "child": self.handle,
+                 "data": base64.b64encode(line.encode()).decode()}
+        return None if BROKER.send(frame) else "child-exited"
+
+    def _chunk(self, left: float) -> bytes | None:
+        assert BROKER is not None
+        return BROKER.chunk(self.handle, left)
+
+    def end_input(self) -> None:
+        assert BROKER is not None
+        if not self.closed:
+            BROKER.send({"op": "end", "child": self.handle})
+
+    def close(self) -> None:
+        if self.closed:
+            return
+        self.closed = True
+        assert BROKER is not None
+        if BROKER.send({"op": "close", "child": self.handle, "timed_out": self.timed_out}):
+            BROKER.answer(self.handle, BROKER_CLOSE_LIMIT)
+
+
+def measured_parent() -> dict[str, Any]:
+    """What this process sees of where it runs, for the isolation record: its uid, gid and
+    groups, the names in its environment, and the host name (a parent container's is the
+    nonce the host gave that container and nothing else)."""
+    return {"uid": os.getuid(), "gid": os.getgid(), "groups": sorted(os.getgroups()),
+            "env": sorted(os.environ), "hostname": socket.gethostname()}
 
 
 class Proxy:
@@ -675,11 +855,7 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
         # The child sends nothing more until it is called. With its input closed it exits, so
         # any line after the second report was written by the candidate's code on the protocol
         # descriptor (a forged report ahead of the genuine one, which then arrives late).
-        if child.process.stdin is not None:
-            try:
-                child.process.stdin.close()
-            except OSError:
-                pass
+        child.end_input()
         extra = 0
         while child.read().get("error") not in ("child-exited", "child-pipes", "child-timeout"):
             extra += 1
@@ -760,14 +936,32 @@ def terminated(signum: int, frame: Any) -> None:
     Not ``sys.exit``: in a pytest replay the signal lands inside a test, and pytest records
     the ``SystemExit`` as that test's failure and goes on to the next, asking the same child."""
     try:
-        close_all()
+        # A brokered parent's children are the host's: it ends them when this process ends.
+        if BROKER is None:
+            close_all()
     finally:
         os._exit(TERMINATED_EXIT)
 
 
+def link_protocol() -> HostLink:
+    """Keep the parent's standard input and output for the host broker, out of the sealed
+    code's way: descriptors 0 and 1 become ``/dev/null`` and standard error, so a print in a
+    sealed test or conftest never reaches the protocol."""
+    read_fd, write_fd = os.dup(0), os.dup(1)
+    null = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(null, 0)
+    os.close(null)
+    os.dup2(2, 1)
+    return HostLink(read_fd, write_fd)
+
+
 def main(argv: list[str] | None = None) -> int:
-    global CHILDREN
+    global CHILDREN, BROKER
     args = sys.argv[1:] if argv is None else argv
+    brokered = bool(args) and args[0] == "--brokered"
+    if brokered:
+        args = args[1:]
+        BROKER = link_protocol()
     request = json.loads(Path(args[0]).read_text())
     STARTED.clear()
     CHILDREN = Path(request["children"]) if request.get("children") else None
@@ -785,8 +979,13 @@ def main(argv: list[str] | None = None) -> int:
     kind = failure_kind(result)
     if kind is not None:
         result["failure_kind"] = kind
-    Path(request["out"]).write_text(json.dumps(result, sort_keys=True))
-    return 0 if result["passed"] else 1
+    result["parent"] = measured_parent()
+    code = 0 if result["passed"] else 1
+    if BROKER is not None:
+        BROKER.send({"op": "result", "child": None, "result": result, "exit": code})
+    else:
+        Path(request["out"]).write_text(json.dumps(result, sort_keys=True))
+    return code
 
 
 if __name__ == "__main__":
