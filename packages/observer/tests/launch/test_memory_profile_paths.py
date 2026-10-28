@@ -104,14 +104,27 @@ def test_proc_mem_requires_both_open_modes_to_be_denied(monkeypatch):
     assert profile._proc_mem_denied() is False
 
 
+class _OsProxy:
+    """Stand-in for the os module that profile sees.
+
+    Patching os.fstat or os.close on the real module also breaks pytest's own
+    capture, which calls them while the test runs. Replacing profile's reference
+    keeps the patch inside the code under test."""
+
+    def __getattr__(self, name):
+        return getattr(os, name)
+
+
 def test_close_inherited_checks_channels_and_reconciles_fds(monkeypatch):
     null = SimpleNamespace(st_mode=stat.S_IFCHR, st_rdev=7)
     pipe = SimpleNamespace(st_mode=stat.S_IFIFO, st_rdev=0)
     closed = []
-    monkeypatch.setattr(profile.os, "listdir",
+    fake_os = _OsProxy()
+    monkeypatch.setattr(profile, "os", fake_os)
+    monkeypatch.setattr(fake_os, "listdir",
                         lambda path: ["0", "1", "2", "8", "9"])
-    monkeypatch.setattr(profile.os, "stat", lambda path: null)
-    monkeypatch.setattr(profile.os, "fstat",
+    monkeypatch.setattr(fake_os, "stat", lambda path: null)
+    monkeypatch.setattr(fake_os, "fstat",
                         lambda fd: null if fd == 0 else pipe)
 
     def close(fd):
@@ -119,11 +132,11 @@ def test_close_inherited_checks_channels_and_reconciles_fds(monkeypatch):
         if fd == 9:
             raise OSError(errno.EBADF, "already closed")
 
-    monkeypatch.setattr(profile.os, "close", close)
+    monkeypatch.setattr(fake_os, "close", close)
     profile._close_inherited((0, 1, 2))
     assert closed == [8, 9]
 
-    monkeypatch.setattr(profile.os, "fstat",
+    monkeypatch.setattr(fake_os, "fstat",
                         lambda fd: SimpleNamespace(st_mode=stat.S_IFREG,
                                                    st_rdev=0))
     with pytest.raises(profile.ProfileUnsupported, match="not a pipe"):
@@ -136,7 +149,7 @@ def test_close_inherited_checks_channels_and_reconciles_fds(monkeypatch):
     def unavailable(path):
         raise FileNotFoundError(path)
 
-    monkeypatch.setattr(profile.os, "listdir", unavailable)
+    monkeypatch.setattr(fake_os, "listdir", unavailable)
     with pytest.raises(profile.ProfileUnsupported, match="cannot reconcile"):
         profile._close_inherited((0,))
 

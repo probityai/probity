@@ -377,7 +377,9 @@ class RemoteModule(types.ModuleType):
     """A module of the candidate's tree: a missing attribute is read from the child."""
 
     def __getattr__(self, name: str) -> Any:
-        if name.startswith("__") and name.endswith("__"):
+        # Dunder names and ``_mock_*`` are probes pytest makes on a module (pytest 9.2 reads
+        # ``_mock_name`` while it skips a test), not reads of the candidate by sealed code.
+        if (name.startswith("__") and name.endswith("__")) or name.startswith("_mock_"):
             raise AttributeError(name)
         session = self.__dict__["__probity_session__"]
         return value(session, session.ask({"op": "attr", "module": self.__name__,
