@@ -47,13 +47,13 @@ from typing import Any, Sequence
 
 from ..sensors import treedigest
 from . import heldout as heldout_cases
-from . import mutants, pytest_plugins, visible_detect
+from . import mutants, parent_image, pytest_plugins, visible_detect
 from .contract import ACCEPTANCE_CONFIG, Protected, copy_protected, protected_digest
 from .formats import DoneError, encode, public_key, sha256, sign_record
 from .native import ELF_MAGIC, native_name
 from .runner import (PYTEST_ROOT, SCRUBBED_ENV, TIMEOUT_EXIT, changed_paths, chmod_tree,
-                     image_executable, is_pytest_replay, is_replay, replay_parent, run_replay,
-                     stage)
+                     image_executable, is_pytest_replay, is_replay, parent_env, replay_parent,
+                     run_replay, stage)
 
 GRADE_SCHEMA = "probity-acceptance-grade/v1"
 WORKER_UID = 65534
@@ -78,6 +78,8 @@ class DockerRunner:
     name: str = "docker"
     order_seed: str = "docker"
     replays: list[dict[str, Any]] = field(default_factory=list)
+    # The replay parent's image (:mod:`.parent_image`), built from this verifier when unset.
+    parent_image: str | None = None
 
     def flags(self) -> list[str]:
         """Every isolation flag, in the order they are passed; part of the isolation report."""
@@ -100,6 +102,28 @@ class DockerRunner:
     def executable(self, name: str) -> str | list[str]:
         return image_executable(self.image, name, self.docker)
 
+    def parent_image_id(self) -> str:
+        if self.parent_image is None:
+            self.parent_image = parent_image.ensure(self.docker)
+        return self.parent_image
+
+    def parent_command(self, name: str, hostname: str, mounts: Sequence[tuple[Path, str]],
+                       argv: Sequence[str]) -> list[str]:
+        """The replay parent's container: the lockdown flags, the worker's uid, the parent's
+        own environment, read-only mounts only, and ``--init`` so the SIGTERM the client
+        forwards at the limit reaches the parent."""
+        command = [self.docker, "run", "-i", "--rm", "--init", "--name", name, "--hostname",
+                   hostname, *self.flags()]
+        for source, target in mounts:
+            command += ["--volume", f"{source}:{target}:ro"]
+        return [*command, "--workdir", "/", "--entrypoint", "/usr/bin/env",
+                self.parent_image_id(), "-i",
+                *(f"{key}={value}" for key, value in sorted(parent_env().items())), *argv]
+
+    def kill(self, name: str, signal_name: str) -> None:
+        subprocess.run([self.docker, "kill", "--signal", signal_name, name],
+                       capture_output=True, check=False)
+
     def child_argv(self, directory: Path, source: str) -> tuple[list[str], None]:
         """A fresh container holding only the candidate's module, read-only.
 
@@ -121,7 +145,7 @@ class DockerRunner:
             stage(Path(state), heldout, root)
             if is_replay(argv):
                 return run_replay(root, argv, self.child_argv, timeout, self.order_seed,
-                                  self.replays, stopped)
+                                  self.replays, stopped, parent=self)
             chmod_tree(root / "workspace")
             if heldout is not None:
                 chmod_tree(root / "heldout", 0o755, 0o644)
@@ -576,8 +600,9 @@ def _isolation(contract_sha256: str, trusted: tuple[str, str], runner: DockerRun
         "lockdown": {"runtime": runner.name, "image": runner.image, "flags": runner.flags()},
     }
     if any(is_replay(item["argv"]) for item in commands):
-        # The replay parent runs the sealed tests on this host, outside the lockdown above.
-        report["verifier"]["replay_parent"] = replay_parent()
+        # Where the replay parents ran, as each measured itself: in a container of their own
+        # under the lockdown above, or not (``runner.replay_parent``).
+        report["verifier"]["replay_parent"] = replay_parent(runner.replays)
     if heldout_mode is not None:
         report["reference"] = {"dir_mode": heldout_mode, "inside_artifact_dir": False}
     return report
