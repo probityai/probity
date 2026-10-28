@@ -2,7 +2,7 @@
   "repository": "https://github.com/AgentAvow/AgentAvow",
   "commit": "36426cfd5152bba6a27766febfac8aaef47b6f34",
   "contributor": "kenneives / AgentAvow",
-  "contribution": "https://github.com/probityai/agent-evidence-atlas/issues/49#issuecomment-6071630803",
+  "contribution": "https://github.com/probityai/agent-evidence/issues/24#issuecomment-6247268743",
   "fixture": {
     "path": "docs/standards/tool-manifest-digest-vectors-v1/tool-manifest-digest-v1-vectors.json",
     "sha256": "488496079155830caf83593be0cafcb21367f72cd70ea363c2400f40eda72647"
