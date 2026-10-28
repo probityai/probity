@@ -1,0 +1,75 @@
+{
+ "schema": "hs-aps-receipt-adapter-case-v0",
+ "profile": "hs-refund-admission-profile/0.1",
+ "contract_revision": "review-2026-10-23",
+ "run_id": "j01-connected-20261028-r1",
+ "consumed_at": "2026-10-28T21:45:38.942Z",
+ "verified": false,
+ "reason": "action_digest_mismatch",
+ "step": 5,
+ "code": "PAYLOAD_REF",
+ "detail": "computePayloadRefV1(payload) is not action.payload_ref",
+ "inputs": [
+  {
+   "file": "inputs/pic-proposal.json",
+   "raw_sha256": "sha256:9bc7b377ee476bfa7b6b6b75f07610d65d3caed82a0154fda76ced3ebbda8c40",
+   "canonical_sha256": "adb830f1b89ba9239761afb41076e9eb0c5785a0d1ab27dd61a571e2ccfb1e9e"
+  },
+  {
+   "file": "inputs/aps-approval.json",
+   "raw_sha256": "sha256:accc2225043a7ef5518ebb6efe8b1c587681415ce07f2635c29cf71153bcf94d",
+   "canonical_sha256": "65cc32c14310017a339ad416f6a2965fd71d032935f712c6082726b330b889ab"
+  },
+  {
+   "file": "inputs/aps-intent.json",
+   "raw_sha256": "sha256:502d2e4192b627e76938eab2c7e57e3f2daeff3de1688e01ae90599dcd863e15",
+   "canonical_sha256": "6e53264ad56c62985abe67f8595464fbeb96e948a264f1945f1aa4c91c0739a4"
+  },
+  {
+   "file": "inputs/aps-action.json",
+   "raw_sha256": "sha256:3abb7176936036054678e886861fb81d2fcacf893fe7d3fea1cf17a593819d7e",
+   "canonical_sha256": "da6807f53aad02e9a4c1391bb00373774a3228e12f8314c3a4b646f7b8edd858"
+  },
+  {
+   "file": "inputs/aps-payload.json",
+   "raw_sha256": "sha256:95b5f7eff43adcd062d62d019aa4fba48ae350c4e90c5e02ca1188083adeae61",
+   "canonical_sha256": "87f32ba77d7ca064528affe0487160968ce2695cd7d2e72793aa5b8783ad1aa3"
+  },
+  {
+   "file": "inputs/decision-evidence.json",
+   "raw_sha256": "sha256:497239f52ca2bd1ceefebee170938265d184d000787bfb85a08e7d033f49ee60",
+   "canonical_sha256": "ae6591a4d1e83384d53a9ee80db52e95e9157e764258d271573bae56672343f4"
+  },
+  {
+   "file": "inputs/pic-verification.json",
+   "raw_sha256": "sha256:f05926bc692e776f7641e27d0bb4b239ac7f31f374f4da0d210d9941cb246311",
+   "canonical_sha256": "f05926bc692e776f7641e27d0bb4b239ac7f31f374f4da0d210d9941cb246311"
+  },
+  {
+   "file": "trust/pic-keys.json",
+   "raw_sha256": "sha256:c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+   "canonical_sha256": "987497eac382fa77122ae6aa36ced40d67530e40be7220f3ea875db914724d4a"
+  },
+  {
+   "file": "trust/aps-consumption.json",
+   "raw_sha256": "sha256:e8fd359116d9a6cc5800a7ea79f9ebf62faaadf4f3fba4f5f549620f6d7a7172",
+   "canonical_sha256": "090f1385be7559673b73704b40a06a54269b2d7fa61545146d827d3af7eee227"
+  },
+  {
+   "file": "trust/handoff-issuance.json",
+   "raw_sha256": "sha256:4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+   "canonical_sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12"
+  },
+  {
+   "file": "trust/handoff-evaluation.json",
+   "raw_sha256": "sha256:9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+   "canonical_sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9"
+  }
+ ],
+ "tuple": null,
+ "decision_id": null,
+ "approval_ref": "0f61bc806bdfa9b573655588f5f5912b5f6221b30e58188d6b72f50dfab415f1",
+ "intent_ref": "d7be2f37e1dc524611b6acb6d914926c947efb34c1d5e78438720caa8ed164cd",
+ "action_ref": "375076525e292815aa394733ce4ea8a80ec850a6b6a36a947b0e191b000c659a",
+ "decision_valid_until": "2026-10-28T22:15:38.054Z"
+}

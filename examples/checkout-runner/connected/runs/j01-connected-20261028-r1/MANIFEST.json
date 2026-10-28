@@ -1,0 +1,634 @@
+{
+  "ended_at": "2026-10-28T21:45:45.166Z",
+  "files": [
+    {
+      "path": "VERDICTS.md",
+      "sha256": "cfde52655b4732cf64a4299eb73255d92e81cead41096fc9f93d2997de263004",
+      "size": 2283
+    },
+    {
+      "path": "admission/state.json",
+      "sha256": "106bf41ebe86890cd2fe49208a2eee8e4790fee81711b7f6c939a0b5dfddb716",
+      "size": 3138
+    },
+    {
+      "path": "cases/j01/inputs/aps-action.json",
+      "sha256": "d240322c0cfc2cbdf4689426cde3b438b0fd5df43e2546b12af53c18f6038d3d",
+      "size": 406
+    },
+    {
+      "path": "cases/j01/inputs/aps-approval.json",
+      "sha256": "8ff1509bfff289da210c5458e117b4e01c43bdc14dd103158a103bd482a20357",
+      "size": 1215
+    },
+    {
+      "path": "cases/j01/inputs/aps-intent.json",
+      "sha256": "7693e9f4e69f3c9aec6ba592282635e35ad74b87499ed9b3547842f959b93fc2",
+      "size": 859
+    },
+    {
+      "path": "cases/j01/inputs/aps-payload.json",
+      "sha256": "06308c11ca6c26e4d0b423eb6dc2d0f9640a4e7fb89588b41606677d43fb13d3",
+      "size": 73
+    },
+    {
+      "path": "cases/j01/inputs/decision-evidence.json",
+      "sha256": "0225f54688052f489ad7e12bd4b8fd708d7669cc10cf7f85590bed23cf921bcf",
+      "size": 520
+    },
+    {
+      "path": "cases/j01/inputs/pic-proposal.json",
+      "sha256": "4f240393358b88b31f846ffac21f056265f0f2e016a42b50727b5c8314205ca0",
+      "size": 1604
+    },
+    {
+      "path": "cases/j01/inputs/pic-verification.json",
+      "sha256": "2ec44933dff611aabdee5ec753fb819c0ddcd097b428134cd250de73772a3ad6",
+      "size": 725
+    },
+    {
+      "path": "cases/j01/trust/aps-consumption.json",
+      "sha256": "b191451af9d940a113afff713760917a00d1f1d4923da6446da7dec16b324f11",
+      "size": 742
+    },
+    {
+      "path": "cases/j01/trust/handoff-evaluation.json",
+      "sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+      "size": 577
+    },
+    {
+      "path": "cases/j01/trust/handoff-issuance.json",
+      "sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+      "size": 398
+    },
+    {
+      "path": "cases/j01/trust/pic-keys.json",
+      "sha256": "c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+      "size": 156
+    },
+    {
+      "path": "cases/n1a-pic-args/inputs/aps-action.json",
+      "sha256": "bbce44f617cb9ea612dcd274c42cb455c73ef7d6855b5a7a40e338eb86189a79",
+      "size": 406
+    },
+    {
+      "path": "cases/n1a-pic-args/inputs/aps-approval.json",
+      "sha256": "42d4f65adee866e95abc585493c6b9b57071987bb2f2df13d3c256f5063e8a3c",
+      "size": 1215
+    },
+    {
+      "path": "cases/n1a-pic-args/inputs/aps-intent.json",
+      "sha256": "e29a976be21d3b93ff0df7cd7c1d44e774975c9e3ad11ab94f1bb54380ba01a2",
+      "size": 859
+    },
+    {
+      "path": "cases/n1a-pic-args/inputs/aps-payload.json",
+      "sha256": "f33b6fe4b1b12c3ecaed8c79b35874a2a5fb6e693fdb128cd1c39dd742fbb3b0",
+      "size": 73
+    },
+    {
+      "path": "cases/n1a-pic-args/inputs/decision-evidence.json",
+      "sha256": "fca467c01a6252d216d6845a230ce0dae9bcc3419d831e269e8bd92c2117d2e6",
+      "size": 520
+    },
+    {
+      "path": "cases/n1a-pic-args/inputs/pic-proposal.json",
+      "sha256": "9b815637a22b625840270627fabbc6ac38ab61e97783a4f04f1a2543918a2546",
+      "size": 1604
+    },
+    {
+      "path": "cases/n1a-pic-args/inputs/pic-verification.json",
+      "sha256": "e978bf8efca43d742e06cf2050bbe2265f38caffb974e1833c60a7a36019e29e",
+      "size": 549
+    },
+    {
+      "path": "cases/n1a-pic-args/trust/aps-consumption.json",
+      "sha256": "bf6b55bfe1d816d35b4bb76fa819940c2cbacc079cafd47d58a2f7694ff6a871",
+      "size": 742
+    },
+    {
+      "path": "cases/n1a-pic-args/trust/handoff-evaluation.json",
+      "sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+      "size": 577
+    },
+    {
+      "path": "cases/n1a-pic-args/trust/handoff-issuance.json",
+      "sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+      "size": 398
+    },
+    {
+      "path": "cases/n1a-pic-args/trust/pic-keys.json",
+      "sha256": "c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+      "size": 156
+    },
+    {
+      "path": "cases/n1b-aps-payload/inputs/aps-action.json",
+      "sha256": "3abb7176936036054678e886861fb81d2fcacf893fe7d3fea1cf17a593819d7e",
+      "size": 406
+    },
+    {
+      "path": "cases/n1b-aps-payload/inputs/aps-approval.json",
+      "sha256": "accc2225043a7ef5518ebb6efe8b1c587681415ce07f2635c29cf71153bcf94d",
+      "size": 1215
+    },
+    {
+      "path": "cases/n1b-aps-payload/inputs/aps-intent.json",
+      "sha256": "502d2e4192b627e76938eab2c7e57e3f2daeff3de1688e01ae90599dcd863e15",
+      "size": 859
+    },
+    {
+      "path": "cases/n1b-aps-payload/inputs/aps-payload.json",
+      "sha256": "95b5f7eff43adcd062d62d019aa4fba48ae350c4e90c5e02ca1188083adeae61",
+      "size": 73
+    },
+    {
+      "path": "cases/n1b-aps-payload/inputs/decision-evidence.json",
+      "sha256": "497239f52ca2bd1ceefebee170938265d184d000787bfb85a08e7d033f49ee60",
+      "size": 520
+    },
+    {
+      "path": "cases/n1b-aps-payload/inputs/pic-proposal.json",
+      "sha256": "9bc7b377ee476bfa7b6b6b75f07610d65d3caed82a0154fda76ced3ebbda8c40",
+      "size": 1604
+    },
+    {
+      "path": "cases/n1b-aps-payload/inputs/pic-verification.json",
+      "sha256": "f05926bc692e776f7641e27d0bb4b239ac7f31f374f4da0d210d9941cb246311",
+      "size": 725
+    },
+    {
+      "path": "cases/n1b-aps-payload/trust/aps-consumption.json",
+      "sha256": "e8fd359116d9a6cc5800a7ea79f9ebf62faaadf4f3fba4f5f549620f6d7a7172",
+      "size": 742
+    },
+    {
+      "path": "cases/n1b-aps-payload/trust/handoff-evaluation.json",
+      "sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+      "size": 577
+    },
+    {
+      "path": "cases/n1b-aps-payload/trust/handoff-issuance.json",
+      "sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+      "size": 398
+    },
+    {
+      "path": "cases/n1b-aps-payload/trust/pic-keys.json",
+      "sha256": "c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+      "size": 156
+    },
+    {
+      "path": "cases/n3-reissue/inputs/aps-action.json",
+      "sha256": "d240322c0cfc2cbdf4689426cde3b438b0fd5df43e2546b12af53c18f6038d3d",
+      "size": 406
+    },
+    {
+      "path": "cases/n3-reissue/inputs/aps-approval.json",
+      "sha256": "8ef521879931915c0ab69d2acfc6b97466335d23eab29a83e982b75799835a9d",
+      "size": 1215
+    },
+    {
+      "path": "cases/n3-reissue/inputs/aps-intent.json",
+      "sha256": "7693e9f4e69f3c9aec6ba592282635e35ad74b87499ed9b3547842f959b93fc2",
+      "size": 859
+    },
+    {
+      "path": "cases/n3-reissue/inputs/aps-payload.json",
+      "sha256": "06308c11ca6c26e4d0b423eb6dc2d0f9640a4e7fb89588b41606677d43fb13d3",
+      "size": 73
+    },
+    {
+      "path": "cases/n3-reissue/inputs/decision-evidence.json",
+      "sha256": "747a697eafdc5823a9ee7a390e526e464a97787d2fda262589f1b7d2f6a68115",
+      "size": 520
+    },
+    {
+      "path": "cases/n3-reissue/inputs/pic-proposal.json",
+      "sha256": "1e182979c635555ad0fff4f19da75fc85ff18be7a12867e725a60360cd587e0a",
+      "size": 1604
+    },
+    {
+      "path": "cases/n3-reissue/inputs/pic-verification.json",
+      "sha256": "3378e85143873f26ef3e427992cd125536c002e07b640a65a78d6d24249f548a",
+      "size": 725
+    },
+    {
+      "path": "cases/n3-reissue/trust/aps-consumption.json",
+      "sha256": "b191451af9d940a113afff713760917a00d1f1d4923da6446da7dec16b324f11",
+      "size": 742
+    },
+    {
+      "path": "cases/n3-reissue/trust/handoff-evaluation.json",
+      "sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+      "size": 577
+    },
+    {
+      "path": "cases/n3-reissue/trust/handoff-issuance.json",
+      "sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+      "size": 398
+    },
+    {
+      "path": "cases/n3-reissue/trust/pic-keys.json",
+      "sha256": "c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+      "size": 156
+    },
+    {
+      "path": "cases/n3b-old-pic/inputs/aps-action.json",
+      "sha256": "d240322c0cfc2cbdf4689426cde3b438b0fd5df43e2546b12af53c18f6038d3d",
+      "size": 406
+    },
+    {
+      "path": "cases/n3b-old-pic/inputs/aps-approval.json",
+      "sha256": "8ef521879931915c0ab69d2acfc6b97466335d23eab29a83e982b75799835a9d",
+      "size": 1215
+    },
+    {
+      "path": "cases/n3b-old-pic/inputs/aps-intent.json",
+      "sha256": "7693e9f4e69f3c9aec6ba592282635e35ad74b87499ed9b3547842f959b93fc2",
+      "size": 859
+    },
+    {
+      "path": "cases/n3b-old-pic/inputs/aps-payload.json",
+      "sha256": "06308c11ca6c26e4d0b423eb6dc2d0f9640a4e7fb89588b41606677d43fb13d3",
+      "size": 73
+    },
+    {
+      "path": "cases/n3b-old-pic/inputs/decision-evidence.json",
+      "sha256": "747a697eafdc5823a9ee7a390e526e464a97787d2fda262589f1b7d2f6a68115",
+      "size": 520
+    },
+    {
+      "path": "cases/n3b-old-pic/inputs/pic-proposal.json",
+      "sha256": "4f240393358b88b31f846ffac21f056265f0f2e016a42b50727b5c8314205ca0",
+      "size": 1604
+    },
+    {
+      "path": "cases/n3b-old-pic/inputs/pic-verification.json",
+      "sha256": "b6460064fcea463975589bdfa0687a778588048140015f78faa9a9657c979f01",
+      "size": 725
+    },
+    {
+      "path": "cases/n3b-old-pic/trust/aps-consumption.json",
+      "sha256": "b191451af9d940a113afff713760917a00d1f1d4923da6446da7dec16b324f11",
+      "size": 742
+    },
+    {
+      "path": "cases/n3b-old-pic/trust/handoff-evaluation.json",
+      "sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+      "size": 577
+    },
+    {
+      "path": "cases/n3b-old-pic/trust/handoff-issuance.json",
+      "sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+      "size": 398
+    },
+    {
+      "path": "cases/n3b-old-pic/trust/pic-keys.json",
+      "sha256": "c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+      "size": 156
+    },
+    {
+      "path": "cases/n4-lost-ack/inputs/aps-action.json",
+      "sha256": "f557653ac1e460859eada47368d04424d644adbaf8980b0a44a0d6235bd47df8",
+      "size": 406
+    },
+    {
+      "path": "cases/n4-lost-ack/inputs/aps-approval.json",
+      "sha256": "aba24190eed8773896a044f07da1853c3c299a828639af587168e9dc203a5e50",
+      "size": 1215
+    },
+    {
+      "path": "cases/n4-lost-ack/inputs/aps-intent.json",
+      "sha256": "0fd6ff611117a5637ca9d582d2c1d36e31babde7221c14e9821c47ef25c2d42e",
+      "size": 859
+    },
+    {
+      "path": "cases/n4-lost-ack/inputs/aps-payload.json",
+      "sha256": "e212d8d2edd9aef30ee2a01f977ffa793cb26ae52089795a752fb9033b87dbd6",
+      "size": 73
+    },
+    {
+      "path": "cases/n4-lost-ack/inputs/decision-evidence.json",
+      "sha256": "faf33733193406df6eefc18a3fdf96cec8d3bdfb0801b1be607f84d87a0a5524",
+      "size": 519
+    },
+    {
+      "path": "cases/n4-lost-ack/inputs/pic-proposal.json",
+      "sha256": "995e5c6dc703c7ad8bfdbe2a991b40fa0fd3836279f4ec77f644b8230f4abcac",
+      "size": 1602
+    },
+    {
+      "path": "cases/n4-lost-ack/inputs/pic-verification.json",
+      "sha256": "3a87eca67212ce4d327a20db259866b1957caede9baaee60af56cef772962c3e",
+      "size": 725
+    },
+    {
+      "path": "cases/n4-lost-ack/trust/aps-consumption.json",
+      "sha256": "67bc43a11023d9215c6ec47ccaddc82b07f6d4405f94f9cfe369653a8e8a67f4",
+      "size": 742
+    },
+    {
+      "path": "cases/n4-lost-ack/trust/handoff-evaluation.json",
+      "sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+      "size": 577
+    },
+    {
+      "path": "cases/n4-lost-ack/trust/handoff-issuance.json",
+      "sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+      "size": 398
+    },
+    {
+      "path": "cases/n4-lost-ack/trust/pic-keys.json",
+      "sha256": "c9129f3ab83f7e464574a5aac46f48275ffdef07b5c8fa3645fd8a61d18114c1",
+      "size": 156
+    },
+    {
+      "path": "executor/report-context-j01.json",
+      "sha256": "109c606d8fe27e6beed9b39a06bb75cff302d79727e1aea125e65ca125bd22b4",
+      "size": 295
+    },
+    {
+      "path": "executor/report-context-n4.json",
+      "sha256": "7df26f86a74a645bc740835e32cfd459e680b69c9040d4abeae869a5df9a4623",
+      "size": 294
+    },
+    {
+      "path": "results.json",
+      "sha256": "842fd6677a7e60951cbb803ae33f2b2b0904c4f4ad39b5ecf1e16bca460e508d",
+      "size": 14421
+    },
+    {
+      "path": "signer/j01.handoff.json",
+      "sha256": "3601851c03caf560d572334d75b0b88874dacc235931ae1ac46d0bb0a2526583",
+      "size": 684
+    },
+    {
+      "path": "signer/n3.resolution.json",
+      "sha256": "2d5194127ac189db2e81f099ec3d92f14a5a2ca75d3c8843367d6812b525df64",
+      "size": 1785
+    },
+    {
+      "path": "signer/n4.handoff.json",
+      "sha256": "4520b9a61d264aa0ecb268fad7a3394ed501a6d2369433de79b5f84a5f15b2ec",
+      "size": 684
+    },
+    {
+      "path": "sim/sim.json",
+      "sha256": "39e41058e8441a7925d45881d0cd6149da73ed6845db36ea00c37eacefde83f8",
+      "size": 30
+    },
+    {
+      "path": "transcript/01-aps-inputs.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/01-aps-inputs.out",
+      "sha256": "593467baf2a533ab9e66ac7f36945767f2e59b37528d5f2120173cf65d1445d6",
+      "size": 486
+    },
+    {
+      "path": "transcript/02-pic-make-fixture.err",
+      "sha256": "15f3f99a93bfaee3a8bfb0ea6882cf76a3363462fee3153aca2465cad0287760",
+      "size": 241
+    },
+    {
+      "path": "transcript/02-pic-make-fixture.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/03-pic-result.err",
+      "sha256": "f1d2075773f6b572f9a61b53bf063d844f9d72941709e9d99febf6daea684094",
+      "size": 26
+    },
+    {
+      "path": "transcript/03-pic-result.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/04-horizon-aps-receipt.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/04-horizon-aps-receipt.out",
+      "sha256": "efd20c7c7239dc093dc928ce8f9672d8db526c82448c5919204aaf82cd37fb55",
+      "size": 3281
+    },
+    {
+      "path": "transcript/05-aps-inputs.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/05-aps-inputs.out",
+      "sha256": "f8a99d5094a38856c3a4b62ce6ee9bc772ef78db06b53082a710e4f7f940c079",
+      "size": 486
+    },
+    {
+      "path": "transcript/06-pic-make-fixture.err",
+      "sha256": "be8f7591d0ee937297b8b53e2f2d41e3d818e9f4fe3c22b64483c15f13b2743d",
+      "size": 250
+    },
+    {
+      "path": "transcript/06-pic-make-fixture.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/07-pic-result.err",
+      "sha256": "dc73fff013602971c9af8ec8ed0305357ffa8b1fbb8f70d64a85385cdbf763c2",
+      "size": 70
+    },
+    {
+      "path": "transcript/07-pic-result.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/08-aps-inputs.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/08-aps-inputs.out",
+      "sha256": "63543639a8c737cd64e005eabdede9eb1c90e55066db7d373c0385f6310f130b",
+      "size": 486
+    },
+    {
+      "path": "transcript/09-pic-make-fixture.err",
+      "sha256": "ca1dc7926ce86b5127110128d4cb7c77e2041399322c470f89afd2e61885e203",
+      "size": 253
+    },
+    {
+      "path": "transcript/09-pic-make-fixture.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/10-pic-result.err",
+      "sha256": "f1d2075773f6b572f9a61b53bf063d844f9d72941709e9d99febf6daea684094",
+      "size": 26
+    },
+    {
+      "path": "transcript/10-pic-result.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/11-horizon-aps-receipt.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/11-horizon-aps-receipt.out",
+      "sha256": "8449725502f49826b5045788072f27fda26ecc2a2b70e111ee51cff9d58da73f",
+      "size": 3281
+    },
+    {
+      "path": "transcript/12-horizon-aps-receipt.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/12-horizon-aps-receipt.out",
+      "sha256": "83b98c2f15e6dda0dabdb973da68c32ca35c8eaf1b553292ae2da5a6ed182f14",
+      "size": 3281
+    },
+    {
+      "path": "transcript/13-aps-inputs.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/13-aps-inputs.out",
+      "sha256": "f0be215dac99ef34afe040e0f32f366469eafa708544c6d15d4a1d166ab6efe3",
+      "size": 486
+    },
+    {
+      "path": "transcript/14-pic-make-fixture.err",
+      "sha256": "ae127dec08879febb38c52fb7b5de47b0a18b921fba15395b9f26f8dbce8edec",
+      "size": 248
+    },
+    {
+      "path": "transcript/14-pic-make-fixture.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/15-pic-result.err",
+      "sha256": "f1d2075773f6b572f9a61b53bf063d844f9d72941709e9d99febf6daea684094",
+      "size": 26
+    },
+    {
+      "path": "transcript/15-pic-result.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/16-horizon-aps-receipt.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/16-horizon-aps-receipt.out",
+      "sha256": "9ed744ca9003158bd3c62a692653492e598b48623819e78e4b74854a5273126e",
+      "size": 3281
+    },
+    {
+      "path": "transcript/17-pic-result.err",
+      "sha256": "f1d2075773f6b572f9a61b53bf063d844f9d72941709e9d99febf6daea684094",
+      "size": 26
+    },
+    {
+      "path": "transcript/17-pic-result.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/18-horizon-aps-receipt.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/18-horizon-aps-receipt.out",
+      "sha256": "9f62cfe7b998a136843e1ad00b11ae2112001c7dc56751cc2dc8a5ce922ea83c",
+      "size": 3350
+    },
+    {
+      "path": "transcript/19-aps-inputs.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/19-aps-inputs.out",
+      "sha256": "0be187159ff70f962feddafeb38ba9183c3b4bd39ddc745d8e0f8a6a4731babb",
+      "size": 485
+    },
+    {
+      "path": "transcript/20-pic-make-fixture.err",
+      "sha256": "348d86a22246b36be73a4f03e3ce2e83c033e24ddcceeef44e80be743f727625",
+      "size": 249
+    },
+    {
+      "path": "transcript/20-pic-make-fixture.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/21-pic-result.err",
+      "sha256": "f1d2075773f6b572f9a61b53bf063d844f9d72941709e9d99febf6daea684094",
+      "size": 26
+    },
+    {
+      "path": "transcript/21-pic-result.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/22-horizon-aps-receipt.err",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "transcript/22-horizon-aps-receipt.out",
+      "sha256": "3631eefb7e633450171f6890594176872470b32b48b344ead9b3cab288689ee5",
+      "size": 3280
+    },
+    {
+      "path": "transcript/commands.jsonl",
+      "sha256": "72bb5ee95299f3ba5d6c081a5d6aec72d053668b465910d5d41360e1a2839e85",
+      "size": 15550
+    },
+    {
+      "path": "trust/handoff-evaluation.json",
+      "sha256": "9ead0cd5584b1581e7b14ff158faac2b4470290e96f3c5e52169a3e41b0dbbc9",
+      "size": 577
+    },
+    {
+      "path": "trust/handoff-issuance.json",
+      "sha256": "4bc619212384e0cfe61028cfd36dd16f1242b3753b2722724a3704f795927b12",
+      "size": 398
+    },
+    {
+      "path": "verdicts.json",
+      "sha256": "5e23abe9700a3e6626012d84f061820d0a56a2817fa4b56ceb8969cb9a0ed392",
+      "size": 4323
+    }
+  ],
+  "format": "refund-connected-run-manifest/0.1",
+  "pins": {
+    "checkout_runner imported from": "/home/gate/work/.t/10f3fce19545/refund-j01-work/w-old/probity/examples/checkout-runner/src/checkout_runner",
+    "horizon-shield": "12a48bbecb111ae5c84ab5c68decff5763d1cbbd",
+    "host": "quint-testrunner-3",
+    "node": "v22.23.3",
+    "pic-standard": "6856f36267a9feb56e8c3deb334e9293fc4258dd",
+    "pic_python": "Python 3.12.14",
+    "probity checkout_runner (signer, executor, simulator)": "0792af8cd7d4367cda7bfb883dcade8f82572db8",
+    "probity harness": "129e15c5ab4a406f672a6930008b9b1c77d1efe5",
+    "runner_python": "3.14.7"
+  },
+  "run_id": "j01-connected-20261028-r1",
+  "started_at": "2026-10-28T21:45:34.558Z"
+}
