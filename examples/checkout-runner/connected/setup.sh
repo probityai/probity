@@ -13,6 +13,8 @@ pins="$here/pins.json"
 pin() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d[sys.argv[2]][sys.argv[3]])' "$pins" "$1" "$2"; }
 node=${NODE:-node}
 python312=${PYTHON312:-python3.12}
+"$node" -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' \
+  || { echo "setup: $node is $("$node" --version); the Horizon Shield adapter needs Node 22 or later" >&2; exit 2; }
 mkdir -p "$work"
 
 fetch() {  # fetch <dir> <url> <commit>
@@ -31,7 +33,7 @@ if [ ! -x "$work/pic-venv/bin/python" ]; then "$python312" -m venv "$work/pic-ve
 "$work/pic-venv/bin/python" -m pip install -q --disable-pip-version-check -r "$pic_example/requirements.txt" -c "$pic_example/constraints.txt"
 
 adapter="$work/horizon-shield/$(pin horizon adapter_path)"
-(cd "$adapter" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null)
+(cd "$adapter" && PATH="$(dirname "$(command -v "$node")"):$PATH" npm ci --ignore-scripts --no-audit --no-fund >/dev/null)
 "$node" "$adapter/adapter_aps_receipt.mjs" --pins
 
 (cd "$work/probity/examples/checkout-runner" && uv sync -q --frozen)

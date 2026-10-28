@@ -413,14 +413,18 @@ def run_scenarios(run: Run) -> dict[str, Any]:
         n2: dict[str, Any] = {"horizon_exit": h_rc, "admission": replay["verdict"],
                               "same_admission_ref": replay.get("record") is not None and sg.ref_of(replay["record"]) == sg.ref_of(j01_record)}
         if executor_ok(results):
-            dup = executor.deliver(j01_delivery)
-            resigned = sign("n2-resigned", replay["record"]) if replay["verdict"] == "existing" else None
-            n2["duplicate_delivery_state"] = dup["state"]
-            if resigned is not None:
-                again = executor.deliver(delivery_for(j01_case, replay["record"], resigned, issuance, evaluation_file))
-                n2["resigned_delivery_state"] = again["state"]
-                n2["resigned_valid_until"] = json.loads(resigned)["payload"]["valid_until"]
-                n2["original_valid_until"] = json.loads(j01_handoff)["payload"]["valid_until"]
+            try:
+                n2["duplicate_delivery_state"] = executor.deliver(j01_delivery)["state"]
+                if replay["verdict"] == "existing":
+                    # Retrying signing of the same committed operation: a new handoff, no new admission.
+                    resigned = sign("n2-resigned", replay["record"])
+                    n2["resigned_valid_until"] = json.loads(resigned)["payload"]["valid_until"]
+                    n2["original_valid_until"] = json.loads(j01_handoff)["payload"]["valid_until"]
+                    n2["waited_for_window_s"] = round(wait_for_window(json.loads(resigned)["payload"], replay["record"]), 3)
+                    again = executor.deliver(delivery_for(j01_case, replay["record"], resigned, issuance, evaluation_file))
+                    n2["resigned_delivery_state"] = again["state"]
+            except sg.SignerRefusal as exc:
+                n2["executor_refused"] = exc.code
         n2["applies_for_key"] = apply_count(sim, key)
         results["N2"] = n2
 
