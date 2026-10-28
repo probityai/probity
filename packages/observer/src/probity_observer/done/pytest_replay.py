@@ -211,6 +211,10 @@ class Session:
         self.requests: dict[str, dict[str, Any]] = {}
         self.phase: Phase | None = None
         self.outside: list[str] = []
+        # Keys of requests made while a proven test ran. A read pytest makes itself outside a
+        # test (it looks up ``_mock_name`` on a module while it skips) never consulted the
+        # candidate for the test, so it is not a call that reached it.
+        self.during: set[str] = set()
 
     def left(self) -> float | None:
         """Seconds to the replay's deadline, or ``None`` when it has none."""
@@ -224,6 +228,8 @@ class Session:
             self.spent = True
         self.answers.setdefault(key, []).append(_answer(reply))
         self.requests[key] = request
+        if self.phase is not None:
+            self.during.add(key)
         if self.phase is None or request["op"] != "call":
             if not handle(request, reply):
                 if key not in self.outside:
@@ -236,7 +242,8 @@ class Session:
     def counted(self) -> tuple[int, int]:
         """Calls and attribute reads answered, and how many distinct ones (imports are not
         counted: a test that only imports the candidate never consulted it)."""
-        keys = [key for key, request in self.requests.items() if request["op"] != "import"]
+        keys = [key for key, request in self.requests.items()
+                if request["op"] != "import" and key in self.during]
         return sum(len(self.answers[key]) for key in keys), len(keys)
 
 
