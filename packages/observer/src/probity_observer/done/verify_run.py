@@ -51,9 +51,9 @@ from . import mutants, parent_image, pytest_plugins, visible_detect
 from .contract import ACCEPTANCE_CONFIG, Protected, copy_protected, protected_digest
 from .formats import DoneError, encode, public_key, sha256, sign_record
 from .native import ELF_MAGIC, native_name
-from .runner import (PYTEST_ROOT, SCRUBBED_ENV, TIMEOUT_EXIT, changed_paths, chmod_tree,
-                     image_executable, is_pytest_replay, is_replay, parent_env, replay_parent,
-                     run_replay, stage)
+from .runner import (CONTAINER_ENV, PYTEST_ROOT, TIMEOUT_EXIT, changed_paths, chmod_tree,
+                     image_executable, is_pytest_replay, is_replay, parent_container_env,
+                     replay_parent, run_replay, stage)
 
 GRADE_SCHEMA = "probity-acceptance-grade/v1"
 WORKER_UID = 65534
@@ -96,7 +96,7 @@ class DockerRunner:
         if heldout:
             command += ["--volume", f"{scratch / 'heldout'}:/heldout:ro"]
         command += ["--workdir", "/workspace", "--entrypoint", "/usr/bin/env", self.image, "-i",
-                    *(f"{key}={value}" for key, value in sorted(SCRUBBED_ENV.items())), *argv]
+                    *(f"{key}={value}" for key, value in sorted(CONTAINER_ENV.items())), *argv]
         return command
 
     def executable(self, name: str) -> str | list[str]:
@@ -118,7 +118,7 @@ class DockerRunner:
             command += ["--volume", f"{source}:{target}:ro"]
         return [*command, "--workdir", "/", "--entrypoint", "/usr/bin/env",
                 self.parent_image_id(), "-i",
-                *(f"{key}={value}" for key, value in sorted(parent_env().items())), *argv]
+                *(f"{key}={value}" for key, value in sorted(parent_container_env().items())), *argv]
 
     def kill(self, name: str, signal_name: str) -> None:
         subprocess.run([self.docker, "kill", "--signal", signal_name, name],
@@ -133,7 +133,7 @@ class DockerRunner:
         return ([self.docker, "run", "-i", "--rm", "--init", *self.flags(),
                  "--volume", f"{directory}:/workspace:ro", "--workdir", "/workspace",
                  "--entrypoint", "/usr/bin/env", self.image, "-i",
-                 *(f"{key}={value}" for key, value in sorted(SCRUBBED_ENV.items())),
+                 *(f"{key}={value}" for key, value in sorted(CONTAINER_ENV.items())),
                  "python", "-I", "-P", "-c", source], None)
 
     def run(self, state: Path, argv: Sequence[str], heldout: Path | None,

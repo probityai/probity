@@ -26,7 +26,8 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol, Sequence
+from types import MappingProxyType
+from typing import Any, Mapping, Protocol, Sequence
 
 from ..sensors import treedigest
 from . import pytest_plugins
@@ -34,14 +35,22 @@ from . import replay as replay_harness
 from .formats import DoneError
 
 TIMEOUT_EXIT = 124
-SCRUBBED_ENV = {
+# The whole environment of every process the verifier starts in a container: the worker, a
+# replay's children, and the replay parent (with :func:`parent_container_env`'s one addition).
+# It is fixed here and read-only, because a container shares nothing of this host: no name added
+# to this host's environment, or to :data:`SCRUBBED_ENV`, reaches a container.
+CONTAINER_ENV: Mapping[str, str] = MappingProxyType({
     "PATH": "/usr/local/bin:/usr/bin:/bin",
     "HOME": "/tmp",
     "LANG": "C.UTF-8",
     "PYTHONDONTWRITEBYTECODE": "1",
     "PYTHONNOUSERSITE": "1",
     "PYTHONHASHSEED": "0",
-}
+})
+# The environment of a process the verifier starts on this host. It is the container's; a test
+# session that measures coverage adds coverage's start variables to it (``tests/done/conftest.py``),
+# and those name paths on this host, so they stay with the processes on this host.
+SCRUBBED_ENV = dict(CONTAINER_ENV)
 
 
 @dataclass(frozen=True)
@@ -314,8 +323,16 @@ def parent_env() -> dict[str, str]:
     ``PYTEST_PLUGINS`` from the environment, and every sealed conftest can read
     ``os.environ``, so the verifier's own environment never reaches the parent. A parent in a
     container asks the host for its children, so no container client setting reaches it
-    either."""
+    either. A parent in a container gets :func:`parent_container_env` instead."""
     return {**SCRUBBED_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}
+
+
+def parent_container_env() -> dict[str, str]:
+    """A replay parent's environment in a container of its own: :data:`CONTAINER_ENV`, with
+    pytest's plugin autoloading off. It never follows :data:`SCRUBBED_ENV`, which may carry
+    this host's paths; the parent measures these names and the isolation rule set admits only
+    neutral ones."""
+    return {**CONTAINER_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}
 
 
 class ContainerParent(Protocol):
@@ -436,7 +453,7 @@ def _run_container_parent(scratch: Path, argv: Sequence[str], request: dict, tim
     The container holds the sealed directory, the parent's test root and its request, all
     read-only, and nothing else of this host: no grader key, no container runtime socket, no
     network, no other host path. It runs under the runner's lockdown flags as the worker's uid,
-    with :func:`parent_env`. The host name it is given is a nonce it reports back
+    with :func:`parent_container_env`. The host name it is given is a nonce it reports back
     (:func:`replay_parent`). Its children are started by :class:`.parent_broker.HostBroker`,
     with the command the runner built for this replay, which the parent never sees."""
     from .parent_broker import HostBroker

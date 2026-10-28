@@ -46,10 +46,11 @@ def test_an_honest_module_passes_with_the_parent_in_its_own_container(tmp_path,
     # name the runner gave its container alone.
     seen, launch = report["parent"], report["parent_launch"]
     assert seen["uid"] == graded.worker_uid != os.getuid()
-    assert seen["env"] == sorted(runner.parent_env())
+    assert seen["env"] == sorted(runner.parent_container_env())
     assert seen["hostname"] == launch["hostname"] != socket.gethostname()
     assert runner.replay_parent(graded.replays) == {
-        "runtime": "docker", "uid": graded.worker_uid, "env": sorted(runner.parent_env()),
+        "runtime": "docker", "uid": graded.worker_uid,
+        "env": sorted(runner.parent_container_env()),
         "image": parent_image_id}
 
 

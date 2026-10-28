@@ -35,6 +35,9 @@ PROOF = DONE / "pytest_proof.py"
 UNIT = ["tests/done/test_pytest_replay.py"]
 PROVE = ["tests/done/test_pytest_proof.py"]
 PIPELINE = ["tests/done/test_grade_pipeline.py"]
+# The host's scrubbed environment, as a mutant of verify_run.py (which imports only the
+# container's) reads it.
+HOST_ENV = '__import__("probity_observer.done.runner", fromlist=["SCRUBBED_ENV"]).SCRUBBED_ENV'
 # Real containers: the parent's own image and the host broker.
 CONTAINER = ["tests/done/test_replay_parent_container.py",
              "tests/done/test_replay_parent_command.py"]
@@ -130,8 +133,14 @@ MUTANTS = [
     (GRADE, CONTAINER, '            command += ["--volume", f"{source}:{target}:ro"]',
      '            command += ["--volume", f"{source}:{target}:ro", "--volume", "/:/host:ro",\n'
      '                        "--volume", "/var/run/docker.sock:/var/run/docker.sock"]'),
-    (GRADE, CONTAINER, '                *(f"{key}={value}" for key, value in sorted(parent_env().items())), *argv]',
+    (GRADE, CONTAINER, '                *(f"{key}={value}" for key, value in sorted(parent_container_env().items())), *argv]',
      '                *(f"{key}={value}" for key, value in sorted(os.environ.items())), *argv]'),
+    # Nothing added to the host's scrubbed environment reaches a container: not the parent's,
+    # not the worker's, not a replay child's.
+    (RUNNER, CONTAINER, '    return {**CONTAINER_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}',
+     '    return {**SCRUBBED_ENV, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}'),
+    (GRADE, CONTAINER, "sorted(CONTAINER_ENV.items())), *argv]", f"sorted({HOST_ENV}.items())), *argv]"),
+    (GRADE, CONTAINER, "sorted(CONTAINER_ENV.items())),\n", f"sorted({HOST_ENV}.items())),\n"),
     (HARNESS, CONTAINER, '    result["parent"] = measured_parent()\n', "\n"),
     # The contract seals the replays, and only for protected test files.
     (CONTRACT, PIPELINE, "        commands += pytest_replays(", "        commands += [] and pytest_replays("),
