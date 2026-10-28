@@ -4,23 +4,23 @@
 [![PyPI](https://img.shields.io/pypi/v/probity-verify?label=probity-verify)](https://pypi.org/project/probity-verify/)
 [![Downloads](https://static.pepy.tech/badge/probity-verify)](https://pepy.tech/projects/probity-verify)
 [![Licence](https://img.shields.io/github/license/probityai/probity)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity/stargazers)
+[![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity)
 
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier today, with the observer, admission rules, vocabulary, conformance vectors and Rust crates joining this repository.
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `uv add probity-verify==0.1.1`, then `pip install probity-verify==0.1.1`.
+Install the released verifier: `uv add probity-verify==0.2.2`, then `pip install probity-verify==0.2.2`.
 
-Verified by Probity (github.com/probityai/probity). The `probityai` command line is planned, not yet released: `uv add probityai`, then `pip install probityai`.
+Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai==0.1.0`, then `pip install probityai==0.1.0`.
 
 ## Quick start
 
 Check a sample claim with the released package. You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
-samples="$(uvx --from probity-verify==0.1.1 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
-uvx probity-verify==0.1.1 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from probity-verify==0.2.2 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
+uvx probity-verify==0.2.2 "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -39,10 +39,10 @@ A selected passage is in the source capture but missing from the stored report. 
 
 | member | what it is | released |
 | --- | --- | --- |
-| [packages/probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` for a claim against pinned bytes | 0.1.1 on PyPI |
-| [packages/observer](packages/observer/README.md) | records what an agent run did into pinned evidence the verifier can check | 0.1.0 on PyPI (`agent-evidence-observer`) |
-| [packages/ratchet](packages/ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | 0.2.0 on PyPI (`probity-ratchet`) |
-| [packages/probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today, each member adds its own subcommand | not yet released |
+| [packages/probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` for a claim against pinned bytes | 0.2.2 on PyPI |
+| [packages/observer](packages/observer/README.md) | records what an agent run did into pinned evidence the verifier can check | 0.1.1 on PyPI (`agent-evidence-observer`) |
+| [packages/ratchet](packages/ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | 0.2.1 on PyPI (`probity-ratchet`) |
+| [packages/probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today, each member adds its own subcommand | 0.1.0 on PyPI (`probityai`) |
 
 ## Work on the repository
 
