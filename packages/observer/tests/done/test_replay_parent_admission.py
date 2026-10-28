@@ -102,7 +102,11 @@ def test_a_parent_run_on_this_host_is_refused(opa, rules, tmp_path):
 
 
 @pytest.mark.skipif(shutil.which("docker") is None, reason="needs docker")
-def test_a_parent_run_in_its_own_container_is_admitted(opa, rules, tmp_path):
+def test_a_parent_run_in_its_own_container_is_admitted(opa, rules, tmp_path, monkeypatch):
+    # A name on this host's scrubbed environment, naming a host path, as a coverage run of
+    # this suite adds two (conftest.py). It stays on this host; a parent that measured it would
+    # be refused as not scrubbed, which is what the coverage run in CI first showed.
+    monkeypatch.setitem(runner.SCRUBBED_ENV, "PROBITY_HOST_ONLY", str(tmp_path))
     image = parent_image.ensure()
     graded = verify_run.DockerRunner(image, parent_image=image)
     code, _ = replay(tmp_path / "run", graded, HONEST, TEST)
@@ -110,4 +114,5 @@ def test_a_parent_run_in_its_own_container_is_admitted(opa, rules, tmp_path):
     record = {"verifier_uid": os.getuid(),
               "replay_parent": runner.replay_parent(graded.replays)}
     assert record["replay_parent"]["runtime"] == "docker"
-    assert reasons(opa, rules, tmp_path, record) == []
+    assert record["replay_parent"]["env"] == sorted(runner.parent_container_env())
+    assert reasons(opa, rules, tmp_path, record) == [], record["replay_parent"]
