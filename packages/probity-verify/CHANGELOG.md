@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.3 (unreleased)
+
+- Every decision carries `reference.verifier.id`, the URI `https://probityai.github.io/probity/verifiers/probity-verify`,
+  in its JSON and as a `Reference verifier:` line in the text packet. A conformance run that records the field
+  names the verifier that produced the result. The done-receipt adapter's own `verifier.id` is unchanged.
+- `docs/release-manifest.json` records the release's corpus digests, one digest over every vector's expected
+  decision, the verifier identifier, and the build and publish workflow files with the actions they use.
+  `scripts/build-release-manifest.py --check` fails when it is stale.
+
 ## 0.2.2 (2026-10-26)
 
 - `agent-evidence-vocabulary` is now `~=0.8.0`, the release that adds open verdict classes. No identifier

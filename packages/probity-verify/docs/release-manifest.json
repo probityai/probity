@@ -1,0 +1,48 @@
+{
+  "actions": [
+    "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6",
+    "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+    "actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0",
+    "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+    "pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086"
+  ],
+  "corpora": [
+    {
+      "corpus_digest": "49ce492bb1bf6b418a313aa495abe77579322936b4de1396d58ba8b1a29fdaac",
+      "directory": "vectors-done-checks",
+      "suite": "done-checks/v1",
+      "vectors": 32
+    },
+    {
+      "corpus_digest": "58f0429ce8864f244c1a894340307f7fac871745427814ab00a5605c1bf2ec2a",
+      "directory": "vectors-operand-lineage",
+      "suite": "operand-lineage/v1",
+      "vectors": 10
+    },
+    {
+      "corpus_digest": "05f84dc87391f8711ee8f657b2afb45946f16c3342b404838700e418ba8d7fcb",
+      "directory": "vectors-source-coverage",
+      "suite": "source-text-coverage/v1",
+      "vectors": 6
+    }
+  ],
+  "expectations_digest": "599f19b9ab05d111f3871e7615b883b14342ea322deb36a07c04ddbd234b2197",
+  "package": "probity-verify",
+  "reference": {
+    "verifier": {
+      "id": "https://probityai.github.io/probity/verifiers/probity-verify"
+    }
+  },
+  "version": "0.2.3",
+  "workflows": [
+    {
+      "path": ".github/workflows/release.yml",
+      "sha256": "223b05d24aa7bb401954fcb6981b7a3d2e154a038ee4900443f99668d427fced"
+    },
+    {
+      "path": ".github/workflows/python-build.yml",
+      "sha256": "ebef8bd8da15f70f16925cb09c2d959d5118d34f3ff2a39a97d870be3d88150e"
+    }
+  ]
+}

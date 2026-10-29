@@ -32,6 +32,11 @@ from .adapters import (
 from .common import CaseError
 from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
 
+#: Names this verifier in every decision it prints, as ``reference.verifier.id``. A
+#: conformance run that records the field carries this identifier in the bytes its
+#: own pipeline emits. The URI is the same in every release.
+REFERENCE_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/probity-verify"
+
 ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "brokered_file_write/v1": brokered_file_write.adjudicate,
     "source_text_coverage/v1": source_coverage.adjudicate,
@@ -160,6 +165,7 @@ def adjudicate(
             not isinstance(result.get("unwitnessed_scope_claims", []), list)):
         raise CaseError("adapter returned an invalid decision envelope")
     result["policy_sha256"] = policy_sha256
+    result["reference"] = {"verifier": {"id": REFERENCE_VERIFIER_ID}}
     if require_witness_scope == EXTERNAL:
         _require_external(result)
     return result
@@ -201,6 +207,7 @@ def render_packet(result: dict) -> str:
         f"Decision: {result['decision']}{_qualifiers(result)}",
         f"Reason: {result['reason']}",
         f"Policy SHA-256: {result['policy_sha256']}",
+        f"Reference verifier: {result['reference']['verifier']['id']}",
         "Scope and evidence:",
         json.dumps(result["scope"], indent=2, sort_keys=True, ensure_ascii=True),
         "Checks:",
