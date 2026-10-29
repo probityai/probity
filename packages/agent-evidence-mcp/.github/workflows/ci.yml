@@ -12,23 +12,43 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - name: install the pinned dependencies
         run: |
-          uv venv --python 3.12
+          uv venv --python ${{ matrix.python }}
           uv pip install -e ".[test]"
       - name: tests (real MCP client, real corpus, no mocks)
         run: .venv/bin/python -m pytest -q
       - name: every mutation of a tool output is caught by the tests
+        if: matrix.python == '3.12'
         run: .venv/bin/python scripts/mutation_check.py
       - name: the server answers over stdio from the built wheel
         run: |
           uv build
-          uv venv --python 3.12 /tmp/wheel-venv
+          uv venv --python ${{ matrix.python }} /tmp/wheel-venv
           uv pip install --python /tmp/wheel-venv/bin/python dist/*.whl
           /tmp/wheel-venv/bin/python scripts/wheel_smoke.py /tmp/wheel-venv/bin/agent-evidence-mcp
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: the container image builds and answers over stdio
+        run: |
+          docker build -t agent-evidence-mcp:ci .
+          docker inspect agent-evidence-mcp:ci --format '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}' | grep -qx 'io.github.probityai/agent-evidence-mcp'
+      - uses: astral-sh/setup-uv@v7
+      - name: a real MCP client gets the contradicted sample from the image
+        run: |
+          uv venv --python 3.12 /tmp/client-venv
+          uv pip install --python /tmp/client-venv/bin/python "mcp==2.3.0"
+          /tmp/client-venv/bin/python scripts/wheel_smoke.py docker run --rm -i agent-evidence-mcp:ci
   hygiene:
     runs-on: ubuntu-latest
     timeout-minutes: 10

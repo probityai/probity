@@ -3,9 +3,12 @@ name: publish-mcp-registry
 # Publishes server.json to the official MCP Registry. The registry checks that the
 # repository owner matches the io.github.probityai namespace through this job's
 # GitHub OIDC identity, and that the PyPI package's README carries the mcp-name line.
+# The release workflow calls it after PyPI and the image are published, so the registry
+# cannot lag behind a release; it can still be run by hand.
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
