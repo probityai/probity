@@ -40,3 +40,13 @@ def inprocess_referee() -> Callable[..., Any]:
     process through the same `RefereeCore`, so the driver's in-process patches (scripted endpoints, fake
     runners) reach the referee too. The process boundary itself is tested in tests/improve/test_referee.py."""
     return _inprocess_referee
+
+
+@pytest.fixture(autouse=True)
+def _scripted_proposer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The loop's default proposer is an installed plug-in; tests drive the loop with a scripted chat."""
+    from improve.chat_proposer import ChatProposer
+
+    from ratchet.improve import loop
+
+    monkeypatch.setattr(loop, "load_proposer", lambda name, model: ChatProposer(model))
