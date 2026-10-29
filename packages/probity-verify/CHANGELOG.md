@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.3 (unreleased)
+## 0.2.3 (2026-10-29)
 
 - Every decision carries `reference.verifier.id`, the URI `https://probityai.github.io/probity/verifiers/probity-verify`,
   in its JSON and as a `Reference verifier:` line in the text packet. A conformance run that records the field

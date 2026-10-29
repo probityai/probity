@@ -1,11 +1,11 @@
 {
   "package": "probity-verify",
-  "version": "0.2.2",
-  "tag": "probity-verify-v0.2.2",
-  "commit": "bc4557b1237c0d949087c19c6ee17dd858edbedd",
-  "uploaded": "2026-10-26",
+  "version": "0.2.3",
+  "tag": "probity-verify-v0.2.3",
+  "commit": "e878ff1a3d96afc28e713f0ff26ac12d4df8a5de",
+  "uploaded": "2026-10-29",
   "files": [
-    {"name": "probity_verify-0.2.2-py3-none-any.whl", "sha256": "962b17f9e3989041cc567f6249e805e3af84eda3175b8d2bfa917034987a0c90"},
-    {"name": "probity_verify-0.2.2.tar.gz", "sha256": "ad4aa6ae3c70d80f2a366ed8c7fb9b39302fcaba869981cb773480ac74ef72dc"}
+    {"name": "probity_verify-0.2.3-py3-none-any.whl", "sha256": "785d6ed37d9cabe57cfa0c35a79af7f6a9532b60779f2ef09aebcbdd8c6c4286"},
+    {"name": "probity_verify-0.2.3.tar.gz", "sha256": "58571ebee72025f33fdc34d4c895ae1419117decd0944a94d40b1fbe9c9b6c7f"}
   ]
 }
