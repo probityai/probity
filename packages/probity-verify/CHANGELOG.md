@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.4 (unreleased)
+
+- A reference route for the Adversarial Execution Evidence predicate, version 0.7: claim type
+  `adversarial_execution_evidence/v1` recomputes a statement's verdict, failure codes, result and per-row
+  evidence tiers from its own bytes, under the substrate keys the consumer pins. It reads the predicate's
+  strict I-JSON wire profile and judges each statement independently. Across all 288 members of the
+  `vectors` corpus of agent-evidence-vectors (suite revision 32) it reaches every declared verdict, result
+  and tier column under both key policies, and a primary code the corpus declares.
+
 ## 0.2.3 (2026-10-29)
 
 - Every decision carries `reference.verifier.id`, the URI `https://probityai.github.io/probity/verifiers/probity-verify`,
