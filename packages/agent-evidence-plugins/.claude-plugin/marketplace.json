@@ -1,0 +1,15 @@
+{
+  "name": "agent-evidence-plugins",
+  "owner": { "name": "Sankalp Gilda" },
+  "metadata": { "description": "Plugins that replay agent-evidence decision bundles and fail on a bad one" },
+  "plugins": [
+    {
+      "name": "verdict-bundle-gate",
+      "source": "./plugins/verdict-bundle-gate",
+      "description": "Replay a verdict bundle with the pinned probity-verify after any tool names one, and block on tamper or a decision you did not allow.",
+      "version": "0.1.0",
+      "category": "security",
+      "keywords": ["agent-evidence", "verification", "hook", "probity-verify"]
+    }
+  ]
+}
