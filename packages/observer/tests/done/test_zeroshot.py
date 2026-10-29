@@ -5,7 +5,8 @@ import shutil
 
 import pytest
 
-from probity_observer.done import contract, zeroshot
+from probity_observer.done import contract, repo_task, zeroshot
+from probity_observer.done import harvest as guard_selector
 from probity_observer.done.formats import DoneError
 from probity_observer.done.runner import SubprocessRunner
 
@@ -55,7 +56,7 @@ def test_a_proposal_seals_after_stability(tmp_path, repo, harness, python_bin):
                                 work=tmp_path / "w", template_name="contract_v1.txt")
     assert len(model.prompts) == 1 and proposal.record["model"] == "fixed-test-model"
     sealed = contract.compile_task(proposal.task, tmp_path / "out", harness,
-                                   SubprocessRunner(python_bin), timeout=60)
+                                   SubprocessRunner(python_bin), timeout=60, guards=guard_selector)
     compiled = json.loads((sealed.out / "sealed" / "compile.json").read_bytes())
     assert compiled["model_calls"] == 1 and compiled["notes"]["proposal"]["template_sha256"]
     assert sealed.record["protected_paths"][0]["exclude"] == list(contract.EXCLUDE)
@@ -121,7 +122,7 @@ def test_a_reference_gives_the_proposal_mutants(tmp_path, repo, harness, python_
     # The only test compares with ==, so an any-eq result passes it: the contract is refused.
     with pytest.raises(contract.Refused, match="cheat_class_survived") as caught:
         contract.compile_task(proposal.task, tmp_path / "out", harness,
-                              SubprocessRunner(python_bin), timeout=60)
+                              SubprocessRunner(python_bin), timeout=60, guards=guard_selector)
     assert caught.value.reason == "cheat_class_survived"
 
 
@@ -204,7 +205,7 @@ def test_proposed_commands_are_sealed_with_repeats_isolation_and_ids(tmp_path, r
     assert "ids" not in commands["keyword"].record() and commands["keyword"].argv[-2:] == ("-k", "double")
     assert (tmp_path / "w/heldout/config/probity-plugins/probity_repeat.py").is_file()
     assert proposal.task.heldout == tmp_path / "w" / "heldout"
-    assert zeroshot.unittest_node(repo, "tests.test_app") == "tests/test_app.py"
+    assert repo_task.unittest_node(repo, "tests.test_app") == "tests/test_app.py"
 
 
 def test_a_repo_task_needs_a_work_directory(repo):
@@ -235,7 +236,7 @@ def test_guards_are_harvested_from_the_suite_by_the_mutants_they_kill(tmp_path, 
     proposal = zeroshot.propose(repo, "g", "double it", Fixed(answer), reference, tmp_path / "w",
                                 template_name="contract_v1.txt")
     sealed = contract.compile_task(proposal.task, tmp_path / "out", harness,
-                                   SubprocessRunner(python_bin), timeout=60)
+                                   SubprocessRunner(python_bin), timeout=60, guards=guard_selector)
     compiled = json.loads((sealed.out / "sealed" / "compile.json").read_bytes())
     harvest = compiled["harvest"]
     assert [item["id"] for item in harvest["greedy"]] == ["tests/test_more.py::test_zero",
@@ -259,7 +260,7 @@ def test_a_strong_contract_seals_with_its_gates_and_strength(tmp_path, harness, 
     proposal = zeroshot.propose(repo, "g", "double it", Fixed(answer), reference, tmp_path / "w",
                                 template_name="contract_v1.txt")
     sealed = contract.compile_task(proposal.task, tmp_path / "out", harness,
-                                   SubprocessRunner(python_bin), timeout=60)
+                                   SubprocessRunner(python_bin), timeout=60, guards=guard_selector)
     compiled = json.loads((sealed.out / "sealed" / "compile.json").read_bytes())
     assert compiled["strength"] == "gated"
     assert all(entry["pass"] for entry in compiled["gates"].values())
@@ -272,7 +273,7 @@ def test_without_a_reference_the_start_suite_guards_and_the_strength_says_so(tmp
     proposal = zeroshot.propose(repo, "g", "double it", Fixed(answer), work=tmp_path / "w",
                                 template_name="contract_v1.txt")
     sealed = contract.compile_task(proposal.task, tmp_path / "out", harness,
-                                   SubprocessRunner(python_bin), timeout=60)
+                                   SubprocessRunner(python_bin), timeout=60, guards=guard_selector)
     compiled = json.loads((sealed.out / "sealed" / "compile.json").read_bytes())
     assert compiled["strength"] == "reference_free" and "gates" not in compiled
     guard = next(item for item in sealed.record["acceptance"] if item["id"] == "guard-repo")

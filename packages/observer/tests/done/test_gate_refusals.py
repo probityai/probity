@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from probity_observer.done import contract, zeroshot
+from probity_observer.done import harvest as guard_selector
 from probity_observer.done.runner import SubprocessRunner
 
 HEADER = "import os, sys\nsys.path.insert(0, os.getcwd())\n"
@@ -50,7 +51,7 @@ def refusal(tmp_path, repo, solved, node, harness, runner):
     proposal = zeroshot.propose(repo, "planted", "solve it", Fixed(answer(node)), solved,
                                 tmp_path / "w", template_name="contract_v1.txt")
     with pytest.raises(contract.Refused) as caught:
-        contract.compile_task(proposal.task, tmp_path / "out", harness, runner, timeout=60)
+        contract.compile_task(proposal.task, tmp_path / "out", harness, runner, timeout=60, guards=guard_selector)
     return caught.value
 
 

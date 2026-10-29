@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from . import mutants, pytest_plugins
+from .contract import SYNTHESIZED_PREFIX, Task, is_test_path
 from .formats import sha256
 from .mutants import Mutant
 from .runner import Command, Runner
@@ -41,7 +42,8 @@ TEMPLATE = "contract_strengthen_v1.txt"
 ROUNDS = 3
 RUNS = 3
 SYNTH_DIR = "probity_synth"
-PREFIX = "heldout-synth-"
+PREFIX = SYNTHESIZED_PREFIX
+SYNTH_HEADER = "import os, sys\nsys.path.insert(0, os.getcwd())\n"
 MOCKS = frozenset({"mock", "monkeypatch", "mocker", "MagicMock", "patch"})
 MODES = {
     "strengthen": "",
@@ -276,10 +278,6 @@ def command(number: int, prefix: Sequence[str], fails_on_start: bool) -> Command
                    sealed_ids=(name,) if pytest_plugins.is_sealed_pytest(prefix) else None)
 
 
-def is_synthesized(command_id: str) -> bool:
-    return command_id.startswith(PREFIX)
-
-
 def ask(model: Any, task: str, mode: str, sources: str, modules: Sequence[str],
         found: Sequence[Mutant], reference: Path, alive: Sequence[int], number: int
         ) -> tuple[str, dict[str, Any]]:
@@ -290,3 +288,29 @@ def ask(model: Any, task: str, mode: str, sources: str, modules: Sequence[str],
                     "template_sha256": sha256(template().encode()),
                     "prompt_sha256": sha256(prompt.encode()),
                     "response_sha256": sha256(answer.encode()), "mutants_shown": len(alive)}
+
+
+@dataclass
+class ModelStrengthener:
+    """The compiler's strengthener (:class:`.providers.Strengthener`) over one model."""
+
+    model: Any
+    rounds: int = ROUNDS
+
+    def round(self, task: Task, runner: Runner, prefix: Sequence[str], found: Sequence[Mutant],
+              alive: Sequence[int], number: int, mode: str, timeout: float
+              ) -> tuple[Command | None, dict[str, Any]]:
+        assert task.reference is not None and task.heldout is not None
+        sources = start_sources(task.start, task.reference, task.mutation_targets)
+        modules = public_modules(task.start, is_test_path)
+        answer, record = ask(self.model, task.description, mode, sources, modules, found,
+                             task.reference, alive, number)
+        source = SYNTH_HEADER + test_file(answer)
+        kept, rejected, fails, _ = validate(runner, task.start, task.reference, task.heldout,
+                                            prefix, source, modules, found, alive, number, timeout)
+        record.update(kept=kept, rejected=rejected)
+        if not kept:
+            return None, record
+        (task.heldout / "synth").mkdir(exist_ok=True)
+        (task.heldout / "synth" / f"test_synth_{number}.py").write_text(kept_file(source, kept))
+        return command(number, prefix, any(fails.values())), record

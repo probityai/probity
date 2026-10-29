@@ -1,7 +1,7 @@
 """``probity-done contract | run | verify``: seal a definition of done, run, re-check offline.
 
 ``contract`` compiles and seals a task (SWE-bench and LiveCodeBench from dataset fields,
-a real repository through the zero-shot template). ``run`` runs the bounded loop on a sealed
+a real repository from a proposal file or an installed contract provider). ``run`` runs the bounded loop on a sealed
 contract. ``verify`` re-checks one attempt's receipt from its records alone, under the
 consumer's own key pins, and prints the decision line with ``vantage`` and
 ``witness_scope`` and the two verdicts it rests on, outcome and integrity. The decision is
@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
-from . import contract, receipt, zeroshot
+from . import contract, providers, receipt, repo_task
 from .formats import DoneError, load_signer, new_seed, open_record
 from .runner import SubprocessRunner
 
@@ -33,23 +33,25 @@ def _runner(args: argparse.Namespace):
     return SubprocessRunner(args.python)
 
 
-def _task(args: argparse.Namespace) -> tuple[contract.Task, zeroshot.Model | None]:
-    """The task, and the model a repository task's strengthening rounds may call (a live
-    endpoint only: a recorded answer cannot answer a new prompt)."""
+PROVIDER_OPTIONS = ("model_url", "model", "max_tokens", "model_tag", "template", "model_replay")
+
+
+def _task(args: argparse.Namespace
+          ) -> tuple[contract.Task, providers.Strengthener | None]:
+    """The task, and the strengthener a repository task's provider offers (if any)."""
     if args.dataset == "repo":
-        if args.model_replay:
-            model: zeroshot.Model = zeroshot.RecordedModel(Path(args.model_replay))
-        elif args.model_url and args.model:
-            model = zeroshot.ChatModel(args.model_url, args.model, max_tokens=args.max_tokens,
-                                        tag=args.model_tag)
-        else:
-            raise DoneError("a repo task needs --model-url and --model, or --model-replay")
         if not args.work:
             raise DoneError("a repo task needs --work for its sealed configuration")
-        task = zeroshot.propose(Path(args.repo), args.task_id, args.task, model,
-                                Path(args.reference) if args.reference else None,
-                                Path(args.work), args.template, _runner(args)).task
-        return task, model if isinstance(model, zeroshot.ChatModel) else None
+        reference = Path(args.reference) if args.reference else None
+        if args.proposal:
+            return repo_task.from_file(Path(args.repo), args.task_id, args.task,
+                                       Path(args.proposal), reference, Path(args.work)), None
+        provider = providers.contract_provider()
+        if provider is None:
+            raise DoneError("a repo task needs --proposal (no contract provider is installed)")
+        return provider.provide(Path(args.repo), args.task_id, args.task, reference=reference,
+                                work=Path(args.work), runner=_runner(args),
+                                options={name: getattr(args, name) for name in PROVIDER_OPTIONS})
     work = Path(args.work)
     record = json.loads(Path(args.record).read_text())
     if args.dataset == "lcb":
@@ -64,12 +66,13 @@ def cmd_keygen(args: argparse.Namespace) -> int:
 
 
 def cmd_contract(args: argparse.Namespace) -> int:
-    task, model = _task(args)
+    task, strengthener = _task(args)
     sealed = contract.compile_task(task, Path(args.out), load_signer(Path(args.harness_key)),
                                    _runner(args), runs=args.runs, mutant_limit=args.mutants,
                                    timeout=args.timeout,
                                    agent_image=args.agent_image,
-                                   model=model)
+                                   strengthener=strengthener,
+                                   guards=providers.guard_selector())
     adequacy = sealed.record["adequacy"]
     print(f"Contract: {sealed.out / 'contract.json'}")
     print(f"SHA-256: {sealed.contract_sha256}")
@@ -230,15 +233,17 @@ def add_commands(sub) -> None:
     seal.add_argument("--test-cmd", nargs="+", help="argv prefix for SWE-bench test ids")
     seal.add_argument("--task-id")
     seal.add_argument("--task", help="the task in words (repo)")
-    seal.add_argument("--model-url", help="OpenAI-compatible endpoint (repo)")
-    seal.add_argument("--model", help="model name at that endpoint (repo)")
+    seal.add_argument("--proposal",
+                      help="the acceptance proposal as JSON, or a recorded call holding it (repo)")
+    # Read by an installed contract provider (repo, without --proposal).
+    seal.add_argument("--model-url", help="model endpoint for the contract provider (repo)")
+    seal.add_argument("--model", help="model name for the contract provider (repo)")
     seal.add_argument("--max-tokens", type=int, default=8192,
-                      help="completion budget for the zero-shot call, reasoning included (repo)")
-    seal.add_argument("--model-tag", help="sent as X-Probity-Tag with the zero-shot call (repo)")
-    seal.add_argument("--template", choices=zeroshot.TEMPLATES, default=zeroshot.DEFAULT_TEMPLATE,
-                      help="the zero-shot template (repo); v1 replays proposals recorded with it")
+                      help="completion budget for the provider's model call (repo)")
+    seal.add_argument("--model-tag", help="a tag the provider sends with its model call (repo)")
+    seal.add_argument("--template", help="the provider's prompt template (repo)")
     seal.add_argument("--model-replay",
-                      help="a recorded model call or answer to replay instead of a call (repo)")
+                      help="a recorded model call or answer for the provider to replay (repo)")
     seal.add_argument("--reference", help="a known-good solution tree, for mutants (repo)")
     seal.set_defaults(func=cmd_contract)
 

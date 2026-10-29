@@ -15,9 +15,10 @@ One grading run, in order:
    ``/tmp``, process and memory limits, an unprivileged uid with no supplementary groups, and
    ``env -i`` with a fixed environment. These are the lockdown layers of Ratchet's guard
    child (rlimits, network namespace, no new privileges) applied by the container runtime.
-5. For a task graded by replay of a sealed visible test, run the visible-test detectors
-   (:mod:`.visible_detect`) in fresh containers of the same kind and put their findings in the
-   grade (``visible_detectors``); the full facts behind them go in the staging report.
+5. For a task graded by replay of a sealed visible test, run the installed visible-test
+   detector (:func:`.providers.visible_detector`), if any, in fresh containers of the same kind
+   and put its findings in the grade (``visible_detectors``); the full facts behind them go in
+   the staging report. With no detector installed the grade has no such block.
 6. Write the ``probity-acceptance-grade/v1`` record and sign it with the grader's own key,
    which is not the harness key that sealed the contract.
 7. Write the verifier's account of its own isolation, the ``verifier_isolation`` block the
@@ -47,7 +48,7 @@ from typing import Any, Sequence
 
 from ..sensors import treedigest
 from . import heldout as heldout_cases
-from . import mutants, parent_image, pytest_plugins, visible_detect
+from . import mutants, parent_image, providers, pytest_plugins
 from .contract import ACCEPTANCE_CONFIG, Protected, copy_protected, protected_digest
 from .formats import DoneError, encode, public_key, sha256, sign_record
 from .native import ELF_MAGIC, native_name
@@ -710,12 +711,14 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
         replays = list(runner.replays)
         hunks = (post_patch(runner, staged.root, start, contract, dirs, timeout)
                  if all(item["exit"] == 0 for item in results) else [])
-        entry = visible_detect.applies(contract, heldout if has_heldout else None)
+        detector = providers.visible_detector()
+        entry = (detector.applies(contract, heldout if has_heldout else None)
+                 if detector is not None else None)
         detected = None
-        if entry is not None:
-            detected = visible_detect.detect(runner, staged.root, heldout,
-                                             (start / "func.py").read_text("utf-8", "replace"),
-                                             entry, agent_test, timeout)
+        if detector is not None and entry is not None:
+            detected = detector.detect(runner, staged.root, heldout,
+                                       (start / "func.py").read_text("utf-8", "replace"),
+                                       entry, agent_test, timeout)
         # Each run's container has exited (and with it every worker process) before its
         # exit status is read: kill is step 1, the read step 2, for every command.
         isolation = _isolation(sha256(contract_bytes), trusted, runner, contract["acceptance"],
