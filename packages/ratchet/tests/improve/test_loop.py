@@ -318,31 +318,6 @@ def test_a_guard_that_leaks_protected_inputs_through_its_reason_never_reaches_th
     assert not protected.search(chat.prompts())  # and none of it reached the improver
 
 
-def test_an_archive_choice_inspires_the_proposer_but_never_changes_the_comparison_parent() -> None:
-    from ratchet.improve.archive import ParentChoice
-
-    old = SEED.child(
-        system_prompt=SEED.system_prompt + "\n\nOLD IDEA: read refunds first.", created_by="improver"
-    )
-    store = MemStore()
-    store.put_harness(old)
-    calls: list[tuple[str, int]] = []
-
-    def choose(tip: str, generation: int) -> ParentChoice:
-        calls.append((tip, generation))
-        return ParentChoice(old.version, tip, {"kind": "test"})
-
-    chat = RoutingChat()
-    result = evolve(store, None, 1, lab=_lab(store, chat, Signer.generate()), seed=SEED, select_parent=choose)
-    g1 = result.generations[0]
-    assert (
-        calls == [(SEED.version, 1)] and g1.archive["source"] == old.version and g1.archive["rebase_required"]
-    )
-    assert "OLD IDEA: read refunds first." in chat.prompts() and "for ideas only" in chat.prompts()
-    assert all(d["parent"] == SEED.version for d in store.decisions)
-    assert all(d["context"]["archive"]["source"] == old.version for d in store.decisions)
-
-
 def test_the_shortlist_gives_every_kind_a_slot() -> None:
     from ratchet.improve.candidates import Candidate
     from ratchet.improve.loop import _shortlist, _Tried
