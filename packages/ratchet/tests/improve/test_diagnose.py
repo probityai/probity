@@ -5,11 +5,9 @@ from dataclasses import replace
 from ratchet_cases.types import Event
 
 from ratchet.improve.diagnose import diagnose, excerpt, locate, normalize, render_event
-from ratchet.improve.llm import Meter
-from ratchet.improve.propose import summarize
 from ratchet.improve.sim import RecordedViews
 
-from .fakes import FakeSimulator, ScriptedChat, bad_timeout, good_plain, lazy, without_views
+from .fakes import FakeSimulator, bad_timeout, good_plain, lazy, without_views
 
 
 def test_normalize_strips_ids_and_quotes() -> None:
@@ -32,21 +30,6 @@ def test_clusters_by_mechanism_and_names_the_failing_step() -> None:
     assert omit.key["tool"] == "<end>"
     payload = dup.to_payload()
     assert payload["members"][0]["id"].endswith("@5") and "timeout" in dup.summary
-
-
-def test_model_writes_the_summary_but_not_the_grouping() -> None:
-    chat = ScriptedChat(
-        [{"mechanism": "retries a refund after a timeout without checking status"}, "garbage", "x"]
-    )
-    meter = Meter()
-    clusters = diagnose(
-        [bad_timeout(1), lazy(2)], FakeSimulator(), lambda k, m, t: summarize(k, m, t, chat, meter)
-    )
-    by_mode = {c.key["mode"]: c for c in clusters}
-    summaries = {c.summary for c in clusters}
-    assert any(x.startswith("retries a refund") for x in summaries)
-    assert len(by_mode) == 2 and any("model summary unavailable" in x for x in summaries)
-    assert meter.model_calls == 3
 
 
 def test_without_intermediate_grading_falls_back_to_mentions() -> None:

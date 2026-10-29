@@ -103,7 +103,6 @@ v3); the referee refuses a file whose digest is not the one the driver names:
 ```sh
 uv run python -m ratchet.improve.run_det --endpoints-file det.json --candidate DB:VERSION --out det.json
 uv run python -m ratchet.improve.run_v3 --endpoints-file v3.json --cases A,B --candidate DB:VERSION --out v3.json
-uv run --extra gepa python -m ratchet.improve.instruction_search --endpoints-file worker.json --out l2.json
 python -m ratchet.verify.results det-results/det.dsse --case-suite   # the referee's per-case tables
 ```
 
