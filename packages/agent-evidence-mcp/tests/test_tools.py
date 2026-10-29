@@ -230,8 +230,9 @@ def test_base64_artifact_and_argument_errors() -> None:
 
 # --- pins ----------------------------------------------------------------------------
 
-def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_compatible_range() -> None:
+def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_floor_and_a_cap_at_the_next_major() -> None:
     from packaging.requirements import Requirement
+    from packaging.version import Version
 
     lines = [x for x in metadata.requires("agent-evidence-mcp") or [] if "extra ==" not in x]
     reqs = {r.name: r for r in map(Requirement, lines)}
@@ -242,8 +243,12 @@ def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_comp
     assert set(reqs) == {"mcp", "pyyaml"} | family
     for name, req in reqs.items():
         spec = str(req.specifier)
-        form = r"~=\d+\.\d+\.\d+" if name in family else r"==\d+\.\d+\.\d+"
-        assert re.fullmatch(form, spec), f"{name}: {spec}"
+        if name in family:
+            assert re.fullmatch(r">=\d+\.\d+\.\d+,<1|<1,>=\d+\.\d+\.\d+", spec), f"{name}: {spec}"
+            nxt = Version(metadata.version(name))
+            assert req.specifier.contains(f"{nxt.major}.{nxt.minor + 1}.0"), f"{name}: {spec} stops at the next minor"
+            continue
+        assert re.fullmatch(r"==\d+\.\d+\.\d+", spec), f"{name}: {spec}"
         assert req.specifier.contains(metadata.version(name)), f"{name} installed outside {spec}"
 
 

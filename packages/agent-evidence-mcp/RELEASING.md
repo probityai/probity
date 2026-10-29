@@ -3,8 +3,9 @@
 1. Change `version` in `pyproject.toml`, and the version fields in `server.json`, `gemini-extension.json`,
    `.claude-plugin/plugin.json` and `.mcp.json`, in one commit. Move the install lines in `README.md` and
    `docs/install.md` to the same version.
-2. Packages of our own family take compatible-release ranges (`~=X.Y.Z`), never an exact pin, so the family installs
-   together at its latest releases. Third-party dependencies stay exact. After a family release, run `uv lock`, then
+2. Packages of our own family take a floor and a cap at the next major (`>=X.Y.Z,<1`), never an exact pin and never `~=0.X.Y`: on a 0.x package that form stops at the next minor, and the family
+   releases a minor for every additive change (`~=0.26.0` kept 0.30.0 out and failed `family-resolves` for two days). The
+   `family` CI job installs the latest releases of the whole family on every pull request and daily. Third-party dependencies stay exact. After a family release, run `uv lock`, then
    the tests against the new versions.
 3. Merge to `main` once the checks are green.
 4. Create a non-prerelease GitHub release tagged `v<version>` on a `main` commit. The `release` workflow checks the tag

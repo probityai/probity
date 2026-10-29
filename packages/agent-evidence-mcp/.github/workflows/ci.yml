@@ -3,6 +3,8 @@ name: ci
 on:
   push:
   pull_request:
+  schedule:
+    - cron: '41 9 * * *'
   workflow_dispatch:
 
 permissions:
@@ -34,6 +36,17 @@ jobs:
           uv venv --python ${{ matrix.python }} /tmp/wheel-venv
           uv pip install --python /tmp/wheel-venv/bin/python dist/*.whl
           /tmp/wheel-venv/bin/python scripts/wheel_smoke.py /tmp/wheel-venv/bin/agent-evidence-mcp
+  family:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: the declared ranges install beside the latest family releases
+        run: |
+          uv venv --python 3.12
+          uv pip install -e . agent-evidence-vectors agent-evidence-vocabulary agent-evidence-admission probity-verify jcs-admit
+          uv pip check
   image:
     runs-on: ubuntu-latest
     timeout-minutes: 20
