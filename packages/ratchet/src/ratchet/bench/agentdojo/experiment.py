@@ -37,7 +37,7 @@ from ratchet.canonical import canonical_json
 from ratchet.improve.activate import MemoryActivator
 from ratchet.improve.evaluate import EvalReport, evaluate_many
 from ratchet.improve.loop import EvolveResult, Lab, evolve
-from ratchet.improve.propose import Instructions
+from ratchet.improve.candidates import Instructions
 from ratchet.improve.receipt import Signer
 from ratchet.improve.referee import Referee, RefereeParts, Totals
 from ratchet.improve.sandbox import SandboxRunner

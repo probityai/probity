@@ -5,6 +5,7 @@ from dataclasses import replace
 from ratchet_cases.types import Event
 
 from ratchet.improve.diagnose import diagnose, excerpt, locate, normalize, render_event
+from ratchet.improve.propose import summarize
 from ratchet.improve.llm import Meter
 from ratchet.improve.sim import RecordedViews
 
@@ -38,7 +39,9 @@ def test_model_writes_the_summary_but_not_the_grouping() -> None:
         [{"mechanism": "retries a refund after a timeout without checking status"}, "garbage", "x"]
     )
     meter = Meter()
-    clusters = diagnose([bad_timeout(1), lazy(2)], FakeSimulator(), chat, meter)
+    clusters = diagnose(
+        [bad_timeout(1), lazy(2)], FakeSimulator(), lambda k, m, t: summarize(k, m, t, chat, meter)
+    )
     by_mode = {c.key["mode"]: c for c in clusters}
     summaries = {c.summary for c in clusters}
     assert any(x.startswith("retries a refund") for x in summaries)

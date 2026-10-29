@@ -9,11 +9,14 @@ held-out cases; the admission rule decides, and every decision is signed. The pa
 held-out cases so that a gain must clear the parent's own run-to-run noise.
 
 Level 2, the improver. The instructions the improver proposes with are a versioned artifact. After a
-generation the model drafts an edit (the challenger). Each version records the failure clusters whose
+generation the proposer drafts an edit (the challenger). Each version records the failure clusters whose
 results it was shown while it was written. The challenger is judged against the champion only on a frozen
 batch: clusters of a later generation that neither version has seen. Both propose for that batch against
 the same parent; the challenger replaces the champion only if its admission yield (admitted / proposed) on
 the batch is strictly higher. With no unseen cluster there is no comparison and no level-2 claim.
+
+The proposer (`ratchet.improve.proposer`) only writes changes: the summaries of failure clusters, the
+candidates, guard repairs and instruction challengers. Everything that decides stays here and at the referee.
 
 The firewall: the loop holds training cases only. Held-out cases, their runs and traces, the referee-side
 replay, the admission rule, the decision signature and activation all belong to the referee
@@ -23,7 +26,7 @@ replay, the admission rule, the decision signature and activation all belong to 
 from __future__ import annotations
 
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from typing import Any, Protocol
 
@@ -32,12 +35,13 @@ from ratchet_cases.types import Trace, sha256_hex
 
 from ratchet.canonical import canonical_json
 from ratchet.improve.activate import ActivationError
-from ratchet.improve.diagnose import FailureCluster, diagnose
+from ratchet.improve.candidates import Candidate, Instructions
+from ratchet.improve.diagnose import FailureCluster, FailurePoint, diagnose
 from ratchet.improve.evaluate import CaseLike, EvalReport, RunCase, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity
-from ratchet.improve.llm import Chat, Meter, ask_json
+from ratchet.improve.llm import Chat, Meter
 from ratchet.improve.overfit import Literals, lint, training_literals
-from ratchet.improve.propose import SEED, Candidate, Instructions, propose, revise_guard
+from ratchet.improve.proposer import DEFAULT_PROPOSER, ParentChooser, Proposer, load_proposer
 from ratchet.improve.referee import Referee, Totals, Verdict
 from ratchet.improve.replay import GuardRunner, ReplayReport, WalkCache, replay
 from ratchet.improve.sim import Simulator
@@ -47,12 +51,6 @@ from ratchet.types import Guard, Harness, Procedure
 def frozen_suite_digest() -> str:
     """The case suite digest the installed `probity-ratchet-cases` release was published with."""
     return released_digest()
-
-
-class ParentChooser(Protocol):
-    """The archive's parent selection: where ideas come from. It never changes the comparison parent."""
-
-    def __call__(self, tip: str, generation: int) -> Any: ...
 
 
 class ImproveStore(Protocol):
@@ -73,6 +71,8 @@ class Lab:
     runner: GuardRunner
     referee: Referee
     improver: Chat | None = None
+    # What writes the changes. None: the installed proposer named `model`, built over the improver model.
+    proposer: Proposer | None = None
     workers: int = 8
     repeats: int = 1
     max_clusters: int = 4
@@ -206,6 +206,7 @@ class _Gen:
     inspiration: Harness | None = None
     archive_context: dict[str, Any] = field(default_factory=dict)
     task_stats: dict[tuple[str, str], dict[str, int]] = field(default_factory=dict)
+    instructions: dict[str, Instructions] = field(default_factory=dict)  # each arm's, for guard repairs
 
 
 def _score(r: EvalReport, heldout_passed: int, heldout_total: int) -> dict[str, int]:
@@ -243,9 +244,11 @@ def _proof_replay(tried: _Tried, g: _Gen, cluster: FailureCluster, train: list[T
         guard = c.harness.guards[-1]
         rep = replay(guard, cluster.members, cluster.traces, passing, g.walks, lab.runner, benign)
         tried.candidate, tried.replay = c, rep
-        if rep.passed or attempt == lab.repair_rounds or lab.improver is None:
+        if rep.passed or attempt == lab.repair_rounds:
             break
-        revised = revise_guard(c, rep, cluster, g.parent, lab.improver, walks=g.walks)
+        revised = _proposer(lab).revise_guard(
+            c, rep, cluster, g.parent, instructions=g.instructions[tried.arm], walks=g.walks, meter=g.meter
+        )
         if isinstance(revised, str):
             break
         c = revised
@@ -314,37 +317,6 @@ def compose(parent: Harness, picks: Sequence[Candidate]) -> Harness:
         if c.kind == "prompt_edit":
             prompt = f"{prompt}\n\n{c.change['append']}"
     return parent.child(guards=guards, procedures=procs, system_prompt=prompt, created_by="improver")
-
-
-_META_SYSTEM = (
-    "You maintain the instructions an improver model follows when it proposes harness changes. You edit them "
-    "so that more of its candidates pass replay and admission. Reply with one JSON object only."
-)
-
-
-def propose_instructions(
-    champion: Instructions, arms: dict[str, ArmScore], examples: list[str], model: Chat, meter: Meter
-) -> Instructions | None:
-    scores = "\n".join(f"{name}: {a.to_payload()}" for name, a in arms.items())
-    user = "\n\n".join(
-        [
-            f"Current instructions (version {champion.version}):\n{champion.text}",
-            f"Results last generation:\n{scores}",
-            "What happened to individual candidates:\n" + ("\n".join(examples[:12]) or "(none)"),
-            "Rewrite the instructions to raise the share of candidates that are admitted. Keep the three "
-            "kinds (guard, procedure, prompt_edit); the guard API and the reply format are appended "
-            'separately, so do not restate them. Reply JSON: {"text": "<new instructions>", '
-            '"rationale": "<what you changed and why>"}',
-        ]
-    )
-    try:
-        reply = ask_json(model, _META_SYSTEM, user, meter)
-    except Exception:
-        return None
-    text = str(reply.get("text", "")).strip()
-    if not text or text == champion.text:
-        return None
-    return Instructions.build(text, parent=champion.version)
 
 
 def _verdict(
@@ -421,6 +393,23 @@ def _frozen_batch(clusters: list[FailureCluster], seen: set[str]) -> dict[str, A
     }
 
 
+def _summarizer(
+    proposer: Proposer, meter: Meter
+) -> Callable[[Mapping[str, str], Sequence[FailurePoint], Mapping[str, Trace]], str | None]:
+    def summarize(
+        key: Mapping[str, str], members: Sequence[FailurePoint], traces: Mapping[str, Trace]
+    ) -> str | None:
+        return proposer.summarize(key, members, traces, meter)
+
+    return summarize
+
+
+def _proposer(lab: Lab) -> Proposer:
+    if lab.proposer is None:
+        raise RuntimeError("the loop has no proposer; evolve() sets one")
+    return lab.proposer
+
+
 def evolve(
     store: ImproveStore,
     model: Any,
@@ -428,17 +417,23 @@ def evolve(
     *,
     lab: Lab,
     seed: Harness,
-    instructions: Instructions = SEED,
+    instructions: Instructions | None = None,
     select_parent: ParentChooser | None = None,
 ) -> EvolveResult:
     """Run `generations` rounds of the ratchet from `seed`. Returns the final harness and every record.
 
+    The proposer is `lab.proposer`, or else the installed proposer named `model` over the improver model
+    (`lab.improver`, else `model`). `instructions` defaults to the proposer's own seed instructions.
+
     With `select_parent` (the version archive), each generation may draw ideas from an earlier admitted
     version: that version is shown to the proposer read-only, every candidate is still a child of the active
     harness and is compared with it, and the choice is recorded in the generation and in each decision."""
-    improver: Chat = lab.improver or model
+    improver: Chat | None = lab.improver or model
     lab.improver = improver
-    parent, champion = seed, instructions
+    if lab.proposer is None:
+        lab.proposer = load_proposer(DEFAULT_PROPOSER, improver)
+    proposer = lab.proposer
+    parent, champion = seed, instructions or proposer.seed
     challenger: Instructions | None = None
     seen: dict[str, set[str]] = {champion.version: set()}
     if any(c.split == "heldout" for c in lab.cases):
@@ -484,7 +479,7 @@ def evolve(
             g.archive_context = choice.decision_context()
             if choice.rebase_required:
                 g.inspiration = store.get_harness(choice.version)
-        clusters = diagnose(train, lab.simulator, improver, meter)[: lab.max_clusters]
+        clusters = diagnose(train, lab.simulator, _summarizer(proposer, meter))[: lab.max_clusters]
         rec.clusters = [c.to_payload() for c in clusters]
         if not clusters:
             rec.note = "no training failures left to diagnose"
@@ -504,6 +499,7 @@ def evolve(
             batch = [c for c in clusters if c.id in frozen["cluster_ids"]]
             if batch:
                 arms["challenger"] = (challenger, ArmScore(challenger.version, frozen["cluster_ids"]), batch)
+        g.instructions = {arm: ins for arm, (ins, _, _) in arms.items()}
 
         tried, rejected = _propose_all(arms, g, train, lab)
         failures = sum(1 for _, text in rejected if "model call failed" in text)
@@ -562,12 +558,12 @@ def evolve(
             seen,
             tried,
             rejected,
-            improver,
             meter,
             gen,
             g.task_stats,
             lab.candidates_per_cluster,
             tuning_ids,
+            proposer,
         )
         rec.level2["families"] = {"tuning": sorted(tune_families), "evaluation": sorted(eval_families)}
         rec.agent_cost = {"candidates": [_cost(r) for r in reports]}
@@ -583,16 +579,15 @@ def _propose_all(
     train: list[Trace],
     lab: Lab,
 ) -> tuple[list[_Tried], list[tuple[str, str]]]:
-    assert lab.improver is not None
+    proposer = _proposer(lab)
     passing = [t for t in train if t.outcome.passed]
     tried: list[_Tried] = []
     rejected: list[tuple[str, str]] = []
     for arm, (ins, score, batch) in arms.items():
         for cl in batch:
-            prop = propose(
+            prop = proposer.propose(
                 cl,
                 g.parent,
-                lab.improver,
                 instructions=ins,
                 passing=passing,
                 walks=g.walks,
@@ -684,12 +679,12 @@ def _level2(
     seen: dict[str, set[str]],
     tried: list[_Tried],
     rejected: list[tuple[str, str]],
-    improver: Chat,
     meter: Meter,
     gen: int,
     task_stats: dict[tuple[str, str], dict[str, int]],
     slots_per_task: int,
     tuning_ids: set[str],
+    proposer: Proposer,
 ) -> tuple[Instructions, Instructions | None, dict[str, Any]]:
     """Score each arm on the frozen batch, keep or drop the challenger, and draft the next one."""
     frozen_ids = set(frozen["cluster_ids"])
@@ -769,8 +764,8 @@ def _level2(
             for t in tuning
         ] + [text for cid, text in rejected if cid in tuning_ids]
         shown = {t.candidate.cluster_id for t in tuning}
-        challenger = propose_instructions(
-            champion, {n: s for n, (_, s, _) in arms.items()}, examples, improver, meter
+        challenger = proposer.revise_instructions(
+            champion, {n: s for n, (_, s, _) in arms.items()}, examples, meter
         )
         if challenger is not None:
             seen[challenger.version] = seen.get(champion.version, set()) | shown

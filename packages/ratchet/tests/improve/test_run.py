@@ -8,13 +8,16 @@ import pytest
 
 from ratchet.agent.model import SeededTransport
 from ratchet.improve import run
+from ratchet.improve.candidates import Instructions
 from ratchet.improve.loop import EvolveResult, GenerationRecord
-from ratchet.improve.propose import SEED
+from ratchet.improve.proposer import FixedProposer, NotInstalledError
 from ratchet.types import Harness
 
 HARNESS = Harness.build(
     parent=None, system_prompt="p", procedures=[], guards=[], tool_allowlist=[], created_by="seed"
 )
+INSTRUCTIONS = Instructions.build("i")
+PROPOSER = FixedProposer()
 
 
 class _Ctx:
@@ -48,6 +51,21 @@ def test_main_refuses_without_a_store_or_key(monkeypatch: pytest.MonkeyPatch, tm
     assert run.main(["--out", str(tmp_path / "x.json")]) == 2
 
 
+def _fake_lookups(monkeypatch: pytest.MonkeyPatch, seen: dict[str, Any]) -> None:
+    def proposer(name: str, model: Any) -> FixedProposer:
+        seen["proposer"] = (name, model)
+        return PROPOSER
+
+    def chooser(name: str, store: Any, **options: Any) -> Any:
+        seen["chooser"] = (name, options)
+        return "chooser"
+
+    monkeypatch.setattr(run, "load_proposer", proposer)
+    monkeypatch.setattr(run, "load_parent_chooser", chooser)
+    for name in ("Store", "ModelClient", "GuardRuntime", "ProcessReferee"):
+        monkeypatch.setattr(run, name, _Ctx)
+
+
 def test_main_wires_the_lanes_and_writes_a_summary(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     seen: dict[str, Any] = {}
 
@@ -55,11 +73,10 @@ def test_main_wires_the_lanes_and_writes_a_summary(monkeypatch: pytest.MonkeyPat
         store: Any, model: Any, generations: int, *, lab: Any, seed: Harness, select_parent: Any
     ) -> EvolveResult:
         seen.update(generations=generations, cases=len(lab.cases), config=lab.model_config)
-        assert select_parent.split == "train" and select_parent.min_descendants == 2
-        return EvolveResult(HARNESS, SEED, [GenerationRecord(1, seed.version, note="n")])
+        assert lab.proposer is PROPOSER and select_parent == "chooser"
+        return EvolveResult(HARNESS, INSTRUCTIONS, [GenerationRecord(1, seed.version, note="n")])
 
-    for name in ("Store", "ModelClient", "GuardRuntime", "ProcessReferee"):
-        monkeypatch.setattr(run, name, _Ctx)
+    _fake_lookups(monkeypatch, seen)
     monkeypatch.setattr(run, "evolve", fake_evolve)
     monkeypatch.setenv("RATCHET_API_KEY", "secret-value")
     out = tmp_path / "live.json"
@@ -75,6 +92,38 @@ def test_main_wires_the_lanes_and_writes_a_summary(monkeypatch: pytest.MonkeyPat
     body = json.loads(text)
     assert body["final_harness"] == HARNESS.version and body["generations"][0]["note"] == "n"
     assert body["config"]["model"] == seen["config"]["model"] and len(body["signer_public_key_hex"]) == 64
+    assert seen["proposer"][0] == "model" and isinstance(seen["proposer"][1], run.FallbackChat)
+    assert seen["chooser"] == ("clade", {"min_descendants": 2, "seed": "ratchet", "split": "train"})
+    assert body["config"]["proposer"] == "model" and body["config"]["parent_chooser"] == "clade"
+
+
+def test_main_climbs_the_tip_without_a_parent_chooser(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    seen: dict[str, Any] = {}
+
+    def fake_evolve(store: Any, model: Any, generations: int, *, lab: Any, seed: Harness, select_parent: Any) -> Any:
+        seen["select_parent"] = select_parent
+        return EvolveResult(HARNESS, INSTRUCTIONS, [])
+
+    _fake_lookups(monkeypatch, seen)
+    monkeypatch.setattr(run, "evolve", fake_evolve)
+    monkeypatch.setenv("RATCHET_API_KEY", "k")
+    argv = ["--uri", "mongodb://x", "--parent-chooser", "none", "--out", str(tmp_path / "o.json")]
+    assert run.main(argv) == 0 and seen["select_parent"] is None and "chooser" not in seen
+
+
+def test_main_stops_when_the_named_proposer_is_not_installed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def missing(name: str, model: Any) -> Any:
+        raise NotInstalledError(f"no entry named {name!r}")
+
+    _fake_lookups(monkeypatch, {})
+    monkeypatch.setattr(run, "load_proposer", missing)
+    monkeypatch.setattr(run, "evolve", lambda *a, **k: pytest.fail("evolve ran without a proposer"))
+    monkeypatch.setenv("RATCHET_API_KEY", "k")
+    out = tmp_path / "o.json"
+    assert run.main(["--uri", "mongodb://x", "--proposer", "nope", "--out", str(out)]) == 2
+    assert "'nope'" in capsys.readouterr().err and not out.exists()
 
 
 def test_seeded_transport_adds_the_seed_to_chat_requests_only() -> None:

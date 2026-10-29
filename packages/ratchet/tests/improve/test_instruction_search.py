@@ -31,7 +31,8 @@ from ratchet.improve.instruction_search import (
 )
 from ratchet.improve.llm import Chat, Meter
 from ratchet.improve.overfit import training_literals
-from ratchet.improve.propose import SEED, Instructions, Proposal, make_candidate, propose
+from ratchet.improve.candidates import Instructions, Proposal, make_candidate
+from ratchet.improve.propose import SEED, propose
 from ratchet.improve.receipt import Signer
 from ratchet.improve.referee import RefereeCore, RefereeParts, Verdict
 from ratchet.improve.replay import GuardRunner, ReplayReport, WalkCache

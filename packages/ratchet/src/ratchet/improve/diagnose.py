@@ -3,8 +3,8 @@
 Grouping is deterministic: the cluster key is built from the grader reason (with ids and numbers
 normalised away), whether the failure is something the agent did or something it never did, the tool
 called at the failing step, the error the world returned just before it, and whether the call repeats an
-earlier one. The model only writes the one-line mechanism summary for each cluster; it never decides
-membership.
+earlier one. A caller may supply `summarize`, which writes the one-line mechanism summary for each cluster;
+it never decides membership, and without it the summary is built from the key.
 
 The failing step comes from grading intermediate states: the earliest tool call after which the reason
 holds and keeps holding. A reason that holds before the agent acts and is never cleared is an omission,
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
@@ -23,7 +23,6 @@ from ratchet_cases.types import Event, Trace, sha256_hex
 
 from ratchet.canonical import canonical_json
 from ratchet.improve.evaluate import is_infra_failure
-from ratchet.improve.llm import Chat, Meter, ask_json
 from ratchet.improve.sim import Simulator, Walk, call_of, last_seq
 
 Mode = Literal["commission", "omission", "unlocated"]
@@ -167,18 +166,14 @@ def _default_summary(key: dict[str, str], n: int) -> str:
     return ", ".join(bits) + "."
 
 
-_SUMMARY_SYSTEM = (
-    "You read agent failure traces and name the failure mechanism in one sentence: what the agent did "
-    "(or failed to do), in which state, and which property of the state or call it ignored. "
-    'Reply with JSON: {"mechanism": "<one sentence>"}.'
-)
+# A cluster's key, its members and their traces in; a one-sentence mechanism, or None for the default, out.
+Summarizer = Callable[[Mapping[str, str], Sequence[FailurePoint], Mapping[str, Trace]], str | None]
 
 
 def diagnose(
     traces: Sequence[Trace],
     simulator: Simulator | None = None,
-    model: Chat | None = None,
-    meter: Meter | None = None,
+    summarize: Summarizer | None = None,
     on_walk_error: Callable[[Trace, Exception], None] | None = None,
 ) -> list[FailureCluster]:
     """Cluster the failed traces in `traces` (passing ones are ignored), largest cluster first."""
@@ -202,17 +197,11 @@ def diagnose(
     clusters: list[FailureCluster] = []
     for cid, (key, members) in sorted(groups.items(), key=lambda kv: (-len(kv[1][1]), kv[0])):
         summary = _default_summary(key, len(members))
-        if model is not None:
-            shown = "\n\n".join(excerpt(by_run[m.run_id], m.seq) for m in members[:2])
-            user = (
-                f"Cluster key: {json.dumps(key)}\nReasons: {sorted({m.reason for m in members})}\n\n{shown}"
-            )
+        traces_of = {m.run_id: by_run[m.run_id] for m in members}
+        if summarize is not None:
             try:
-                summary = (
-                    str(ask_json(model, _SUMMARY_SYSTEM, user, meter or Meter())["mechanism"]) or summary
-                )
+                summary = summarize(key, members, traces_of) or summary
             except Exception as exc:  # the deterministic summary stands, and says why
                 summary += f" (model summary unavailable: {type(exc).__name__})"
-        traces_of = {m.run_id: by_run[m.run_id] for m in members}
         clusters.append(FailureCluster(cid, key, members, summary, traces_of))
     return clusters

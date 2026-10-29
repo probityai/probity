@@ -32,6 +32,14 @@ dependencies = [
 [project.scripts]
 ratchet = "ratchet.cli:main"
 
+# The loop's seams (ratchet.improve.proposer): what writes candidate changes, and where the version archive
+# draws ideas from.
+[project.entry-points."ratchet.proposers"]
+model = "ratchet.improve.propose:ModelProposer"
+
+[project.entry-points."ratchet.parent_choosers"]
+clade = "ratchet.improve.archive:ArchiveSelector"
+
 [project.urls]
 Source = "https://github.com/probityai/probity/tree/main/packages/ratchet"
 Issues = "https://github.com/probityai/probity/issues"
