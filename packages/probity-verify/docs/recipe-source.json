@@ -233,6 +233,15 @@
       "documentation": "docs/done-receipt.md",
       "expected_decision": "contradicted",
       "scope": "Synthetic records and an unsigned receipt Statement; PEER scope."
+    },
+    {
+      "task": "Check an adversarial execution evidence statement",
+      "claim_type": "adversarial_execution_evidence/v1",
+      "case": "examples/execution-evidence/case.json",
+      "policy": "examples/execution-evidence/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Conformance-corpus statement signed with a published test key; the key carries no trust outside the corpus."
     }
   ]
 }

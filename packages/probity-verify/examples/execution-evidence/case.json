@@ -1,0 +1,11 @@
+{
+  "schema_version": "probity-case/v1",
+  "case_id": "aee-attested-pass",
+  "artifacts": {
+    "statement": {
+      "path": "statement.json",
+      "sha256": "fcb846afff2d6979e356bb33f144f24ed526d818ffee6ab9e78d4d3788daf99d",
+      "length": 3869
+    }
+  }
+}

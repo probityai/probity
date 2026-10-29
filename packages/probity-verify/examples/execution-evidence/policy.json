@@ -1,0 +1,12 @@
+{
+  "schema_version": "probity-policy/v1",
+  "assessments": {
+    "aee-attested-pass": {
+      "claim_type": "adversarial_execution_evidence/v1",
+      "statement": "statement",
+      "substrate_observation_keys": [
+        "496cbe15e391eccd3a0864f2709df0eeb4f5b6c1bad750c95cc80ee49bceae62"
+      ]
+    }
+  }
+}

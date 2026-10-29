@@ -22,6 +22,7 @@ from .adapters import (
     completion_claim,
     done_receipt,
     event_absence,
+    execution_evidence,
     operand_lineage,
     probe_observed,
     protected_paths,
@@ -51,6 +52,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "tool_claim_match/v1": tool_claim_match.adjudicate,
     "completion_claim/v1": completion_claim.adjudicate,
     "done_receipt/v2": done_receipt.adjudicate,
+    "adversarial_execution_evidence/v1": execution_evidence.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

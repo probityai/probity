@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "probity-verify",
-      "project.version": "0.2.3",
+      "project.version": "0.2.4",
       "project.requires-python": ">=3.11",
       "project.dependencies": [
         "cryptography>=50.0.2,<51",
@@ -59,7 +59,7 @@
         }
       }
     },
-    "sha256": "29a1ad3f514d54436d59c80d075acfdbbc75d53d5d7fd6d874d0c3daac507e21"
+    "sha256": "997cdf3178e4bd91207e8dfdbb9678c88c4a05e52ab5598273b0dcbc256d794a"
   },
   "implementation": [
     {
@@ -123,6 +123,11 @@
       "sha256": "7590dbf3679ba65d650b50489f798dd647ea7faed8cbb89909f79b34ff8ac8b2"
     },
     {
+      "path": "src/probity_verify/adapters/execution_evidence.py",
+      "bytes": 3857,
+      "sha256": "9c786c4458c3726c809d1500889bdfec244cccd137ed36b330bbe00cfd649669"
+    },
+    {
       "path": "src/probity_verify/adapters/operand_lineage.py",
       "bytes": 12072,
       "sha256": "a24ae4f5e3b0517a1a9030c8a698128061be65bd0aa8d0880d9b4c99a74fa83b"
@@ -179,13 +184,18 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 9836,
-      "sha256": "2907eebd46840d30a30dfc1bda3740f96e7d9b51a2570525e68874fb13464fb9"
+      "bytes": 9932,
+      "sha256": "82c7d36aa78f472b303994e2d2a33d44169f43a2d0b36b0d32801e9f6db181ef"
     },
     {
       "path": "src/probity_verify/dsse.py",
       "bytes": 8199,
       "sha256": "21c377c84014b9155974c32ece782430096c7944f538313fe7038566da7f8f5d"
+    },
+    {
+      "path": "src/probity_verify/execution_evidence.py",
+      "bytes": 70001,
+      "sha256": "dbe822703a903cad09271876793bcbaf9a1f98b27f3af7fecc6ae61c35d24330"
     },
     {
       "path": "src/probity_verify/index.py",
@@ -1462,6 +1472,42 @@
           "path": "examples/done-receipt/forged-receipt/tree.json",
           "bytes": 618,
           "sha256": "5bdad9546644554bde7c9cc71f0263b6eb2906d33d3851c9bd8cad59978882a4"
+        }
+      ]
+    },
+    {
+      "task": "Check an adversarial execution evidence statement",
+      "claim_type": "adversarial_execution_evidence/v1",
+      "case": "examples/execution-evidence/case.json",
+      "policy": "examples/execution-evidence/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Conformance-corpus statement signed with a published test key; the key carries no trust outside the corpus.",
+      "case_id": "aee-attested-pass",
+      "expected_reason": "statement_valid",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/execution-evidence/case.json",
+        "--policy",
+        "examples/execution-evidence/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/execution-evidence/case.json",
+          "bytes": 260,
+          "sha256": "605805d1658f483ac837e97ddff9c3304690ed5353fd48e966d35aa57943d3b6"
+        },
+        {
+          "path": "examples/execution-evidence/policy.json",
+          "bytes": 311,
+          "sha256": "99d4f3f3b4dceb689772e859010fd4583e2aaa5bbcd34d4ba19fca450c6dce67"
+        },
+        {
+          "path": "examples/execution-evidence/statement.json",
+          "bytes": 3869,
+          "sha256": "fcb846afff2d6979e356bb33f144f24ed526d818ffee6ab9e78d4d3788daf99d"
         }
       ]
     }
