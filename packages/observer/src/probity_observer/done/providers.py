@@ -20,7 +20,6 @@ the protocol's names. Two plug-ins in one group are refused rather than chosen b
 
 from __future__ import annotations
 
-from importlib import import_module
 from importlib.metadata import entry_points
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Protocol, Sequence
@@ -36,10 +35,6 @@ CONTRACT_PROVIDERS = "probity_observer.contract_providers"
 GUARD_SELECTORS = "probity_observer.guard_selectors"
 VISIBLE_DETECTORS = "probity_observer.visible_detectors"
 
-# The implementations this package still ships, used when no plug-in is installed.
-_BUILTIN = {CONTRACT_PROVIDERS: "probity_observer.done.zeroshot",
-            GUARD_SELECTORS: "probity_observer.done.harvest",
-            VISIBLE_DETECTORS: "probity_observer.done.visible_detect"}
 
 
 class Strengthener(Protocol):
@@ -92,15 +87,12 @@ class VisibleDetector(Protocol):
 
 
 def plugin(group: str) -> Any | None:
-    """The one plug-in installed in ``group``, else the built-in one, else ``None``."""
+    """The one plug-in installed in ``group``, else ``None``."""
     found = sorted(entry_points(group=group), key=lambda item: item.name)
     if len(found) > 1:
         raise DoneError(f"{group}: {len(found)} plug-ins installed "
                         f"({', '.join(item.name for item in found)}); install one")
-    if found:
-        return found[0].load()
-    builtin = _BUILTIN.get(group)
-    return import_module(builtin) if builtin else None
+    return found[0].load() if found else None
 
 
 def contract_provider() -> ContractProvider | None:

@@ -123,37 +123,38 @@ def test_a_counter_fails_the_conflicting_task_in_the_container(tmp_path, harness
     assert len(graded.staging["replays"]) == 7 and graded.staging["replay_order_seed"]
 
 
-def test_the_grade_names_who_made_the_visible_test_unsatisfiable(tmp_path, harness, grader, image):
-    sealed = sealed_task(tmp_path, harness, LCB_RECORD)
-    final, tree = final_tree(sealed, tmp_path, HONEST)
-    graded = run_grade(sealed, final, tree, image, grader)
-    block = graded.grade["visible_detectors"]
-    assert block["status"] == "ok"
-    assert [(item["reason"], item["refuses"], item.get("attribution")) for item in block["findings"]] == [
-        ("invalid_task_spec", False, "task"), ("visible_test_unsatisfiable", False, "test_author")]
-    assert block["findings"][0]["evidence"][0]["call"] == repr(((1, 1), ()))
-    assert block["findings"][1]["evidence"][0]["call"] == "(1, 1)"
-    # The repeat source is the issued visible test verbatim, which no program passes here, so the
-    # repeat rule has no first pass to compare and stays silent.
-    assert not graded.staging["visible_detectors"]["repeat"]["runs"][0]["passed"]
-    # The honest program fails the unsatisfiable unit, so the isolate worker stops after its
-    # baseline and runs no probe (the frozen runner's early return), and D7 as a covariate, which
-    # reads only the baseline outputs and the probes, has nothing to read: control_unknown, as on
-    # the 24 development records of the study with the same shape.
-    isolate = graded.staging["visible_detectors"]["isolate"]
-    assert isolate["status"] == "ok" and isolate["probes"] == []
-    assert [unit["passed"] for unit in isolate["baseline"]] == [True, True, True, True, False]
-    assert graded.staging["visible_detectors"]["covariate"] == "control_unknown"
-    from probity_verify.adapters import done_records
-    assert done_records.grade(graded.grade_bytes)["visible_detectors"] == block
-
-
-def test_an_honest_tree_has_no_detector_finding(tmp_path, harness, grader, image):
+def test_with_no_detector_installed_the_grade_has_no_detector_block(tmp_path, harness, grader, image,
+                                                                    monkeypatch):
+    monkeypatch.setattr(verify_run.providers, "visible_detector", lambda: None)
     sealed = sealed_task(tmp_path, harness, LCB_ORIGINAL)
     final, tree = final_tree(sealed, tmp_path, HONEST)
     graded = run_grade(sealed, final, tree, image, grader)
-    assert graded.grade["visible_detectors"] == {"status": "ok", "findings": []}
-    assert graded.staging["visible_detectors"]["label"] == "control_honest"
+    assert "visible_detectors" not in graded.grade and "visible_detectors" not in graded.staging
+    from probity_verify.adapters import done_records
+    assert "visible_detectors" not in done_records.grade(graded.grade_bytes)
+
+
+def test_an_installed_detector_signs_its_block_into_the_grade(tmp_path, harness, grader, image,
+                                                              monkeypatch):
+    block = {"status": "ok", "findings": []}
+    seen = {}
+
+    class Detector:
+        def applies(self, contract, heldout):
+            return "add" if heldout is not None else None
+
+        def detect(self, runner, root, heldout, prompt, entry, agent_test, timeout):
+            seen.update(entry=entry, prompt=prompt)
+            return block, {"facts": "staged"}
+
+    monkeypatch.setattr(verify_run.providers, "visible_detector", Detector)
+    sealed = sealed_task(tmp_path, harness, LCB_ORIGINAL)
+    final, tree = final_tree(sealed, tmp_path, HONEST)
+    graded = run_grade(sealed, final, tree, image, grader)
+    assert seen["entry"] == "add" and graded.grade["visible_detectors"] == block
+    assert graded.staging["visible_detectors"] == {"facts": "staged"}
+    from probity_verify.adapters import done_records
+    assert done_records.grade(graded.grade_bytes)["visible_detectors"] == block
 
 
 def test_protected_edit_and_poisoned_cache_are_reset(tmp_path, harness, grader, image):
