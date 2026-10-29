@@ -33,10 +33,16 @@ class ChatProposer:
         return SEED
 
     def summarize(
-        self, key: Mapping[str, str], members: Sequence[FailurePoint], traces: Mapping[str, Trace], meter: Meter
+        self,
+        key: Mapping[str, str],
+        members: Sequence[FailurePoint],
+        traces: Mapping[str, Trace],
+        meter: Meter,
     ) -> str | None:
         shown = "\n\n".join(excerpt(traces[m.run_id], m.seq) for m in members[:2])
-        user = f"Cluster key: {json.dumps(dict(key))}\n\n{shown}"
+        user = (
+            f"Cluster key: {json.dumps(dict(key))}\nReasons: {sorted({m.reason for m in members})}\n\n{shown}"
+        )
         system = "Name the failure mechanism in one sentence: the failure mechanism in one sentence."
         return str(ask_json(self.model, system, user, meter)["mechanism"])
 
@@ -52,13 +58,24 @@ class ChatProposer:
         n: int = 4,
         inspiration: Harness | None = None,
     ) -> Proposal:
-        shown = "\n\n".join(excerpt(cluster.traces[m.run_id], m.seq) for m in cluster.members[:3])
-        parts = [instructions.text, f"Failure cluster {cluster.id}: {cluster.summary}", shown]
+        shown = "\n\n".join(
+            f"Failure {m.id} (reason: {m.reason}; failing step {m.seq}, {m.mode}):\n"
+            + excerpt(cluster.traces[m.run_id], m.seq)
+            for m in cluster.members[:3]
+        )
+        parts = [
+            instructions.text,
+            f"Failure cluster {cluster.id} ({len(cluster.members)} failures): {cluster.summary}\n"
+            f"Mechanism key: {json.dumps(cluster.key)}",
+            shown,
+        ]
         if inspiration is not None and inspiration.version != harness.version:
             parts.append(f"An earlier admitted harness, for ideas only:\n{inspiration.system_prompt}")
         parts.append(f"Propose {n} candidates.")
         try:
-            reply = ask_json(self.model, "Reply with one JSON object only.", "\n\n".join(parts), meter or Meter())
+            reply = ask_json(
+                self.model, "Reply with one JSON object only.", "\n\n".join(parts), meter or Meter()
+            )
         except Exception as exc:
             out = Proposal()
             out.rejected.append({"cluster_id": cluster.id, "reason": f"model call failed: {exc}"})
