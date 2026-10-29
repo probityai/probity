@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-verify"
-version = "0.2.2"
+version = "0.2.3"
 description = "Check claims against pinned evidence offline, with replayable decisions"
 readme = "README.md"
 requires-python = ">=3.11"

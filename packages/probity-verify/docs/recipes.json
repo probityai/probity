@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "probity-verify",
-      "project.version": "0.2.2",
+      "project.version": "0.2.3",
       "project.requires-python": ">=3.11",
       "project.dependencies": [
         "cryptography>=50.0.2,<51",
@@ -59,7 +59,7 @@
         }
       }
     },
-    "sha256": "7d454b3215ffbb15e44d6fbba6547153a71057af2ab55c790c48f3ebfbb48855"
+    "sha256": "29a1ad3f514d54436d59c80d075acfdbbc75d53d5d7fd6d874d0c3daac507e21"
   },
   "implementation": [
     {
@@ -179,8 +179,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 9378,
-      "sha256": "aff5e31be463f7801c32334a5eb69a64c9913ca4ed41c2bc8095d45dc096288e"
+      "bytes": 9836,
+      "sha256": "2907eebd46840d30a30dfc1bda3740f96e7d9b51a2570525e68874fb13464fb9"
     },
     {
       "path": "src/probity_verify/dsse.py",
