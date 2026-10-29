@@ -51,10 +51,11 @@ The kit reads the whole record before it judges any of it. Checks run in this or
    - `step_missing` (gap): a pinned `id` is absent from the record.
    - `digest_mismatch` (tamper): a pinned `id` is present with another digest.
    - `step_unpinned` (tamper): the record holds an `id` the pin does not list.
-7. **Pinned end.** When the pin carries `count` and `head`:
-   - `tail_truncated` (gap): the record has fewer steps than `count`, or `head` equals the digest of an earlier step.
-   - `head_mismatch` (tamper): `head` equals the digest of no step.
+7. **Pinned end.** When the pin carries `count` or `head`:
+   - `steps_missing` (gap): the record has fewer steps than `count` and no `step_missing` finding already names what is absent. Without a pinned `records` map the kit cannot say which steps went.
    - `count_mismatch` (tamper): the record has more steps than `count`.
+   - `tail_truncated` (gap): `head` equals the digest of an earlier step, so the record stops before the pinned end.
+   - `head_mismatch`: `head` equals the digest of no step and nothing above explains it. It is `tamper` when `count` equals the number of steps (the last step changed), and `unresolved` when `count` is not pinned (the last step was changed or cut; one head cannot say which).
 8. **Classify `link_broken`.** A broken link is a symptom, not a cause. When the pin supports it, the finding takes the class of its cause: if step *i*'s `previousHash` equals the pinned digest of an `id` that is absent, the class is `gap` (`step_missing` explains it); if it equals the pinned digest of a present step whose digest differs, the class is `tamper` (`digest_mismatch` explains it). Otherwise it stays `unresolved`. Without a pin the kit can say the chain is broken and where; it cannot say whether a step was removed or altered, and it does not pretend to.
 
 ## 5. Pin
