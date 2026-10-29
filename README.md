@@ -6,11 +6,11 @@
 [![Licence](https://img.shields.io/github/license/probityai/probity)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity)
 
-Open tools that check claims about AI agents against evidence you pinned: an offline verifier today, with the observer, admission rules, vocabulary, conformance vectors and Rust crates joining this repository.
+Open tools that check claims about AI agents against evidence you pinned: an offline verifier today, with the observer joining this repository. The standard layer (corpus, vocabulary, admission rules and crates) lives in https://github.com/probityai/agent-evidence.
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `uv add probity-verify==0.2.2`, then `pip install probity-verify==0.2.2`.
+Install the released verifier: `uv add probity-verify==0.2.4`, then `pip install probity-verify==0.2.4`.
 
 Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai==0.1.0`, then `pip install probityai==0.1.0`.
 
@@ -19,8 +19,8 @@ Verified by Probity (github.com/probityai/probity). The `probityai` command line
 Check a sample claim with the released package. You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
-samples="$(uvx --from probity-verify==0.2.2 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
-uvx probity-verify==0.2.2 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from probity-verify==0.2.4 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
+uvx probity-verify==0.2.4 "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
