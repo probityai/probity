@@ -57,7 +57,6 @@ done = "probity_observer.done.cli:register"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"probity_observer.done" = ["prompts/*.txt", "visible_runner.txt", "visible_calls.txt"]
 "probity_observer.done.basharena" = ["grader_bootstrap.txt", "basharena_driver.txt", "export_runtime.sh", "observer.Dockerfile", "observer_tools.txt"]
 
 [tool.coverage.paths]

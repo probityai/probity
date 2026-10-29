@@ -1,4 +1,4 @@
-"""The plug-in points: one plug-in per group, the built-in one otherwise, never two."""
+"""The plug-in points: at most one plug-in per group, never two."""
 
 import types
 
@@ -29,18 +29,8 @@ def test_two_plugins_in_one_group_are_refused(monkeypatch):
         providers.guard_selector()
 
 
-def test_with_no_plugin_the_group_falls_back(monkeypatch):
+def test_with_no_plugin_there_is_none(monkeypatch):
     monkeypatch.setattr(providers, "entry_points", lambda group: [])
-    monkeypatch.setattr(providers, "_BUILTIN", {})
     assert providers.contract_provider() is None
     assert providers.guard_selector() is None
     assert providers.visible_detector() is None
-
-
-def test_every_builtin_has_the_protocol_names(monkeypatch):
-    monkeypatch.setattr(providers, "entry_points", lambda group: [])
-    for found, names in ((providers.contract_provider(), ("provide",)),
-                         (providers.guard_selector(), ("harvest",)),
-                         (providers.visible_detector(), ("applies", "detect"))):
-        if found is not None:
-            assert all(callable(getattr(found, name)) for name in names)

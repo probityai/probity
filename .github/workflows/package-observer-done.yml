@@ -48,8 +48,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - script: mutate-visible-detectors.py
-            what: Every mutant of the visible-test detector rules turns their tests red
           - script: mutate-done-rules.py
             what: Every mutant of the loop policy and the completion reading turns their tests red
           - script: mutate-oot-rules.py
