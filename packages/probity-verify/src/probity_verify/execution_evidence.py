@@ -121,7 +121,7 @@ PROMOTED = frozenset({DUPLICATE, NOT_SCALAR, TOO_LARGE, TOO_DEEP})
 class Node:
     """One JSON value: ``kind`` is obj, arr, str, num, true, false or null."""
 
-    __slots__ = ("kind", "value", "start", "end")
+    __slots__ = ("end", "kind", "start", "value")
 
     def __init__(self, kind: str, value: Any, start: int, end: int = 0) -> None:
         self.kind = kind
