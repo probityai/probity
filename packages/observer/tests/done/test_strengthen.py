@@ -7,6 +7,8 @@ import shutil
 import pytest
 
 from probity_observer.done import contract, strengthen, zeroshot
+from probity_observer.done import harvest as guard_selector
+from probity_observer.done.strengthen import ModelStrengthener
 from probity_verify.adapters import done_records
 from probity_observer.done.runner import SubprocessRunner
 
@@ -58,7 +60,7 @@ def test_a_flag_off_contract_with_synthesized_tests_is_refused(
     model = Fixed("```python\n" + GOOD + "```\n")
     with pytest.raises(contract.Refused, match="synthesized_tier_unsupported"):
         contract.compile_task(task, tmp_path / "out", harness, SubprocessRunner(python_bin),
-                              timeout=60, model=model)
+                              timeout=60, strengthener=ModelStrengthener(model), guards=guard_selector)
     assert len(model.prompts) == 1 and "_ProbityAnyEq" in model.prompts[0]
     assert "def double(x):\n    return x" in model.prompts[0]
 
@@ -67,7 +69,7 @@ def test_a_weak_contract_is_strengthened_and_seals_with_tier_and_strength(
         tmp_path, repo, harness, python_bin):
     task = _task(tmp_path, repo)
     sealed = contract.compile_task(task, tmp_path / "out", harness, SubprocessRunner(python_bin),
-                                   timeout=60, model=Fixed("```python\n" + GOOD + "```\n"))
+                                   timeout=60, strengthener=ModelStrengthener(Fixed("```python\n" + GOOD + "```\n")), guards=guard_selector)
     compiled = json.loads((sealed.out / "sealed" / "compile.json").read_bytes())
     (round_one,) = compiled["strengthening"]
     assert round_one["kept"] == ["test_three"]
@@ -96,7 +98,7 @@ def test_with_no_failing_command_one_round_synthesizes_the_spec(tmp_path, repo, 
     task = _task(tmp_path, repo, passing)
     model = Fixed("```python\n" + GOOD + "```\n")
     sealed = contract.compile_task(task, tmp_path / "out", harness, SubprocessRunner(python_bin),
-                                   timeout=60, model=model)
+                                   timeout=60, strengthener=ModelStrengthener(model), guards=guard_selector)
     assert "fail on the repository as it is now" in model.prompts[0]
     compiled = json.loads((sealed.out / "sealed" / "compile.json").read_bytes())
     assert compiled["strength"] == "synthesized_spec"

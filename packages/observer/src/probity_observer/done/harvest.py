@@ -31,10 +31,9 @@ from . import pytest_plugins
 from .formats import encode, sha256
 from .mutants import Mutant
 from .runner import Runner
+from .suite import clean_copy, outcome_argv, stable_nodes
 
-STABILITY_RUNS = 3
 PRIORITY = (("null_patch", "hunk_revert", "change"), ("cheat",), ("function",), ("rest",))
-GUARD_ID = "guard-repo"
 
 
 @dataclass
@@ -51,16 +50,6 @@ class Harvest:
         return {index for node in ids for index in self.matrix.get(node, [])}
 
 
-def _clean(state: Path, scratch: Path, name: str) -> Path:
-    target = scratch / name
-    shutil.copytree(state, target, symlinks=True, ignore=shutil.ignore_patterns("__pycache__"))
-    return target
-
-
-def _outcome_argv(prefix: Sequence[str], args: Sequence[str]) -> tuple[str, ...]:
-    return tuple(prefix) + ("-p", "probity_outcome", *args)
-
-
 def candidates(runner: Runner, reference: Path, heldout: Path | None, prefix: Sequence[str],
                tests: Sequence[str], sources: Sequence[str],
                timeout: float) -> tuple[list[str], dict[str, dict[str, list[int]]]]:
@@ -68,7 +57,7 @@ def candidates(runner: Runner, reference: Path, heldout: Path | None, prefix: Se
     the changed sources each one ran."""
     found, coverage = [], {}
     with tempfile.TemporaryDirectory(prefix="probity-harvest-") as scratch:
-        state = _clean(reference, Path(scratch), "reference")
+        state = clean_copy(reference, Path(scratch), "reference")
         for name in tests:
             # Traced without isolation: an isolated function's lines run in a child process
             # the trace does not follow, and its operator mutants would read as unseen.
@@ -83,44 +72,6 @@ def candidates(runner: Runner, reference: Path, heldout: Path | None, prefix: Se
                 found.append(name)
                 coverage[name] = trace["lines"]
     return found, coverage
-
-
-def _collect(runner: Runner, state: Path, heldout: Path | None, prefix: Sequence[str],
-             name: str, timeout: float) -> list[str]:
-    printed: list[str] = []
-    runner.run(state, tuple(prefix) + ("--collect-only", "--verbosity=-1", name), heldout, timeout,
-               output=printed)
-    return sorted({line.strip() for text in printed for line in text.splitlines()
-                   if line.strip().startswith(name + "::")})
-
-
-def stable_nodes(runner: Runner, start: Path, reference: Path, heldout: Path | None,
-                 prefix: Sequence[str], files: Sequence[str], timeout: float
-                 ) -> tuple[dict[str, list[str]], dict[str, float], list[dict[str, Any]]]:
-    """Per file, the node ids that pass every run on both states; each node's seconds."""
-    kept: dict[str, list[str]] = {}
-    seconds: dict[str, float] = {}
-    log: list[dict[str, Any]] = []
-    with tempfile.TemporaryDirectory(prefix="probity-harvest-") as scratch:
-        states = {"start": _clean(start, Path(scratch), "start"),
-                  "reference": _clean(reference, Path(scratch), "reference")}
-        for name in files:
-            nodes = _collect(runner, states["reference"], heldout, prefix, name, timeout)
-            passing = set(nodes)
-            for label, state in states.items():
-                for _ in range(STABILITY_RUNS):
-                    printed: list[str] = []
-                    runner.run(state, _outcome_argv(prefix, [name]), heldout, timeout,
-                               output=printed)
-                    result = pytest_plugins.outcomes(printed)
-                    passing &= {node for node, entry in result.items() if entry["passed"]}
-                    if label == "reference":
-                        for node, entry in result.items():
-                            seconds[node] = max(seconds.get(node, 0.0), entry["seconds"])
-            log.append({"file": name, "collected": len(nodes), "stable": len(passing)})
-            if passing:
-                kept[name] = sorted(passing)
-    return kept, seconds, log
 
 
 def _sees(mutant: Mutant, name: str, coverage: dict[str, dict[str, list[int]]]) -> bool:
@@ -142,7 +93,7 @@ def kill_matrix(runner: Runner, base: Path, heldout: Path | None, prefix: Sequen
     with tempfile.TemporaryDirectory(prefix="probity-matrix-") as scratch:
         for index in alive:
             mutant = found[index]
-            state = _clean(base, Path(scratch), f"m{index}")
+            state = clean_copy(base, Path(scratch), f"m{index}")
             for name, text in mutant.files():
                 (state / name).write_text(text)
             for name, ids in nodes.items():
@@ -150,7 +101,7 @@ def kill_matrix(runner: Runner, base: Path, heldout: Path | None, prefix: Sequen
                     skipped += 1
                     continue
                 printed: list[str] = []
-                runner.run(state, _outcome_argv(prefix, ids), heldout, timeout, output=printed)
+                runner.run(state, outcome_argv(prefix, ids), heldout, timeout, output=printed)
                 result = pytest_plugins.outcomes(printed)
                 for node in ids:
                     if not result.get(node, {"passed": False})["passed"]:
