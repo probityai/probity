@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ratchet.improve.diagnose import diagnose
 from ratchet.improve.candidates import Instructions, check_guard_source, make_candidate
+from ratchet.improve.diagnose import diagnose
 from ratchet.improve.propose import (
     SEED,
     passing_shapes,

@@ -951,7 +951,9 @@ def compare_level2(bench: Bench, experiment: str = "level2") -> dict[str, Any]:
     benign_ids = {c.id for c in bench.cases if c.kind == "benign_twin"}
     diag = Meter()
     clusters = diagnose(
-        train, bench.simulator, lambda key, members, traces: summarize(key, members, traces, bench.improver, diag)
+        train,
+        bench.simulator,
+        lambda key, members, traces: summarize(key, members, traces, bench.improver, diag),
     )
     family_of = {c.id: str(getattr(c, "family", "")) for c in bench.cases}
     a, b, mixed = split_clusters(clusters, family_of, bench.families_a)

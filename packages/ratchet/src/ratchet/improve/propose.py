@@ -296,7 +296,11 @@ class ModelProposer:
         return SEED
 
     def summarize(
-        self, key: Mapping[str, str], members: Sequence[FailurePoint], traces: Mapping[str, Trace], meter: Meter
+        self,
+        key: Mapping[str, str],
+        members: Sequence[FailurePoint],
+        traces: Mapping[str, Trace],
+        meter: Meter,
     ) -> str | None:
         return summarize(key, members, traces, self.model, meter)
 

@@ -27,11 +27,11 @@ from pymongo.errors import OperationFailure
 from ratchet_cases.types import Trace
 
 from ratchet.improve.admit import admit
+from ratchet.improve.candidates import Candidate, make_candidate
 from ratchet.improve.diagnose import FailureCluster, diagnose
 from ratchet.improve.evaluate import EvalReport, evaluate
 from ratchet.improve.loop import GenerationRecord
 from ratchet.improve.overfit import training_literals
-from ratchet.improve.candidates import Candidate, make_candidate
 from ratchet.improve.propose import SEED, build_prompt
 from ratchet.improve.recall import (
     PriorFix,

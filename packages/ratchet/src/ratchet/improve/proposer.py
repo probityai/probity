@@ -48,7 +48,11 @@ class Proposer(Protocol):
         ...
 
     def summarize(
-        self, key: Mapping[str, str], members: Sequence[FailurePoint], traces: Mapping[str, Trace], meter: Meter
+        self,
+        key: Mapping[str, str],
+        members: Sequence[FailurePoint],
+        traces: Mapping[str, Trace],
+        meter: Meter,
     ) -> str | None:
         """A one-sentence mechanism for a failure cluster, or None to keep the deterministic summary."""
         ...
@@ -128,7 +132,11 @@ class FixedProposer:
         return Instructions.build(f"fixed changes {digest}")
 
     def summarize(
-        self, key: Mapping[str, str], members: Sequence[FailurePoint], traces: Mapping[str, Trace], meter: Meter
+        self,
+        key: Mapping[str, str],
+        members: Sequence[FailurePoint],
+        traces: Mapping[str, Trace],
+        meter: Meter,
     ) -> str | None:
         return None
 

@@ -97,10 +97,14 @@ def test_main_wires_the_lanes_and_writes_a_summary(monkeypatch: pytest.MonkeyPat
     assert body["config"]["proposer"] == "model" and body["config"]["parent_chooser"] == "clade"
 
 
-def test_main_climbs_the_tip_without_a_parent_chooser(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_main_climbs_the_tip_without_a_parent_chooser(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     seen: dict[str, Any] = {}
 
-    def fake_evolve(store: Any, model: Any, generations: int, *, lab: Any, seed: Harness, select_parent: Any) -> Any:
+    def fake_evolve(
+        store: Any, model: Any, generations: int, *, lab: Any, seed: Harness, select_parent: Any
+    ) -> Any:
         seen["select_parent"] = select_parent
         return EvolveResult(HARNESS, INSTRUCTIONS, [])
 

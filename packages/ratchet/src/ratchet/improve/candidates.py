@@ -122,9 +122,7 @@ def make_candidate(
     return f"unknown kind {kind!r}"
 
 
-def collect(
-    raws: Any, cluster: FailureCluster, harness: Harness, instructions: Instructions
-) -> Proposal:
+def collect(raws: Any, cluster: FailureCluster, harness: Harness, instructions: Instructions) -> Proposal:
     """A proposal from a list of proposed changes: unusable items are kept in `rejected` with the reason,
     repeats and no-op changes are counted as duplicates."""
     out = Proposal()

@@ -12,6 +12,7 @@ from ratchet_cases.types import Cost, Trace
 from ratchet.agent.guards import GuardRuntime
 from ratchet.improve import instruction_search as search
 from ratchet.improve.activate import MemoryActivator
+from ratchet.improve.candidates import Instructions, Proposal, make_candidate
 from ratchet.improve.diagnose import FailureCluster, FailurePoint, diagnose
 from ratchet.improve.instruction_search import (
     Bench,
@@ -31,7 +32,6 @@ from ratchet.improve.instruction_search import (
 )
 from ratchet.improve.llm import Chat, Meter
 from ratchet.improve.overfit import training_literals
-from ratchet.improve.candidates import Instructions, Proposal, make_candidate
 from ratchet.improve.propose import SEED, propose
 from ratchet.improve.receipt import Signer
 from ratchet.improve.referee import RefereeCore, RefereeParts, Verdict

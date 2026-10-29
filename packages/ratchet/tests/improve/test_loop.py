@@ -344,8 +344,8 @@ def test_an_archive_choice_inspires_the_proposer_but_never_changes_the_compariso
 
 
 def test_the_shortlist_gives_every_kind_a_slot() -> None:
-    from ratchet.improve.loop import _shortlist, _Tried
     from ratchet.improve.candidates import Candidate
+    from ratchet.improve.loop import _shortlist, _Tried
 
     def cand(kind: str, cluster: str, n: int) -> _Tried:
         c = Candidate(f"{kind}-{cluster}-{n}", kind, cluster, "v", SEED, {}, "")  # type: ignore[arg-type]
