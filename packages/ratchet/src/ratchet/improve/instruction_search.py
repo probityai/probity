@@ -45,13 +45,14 @@ from ratchet_cases.types import Trace, sha256_hex
 
 from ratchet.canonical import canonical_json
 from ratchet.improve.admit import GATES
+from ratchet.improve.candidates import Candidate, Instructions, Proposal
 from ratchet.improve.diagnose import FailureCluster, FailurePoint, diagnose
 from ratchet.improve.evaluate import CaseLike, EvalReport, RunCase, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity
 from ratchet.improve.llm import Chat, Meter
-from ratchet.improve.loop import ArmScore, propose_instructions
+from ratchet.improve.loop import ArmScore
 from ratchet.improve.overfit import Literals, lint, training_literals
-from ratchet.improve.propose import SEED, Candidate, Instructions, Proposal, propose
+from ratchet.improve.propose import SEED, propose, propose_instructions, summarize
 from ratchet.improve.referee import Referee, Request, Totals, Verdict
 from ratchet.improve.replay import GuardRunner, ReplayReport, WalkCache, replay
 from ratchet.improve.sim import Simulator
@@ -949,7 +950,11 @@ def compare_level2(bench: Bench, experiment: str = "level2") -> dict[str, Any]:
     base, train = baseline(bench, experiment)
     benign_ids = {c.id for c in bench.cases if c.kind == "benign_twin"}
     diag = Meter()
-    clusters = diagnose(train, bench.simulator, bench.improver, diag)
+    clusters = diagnose(
+        train,
+        bench.simulator,
+        lambda key, members, traces: summarize(key, members, traces, bench.improver, diag),
+    )
     family_of = {c.id: str(getattr(c, "family", "")) for c in bench.cases}
     a, b, mixed = split_clusters(clusters, family_of, bench.families_a)
     frozen = {"cluster_ids": [c.id for c in b], "digest": clusters_digest(b)}

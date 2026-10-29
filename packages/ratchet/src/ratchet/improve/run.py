@@ -5,6 +5,10 @@
 The agent model, the improver model, the endpoint and the store come from flags or the environment
 (`RATCHET_BASE_URL`, `RATCHET_API_KEY`, `RATCHET_MODEL`, `RATCHET_IMPROVER_MODEL`, `RATCHET_MONGODB_URI`,
 `RATCHET_DB`, `RATCHET_SIGNING_KEY`). No key is written to the summary, a log or the store.
+
+The proposer and the parent chooser are named entries of the `ratchet.proposers` and
+`ratchet.parent_choosers` entry-point groups (`ratchet.improve.proposer`); `--parent-chooser none` climbs the
+tip. A name no installed distribution registers stops the run before anything is written.
 """
 
 from __future__ import annotations
@@ -26,8 +30,14 @@ from ratchet.agent.guards import GuardRuntime
 from ratchet.agent.model import ModelClient, ModelConfig, ModelError, SeededTransport
 from ratchet.agent.seed import seed_harness
 from ratchet.agent.worker import run_case
-from ratchet.improve.archive import ArchiveSelector
 from ratchet.improve.loop import EvolveResult, Lab, evolve, frozen_suite_digest
+from ratchet.improve.proposer import (
+    DEFAULT_PROPOSER,
+    NotInstalledError,
+    ParentChooser,
+    load_parent_chooser,
+    load_proposer,
+)
 from ratchet.improve.receipt import TRUSTED_KEY_ENV
 from ratchet.improve.referee import ProcessReferee
 from ratchet.improve.sandbox import SandboxRunner
@@ -58,6 +68,12 @@ def _args(argv: Sequence[str] | None) -> argparse.Namespace:
     p.add_argument("--candidates", type=int, default=4)
     p.add_argument("--max-evals", type=int, default=3)
     p.add_argument("--family", action="append", default=[], help="limit to these case families")
+    p.add_argument("--proposer", default=DEFAULT_PROPOSER, help="a name in the ratchet.proposers group")
+    p.add_argument(
+        "--parent-chooser",
+        default="clade",
+        help="a name in the ratchet.parent_choosers group, or 'none' to climb the tip",
+    )
     p.add_argument("--out", type=Path, required=True)
     return p.parse_args(argv)
 
@@ -129,6 +145,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     }
     config = {
         **model_config,
+        "proposer": a.proposer,
+        "parent_chooser": a.parent_chooser,
         "workers": a.workers,
         "max_clusters": a.max_clusters,
         "candidates": a.candidates,
@@ -156,6 +174,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     ):
         store.setup(wait_search=False)
         improver = FallbackChat([stack.enter_context(ModelClient(c)) for c in improver_cfgs])
+        try:
+            proposer = load_proposer(a.proposer, improver)
+            # Selector scores come from training outcomes only, since the proposer sees what they select.
+            chooser: ParentChooser | None = (
+                None
+                if a.parent_chooser == "none"
+                else load_parent_chooser(a.parent_chooser, store, min_descendants=2, seed=a.db, split="train")
+            )
+        except NotInstalledError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
         lab = Lab(
             cases=[c for c in cases if c.split != "heldout"],
             run_case=run_case,
@@ -163,6 +192,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             runner=SandboxRunner(runtime),
             referee=referee,
             improver=improver,
+            proposer=proposer,
             workers=a.workers,
             max_clusters=a.max_clusters,
             candidates_per_cluster=a.candidates,
@@ -170,8 +200,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             model_config=model_config,
             log=lambda msg: print(msg, flush=True),
         )
-        # Selector scores come from training outcomes only, since the proposer sees what they select.
-        chooser = ArchiveSelector(store, min_descendants=2, seed=a.db, split="train")
         result = evolve(store, model, a.generations, lab=lab, seed=seed_harness(), select_parent=chooser)
         report = summary(result, decision_key, time.perf_counter() - started, config)
         report["agent_model_cost"] = model.cost().__dict__
