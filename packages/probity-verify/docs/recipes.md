@@ -31,6 +31,7 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check an agent's completion assertion against the runs the observer saw](done-receipt.md) | `completion_claim/v1` | `contradicted` | Synthetic observer records; PEER scope. |
 | [Check a contract's oracle-free probes on a split whose behavioural tests passed](done-receipt.md) | `probe_observed/v1` | `supported` | Synthetic verifier grade; PEER scope. |
 | [Detect a done receipt that reports verdicts its records do not give](done-receipt.md) | `done_receipt/v2` | `contradicted` | Synthetic records and an unsigned receipt Statement; PEER scope. |
+| [Check an adversarial execution evidence statement](adapters.md) | `adversarial_execution_evidence/v1` | `supported` | Conformance-corpus statement signed with a published test key; the key carries no trust outside the corpus. |
 
 ## Retrieve a command
 

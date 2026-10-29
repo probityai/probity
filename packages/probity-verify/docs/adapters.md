@@ -65,3 +65,16 @@ does not establish arbitrary effects or independent custody.
 check a coding agent's completion claim against a sealed contract and records made
 outside the agent. `protected_paths/v1` is the event-absence rule above, applied to
 file mutation.
+
+## Adversarial execution evidence statements
+
+`adversarial_execution_evidence/v1` judges one in-toto statement whose predicate type is
+`https://in-toto.io/attestation/adversarial-execution-evidence/v0.7`. The assessment names the
+statement artifact and may pin `substrate_observation_keys`, raw Ed25519 public keys as 64 lowercase
+hex digits. The adapter recomputes the predicate's gates from the statement's own bytes: `supported`
+means the statement is valid and its carried result equals the recomputed result; `contradicted`
+means a gate refused it. The `execution_evidence` check carries the verdict, the failure codes in
+detection order, and for a valid statement the result and each row's tier (`attested` only when every
+covering record verifies under a pinned key). [examples/execution-evidence](../examples/execution-evidence)
+uses a conformance-corpus statement and the corpus's published test key, which carries no trust
+outside the corpus.
