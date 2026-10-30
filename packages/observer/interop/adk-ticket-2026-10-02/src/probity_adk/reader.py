@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, digest
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
-from probity_observer.ticket_state import (
+from probity_observer.ticket_service import (
     DOMAIN,
-    checked_record,
-    state_schema,
+    _checked,
+    _state_schema,
     verify_ticket_result,
 )
 
@@ -155,8 +155,8 @@ def check_entry(entry: dict[str, Any], run_id: str, reference: datetime) -> None
         GrantPolicy(**entry["policy"]),
         now=reference.replace(microsecond=0),
     )
-    state = checked_record(entry["initial"]["receipt"], entry["serviceKey"])
-    state_schema(state, receipt=True)
+    state = _checked(entry["initial"]["receipt"], entry["serviceKey"])
+    _state_schema(state, receipt=True)
     configuration = digest(
         DOMAIN + "-configuration",
         {key: entry[key] for key in ("request", "policy", "serviceKey")},
