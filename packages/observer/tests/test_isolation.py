@@ -10,7 +10,8 @@ from probity_observer import CoverageError, SigningKey, VerificationError, Witne
 from probity_observer.broker import Broker
 from probity_observer.crypto import canonical, strict_loads
 from probity_observer.history import append_history, read_history
-from probity_observer.isolation import EXPECTED, launch_command, run_boundary_probe, verify_boundary_bundle
+from probity_observer.boundary_probe import EXPECTED, launch_command, run_boundary_probe
+from probity_observer.isolation import verify_boundary_bundle
 from probity_observer.verify import verify_incomplete
 
 
@@ -58,7 +59,7 @@ class TestBoundaryGate:
             assert command[-1] == "12345"
 
         def test_host_checks_broker_events_and_retains_peer(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-            from probity_observer import isolation
+            from probity_observer import boundary_probe as isolation
 
             monkeypatch.setattr(isolation, "_WriteServer", FakeServer)
 
@@ -79,7 +80,7 @@ class TestBoundaryGate:
             assert verify_boundary_bundle(output, keys["observer"], keys["witness"])["status"] == "probe-passed"
 
         def test_relative_output_yields_absolute_mount_sources(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-            from probity_observer import isolation
+            from probity_observer import boundary_probe as isolation
 
             monkeypatch.chdir(tmp_path)
             monkeypatch.setattr(isolation, "_WriteServer", FakeServer)
@@ -98,7 +99,7 @@ class TestBoundaryGate:
 
     class TestFailingCases:
         def test_failed_socket_setup_is_a_witnessed_incomplete_interval(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-            from probity_observer import isolation
+            from probity_observer import boundary_probe as isolation
 
             def fail(*_: object) -> None:
                 raise PermissionError("socket denied")
@@ -118,7 +119,7 @@ class TestBoundaryGate:
             assert verify_boundary_bundle(output, keys["observer"], keys["witness"])["status"] == "incomplete"
 
         def test_pinned_reader_rejects_changed_probe_and_result(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-            from probity_observer import isolation
+            from probity_observer import boundary_probe as isolation
 
             monkeypatch.setattr(isolation, "_WriteServer", FakeServer)
 
@@ -162,7 +163,7 @@ class TestBoundaryGate:
 
         @pytest.mark.parametrize("complete, flags_pass", [(False, True), (True, False)])
         def test_missing_broker_event_or_refusal_aborts(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, complete: bool, flags_pass: bool) -> None:
-            from probity_observer import isolation
+            from probity_observer import boundary_probe as isolation
 
             monkeypatch.setattr(isolation, "_WriteServer", FakeServer)
 

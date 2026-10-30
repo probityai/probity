@@ -23,7 +23,8 @@ from .crypto import (
 from .dispatch_records import verify_dispatch_bundle
 from .grant_records import ActionRequest, GrantPolicy, utc_clock
 from .history import read_history, verify_checkpoint
-from .isolation import _run_child, launch_command, observer_build_digest, sha256
+from .boundary_probe import _run_child, launch_command, observer_build_digest
+from .isolation import sha256
 from .ledger import LedgerWitness
 from .protected_dispatch import ProtectedDispatcher, ProtectedWriteServer
 
