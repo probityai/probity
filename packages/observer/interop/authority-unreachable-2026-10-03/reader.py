@@ -9,18 +9,32 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from authority_profile import (
+    AUTHORITY_DOMAIN,
+    CASE_IDS,
+    CONTRACT_ID,
+    MAX_AGE_SECONDS,
+    PROFILE,
+    RECORD_DOMAIN,
+    RESIDUAL_RISKS,
+    check_authority,
+    check_delegation,
+    check_veto,
+    checked_record,
+    reference_time,
+    refuse,
+)
 from probity_observer.crypto import VerificationError, digest, strict_loads
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     DOMAIN,
     STATE_FIELDS,
-    checked_record as checked_native_receipt,
     state_schema,
     verify_ticket_result,
 )
-
-from authority_profile import (AUTHORITY_DOMAIN, CASE_IDS, CONTRACT_ID, MAX_AGE_SECONDS, PROFILE, RECORD_DOMAIN, RESIDUAL_RISKS, check_authority, check_delegation,
-                               check_veto, checked_record, reference_time, refuse)
+from probity_observer.ticket_state import (
+    checked_record as checked_native_receipt,
+)
 
 
 def _native_envelope(raw: bytes, key: str) -> dict[str, Any]:

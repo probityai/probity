@@ -17,8 +17,19 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from probity_observer.grant_records import ActionRequest, AuthorizedAction, GrantPolicy, validate_utc_time
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
+from probity_observer.crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+)
+from probity_observer.grant_records import (
+    ActionRequest,
+    AuthorizedAction,
+    GrantPolicy,
+    validate_utc_time,
+)
 from probity_observer.ticket_service import TicketStore
 from probity_observer.ticket_state import MAX_BODY, verify_ticket_result
 

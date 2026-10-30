@@ -13,9 +13,16 @@ from pathlib import Path
 from typing import Any
 
 from .broker import Broker, recover_interrupted
-from .records import tree_root
-from .crypto import SigningKey, VerificationError, canonical, digest, strict_loads, verify_signature
+from .crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+    verify_signature,
+)
 from .history import Witness, read_history, unresolved_intents
+from .records import tree_root
 from .verify import verify_incomplete, verify_packet
 
 PROBE = Path(__file__).with_name("probe_agent.py")

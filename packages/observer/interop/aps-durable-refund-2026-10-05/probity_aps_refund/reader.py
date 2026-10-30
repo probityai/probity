@@ -10,8 +10,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from probity_observer.crypto import (
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+    verify_signature,
+)
 from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
-from probity_observer.crypto import VerificationError, canonical, digest, strict_loads, verify_signature
 from probity_observer.ticket_state import (
     DOMAIN,
     READBACK_FIELDS,
@@ -19,7 +25,13 @@ from probity_observer.ticket_state import (
     verify_ticket_capture,
 )
 
-from .service import parse_native_clock, refund_decision_digest, verify_aps, verify_aps_observations, verify_refund_result
+from .service import (
+    parse_native_clock,
+    refund_decision_digest,
+    verify_aps,
+    verify_aps_observations,
+    verify_refund_result,
+)
 
 
 @dataclass(frozen=True)

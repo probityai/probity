@@ -51,8 +51,8 @@ def run(config: dict[str, Any], endpoint: Path) -> None:
     process; this is not an in-memory exception substitute for process restart.
     """
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from probity_observer.grant_records import ActionRequest, GrantPolicy
     from probity_observer.crypto import SigningKey
+    from probity_observer.grant_records import ActionRequest, GrantPolicy
     from probity_observer.ticket_service import TicketHTTPServer, TicketStore
 
     seed = bytes.fromhex(Path(config["serviceSeed"]).read_text().strip())

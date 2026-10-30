@@ -20,9 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from .authorization import AuthorizedBroker
-from .grant_records import ActionRequest, GrantPolicy, utc_clock, verify_grant
 from .broker import Broker
-from .records import WriteResult, tree_root
 from .crypto import (
     SigningKey,
     canonical,
@@ -44,8 +42,10 @@ from .dispatch_records import (  # noqa: F401
     _verify_prior,
     verify_dispatch_bundle,
 )
+from .grant_records import ActionRequest, GrantPolicy, utc_clock, verify_grant
 from .history import Witness, append_history, read_history, verify_checkpoint
 from .ledger import LedgerWitness, read_ledger
+from .records import WriteResult, tree_root
 from .witness_port import DispatchWitnessPorts, WitnessPort
 
 MAX_REQUEST = 65536

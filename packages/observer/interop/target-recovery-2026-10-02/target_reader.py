@@ -9,11 +9,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, canonical, strict_loads
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_service import TicketStore
-from probity_observer.ticket_state import checked_record, state_schema, verify_ticket_result
-
+from probity_observer.ticket_state import (
+    checked_record,
+    state_schema,
+    verify_ticket_result,
+)
 from target_common import CASES, NONCLAIMS, PROFILE, load, read, require, sha
 
 

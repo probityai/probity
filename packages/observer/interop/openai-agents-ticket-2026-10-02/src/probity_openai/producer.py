@@ -16,8 +16,8 @@ from urllib.request import Request, urlopen
 from uuid import uuid4
 
 from probity_observer.authorization import issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.ticket_service import TicketStore, running_server
 
 from .contract import (

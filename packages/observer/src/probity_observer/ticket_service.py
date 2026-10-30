@@ -22,13 +22,19 @@ from typing import Any
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from .grant_records import ActionRequest, AuthorizedAction, GrantPolicy, utc_clock, verify_grant
 from .crypto import (
     SigningKey,
     VerificationError,
     canonical,
     digest,
     strict_loads,
+)
+from .grant_records import (
+    ActionRequest,
+    AuthorizedAction,
+    GrantPolicy,
+    utc_clock,
+    verify_grant,
 )
 from .ticket_state import (  # noqa: F401
     DOMAIN,

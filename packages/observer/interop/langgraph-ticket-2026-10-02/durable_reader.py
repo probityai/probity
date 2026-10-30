@@ -8,9 +8,17 @@ from pathlib import Path
 from typing import Any
 
 from lg_common import decode, encode, read, require, sha
-from lg_reader import aware_time, checkpoint_identity, effect_packet, same, selection, snapshot_state, task_identity
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from lg_reader import (
+    aware_time,
+    checkpoint_identity,
+    effect_packet,
+    same,
+    selection,
+    snapshot_state,
+    task_identity,
+)
 from probity_observer.crypto import canonical, digest
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import DOMAIN, parse_time
 
 PROFILE = "probity-langgraph-durable-restart-v0"

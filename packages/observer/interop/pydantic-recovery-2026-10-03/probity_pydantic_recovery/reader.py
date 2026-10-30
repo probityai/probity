@@ -7,13 +7,13 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import (
     VerificationError,
     canonical,
     strict_loads,
     verify_signature,
 )
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import DOMAIN, verify_ticket_result
 
 from probity_pydantic_recovery.common import (

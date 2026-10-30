@@ -19,10 +19,19 @@ from urllib.request import Request, urlopen
 from evaluation_contract import decode, encode, require
 from probity_observer.aae_enforce import enforce_check, native_digest
 from probity_observer.aae_ticket import AaeTicketStore
-from probity_observer.aae_ticket_records import ticket_transaction, verify_aae_ticket_result
+from probity_observer.aae_ticket_records import (
+    ticket_transaction,
+    verify_aae_ticket_result,
+)
 from probity_observer.authorization import issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock, verify_grant
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest as domain_digest
+from probity_observer.crypto import SigningKey, VerificationError, canonical
+from probity_observer.crypto import digest as domain_digest
+from probity_observer.grant_records import (
+    ActionRequest,
+    GrantPolicy,
+    utc_clock,
+    verify_grant,
+)
 from probity_observer.ticket_service import running_server
 from probity_observer.ticket_state import DOMAIN, MAX_BODY, checked_record, state_schema
 
@@ -137,7 +146,12 @@ def execute(output: Path, plan: dict, case: dict, store: AaeTicketStore) -> dict
     import inspect_ai
     from inspect_ai.agent import react
     from inspect_ai.dataset import Sample
-    from inspect_ai.model import ChatMessageAssistant, ModelOutput, ModelUsage, get_model
+    from inspect_ai.model import (
+        ChatMessageAssistant,
+        ModelOutput,
+        ModelUsage,
+        get_model,
+    )
     from inspect_ai.scorer import match
     from inspect_ai.tool import ToolCall, tool
 

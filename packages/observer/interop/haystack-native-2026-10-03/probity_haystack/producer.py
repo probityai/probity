@@ -16,11 +16,10 @@ from haystack.components.agents import Agent
 from haystack.dataclasses import ChatMessage, ToolCall
 from haystack.tools import Tool
 from haystack.tracing import Span, Tracer
-
 from probity_observer.authorization import AuthorizedBroker, issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.broker import Broker
 from probity_observer.crypto import SigningKey
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.history import Witness
 
 from .contract import CASES, CONTENT, PROFILE, SDK_SOURCE, SDK_VERSION, encode, sha

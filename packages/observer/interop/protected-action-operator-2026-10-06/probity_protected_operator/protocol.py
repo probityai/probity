@@ -6,10 +6,16 @@ from datetime import datetime
 from typing import Any
 
 from probity_observer.crypto import canonical, digest, strict_loads, verify_signature
+from probity_observer.dispatch_records import CONFIG_DOMAIN, PRIOR_DOMAIN
 from probity_observer.history import GENESIS
 from probity_observer.ledger import RECEIPT_DOMAIN
-from probity_observer.dispatch_records import CONFIG_DOMAIN, PRIOR_DOMAIN
-from probity_witness_operator.protocol import HEX_DIGEST, exact_fields, history_entries, require, sha
+from probity_witness_operator.protocol import (
+    HEX_DIGEST,
+    exact_fields,
+    history_entries,
+    require,
+    sha,
+)
 
 FORMAT = "probity-authorization-witness-v0"
 REPLY_DOMAIN = FORMAT + "-reply"

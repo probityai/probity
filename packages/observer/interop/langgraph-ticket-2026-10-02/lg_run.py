@@ -14,13 +14,23 @@ from typing import Any, TypedDict
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from lg_common import CASES, PROFILE, VERSION, decode, encode, project, require, sha, write
+from lg_common import (
+    CASES,
+    PROFILE,
+    VERSION,
+    decode,
+    encode,
+    project,
+    require,
+    sha,
+    write,
+)
 from probity_observer.aae_enforce import enforce_check, native_digest
 from probity_observer.aae_ticket import AaeTicketStore
 from probity_observer.aae_ticket_records import ticket_transaction
 from probity_observer.authorization import issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, VerificationError, canonical
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.ticket_service import running_server
 from probity_observer.ticket_state import MAX_BODY
 

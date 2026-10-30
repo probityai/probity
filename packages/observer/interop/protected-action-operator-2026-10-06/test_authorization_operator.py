@@ -16,23 +16,43 @@ from typing import Any
 import pytest
 from cryptography.hazmat.primitives import serialization
 from probity_observer.authorization import issue_grant
+from probity_observer.crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+)
+from probity_observer.dispatch_records import (
+    CONFIG_DOMAIN,
+    PRIOR_DOMAIN,
+    verify_dispatch_bundle,
+)
 from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
-from probity_observer.records import tree_root
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
 from probity_observer.history import GENESIS, append_history
 from probity_observer.ledger import RECEIPT_DOMAIN
 from probity_observer.protected_dispatch import ProtectedDispatcher
-from probity_observer.dispatch_records import CONFIG_DOMAIN, PRIOR_DOMAIN, verify_dispatch_bundle
+from probity_observer.records import tree_root
 from probity_observer.witness_port import DispatchWitnessPorts
-from probity_witness_operator.client import WitnessClient
-from probity_witness_operator.protocol import FORMAT as NATIVE_FORMAT, sha
-from probity_witness_operator.server import OperatorServer
-from probity_witness_operator.store import Configuration, OperatorStore, initialize as initialize_native, write_private
-
 from probity_protected_operator.client import AuthorizationClient
-from probity_protected_operator.protocol import FORMAT, _prior, checkpoint_prefix, request_bytes
-from probity_protected_operator.store import AuthorizationConfiguration, AuthorizationStore, initialize
+from probity_protected_operator.protocol import (
+    FORMAT,
+    _prior,
+    checkpoint_prefix,
+    request_bytes,
+)
+from probity_protected_operator.store import (
+    AuthorizationConfiguration,
+    AuthorizationStore,
+    initialize,
+)
 from probity_protected_operator.worker import _workload
+from probity_witness_operator.client import WitnessClient
+from probity_witness_operator.protocol import FORMAT as NATIVE_FORMAT
+from probity_witness_operator.protocol import sha
+from probity_witness_operator.server import OperatorServer
+from probity_witness_operator.store import Configuration, OperatorStore, write_private
+from probity_witness_operator.store import initialize as initialize_native
 
 
 @pytest.fixture

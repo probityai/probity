@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from .aae_enforce import DIGEST, canonical_bytes, enforce_check, native_digest
-from .grant_records import ActionRequest
 from .broker import Broker
-from .records import WriteResult
 from .crypto import SigningKey, VerificationError, digest, verify_signature
+from .grant_records import ActionRequest
+from .records import WriteResult
 from .verify import verify_packet
 
 DOMAIN = "probity-aae-local-effect-link-v0"

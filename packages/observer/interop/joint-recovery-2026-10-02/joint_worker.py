@@ -19,12 +19,16 @@ sys.path.insert(0, str(BASE / "langgraph-recovery-authority-2026-10-02"))
 sys.path.insert(0, str(BASE / "target-recovery-2026-10-02"))
 from authority_worker import gate  # noqa: E402
 from durable_worker import durable_write  # noqa: E402
+from joint_common import expected_authority, load, require, same, sha  # noqa: E402
 from lg_common import project  # noqa: E402
 from lg_run import GraphState  # noqa: E402
-from target_run import exchange  # noqa: E402
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, canonical  # noqa: E402
-from joint_common import expected_authority, load, require, same, sha  # noqa: E402
+from probity_observer.grant_records import (  # noqa: E402
+    ActionRequest,
+    GrantPolicy,
+    verify_grant,
+)
+from target_run import exchange  # noqa: E402
 
 
 def current_gate(conn: sqlite3.Connection, case: dict[str, Any], current: dict[str, Any], phase: str) -> dict[str, Any]:

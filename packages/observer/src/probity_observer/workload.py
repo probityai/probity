@@ -14,10 +14,17 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .broker import Broker, recover_interrupted
-from .records import CoverageError, tree_root
-from .crypto import SigningKey, VerificationError, canonical, digest, strict_loads, verify_signature
+from .crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+    verify_signature,
+)
 from .history import Witness, read_history, unresolved_intents
 from .isolation import _WriteServer, observer_build_digest, sha256
+from .records import CoverageError, tree_root
 from .verify import verify_incomplete, verify_packet
 
 MAX_OUTPUT = 1_048_576

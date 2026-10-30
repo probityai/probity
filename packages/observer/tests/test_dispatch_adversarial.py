@@ -16,12 +16,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from probity_observer import broker as native_broker
 from probity_observer import protected_dispatch as dispatch_module
 from probity_observer import protected_isolation as isolation_module
 from probity_observer.authorization import issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import (
     SigningKey,
     VerificationError,
@@ -29,9 +27,10 @@ from probity_observer.crypto import (
     digest,
     strict_loads,
 )
+from probity_observer.dispatch_records import verify_dispatch_bundle
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.history import Witness, append_history, read_history
 from probity_observer.protected_dispatch import ProtectedDispatcher
-from probity_observer.dispatch_records import verify_dispatch_bundle
 
 CONTENT = b"independent reviewer effect\n"
 

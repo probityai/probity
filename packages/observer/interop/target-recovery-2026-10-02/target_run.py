@@ -9,8 +9,8 @@ import shutil
 import signal
 import subprocess
 import sys
-import time
 import threading
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
@@ -19,14 +19,13 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from cryptography.hazmat.primitives import serialization
 import probity_observer
+from cryptography.hazmat.primitives import serialization
 from probity_observer.authorization import issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, canonical
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.ticket_service import TicketStore
 from probity_observer.ticket_state import MAX_BODY
-
 from target_common import CASES, NONCLAIMS, PROFILE, load, require, sha, write
 
 ACTIVE: list[tuple[subprocess.Popen, Path, int]] = []

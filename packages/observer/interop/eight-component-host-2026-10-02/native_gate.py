@@ -163,8 +163,8 @@ def issue(config: dict[str, Any]) -> dict[str, Any]:
     """
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from probity_observer.authorization import issue_grant
-    from probity_observer.grant_records import ActionRequest, GrantPolicy
     from probity_observer.crypto import SigningKey
+    from probity_observer.grant_records import ActionRequest, GrantPolicy
 
     policy = config["policy"]
     seed = bytes.fromhex(Path(config["seedFiles"]["issuer"]["path"]).read_text().strip())

@@ -9,14 +9,24 @@ from pathlib import Path
 from typing import Any
 
 from probity_observer.authorization import AuthorizedBroker, issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.broker import Broker
 from probity_observer.crypto import SigningKey
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.history import Witness
 
 from .contract import (
-    A2A_VERSION, CASES, CONTENT, FAILURE, PROFILE, REVISIONS, SDK_VERSION,
-    encode, identity, population, require, sha,
+    A2A_VERSION,
+    CASES,
+    CONTENT,
+    FAILURE,
+    PROFILE,
+    REVISIONS,
+    SDK_VERSION,
+    encode,
+    identity,
+    population,
+    require,
+    sha,
 )
 from .source import snapshot_sources
 

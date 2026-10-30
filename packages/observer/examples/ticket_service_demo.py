@@ -13,9 +13,14 @@ from pathlib import Path
 from typing import Any
 
 from probity_observer.authorization import issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, canonical
-from probity_observer.ticket_service import TicketHTTPServer, TicketStore, http_json, running_server
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
+from probity_observer.ticket_service import (
+    TicketHTTPServer,
+    TicketStore,
+    http_json,
+    running_server,
+)
 from probity_observer.ticket_state import verify_ticket_result
 
 

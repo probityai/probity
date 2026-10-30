@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
-import sys
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
@@ -13,12 +12,15 @@ from pathlib import Path
 from typing import Any
 
 from cryptography.hazmat.primitives import serialization
+from probity_observer.crypto import SigningKey, canonical, strict_loads
 from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.records import tree_root
-from probity_observer.crypto import SigningKey, canonical, strict_loads
-from probity_witness_operator.protocol import FORMAT as NATIVE_FORMAT, request_bytes as native_request, require, sha
+from probity_witness_operator.protocol import FORMAT as NATIVE_FORMAT
+from probity_witness_operator.protocol import request_bytes as native_request
+from probity_witness_operator.protocol import require, sha
 
-from .protocol import FORMAT, request_bytes as authorization_request
+from .protocol import FORMAT
+from .protocol import request_bytes as authorization_request
 from .worker import BUNDLE_FILES
 
 UIDS = {"issuer": 65529, "gateway": 65530, "witness": 65531, "consumer": 65533, "workload": 65534}

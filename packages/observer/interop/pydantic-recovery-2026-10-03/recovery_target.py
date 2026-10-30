@@ -8,14 +8,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, VerificationError
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.ticket_service import (
     TicketHTTPServer,
     TicketStore,
     _TicketHandler,
 )
-
 from probity_pydantic_recovery.common import load, write
 
 

@@ -1,23 +1,24 @@
 """Native unsigned decision joined to actual HTTP persistence and consumer pins."""
 from __future__ import annotations
+
 import copy
 import hashlib
 import json
-from dataclasses import asdict, replace
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
 import pytest
-from probity_observer.aae_enforce import enforce_check, native_digest, canonical_bytes
+from probity_observer.aae_enforce import canonical_bytes, enforce_check, native_digest
 from probity_observer.aae_ticket import AaeTicketStore
 from probity_observer.aae_ticket_records import (
     ticket_transaction,
-    ticket_decision_digest,
     verify_aae_ticket_result,
 )
 from probity_observer.authorization import issue_grant
-from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, VerificationError, digest
-from probity_observer.ticket_service import TicketStore, running_server, http_json
+from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.ticket_service import TicketStore, http_json, running_server
 from probity_observer.ticket_state import verify_ticket_result
 
 

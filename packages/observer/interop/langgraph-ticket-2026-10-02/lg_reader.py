@@ -19,9 +19,14 @@ from probity_observer.aae_ticket_records import (
     ticket_transaction,
     verify_aae_ticket_result,
 )
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import canonical, digest
-from probity_observer.ticket_state import DOMAIN, checked_record, state_schema, parse_time
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_state import (
+    DOMAIN,
+    checked_record,
+    parse_time,
+    state_schema,
+)
 
 
 def same(actual: Any, expected: Any, reason: str) -> None:

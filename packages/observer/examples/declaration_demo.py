@@ -14,7 +14,6 @@ from typing import Any
 
 from probity_observer import Broker, LedgerWitness, SigningKey
 from probity_observer.authorization import AuthorizedBroker, issue_grant
-from probity_observer.grant_records import ActionRequest, AuthorizedAction, GrantPolicy, verify_grant
 from probity_observer.declaration import (
     EffectObservation,
     ManifestProjection,
@@ -24,6 +23,12 @@ from probity_observer.declaration import (
     project_manifest,
     sha256_bytes,
     tool_catalog_digest,
+)
+from probity_observer.grant_records import (
+    ActionRequest,
+    AuthorizedAction,
+    GrantPolicy,
+    verify_grant,
 )
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests/fixtures/declaration"

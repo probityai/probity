@@ -8,9 +8,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, digest
-from probity_observer.ticket_state import DOMAIN, checked_record, state_schema, verify_ticket_result
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_state import (
+    DOMAIN,
+    checked_record,
+    state_schema,
+    verify_ticket_result,
+)
 
 from .contract import (
     AFTER_ERROR,

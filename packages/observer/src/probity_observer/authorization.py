@@ -22,7 +22,6 @@ from typing import Any
 
 from . import broker as native_broker
 from .broker import Broker
-from .records import WriteResult
 from .crypto import (
     SigningKey,
     canonical,
@@ -66,6 +65,7 @@ from .grant_records import (  # noqa: F401
     verify_authorized_packet,
     verify_grant,
 )
+from .records import WriteResult
 
 
 def issue_grant(
