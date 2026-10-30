@@ -5,7 +5,7 @@ description = "Combined runner for agent checkout and refund components: drives 
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 readme = "README.md"
-dependencies = ["agent-evidence-vectors==0.26.2"]
+dependencies = ["agent-evidence-vectors==0.27.0"]
 
 [project.scripts]
 agent-checkout-runner = "checkout_runner.cli:main"
