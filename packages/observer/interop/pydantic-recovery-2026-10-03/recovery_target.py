@@ -15,6 +15,7 @@ from probity_observer.ticket_service import (
     TicketStore,
     _TicketHandler,
 )
+
 from probity_pydantic_recovery.common import load, write
 
 

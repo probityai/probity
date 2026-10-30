@@ -12,6 +12,7 @@ import pytest
 from probity_observer.crypto import VerificationError, canonical
 from probity_observer.ticket_service import TicketStore
 from probity_observer.ticket_state import DOMAIN
+
 from probity_pydantic_recovery.common import CASES, load, sha
 from probity_pydantic_recovery.reader import verify_saved
 from recovery_run import run, selection
@@ -361,6 +362,7 @@ def test_real_runtime_expiry_refuses_a_stale_positive_selection(native: Path, tm
     from probity_observer.authorization import issue_grant
     from probity_observer.crypto import SigningKey
     from probity_observer.grant_records import GrantPolicy
+
     from probity_pydantic_recovery.gate import admit
 
     now = datetime.now(UTC).replace(microsecond=0)
@@ -518,6 +520,7 @@ def test_actually_expired_grant_refuses_retagged_past_clock_in_both_boundaries(n
     from probity_observer.authorization import issue_grant
     from probity_observer.crypto import SigningKey
     from probity_observer.grant_records import GrantPolicy
+
     from probity_pydantic_recovery.gate import admit, reconstruct_admission
 
     now = datetime.now(UTC).replace(microsecond=0)
