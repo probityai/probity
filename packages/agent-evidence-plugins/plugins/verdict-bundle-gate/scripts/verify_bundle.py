@@ -42,7 +42,7 @@ import sys
 from pathlib import Path
 from typing import Any, Iterator
 
-PINNED_VERSION = "0.2.2"
+PINNED = "probity-verify==0.2.4"
 DECISIONS = ("supported", "contradicted", "not_established")
 DEFAULT_GLOBS = "*.decision.zip,*.verdict.zip,decision.zip,verdict.zip"
 REPLAY_TIMEOUT_SECONDS = 120
@@ -60,10 +60,10 @@ def replay_command() -> list[str]:
     if shutil.which("probity-bundle"):
         return ["probity-bundle"]
     if shutil.which("uvx"):
-        return ["uvx", "--from", f"probity-verify=={PINNED_VERSION}", "probity-bundle"]
+        return ["uvx", "--from", PINNED, "probity-bundle"]
     raise Refused(
         f"probity-bundle is not installed and uvx is not available; "
-        f"run: pip install probity-verify=={PINNED_VERSION}"
+        f"run: pip install {PINNED}"
     )
 
 
