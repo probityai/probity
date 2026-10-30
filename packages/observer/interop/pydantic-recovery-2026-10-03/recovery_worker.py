@@ -9,8 +9,8 @@ from typing import Any
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, canonical, strict_loads
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 
 from probity_pydantic_recovery.common import load, read, require, write
 from probity_pydantic_recovery.gate import admit

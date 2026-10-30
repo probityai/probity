@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Any, Callable
 
 import cryptography
-
 from probity_observer import (
     AdmissionPolicy,
     AdmissionStore,
@@ -29,15 +28,14 @@ from probity_observer import (
     SigningKey,
     VerificationError,
 )
-from probity_observer.authorization import (
+from probity_observer.authorization import AuthorizedBroker, issue_grant
+from probity_observer.crypto import canonical, digest
+from probity_observer.grant_records import (
     ActionRequest,
-    AuthorizedBroker,
     GrantPolicy,
-    issue_grant,
     verify_authorized_packet,
     verify_grant,
 )
-from probity_observer.crypto import canonical, digest
 
 
 def _require_refusal(operation: Callable[[], Any]) -> str:

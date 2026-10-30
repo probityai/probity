@@ -15,10 +15,11 @@ from typing import Any
 
 from .aae_binding import verify_local_decision
 from .aae_enforce import canonical_bytes
-from .authorization import ActionRequest, GrantPolicy, utc_clock
-from .broker import WriteResult
 from .crypto import SigningKey, digest
-from .protected_dispatch import ProtectedDispatcher, verify_dispatch_bundle
+from .dispatch_records import verify_dispatch_bundle
+from .grant_records import ActionRequest, GrantPolicy, utc_clock
+from .protected_dispatch import ProtectedDispatcher
+from .records import WriteResult
 
 DECISION_DOMAIN = "probity-aae-protected-decision-v0"
 

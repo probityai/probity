@@ -5,18 +5,24 @@ import hashlib
 import json
 import shutil
 import sqlite3
-from contextlib import closing
 import subprocess
 import sys
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
-from probity_observer.ticket_service import DOMAIN
 from probity_aps_refund.native import run
 from probity_aps_refund.reader import read
+from probity_observer.crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+)
+from probity_observer.ticket_state import DOMAIN
 
 PROFILE = Path(__file__).resolve().parent
 

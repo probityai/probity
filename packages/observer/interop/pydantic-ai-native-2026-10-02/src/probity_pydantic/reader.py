@@ -9,12 +9,12 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, digest
-from probity_observer.ticket_service import (
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_state import (
     DOMAIN,
-    _checked,
-    _state_schema,
+    checked_record,
+    state_schema,
     verify_ticket_result,
 )
 
@@ -206,8 +206,8 @@ def check_plan(plan: dict[str, Any], reference: datetime) -> None:
 def signed_initial(entry: dict[str, Any]) -> dict[str, Any]:
     """Authenticate the selected initial row without treating absence as effect."""
     initial = entry["initial"]
-    state = _checked(initial["receipt"], entry["serviceKey"])
-    _state_schema(state, receipt=True)
+    state = checked_record(initial["receipt"], entry["serviceKey"])
+    state_schema(state, receipt=True)
     expected_configuration = digest(
         DOMAIN + "-configuration",
         {

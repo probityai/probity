@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pytest
 from probity_observer.crypto import VerificationError, canonical
-from probity_observer.ticket_service import DOMAIN, TicketStore
+from probity_observer.ticket_service import TicketStore
+from probity_observer.ticket_state import DOMAIN
 
 from probity_pydantic_recovery.common import CASES, load, sha
 from probity_pydantic_recovery.reader import verify_saved
@@ -358,8 +359,9 @@ def test_latest_revoked_head_refuses_a_restored_pre_revocation_store(tmp_path: P
 
 def test_real_runtime_expiry_refuses_a_stale_positive_selection(native: Path, tmp_path: Path) -> None:
     """After the real UTC expiry, a past selected clock cannot release a result."""
-    from probity_observer.authorization import GrantPolicy, issue_grant
+    from probity_observer.authorization import issue_grant
     from probity_observer.crypto import SigningKey
+    from probity_observer.grant_records import GrantPolicy
 
     from probity_pydantic_recovery.gate import admit
 
@@ -515,8 +517,9 @@ def test_exact_expiry_fixture_cannot_be_used_as_a_past_runtime_clock(native: Pat
 
 def test_actually_expired_grant_refuses_retagged_past_clock_in_both_boundaries(native: Path, tmp_path: Path) -> None:
     """Both runtime and retained replay refuse the expired-label clock bypass."""
-    from probity_observer.authorization import GrantPolicy, issue_grant
+    from probity_observer.authorization import issue_grant
     from probity_observer.crypto import SigningKey
+    from probity_observer.grant_records import GrantPolicy
 
     from probity_pydantic_recovery.gate import admit, reconstruct_admission
 

@@ -15,11 +15,30 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
+from joint_common import (
+    CASES,
+    HOST_POLICY,
+    NONCLAIMS,
+    PROFILE,
+    authority,
+    child_environment,
+    expected_authority,
+    expected_revision,
+    load,
+    phases,
+    read,
+    require,
+    same,
+    sha,
+)
 from probity_observer.crypto import VerificationError, canonical, strict_loads
-from probity_observer.ticket_service import TicketStore, _checked, _state_schema, verify_ticket_result
-
-from joint_common import CASES, HOST_POLICY, NONCLAIMS, PROFILE, authority, child_environment, expected_authority, expected_revision, load, phases, read, require, same, sha
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_service import TicketStore
+from probity_observer.ticket_state import (
+    checked_record,
+    state_schema,
+    verify_ticket_result,
+)
 
 
 def selections(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
@@ -76,8 +95,8 @@ def signed_state(value: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
     classified as an authentic prior effect.
     """
     same(sorted(value), sorted(["tenantId", "ticketId", "contentHex", "revision", "effectId", "receipt"]), "readback-fields")
-    payload = _checked(value["receipt"], case["serviceKey"])
-    _state_schema(payload, receipt=True)
+    payload = checked_record(value["receipt"], case["serviceKey"])
+    state_schema(payload, receipt=True)
     same(payload["request"], case["request"], "readback-request")
     same(payload["authorityKey"], case["policy"]["issuer_key"], "readback-authority")
     same([payload["witnessScope"], payload["coverage"]], ["PEER", "one-native-ticket-row-and-service-events"], "readback-scope")

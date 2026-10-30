@@ -6,13 +6,15 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
-from probity_observer.broker import Broker, CoverageError
+from probity_observer.authorization import issue_grant
+from probity_observer.broker import Broker
 from probity_observer.crypto import SigningKey, VerificationError, digest, strict_loads
+from probity_observer.dispatch_records import CONFIG_DOMAIN, verify_dispatch_bundle
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.history import Witness
 from probity_observer.ledger import LedgerWitness
-from probity_observer.protected_dispatch import CONFIG_DOMAIN, ProtectedDispatcher, verify_dispatch_bundle
+from probity_observer.protected_dispatch import ProtectedDispatcher
+from probity_observer.records import CoverageError
 from probity_observer.witness_port import DispatchWitnessPorts
 
 

@@ -13,12 +13,16 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from probity_observer.authorization import ActionRequest, GrantPolicy
-from probity_observer.crypto import VerificationError, canonical
-from probity_observer.ticket_service import http_json, running_server
 from probity_aps_refund.fixture import NOW, provision, select_action
-from probity_aps_refund.service import parse_native_clock, verify_aps, verify_refund_result
+from probity_aps_refund.service import (
+    parse_native_clock,
+    verify_aps,
+    verify_refund_result,
+)
 from probity_aps_refund.worker import load_store
+from probity_observer.crypto import VerificationError, canonical
+from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.ticket_service import http_json, running_server
 
 PROFILE = Path(__file__).resolve().parent
 
@@ -510,6 +514,7 @@ def test_native_default_clock_samples_declared_millisecond_resolution() -> None:
     """The live native clock selects millisecond resolution without modifying injected times."""
     import time
     from datetime import datetime, timezone
+
     from probity_aps_refund.service import millisecond_clock
     before = time.time_ns() // 1_000_000
     observation = millisecond_clock()

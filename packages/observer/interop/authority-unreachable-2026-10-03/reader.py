@@ -9,12 +9,32 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
+from authority_profile import (
+    AUTHORITY_DOMAIN,
+    CASE_IDS,
+    CONTRACT_ID,
+    MAX_AGE_SECONDS,
+    PROFILE,
+    RECORD_DOMAIN,
+    RESIDUAL_RISKS,
+    check_authority,
+    check_delegation,
+    check_veto,
+    checked_record,
+    reference_time,
+    refuse,
+)
 from probity_observer.crypto import VerificationError, digest, strict_loads
-from probity_observer.ticket_service import DOMAIN, STATE_FIELDS, _checked as checked_native_receipt, _state_schema, verify_ticket_result
-
-from authority_profile import (AUTHORITY_DOMAIN, CASE_IDS, CONTRACT_ID, MAX_AGE_SECONDS, PROFILE, RECORD_DOMAIN, RESIDUAL_RISKS, check_authority, check_delegation,
-                               check_veto, checked_record, reference_time, refuse)
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_state import (
+    DOMAIN,
+    STATE_FIELDS,
+    state_schema,
+    verify_ticket_result,
+)
+from probity_observer.ticket_state import (
+    checked_record as checked_native_receipt,
+)
 
 
 def _native_envelope(raw: bytes, key: str) -> dict[str, Any]:
@@ -115,7 +135,7 @@ def read_native(path: Path, payload: dict[str, Any], pins: dict[str, str]) -> tu
         if len(records) != 1:
             refuse("native signed state is missing")
         state = _native_envelope(records[0][0], pins["serviceKey"])
-        _state_schema(state)
+        state_schema(state)
         fields = {"request": payload["request"], "policy": payload["grantPolicy"], "serviceKey": pins["serviceKey"]}
         if state["configuration"] != digest(DOMAIN + "-configuration", fields):
             refuse("native configuration differs from selected request")
@@ -166,7 +186,7 @@ def _completion(payload: dict[str, Any], pins: dict[str, str], native_state: dic
         return "no-completed-effect-proof", None
     try:
         retained = checked_native_receipt(payload["readback"]["receipt"], pins["serviceKey"])
-        _state_schema(retained, receipt=True)
+        state_schema(retained, receipt=True)
     except VerificationError as error:
         return "incomplete-or-no-longer-admissible", str(error)
     if {field: retained[field] for field in STATE_FIELDS} != native_state:
@@ -185,7 +205,7 @@ def _completed_attempt(attempt: dict[str, Any], payload: dict[str, Any], service
     """Authenticate a completed native return under the selected service key."""
     try:
         receipt = checked_native_receipt(attempt["receipt"], service_key)
-        _state_schema(receipt, receipt=True)
+        state_schema(receipt, receipt=True)
         request = ActionRequest(**payload["request"])
         authorized = verify_grant(payload["grant"], request, GrantPolicy(**payload["grantPolicy"]),
                                   now=reference_time(payload["decisionAt"]))

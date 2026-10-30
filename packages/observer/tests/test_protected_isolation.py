@@ -6,14 +6,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from probity_observer import protected_isolation as module
-from probity_observer.authorization import ActionRequest, GrantPolicy
 from probity_observer.crypto import (
     VerificationError,
     canonical,
     strict_loads,
 )
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.protected_dispatch import ProtectedDispatcher
 from probity_observer.protected_isolation import (
     protected_launch_command,

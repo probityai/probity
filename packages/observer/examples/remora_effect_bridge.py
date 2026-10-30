@@ -9,10 +9,18 @@ from dataclasses import asdict, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
-from probity_observer.crypto import SigningKey, VerificationError, canonical, strict_loads, verify_signature
+from probity_observer.authorization import issue_grant
+from probity_observer.crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    strict_loads,
+    verify_signature,
+)
+from probity_observer.dispatch_records import STATE_DOMAIN, verify_dispatch_bundle
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.history import read_history, verify_checkpoint
-from probity_observer.protected_dispatch import STATE_DOMAIN, ProtectedDispatcher, verify_dispatch_bundle
+from probity_observer.protected_dispatch import ProtectedDispatcher
 
 REMORA_COMMIT = "b25e735d36590154ff53768b4d245ad4c7996f64"
 VECTOR_PATH = "conformance/autoreview-to-effect-v1/vectors.json"

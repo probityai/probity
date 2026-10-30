@@ -12,15 +12,15 @@ from typing import Any
 
 from aae_demo import CONTENT, _mandate, _request
 from aae_replay import run_replay
-
 from probity_observer.aae_binding import local_transaction
 from probity_observer.aae_dispatch import (
     AaeProtectedDispatcher,
     verify_aae_dispatch_bundle,
 )
 from probity_observer.aae_enforce import enforce_check, native_digest
-from probity_observer.authorization import GrantPolicy, issue_grant, utc_clock
+from probity_observer.authorization import issue_grant
 from probity_observer.crypto import SigningKey, VerificationError, canonical
+from probity_observer.grant_records import GrantPolicy, utc_clock
 
 
 def run_demo(output: Path) -> dict[str, Any]:

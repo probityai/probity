@@ -13,11 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from probity_observer.authorization import ActionRequest, GrantPolicy
-from probity_observer.crypto import SigningKey, VerificationError
-from probity_observer.ticket_service import TicketHTTPServer, TicketStore
-
 from joint_common import load, write
+from probity_observer.crypto import SigningKey, VerificationError
+from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.ticket_service import TicketHTTPServer, TicketStore
 
 
 def serve(config: Path, fault: str) -> None:

@@ -18,10 +18,22 @@ from urllib.request import Request, urlopen
 
 from evaluation_contract import decode, encode, require
 from probity_observer.aae_enforce import enforce_check, native_digest
-from probity_observer.aae_ticket import AaeTicketStore, ticket_transaction, verify_aae_ticket_result
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock, verify_grant
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest as domain_digest
-from probity_observer.ticket_service import DOMAIN, MAX_BODY, _checked, _state_schema, running_server
+from probity_observer.aae_ticket import AaeTicketStore
+from probity_observer.aae_ticket_records import (
+    ticket_transaction,
+    verify_aae_ticket_result,
+)
+from probity_observer.authorization import issue_grant
+from probity_observer.crypto import SigningKey, VerificationError, canonical
+from probity_observer.crypto import digest as domain_digest
+from probity_observer.grant_records import (
+    ActionRequest,
+    GrantPolicy,
+    utc_clock,
+    verify_grant,
+)
+from probity_observer.ticket_service import running_server
+from probity_observer.ticket_state import DOMAIN, MAX_BODY, checked_record, state_schema
 
 PROFILE = "probity-inspect-aae-ticket-v0"
 INSPECT_VERSION = "0.3.281"
@@ -134,7 +146,12 @@ def execute(output: Path, plan: dict, case: dict, store: AaeTicketStore) -> dict
     import inspect_ai
     from inspect_ai.agent import react
     from inspect_ai.dataset import Sample
-    from inspect_ai.model import ChatMessageAssistant, ModelOutput, ModelUsage, get_model
+    from inspect_ai.model import (
+        ChatMessageAssistant,
+        ModelOutput,
+        ModelUsage,
+        get_model,
+    )
     from inspect_ai.scorer import match
     from inspect_ai.tool import ToolCall, tool
 
@@ -176,8 +193,8 @@ def execute(output: Path, plan: dict, case: dict, store: AaeTicketStore) -> dict
 def signed_state(case: dict, snapshot: dict) -> dict:
     """Authenticate a native snapshot under the selected service configuration."""
     require(set(snapshot) == {"tenantId", "ticketId", "contentHex", "revision", "effectId", "receipt"}, "ticket_snapshot_fields")
-    state = _checked(snapshot["receipt"], case["serviceKey"])
-    _state_schema(state, receipt=True)
+    state = checked_record(snapshot["receipt"], case["serviceKey"])
+    state_schema(state, receipt=True)
     require(snapshot["tenantId"] == "tenant" and snapshot["ticketId"] == case["id"], "ticket_snapshot_identity")
     require(state["request"] == case["request"] and state["authorityKey"] == case["policy"]["issuer_key"], "ticket_snapshot_request")
     require(state["configuration"] == domain_digest(DOMAIN + "-configuration", case["configuration"]), "ticket_snapshot_configuration")
@@ -294,8 +311,8 @@ def verify_saved(output: Path, selected: dict) -> dict:
         _same(decision["record"], actual, "ticket_decision_replay")
         require(actual["verdict"] == ("DENY" if disposition == "forbid" else "PERMIT"), "ticket_kernel_verdict")
         # Same strict commitment relation used by the host, including bounded DENY.
-        from probity_observer.aae_ticket import _decision_commitment
-        commitment = _decision_commitment(decision["mandate"], decision["transaction"], decision["record"], request, decision["pinned_mandate_digest"], require_permit=False)
+        from probity_observer.aae_ticket_records import decision_commitment
+        commitment = decision_commitment(decision["mandate"], decision["transaction"], decision["record"], request, decision["pinned_mandate_digest"], require_permit=False)
         _same(case["configuration"], {"request": case["request"], "policy": case["policy"], "serviceKey": case["serviceKey"], "decisionDigest": commitment}, "ticket_selected_configuration")
         initial = signed_state(case, case["initial"])
         require(initial["phase"] == "ready" and initial["eventCount"] == 1 and initial["revoked"] is False, "ticket_selected_initial")
@@ -320,9 +337,9 @@ def verify_saved(output: Path, selected: dict) -> dict:
             require(packet["postStatus"] == 409 and response.get("status") == "refused" and state["phase"] == "pending" and state["revision"] == 0 and state["eventCount"] == 2 and not state["revoked"], "ticket_pending_effect")
             expected_effect = domain_digest(DOMAIN + "-effect", {"configuration": state["configuration"], "requestId": request.request_id, "grantDigest": authorized.grant_digest})
             require(state["effectId"] == expected_effect and state["grantDigest"] == authorized.grant_digest, "ticket_pending_identity")
-            from probity_observer.ticket_service import _time
-            verify_grant(case["grant"], request, policy, now=_time(state["intentTime"]))
-            require(now >= _time(state["intentTime"]), "ticket_pending_time")
+            from probity_observer.ticket_state import parse_time
+            verify_grant(case["grant"], request, policy, now=parse_time(state["intentTime"]))
+            require(now >= parse_time(state["intentTime"]), "ticket_pending_time")
             effect = "incomplete-no-automatic-replay"
         else:
             require(packet["postStatus"] == 200, "ticket_completion_response")

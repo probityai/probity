@@ -10,15 +10,33 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings, strategies as st
-
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
-from probity_observer.ticket_service import DOMAIN
-
-from authority_profile import (AUTHORITY_DOMAIN, CONTRACT_ID, RESIDUAL_RISKS, MAX_AGE_SECONDS, PROFILE, RECORD_DOMAIN, VETO_DOMAIN,
-                               check_authority, check_delegation, check_veto, checked_record, content_bytes, reference_time,
-                               sign_record)
+from authority_profile import (
+    AUTHORITY_DOMAIN,
+    CONTRACT_ID,
+    MAX_AGE_SECONDS,
+    PROFILE,
+    RECORD_DOMAIN,
+    RESIDUAL_RISKS,
+    VETO_DOMAIN,
+    check_authority,
+    check_delegation,
+    check_veto,
+    checked_record,
+    content_bytes,
+    reference_time,
+    sign_record,
+)
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from probity_observer.crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+)
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_state import DOMAIN
 from producer import START, _case, produce
 from reader import read_case, read_run
 from source_discriminator import inspect_fingerprint

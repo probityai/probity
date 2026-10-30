@@ -16,13 +16,7 @@ import pytest
 from cryptography.exceptions import InvalidSignature
 from hypothesis import given
 from hypothesis import strategies as st
-
-from probity_observer.authorization import (
-    ActionRequest,
-    GrantPolicy,
-    issue_grant,
-    verify_grant,
-)
+from probity_observer.authorization import issue_grant
 from probity_observer.crypto import SigningKey, VerificationError
 from probity_observer.declaration import (
     MAX_PAYLOAD_BYTES,
@@ -34,6 +28,7 @@ from probity_observer.declaration import (
     sha256_bytes,
     tool_catalog_digest,
 )
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 
 EXAMPLE = Path(__file__).parents[1] / "examples/declaration_demo.py"
 SPEC = importlib.util.spec_from_file_location("declaration_demo", EXAMPLE)

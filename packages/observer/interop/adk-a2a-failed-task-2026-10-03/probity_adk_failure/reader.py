@@ -7,15 +7,33 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from probity_observer.authorization import (
-    ActionRequest, GrantPolicy, verify_authorized_packet, verify_grant,
+from probity_observer.grant_records import (
+    ActionRequest,
+    GrantPolicy,
+    verify_authorized_packet,
+    verify_grant,
 )
 from probity_observer.verify import verify_packet
 
 from .contract import (
-    A2A_VERSION, ARTIFACTS, BARE_FAILURE, CASES, CONTENT, FAILURE, PROFILE,
-    REVISIONS, SDK_VERSION, decode, encode, exact, identity, load, population,
-    require, sha, state_label,
+    A2A_VERSION,
+    ARTIFACTS,
+    BARE_FAILURE,
+    CASES,
+    CONTENT,
+    FAILURE,
+    PROFILE,
+    REVISIONS,
+    SDK_VERSION,
+    decode,
+    encode,
+    exact,
+    identity,
+    load,
+    population,
+    require,
+    sha,
+    state_label,
 )
 from .source import expected_sources
 

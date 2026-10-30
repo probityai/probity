@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from probity_observer.authorization import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, canonical
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 
 from .service import ApsRefundStore, parse_native_clock
 

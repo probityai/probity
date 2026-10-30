@@ -13,21 +13,20 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from protected_action_demo import run_demo as run_action
-
 from probity_observer.attribution import (
     ArtifactPin,
     check_artifact,
     sign_consumption,
     verify_consumption,
 )
-from probity_observer.authorization import (
+from probity_observer.crypto import SigningKey, VerificationError, canonical, digest
+from probity_observer.grant_records import (
     ActionRequest,
     GrantPolicy,
     verify_authorized_packet,
     verify_grant,
 )
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest
+from protected_action_demo import run_demo as run_action
 
 SOURCE = "https://github.com/probityai/agent-evidence-observer"
 REVISION = "0c3ec928bd8d3c0caf5b292b828143bfa7099d34"

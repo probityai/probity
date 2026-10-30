@@ -16,13 +16,25 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from cryptography.hazmat.primitives import serialization
 import probity_observer
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
+from cryptography.hazmat.primitives import serialization
+from joint_common import (
+    CASES,
+    HOST_POLICY,
+    NONCLAIMS,
+    PROFILE,
+    authority,
+    child_environment,
+    load,
+    phases,
+    require,
+    sha,
+    write,
+)
+from probity_observer.authorization import issue_grant
 from probity_observer.crypto import SigningKey, canonical
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.ticket_service import TicketStore
-
-from joint_common import CASES, HOST_POLICY, NONCLAIMS, PROFILE, authority, child_environment, load, phases, require, sha, write
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "target-recovery-2026-10-02"))
