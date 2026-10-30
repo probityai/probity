@@ -44,7 +44,7 @@ from probity_observer.history import read_history
 
 NOW = datetime(2026, 10, 1, 15, 0, tzinfo=timezone.utc)
 CONTENT = b"controlled reference effect\n"
-LOGGER_NAME = "probity_observer.authorization"
+LOGGER_NAME = "probity_observer.grant_records"
 IDENTITY_FIELDS = (
     "run_id",
     "attempt_id",
