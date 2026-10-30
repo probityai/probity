@@ -20,4 +20,4 @@ The replay rechecks every artifact binding against the digests the case pins and
 
 ## Pinning
 
-The script runs `probity-bundle` from the environment, or `uvx --from probity-verify==0.2.4 probity-bundle`. `PINNED` in the script and the test dependency in `pyproject.toml` move together.
+The script runs `probity-bundle` from the environment, or `uvx --from probity-verify==0.2.2 probity-bundle`. `PINNED` in the script and the test dependency in `pyproject.toml` move together.
