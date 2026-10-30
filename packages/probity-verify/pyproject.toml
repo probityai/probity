@@ -30,7 +30,7 @@ Issues = "https://github.com/probityai/probity/issues"
 "Agent guide" = "https://github.com/probityai/probity/blob/main/packages/probity-verify/llms.txt"
 
 [project.optional-dependencies]
-test = ["pytest>=8,<10", "hypothesis>=6.170.8,<7"]
+test = ["pytest>=8,<10", "hypothesis>=6.170.12,<7"]
 a2a = ["a2a-sdk[http-server]==1.2.3", "uvicorn==0.54.0"]
 
 [tool.pytest.ini_options]

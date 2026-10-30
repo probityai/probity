@@ -14,7 +14,7 @@ exclude = ["packages/ratchet", "packages/observer"]
 package = false
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "hypothesis>=6.170.8,<7", "ruff==0.17.2"]
+dev = ["pytest>=8,<10", "hypothesis>=6.170.12,<7", "ruff==0.17.3"]
 
 [tool.pytest.ini_options]
 # `uv run python -m pytest` from the root runs every member's tests. Test file
