@@ -1,0 +1,13 @@
+# Where each version this repository's pages name is decided; scripts/version-pins.py
+# holds every page to it. A release bumps pyproject.toml and runs
+# `python3 scripts/version-pins.py write` in the same pull request, before the tag.
+repository = "probityai/evaluator-replay-kit"
+
+# Released as a GitHub release of tag v<version>; nothing goes to a registry.
+[[own]]
+key = "github:evaluator-replay-kit"
+manifest = "pyproject.toml"
+pages = ["README.md"]
+
+[scan]
+skip = ["tests/fixtures/**"]
