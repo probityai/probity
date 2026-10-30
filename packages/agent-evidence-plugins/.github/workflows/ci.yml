@@ -25,3 +25,7 @@ jobs:
         run: python -m pytest -q
       - name: README shape
         run: python -B scripts/readme-lint.py README.md
+      - name: Every version a page names equals its manifest or the family lock
+        run: |
+          python -B scripts/version-pins.py check
+          python -B scripts/version-pins-test.py

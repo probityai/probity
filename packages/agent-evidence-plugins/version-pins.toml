@@ -1,0 +1,18 @@
+# Where each version this repository's pages name is decided; scripts/version-pins.py
+# holds every page to it. A release bumps pyproject.toml and runs
+# `python3 scripts/version-pins.py write` in the same pull request, before the tag.
+repository = "probityai/agent-evidence-plugins"
+
+# Released as a GitHub release of tag v<version>; nothing goes to a registry.
+[[own]]
+key = "github:agent-evidence-plugins"
+manifest = "pyproject.toml"
+pages = ["README.md"]
+
+# Packages other repositories release that this repository pins.
+[family]
+"pypi:probity-verify" = "0.2.4"
+
+[scan]
+include = ["**/*.md", "**/llms.txt", ".github/workflows/*.yml", "pyproject.toml", "plugins/**/*.py"]
+skip = ["tests/fixtures/**"]
