@@ -12,9 +12,9 @@ from pathlib import Path
 import pytest
 from hypothesis import given, settings, strategies as st
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
-from probity_observer.ticket_service import DOMAIN
+from probity_observer.ticket_state import DOMAIN
 
 from authority_profile import (AUTHORITY_DOMAIN, CONTRACT_ID, RESIDUAL_RISKS, MAX_AGE_SECONDS, PROFILE, RECORD_DOMAIN, VETO_DOMAIN,
                                check_authority, check_delegation, check_veto, checked_record, content_bytes, reference_time,

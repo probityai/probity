@@ -10,7 +10,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, VerificationError, canonical
 from probity_observer.ticket_service import TicketStore
 

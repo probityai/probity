@@ -14,10 +14,14 @@ from typing import Any
 
 from lg_common import CASES, PROFILE, VERSION, decode, encode, read, require, sha
 from probity_observer.aae_enforce import enforce_check, native_digest
-from probity_observer.aae_ticket import _decision_commitment, ticket_transaction, verify_aae_ticket_result
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.aae_ticket_records import (
+    decision_commitment,
+    ticket_transaction,
+    verify_aae_ticket_result,
+)
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import canonical, digest
-from probity_observer.ticket_service import DOMAIN, _checked, _state_schema, _time
+from probity_observer.ticket_state import DOMAIN, checked_record, state_schema, parse_time
 
 
 def same(actual: Any, expected: Any, reason: str) -> None:
@@ -40,7 +44,7 @@ def selection(case: dict[str, Any], run_id: str, now: datetime) -> None:
     same(decision["record"], actual, "selected-native-decision")
     require(actual["verdict"] == ("DENY" if name == "deny" else "PERMIT"), "selected-native-verdict")
     require(native_digest("mandate", decision["mandate"]) == decision["pinned_mandate_digest"], "selected-mandate-pin")
-    commitment = _decision_commitment(**decision, request=request, require_permit=False)
+    commitment = decision_commitment(**decision, request=request, require_permit=False)
     same(case["configuration"], {"request": case["request"], "policy": case["policy"], "serviceKey": case["serviceKey"], "decisionDigest": commitment}, "selected-configuration")
     verify_grant(case["grant"], request, policy, now=now)
 
@@ -48,8 +52,8 @@ def selection(case: dict[str, Any], run_id: str, now: datetime) -> None:
 def snapshot_state(case: dict[str, Any], snapshot: dict[str, Any]) -> dict[str, Any]:
     """Authenticate service state using the separately selected key and request."""
     require(set(snapshot) == {"tenantId", "ticketId", "contentHex", "revision", "effectId", "receipt"}, "readback-fields")
-    state = _checked(snapshot["receipt"], case["serviceKey"])
-    _state_schema(state, receipt=True)
+    state = checked_record(snapshot["receipt"], case["serviceKey"])
+    state_schema(state, receipt=True)
     require(state["configuration"] == digest(DOMAIN + "-configuration", case["configuration"]), "readback-configuration")
     same(state["request"], case["request"], "readback-request")
     require(state["authorityKey"] == case["policy"]["issuer_key"] and not state["revoked"], "readback-authority")
@@ -212,8 +216,8 @@ def effect_packet(case: dict[str, Any], packet: dict[str, Any], now: datetime) -
         require(packet["response"].get("status") == "refused" and state["phase"] == "pending" and state["eventCount"] == 2, "pending-state")
         same(state["revision"], 0, "pending-revision")
         require(packet["readback"]["contentHex"] is None, "pending-native-content")
-        authorized = verify_grant(case["grant"], request, policy, now=_time(state["intentTime"]))
-        require(now >= _time(state["intentTime"]) and state["grantDigest"] == authorized.grant_digest, "pending-grant")
+        authorized = verify_grant(case["grant"], request, policy, now=parse_time(state["intentTime"]))
+        require(now >= parse_time(state["intentTime"]) and state["grantDigest"] == authorized.grant_digest, "pending-grant")
         expected = digest(DOMAIN + "-effect", {"configuration": state["configuration"], "requestId": request.request_id, "grantDigest": authorized.grant_digest})
         require(state["effectId"] == expected, "pending-effect-identity")
         return

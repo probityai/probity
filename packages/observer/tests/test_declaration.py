@@ -17,12 +17,8 @@ from cryptography.exceptions import InvalidSignature
 from hypothesis import given
 from hypothesis import strategies as st
 
-from probity_observer.authorization import (
-    ActionRequest,
-    GrantPolicy,
-    issue_grant,
-    verify_grant,
-)
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import SigningKey, VerificationError
 from probity_observer.declaration import (
     MAX_PAYLOAD_BYTES,

@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_authorized_packet
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_authorized_packet
 from probity_observer.crypto import canonical, strict_loads
 from probity_observer.history import read_history, verify_checkpoint
 from probity_observer.ledger import read_ledger, verify_ledger_head

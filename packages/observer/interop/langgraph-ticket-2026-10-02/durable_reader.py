@@ -9,9 +9,9 @@ from typing import Any
 
 from lg_common import decode, encode, read, require, sha
 from lg_reader import aware_time, checkpoint_identity, effect_packet, same, selection, snapshot_state, task_identity
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import canonical, digest
-from probity_observer.ticket_service import DOMAIN, _time
+from probity_observer.ticket_state import DOMAIN, parse_time
 
 PROFILE = "probity-langgraph-durable-restart-v0"
 CASES = ("restart-before", "restart-after", "crash-after-effect", "restart-pending", "missing-checkpoint", "wrong-thread")
@@ -27,8 +27,8 @@ def pending(case: dict, item: dict, now: Any) -> None:
     same(state["revision"], 0, "pending-revision")
     require(item["readback"]["contentHex"] is None, "pending-native-content")
     request, policy = ActionRequest(**case["request"]), GrantPolicy(**case["policy"])
-    authorized = verify_grant(case["grant"], request, policy, now=_time(state["intentTime"]))
-    require(now >= _time(state["intentTime"]) and state["grantDigest"] == authorized.grant_digest, "pending-grant")
+    authorized = verify_grant(case["grant"], request, policy, now=parse_time(state["intentTime"]))
+    require(now >= parse_time(state["intentTime"]) and state["grantDigest"] == authorized.grant_digest, "pending-grant")
     expected = digest(DOMAIN + "-effect", {"configuration": state["configuration"], "requestId": request.request_id, "grantDigest": authorized.grant_digest})
     require(state["effectId"] == expected, "pending-effect-identity")
 

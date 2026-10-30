@@ -12,7 +12,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from .broker import Broker, recover_interrupted, tree_root
+from .broker import Broker, recover_interrupted
+from .records import tree_root
 from .crypto import SigningKey, VerificationError, canonical, digest, strict_loads, verify_signature
 from .history import Witness, read_history, unresolved_intents
 from .verify import verify_incomplete, verify_packet

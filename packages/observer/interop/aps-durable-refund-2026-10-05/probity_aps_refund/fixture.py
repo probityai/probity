@@ -12,7 +12,8 @@ from typing import Any
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, validate_utc_time
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, validate_utc_time
 from probity_observer.crypto import SigningKey, canonical
 
 from .service import parse_native_clock, refund_operation_id, sdk_digest, verify_aps

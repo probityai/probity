@@ -13,7 +13,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, VerificationError, canonical, verify_signature
 from probity_observer.ticket_service import TicketStore
 

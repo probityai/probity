@@ -13,14 +13,8 @@ from pathlib import Path
 from typing import Any
 
 from probity_observer import Broker, LedgerWitness, SigningKey
-from probity_observer.authorization import (
-    ActionRequest,
-    AuthorizedAction,
-    AuthorizedBroker,
-    GrantPolicy,
-    issue_grant,
-    verify_grant,
-)
+from probity_observer.authorization import AuthorizedBroker, issue_grant
+from probity_observer.grant_records import ActionRequest, AuthorizedAction, GrantPolicy, verify_grant
 from probity_observer.declaration import (
     EffectObservation,
     ManifestProjection,

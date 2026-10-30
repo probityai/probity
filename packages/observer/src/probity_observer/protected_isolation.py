@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from .admission import AdmissionPolicy, AdmissionStore
-from .authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
+from .authorization import issue_grant
+from .grant_records import ActionRequest, GrantPolicy, utc_clock
 from .crypto import (
     SigningKey,
     VerificationError,
@@ -23,11 +24,8 @@ from .crypto import (
 from .history import read_history, verify_checkpoint
 from .isolation import _run_child, launch_command, observer_build_digest, sha256
 from .ledger import LedgerWitness
-from .protected_dispatch import (
-    ProtectedDispatcher,
-    ProtectedWriteServer,
-    verify_dispatch_bundle,
-)
+from .protected_dispatch import ProtectedDispatcher, ProtectedWriteServer
+from .dispatch_records import verify_dispatch_bundle
 
 PROBE = Path(__file__).with_name("protected_probe.py")
 LAUNCH_DOMAIN = "probity-protected-isolation-launch-v0"

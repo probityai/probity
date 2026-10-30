@@ -22,7 +22,7 @@ from durable_worker import durable_write  # noqa: E402
 from lg_common import project  # noqa: E402
 from lg_run import GraphState  # noqa: E402
 from target_run import exchange  # noqa: E402
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant  # noqa: E402
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, canonical  # noqa: E402
 from joint_common import expected_authority, load, require, same, sha  # noqa: E402
 

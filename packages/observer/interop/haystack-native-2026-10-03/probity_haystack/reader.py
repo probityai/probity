@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_authorized_packet, verify_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_authorized_packet, verify_grant
 from probity_observer.verify import verify_packet
 
 from .contract import CASES, CONTENT, PROFILE, SDK_SOURCE, SDK_VERSION, encode, load, sha

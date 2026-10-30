@@ -8,10 +8,17 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 import pytest
 from probity_observer.aae_enforce import enforce_check, native_digest, canonical_bytes
-from probity_observer.aae_ticket import AaeTicketStore, ticket_transaction, ticket_decision_digest, verify_aae_ticket_result
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
+from probity_observer.aae_ticket import AaeTicketStore
+from probity_observer.aae_ticket_records import (
+    ticket_transaction,
+    ticket_decision_digest,
+    verify_aae_ticket_result,
+)
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, VerificationError, digest
-from probity_observer.ticket_service import TicketStore, running_server, http_json, verify_ticket_result
+from probity_observer.ticket_service import TicketStore, running_server, http_json
+from probity_observer.ticket_state import verify_ticket_result
 
 
 def make_case(tmp_path: Path):
@@ -159,7 +166,7 @@ def test_denied_kernel_initializes_but_never_dispatches(case, tmp_path):
 
 def test_rehashed_and_resigned_wrapper_cannot_override_native_replay(case):
     """A local wrapper/signature cannot make a fabricated native core true."""
-    from probity_observer.ticket_service import DOMAIN
+    from probity_observer.ticket_state import DOMAIN
     receipt, native = complete(case)
     changed = copy.deepcopy(case["decision"])
     changed["record"]["core"]["transaction_digest"] = "sha256:" + "0" * 64

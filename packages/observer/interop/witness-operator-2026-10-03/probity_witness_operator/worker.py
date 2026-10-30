@@ -12,7 +12,8 @@ from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from probity_observer import Broker, SigningKey, VerificationError
-from probity_observer.authorization import ActionRequest, AuthorizedBroker, GrantPolicy, issue_grant
+from probity_observer.authorization import AuthorizedBroker, issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import canonical, strict_loads
 
 from .client import WitnessClient

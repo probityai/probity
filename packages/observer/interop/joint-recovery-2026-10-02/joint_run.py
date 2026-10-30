@@ -18,7 +18,8 @@ from typing import Any
 
 from cryptography.hazmat.primitives import serialization
 import probity_observer
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, canonical
 from probity_observer.ticket_service import TicketStore
 

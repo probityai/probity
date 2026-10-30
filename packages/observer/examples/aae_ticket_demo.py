@@ -11,10 +11,13 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from probity_observer.aae_enforce import enforce_check, native_digest
-from probity_observer.aae_ticket import AaeTicketStore, ticket_transaction, verify_aae_ticket_result
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
+from probity_observer.aae_ticket import AaeTicketStore
+from probity_observer.aae_ticket_records import ticket_transaction, verify_aae_ticket_result
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, VerificationError, canonical
-from probity_observer.ticket_service import TicketHTTPServer, http_json, running_server, verify_ticket_result
+from probity_observer.ticket_service import TicketHTTPServer, http_json, running_server
+from probity_observer.ticket_state import verify_ticket_result
 
 
 def setup(directory: Path, name: str, *, denied: bool = False) -> dict[str, Any]:

@@ -29,14 +29,8 @@ from probity_observer import (
     SigningKey,
     VerificationError,
 )
-from probity_observer.authorization import (
-    ActionRequest,
-    AuthorizedBroker,
-    GrantPolicy,
-    issue_grant,
-    verify_authorized_packet,
-    verify_grant,
-)
+from probity_observer.authorization import AuthorizedBroker, issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_authorized_packet, verify_grant
 from probity_observer.crypto import canonical, digest
 
 

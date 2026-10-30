@@ -9,9 +9,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, canonical, strict_loads
-from probity_observer.ticket_service import TicketStore, _checked, _state_schema, verify_ticket_result
+from probity_observer.ticket_service import TicketStore
+from probity_observer.ticket_state import checked_record, state_schema, verify_ticket_result
 
 from target_common import CASES, NONCLAIMS, PROFILE, load, read, require, sha
 
@@ -24,8 +25,8 @@ def exact(value: Any, expected: Any) -> bool:
 def authenticated_readback(value: dict, case: dict) -> dict:
     """Authenticate bounded native response identity, phase and selected service key."""
     require(set(value) == {'tenantId', 'ticketId', 'contentHex', 'revision', 'effectId', 'receipt'}, 'readback-fields')
-    payload = _checked(value['receipt'], case['serviceKey'])
-    _state_schema(payload, receipt=True)
+    payload = checked_record(value['receipt'], case['serviceKey'])
+    state_schema(payload, receipt=True)
     require(type(value['revision']) is int and value['revision'] == payload['revision'], 'readback-revision')
     require(value['tenantId'] == 'tenant' and value['ticketId'] == case['id'] and value['effectId'] == payload['effectId'], 'readback-identity')
     require(exact(payload['request'], case['request']) and payload['authorityKey'] == case['policy']['issuer_key'], 'readback-authority')

@@ -17,8 +17,8 @@ from typing import Any, Literal, NoReturn
 
 from cryptography.exceptions import InvalidSignature
 
-from .authorization import AuthorizedAction
 from .crypto import VerificationError
+from .grant_records import AuthorizedAction
 
 LOGGER = logging.getLogger(__name__)
 PROFILE = "probity-declaration-action-reference-v0"

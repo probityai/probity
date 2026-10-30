@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from probity_observer import protected_isolation as module
-from probity_observer.authorization import ActionRequest, GrantPolicy
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import (
     VerificationError,
     canonical,

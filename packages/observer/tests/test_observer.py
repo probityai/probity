@@ -15,7 +15,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from hypothesis import HealthCheck, given, settings, strategies as st
 
 from probity_observer import Broker, CoverageError, SigningKey, VerificationError, Witness, verify_packet
-from probity_observer.broker import recover_interrupted, tree_root
+from probity_observer.broker import recover_interrupted
+from probity_observer.records import tree_root
 from probity_observer.crypto import canonical, strict_loads
 from probity_observer.history import read_history
 from probity_observer.verify import _verify_commitment, _verify_request_sequence, verify_incomplete

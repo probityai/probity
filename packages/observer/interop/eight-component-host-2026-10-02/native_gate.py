@@ -162,7 +162,8 @@ def issue(config: dict[str, Any]) -> dict[str, Any]:
     identity, duration and public key policy.
     """
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
+    from probity_observer.authorization import issue_grant
+    from probity_observer.grant_records import ActionRequest, GrantPolicy
     from probity_observer.crypto import SigningKey
 
     policy = config["policy"]
@@ -180,8 +181,8 @@ def issue(config: dict[str, Any]) -> dict[str, Any]:
 
 def verify_effect(config: dict[str, Any]) -> dict[str, Any]:
     """Authenticate a retained native receipt against separate HTTP readback."""
-    from probity_observer.authorization import ActionRequest, GrantPolicy
-    from probity_observer.ticket_service import verify_ticket_result
+    from probity_observer.grant_records import ActionRequest, GrantPolicy
+    from probity_observer.ticket_state import verify_ticket_result
 
     selected = read(Path(config["run"]) / "host-grant.json")
     now = datetime.fromisoformat(config["currentTime"].replace("Z", "+00:00"))

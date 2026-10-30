@@ -16,7 +16,8 @@ from hypothesis import strategies as st
 
 from probity_observer import broker as native
 from probity_observer import protected_dispatch as module
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import (
     SigningKey,
     VerificationError,
@@ -24,11 +25,8 @@ from probity_observer.crypto import (
     strict_loads,
 )
 from probity_observer.history import read_history
-from probity_observer.protected_dispatch import (
-    ProtectedDispatcher,
-    ProtectedWriteServer,
-    verify_dispatch_bundle,
-)
+from probity_observer.protected_dispatch import ProtectedDispatcher, ProtectedWriteServer
+from probity_observer.dispatch_records import verify_dispatch_bundle
 
 
 @pytest.fixture

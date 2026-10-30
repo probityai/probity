@@ -11,10 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
-from probity_observer.authorization import ActionRequest, GrantPolicy
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, canonical, digest, strict_loads
 from probity_observer.history import GENESIS
-from probity_observer.protected_dispatch import CONFIG_DOMAIN
+from probity_observer.dispatch_records import CONFIG_DOMAIN
 from probity_witness_operator.protocol import HEX_DIGEST, exact_fields, require, sha
 from probity_witness_operator.store import absolute_path, flush_directory, load_key, public_key, secure_file, write_private
 

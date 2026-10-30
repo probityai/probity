@@ -29,14 +29,13 @@ from probity_observer import (
     SigningKey,
     VerificationError,
 )
-from probity_observer.authorization import (
+from probity_observer.authorization import AuthorizedBroker, issue_grant
+from probity_observer.grant_records import (
     BINDING_DOMAIN,
     GRANT_DOMAIN,
     PROFILE,
     ActionRequest,
-    AuthorizedBroker,
     GrantPolicy,
-    issue_grant,
     verify_authorized_packet,
     verify_grant,
 )
@@ -1538,7 +1537,7 @@ class TestVerifyAuthorizedPacket:
 ])
 def test_explicit_utc_observation_precision_is_never_inferred_or_rounded(precision: Any, value: Any, accepted: bool) -> None:
     """The public boundary preserves selected times exactly and rejects finer or unsupported input."""
-    from probity_observer.authorization import validate_utc_time
+    from probity_observer.grant_records import validate_utc_time
     if accepted:
         assert validate_utc_time(value, "selected time", precision=precision) is value
     else:

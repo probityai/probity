@@ -6,9 +6,14 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .broker import CoverageError, _path_under_scope, tree_root
 from .crypto import VerificationError, digest, verify_signature
-from .history import read_history, unresolved_intents, verify_checkpoint, verify_incomplete_terminal
+from .history import (
+    read_history,
+    unresolved_intents,
+    verify_checkpoint,
+    verify_incomplete_terminal,
+)
+from .records import CoverageError, path_under_scope, tree_root
 
 UTC_SECOND = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
 
@@ -116,7 +121,7 @@ def _verify_roots(claim: dict[str, Any], entries: list[dict[str, Any]]) -> None:
         if write["beforeRoot"] != current:
             raise VerificationError("write roots do not form a continuous chain")
         try:
-            _path_under_scope(claim["coverage"]["scope"], write["path"])
+            path_under_scope(claim["coverage"]["scope"], write["path"])
         except CoverageError as exc:
             raise VerificationError("observed write is outside the declared scope") from exc
         current = write["afterRoot"]

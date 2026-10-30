@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
-from probity_observer.ticket_service import DOMAIN
+from probity_observer.ticket_state import DOMAIN
 from probity_aps_refund.native import run
 from probity_aps_refund.reader import read
 

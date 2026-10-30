@@ -4,9 +4,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import canonical, strict_loads
-from probity_observer.ticket_service import verify_ticket_result
+from probity_observer.ticket_state import verify_ticket_result
 
 from probity_pydantic_recovery.common import deferred, require, sha
 

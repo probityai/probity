@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from probity_observer.authorization import ActionRequest, GrantPolicy
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import VerificationError, canonical
 from probity_observer.ticket_service import http_json, running_server
 from probity_aps_refund.fixture import NOW, provision, select_action

@@ -19,7 +19,8 @@ from probity_observer.aae_dispatch import (
     verify_aae_dispatch_bundle,
 )
 from probity_observer.aae_enforce import enforce_check, native_digest
-from probity_observer.authorization import GrantPolicy, issue_grant, utc_clock
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, VerificationError, canonical
 
 

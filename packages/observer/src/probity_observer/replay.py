@@ -12,20 +12,20 @@ import logging
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, NoReturn
 
 from .attribution import ArtifactPin, verify_consumption
-from .authorization import (
+from .crypto import VerificationError, canonical, digest, strict_loads
+from .grant_records import (
     ActionRequest,
     GrantPolicy,
     verify_authorized_packet,
     verify_grant,
 )
-from .crypto import VerificationError, canonical, digest, strict_loads
 from .ledger import verify_ledger_head, verify_ledger_receipts
 
 LOGGER = logging.getLogger(__name__)
@@ -473,7 +473,7 @@ def _time(raw: bytes) -> datetime:
     _object(value, {"now"}, "replay time context has unexpected fields")
     try:
         reference = datetime.strptime(value["now"], "%Y-%m-%dT%H:%M:%SZ").replace(
-            tzinfo=timezone.utc
+            tzinfo=UTC
         )
     except (TypeError, ValueError):
         _refuse("replay reference time must use canonical UTC seconds")

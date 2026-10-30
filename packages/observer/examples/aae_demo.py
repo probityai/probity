@@ -20,7 +20,7 @@ from probity_observer.aae_binding import (
     write_local_action,
 )
 from probity_observer.aae_enforce import canonical_bytes, enforce_check, native_digest
-from probity_observer.authorization import ActionRequest
+from probity_observer.grant_records import ActionRequest
 from probity_observer.broker import Broker
 from probity_observer.crypto import SigningKey, VerificationError
 from probity_observer.history import Witness

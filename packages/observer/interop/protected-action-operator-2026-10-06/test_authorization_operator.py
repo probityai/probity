@@ -15,12 +15,14 @@ from typing import Any
 
 import pytest
 from cryptography.hazmat.primitives import serialization
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
-from probity_observer.broker import tree_root
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
+from probity_observer.records import tree_root
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
 from probity_observer.history import GENESIS, append_history
 from probity_observer.ledger import RECEIPT_DOMAIN
-from probity_observer.protected_dispatch import CONFIG_DOMAIN, PRIOR_DOMAIN, ProtectedDispatcher, verify_dispatch_bundle
+from probity_observer.protected_dispatch import ProtectedDispatcher
+from probity_observer.dispatch_records import CONFIG_DOMAIN, PRIOR_DOMAIN, verify_dispatch_bundle
 from probity_observer.witness_port import DispatchWitnessPorts
 from probity_witness_operator.client import WitnessClient
 from probity_witness_operator.protocol import FORMAT as NATIVE_FORMAT, sha

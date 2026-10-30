@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import Any
 
 from .aae_enforce import DIGEST, canonical_bytes, enforce_check, native_digest
-from .authorization import ActionRequest
-from .broker import Broker, WriteResult
+from .grant_records import ActionRequest
+from .broker import Broker
+from .records import WriteResult
 from .crypto import SigningKey, VerificationError, digest, verify_signature
 from .verify import verify_packet
 

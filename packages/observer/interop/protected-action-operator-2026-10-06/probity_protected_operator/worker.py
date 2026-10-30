@@ -16,11 +16,13 @@ from typing import Any
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from probity_observer import broker as native_broker
 from probity_observer.admission import AdmissionPolicy, AdmissionStore
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
 from probity_observer.history import read_history, verify_checkpoint
 from probity_observer.ledger import RECEIPT_DOMAIN, read_ledger, verify_ledger_head
-from probity_observer.protected_dispatch import CONFIG_DOMAIN, ProtectedDispatcher, ProtectedWriteServer, _locked, _save, verify_dispatch_bundle
+from probity_observer.protected_dispatch import ProtectedDispatcher, ProtectedWriteServer, _locked, _save
+from probity_observer.dispatch_records import CONFIG_DOMAIN, verify_dispatch_bundle
 from probity_observer.witness_port import DispatchWitnessPorts
 from probity_witness_operator.client import WitnessClient
 from probity_witness_operator.protocol import exchange, require, sha

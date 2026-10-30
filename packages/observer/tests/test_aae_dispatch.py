@@ -21,13 +21,12 @@ from probity_observer.aae_dispatch import (
     verify_aae_dispatch_bundle,
 )
 from probity_observer.aae_enforce import enforce_check, native_digest
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, VerificationError, strict_loads
 from probity_observer.history import read_history
-from probity_observer.protected_dispatch import (
-    ProtectedDispatcher,
-    verify_dispatch_bundle,
-)
+from probity_observer.protected_dispatch import ProtectedDispatcher
+from probity_observer.dispatch_records import verify_dispatch_bundle
 
 
 def make_case(

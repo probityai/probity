@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any
 
 from cryptography.hazmat.primitives import serialization
-from probity_observer.authorization import ActionRequest, GrantPolicy
-from probity_observer.broker import tree_root
+from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.records import tree_root
 from probity_observer.crypto import SigningKey, canonical, strict_loads
 from probity_witness_operator.protocol import FORMAT as NATIVE_FORMAT, request_bytes as native_request, require, sha
 

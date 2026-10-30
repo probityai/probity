@@ -21,12 +21,7 @@ from probity_observer.attribution import (
     sign_consumption,
     verify_consumption,
 )
-from probity_observer.authorization import (
-    ActionRequest,
-    GrantPolicy,
-    verify_authorized_packet,
-    verify_grant,
-)
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_authorized_packet, verify_grant
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest
 
 SOURCE = "https://github.com/probityai/agent-evidence-observer"

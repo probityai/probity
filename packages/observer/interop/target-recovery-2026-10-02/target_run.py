@@ -21,9 +21,11 @@ from urllib.request import Request, urlopen
 
 from cryptography.hazmat.primitives import serialization
 import probity_observer
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant, utc_clock
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy, utc_clock
 from probity_observer.crypto import SigningKey, canonical
-from probity_observer.ticket_service import MAX_BODY, TicketStore
+from probity_observer.ticket_service import TicketStore
+from probity_observer.ticket_state import MAX_BODY
 
 from target_common import CASES, NONCLAIMS, PROFILE, load, require, sha, write
 

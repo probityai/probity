@@ -18,9 +18,11 @@ from typing import Any
 
 import pytest
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, issue_grant
+from probity_observer.authorization import issue_grant
+from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
-from probity_observer.ticket_service import DOMAIN, MAX_BODY, TicketHTTPServer, TicketStore, http_json, running_server, verify_ticket_capture, verify_ticket_result
+from probity_observer.ticket_service import TicketHTTPServer, TicketStore, http_json, running_server
+from probity_observer.ticket_state import DOMAIN, MAX_BODY, verify_ticket_capture, verify_ticket_result
 
 
 @pytest.fixture
