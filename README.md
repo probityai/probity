@@ -41,7 +41,7 @@ A selected passage is in the source capture but missing from the stored report. 
 | --- | --- | --- |
 | [packages/probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` for a claim against pinned bytes | 0.2.2 on PyPI |
 | [packages/observer](packages/observer/README.md) | records what an agent run did into pinned evidence the verifier can check | 0.1.1 on PyPI (`agent-evidence-observer`) |
-| [packages/ratchet](packages/ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | 0.3.0 on PyPI (`probity-ratchet`) |
+| [packages/ratchet](packages/ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | 0.3.2 on PyPI (`probity-ratchet`) |
 | [packages/probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today, each member adds its own subcommand | 0.1.0 on PyPI (`probityai`) |
 
 ## Work on the repository
