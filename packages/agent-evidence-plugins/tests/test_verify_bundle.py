@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -27,6 +28,14 @@ def replay_tool(monkeypatch):
     monkeypatch.delenv("PROBITY_BUNDLE_GLOBS", raising=False)
 
 
+def gate_pin() -> str:
+    """The requirement string the gate script pins, for example probity-verify==0.2.4."""
+    for line in SCRIPT.read_text().splitlines():
+        if line.startswith("PINNED = "):
+            return line.split('"')[1]
+    raise AssertionError(f"{SCRIPT} has no PINNED line")
+
+
 def run(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args], input=stdin, capture_output=True, text=True,
@@ -43,6 +52,24 @@ def tamper(source: Path, target: Path, member: str = "artifacts/tree.json") -> P
                 data = data + b" "
             zout.writestr(info, data)
     return target
+
+
+def test_environment_runs_the_pinned_verifier():
+    name, version = gate_pin().split("==")
+    assert metadata.version(name) == version, f"tests run {name} {metadata.version(name)}, the gate pins {version}"
+
+
+@pytest.mark.parametrize("fixture", [GOOD, CONTRADICTED], ids=lambda path: path.name)
+def test_fixtures_replay_under_the_pinned_verifier(fixture):
+    """A bundle replays only under the release that built it, so the fixtures move with the pin."""
+    done = subprocess.run(
+        [sys.executable, "-m", "probity_verify.bundle", "replay", "--json", str(fixture)],
+        capture_output=True, text=True, check=False,
+    )
+    assert done.returncode == 0, (
+        f"{fixture.name} does not replay under {gate_pin()}: {done.stderr.strip()}; "
+        "rebuild it as tests/fixtures/README.md says"
+    )
 
 
 def test_supported_bundle_passes():
