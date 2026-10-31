@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 (2026-10-30)
+
+- The loop's proposals and parent choice are seams filled by installed plug-ins (`ratchet.proposers` and
+  `ratchet.parent_choosers` entry-point groups). This package registers none, so a run with only public packages
+  installed uses `FixedProposer` and the default parent choice. The model proposer, the version archive, failure
+  recall and the instruction search are no longer in this package; `ratchet.improve.propose`, `.archive`,
+  `.recall` and `.instruction_search` are gone. Every receipt still verifies with this package alone.
+- `agent-evidence-vectors~=0.30.0` (was `~=0.26.0`), so the latest releases of the family install together.
+  The lock moves to agent-evidence-vectors 0.30.0.
+
 ## 0.2.1 (2026-10-26)
 
 The in-family dependencies are compatible-release ranges instead of exact pins, so the family installs together at
