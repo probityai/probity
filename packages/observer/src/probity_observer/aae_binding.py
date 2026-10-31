@@ -1,4 +1,4 @@
-"""Link an unsigned AAE kernel decision to one local observer write.
+"""Check the link between an unsigned AAE kernel decision and one local write.
 
 The kernel's PERMIT does not authenticate its issuer. Consumer-selected mandate
 and observer pins are separate inputs; neither comes from the received record.
@@ -7,16 +7,13 @@ The signed link is made after the effect and retains PEER scope.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 from .aae_enforce import DIGEST, canonical_bytes, enforce_check, native_digest
-from .broker import Broker
-from .crypto import SigningKey, VerificationError, digest, verify_signature
+from .crypto import VerificationError, digest, verify_signature
 from .grant_records import ActionRequest
-from .records import WriteResult
 from .verify import verify_packet
 
 DOMAIN = "probity-aae-local-effect-link-v0"
@@ -139,66 +136,12 @@ def _local_grant_covers(
     )
 
 
-def write_local_action(
-    mandate: Any,
-    transaction: Any,
-    record: dict[str, Any],
-    request: ActionRequest,
-    content: bytes,
-    broker: Broker,
-    *,
-    pinned_mandate_digest: str,
-) -> WriteResult:
-    """Check the consumer-pinned kernel decision before a native broker write.
-
-    Parameters
-    ----------
-    mandate, transaction, record : Any
-        Retained unsigned AAE kernel inputs and the claimed native core record.
-    request : ActionRequest
-        Consumer-selected exact invocation identity and content digest.
-    content : bytes
-        File replacement bytes; checked before the broker is called.
-    broker : Broker
-        Begun local observer broker. A caller retaining the underlying broker
-        or writable workspace can bypass this one dispatch path.
-    pinned_mandate_digest : str
-        Mandate digest selected by the consumer outside the candidate record.
-
-    Returns
-    -------
-    WriteResult
-        Native broker result. The issuer of an unsigned mandate remains
-        unauthenticated; this is not a full AAE JWS authorization decision.
-
-    Raises
-    ------
-    VerificationError
-        If the core, exact invocation, content, consumer pin or broker authority
-        does not match. No write is attempted for these mismatches.
-    """
-    verify_local_decision(mandate, transaction, record, request, pinned_mandate_digest)
-    if hashlib.sha256(content).hexdigest() != request.content_sha256:
-        raise VerificationError(
-            "AAE write content differs from the expected local action"
-        )
-    authority = {
-        "intervalId": request.run_id,
-        "scope": "/work",
-        "operation": "write-file",
-    }
-    if broker.authority != authority:
-        raise VerificationError(
-            "AAE write broker authority differs from the local action"
-        )
-    return broker.write(request.request_id, request.target_path, content)
-
-
-def _payload(
+def effect_link_payload(
     record: dict[str, Any],
     request: ActionRequest,
     packet: dict[str, Any],
 ) -> dict[str, Any]:
+    """Return the exact payload a post-effect link signs for this request."""
     if not isinstance(packet, dict) or not isinstance(packet.get("claim"), dict):
         raise VerificationError("AAE observer packet has no claim object")
     return {
@@ -208,21 +151,6 @@ def _payload(
         "claimDigest": digest("probity-claim-v0", packet["claim"]),
         "request": asdict(request),
         "witnessScope": "PEER",
-    }
-
-
-def sign_effect_link(
-    record: dict[str, Any],
-    request: ActionRequest,
-    packet: dict[str, Any],
-    observer: SigningKey,
-) -> dict[str, Any]:
-    """Sign a post-effect link; consumers still replay and verify every input."""
-    payload = _payload(record, request, packet)
-    return {
-        "payload": payload,
-        "keyid": observer.public_hex,
-        "signature": observer.sign(DOMAIN, payload),
     }
 
 
@@ -302,7 +230,7 @@ def verify_effect_link(
     }
     if link is None:
         return {**result, "linkage": "missing"}
-    _verified_link(link, _payload(actual, request, packet), pinned_observer_key)
+    _verified_link(link, effect_link_payload(actual, request, packet), pinned_observer_key)
     claim = verify_packet(
         packet, history, pinned_observer_key, pinned_witness_key, workspace
     )

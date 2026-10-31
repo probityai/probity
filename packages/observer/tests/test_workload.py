@@ -12,8 +12,9 @@ from probity_observer import VerificationError
 from probity_observer.broker import Broker
 from probity_observer.crypto import canonical, strict_loads
 from probity_observer.history import read_history
-from probity_observer.isolation import _WriteHandler
-from probity_observer.workload import _run_workload_child, run_workload, verify_workload_bundle
+from probity_observer.boundary_probe import _WriteHandler
+from probity_observer.workload import verify_workload_bundle
+from probity_observer.workload_runner import _run_workload_child, run_workload
 
 
 class FakeServer:
@@ -34,7 +35,7 @@ def keys(output: Path) -> tuple[str, str]:
 
 
 def test_host_counts_effects_without_trusting_stdout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from probity_observer import workload
+    from probity_observer import workload_runner as workload
 
     monkeypatch.setattr(workload, "_WriteServer", FakeServer)
     script = tmp_path / "agent.py"
@@ -62,7 +63,7 @@ def test_host_counts_effects_without_trusting_stdout(tmp_path: Path, monkeypatch
 def test_no_effect_or_failed_child_is_incomplete(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, effect: bool, exit_code: int,
 ) -> None:
-    from probity_observer import workload
+    from probity_observer import workload_runner as workload
 
     monkeypatch.setattr(workload, "_WriteServer", FakeServer)
     script = tmp_path / "agent.py"
@@ -82,7 +83,7 @@ def test_no_effect_or_failed_child_is_incomplete(
 
 
 def test_gap_after_an_effect_keeps_the_interval_incomplete(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from probity_observer import workload
+    from probity_observer import workload_runner as workload
 
     monkeypatch.setattr(workload, "_WriteServer", FakeServer)
     script = tmp_path / "agent.py"
@@ -103,7 +104,7 @@ def test_gap_after_an_effect_keeps_the_interval_incomplete(tmp_path: Path, monke
 
 
 def test_direct_workspace_change_keeps_the_interval_incomplete(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from probity_observer import workload
+    from probity_observer import workload_runner as workload
 
     monkeypatch.setattr(workload, "_WriteServer", FakeServer)
     script = tmp_path / "agent.py"
@@ -123,7 +124,7 @@ def test_direct_workspace_change_keeps_the_interval_incomplete(tmp_path: Path, m
 
 
 def test_report_and_script_tampering_are_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from probity_observer import workload
+    from probity_observer import workload_runner as workload
 
     monkeypatch.setattr(workload, "_WriteServer", FakeServer)
     script = tmp_path / "agent.py"
@@ -169,7 +170,7 @@ def test_malformed_socket_request_marks_a_gap(tmp_path: Path) -> None:
 
 
 def test_child_output_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
-    from probity_observer import workload
+    from probity_observer import workload_runner as workload
 
     monkeypatch.setattr(workload, "MAX_OUTPUT", 1024)
 
@@ -188,7 +189,7 @@ def test_child_output_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_child_cannot_outlive_closed_output_pipes(monkeypatch: pytest.MonkeyPatch) -> None:
-    from probity_observer import workload
+    from probity_observer import workload_runner as workload
 
     monkeypatch.setattr(workload, "DEADLINE", 0.2)
 

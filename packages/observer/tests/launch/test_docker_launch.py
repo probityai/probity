@@ -281,7 +281,7 @@ def test_reset_restores_the_sealed_start_after_a_run(image, workspace, tmp_path)
 
 
 def test_cli_launches_and_prints_the_summary(image, workspace, tmp_path, capsys):
-    from probity_observer.cli import main
+    from probity_observer.producer_cli import main
     code = main(["launch-agent", str(tmp_path / "cli-run"), "--backend", "docker",
                  "--image", image, "--workspace", str(workspace), "--claim-id", "cli",
                  "--invocation-id", "cli-1", "--env", "MARK=1", "--",

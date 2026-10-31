@@ -8,12 +8,8 @@ import re
 from dataclasses import replace
 
 import pytest
-from probity_observer.aae_binding import (
-    local_transaction,
-    sign_effect_link,
-    verify_effect_link,
-    write_local_action,
-)
+from probity_observer.aae_binding import local_transaction, verify_effect_link
+from probity_observer.aae_effect_writer import sign_effect_link, write_local_action
 from probity_observer.aae_enforce import enforce_check, native_digest
 from probity_observer.broker import Broker
 from probity_observer.crypto import SigningKey, VerificationError
