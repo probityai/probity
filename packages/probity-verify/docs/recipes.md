@@ -43,7 +43,7 @@ The JSON `distribution.status` describes package-name availability: `probity-ver
 It does not assert that the source candidate bound by `package_metadata` has been uploaded.
 The separate `fixture_scope` describes where the indexed case and policy files live.
 
-The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.2.3 with the sample inputs its wheel carries.
+The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.2.4 with the sample inputs its wheel carries.
 For this index, install its own checkout, then use the index's `argv` from that checkout root.
 Replace its first argument with your installed executable's path when the environment is separate.
 The index binds its inputs and implementation to exact bytes.

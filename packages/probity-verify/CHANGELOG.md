@@ -1,6 +1,27 @@
 # Changelog
 
-## 0.2.4 (unreleased)
+## 0.3.0 (unreleased)
+
+Bundles now name the release that wrote them, and bundles written by earlier releases replay again. This is a
+minor release because the bundle format changed: a bundle written by 0.3.0 carries a `bundle.json` member that
+0.2.x refuses as an unlisted member, so replay a 0.3.0 bundle with 0.3.0 or later.
+
+- `probity-bundle create` writes `bundle.json`, `{"schema_version": "probity-bundle/v1", "verifier": {"id":
+  <reference verifier id>, "version": <release>}}`, in canonical JSON. Replay refuses a record that is not
+  canonical, names another verifier, carries another key or does not give a release number.
+- Replay still compares the bundled decision byte for byte with its own. When they differ, the refusal now says
+  which case it is. Under the release that wrote the bundle it is `bundled decision differs from replay`: the
+  bundle was altered. Under another release it names both releases, because an honest decision may differ
+  between releases, and says to rebuild the bundle or replay it with the release that wrote it.
+- A bundle written before 0.3.0 has no `bundle.json`. It replays when its decision equals this release's
+  decision byte for byte in the shape a release of that time wrote: the current shape (0.2.3 and 0.2.4) or the
+  shape without `reference` (0.2.2 and earlier). Every other field, verdict and reason included, must still
+  match, so an altered decision is refused. 0.2.3 and 0.2.4 refused every 0.2.2 bundle with `bundled decision
+  differs from replay`, the message an altered bundle gets.
+- The tests replay bundles written by the published 0.2.2 and 0.2.4 releases (`tests/data/bundles/`), so the
+  next change to the decision envelope fails here before it ships.
+
+## 0.2.4 (2026-10-29)
 
 - A reference route for the Adversarial Execution Evidence predicate, version 0.7: claim type
   `adversarial_execution_evidence/v1` recomputes a statement's verdict, failure codes, result and per-row
@@ -11,6 +32,9 @@
 
 ## 0.2.3 (2026-10-29)
 
+- The decision envelope gained a field. Replay compares the bundled decision byte for byte, so 0.2.3 and 0.2.4
+  refuse every bundle written by 0.2.2 or earlier with `bundled decision differs from replay`, though the verdicts
+  are unchanged. This changed the decision shape in a patch release; 0.3.0 replays those bundles again.
 - Every decision carries `reference.verifier.id`, the URI `https://probityai.github.io/probity/verifiers/probity-verify`,
   in its JSON and as a `Reference verifier:` line in the text packet. A conformance run that records the field
   names the verifier that produced the result. The done-receipt adapter's own `verifier.id` is unchanged.

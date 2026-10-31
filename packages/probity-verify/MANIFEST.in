@@ -1,6 +1,6 @@
 recursive-include src *.py
 recursive-include examples *.json *.txt *.py *.jsonl *.md *.html *.pub *.err
-recursive-include tests *.py *.json
+recursive-include tests *.py *.json *.zip
 recursive-include scripts *.py *.sh
 recursive-include docs *.md *.json
 recursive-include vectors-source-coverage *.json *.txt *.html *.py *.md

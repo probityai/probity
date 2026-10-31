@@ -3,6 +3,14 @@
 A bundle carries the exact case, consumer policy, bound artifacts, and decision.
 It is a replay format, not a signature or an assertion about who captured the
 artifacts. A recipient must establish the policy and witness provenance.
+
+Since 0.3.0 a bundle also carries ``bundle.json``, which names the verifier
+release that wrote it. Replay compares the bundled decision byte for byte with
+its own, and on a difference that record separates two cases: a bundle written
+by another release, whose decisions may legitimately differ, and an altered
+bundle. Bundles from before 0.3.0 carry no record; they replay when their
+decision is the one this release computes in the decision shape of the release
+that wrote it (see ``_LEGACY_SHAPES``).
 """
 
 from __future__ import annotations
@@ -10,23 +18,57 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import stat
 import sys
 import tempfile
 import zipfile
 from collections.abc import Callable, Mapping
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _distribution_version
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .cli import _load
 from .common import MAX_ARTIFACT_BYTES, CaseError, _artifact
-from .core import adjudicate, canonical_json, render_packet
+from .core import REFERENCE_VERIFIER_ID, adjudicate, canonical_json, render_packet
 from .json_input import parse_json
 
 _CONTROL_LIMIT = 1024 * 1024
 _BUNDLE_LIMIT = 64 * 1024 * 1024
 _MEMBER_LIMIT = 128
 _CONTROLS = {"case.json", "policy.json", "decision.json"}
+_PRODUCER = "bundle.json"
+_PRODUCER_SCHEMA = "probity-bundle/v1"
+_RELEASE = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
+
+
+def _without_reference(decision: dict) -> dict:
+    """The decision envelope of releases up to 0.2.2, which had no ``reference``."""
+    return {key: value for key, value in decision.items() if key != "reference"}
+
+
+#: Decision shapes of releases that wrote no ``bundle.json``, other than the
+#: current shape, which 0.2.3 and 0.2.4 wrote. A bundle without that record
+#: replays only when its decision equals this release's decision byte for byte,
+#: in the current shape or in one of these, so the verdict, reason, checks and
+#: every other field still have to match exactly.
+_LEGACY_SHAPES: tuple[tuple[str, Callable[[dict], dict]], ...] = (
+    ("0.2.2 or earlier", _without_reference),
+)
+
+
+def _release() -> str:
+    """The installed release of this verifier, recorded in every new bundle."""
+    try:
+        return _distribution_version("probity-verify")
+    except PackageNotFoundError as exc:
+        raise CaseError("probity-verify is not installed, so its release is unknown") from exc
+
+
+def _producer_record() -> dict:
+    return {"schema_version": _PRODUCER_SCHEMA,
+            "verifier": {"id": REFERENCE_VERIFIER_ID, "version": _release()}}
 
 
 def _consumer_adapters(
@@ -163,6 +205,7 @@ def create_bundle(
         "case.json": canonical_json(case),
         "policy.json": canonical_json(policy),
         "decision.json": canonical_json(result),
+        _PRODUCER: canonical_json(_producer_record()),
         **files,
     }
     with tempfile.NamedTemporaryFile(dir=output.parent, suffix=".zip", delete=False) as stream:
@@ -199,8 +242,9 @@ def _read_bundle(path: Path) -> dict[str, bytes]:
             raise CaseError("bundle has duplicate or missing control members")
         if sum(info.file_size for info in infos) > _BUNDLE_LIMIT:
             raise CaseError("bundle exceeds size limit")
+        controls = _CONTROLS | {_PRODUCER}
         return {info.filename: _read_member(
-            archive, info, _CONTROL_LIMIT if info.filename in _CONTROLS else MAX_ARTIFACT_BYTES
+            archive, info, _CONTROL_LIMIT if info.filename in controls else MAX_ARTIFACT_BYTES
         ) for info in infos}
 
 
@@ -209,6 +253,55 @@ def _parse_json(data: bytes, label: str) -> Any:
         return parse_json(data, max_bytes=_CONTROL_LIMIT, max_depth=32, max_nodes=32768)
     except CaseError as exc:
         raise CaseError(f"{label}: {exc}") from exc
+
+
+def _producer_release(entries: dict[str, bytes]) -> str | None:
+    """The release named by ``bundle.json``, or None for a bundle from before 0.3.0."""
+    if _PRODUCER not in entries:
+        return None
+    data = entries[_PRODUCER]
+    record = _parse_json(data, _PRODUCER)
+    if data != canonical_json(record):
+        raise CaseError(f"{_PRODUCER}: must use canonical JSON")
+    verifier = record.get("verifier") if isinstance(record, dict) else None
+    if (not isinstance(record, dict) or set(record) != {"schema_version", "verifier"} or
+            record["schema_version"] != _PRODUCER_SCHEMA or
+            not isinstance(verifier, dict) or set(verifier) != {"id", "version"}):
+        raise CaseError(f"{_PRODUCER}: expected {_PRODUCER_SCHEMA} with verifier id and version")
+    if verifier["id"] != REFERENCE_VERIFIER_ID:
+        raise CaseError(f"{_PRODUCER}: written by another verifier, {verifier['id']!r}")
+    release = verifier["version"]
+    if not isinstance(release, str) or not _RELEASE.fullmatch(release):
+        raise CaseError(f"{_PRODUCER}: verifier.version must be a release number X.Y.Z")
+    return release
+
+
+def _check_decision(stored: bytes, result: dict, producer: str | None) -> None:
+    """Refuse a bundled decision that is not this release's replay of the bundle.
+
+    A bundle that names its release must match byte for byte. When it does not,
+    the refusal says whether another release wrote it, because a decision from
+    another release may differ honestly; a mismatch under the same release means
+    the bundle was altered. A bundle from before 0.3.0 must match byte for byte
+    in the decision shape of one of the releases that wrote no record.
+    """
+    if stored == canonical_json(result):
+        return
+    current = _release()
+    if producer is None:
+        if any(stored == canonical_json(shape(result)) for _, shape in _LEGACY_SHAPES):
+            return
+        shapes = ", ".join(["0.2.3 or 0.2.4", *(name for name, _ in _LEGACY_SHAPES)])
+        raise CaseError(
+            "bundled decision differs from replay: the bundle names no verifier release "
+            f"(it predates 0.3.0), and its decision is not this release's ({current}) decision "
+            f"in any shape an earlier release wrote ({shapes})")
+    if producer != current:
+        raise CaseError(
+            f"bundled decision differs from replay: the bundle was written by probity-verify "
+            f"{producer} and this is {current}; rebuild it with {current}, or replay it with "
+            f"{producer} to check it against the release that wrote it")
+    raise CaseError("bundled decision differs from replay")
 
 
 def replay_bundle(
@@ -241,19 +334,20 @@ def replay_bundle(
     if (entries["case.json"] != canonical_json(case) or
             entries["policy.json"] != canonical_json(policy)):
         raise CaseError("case and policy must use canonical JSON")
-    expected = _CONTROLS | set(_artifact_paths(case))
+    producer = _producer_release(entries)
+    controls = _CONTROLS | ({_PRODUCER} if producer is not None else set())
+    expected = controls | set(_artifact_paths(case))
     if set(entries) != expected:
         raise CaseError("bundle members do not match case artifacts")
     with tempfile.TemporaryDirectory() as directory:
         staged = Path(directory)
-        for member in sorted(expected - _CONTROLS):
+        for member in sorted(expected - controls):
             target = staged / member
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(entries[member])
         _bound_files(case, staged / "artifacts")
         result = adjudicate(case, policy, staged / "artifacts", adapters=adapters)
-    if entries["decision.json"] != canonical_json(result):
-        raise CaseError("bundled decision differs from replay")
+    _check_decision(entries["decision.json"], result, producer)
     return result
 
 

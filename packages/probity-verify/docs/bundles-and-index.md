@@ -8,9 +8,15 @@ uv run probity-bundle create examples/source-coverage/case.json \
 uv run probity-bundle replay decision.zip
 ```
 
-The ZIP contains the case, consumer policy, bound artifact bytes, and decision.
-Replay checks the bindings, recomputes the decision, and rejects unsafe archive
-members. Only fully bound cases can be bundled. Identical inputs produce
+The ZIP contains the case, consumer policy, bound artifact bytes, decision, and
+`bundle.json`, which names the verifier release that wrote it. Replay checks the
+bindings, recomputes the decision, compares it byte for byte with the bundled
+one, and rejects unsafe archive members. When the decisions differ under the
+release that wrote the bundle, replay reports `bundled decision differs from
+replay`: the bundle was altered. Under another release it names both releases,
+since a decision can change between releases; rebuild the bundle, or replay it
+with the release that wrote it. A bundle from before 0.3.0 has no `bundle.json`
+and replays when its decision matches in the shape its release wrote. Only fully bound cases can be bundled. Identical inputs produce
 identical ZIP bytes. The ZIP is unsigned; its holder can replace the policy,
 artifacts, and decision together. A recipient must establish the policy and
 witness provenance separately.

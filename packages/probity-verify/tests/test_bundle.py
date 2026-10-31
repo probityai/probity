@@ -7,6 +7,7 @@ import json
 import re
 import stat
 import tempfile
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from probity_verify.bundle import create_bundle, main, replay_bundle
 from probity_verify.common import CaseError
-from probity_verify.core import canonical_json
+from probity_verify.core import REFERENCE_VERIFIER_ID, canonical_json
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
@@ -186,3 +187,108 @@ class TestFailingCases(TestBundle):
         with pytest.raises(CaseError, match="bundle already exists"):
             create_bundle(root / "case.json", root / "policy-june.json", bundle)
         assert bundle.read_bytes() == original
+
+
+RELEASED = Path(__file__).resolve().parent / "data" / "bundles"
+RELEASED_BUNDLES = [
+    ("source-coverage-0.2.2.zip", "contradicted"),
+    ("operand-lineage-0.2.2.zip", "supported"),
+    ("source-coverage-0.2.4.zip", "contradicted"),
+    ("operand-lineage-0.2.4.zip", "supported"),
+]
+
+
+def _copy_released(tmp_path: Path, name: str) -> Path:
+    bundle = tmp_path / name
+    bundle.write_bytes((RELEASED / name).read_bytes())
+    return bundle
+
+
+def _forge_decision(bundle: Path) -> None:
+    """Flip the bundled verdict while keeping every other byte of the archive."""
+    with zipfile.ZipFile(bundle) as archive:
+        decision = json.loads(archive.read("decision.json"))
+    decision.update(decision="supported", reason="all_selected_spans_present")
+    _rewrite_bundle(bundle, {"decision.json": canonical_json(decision)})
+
+
+def _producer(bundle: Path) -> dict:
+    with zipfile.ZipFile(bundle) as archive:
+        return json.loads(archive.read("bundle.json"))
+
+
+class TestReleaseSkew(TestBundle):
+    """Bundles written by earlier releases replay; altered ones are still refused."""
+
+    @pytest.mark.parametrize("name,decision", RELEASED_BUNDLES)
+    def test_bundle_written_by_a_published_release_replays(
+        self, tmp_path: Path, name: str, decision: str
+    ) -> None:
+        bundle = _copy_released(tmp_path, name)
+        assert replay_bundle(bundle)["decision"] == decision
+        assert main(["replay", str(bundle)]) == 0
+
+    @pytest.mark.parametrize("name", ["source-coverage-0.2.2.zip", "source-coverage-0.2.4.zip"])
+    def test_forged_decision_in_a_released_bundle_is_refused(self, tmp_path: Path, name: str) -> None:
+        bundle = _copy_released(tmp_path, name)
+        _forge_decision(bundle)
+        with pytest.raises(CaseError, match="bundled decision differs from replay: "
+                                            "the bundle names no verifier release"):
+            replay_bundle(bundle)
+        assert main(["replay", str(bundle)]) == 2
+
+    def test_new_bundle_records_this_release(self, tmp_path: Path) -> None:
+        bundle = self.create(tmp_path)
+        source = tomllib.loads((EXAMPLES.parent / "pyproject.toml").read_text())["project"]["version"]
+        assert _producer(bundle) == {
+            "schema_version": "probity-bundle/v1",
+            "verifier": {"id": REFERENCE_VERIFIER_ID, "version": source},
+        }
+
+    def test_forged_decision_under_this_release_is_refused_as_altered(self, tmp_path: Path) -> None:
+        bundle = self.create(tmp_path)
+        _forge_decision(bundle)
+        with pytest.raises(CaseError, match=r"^bundled decision differs from replay$"):
+            replay_bundle(bundle)
+
+    def test_decision_from_another_release_names_both_releases(self, tmp_path: Path) -> None:
+        bundle = self.create(tmp_path)
+        record = _producer(bundle)
+        record["verifier"]["version"] = "0.2.9"
+        _rewrite_bundle(bundle, {"bundle.json": canonical_json(record)})
+        assert replay_bundle(bundle)["decision"] == "contradicted"
+        _forge_decision(bundle)
+        with pytest.raises(CaseError, match="written by probity-verify 0.2.9 and this is "):
+            replay_bundle(bundle)
+
+    def test_bundle_without_release_record_in_the_current_shape_replays(self, tmp_path: Path) -> None:
+        bundle = self.create(tmp_path)
+        with zipfile.ZipFile(bundle) as archive:
+            members = {name: archive.read(name) for name in archive.namelist()
+                       if name != "bundle.json"}
+        with zipfile.ZipFile(bundle, "w") as archive:
+            for name, data in members.items():
+                archive.writestr(name, data, compress_type=zipfile.ZIP_STORED)
+        assert replay_bundle(bundle)["decision"] == "contradicted"
+
+    @pytest.mark.parametrize("change,message", [
+        (lambda r: r["verifier"].update(id="https://example.invalid/other"), "written by another verifier"),
+        (lambda r: r["verifier"].update(version="0.3"), "release number"),
+        (lambda r: r["verifier"].update(version=3), "release number"),
+        (lambda r: r.update(extra=True), "expected probity-bundle/v1"),
+        (lambda r: r.update(schema_version="probity-bundle/v2"), "expected probity-bundle/v1"),
+        (lambda r: r["verifier"].pop("version"), "expected probity-bundle/v1"),
+    ])
+    def test_malformed_release_record_is_refused(self, tmp_path: Path, change, message: str) -> None:
+        bundle = self.create(tmp_path)
+        record = _producer(bundle)
+        change(record)
+        _rewrite_bundle(bundle, {"bundle.json": canonical_json(record)})
+        with pytest.raises(CaseError, match=message):
+            replay_bundle(bundle)
+
+    def test_noncanonical_release_record_is_refused(self, tmp_path: Path) -> None:
+        bundle = self.create(tmp_path)
+        _rewrite_bundle(bundle, {"bundle.json": json.dumps(_producer(bundle), indent=1).encode()})
+        with pytest.raises(CaseError, match="bundle.json: must use canonical JSON"):
+            replay_bundle(bundle)
