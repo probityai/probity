@@ -60,11 +60,11 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-vocabulary"
-version = "0.7.0"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/32/e3/74d74f681b6b23558d82182613c27fb9107bd5f533afda0bedfe134373b6/agent_evidence_vocabulary-0.7.0.tar.gz", hash = "sha256:9ae61b19a0ca50664292c4e284a4f178ad61791f03d3cd75b5733e026c1734b8", size = 39050, upload-time = "2026-10-25T10:22:54.101Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/28/93d0b07850e4e2b565fb8e073cafa76af6481ea8f49eb5f71bf6a2087451/agent_evidence_vocabulary-0.8.0.tar.gz", hash = "sha256:f18ccc35d1031ddaddf037985859f45d8ab90f1af63719ae1349834f1d1ddad4", size = 52994, upload-time = "2026-10-26T21:19:15.488Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/7b/01e9aaf0979da64d2387daed7afe417602aa4ae1e1894aa9d7464a8c9fed/agent_evidence_vocabulary-0.7.0-py3-none-any.whl", hash = "sha256:413820e672a8741466c3ab2900a02b9474f0dd895c7ac9844927c60094d54b85", size = 40311, upload-time = "2026-10-25T10:22:52.777Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/fa/9f32fbc999fc1640e7a65f4acfb6edf004dabdbdb09e5564fd010fbee470/agent_evidence_vocabulary-0.8.0-py3-none-any.whl", hash = "sha256:cfb6b198cef1a48601b3b2961013514268f734c784b4799fcb30215ffc2636e2", size = 55483, upload-time = "2026-10-26T21:19:14.161Z" },
 ]
 
 [[package]]
@@ -4008,7 +4008,7 @@ requires-dist = [
     { name = "jcs-admit", specifier = "~=0.1.0" },
     { name = "litellm", marker = "extra == 'bench'", specifier = "==1.106.4" },
     { name = "probity-ratchet-cases", editable = "probity-ratchet-cases" },
-    { name = "probity-verify", specifier = "~=0.2.1" },
+    { name = "probity-verify", specifier = "~=0.3.0" },
     { name = "pymongo", marker = "extra == 'atlas'", specifier = ">=4.10" },
     { name = "pymongo", marker = "extra == 'bench'", specifier = ">=4.10" },
     { name = "raindrop-ai", marker = "extra == 'telemetry'", specifier = "==0.0.75" },
@@ -4044,16 +4044,16 @@ provides-extras = ["agentdojo"]
 
 [[package]]
 name = "probity-verify"
-version = "0.2.1"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
     { name = "cryptography" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/94/aa/4d9b3f81ecddd5a75d29b3d369623f8337f02e4a56366e00187ea4183176/probity_verify-0.2.1.tar.gz", hash = "sha256:22878b464e5c14e14543483f2427302702880bda02837df787f090f2f2920790", size = 353261, upload-time = "2026-10-26T06:23:33.616Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/ff/1af2eaece304bfa15360857827d48fe5c86e1a2442bd57070e8145471103/probity_verify-0.3.0.tar.gz", hash = "sha256:fac577dbb0bc4dd0ed6d056c5afda7a788654298c14d4bd8a581c5edcd643634", size = 503404, upload-time = "2026-10-31T02:48:30.706Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/34/99/6c857bcce6222c146a1128152bcb32368fdd07939411310f0f11fc645e29/probity_verify-0.2.1-py3-none-any.whl", hash = "sha256:032bbef522b4990d90754085a7cb5ef0c52d03e9fbe4cd631d13bacf04617309", size = 111099, upload-time = "2026-10-26T06:23:32.18Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/df/d4fb3194b0bd34dad79839b3a186a23a55dc729cef49d77b3717c7eb15af/probity_verify-0.3.0-py3-none-any.whl", hash = "sha256:440b0efd203aa54683a94995d80edcaed3c6f04b2cd7d34877c2239b83bf4660", size = 133212, upload-time = "2026-10-31T02:48:28.948Z" },
 ]
 
 [[package]]
