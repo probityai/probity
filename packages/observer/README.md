@@ -7,15 +7,15 @@ Record brokered agent writes and check selected native framework reports offline
 
 Use it in agent harnesses and evaluation pipelines that need replayable action records or a consumer gate for retained reports.
 
-Install the root package: `pip install agent-evidence-observer==0.1.1`.
+Install the root package: `pip install agent-evidence-observer==0.1.2`.
 
 ## Quick start
 
 Run the demo from the released package. You need Python 3.12 or later and [`uv`](https://docs.astral.sh/uv/); there is nothing to clone.
 
 ```sh
-uvx agent-evidence-observer==0.1.1 demo ./sample-run
-uvx agent-evidence-observer==0.1.1 verify ./sample-run
+uvx agent-evidence-observer==0.1.2 demo ./sample-run
+uvx agent-evidence-observer==0.1.2 verify ./sample-run
 ```
 
 The two commands print:
