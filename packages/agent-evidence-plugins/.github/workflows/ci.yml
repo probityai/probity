@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install the pinned verifier and the test runner
-        run: python -m pip install "probity-verify==0.2.2" "pytest>=8,<10"
+        run: python -m pip install "probity-verify==0.2.4" "pytest>=8,<10"
       - name: Tests
         run: python -m pytest -q
       - name: README shape
