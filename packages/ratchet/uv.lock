@@ -4008,7 +4008,7 @@ requires-dist = [
     { name = "jcs-admit", specifier = "~=0.1.0" },
     { name = "litellm", marker = "extra == 'bench'", specifier = "==1.106.4" },
     { name = "probity-ratchet-cases", editable = "probity-ratchet-cases" },
-    { name = "probity-verify", specifier = "~=0.2.1" },
+    { name = "probity-verify", specifier = ">=0.2.1,<0.4" },
     { name = "pymongo", marker = "extra == 'atlas'", specifier = ">=4.10" },
     { name = "pymongo", marker = "extra == 'bench'", specifier = ">=4.10" },
     { name = "raindrop-ai", marker = "extra == 'telemetry'", specifier = "==0.0.75" },

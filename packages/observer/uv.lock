@@ -1822,7 +1822,7 @@ wheels = [
 
 [[package]]
 name = "probity-verify"
-version = "0.2.4"
+version = "0.3.0"
 source = { directory = "../probity-verify" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
