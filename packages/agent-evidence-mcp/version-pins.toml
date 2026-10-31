@@ -1,6 +1,6 @@
-# Where each version this repository's pages name is decided; scripts/version-pins.py
+# Where each version this repository's pages name is decided; the .github repository's version-pins script
 # holds every page to it. A release bumps pyproject.toml and runs
-# `python3 scripts/version-pins.py write` in the same pull request, before the tag,
+# `gh api repos/probityai/.github/contents/scripts/version-pins.py -H 'Accept: application/vnd.github.raw' | python3 - write` in the same pull request, before the tag,
 # so the PyPI page built from the tagged commit names the version it publishes.
 repository = "probityai/agent-evidence-mcp"
 

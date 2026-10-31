@@ -72,9 +72,13 @@ jobs:
           python3 scripts/readme-lint-test.py
           python3 scripts/readme-lint.py README.md
       - name: every version a page names equals its manifest or the family lock
-        run: |
-          python3 scripts/version-pins.py check
-          python3 scripts/version-pins-test.py
+        uses: probityai/.github/actions/version-pins@ecb47052aa3ae8188c74f3cdc31eb8f4e9402811 # main
+        with:
+          command: check
+      - name: A planted stale pin turns the version check red
+        uses: probityai/.github/actions/version-pins@ecb47052aa3ae8188c74f3cdc31eb8f4e9402811 # main
+        with:
+          command: test
       - name: manifests parse
         run: |
           for f in server.json gemini-extension.json .mcp.json .claude-plugin/plugin.json .claude-plugin/marketplace.json; do python3 -m json.tool "$f" > /dev/null; done
