@@ -26,9 +26,13 @@ jobs:
       - name: README shape
         run: python -B scripts/readme-lint.py README.md
       - name: Every version a page names equals its manifest
-        run: |
-          python -B scripts/version-pins.py check
-          python -B scripts/version-pins-test.py
+        uses: probityai/.github/actions/version-pins@ecb47052aa3ae8188c74f3cdc31eb8f4e9402811 # main
+        with:
+          command: check
+      - name: A planted stale pin turns the version check red
+        uses: probityai/.github/actions/version-pins@ecb47052aa3ae8188c74f3cdc31eb8f4e9402811 # main
+        with:
+          command: test
       - name: README example runs as written
         run: |
           evaluator-replay verify tests/fixtures/accept-3
