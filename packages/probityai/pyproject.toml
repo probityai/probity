@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probityai"
-version = "0.1.0"
+version = "0.1.1"
 description = "The probityai command: verify agent evidence offline, one entry point for the evidence tools"
 readme = "README.md"
 requires-python = ">=3.11"

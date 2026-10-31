@@ -706,7 +706,7 @@ provides-extras = ["test", "a2a"]
 
 [[package]]
 name = "probityai"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/probityai" }
 dependencies = [
     { name = "probity-verify" },
