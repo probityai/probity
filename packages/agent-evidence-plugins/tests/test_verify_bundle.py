@@ -101,14 +101,16 @@ def test_unknown_allow_value_is_refused():
 
 
 def test_tampered_artifact_is_refused_with_exit_2(tmp_path):
+    assert run(str(GOOD)).returncode == 0, "control: the untampered bundle must pass"
     bad = tamper(GOOD, tmp_path / "t.decision.zip")
     done = run(str(bad))
     assert done.returncode == 2
-    assert done.stderr.startswith("FAIL")
+    assert done.stderr.startswith("FAIL") and "artifacts.tree: artifact binding_mismatch" in done.stderr
 
 
 def test_tampered_decision_is_refused(tmp_path):
     """Editing the stored verdict to a better one must not pass."""
+    assert run(str(CONTRADICTED)).returncode == 1, "control: the unedited bundle must replay"
     with zipfile.ZipFile(CONTRADICTED) as zin:
         members = {i.filename: zin.read(i) for i in zin.infolist()}
     decision = json.loads(members["decision.json"])
@@ -118,7 +120,8 @@ def test_tampered_decision_is_refused(tmp_path):
     with zipfile.ZipFile(forged, "w") as zout:
         for name, data in members.items():
             zout.writestr(name, data)
-    assert run(str(forged)).returncode == 2
+    done = run(str(forged))
+    assert done.returncode == 2 and "bundled decision differs from replay" in done.stderr
 
 
 def test_missing_file_fails_closed(tmp_path):
@@ -159,7 +162,8 @@ def test_hook_finds_a_relative_path_inside_a_shell_command(tmp_path):
     payload = json.dumps(
         {"cwd": str(tmp_path), "tool_input": {"command": "curl -o out.decision.zip https://x.example/b"}}
     )
-    assert run("--hook", stdin=payload).returncode == 2
+    done = run("--hook", stdin=payload)
+    assert done.returncode == 2 and "decision is contradicted" in done.stderr
 
 
 def test_hook_ignores_a_payload_without_a_bundle(tmp_path):
