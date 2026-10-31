@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 import types
-from importlib.metadata import EntryPoint, entry_points
+from importlib.metadata import EntryPoint, entry_points, version
 from importlib.resources import files
 from pathlib import Path
 
@@ -118,7 +118,7 @@ def test_a_plugin_whose_register_raises_is_reported(monkeypatch, capsys):
 def test_version_reports_the_installed_distribution(capsys):
     with pytest.raises(SystemExit):
         main(["--version"], points=[])
-    assert capsys.readouterr().out.startswith("probityai 0.1.0")
+    assert capsys.readouterr().out.startswith(f"probityai {version('probityai')}")
 
 
 def test_installed_probity_verify_registers_verify():
