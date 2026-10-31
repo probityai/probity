@@ -22,7 +22,7 @@ members = [
     "probity-ratchet-cases",
 ]
 overrides = [
-    { name = "filelock", specifier = ">=4.2.1" },
+    { name = "filelock", marker = "python_full_version >= '3.11'", specifier = ">=4.2.1" },
     { name = "litellm", specifier = "==1.106.4" },
 ]
 
@@ -51,11 +51,11 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-vectors"
-version = "0.26.0"
+version = "0.30.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7c/e3/52af4878f725fb81502fb0e372c5da62f63d76cedfe103bddb4ee14324c7/agent_evidence_vectors-0.26.0.tar.gz", hash = "sha256:b5577cb6227b5fe7d67cbcba87b2b2185d24a63911b95c65c6b5b1280884067a", size = 3414741, upload-time = "2026-10-26T01:56:24.739Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/48/6c3046f9cd842b88bbfcb31ff91dd225d1ff22a2e2652443d83f68227ce6/agent_evidence_vectors-0.30.0.tar.gz", hash = "sha256:fdb6ce53d819ee339d3ea44da263a07908f7ad826dae514d74fa939dab39d49c", size = 3758977, upload-time = "2026-10-29T15:17:52.586Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/57/a94f9cc4433d7abe643aa4d2da1640cf1c0bb061cc1225a95401585cdd0b/agent_evidence_vectors-0.26.0-py3-none-any.whl", hash = "sha256:78d87a0cf16cf5d3fe621cfb098883c8354fbb42f0a2e186f789647dbe68fcb9", size = 10158819, upload-time = "2026-10-26T01:56:22.511Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/91/9f70050788ee806452051477960134056a3a0588e25ad3514b788d5be039/agent_evidence_vectors-0.30.0-py3-none-any.whl", hash = "sha256:f2a0a41c275bfda404f26ab75d296857413cf1049aadb6ab1bf049301a1c2301", size = 10915501, upload-time = "2026-10-29T15:17:49.404Z" },
 ]
 
 [[package]]
@@ -3955,7 +3955,7 @@ wheels = [
 
 [[package]]
 name = "probity-ratchet"
-version = "0.2.1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "agent-evidence-vectors" },
@@ -3999,7 +3999,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-evidence-vectors", specifier = "~=0.26.0" },
+    { name = "agent-evidence-vectors", specifier = "~=0.30.0" },
     { name = "agentdojo", marker = "extra == 'bench'", specifier = "==0.1.35" },
     { name = "audioop-lts", marker = "python_full_version >= '3.13' and extra == 'bench'", specifier = "==0.2.2" },
     { name = "cryptography", specifier = ">=44" },
