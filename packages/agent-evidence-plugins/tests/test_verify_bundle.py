@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -27,6 +28,14 @@ def replay_tool(monkeypatch):
     monkeypatch.delenv("PROBITY_BUNDLE_GLOBS", raising=False)
 
 
+def gate_pin() -> str:
+    """The requirement string the gate script pins, for example probity-verify==0.3.0."""
+    for line in SCRIPT.read_text().splitlines():
+        if line.startswith("PINNED = "):
+            return line.split('"')[1]
+    raise AssertionError(f"{SCRIPT} has no PINNED line")
+
+
 def run(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args], input=stdin, capture_output=True, text=True,
@@ -43,6 +52,24 @@ def tamper(source: Path, target: Path, member: str = "artifacts/tree.json") -> P
                 data = data + b" "
             zout.writestr(info, data)
     return target
+
+
+def test_environment_runs_the_pinned_verifier():
+    name, version = gate_pin().split("==")
+    assert metadata.version(name) == version, f"tests run {name} {metadata.version(name)}, the gate pins {version}"
+
+
+@pytest.mark.parametrize("fixture", [GOOD, CONTRADICTED], ids=lambda path: path.name)
+def test_fixtures_replay_under_the_pinned_verifier(fixture):
+    """A bundle replays only under the release that built it, so the fixtures move with the pin."""
+    done = subprocess.run(
+        [sys.executable, "-m", "probity_verify.bundle", "replay", "--json", str(fixture)],
+        capture_output=True, text=True, check=False,
+    )
+    assert done.returncode == 0, (
+        f"{fixture.name} does not replay under {gate_pin()}: {done.stderr.strip()}; "
+        "rebuild it as tests/fixtures/README.md says"
+    )
 
 
 def test_supported_bundle_passes():
@@ -74,14 +101,16 @@ def test_unknown_allow_value_is_refused():
 
 
 def test_tampered_artifact_is_refused_with_exit_2(tmp_path):
+    assert run(str(GOOD)).returncode == 0, "control: the untampered bundle must pass"
     bad = tamper(GOOD, tmp_path / "t.decision.zip")
     done = run(str(bad))
     assert done.returncode == 2
-    assert done.stderr.startswith("FAIL")
+    assert done.stderr.startswith("FAIL") and "artifacts.tree: artifact binding_mismatch" in done.stderr
 
 
 def test_tampered_decision_is_refused(tmp_path):
     """Editing the stored verdict to a better one must not pass."""
+    assert run(str(CONTRADICTED)).returncode == 1, "control: the unedited bundle must replay"
     with zipfile.ZipFile(CONTRADICTED) as zin:
         members = {i.filename: zin.read(i) for i in zin.infolist()}
     decision = json.loads(members["decision.json"])
@@ -91,7 +120,8 @@ def test_tampered_decision_is_refused(tmp_path):
     with zipfile.ZipFile(forged, "w") as zout:
         for name, data in members.items():
             zout.writestr(name, data)
-    assert run(str(forged)).returncode == 2
+    done = run(str(forged))
+    assert done.returncode == 2 and "bundled decision differs from replay" in done.stderr
 
 
 def test_missing_file_fails_closed(tmp_path):
@@ -132,7 +162,8 @@ def test_hook_finds_a_relative_path_inside_a_shell_command(tmp_path):
     payload = json.dumps(
         {"cwd": str(tmp_path), "tool_input": {"command": "curl -o out.decision.zip https://x.example/b"}}
     )
-    assert run("--hook", stdin=payload).returncode == 2
+    done = run("--hook", stdin=payload)
+    assert done.returncode == 2 and "decision is contradicted" in done.stderr
 
 
 def test_hook_ignores_a_payload_without_a_bundle(tmp_path):

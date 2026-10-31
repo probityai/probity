@@ -7,7 +7,7 @@ license = "Apache-2.0"
 dependencies = []
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "probity-verify==0.2.2"]
+dev = ["pytest>=8,<10", "probity-verify==0.3.0"]
 
 [tool.uv]
 package = false

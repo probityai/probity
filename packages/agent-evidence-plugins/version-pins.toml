@@ -11,8 +11,8 @@ pages = ["README.md"]
 
 # Packages other repositories release that this repository pins.
 [family]
-"pypi:probity-verify" = "0.2.2"  # 0.2.4 refuses the bundles the tests build: "bundled decision differs from replay"
+"pypi:probity-verify" = "0.3.0"
 
 [scan]
 include = ["**/*.md", "**/llms.txt", ".github/workflows/*.yml", "pyproject.toml", "plugins/**/*.py"]
-skip = ["tests/fixtures/**"]
+skip = ["tests/fixtures/*.zip"]
