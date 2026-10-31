@@ -1,8 +1,8 @@
 # Release a checked Python distribution
 
-PyPI 0.2.3 contains the current verifier implementation and CLI, and the source
-is 0.2.3. It carries the eight source-coverage inputs as package resources,
-added in source 0.1.1, and reads DSSE envelopes and completion receipts; the
+PyPI 0.2.4 is the latest published release, and the source is 0.3.0. The
+release carries the eight source-coverage inputs as package resources, added in
+source 0.1.1, and reads DSSE envelopes and completion receipts; the
 [changelog](../CHANGELOG.md) lists every change. The sample inputs remain authored
 synthetic records, not an outside run or a consumer's authority choice.
 
@@ -13,7 +13,7 @@ From the source root, install the checked artifact into a separate environment:
 
 ```sh
 uv venv verify-env --python 3.12
-uv pip install --python verify-env/bin/python dist/probity_verify-0.2.3-py3-none-any.whl
+uv pip install --python verify-env/bin/python dist/probity_verify-0.2.4-py3-none-any.whl
 ```
 
 Run Python from that environment. The data comes from the installed package:
