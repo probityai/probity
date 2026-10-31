@@ -51,11 +51,11 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-vectors"
-version = "0.30.0"
+version = "0.31.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1d/48/6c3046f9cd842b88bbfcb31ff91dd225d1ff22a2e2652443d83f68227ce6/agent_evidence_vectors-0.30.0.tar.gz", hash = "sha256:fdb6ce53d819ee339d3ea44da263a07908f7ad826dae514d74fa939dab39d49c", size = 3758977, upload-time = "2026-10-29T15:17:52.586Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/f7/4b1c0674afdae3a5104ee29e9aa33bc85ffbe6c4f379813e63304a3ff49c/agent_evidence_vectors-0.31.0.tar.gz", hash = "sha256:ee3a20eb9d20d149cfd5d4f731c3653b8ea1e29e7f0dbbabec9118f686a90554", size = 3939832, upload-time = "2026-10-31T02:18:17.114Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/91/9f70050788ee806452051477960134056a3a0588e25ad3514b788d5be039/agent_evidence_vectors-0.30.0-py3-none-any.whl", hash = "sha256:f2a0a41c275bfda404f26ab75d296857413cf1049aadb6ab1bf049301a1c2301", size = 10915501, upload-time = "2026-10-29T15:17:49.404Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/82/894d46b4159581a65e5b6bb31960493afb9446fc10b924bd578b3462ed57/agent_evidence_vectors-0.31.0-py3-none-any.whl", hash = "sha256:6a9e43def25fcd69ca7bc4cee749d42a48752be0672e594dbd85f00c7078450a", size = 11301142, upload-time = "2026-10-31T02:18:14.293Z" },
 ]
 
 [[package]]
@@ -3955,7 +3955,7 @@ wheels = [
 
 [[package]]
 name = "probity-ratchet"
-version = "0.3.1"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "agent-evidence-vectors" },
@@ -3999,7 +3999,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-evidence-vectors", specifier = "~=0.30.0" },
+    { name = "agent-evidence-vectors", specifier = "~=0.31.0" },
     { name = "agentdojo", marker = "extra == 'bench'", specifier = "==0.1.35" },
     { name = "audioop-lts", marker = "python_full_version >= '3.13' and extra == 'bench'", specifier = "==0.2.2" },
     { name = "cryptography", specifier = ">=44" },

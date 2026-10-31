@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 (2026-10-31)
+
+- `agent-evidence-vectors~=0.31.0` (was `~=0.30.0`). 0.3.1 could not install beside the current vectors release, so
+  the family-resolves check failed on main. The lock moves to agent-evidence-vectors 0.31.0.
+
 ## 0.3.0 (2026-10-30)
 
 - The loop's proposals and parent choice are seams filled by installed plug-ins (`ratchet.proposers` and
