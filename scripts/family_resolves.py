@@ -9,9 +9,22 @@ which is the failure this check exists to catch (on 2026-10-26 uv "resolved"
 verify 0.2.0 with vocabulary 0.7.0 only by silently installing verify 0.1.1).
 
 The family is pre-1.0, so an exact pin of one family member by another makes the
-latest releases unresolvable as a set (measured 2026-10-26). In-family requirements
-use compatible-release ranges (`~=X.Y.Z`); third-party pins stay exact. Standard
-library only for `lint`; `resolve` needs `uv` on PATH.
+latest releases unresolvable as a set (measured 2026-10-26). Third-party pins stay exact.
+Standard library only for `lint`; `resolve` needs `uv` on PATH.
+
+Range policy for a requirement on a member of this workspace. A compatible-release range
+(`~=0.3.0`) stops at the next minor, so the day that member released 0.4 the published
+dependents could no longer install beside it (probity-verify 0.3.0 on 2026-10-30 broke
+probityai, probity-ratchet and agent-evidence-observer, and family-resolves went red until
+three patch releases shipped). The range is therefore a window, `>=F,<C`: F is a release
+the dependent was tested against (not above the member's version in this tree), and C is the
+end of the NEXT release series, meaning minor+2 for 0.x and the next major from 1.0. The window
+always admits the member's current release and the one after it, so a release of the member
+never strands a published dependent, and a release of the member after that is held back by
+the lint: the pull request that bumps the member must move every dependent's window in the same
+change, where the workspace tests run the dependents against the new version before it ships.
+Requirements on family members that live outside this workspace stay `~=`, because their next
+release is not known here; family-resolves reads PyPI daily and catches those.
 """
 
 from __future__ import annotations
@@ -38,6 +51,8 @@ FAMILY = {
     "probity-ratchet-cases": ("probity-ratchet-cases", "ratchet_cases"),
     "jcs-admit": ("jcs-admit", "jcs_admit"),
 }
+_WINDOW = re.compile(r"\s*>=\s*(\d+)\.(\d+)\.(\d+)\s*,\s*<\s*(\d+)(?:\.(\d+))?(?:\.(\d+))?\s*")
+_NAME = re.compile(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*(.*)")
 _EXACT = re.compile(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(\[[^\]]*\])?\s*===?\s*\S")
 
 
@@ -55,18 +70,66 @@ def _requirements(data: dict) -> list[str]:
     return out
 
 
-def lint(root: Path = ROOT) -> list[str]:
-    """Every pyproject under packages/ whose in-family requirement is an exact pin."""
-    family = {_norm(name) for name in FAMILY}
-    problems = []
+def _manifests(root: Path) -> list[tuple[Path, dict]]:
+    out = []
     for path in sorted(root.glob("packages/**/pyproject.toml")):
         # interop/ holds dated, frozen experiments that pin the release they were run against
         if {".venv", "node_modules", "interop"} & set(path.parts):
             continue
-        for req in _requirements(tomllib.loads(path.read_text(encoding="utf-8"))):
-            match = _EXACT.match(req.split(";")[0])
-            if match and _norm(match.group(1)) in family:
-                problems.append(f"{path.relative_to(root)}: in-family requirement {req!r} must be a range (~=X.Y.Z)")
+        out.append((path, tomllib.loads(path.read_text(encoding="utf-8"))))
+    return out
+
+
+def workspace_versions(root: Path = ROOT) -> dict[str, tuple[int, int, int]]:
+    """Name and version of every family distribution whose source is in this tree."""
+    family = {_norm(name) for name in FAMILY}
+    out = {}
+    for _, data in _manifests(root):
+        project = data.get("project", {})
+        name, version = _norm(project.get("name", "")), project.get("version", "")
+        parts = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
+        if name in family and parts:
+            out[name] = (int(parts[1]), int(parts[2]), int(parts[3]))
+    return out
+
+
+def window_ceiling(version: tuple[int, int, int]) -> tuple[int, int]:
+    """The end of the next release series: minor+2 below 1.0, the next major from 1.0."""
+    major, minor, _ = version
+    return (0, minor + 2) if major == 0 else (major + 1, 0)
+
+
+def _window_problem(spec: str, version: tuple[int, int, int]) -> str | None:
+    """Why `spec` is not the window for a member at `version`, or None when it is."""
+    match = _WINDOW.fullmatch(spec)
+    if not match:
+        return "must be a window >=F,<C"
+    floor, ceiling = tuple(map(int, match.group(1, 2, 3))), (int(match.group(4)), int(match.group(5) or 0))
+    if floor > version:
+        return f"floor {floor} is above the {version} in this tree"
+    if match.group(6) not in (None, "0") or ceiling != window_ceiling(version):
+        want = ".".join(map(str, window_ceiling(version)))
+        return f"ceiling must be <{want}, the end of the series after {'.'.join(map(str, version))}"
+    return None
+
+
+def lint(root: Path = ROOT) -> list[str]:
+    """Every in-family requirement under packages/ that breaks the policy in the module docstring."""
+    family = {_norm(name) for name in FAMILY}
+    members = workspace_versions(root)
+    problems = []
+    for path, data in _manifests(root):
+        for req in _requirements(data):
+            body = req.split(";")[0]
+            where = f"{path.relative_to(root)}: in-family requirement {req!r}"
+            match = _NAME.fullmatch(body)
+            name = _norm(match.group(1)) if match else ""
+            if name not in family:
+                continue
+            if _EXACT.match(body):
+                problems.append(f"{where} must be a range, not an exact pin")
+            elif name in members and (why := _window_problem(match.group(2).strip(), members[name])):
+                problems.append(f"{where} {why}")
     return problems
 
 

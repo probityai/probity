@@ -1,7 +1,9 @@
 """The verifier is our public package, not a copy: assert the ranges, the lock and that they run.
 
-Each in-family dependency is a compatible-release range (`~=X.Y.Z`), so the family installs together at
-its latest releases. The lock names one version per package, from the index with a hash per file. The
+Each in-family dependency is a range, so the family installs together at its latest releases: a
+compatible release (`~=X.Y.Z`), or for a member of this workspace the window `>=F,<C` that
+scripts/family_resolves.py holds to the member's version (`WINDOWED`).
+The lock names one version per package, from the index with a hash per file. The
 tests hold the lock to the range and the installed package to the lock: a bump that moves only one of
 them fails.
 """
@@ -22,17 +24,24 @@ from packaging.version import Version
 
 ROOT = Path(__file__).resolve().parents[2]
 PYPI = {"registry": "https://pypi.org/simple"}
+WINDOWED = {"probity-verify"}  # the member of this workspace, whose release series the window spans
 
 
-def requirement(name: str) -> Requirement:
-    """The one `[project].dependencies` entry for `name`, which must be a compatible-release range."""
+def declared(name: str) -> str:
+    """The one `[project].dependencies` entry for `name`, as written."""
     deps = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["dependencies"]
     named = [dep for dep in deps if re.match(rf"{re.escape(name)}\s*[=<>!~ ;\[]", dep)]
     assert len(named) == 1, f"{name} must appear once in [project].dependencies, found {named}"
-    req = Requirement(named[0])
-    assert re.fullmatch(r"~=[0-9]+\.[0-9]+\.[0-9]+", str(req.specifier)), (
-        f"{name} must take a compatible release (~=X.Y.Z), found {named[0]!r}"
-    )
+    return named[0]
+
+
+def requirement(name: str) -> Requirement:
+    """The `name` requirement: a compatible-release range, or for `WINDOWED` a `>=F,<C` window."""
+    text = declared(name)
+    req = Requirement(text)
+    shape = r">=[0-9]+\.[0-9]+\.[0-9]+,<[0-9]+\.[0-9]+" if name in WINDOWED else r"~=[0-9]+\.[0-9]+\.[0-9]+"
+    kind = "a window >=F,<C" if name in WINDOWED else "a compatible release (~=X.Y.Z)"
+    assert re.fullmatch(shape, text[len(name) :]), f"{name} must be {kind}, found {text!r}"
     return req
 
 
@@ -95,7 +104,7 @@ def test_a_range_the_lock_falls_outside_fails(
 ) -> None:
     """A manifest range that moved without the lock (or the reverse) is refused, not read past."""
     manifest = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    old = f'"{name}{requirement(name).specifier}"'
+    old = f'"{declared(name)}"'
     (tmp_path / "pyproject.toml").write_text(manifest.replace(old, f'"{name}~=999.0.0"'), encoding="utf-8")
     (tmp_path / "uv.lock").write_bytes((ROOT / "uv.lock").read_bytes())
     monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
@@ -109,8 +118,8 @@ def test_an_exact_in_family_pin_is_refused(
 ) -> None:
     """The family installs together only while no member pins another exactly."""
     manifest = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    old = f'"{name}{requirement(name).specifier}"'
-    version = str(requirement(name).specifier)[2:]
+    old = f'"{declared(name)}"'
+    version = next(spec.version for spec in requirement(name).specifier if spec.operator in (">=", "~="))
     (tmp_path / "pyproject.toml").write_text(manifest.replace(old, f'"{name}=={version}"'), encoding="utf-8")
     monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
     with pytest.raises(AssertionError):

@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-dependencies = ["probity-verify~=0.3.0"]
+dependencies = ["probity-verify>=0.3.0,<0.5"]
 keywords = ["ai-agents", "evidence-verification", "provenance", "cli"]
 classifiers = [
     "Development Status :: 3 - Alpha",

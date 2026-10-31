@@ -38,7 +38,7 @@ witness = ["jcs-admit~=0.1.0"]
 cover = ["coverage>=7.10,<8"]
 done = [
     "jcs-admit~=0.1.0",
-    "probity-verify~=0.3.0",
+    "probity-verify>=0.3.0,<0.5",
 ]
 
 [project.scripts]
