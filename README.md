@@ -6,7 +6,7 @@
 [![Licence](https://img.shields.io/github/license/probityai/probity)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity)
 
-Open tools that check claims about AI agents against evidence you pinned: an offline verifier today, with the observer joining this repository. The standard layer (corpus, vocabulary, admission rules and crates) lives in https://github.com/probityai/agent-evidence.
+Open tools that check claims about AI agents against evidence you pinned: an offline verifier today, with the observer joining this repository. The standard layer (corpus, vocabulary, admission rules and crates) lives in https://github.com/probityai/agent-evidence-vectors.
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
