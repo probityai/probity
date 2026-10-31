@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -124,6 +125,14 @@ class Fixture(unittest.TestCase):
         (root / "pyproject.toml").write_text(PYPROJECT.replace("1.2.3", "1.3.0"))
         findings, _ = vp.scan(vp.load_config(root))
         self.assertEqual(len(findings), 1)
+
+    def test_refresh_leaves_a_parseable_lock(self):
+        root, cfg, _ = self.run_check("pip install demo==1.2.3\n")
+        with mock.patch.object(vp, "registry_latest", return_value="0.31.0"):
+            vp.refresh(cfg)
+        text = (root / "version-pins.toml").read_text()
+        self.assertIn('"pypi:agent-evidence-vectors" = "0.31.0"\n', text)
+        vp.load_config(root)
 
     def test_two_owners_for_one_package_is_a_config_error(self):
         bad = CONFIG + '\n[[own]]\nkey = "pypi:agent-evidence-vectors"\nmanifest = "pyproject.toml"\n'

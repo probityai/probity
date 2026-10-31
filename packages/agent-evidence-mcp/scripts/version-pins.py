@@ -795,7 +795,7 @@ def refresh(cfg: Config, rel: str = CONFIG) -> int:
         if latest is None or latest == e.version:
             continue
         pattern = re.compile(rf'(?m)^("{re.escape(e.key)}"\s*=\s*(?:\{{[^}}\n]*version\s*=\s*)?"){re.escape(e.version)}"')
-        text, n = pattern.subn(rf"\g<1>{latest}\"", text)
+        text, n = pattern.subn(lambda m: f'{m.group(1)}{latest}"', text)
         if n != 1:
             raise ConfigError(f"could not move {e.key} in {rel}")
         print(f"family {e.key}: {e.version} -> {latest}")

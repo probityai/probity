@@ -15,9 +15,9 @@ publisher = "probityai/agent-evidence-mcp"
 
 # Packages other repositories release that a page here names.
 [family]
-"pypi:probity-verify" = "0.2.4"
-"pypi:agent-evidence-vectors" = "0.30.0"
+"pypi:probity-verify" = "0.3.0"
+"pypi:agent-evidence-vectors" = "0.31.0"
 "pypi:agent-evidence-vocabulary" = "0.8.0"
 "pypi:agent-evidence-admission" = "0.2.0"
 "pypi:jcs-admit" = "0.1.0"
-"action:agent-evidence-vectors" = "0.30.0"
+"action:agent-evidence-vectors" = "0.31.0"
