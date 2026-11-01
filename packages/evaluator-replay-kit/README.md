@@ -5,8 +5,8 @@ Replay a lab-produced agent action record: recompute its digest chain and flag a
 It is for evaluators and auditors who receive an action record from an AI lab and need to know the record is whole before they read it.
 
 ```sh
-pip install "git+https://github.com/probityai/evaluator-replay-kit@v0.1.0"
-git clone --branch v0.1.0 https://github.com/probityai/evaluator-replay-kit && cd evaluator-replay-kit
+pip install "git+https://github.com/probityai/probity@evaluator-replay-kit-v0.1.0#subdirectory=packages/evaluator-replay-kit"
+git clone --branch evaluator-replay-kit-v0.1.0 https://github.com/probityai/probity && cd probity/packages/evaluator-replay-kit
 evaluator-replay verify tests/fixtures/accept-3
 evaluator-replay verify tests/fixtures/gap-2 --pin tests/fixtures/accept-3/pin.json
 ```
@@ -38,8 +38,8 @@ Version 0.1.0. The digest chain, the pin and the tamper and gap findings work an
 
 | page | read it for |
 | --- | --- |
-| [Specification](https://github.com/probityai/evaluator-replay-kit/blob/main/SPEC.md) | the record format, every check and finding code, the pin, and what a replay does not establish |
-| [Fixtures](https://github.com/probityai/evaluator-replay-kit/blob/main/tests/fixtures/README.md) | where the test records come from |
+| [Specification](https://github.com/probityai/probity/blob/main/packages/evaluator-replay-kit/SPEC.md) | the record format, every check and finding code, the pin, and what a replay does not establish |
+| [Fixtures](https://github.com/probityai/probity/blob/main/packages/evaluator-replay-kit/tests/fixtures/README.md) | where the test records come from |
 
 ## Next
 

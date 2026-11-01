@@ -13,8 +13,8 @@ dependencies = ["agent-evidence-vectors==0.30.0"]
 keywords = ["ai-agents", "evaluation", "audit", "provenance", "offline"]
 
 [project.urls]
-Source = "https://github.com/probityai/evaluator-replay-kit"
-Issues = "https://github.com/probityai/evaluator-replay-kit/issues"
+Source = "https://github.com/probityai/probity/tree/main/packages/evaluator-replay-kit"
+Issues = "https://github.com/probityai/probity/issues"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]

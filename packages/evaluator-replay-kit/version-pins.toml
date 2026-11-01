@@ -1,13 +1,17 @@
-# Where each version this repository's pages name is decided; the .github repository's version-pins script
-# holds every page to it. A release bumps pyproject.toml and runs
-# `gh api repos/probityai/.github/contents/scripts/version-pins.py -H 'Accept: application/vnd.github.raw' | python3 - write` in the same pull request, before the tag.
-repository = "probityai/evaluator-replay-kit"
+# Where each version this package's pages name is decided; the .github repository's version-pins script
+# holds every page to it. Paths are relative to the repository root: the package workflows run
+# `python3 -B scripts/version-pins.py check --root . --config packages/evaluator-replay-kit/version-pins.toml`
+# from a checkout of probityai/.github. A release bumps pyproject.toml and runs the script's `write` mode
+# the same way in the same pull request, before the tag.
+repository = "probityai/probity"
 
-# Released as a GitHub release of tag v<version>; nothing goes to a registry.
+# Released as a GitHub release of tag evaluator-replay-kit-v<version>; nothing goes to a registry.
 [[own]]
 key = "github:evaluator-replay-kit"
-manifest = "pyproject.toml"
-pages = ["README.md"]
+manifest = "packages/evaluator-replay-kit/pyproject.toml"
+pages = ["packages/evaluator-replay-kit/README.md"]
+tag = "evaluator-replay-kit-v{version}"
 
 [scan]
-skip = ["tests/fixtures/**"]
+include = ["packages/evaluator-replay-kit/**/*.md"]
+skip = ["packages/evaluator-replay-kit/tests/fixtures/**"]
