@@ -4,7 +4,7 @@
 # from a checkout of probityai/.github. A release bumps pyproject.toml and runs the script's `write` mode
 # the same way in the same pull request, before the tag, so the PyPI page built from the tagged commit
 # names the version it publishes.
-repository = "probityai/agent-evidence-mcp"
+repository = "probityai/probity"
 
 # PyPI renders README.md, so it may carry no relative link.
 registry_pages = { "packages/agent-evidence-mcp/README.md" = "pypi:agent-evidence-mcp" }
@@ -14,7 +14,7 @@ key = "pypi:agent-evidence-mcp"
 manifest = "packages/agent-evidence-mcp/pyproject.toml"
 pages = ["packages/agent-evidence-mcp/README.md"]
 tag = "agent-evidence-mcp-v{version}"
-publisher = "probityai/agent-evidence-mcp"
+publisher = "probityai/probity"
 
 # Packages other repositories release that a page here names.
 [family]

@@ -18,7 +18,7 @@ Add it to Claude Code, then ask the assistant to run the sample claim:
 claude mcp add agent-evidence -- uvx agent-evidence-mcp@0.2.4
 ```
 
-Or install the Claude Code plugin: `/plugin install agent-evidence --marketplace probityai/agent-evidence-mcp`.
+Or install the Claude Code plugin: `/plugin install agent-evidence --marketplace probityai/probity`.
 
 Or call a tool from Python, with no client installed beyond the package:
 
@@ -57,10 +57,10 @@ Version 0.2.4. The tests run every tool through a real MCP client against the sh
 
 | page | read it for |
 | --- | --- |
-| [Tools](https://github.com/probityai/agent-evidence-mcp/blob/main/docs/tools.md) | every tool, its arguments and what it returns |
-| [Install](https://github.com/probityai/agent-evidence-mcp/blob/main/docs/install.md) | Claude Code, Gemini CLI, Docker and plain stdio |
-| [Agent guide](https://github.com/probityai/agent-evidence-mcp/blob/main/llms.txt) | a short index for agents using the server |
-| [Changing the repository](https://github.com/probityai/agent-evidence-mcp/blob/main/AGENTS.md) | the commands to run and what never to hand-edit |
+| [Tools](https://github.com/probityai/probity/blob/main/packages/agent-evidence-mcp/docs/tools.md) | every tool, its arguments and what it returns |
+| [Install](https://github.com/probityai/probity/blob/main/packages/agent-evidence-mcp/docs/install.md) | Claude Code, Gemini CLI, Docker and plain stdio |
+| [Agent guide](https://github.com/probityai/probity/blob/main/packages/agent-evidence-mcp/llms.txt) | a short index for agents using the server |
+| [Changing the repository](https://github.com/probityai/probity/blob/main/packages/agent-evidence-mcp/AGENTS.md) | the commands to run and what never to hand-edit |
 
 ## License
 

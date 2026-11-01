@@ -4,7 +4,8 @@
   "title": "Agent evidence",
   "description": "Offline, read-only tools that verify AI claims against evidence and replay conformance vectors.",
   "repository": {
-    "url": "https://github.com/probityai/agent-evidence-mcp",
+    "url": "https://github.com/probityai/probity",
+    "subfolder": "packages/agent-evidence-mcp",
     "source": "github"
   },
   "version": "0.2.4",

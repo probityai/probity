@@ -37,9 +37,9 @@ dependencies = [
 test = ["pytest==9.1.1"]
 
 [project.urls]
-Source = "https://github.com/probityai/agent-evidence-mcp"
-Documentation = "https://github.com/probityai/agent-evidence-mcp/blob/main/docs/tools.md"
-Issues = "https://github.com/probityai/agent-evidence-mcp/issues"
+Source = "https://github.com/probityai/probity/tree/main/packages/agent-evidence-mcp"
+Documentation = "https://github.com/probityai/probity/blob/main/packages/agent-evidence-mcp/docs/tools.md"
+Issues = "https://github.com/probityai/probity/issues"
 
 [project.scripts]
 agent-evidence-mcp = "agent_evidence_mcp.server:main"
