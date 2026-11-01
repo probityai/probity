@@ -9,7 +9,7 @@ description = "Replay a lab-produced agent action record: recompute its digest c
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
-dependencies = ["agent-evidence-vectors==0.30.0"]
+dependencies = ["agent-evidence-vectors>=0.30.0,<1"]
 keywords = ["ai-agents", "evaluation", "audit", "provenance", "offline"]
 
 [project.urls]
