@@ -42,7 +42,7 @@ Keep a separate source checkout if the selected profile needs scripts:
 ```sh
 git clone https://github.com/probityai/probity.git observer-source
 git -C observer-source checkout b617361c221db5ca96989a94c60e8480e14aecd5
-observer-env/bin/agent-evidence-read-native --source-checkout "$PWD/observer-source/packages/agent-evidence-observer" --describe-sources inspect-execution
+observer-env/bin/agent-evidence-read-native --source-checkout "$PWD/observer-source/packages/observer" --describe-sources inspect-execution
 ```
 
 This command prints `installed_sources` and `reader_sources` hash maps for review.

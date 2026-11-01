@@ -64,7 +64,7 @@ jobs:
       - name: Normally upgrade the installed original reader and refuse stale selection
         run: |
           python -m pip download --require-hashes --only-binary=:all: -r requirements-reader.lock --dest reader-dependency-wheels
-          python verify_upgrade.py --baseline ../../selected-reader-baseline/packages/agent-evidence-observer/interop/joint-recovery-2026-10-02 --packet fresh-run --output upgrade-receipts --dependency-wheels reader-dependency-wheels > upgrade-report.json
+          python verify_upgrade.py --baseline ../../selected-reader-baseline/packages/observer/interop/joint-recovery-2026-10-02 --packet fresh-run --output upgrade-receipts --dependency-wheels reader-dependency-wheels > upgrade-report.json
       - name: Build and normally install a separate framework-free reader
         run: |
           python -m pip wheel --no-deps --no-build-isolation --wheel-dir wheels ../.. .

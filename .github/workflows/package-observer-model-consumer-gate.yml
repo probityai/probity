@@ -58,18 +58,18 @@ jobs:
           python -m pip install --require-hashes --only-binary=:all: -r interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock
       - name: Build the frozen0.0.1 baseline and install both clean environments
         run: |
-          python historical-model-reader/packages/agent-evidence-observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/historical-model-reader/packages/agent-evidence-observer" "$RUNNER_TEMP/baseline-model-wheels"
+          python historical-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/historical-model-reader/packages/observer" "$RUNNER_TEMP/baseline-model-wheels"
           for environment in baseline-consumer previous-consumer; do
             python -m venv "$RUNNER_TEMP/$environment"
             "$RUNNER_TEMP/$environment/bin/python" -m pip install --no-index --no-deps "$RUNNER_TEMP/baseline-model-wheels/"*.whl
           done
       - name: Build the frozen 0.0.2 wheel and install the next upgrade baseline
         run: |
-          python previous-model-reader/packages/agent-evidence-observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/previous-model-reader/packages/agent-evidence-observer" "$RUNNER_TEMP/previous-model-wheels"
+          python previous-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/previous-model-reader/packages/observer" "$RUNNER_TEMP/previous-model-wheels"
           "$RUNNER_TEMP/previous-consumer/bin/python" -m pip install --no-index --no-deps --upgrade "$RUNNER_TEMP/previous-model-wheels/"*.whl
       - name: Build frozen 0.0.3 and retain the next clean upgrade baseline
         run: |
-          python boundary-baseline-model-reader/packages/agent-evidence-observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/boundary-baseline-model-reader/packages/agent-evidence-observer" "$RUNNER_TEMP/boundary-baseline-wheels"
+          python boundary-baseline-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/boundary-baseline-model-reader/packages/observer" "$RUNNER_TEMP/boundary-baseline-wheels"
           for environment in format-consumer consumer; do
             python -m venv "$RUNNER_TEMP/$environment"
             "$RUNNER_TEMP/$environment/bin/python" -m pip install --no-index --no-deps "$RUNNER_TEMP/boundary-baseline-wheels/"*.whl
