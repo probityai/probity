@@ -30,7 +30,7 @@ Source = "https://github.com/probityai/probity/tree/main/packages/probityai"
 Issues = "https://github.com/probityai/probity/issues"
 
 [project.optional-dependencies]
-test = ["pytest>=8,<10"]
+test = ["pytest>=9.2.0,<10"]
 
 [project.scripts]
 probityai = "probityai.cli:main"

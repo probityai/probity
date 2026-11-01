@@ -40,7 +40,7 @@
   "workflows": [
     {
       "path": ".github/workflows/release.yml",
-      "sha256": "a4e7f7395a1b286320590ddf0524ad1df23da08c6074cd51ca4df992bbd427c1"
+      "sha256": "7a1933ff6696baf56c480beee03feac484fa09725da13b6accfe99324feed7fc"
     },
     {
       "path": ".github/workflows/python-build.yml",
