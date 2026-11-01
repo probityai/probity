@@ -30,3 +30,18 @@ updates:
     directory: /examples/checkout-runner
     schedule:
       interval: weekly
+  - package-ecosystem: uv
+    directory: /packages/agent-evidence-mcp
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    groups:
+      family:
+        patterns:
+          - "agent-evidence-*"
+          - "probity-verify"
+          - "jcs-admit"
+  - package-ecosystem: docker
+    directory: /packages/agent-evidence-mcp
+    schedule:
+      interval: weekly

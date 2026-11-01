@@ -1,0 +1,33 @@
+# Moved from packages/agent-evidence-mcp/.github/workflows/badge-check.yml when the package was
+# imported. Fetches every image the package's markdown pages show, badges included, once a week,
+# and fails naming each one that does not load as an image.
+name: package-agent-evidence-mcp-badges
+
+on:
+  schedule:
+    - cron: "41 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  badges:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: fetch the version-pins script at its pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: probityai/.github
+          ref: ecb47052aa3ae8188c74f3cdc31eb8f4e9402811
+          path: .github-scripts
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: every image on every page loads
+        run: python3 -B .github-scripts/scripts/version-pins.py badges --root . --config packages/agent-evidence-mcp/version-pins.toml
