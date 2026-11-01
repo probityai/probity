@@ -42,7 +42,7 @@ requires-dist = [
     { name = "agent-evidence-vocabulary", specifier = ">=0.8.0,<1" },
     { name = "jcs-admit", specifier = ">=0.1.0,<1" },
     { name = "mcp", specifier = "==2.3.0" },
-    { name = "probity-verify", specifier = ">=0.2.2,<1" },
+    { name = "probity-verify", specifier = ">=0.2.2,<0.5" },
     { name = "pytest", marker = "extra == 'test'", specifier = "==9.1.1" },
     { name = "pyyaml", specifier = "==6.0.3" },
 ]

@@ -26,7 +26,7 @@ keywords = ["mcp", "model-context-protocol", "ai-agents", "evidence-verification
 dependencies = [
   "mcp==2.3.0",
   "pyyaml==6.0.3",
-  "probity-verify>=0.2.2,<1",
+  "probity-verify>=0.2.2,<0.5",
   "agent-evidence-vectors>=0.30.0,<1",
   "agent-evidence-vocabulary>=0.8.0,<1",
   "agent-evidence-admission>=0.2.0,<1",
