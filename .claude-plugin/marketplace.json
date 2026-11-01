@@ -1,0 +1,20 @@
+{
+  "name": "agent-evidence-plugins",
+  "owner": { "name": "Probity AI" },
+  "metadata": { "description": "Plugins that replay agent-evidence decision bundles and verify claims against evidence, offline" },
+  "plugins": [
+    {
+      "name": "verdict-bundle-gate",
+      "source": "./packages/agent-evidence-plugins/plugins/verdict-bundle-gate",
+      "description": "Replay a verdict bundle with the pinned probity-verify after any tool names one, and block on tamper or a decision you did not allow.",
+      "version": "0.1.0",
+      "category": "security",
+      "keywords": ["agent-evidence", "verification", "hook", "probity-verify"]
+    },
+    {
+      "name": "agent-evidence",
+      "source": "./packages/agent-evidence-mcp",
+      "description": "Verify claims about AI systems against supplied evidence and replay the agent-evidence conformance vectors, offline and read-only."
+    }
+  ]
+}
