@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -140,3 +140,16 @@ def test_a_tag_must_sit_on_main_or_on_the_maintenance_branch_of_its_own_series()
 def test_a_harness_change_selects_no_member(root):
     assert workspace.changed(["harnesses/plugins/tests/test_x.py"], root) == {
         "base-lib": False, "front": False, "other-tool": False}
+
+
+def test_every_package_folder_is_named_after_its_distribution():
+    # packages/<published-name>/: a folder holds one published distribution and carries its name,
+    # so a reader can go from a PyPI page to the folder without a lookup table.
+    packages = Path(__file__).parents[1] / "packages"
+    for folder in sorted(p for p in packages.iterdir() if p.is_dir()):
+        manifest = folder / "pyproject.toml"
+        assert manifest.is_file(), f"{folder.name} publishes nothing; move it out of packages/"
+        name = workspace.tomllib.loads(manifest.read_text())["project"]["name"]
+        assert folder.name == name, f"packages/{folder.name} publishes {name!r}; name the folder {name}"
+    for member in workspace.members().values():
+        assert PurePosixPath(member.directory).name == member.distribution, member
