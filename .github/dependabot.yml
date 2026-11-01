@@ -1,7 +1,8 @@
 # One configuration for the whole workspace. The uv workspace has one lock at the
 # root, so one uv entry covers every Python member. Add a cargo entry for "/" in
 # the same change that imports the first crate (an empty Cargo workspace has no
-# lock to update).
+# lock to update). Each Python member groups its updates into one pull request per
+# week, so a release wave of small bumps arrives as a handful of reviews, not thirteen.
 version: 2
 updates:
   - package-ecosystem: uv
@@ -22,14 +23,23 @@ updates:
     directory: /packages/ratchet
     schedule:
       interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
   - package-ecosystem: uv
     directory: /packages/observer
     schedule:
       interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
   - package-ecosystem: uv
     directory: /examples/checkout-runner
     schedule:
       interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
   - package-ecosystem: uv
     directory: /packages/agent-evidence-mcp
     schedule:
