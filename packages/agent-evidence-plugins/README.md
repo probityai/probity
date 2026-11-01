@@ -6,8 +6,8 @@ It is for people who let an agent consume a server's or a lab's verdict (a done 
 
 ```sh
 pip install probity-verify==0.3.0
-git clone --branch v0.1.0 https://github.com/probityai/agent-evidence-plugins
-cd agent-evidence-plugins
+git clone --branch agent-evidence-plugins-v0.1.0 https://github.com/probityai/probity
+cd probity/packages/agent-evidence-plugins
 python3 plugins/verdict-bundle-gate/scripts/verify_bundle.py tests/fixtures/honest.decision.zip
 python3 plugins/verdict-bundle-gate/scripts/verify_bundle.py tests/fixtures/honest-failure.decision.zip
 ```
@@ -24,7 +24,7 @@ A bundle that fails replay (a changed artifact, a forged decision, a corrupt ZIP
 ## Install in Claude Code
 
 ```sh
-claude plugin marketplace add probityai/agent-evidence-plugins
+claude plugin marketplace add probityai/probity
 claude plugin install verdict-bundle-gate@agent-evidence-plugins
 ```
 
@@ -32,7 +32,7 @@ The plugin registers a PostToolUse hook. After a Write, Edit, Bash or MCP tool c
 
 ## Install in Cursor
 
-Copy `cursor/rules/verify-verdict-bundle.mdc` to `.cursor/rules/`, `cursor/hooks.json` to `.cursor/hooks.json`, and `plugins/verdict-bundle-gate/scripts/verify_bundle.py` to `scripts/`. The rule tells the agent to run the gate before relying on a bundle. Cursor's after-execution hooks report but do not block, so the rule is what holds the line there.
+From `packages/agent-evidence-plugins` in the probityai/probity repository, copy `cursor/rules/verify-verdict-bundle.mdc` to `.cursor/rules/`, `cursor/hooks.json` to `.cursor/hooks.json`, and `plugins/verdict-bundle-gate/scripts/verify_bundle.py` to `scripts/`. The rule tells the agent to run the gate before relying on a bundle. Cursor's after-execution hooks report but do not block, so the rule is what holds the line there.
 
 ## Settings
 
@@ -50,10 +50,10 @@ Version 0.1.0. The gate and both plugin shells are tested against real bundles b
 
 | page | read it for |
 | --- | --- |
-| [Fixtures](https://github.com/probityai/agent-evidence-plugins/blob/main/tests/fixtures/README.md) | where the two test bundles come from and how to rebuild them |
-| [Gate reference](https://github.com/probityai/agent-evidence-plugins/blob/main/docs/gate.md) | exit codes, hook payload matching and what the replay checks |
+| [Fixtures](https://github.com/probityai/probity/blob/main/packages/agent-evidence-plugins/tests/fixtures/README.md) | where the two test bundles come from and how to rebuild them |
+| [Gate reference](https://github.com/probityai/probity/blob/main/packages/agent-evidence-plugins/docs/gate.md) | exit codes, hook payload matching and what the replay checks |
 
 ## Next
 
-- Tag v0.1.0 and submit the marketplace to the Cursor directory.
+- Submit the marketplace to the Cursor directory.
 - Block on a producer signature once the verifier exposes one.
