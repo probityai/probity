@@ -1,16 +1,19 @@
-# Where each version this repository's pages name is decided; the .github repository's version-pins script
-# holds every page to it. A release bumps pyproject.toml and runs
-# `gh api repos/probityai/.github/contents/scripts/version-pins.py -H 'Accept: application/vnd.github.raw' | python3 - write` in the same pull request, before the tag,
-# so the PyPI page built from the tagged commit names the version it publishes.
+# Where each version this package's pages name is decided; the .github repository's version-pins script
+# holds every page to it. Paths are relative to the repository root: the package workflows run
+# `python3 -B scripts/version-pins.py check --root . --config packages/agent-evidence-mcp/version-pins.toml`
+# from a checkout of probityai/.github. A release bumps pyproject.toml and runs the script's `write` mode
+# the same way in the same pull request, before the tag, so the PyPI page built from the tagged commit
+# names the version it publishes.
 repository = "probityai/agent-evidence-mcp"
 
 # PyPI renders README.md, so it may carry no relative link.
-registry_pages = { "README.md" = "pypi:agent-evidence-mcp" }
+registry_pages = { "packages/agent-evidence-mcp/README.md" = "pypi:agent-evidence-mcp" }
 
 [[own]]
 key = "pypi:agent-evidence-mcp"
-manifest = "pyproject.toml"
-pages = ["README.md"]
+manifest = "packages/agent-evidence-mcp/pyproject.toml"
+pages = ["packages/agent-evidence-mcp/README.md"]
+tag = "agent-evidence-mcp-v{version}"
 publisher = "probityai/agent-evidence-mcp"
 
 # Packages other repositories release that a page here names.
@@ -21,3 +24,6 @@ publisher = "probityai/agent-evidence-mcp"
 "pypi:agent-evidence-admission" = "0.2.0"
 "pypi:jcs-admit" = "0.1.0"
 "action:agent-evidence-vectors" = "0.31.0"
+
+[scan]
+include = ["packages/agent-evidence-mcp/**/*.md", "packages/agent-evidence-mcp/llms*.txt"]

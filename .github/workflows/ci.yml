@@ -154,9 +154,23 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
+  package-agent-evidence-mcp:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['agent-evidence-mcp']
+    uses: ./.github/workflows/package-agent-evidence-mcp.yml
+
+  agent-evidence-mcp-distribution:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['agent-evidence-mcp']
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: agent-evidence-mcp
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
+
   ci-ok:
     if: always()
-    needs: [changes, lint, probity-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution]
+    needs: [changes, lint, probity-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed

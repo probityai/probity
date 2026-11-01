@@ -1,10 +1,10 @@
-name: publish-mcp-registry
-
-# Publishes server.json to the official MCP Registry. The registry checks that the
-# repository owner matches the io.github.probityai namespace through this job's
-# GitHub OIDC identity, and that the PyPI package's README carries the mcp-name line.
-# The release workflow calls it after PyPI and the image are published, so the registry
-# cannot lag behind a release; it can still be run by hand.
+# Moved from packages/agent-evidence-mcp/.github/workflows/publish-mcp-registry.yml when the
+# package was imported. Publishes packages/agent-evidence-mcp/server.json to the official MCP
+# Registry. The registry checks that the repository owner matches the io.github.probityai
+# namespace through this job's GitHub OIDC identity, and that the PyPI package's README carries
+# the mcp-name line. release.yml calls it after PyPI is published, so the registry cannot lag a
+# release; it can still be run by hand.
+name: package-agent-evidence-mcp-registry
 
 on:
   workflow_dispatch:
@@ -20,10 +20,15 @@ env:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-mcp
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: install the pinned publisher
         run: |
           curl -fsSL -o publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"

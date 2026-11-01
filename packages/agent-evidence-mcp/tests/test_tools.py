@@ -12,11 +12,10 @@ from importlib import metadata, resources
 from pathlib import Path
 
 import pytest
-from mcp.client import Client
-from mcp.client.stdio import StdioServerParameters
-
 from agent_evidence_mcp.server import TOOLS, build_server
 from conftest import call
+from mcp.client import Client
+from mcp.client.stdio import StdioServerParameters
 
 SAMPLES = Path(str(resources.files("probity_verify") / "samples"))
 JUNE_POLICY_SHA = "dfda1551714f92702169d1411af6b0bfeee54732f934ce71265534af775fa388"

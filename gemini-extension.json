@@ -8,5 +8,5 @@
       "args": ["agent-evidence-mcp@0.2.4"]
     }
   },
-  "contextFileName": "llms.txt"
+  "contextFileName": "packages/agent-evidence-mcp/llms.txt"
 }

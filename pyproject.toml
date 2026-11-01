@@ -7,8 +7,10 @@ members = ["packages/*"]
 # packages/ratchet is its own uv workspace with its own lock: its Python floor
 # (3.12) and its benchmark extras (git sources, overrides) would otherwise bind
 # every member. packages/observer keeps its own lock for the same floor.
+# packages/agent-evidence-mcp keeps its own lock too: its pinned family packages resolve from PyPI,
+# not from workspace members.
 # scripts/workspace.py still reads both and their members.
-exclude = ["packages/ratchet", "packages/observer"]
+exclude = ["packages/ratchet", "packages/observer", "packages/agent-evidence-mcp"]
 
 [tool.uv]
 package = false
