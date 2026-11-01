@@ -27,7 +27,7 @@ With Python 3.12 and [uv](https://docs.astral.sh/uv/):
 
 ```sh
 uv venv observer-env --python python3.12
-uv pip install --python observer-env/bin/python 'agent-evidence-observer @ git+https://github.com/probityai/probity.git@b617361c221db5ca96989a94c60e8480e14aecd5#subdirectory=packages/agent-evidence-observer'
+uv pip install --python observer-env/bin/python 'agent-evidence-observer @ git+https://github.com/probityai/probity.git@b617361c221db5ca96989a94c60e8480e14aecd5#subdirectory=packages/observer'
 observer-env/bin/agent-evidence-observer demo sample-run
 observer-env/bin/agent-evidence-observer verify sample-run
 ```
