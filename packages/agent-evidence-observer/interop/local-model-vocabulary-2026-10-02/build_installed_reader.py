@@ -20,6 +20,8 @@ from email.parser import BytesParser
 from pathlib import Path
 
 PACKAGE = "probity_policy_vocabulary_reader"
+# This file sits at <package folder>/interop/<experiment>/; pinned sources are read under it.
+PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 TARGETS = {
     "pyproject.toml",
     "LICENSE",
@@ -82,7 +84,11 @@ def select(
         relative = Path(pin["path"])
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError("source selection escapes checkout")
-        path = checkout / relative
+        # The pin names the file where it sat at the reviewed commit. The package folder may have
+        # been renamed since, so the current copy is read at the same place under this package.
+        if len(relative.parts) < 3 or relative.parts[0] != "packages":
+            raise ValueError("source pin must name a file under a package folder")
+        path = PACKAGE_ROOT / Path(*relative.parts[2:])
         if not path.resolve().is_relative_to(checkout.resolve()) or any(
             parent.is_symlink() for parent in (path, *path.parents)
         ):
