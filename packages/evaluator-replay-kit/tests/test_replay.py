@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 from agent_evidence_vectors.auditrecord import canonical_bytes
-
 from evaluator_replay_kit import Pin, make_pin, replay_bytes
 from evaluator_replay_kit.cli import main
 from evaluator_replay_kit.replay import PinError, digest

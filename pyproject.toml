@@ -8,7 +8,8 @@ members = ["packages/*"]
 # (3.12) and its benchmark extras (git sources, overrides) would otherwise bind
 # every member. packages/observer keeps its own lock for the same floor.
 # scripts/workspace.py still reads both and their members.
-exclude = ["packages/ratchet", "packages/observer"]
+# packages/evaluator-replay-kit pins agent-evidence-vectors from PyPI, not from a workspace member.
+exclude = ["packages/ratchet", "packages/observer", "packages/evaluator-replay-kit"]
 
 [tool.uv]
 package = false

@@ -1,0 +1,40 @@
+# Moved from packages/evaluator-replay-kit/.github/workflows/registry-verify.yml when the package
+# was imported. Compares what the package declares (its manifests and the family lock in
+# packages/evaluator-replay-kit/version-pins.toml) with what its tags and the registries hold, after
+# every release run and once a day. It fails when a manifest was bumped and never released, when a
+# tag exists and the registry lacks it, when a registry holds a version the source does not, when a
+# package was published from another repository, or when the family lock lags a release. Each line
+# says which, and the last line says N of M.
+name: package-evaluator-replay-kit-registry-verify
+
+on:
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: fetch the version-pins script at its pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: probityai/.github
+          ref: ecb47052aa3ae8188c74f3cdc31eb8f4e9402811
+          path: .github-scripts
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: manifests, tags and registries agree
+        run: python3 -B .github-scripts/scripts/version-pins.py registry --root . --config packages/evaluator-replay-kit/version-pins.toml
