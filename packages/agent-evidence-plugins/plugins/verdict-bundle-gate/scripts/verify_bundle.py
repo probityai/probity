@@ -39,8 +39,9 @@ import shlex
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 PINNED = "probity-verify==0.3.0"
 DECISIONS = ("supported", "contradicted", "not_established")

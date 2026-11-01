@@ -183,9 +183,12 @@ def test_hook_ignores_non_json_stdin():
 
 
 def test_manifests_parse_and_agree():
-    market = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
-    for entry in market["plugins"]:
-        base = ROOT / entry["source"]
+    repo = ROOT.parents[1]
+    market = json.loads((repo / ".claude-plugin" / "marketplace.json").read_text())
+    ours = [e for e in market["plugins"] if (repo / e["source"]).is_relative_to(ROOT)]
+    assert [e["name"] for e in ours] == ["verdict-bundle-gate"]
+    for entry in ours:
+        base = repo / entry["source"]
         manifest = json.loads((base / ".claude-plugin" / "plugin.json").read_text())
         assert manifest["name"] == entry["name"] and manifest["version"] == entry["version"]
         hooks = json.loads((base / "hooks" / "hooks.json").read_text())
