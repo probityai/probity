@@ -1,11 +1,11 @@
 # Moved from packages/observer/.github/workflows/local-model-tool-arguments.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Prospective native tool arguments and abstention
 on:
   push:
-    paths: ['packages/observer/interop/local-model-tool-arguments-2026-10-03/**', '.github/workflows/package-observer-local-model-tool-arguments.yml']
+    paths: ['packages/agent-evidence-observer/interop/local-model-tool-arguments-2026-10-03/**', '.github/workflows/package-observer-local-model-tool-arguments.yml']
   pull_request:
-    paths: ['packages/observer/interop/local-model-tool-arguments-2026-10-03/**', '.github/workflows/package-observer-local-model-tool-arguments.yml']
+    paths: ['packages/agent-evidence-observer/interop/local-model-tool-arguments-2026-10-03/**', '.github/workflows/package-observer-local-model-tool-arguments.yml']
   workflow_dispatch:
     inputs:
       reviewed_source_head:
@@ -17,7 +17,7 @@ permissions:
   actions: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   offline-controls:
@@ -36,23 +36,23 @@ jobs:
       - run: python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' interop/local-model-tool-arguments-2026-10-03/*.py
       # The preregistered controls select Git blobs relative to the repository
       # root and cannot change, so give them a checkout whose root is the
-      # package tree: a commit with tree HEAD:packages/observer and parent HEAD.
+      # package tree: a commit with tree HEAD:packages/agent-evidence-observer and parent HEAD.
       - name: Select the package tree as its own source root
         run: |
           set -euo pipefail
-          tree="$(git rev-parse HEAD:packages/observer)"
+          tree="$(git rev-parse HEAD:packages/agent-evidence-observer)"
           date="$(git show -s --format=%cI HEAD)"
-          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/observer tree of $GITHUB_SHA")"
+          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/agent-evidence-observer tree of $GITHUB_SHA")"
           git worktree add --detach "$RUNNER_TEMP/observer-root" "$commit"
           test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse "HEAD^{tree}")" = "$tree"
       - name: Really install and replay disclosed synthetic consumer controls
         working-directory: ${{ runner.temp }}/observer-root
-        run: python -I -B interop/local-model-tool-arguments-2026-10-03/verify_installation.py . "$GITHUB_WORKSPACE/packages/observer/installed-tool-argument-controls"
+        run: python -I -B interop/local-model-tool-arguments-2026-10-03/verify_installation.py . "$GITHUB_WORKSPACE/packages/agent-evidence-observer/installed-tool-argument-controls"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: tool-argument-installed-offline-controls-${{ github.sha }}
-          path: packages/observer/installed-tool-argument-controls
+          path: packages/agent-evidence-observer/installed-tool-argument-controls
           if-no-files-found: error
           retention-days: 90
   retained-native-reader:
@@ -108,7 +108,7 @@ jobs:
         if: always()
         with:
           name: tool-argument-installed-retained-native-${{ github.sha }}
-          path: packages/observer/retained-tool-argument-consumer
+          path: packages/agent-evidence-observer/retained-tool-argument-consumer
           if-no-files-found: error
           retention-days: 90
   actual-cpu:
@@ -156,15 +156,15 @@ jobs:
         with:
           name: tool-argument-cpu-preparation-${{ github.sha }}
           path: |
-            packages/observer/tool-argument-preparation
-            packages/observer/tool-argument-observer
-            packages/observer/actual-tool-argument-consumer
+            packages/agent-evidence-observer/tool-argument-preparation
+            packages/agent-evidence-observer/tool-argument-observer
+            packages/agent-evidence-observer/actual-tool-argument-consumer
           if-no-files-found: warn
           retention-days: 90
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: tool-argument-cpu-native-packet-${{ github.sha }}
-          path: packages/observer/tool-argument-preparation/run
+          path: packages/agent-evidence-observer/tool-argument-preparation/run
           if-no-files-found: warn
           retention-days: 90

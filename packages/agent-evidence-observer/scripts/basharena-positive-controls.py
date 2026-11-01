@@ -2,7 +2,7 @@
 
 Run from the repository root with the observer package on PYTHONPATH::
 
-    python packages/observer/scripts/basharena-positive-controls.py OUT
+    python packages/agent-evidence-observer/scripts/basharena-positive-controls.py OUT
 
 Each control is a fresh one-service compose project. The fixture takes the agent's place between the
 runner's start state and end state (``run.start_state``, ``run.end_state``); the readings, the cold

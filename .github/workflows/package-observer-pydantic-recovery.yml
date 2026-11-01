@@ -1,27 +1,27 @@
 # Moved from packages/observer/.github/workflows/pydantic-recovery.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Pydantic native deferred recovery
 on:
   workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
-      - 'packages/observer/interop/pydantic-recovery-2026-10-03/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-pydantic-recovery.yml'
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/pydantic-recovery-2026-10-03/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-pydantic-recovery.yml'
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   native-installed-recovery:
@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: packages/observer/interop/pydantic-recovery-2026-10-03
+        working-directory: packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -57,14 +57,14 @@ jobs:
         with:
           name: pydantic-deferred-recovery-${{ github.sha }}
           path: |
-            packages/observer/interop/pydantic-recovery-2026-10-03/fresh-run/
-            packages/observer/interop/pydantic-recovery-2026-10-03/fresh-report.json
-            packages/observer/interop/pydantic-recovery-2026-10-03/host-receipts/
-            packages/observer/interop/pydantic-recovery-2026-10-03/host-repeat/
-            packages/observer/interop/pydantic-recovery-2026-10-03/install-report.json
-            packages/observer/interop/pydantic-recovery-2026-10-03/reader-install-report.json
-            packages/observer/interop/pydantic-recovery-2026-10-03/test-results.xml
-            packages/observer/interop/pydantic-recovery-2026-10-03/wheels-sha256.txt
-            packages/observer/interop/pydantic-recovery-2026-10-03/wheels/*.whl
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/fresh-run/
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/fresh-report.json
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/host-receipts/
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/host-repeat/
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/install-report.json
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/reader-install-report.json
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/test-results.xml
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/wheels-sha256.txt
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/wheels/*.whl
           if-no-files-found: error
           retention-days: 90

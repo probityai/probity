@@ -1,23 +1,23 @@
 # Moved from packages/observer/.github/workflows/execsurface-native-state.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: ExecSurface native state companion
 on:
   workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
-      - 'packages/observer/interop/execsurface-state-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/**'
       - '.github/workflows/package-observer-execsurface-native-state.yml'
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/execsurface-state-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/**'
       - '.github/workflows/package-observer-execsurface-native-state.yml'
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   reproduce:
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: packages/observer/interop/execsurface-state-2026-10-02
+        working-directory: packages/agent-evidence-observer/interop/execsurface-state-2026-10-02
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -46,7 +46,7 @@ jobs:
           python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' companion.py workload.py download_binary.py tests
       - name: Test real native execution, reference verifier and semantic refusal controls
         env:
-          EXECSURFACE_BINARY: ${{ github.workspace }}/packages/observer/interop/execsurface-state-2026-10-02/execsurface
+          EXECSURFACE_BINARY: ${{ github.workspace }}/packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/execsurface
         run: python -m pytest -q tests --junitxml=test-results.xml
       - name: Execute finite exact-source capture and state binding
         run: |
@@ -63,11 +63,11 @@ jobs:
         with:
           name: execsurface-state-${{ github.sha }}
           path: |
-            packages/observer/interop/execsurface-state-2026-10-02/native-run/
-            packages/observer/interop/execsurface-state-2026-10-02/*-report.json
-            packages/observer/interop/execsurface-state-2026-10-02/selected-pins.json
-            packages/observer/interop/execsurface-state-2026-10-02/source-pins.json
-            packages/observer/interop/execsurface-state-2026-10-02/test-results.xml
-            packages/observer/interop/execsurface-state-2026-10-02/execsurface.tar.gz
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/native-run/
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/*-report.json
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/selected-pins.json
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/source-pins.json
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/test-results.xml
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/execsurface.tar.gz
           if-no-files-found: error
           retention-days: 90

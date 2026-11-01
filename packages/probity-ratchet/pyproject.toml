@@ -36,7 +36,7 @@ ratchet = "ratchet.cli:main"
 # ratchet.proposers and ratchet.parent_choosers entry-point groups; this package registers none.
 
 [project.urls]
-Source = "https://github.com/probityai/probity/tree/main/packages/ratchet"
+Source = "https://github.com/probityai/probity/tree/main/packages/probity-ratchet"
 Issues = "https://github.com/probityai/probity/issues"
 
 [project.optional-dependencies]

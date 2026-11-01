@@ -3,7 +3,7 @@
 Each mutant undoes one guarantee: the two trace programs printing disjoint events, one finding per fact,
 the recount's own comparison and refusals, the controls going through the runner's steps, the image's
 own dpkg sums, I-9's networks and routes, failed host reads, and the attach marker. Each is applied to the source, the tests run with bytecode
-compiled afresh, and the file is restored. Run from ``packages/observer`` in an environment with the
+compiled afresh, and the file is restored. Run from ``packages/agent-evidence-observer`` in an environment with the
 ``test`` and ``done`` extras:
 
     python scripts/mutate-basharena-rules.py

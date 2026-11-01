@@ -5,7 +5,7 @@
     python3 scripts/workspace.py requires <distribution> # member directories it needs, itself last
 
 Members are the directories under packages/ that hold a pyproject.toml, and the
-members a package that is its own uv workspace declares (packages/ratchet, which
+members a package that is its own uv workspace declares (packages/probity-ratchet, which
 the root workspace excludes because its Python floor and benchmark extras would
 bind every other member, declares probity-ratchet-cases). A member
 is changed when a file under its directory changed, when a workspace member it

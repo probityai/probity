@@ -1,33 +1,33 @@
 # Moved from packages/observer/.github/workflows/joint-recovery.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Joint process and current-authority recovery
 on:
   workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
-      - 'packages/observer/interop/joint-recovery-2026-10-02/**'
-      - 'packages/observer/interop/langgraph-recovery-authority-2026-10-02/**'
-      - 'packages/observer/interop/langgraph-ticket-2026-10-02/**'
-      - 'packages/observer/interop/target-recovery-2026-10-02/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/langgraph-recovery-authority-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/target-recovery-2026-10-02/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-joint-recovery.yml'
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/joint-recovery-2026-10-02/**'
-      - 'packages/observer/interop/langgraph-recovery-authority-2026-10-02/**'
-      - 'packages/observer/interop/langgraph-ticket-2026-10-02/**'
-      - 'packages/observer/interop/target-recovery-2026-10-02/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/langgraph-recovery-authority-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/target-recovery-2026-10-02/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-joint-recovery.yml'
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   native-and-installed-reader:
@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: packages/observer/interop/joint-recovery-2026-10-02
+        working-directory: packages/agent-evidence-observer/interop/joint-recovery-2026-10-02
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: 815e517bb513014b31940a43d35a8ba1f189c573
-          path: packages/observer/selected-reader-baseline
+          path: packages/agent-evidence-observer/selected-reader-baseline
           persist-credentials: false
       - name: Install hash-selected native profile and exact Observer checkout
         run: |
@@ -64,7 +64,7 @@ jobs:
       - name: Normally upgrade the installed original reader and refuse stale selection
         run: |
           python -m pip download --require-hashes --only-binary=:all: -r requirements-reader.lock --dest reader-dependency-wheels
-          python verify_upgrade.py --baseline ../../selected-reader-baseline/packages/observer/interop/joint-recovery-2026-10-02 --packet fresh-run --output upgrade-receipts --dependency-wheels reader-dependency-wheels > upgrade-report.json
+          python verify_upgrade.py --baseline ../../selected-reader-baseline/packages/agent-evidence-observer/interop/joint-recovery-2026-10-02 --packet fresh-run --output upgrade-receipts --dependency-wheels reader-dependency-wheels > upgrade-report.json
       - name: Build and normally install a separate framework-free reader
         run: |
           python -m pip wheel --no-deps --no-build-isolation --wheel-dir wheels ../.. .
@@ -92,17 +92,17 @@ jobs:
         with:
           name: joint-recovery-${{ github.sha }}
           path: |
-            packages/observer/interop/joint-recovery-2026-10-02/fresh-run/
-            packages/observer/interop/joint-recovery-2026-10-02/fresh-report.json
-            packages/observer/interop/joint-recovery-2026-10-02/host-receipts/
-            packages/observer/interop/joint-recovery-2026-10-02/host-decision.json
-            packages/observer/interop/joint-recovery-2026-10-02/install-report.json
-            packages/observer/interop/joint-recovery-2026-10-02/reader-install-report.json
-            packages/observer/interop/joint-recovery-2026-10-02/wheels-sha256.txt
-            packages/observer/interop/joint-recovery-2026-10-02/wheels/
-            packages/observer/interop/joint-recovery-2026-10-02/test-results.xml
-            packages/observer/interop/joint-recovery-2026-10-02/upgrade-report.json
-            packages/observer/interop/joint-recovery-2026-10-02/upgrade-receipts/
-            packages/observer/interop/joint-recovery-2026-10-02/reader-dependency-wheels/
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/fresh-run/
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/fresh-report.json
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/host-receipts/
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/host-decision.json
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/install-report.json
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/reader-install-report.json
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/wheels-sha256.txt
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/wheels/
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/test-results.xml
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/upgrade-report.json
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/upgrade-receipts/
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/reader-dependency-wheels/
           if-no-files-found: error
           retention-days: 90

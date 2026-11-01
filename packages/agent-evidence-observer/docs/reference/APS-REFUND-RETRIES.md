@@ -36,7 +36,7 @@ mkdir aps-refund-demo
 cd aps-refund-demo
 git clone https://github.com/probityai/probity.git source
 git -C source checkout b617361c221db5ca96989a94c60e8480e14aecd5
-cd source/packages/observer
+cd source/packages/agent-evidence-observer
 bash interop/aps-durable-refund-2026-10-05/verify_install.sh ../capture
 SH
 ```

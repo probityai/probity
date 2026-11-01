@@ -5,10 +5,10 @@
 Use Python 3.12 on Linux. Install the root package normally from a reviewed immutable Git revision, or build and retain its wheel. Keep a separate checkout of that same revision for the profile readers: the root wheel supplies this wrapper and observer modules, while the profile scripts and common validator remain in the selected checkout. No editable install, Inspect installation or A2A SDK installation is needed for this offline step. The root package remains Apache-2.0; its `LICENSE` is in the selected source manifest. The retained producer packet separately contains its native source/runtime/license bytes.
 
 ```sh
-python -m pip install 'agent-evidence-observer @ git+https://github.com/probityai/probity.git@REVIEWED_COMMIT#subdirectory=packages/observer'
+python -m pip install 'agent-evidence-observer @ git+https://github.com/probityai/probity.git@REVIEWED_COMMIT#subdirectory=packages/agent-evidence-observer'
 git clone https://github.com/probityai/probity.git reader-source
 git -C reader-source checkout REVIEWED_COMMIT
-agent-evidence-read-native --source-checkout "$PWD/reader-source/packages/observer" --packet /retained/native-run --selection /policy/selected-inputs.json --selection-sha256 SELECTED_MANIFEST_SHA256 --output /consumer/new-receipt
+agent-evidence-read-native --source-checkout "$PWD/reader-source/packages/agent-evidence-observer" --packet /retained/native-run --selection /policy/selected-inputs.json --selection-sha256 SELECTED_MANIFEST_SHA256 --output /consumer/new-receipt
 ```
 
 Replace the uppercase values with an actual reviewed commit and selected digest. The output parent must exist; the output directory must be new. The command returns nonzero on refusal. Retain the entire output directory, including child stdout/stderr, selected inputs, launch record and report, even when the step fails. A zero-exit child with no report, malformed report, contradictory counters or a report declaring refusal fails. Stale output and symlink packets fail. A timeout terminates the reader process group. Installation failures must stop the caller before invoking the reader.

@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/remora-effect-bridge.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: REMORA local effect crosswalk
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-remora-effect-bridge.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-remora-effect-bridge.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-remora-effect-bridge.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-remora-effect-bridge.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   local-effect:
@@ -26,7 +26,7 @@ jobs:
         with:
           repository: darklordVirtual/REMORA-research
           ref: b25e735d36590154ff53768b4d245ad4c7996f64
-          path: packages/observer/remora-source
+          path: packages/agent-evidence-observer/remora-source
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -42,6 +42,6 @@ jobs:
         with:
           name: remora-local-effect-run
           path: |
-            packages/observer/remora-bridge-run/
-            packages/observer/bridge-stdout.json
-            packages/observer/bridge-verification.json
+            packages/agent-evidence-observer/remora-bridge-run/
+            packages/agent-evidence-observer/bridge-stdout.json
+            packages/agent-evidence-observer/bridge-verification.json

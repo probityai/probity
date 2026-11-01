@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/a2a-native.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Native A2A SDK exchange
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-a2a-native.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-a2a-native.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-a2a-native.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-a2a-native.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   native-a2a:
@@ -44,6 +44,6 @@ jobs:
         with:
           name: native-a2a-sdk-reference
           path: |
-            packages/observer/a2a-native-run/
-            packages/observer/a2a-results.xml
+            packages/agent-evidence-observer/a2a-native-run/
+            packages/agent-evidence-observer/a2a-results.xml
           if-no-files-found: error

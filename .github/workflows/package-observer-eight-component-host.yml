@@ -1,23 +1,23 @@
 # Moved from packages/observer/.github/workflows/eight-component-host.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Eight component installed host chain
 on:
   workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
-      - 'packages/observer/interop/eight-component-host-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/**'
       - '.github/workflows/package-observer-eight-component-host.yml'
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/eight-component-host-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/**'
       - '.github/workflows/package-observer-eight-component-host.yml'
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   installed-native-chain:
@@ -27,7 +27,7 @@ jobs:
       PYTHONDONTWRITEBYTECODE: '1'
     defaults:
       run:
-        working-directory: packages/observer/interop/eight-component-host-2026-10-02
+        working-directory: packages/agent-evidence-observer/interop/eight-component-host-2026-10-02
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

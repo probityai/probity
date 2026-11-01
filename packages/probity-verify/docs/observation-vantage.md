@@ -31,7 +31,7 @@ On a Linux host with Python 3.12, uv and permission to run the finite UID contro
 git clone https://github.com/probityai/probity
 cd probity
 git checkout b617361c221db5ca96989a94c60e8480e14aecd5
-cd packages/observer
+cd packages/agent-evidence-observer
 bash interop/witness-operator-2026-10-03/verify_install.sh \
   "$PWD/witness-evidence"
 ```

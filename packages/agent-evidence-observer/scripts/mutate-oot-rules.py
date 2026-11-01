@@ -4,7 +4,7 @@ turn the tests red.
 Each mutant deletes or weakens one rule: the replay's failure kind, the child loop's private
 helpers, the sealed execution surface, the in-process twin, or the trace's link following.
 Each is applied to the source, the tests run, and the file is restored. Run from
-``packages/observer`` in an environment with the ``test`` and ``done`` extras:
+``packages/agent-evidence-observer`` in an environment with the ``test`` and ``done`` extras:
 
     python scripts/mutate-oot-rules.py
 """

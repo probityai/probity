@@ -9,7 +9,7 @@ It is for teams running tool-using agents that touch money, accounts or tickets,
 ## Install
 
 ```sh
-git clone --branch probity-ratchet-v0.2.0 https://github.com/probityai/probity && cd probity/packages/ratchet
+git clone --branch probity-ratchet-v0.2.0 https://github.com/probityai/probity && cd probity/packages/probity-ratchet
 uv sync
 ```
 

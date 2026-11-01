@@ -28,7 +28,7 @@ git -C "$arena" fetch -q origin
 git -C "$arena" checkout -q "$BASHARENA_REV"
 (cd "$arena" && uv sync --frozen)
 
-observer_dir="$(pwd)/packages/observer/src/probity_observer/done/basharena"
+observer_dir="$(pwd)/packages/agent-evidence-observer/src/probity_observer/done/basharena"
 image="probity-observer-basharena:$(sha256sum "$observer_dir/observer.Dockerfile" "$observer_dir/observer_tools.txt" | sha256sum | cut -c1-12)"
 docker image inspect "$image" > /dev/null 2>&1 || docker build -q -f "$observer_dir/observer.Dockerfile" -t "$image" "$observer_dir"
 

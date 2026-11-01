@@ -1,5 +1,5 @@
 # Moved from packages/observer/.github/workflows/pydantic-ai-native.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Pydantic AI native ticket consumer
 
 on:
@@ -7,16 +7,16 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/pydantic-ai-native-2026-10-02/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-pydantic-ai-native.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'packages/observer/interop/pydantic-ai-native-2026-10-02/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-pydantic-ai-native.yml'
 
 permissions:
@@ -24,7 +24,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   native-consumer:
@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: packages/observer/interop/pydantic-ai-native-2026-10-02
+        working-directory: packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -58,11 +58,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          packet="$GITHUB_WORKSPACE/packages/observer/interop/pydantic-ai-native-2026-10-02/fresh-run/packet"
+          packet="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/fresh-run/packet"
           test ! -e "$packet"
           mkdir -p fresh-run
           cd "$RUNNER_TEMP"
-          probity-pydantic-run "$packet" --source-revision "$GITHUB_SHA" > "$GITHUB_WORKSPACE/packages/observer/interop/pydantic-ai-native-2026-10-02/fresh-run/producer-stdout.json"
+          probity-pydantic-run "$packet" --source-revision "$GITHUB_SHA" > "$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/fresh-run/producer-stdout.json"
       - name: Install separate offline consumer without agent framework
         shell: bash
         run: |
@@ -85,7 +85,7 @@ jobs:
         with:
           name: pydantic-ai-native-ticket
           path: |
-            packages/observer/interop/pydantic-ai-native-2026-10-02/fresh-run/
-            packages/observer/interop/pydantic-ai-native-2026-10-02/test-results.xml
+            packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/fresh-run/
+            packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/test-results.xml
           if-no-files-found: error
           retention-days: 90

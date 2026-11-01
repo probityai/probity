@@ -1,22 +1,22 @@
 # Moved from packages/observer/.github/workflows/witnessed-run-selection.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Installed witnessed run selection
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['packages/observer/src/**', 'packages/observer/tests/**', 'packages/observer/interop/witnessed-run-selection-2026-10-04/**', '.github/workflows/package-observer-witnessed-run-selection.yml', 'packages/observer/pyproject.toml']
+    paths: ['packages/agent-evidence-observer/src/**', 'packages/agent-evidence-observer/tests/**', 'packages/agent-evidence-observer/interop/witnessed-run-selection-2026-10-04/**', '.github/workflows/package-observer-witnessed-run-selection.yml', 'packages/agent-evidence-observer/pyproject.toml']
   pull_request:
     branches: [main]
-    paths: ['packages/observer/src/**', 'packages/observer/tests/**', 'packages/observer/interop/witnessed-run-selection-2026-10-04/**', '.github/workflows/package-observer-witnessed-run-selection.yml', 'packages/observer/pyproject.toml']
+    paths: ['packages/agent-evidence-observer/src/**', 'packages/agent-evidence-observer/tests/**', 'packages/agent-evidence-observer/interop/witnessed-run-selection-2026-10-04/**', '.github/workflows/package-observer-witnessed-run-selection.yml', 'packages/agent-evidence-observer/pyproject.toml']
 
 permissions:
   contents: read
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   installed-selection:

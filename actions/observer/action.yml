@@ -26,7 +26,7 @@ runs:
     - name: Install this selected reader
       shell: bash
       env:
-        PROBITY_SOURCE: ${{ github.action_path }}/../../packages/observer
+        PROBITY_SOURCE: ${{ github.action_path }}/../../packages/agent-evidence-observer
       run: |
         set -euo pipefail
         python -m pip install "$PROBITY_SOURCE"
@@ -34,7 +34,7 @@ runs:
       id: read
       shell: bash
       env:
-        PROBITY_SOURCE: ${{ github.action_path }}/../../packages/observer
+        PROBITY_SOURCE: ${{ github.action_path }}/../../packages/agent-evidence-observer
         PROBITY_PACKET: ${{ inputs.packet }}
         PROBITY_SELECTION: ${{ inputs.selection }}
         PROBITY_SELECTION_SHA256: ${{ inputs.selection-sha256 }}

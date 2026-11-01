@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/witness.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Witness server
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-witness.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-witness.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-witness.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-witness.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   witness:

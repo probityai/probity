@@ -1,22 +1,22 @@
 # Moved from packages/observer/.github/workflows/witness-operator.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Installed witness operator and public client
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['packages/observer/src/**', 'packages/observer/tests/**', 'packages/observer/interop/witness-operator-2026-10-03/**', '.github/workflows/package-observer-witness-operator.yml', 'packages/observer/pyproject.toml']
+    paths: ['packages/agent-evidence-observer/src/**', 'packages/agent-evidence-observer/tests/**', 'packages/agent-evidence-observer/interop/witness-operator-2026-10-03/**', '.github/workflows/package-observer-witness-operator.yml', 'packages/agent-evidence-observer/pyproject.toml']
   pull_request:
     branches: [main]
-    paths: ['packages/observer/src/**', 'packages/observer/tests/**', 'packages/observer/interop/witness-operator-2026-10-03/**', '.github/workflows/package-observer-witness-operator.yml', 'packages/observer/pyproject.toml']
+    paths: ['packages/agent-evidence-observer/src/**', 'packages/agent-evidence-observer/tests/**', 'packages/agent-evidence-observer/interop/witness-operator-2026-10-03/**', '.github/workflows/package-observer-witness-operator.yml', 'packages/agent-evidence-observer/pyproject.toml']
 
 permissions:
   contents: read
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   native-witness-operator:

@@ -12,7 +12,7 @@ uv venv --python 3.12 .venv
 curl --fail --location --output verify-source.tar.gz \
   https://codeload.github.com/probityai/probity-verify/tar.gz/a2a7e23413be0ab0ad1001d60085a2ff21eaa907
 uv pip install --python .venv/bin/python \
-  'agent-evidence-observer @ git+https://github.com/probityai/probity.git@b617361c221db5ca96989a94c60e8480e14aecd5#subdirectory=packages/observer' \
+  'agent-evidence-observer @ git+https://github.com/probityai/probity.git@b617361c221db5ca96989a94c60e8480e14aecd5#subdirectory=packages/agent-evidence-observer' \
   ./verify-source.tar.gz
 uv pip check --python .venv/bin/python
 mkdir -p verify-controls/scripts

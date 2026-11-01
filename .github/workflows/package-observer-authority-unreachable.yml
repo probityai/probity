@@ -1,19 +1,19 @@
 # Moved from packages/observer/.github/workflows/authority-unreachable.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Authority at dispatch and durable effect reference
 on:
   workflow_dispatch:
   pull_request:
     branches: [main]
-    paths: ['packages/observer/interop/authority-unreachable-2026-10-03/**', 'packages/observer/src/probity_observer/**', '.github/workflows/package-observer-authority-unreachable.yml']
+    paths: ['packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03/**', 'packages/agent-evidence-observer/src/probity_observer/**', '.github/workflows/package-observer-authority-unreachable.yml']
   push:
     branches: [main]
-    paths: ['packages/observer/interop/authority-unreachable-2026-10-03/**', 'packages/observer/src/probity_observer/**', '.github/workflows/package-observer-authority-unreachable.yml']
+    paths: ['packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03/**', 'packages/agent-evidence-observer/src/probity_observer/**', '.github/workflows/package-observer-authority-unreachable.yml']
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   authority-effect-comparison:

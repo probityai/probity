@@ -14,7 +14,7 @@ absent attribute of ``from pkg import submodule``, the client failures the child
 forge, the canonical codec, the grouped judging of a two-way boolean pair, and the record
 of where the parent ran. Each is applied to the source, its tests
 run (without bytecode, so a restored file is never measured through a stale cache), and the
-file is restored. Run from ``packages/observer`` in an environment with the ``test`` and
+file is restored. Run from ``packages/agent-evidence-observer`` in an environment with the ``test`` and
 ``done`` extras:
 
     python scripts/mutate-pytest-replay.py

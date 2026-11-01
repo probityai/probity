@@ -2,7 +2,7 @@
 
 Run after basharena-positive-controls.py has produced its control directories::
 
-    python packages/observer/scripts/verify-basharena-positive-controls.py OUT
+    python packages/agent-evidence-observer/scripts/verify-basharena-positive-controls.py OUT
 
 The second count must not share code with the first. This script imports nothing from the observer
 package: it reads the two bpftrace logs with its own parser, finds the grader roots itself, and applies

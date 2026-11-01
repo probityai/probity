@@ -1,26 +1,26 @@
 # Moved from packages/observer/.github/workflows/five-tier-breadth.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Finite five-tier integration breadth
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/five-tier-v0-2026-10-02/**'
-      - 'packages/observer/interop/a2a-native-2026-10-02/**'
-      - 'packages/observer/interop/evaluation-contract-2026-10-01/**'
+      - 'packages/agent-evidence-observer/interop/five-tier-v0-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/a2a-native-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/**'
       - '.github/workflows/package-observer-five-tier-breadth.yml'
   pull_request:
     paths:
-      - 'packages/observer/interop/five-tier-v0-2026-10-02/**'
-      - 'packages/observer/interop/a2a-native-2026-10-02/**'
-      - 'packages/observer/interop/evaluation-contract-2026-10-01/**'
+      - 'packages/agent-evidence-observer/interop/five-tier-v0-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/a2a-native-2026-10-02/**'
+      - 'packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/**'
       - '.github/workflows/package-observer-five-tier-breadth.yml'
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   execute-and-reconstruct:
@@ -53,9 +53,9 @@ jobs:
         with:
           name: finite-five-tier-native-integration
           path: |
-            packages/observer/five-tier-v0-run/
-            packages/observer/five-tier-v0-run.stdout.json
-            packages/observer/five-tier-v0-offline.json
-            packages/observer/five-tier-v0-tests.xml
+            packages/agent-evidence-observer/five-tier-v0-run/
+            packages/agent-evidence-observer/five-tier-v0-run.stdout.json
+            packages/agent-evidence-observer/five-tier-v0-offline.json
+            packages/agent-evidence-observer/five-tier-v0-tests.xml
           if-no-files-found: error
           retention-days: 90

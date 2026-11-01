@@ -26,10 +26,10 @@ requires-python = ">=3.12"
 dependencies = ["cryptography>=46,<51", "rfc8785==0.1.4"]
 
 [project.urls]
-Documentation = "https://github.com/probityai/probity/blob/main/packages/observer/docs/INSTALLATION.md"
-Source = "https://github.com/probityai/probity/tree/main/packages/observer"
+Documentation = "https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md"
+Source = "https://github.com/probityai/probity/tree/main/packages/agent-evidence-observer"
 Issues = "https://github.com/probityai/probity/issues"
-"Agent guide" = "https://github.com/probityai/probity/blob/main/packages/observer/llms.txt"
+"Agent guide" = "https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/llms.txt"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "hypothesis>=6,<7", "jsonschema>=4,<5"]

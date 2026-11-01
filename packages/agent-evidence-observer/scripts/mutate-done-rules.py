@@ -4,7 +4,7 @@ tests red.
 Each mutant deletes or weakens one rule of ``policy.py`` (how an attempt stands on the two
 verdicts, what escalates, what never pages a human) or of ``claims.py`` (whether the agent
 asserted done). Each is applied to the source, the tests run, and the file is restored. A
-mutant the tests do not kill is a rule no test holds. Run from ``packages/observer`` in an
+mutant the tests do not kill is a rule no test holds. Run from ``packages/agent-evidence-observer`` in an
 environment with the ``test`` and ``done`` extras:
 
     python scripts/mutate-done-rules.py

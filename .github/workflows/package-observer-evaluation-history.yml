@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/evaluation-history.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Evaluation history
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-evaluation-history.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-evaluation-history.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-evaluation-history.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-evaluation-history.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   inspect-contract:
@@ -32,4 +32,4 @@ jobs:
         if: always()
         with:
           name: evaluation-run
-          path: packages/observer/evaluation-run/
+          path: packages/agent-evidence-observer/evaluation-run/

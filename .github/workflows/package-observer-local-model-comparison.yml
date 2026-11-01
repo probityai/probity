@@ -1,16 +1,16 @@
 # Moved from packages/observer/.github/workflows/local-model-comparison.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Preregistered paired CPU model comparison
 on:
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-local-model-comparison.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-local-model-comparison.yml']
     branches: [run/local-model-comparison-v1]
   workflow_dispatch:
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   actual-cpu:
@@ -52,13 +52,13 @@ jobs:
         if: always()
         with:
           name: paired-model-cpu-preparation-${{ github.sha }}
-          path: packages/observer/model-comparison-artifacts
+          path: packages/agent-evidence-observer/model-comparison-artifacts
           if-no-files-found: error
           retention-days: 90
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: paired-model-cpu-native-packet-${{ github.sha }}
-          path: packages/observer/model-comparison-artifacts/run
+          path: packages/agent-evidence-observer/model-comparison-artifacts/run
           if-no-files-found: warn
           retention-days: 90

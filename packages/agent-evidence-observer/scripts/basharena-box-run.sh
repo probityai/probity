@@ -34,7 +34,7 @@ key=()
 tunnel=(ssh -o BatchMode=yes -o ExitOnForwardFailure=yes "${key[@]}" \
     -N -R "127.0.0.1:$remote_port:127.0.0.1:$port" "$box")
 job=("$box_run" "$name" --forward-env "$key_var" --forward-env "$url_var" --fetch "$out" "$local_out" -- \
-    packages/observer/scripts/basharena-box-job.sh "$rows" "$out" "$model" "$revision" "$@")
+    packages/agent-evidence-observer/scripts/basharena-box-job.sh "$rows" "$out" "$model" "$revision" "$@")
 if [ -n "${BASHARENA_DRY_RUN:-}" ]; then
     printf 'TUNNEL %s\n' "${tunnel[*]}"
     printf 'JOB %s=http://127.0.0.1:%s/v1 %s\n' "$url_var" "$remote_port" "${job[*]}"
