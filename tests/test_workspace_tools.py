@@ -135,3 +135,8 @@ def test_a_tag_must_sit_on_main_or_on_the_maintenance_branch_of_its_own_series()
     assert "git merge-base --is-ancestor HEAD origin/main" in release
     assert 'branch="origin/maint/${name}-${version%.*}"' in release
     assert 'git merge-base --is-ancestor HEAD "$branch"' in release
+
+
+def test_a_harness_change_selects_no_member(root):
+    assert workspace.changed(["harnesses/plugins/tests/test_x.py"], root) == {
+        "base-lib": False, "front": False, "other-tool": False}

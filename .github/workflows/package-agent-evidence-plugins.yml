@@ -1,5 +1,5 @@
 # Moved from packages/agent-evidence-plugins/.github/workflows/ci.yml when the package was
-# imported; its steps run from packages/agent-evidence-plugins. The README shape check is the
+# imported; its steps run from harnesses/agent-evidence-plugins. The README shape check is the
 # root lint job's.
 name: package-agent-evidence-plugins
 
@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: packages/agent-evidence-plugins
+        working-directory: harnesses/agent-evidence-plugins
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: every version a page names equals its manifest or the family lock
-        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config packages/agent-evidence-plugins/version-pins.toml
+        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config harnesses/agent-evidence-plugins/version-pins.toml
       - name: manifests parse
         run: |
-          for f in .claude-plugin/marketplace.json packages/agent-evidence-plugins/plugins/verdict-bundle-gate/.claude-plugin/plugin.json packages/agent-evidence-plugins/plugins/verdict-bundle-gate/hooks/hooks.json packages/agent-evidence-plugins/cursor/hooks.json; do python3 -m json.tool "$f" > /dev/null; done
+          for f in .claude-plugin/marketplace.json harnesses/agent-evidence-plugins/plugins/verdict-bundle-gate/.claude-plugin/plugin.json harnesses/agent-evidence-plugins/plugins/verdict-bundle-gate/hooks/hooks.json harnesses/agent-evidence-plugins/cursor/hooks.json; do python3 -m json.tool "$f" > /dev/null; done

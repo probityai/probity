@@ -9,8 +9,10 @@ members a package that is its own uv workspace declares (packages/probity-ratche
 the root workspace excludes because its Python floor and benchmark extras would
 bind every other member, declares probity-ratchet-cases). A member
 is changed when a file under its directory changed, when a workspace member it
-depends on changed, or when a shared file changed (anything outside packages/,
-except documentation). The rules live here and nowhere else, so CI and tests
+depends on changed, or when a shared file changed (anything outside packages/
+and harnesses/, except documentation). Directories under harnesses/ are not
+members: they publish nothing and CI selects their checks itself. The rules
+live here and nowhere else, so CI and tests
 read the same answer. Standard library only: CI runs it before any install.
 """
 
@@ -78,7 +80,7 @@ def members(root: Path = ROOT) -> dict[str, Member]:
 def changed(paths: list[str], root: Path = ROOT) -> dict[str, bool]:
     """Return, for each member, whether these changed paths require its checks."""
     table = members(root)
-    shared = any(not p.startswith("packages/") and not _SHARED_IGNORED.match(p) for p in paths)
+    shared = any(not p.startswith(("packages/", "harnesses/")) and not _SHARED_IGNORED.match(p) for p in paths)
     result = {name: shared or any(PurePosixPath(p).is_relative_to(m.directory) for p in paths)
               for name, m in table.items()}
     grew = True

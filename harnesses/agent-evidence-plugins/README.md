@@ -7,7 +7,7 @@ It is for people who let an agent consume a server's or a lab's verdict (a done 
 ```sh
 pip install probity-verify==0.3.0
 git clone --branch agent-evidence-plugins-v0.1.0 https://github.com/probityai/probity
-cd probity/packages/agent-evidence-plugins
+cd probity/packages/agent-evidence-plugins  # the v0.1.0 tag predates the move to harnesses/
 python3 plugins/verdict-bundle-gate/scripts/verify_bundle.py tests/fixtures/honest.decision.zip
 python3 plugins/verdict-bundle-gate/scripts/verify_bundle.py tests/fixtures/honest-failure.decision.zip
 ```
@@ -32,7 +32,7 @@ The plugin registers a PostToolUse hook. After a Write, Edit, Bash or MCP tool c
 
 ## Install in Cursor
 
-From `packages/agent-evidence-plugins` in the probityai/probity repository, copy `cursor/rules/verify-verdict-bundle.mdc` to `.cursor/rules/`, `cursor/hooks.json` to `.cursor/hooks.json`, and `plugins/verdict-bundle-gate/scripts/verify_bundle.py` to `scripts/`. The rule tells the agent to run the gate before relying on a bundle. Cursor's after-execution hooks report but do not block, so the rule is what holds the line there.
+From `harnesses/agent-evidence-plugins` in the probityai/probity repository, copy `cursor/rules/verify-verdict-bundle.mdc` to `.cursor/rules/`, `cursor/hooks.json` to `.cursor/hooks.json`, and `plugins/verdict-bundle-gate/scripts/verify_bundle.py` to `scripts/`. The rule tells the agent to run the gate before relying on a bundle. Cursor's after-execution hooks report but do not block, so the rule is what holds the line there.
 
 ## Settings
 
@@ -50,8 +50,8 @@ Version 0.1.0. The gate and both plugin shells are tested against real bundles b
 
 | page | read it for |
 | --- | --- |
-| [Fixtures](https://github.com/probityai/probity/blob/main/packages/agent-evidence-plugins/tests/fixtures/README.md) | where the two test bundles come from and how to rebuild them |
-| [Gate reference](https://github.com/probityai/probity/blob/main/packages/agent-evidence-plugins/docs/gate.md) | exit codes, hook payload matching and what the replay checks |
+| [Fixtures](https://github.com/probityai/probity/blob/main/harnesses/agent-evidence-plugins/tests/fixtures/README.md) | where the two test bundles come from and how to rebuild them |
+| [Gate reference](https://github.com/probityai/probity/blob/main/harnesses/agent-evidence-plugins/docs/gate.md) | exit codes, hook payload matching and what the replay checks |
 
 ## Next
 
