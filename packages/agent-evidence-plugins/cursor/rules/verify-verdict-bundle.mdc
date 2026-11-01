@@ -1,0 +1,18 @@
+---
+description: Replay a verdict bundle before relying on what it says
+alwaysApply: false
+globs: ["**/*.decision.zip", "**/*.verdict.zip", "**/decision.zip", "**/verdict.zip"]
+---
+
+A verdict bundle is a ZIP written by `probity-bundle create`. Do not repeat or act on the
+decision inside it until the gate has passed.
+
+1. Run the gate from the repository root of this plugin copy:
+   `python3 scripts/verify_bundle.py <bundle.zip>`
+2. Exit 0 means the replay succeeded and the recomputed decision is `supported`.
+   Exit 1 means it replayed but the decision is not allowed. Exit 2 means the bundle
+   could not be replayed (tampered, malformed, missing) or the verifier did not run.
+3. On exit 1 or 2, tell the user the first line of output and stop treating the
+   claim as established. Never edit the bundle to make it pass.
+4. To accept other decisions, pass `--allow supported,not_established` only when the
+   user asked for it.
