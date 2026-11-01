@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/five-tier-native.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Five-tier native launch
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-five-tier-native.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-five-tier-native.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-five-tier-native.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-five-tier-native.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   five-tier-native:
@@ -38,6 +38,6 @@ jobs:
         with:
           name: five-tier-native-run
           path: |
-            packages/observer/five-tier-native-run/
-            packages/observer/five-tier-launch-tests.xml
+            packages/agent-evidence-observer/five-tier-native-run/
+            packages/agent-evidence-observer/five-tier-launch-tests.xml
           if-no-files-found: error

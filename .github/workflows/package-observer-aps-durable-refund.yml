@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/aps-durable-refund.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Native APS refund controls
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-aps-durable-refund.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-aps-durable-refund.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-aps-durable-refund.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-aps-durable-refund.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   aps-refund:
@@ -40,6 +40,6 @@ jobs:
           name: aps-refund-node-${{ matrix.node }}
           retention-days: 90
           path: |
-            packages/observer/aps-refund-run/
-            !packages/observer/aps-refund-run/operator/
-            !packages/observer/aps-refund-run/reader/
+            packages/agent-evidence-observer/aps-refund-run/
+            !packages/agent-evidence-observer/aps-refund-run/operator/
+            !packages/agent-evidence-observer/aps-refund-run/reader/

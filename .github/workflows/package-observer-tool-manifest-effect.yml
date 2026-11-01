@@ -1,22 +1,22 @@
 # Moved from packages/observer/.github/workflows/tool-manifest-effect.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Tool manifest and retained effect
 
 on:
   push:
     branches: [main]
     paths:
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/tests/**'
-      - 'packages/observer/examples/tool_manifest_effect.py'
-      - 'packages/observer/pyproject.toml'
-      - 'packages/observer/interop/**/requirements*.lock'
-      - 'packages/observer/scripts/check-runtime-locks.py'
-      - 'packages/observer/docs/TOOL-MANIFEST-EFFECT.md'
-      - 'packages/observer/docs/reference/TOOL-MANIFEST-EFFECT.md'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/tests/**'
+      - 'packages/agent-evidence-observer/examples/tool_manifest_effect.py'
+      - 'packages/agent-evidence-observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/**/requirements*.lock'
+      - 'packages/agent-evidence-observer/scripts/check-runtime-locks.py'
+      - 'packages/agent-evidence-observer/docs/TOOL-MANIFEST-EFFECT.md'
+      - 'packages/agent-evidence-observer/docs/reference/TOOL-MANIFEST-EFFECT.md'
       - '.github/workflows/package-observer-tool-manifest-effect.yml'
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-tool-manifest-effect.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-tool-manifest-effect.yml']
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   offline-consumer:
@@ -56,6 +56,6 @@ jobs:
           name: tool-manifest-effect
           if-no-files-found: error
           path: |
-            packages/observer/manifest-effect-run/
-            packages/observer/manifest-effect-run.stdout.json
-            packages/observer/manifest-effect-run.verification.json
+            packages/agent-evidence-observer/manifest-effect-run/
+            packages/agent-evidence-observer/manifest-effect-run.stdout.json
+            packages/agent-evidence-observer/manifest-effect-run.verification.json

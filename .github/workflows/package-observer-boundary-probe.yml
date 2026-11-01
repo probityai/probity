@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/boundary-probe.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Linux boundary probe
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-boundary-probe.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-boundary-probe.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-boundary-probe.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-boundary-probe.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   boundary:
@@ -44,7 +44,7 @@ jobs:
         with:
           repository: agentrust-io/agent-manifest
           ref: fed9aeb091e4c77e0b40e12e959bee30b52e3c75
-          path: packages/observer/native-manifest
+          path: packages/agent-evidence-observer/native-manifest
           persist-credentials: false
       - name: Install isolated native parser dependencies
         run: >-
@@ -80,42 +80,42 @@ jobs:
         if: always()
         with:
           name: boundary-run
-          path: packages/observer/boundary-run/
+          path: packages/agent-evidence-observer/boundary-run/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: workload-run
-          path: packages/observer/workload-run/
+          path: packages/agent-evidence-observer/workload-run/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: admission-run
-          path: packages/observer/admission-run/
+          path: packages/agent-evidence-observer/admission-run/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: protected-action-run
-          path: packages/observer/protected-action-run/
+          path: packages/agent-evidence-observer/protected-action-run/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: attribution-run
-          path: packages/observer/attribution-run/
+          path: packages/agent-evidence-observer/attribution-run/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: replay-run
-          path: packages/observer/replay-run/
+          path: packages/agent-evidence-observer/replay-run/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: protected-run
-          path: packages/observer/protected-run/
+          path: packages/agent-evidence-observer/protected-run/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: declaration-run
-          path: packages/observer/declaration-run/
+          path: packages/agent-evidence-observer/declaration-run/
 
   aae:
     runs-on: ubuntu-24.04
@@ -134,8 +134,8 @@ jobs:
         with:
           name: aae-run
           path: |
-            packages/observer/aae-run/
-            packages/observer/aae-replay.json
-            packages/observer/aae-demo-stdout.json
-            packages/observer/aae-protected-run/
-            packages/observer/aae-protected-stdout.json
+            packages/agent-evidence-observer/aae-run/
+            packages/agent-evidence-observer/aae-replay.json
+            packages/agent-evidence-observer/aae-demo-stdout.json
+            packages/agent-evidence-observer/aae-protected-run/
+            packages/agent-evidence-observer/aae-protected-stdout.json

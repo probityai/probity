@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -100,17 +100,17 @@ def test_every_member_has_its_own_publish_job_in_environment_pypi():
 
 
 def test_a_package_that_is_its_own_workspace_brings_its_members(tmp_path):
-    _member(tmp_path, "ratchet", "probity-ratchet", "0.2.0", ["probity-ratchet-cases==0.3.0"])
-    manifest = tmp_path / "packages/ratchet/pyproject.toml"
+    _member(tmp_path, "probity-ratchet", "probity-ratchet", "0.2.0", ["probity-ratchet-cases==0.3.0"])
+    manifest = tmp_path / "packages/probity-ratchet/pyproject.toml"
     manifest.write_text(manifest.read_text() + '\n[tool.uv.workspace]\nmembers = ["cases"]\n')
-    cases = tmp_path / "packages/ratchet/cases"
+    cases = tmp_path / "packages/probity-ratchet/cases"
     cases.mkdir()
     (cases / "pyproject.toml").write_text('[project]\nname = "probity-ratchet-cases"\nversion = "0.3.0"\n')
     table = workspace.members(tmp_path)
-    assert table["probity-ratchet-cases"].directory == "packages/ratchet/cases"
-    assert workspace.changed(["packages/ratchet/cases/x.py"], tmp_path) == {
+    assert table["probity-ratchet-cases"].directory == "packages/probity-ratchet/cases"
+    assert workspace.changed(["packages/probity-ratchet/cases/x.py"], tmp_path) == {
         "probity-ratchet": True, "probity-ratchet-cases": True}
-    assert workspace.requires("probity-ratchet", tmp_path) == ["packages/ratchet/cases", "packages/ratchet"]
+    assert workspace.requires("probity-ratchet", tmp_path) == ["packages/probity-ratchet/cases", "packages/probity-ratchet"]
 
 
 def test_a_hatch_dynamic_version_is_read_from_its_file(tmp_path):
@@ -124,10 +124,10 @@ def test_a_hatch_dynamic_version_is_read_from_its_file(tmp_path):
 
 
 def test_a_distribution_whose_name_extends_another_resolves_to_itself(tmp_path):
-    _member(tmp_path, "ratchet", "probity-ratchet", "0.2.0", [])
-    _member(tmp_path, "ratchet-cases", "probity-ratchet-cases", "0.3.0", [])
-    assert workspace.release_target("probity-ratchet-v0.2.0", tmp_path)["directory"] == "packages/ratchet"
-    assert workspace.release_target("probity-ratchet-cases-v0.3.0", tmp_path)["directory"] == "packages/ratchet-cases"
+    _member(tmp_path, "probity-ratchet", "probity-ratchet", "0.2.0", [])
+    _member(tmp_path, "probity-ratchet-cases", "probity-ratchet-cases", "0.3.0", [])
+    assert workspace.release_target("probity-ratchet-v0.2.0", tmp_path)["directory"] == "packages/probity-ratchet"
+    assert workspace.release_target("probity-ratchet-cases-v0.3.0", tmp_path)["directory"] == "packages/probity-ratchet-cases"
 
 
 def test_a_tag_must_sit_on_main_or_on_the_maintenance_branch_of_its_own_series():
@@ -135,3 +135,21 @@ def test_a_tag_must_sit_on_main_or_on_the_maintenance_branch_of_its_own_series()
     assert "git merge-base --is-ancestor HEAD origin/main" in release
     assert 'branch="origin/maint/${name}-${version%.*}"' in release
     assert 'git merge-base --is-ancestor HEAD "$branch"' in release
+
+
+def test_a_harness_change_selects_no_member(root):
+    assert workspace.changed(["harnesses/plugins/tests/test_x.py"], root) == {
+        "base-lib": False, "front": False, "other-tool": False}
+
+
+def test_every_package_folder_is_named_after_its_distribution():
+    # packages/<published-name>/: a folder holds one published distribution and carries its name,
+    # so a reader can go from a PyPI page to the folder without a lookup table.
+    packages = Path(__file__).parents[1] / "packages"
+    for folder in sorted(p for p in packages.iterdir() if p.is_dir()):
+        manifest = folder / "pyproject.toml"
+        assert manifest.is_file(), f"{folder.name} publishes nothing; move it out of packages/"
+        name = workspace.tomllib.loads(manifest.read_text())["project"]["name"]
+        assert folder.name == name, f"packages/{folder.name} publishes {name!r}; name the folder {name}"
+    for member in workspace.members().values():
+        assert PurePosixPath(member.directory).name == member.distribution, member

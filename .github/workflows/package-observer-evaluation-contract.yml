@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/evaluation-contract.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Five-tier evaluation contract
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-evaluation-contract.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-evaluation-contract.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-evaluation-contract.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-evaluation-contract.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,14 +15,14 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   contract:
     runs-on: ubuntu-24.04
     defaults:
       run:
-        working-directory: packages/observer/interop/evaluation-contract-2026-10-01
+        working-directory: packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -51,9 +51,9 @@ jobs:
         with:
           name: five-tier-contract-reference
           path: |
-            packages/observer/interop/evaluation-contract-2026-10-01/contract-run/
-            packages/observer/interop/evaluation-contract-2026-10-01/native-contract-run/
-            packages/observer/interop/evaluation-contract-2026-10-01/native-execution-run/
-            packages/observer/interop/evaluation-contract-2026-10-01/native-ticket-run/
-            packages/observer/interop/evaluation-contract-2026-10-01/test-results.xml
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/contract-run/
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-contract-run/
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-execution-run/
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-ticket-run/
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/test-results.xml
           if-no-files-found: error

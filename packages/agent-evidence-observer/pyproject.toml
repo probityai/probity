@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-evidence-observer"
+version = "0.1.2"
+description = "Record brokered agent writes and check selected native reports offline"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Sankalp Gilda"}]
+keywords = ["ai-agents", "observability", "audit-logs", "provenance", "attestation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: System :: Logging",
+]
+requires-python = ">=3.12"
+dependencies = ["cryptography>=46,<51", "rfc8785==0.1.4"]
+
+[project.urls]
+Documentation = "https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md"
+Source = "https://github.com/probityai/probity/tree/main/packages/agent-evidence-observer"
+Issues = "https://github.com/probityai/probity/issues"
+"Agent guide" = "https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/llms.txt"
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "hypothesis>=6,<7", "jsonschema>=4,<5"]
+inspect = ["inspect-ai==0.3.281"]
+witness = ["jcs-admit~=0.1.0"]
+cover = ["coverage>=7.10,<8"]
+done = [
+    "jcs-admit~=0.1.0",
+    "probity-verify>=0.3.0,<0.5",
+]
+
+[project.scripts]
+agent-evidence-observer = "probity_observer.producer_cli:main"
+agent-evidence-admit = "probity_observer.admission:main"
+agent-evidence-read-native = "probity_observer.native_reader:main"
+agent-evidence-read-atomic = "probity_observer.atomic_reader:main"
+agent-evidence-read-refund-handoff = "probity_observer.refund_handoff:main"
+agent-evidence-witness = "probity_observer.witness.cli:main"
+probity-done = "probity_observer.done.cli:main"
+
+[project.entry-points."probityai.cli_subcommands"]
+done = "probity_observer.done.cli:register"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"probity_observer.done.basharena" = ["grader_bootstrap.txt", "basharena_driver.txt", "export_runtime.sh", "observer.Dockerfile", "observer_tools.txt"]
+
+[tool.coverage.paths]
+# The done tests' child processes run copies of the sealed pytest plugins; combine counts
+# those lines against the source files.
+pytest_plugins = ["src/probity_observer/done/pytest_plugins/", "*/probity-plugins/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.uv.sources]
+# The done extra takes probity-verify from this repository, so a source checkout tests the verifier it ships beside.
+probity-verify = { path = "../probity-verify" }

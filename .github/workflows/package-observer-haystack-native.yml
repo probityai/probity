@@ -1,5 +1,5 @@
 # Moved from packages/observer/.github/workflows/haystack-native.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Native Haystack installed publication consumer
 
 on:
@@ -8,17 +8,17 @@ on:
     - cron: '29 5 * * 0'
   push:
     branches: [main]
-    paths: ['packages/observer/interop/haystack-native-2026-10-03/**', '.github/workflows/package-observer-haystack-native.yml', 'packages/observer/pyproject.toml']
+    paths: ['packages/agent-evidence-observer/interop/haystack-native-2026-10-03/**', '.github/workflows/package-observer-haystack-native.yml', 'packages/agent-evidence-observer/pyproject.toml']
   pull_request:
     branches: [main]
-    paths: ['packages/observer/interop/haystack-native-2026-10-03/**', '.github/workflows/package-observer-haystack-native.yml', 'packages/observer/pyproject.toml']
+    paths: ['packages/agent-evidence-observer/interop/haystack-native-2026-10-03/**', '.github/workflows/package-observer-haystack-native.yml', 'packages/agent-evidence-observer/pyproject.toml']
 
 permissions:
   contents: read
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   native-haystack:

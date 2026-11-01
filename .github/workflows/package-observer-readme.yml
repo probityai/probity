@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/readme.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: README shape
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-readme.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-readme.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-readme.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-readme.yml']
     branches: [main]
 
 permissions:
@@ -14,7 +14,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   readme:

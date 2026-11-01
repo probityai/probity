@@ -1,12 +1,12 @@
 # Moved from packages/observer/.github/workflows/agent-launcher.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Agent launcher
 
 on:
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-agent-launcher.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-agent-launcher.yml']
   push:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-agent-launcher.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-agent-launcher.yml']
     branches: [main]
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   launcher:
@@ -37,4 +37,4 @@ jobs:
         if: always()
         with:
           name: launch-xcheck
-          path: packages/observer/launch-xcheck/
+          path: packages/agent-evidence-observer/launch-xcheck/

@@ -1,5 +1,5 @@
 # Moved from packages/observer/.github/workflows/openai-agents-ticket.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: OpenAI Agents native trace and protected ticket
 
 on:
@@ -7,16 +7,16 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/openai-agents-ticket-2026-10-02/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-openai-agents-ticket.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'packages/observer/interop/openai-agents-ticket-2026-10-02/**'
-      - 'packages/observer/src/probity_observer/**'
-      - 'packages/observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/**'
+      - 'packages/agent-evidence-observer/pyproject.toml'
       - '.github/workflows/package-observer-openai-agents-ticket.yml'
 
 permissions:
@@ -24,7 +24,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   native-consumer:
@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: packages/observer/interop/openai-agents-ticket-2026-10-02
+        working-directory: packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -41,7 +41,7 @@ jobs:
         with:
           repository: probityai/agent-evidence-observer
           ref: bf8c515d393951c6da73790e5e05effdb0c945a6
-          path: packages/observer/selected-observer
+          path: packages/agent-evidence-observer/selected-observer
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
@@ -50,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --require-hashes -r requirements.lock
-          python -m pip wheel --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/observer/selected-observer" . --wheel-dir "$RUNNER_TEMP/openai-wheels"
+          python -m pip wheel --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-observer" . --wheel-dir "$RUNNER_TEMP/openai-wheels"
           python verify_wheels.py "$RUNNER_TEMP/openai-wheels" --selection source-selection.json > installed-source-proof.json
           python -m pip install --no-deps "$RUNNER_TEMP/openai-wheels/agent_evidence_observer-0.0.2-py3-none-any.whl" "$RUNNER_TEMP/openai-wheels/probity_openai_agents_reference-0.0.1-py3-none-any.whl"
           python -m pip check
@@ -62,11 +62,11 @@ jobs:
       - name: Execute fresh native SDK and protected HTTP population
         run: |
           set -euo pipefail
-          packet="$GITHUB_WORKSPACE/packages/observer/interop/openai-agents-ticket-2026-10-02/fresh-run/packet"
+          packet="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/fresh-run/packet"
           test ! -e "$packet"
           mkdir -p fresh-run
           cd "$RUNNER_TEMP"
-          probity-openai-run "$packet" --source-revision "$GITHUB_SHA" > "$GITHUB_WORKSPACE/packages/observer/interop/openai-agents-ticket-2026-10-02/fresh-run/producer-stdout.json"
+          probity-openai-run "$packet" --source-revision "$GITHUB_SHA" > "$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/fresh-run/producer-stdout.json"
       - name: Install a separate reader without the Agents SDK or OpenAI client
         run: |
           set -euo pipefail
@@ -87,8 +87,8 @@ jobs:
         with:
           name: openai-agents-native-ticket
           path: |
-            packages/observer/interop/openai-agents-ticket-2026-10-02/fresh-run/
-            packages/observer/interop/openai-agents-ticket-2026-10-02/installed-source-proof.json
-            packages/observer/interop/openai-agents-ticket-2026-10-02/test-results.xml
+            packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/fresh-run/
+            packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/installed-source-proof.json
+            packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/test-results.xml
           if-no-files-found: error
           retention-days: 90

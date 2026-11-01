@@ -1,22 +1,22 @@
 # Moved from packages/observer/.github/workflows/refund-handoff-conformance.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Probity refund handoff conformance
 
 on:
   push:
     branches: [main]
     paths:
-      - 'packages/observer/interop/refund-handoff-conformance-2026-10-12/**'
-      - 'packages/observer/src/probity_observer/crypto.py'
-      - 'packages/observer/src/probity_observer/refund_handoff.py'
-      - 'packages/observer/src/probity_observer/refund_handoff_reasons.py'
-      - 'packages/observer/pyproject.toml'
-      - 'packages/observer/docs/REFUND-HANDOFF-CONFORMANCE.md'
-      - 'packages/observer/docs/reference/REFUND-HANDOFF-CONFORMANCE.md'
-      - 'packages/observer/docs/contract/refund-handoff/0.1/**'
+      - 'packages/agent-evidence-observer/interop/refund-handoff-conformance-2026-10-12/**'
+      - 'packages/agent-evidence-observer/src/probity_observer/crypto.py'
+      - 'packages/agent-evidence-observer/src/probity_observer/refund_handoff.py'
+      - 'packages/agent-evidence-observer/src/probity_observer/refund_handoff_reasons.py'
+      - 'packages/agent-evidence-observer/pyproject.toml'
+      - 'packages/agent-evidence-observer/docs/REFUND-HANDOFF-CONFORMANCE.md'
+      - 'packages/agent-evidence-observer/docs/reference/REFUND-HANDOFF-CONFORMANCE.md'
+      - 'packages/agent-evidence-observer/docs/contract/refund-handoff/0.1/**'
       - '.github/workflows/package-observer-refund-handoff-conformance.yml'
   pull_request:
-    paths: ['packages/observer/**', '.github/workflows/package-observer-refund-handoff-conformance.yml']
+    paths: ['packages/agent-evidence-observer/**', '.github/workflows/package-observer-refund-handoff-conformance.yml']
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   offline-conformance:
@@ -42,7 +42,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: packages/observer
+        working-directory: packages/agent-evidence-observer
     env:
       TERM: dumb
     steps:
@@ -55,13 +55,13 @@ jobs:
           version: '0.13.5'
       # The verifier bundles and archives its repository root and checks the
       # two agree, so give it a checkout whose root is the package tree: a
-      # commit with tree HEAD:packages/observer and parent HEAD.
+      # commit with tree HEAD:packages/agent-evidence-observer and parent HEAD.
       - name: Select the package tree as its own source root
         run: |
           set -euo pipefail
-          tree="$(git rev-parse HEAD:packages/observer)"
+          tree="$(git rev-parse HEAD:packages/agent-evidence-observer)"
           date="$(git show -s --format=%cI HEAD)"
-          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/observer tree of $GITHUB_SHA")"
+          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/agent-evidence-observer tree of $GITHUB_SHA")"
           git worktree add --detach "$RUNNER_TEMP/observer-root" "$commit"
           test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse "HEAD^{tree}")" = "$tree"
       - name: Run the installed verifier over every public vector

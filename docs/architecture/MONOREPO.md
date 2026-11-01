@@ -6,28 +6,31 @@ name, version, licence and release tag. This page records each layout decision a
 ## Layout
 
 ```
-packages/<member>/   one Python distribution each: pyproject.toml, README.md, LICENSE, src/, tests/
-crates/<crate>/      one Rust crate each (none yet)
+packages/<published-name>/  one published Python distribution each, named as on PyPI
+harnesses/<name>/            tooling that ships from the repository, not a registry (the editor plugins)
+crates/<crate>/              one Rust crate each (none yet)
 scripts/             repository tools: workspace.py, the shared README lint
 tests/               tests of the repository tools
 .github/workflows/   ci.yml (entry point), one reusable workflow per member, python-build.yml, release.yml
 ```
 
-Members today: `packages/probity-verify` (distribution `probity-verify`) and `packages/probityai`
-(distribution `probityai`, the `probityai` command).
+Members today: `probity-verify`, `probityai` (the `probityai` command), `probity-ratchet` (with
+`probity-ratchet-cases` inside it), `agent-evidence-observer`, `agent-evidence-mcp` and
+`evaluator-replay-kit`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
+publishes nothing or carries a name other than its distribution's.
 
 ## Decisions
 
 | Topic | Decision | Reason |
 | --- | --- | --- |
 | Member names | A member's directory, distribution, import package and tag prefix come from its own `pyproject.toml`. Nothing reads the repository name. | A repository rename or a renamed member changes one file. `scripts/workspace.py` finds members by scanning `packages/*/pyproject.toml`. |
-| Locking | One `uv.lock` at the root for every member. | One resolution: members that depend on each other are tested together against the same versions they will meet. A member that ever needs a conflicting dependency declares it with `[tool.uv] conflicts`, or leaves the workspace; neither is needed today. |
+| Locking | The root `uv.lock` resolves `probity-verify` and `probityai` together. `agent-evidence-mcp`, `agent-evidence-observer` and `probity-ratchet` (with `probity-ratchet-cases`) keep their own locks, and `evaluator-replay-kit` sits outside the root workspace; the root `pyproject.toml` says why for each. | Members that depend on each other are tested together against the versions they will meet. A member whose Python floor, git-sourced extras or PyPI-pinned tests would bind every other member keeps its own lock instead. |
 | Root project | The root `pyproject.toml` is not a package (`package = false`). It holds the workspace, the `dev` group, the root pytest configuration and the shared ruff configuration. | Nothing is published from the root, so no member inherits metadata by accident. |
 | Lint and types | One `[tool.ruff]` table at the root, ruff's default rule set, run on the whole tree in CI. No type checker yet. | One configuration applies to every member. Widening the rule set (98 findings under E, F, W, I, B and UP on 2026-10-17) and adding a type checker are each one change to this table and its fixes. |
 | Tests | `uv run python -m pytest` at the root runs `tests/` and every member's tests. Each member also runs alone from its directory with its own pytest configuration. | Test file basenames are unique across the workspace; pytest refuses a duplicate at collection, so a clash cannot hide a module. |
 | Licences | Each member and crate carries its own `LICENSE`, declared in its package metadata. The root `LICENSE` (Apache-2.0) covers repository files and is the one GitHub shows. | A scanner reads the same licence from a wheel as before. CC0 data and Apache-2.0 code can sit side by side. |
 | Release toolchain | One hash-pinned `requirements-release.lock` at the root; every Python member builds with setuptools from it. | The build of every distribution is reproducible with one set of pinned tools. |
-| Dependabot | One uv entry for `/` (the workspace lock), one GitHub Actions entry for `/`. A cargo entry for `/` arrives with the first crate. | One lock means one update stream; grouped updates give one pull request per ecosystem. |
+| Dependabot | One uv entry per lock (`/` and each member that keeps its own), one GitHub Actions entry for `/`. A cargo entry for `/` arrives with the first crate. | Each lock is its own update stream; grouped updates give one pull request per lock and ecosystem. |
 | CODEOWNERS | One line per member directory. | A member can get its own reviewers in one line. |
 | Cargo | Root `Cargo.toml` with `resolver = "3"`, shared `[workspace.package]` and `[workspace.lints]`, and an empty `members` list. The change that imports the first crate sets `members = ["crates/*"]`. | Cargo refuses a member glob that matches no directory. The lint table is written now so every imported crate inherits it (`unwrap_used`, `expect_used`, `undocumented_unsafe_blocks` and `await_holding_lock` denied). |
 | Go module | The vectors Go module moves to `vectors/go.mod` with module path `github.com/probityai/probity/vectors`, tagged `vectors/vX.Y.Z`. | Go resolves a module in a subdirectory only from a tag prefixed with that directory. The archived repository's module gets a `// Deprecated: use github.com/probityai/probity/vectors` line. No `go.work` is needed for one module. |

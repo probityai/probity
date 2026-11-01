@@ -1,19 +1,19 @@
 # Moved from packages/observer/.github/workflows/a2a-history-boundary.yml when the package was imported;
-# its steps run from packages/observer.
+# its steps run from packages/agent-evidence-observer.
 name: Native A2A caller and history boundary
 on:
   workflow_dispatch:
   pull_request:
     branches: [main]
-    paths: ['packages/observer/interop/a2a-history-boundary-2026-10-02/**', '.github/workflows/package-observer-a2a-history-boundary.yml']
+    paths: ['packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/**', '.github/workflows/package-observer-a2a-history-boundary.yml']
   push:
     branches: [main]
-    paths: ['packages/observer/interop/a2a-history-boundary-2026-10-02/**', '.github/workflows/package-observer-a2a-history-boundary.yml']
+    paths: ['packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/**', '.github/workflows/package-observer-a2a-history-boundary.yml']
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: packages/observer
+    working-directory: packages/agent-evidence-observer
 
 jobs:
   reproduce:
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: packages/observer/interop/a2a-history-boundary-2026-10-02
+        working-directory: packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -31,7 +31,7 @@ jobs:
           repository: a2aproject/a2a-python
           ref: 52030cf43f2e96d25949952e385e3b73fe93bc2a
           fetch-depth: 0
-          path: packages/observer/interop/a2a-history-boundary-2026-10-02/native-sdk
+          path: packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/native-sdk
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
@@ -88,19 +88,19 @@ jobs:
         with:
           name: a2a-history-${{ github.sha }}
           path: |
-            packages/observer/interop/a2a-history-boundary-2026-10-02/fresh-run/
-            packages/observer/interop/a2a-history-boundary-2026-10-02/fresh-run-pins.json
-            packages/observer/interop/a2a-history-boundary-2026-10-02/host-receipts/
-            packages/observer/interop/a2a-history-boundary-2026-10-02/host-decision.json
-            packages/observer/interop/a2a-history-boundary-2026-10-02/native.stdout
-            packages/observer/interop/a2a-history-boundary-2026-10-02/native.stderr
-            packages/observer/interop/a2a-history-boundary-2026-10-02/mysql.stdout
-            packages/observer/interop/a2a-history-boundary-2026-10-02/mysql.stderr
-            packages/observer/interop/a2a-history-boundary-2026-10-02/install-report.json
-            packages/observer/interop/a2a-history-boundary-2026-10-02/reader-install-report.json
-            packages/observer/interop/a2a-history-boundary-2026-10-02/wheels/
-            packages/observer/interop/a2a-history-boundary-2026-10-02/wheels-sha256.txt
-            packages/observer/interop/a2a-history-boundary-2026-10-02/test-results.xml
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/fresh-run/
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/fresh-run-pins.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/host-receipts/
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/host-decision.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/native.stdout
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/native.stderr
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/mysql.stdout
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/mysql.stderr
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/install-report.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/reader-install-report.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/wheels/
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/wheels-sha256.txt
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/test-results.xml
           if-no-files-found: error
           retention-days: 90
       - name: Stop owned database container
