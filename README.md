@@ -44,13 +44,13 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | layer | package | what it is | install |
 | --- | --- | --- | --- |
 | evidence | [agent-evidence-mcp](packages/agent-evidence-mcp/README.md) | offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors | `pip install agent-evidence-mcp==0.2.5` |
-| evidence | [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | `pip install agent-evidence-observer==0.1.2` |
+| evidence | [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | `pip install agent-evidence-observer==0.1.3` |
 | evidence | [agent-evidence-admission](https://github.com/probityai/agent-evidence-vectors) | checks an artifact has the digest its SBOM or attestation names (in agent-evidence-vectors) | `pip install agent-evidence-admission==0.2.0` |
 | evidence | [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | versioned terms for claims about agent execution evidence (in agent-evidence-vectors) | `pip install agent-evidence-vocabulary==0.8.0` |
 | evidence | [agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors) | conformance corpora and reference verifiers | `pip install agent-evidence-vectors==0.31.0` |
 | product | [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | `pip install probityai==0.1.1` |
 | product | [probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | `pip install probity-verify==0.3.0` |
-| product | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | `pip install probity-ratchet==0.3.2` |
+| product | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | `pip install probity-ratchet==0.3.3` |
 | product | [evaluator-replay-kit](packages/evaluator-replay-kit/README.md) | replays a lab's agent action record and flags a changed or missing step | `pip install "git+https://github.com/probityai/probity@evaluator-replay-kit-v0.1.0#subdirectory=packages/evaluator-replay-kit"` (not on PyPI) |
 
 The Claude Code and Cursor plugins ship from [harnesses/agent-evidence-plugins](harnesses/agent-evidence-plugins/README.md).

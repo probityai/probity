@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3 (2026-11-01)
+
+- The project links on the PyPI page name the renamed package folder, `packages/probity-ratchet`. 0.3.2 pointed at
+  `packages/ratchet`, which no longer exists. No code changed.
+
 ## 0.3.2 (2026-10-31)
 
 - `agent-evidence-vectors~=0.31.0` (was `~=0.30.0`). 0.3.1 could not install beside the current vectors release, so
