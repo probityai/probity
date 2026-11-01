@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evaluator-replay-kit"
+version = "0.1.0"
+description = "Replay a lab-produced agent action record: recompute its digest chain and flag tamper or a gap"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = ["agent-evidence-vectors==0.30.0"]
+keywords = ["ai-agents", "evaluation", "audit", "provenance", "offline"]
+
+[project.urls]
+Source = "https://github.com/probityai/evaluator-replay-kit"
+Issues = "https://github.com/probityai/evaluator-replay-kit/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+evaluator-replay = "evaluator_replay_kit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
