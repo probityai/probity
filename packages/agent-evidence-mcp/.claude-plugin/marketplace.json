@@ -1,0 +1,16 @@
+{
+  "name": "agent-evidence",
+  "owner": {
+    "name": "Probity AI"
+  },
+  "plugins": [
+    {
+      "name": "agent-evidence",
+      "source": "./",
+      "description": "Verify claims about AI systems against supplied evidence and replay the agent-evidence conformance vectors, offline and read-only."
+    }
+  ],
+  "metadata": {
+    "description": "Offline, read-only evidence verification tools for AI systems."
+  }
+}
