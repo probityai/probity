@@ -8,6 +8,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "evaluator-replay-kit",
     "probity-verify",
     "probityai",
 ]
@@ -42,6 +43,15 @@ wheels = [
 http-server = [
     { name = "sse-starlette" },
     { name = "starlette" },
+]
+
+[[package]]
+name = "agent-evidence-vectors"
+version = "0.31.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/f7/4b1c0674afdae3a5104ee29e9aa33bc85ffbe6c4f379813e63304a3ff49c/agent_evidence_vectors-0.31.0.tar.gz", hash = "sha256:ee3a20eb9d20d149cfd5d4f731c3653b8ea1e29e7f0dbbabec9118f686a90554", size = 3939832, upload-time = "2026-10-31T02:18:17.114Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e7/82/894d46b4159581a65e5b6bb31960493afb9446fc10b924bd578b3462ed57/agent_evidence_vectors-0.31.0-py3-none-any.whl", hash = "sha256:6a9e43def25fcd69ca7bc4cee749d42a48752be0672e594dbd85f00c7078450a", size = 11301142, upload-time = "2026-10-31T02:18:14.293Z" },
 ]
 
 [[package]]
@@ -442,6 +452,26 @@ sdist = { url = "https://files.pythonhosted.org/packages/d9/e3/49afa1bc180e0d280
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e0/5d/9fb19fb38f6d6120422064279ea5532e22b84aa2be8831d49607194feda3/culsans-0.11.0-py3-none-any.whl", hash = "sha256:278d118f63fc75b9db11b664b436a1b83cc30d9577127848ba41420e66eb5a47", size = 21811, upload-time = "2025-12-31T23:15:37.189Z" },
 ]
+
+[[package]]
+name = "evaluator-replay-kit"
+version = "0.1.0"
+source = { editable = "packages/evaluator-replay-kit" }
+dependencies = [
+    { name = "agent-evidence-vectors" },
+]
+
+[package.optional-dependencies]
+test = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "agent-evidence-vectors", specifier = ">=0.30.0,<1" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
+]
+provides-extras = ["test"]
 
 [[package]]
 name = "google-api-core"
