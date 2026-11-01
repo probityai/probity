@@ -229,7 +229,7 @@ def test_base64_artifact_and_argument_errors() -> None:
 
 # --- pins ----------------------------------------------------------------------------
 
-def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_floor_and_a_cap_at_the_next_major() -> None:
+def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_floor_and_a_cap_at_the_end_of_the_next_series() -> None:
     from packaging.requirements import Requirement
     from packaging.version import Version
 
@@ -243,8 +243,17 @@ def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_floo
     for name, req in reqs.items():
         spec = str(req.specifier)
         if name in family:
-            assert re.fullmatch(r">=\d+\.\d+\.\d+,<1|<1,>=\d+\.\d+\.\d+", spec), f"{name}: {spec}"
+            # Shape of the window scripts/family_resolves.py enforces exactly against the in-tree versions: a floor and a
+            # cap at the end of the next series (minor+2 below 1.0, the next major from 1.0). The installed release can be
+            # older than the tree, and a family package outside the workspace may still cap at <1, so here the cap only has to
+            # reach that far.
+            window = r">=\d+\.\d+\.\d+,<(\d+(?:\.\d+)?)(?:\.0)?|<(\d+(?:\.\d+)?)(?:\.0)?,>=\d+\.\d+\.\d+"
+            match = re.fullmatch(window, spec)
+            assert match, f"{name}: {spec}"
             nxt = Version(metadata.version(name))
+            ceiling = (0, nxt.minor + 2) if nxt.major == 0 else (nxt.major + 1, 0)
+            cap = tuple(map(int, (match.group(1) or match.group(2)).split("."))) + (0,)
+            assert cap[:2] >= ceiling, f"{name}: {spec} caps below the end of the next series"
             assert req.specifier.contains(f"{nxt.major}.{nxt.minor + 1}.0"), f"{name}: {spec} stops at the next minor"
             continue
         assert re.fullmatch(r"==\d+\.\d+\.\d+", spec), f"{name}: {spec}"
