@@ -4,14 +4,21 @@
 
 [tool.uv.workspace]
 members = ["packages/*"]
-# packages/probity-ratchet is its own uv workspace with its own lock: its Python floor
-# (3.12) and its benchmark extras (git sources, overrides) would otherwise bind
-# every member. packages/agent-evidence-observer keeps its own lock for the same floor.
-# harnesses/agent-evidence-plugins is not a distribution: it pins probity-verify from PyPI for its tests.
-# packages/agent-evidence-mcp keeps its own lock too: its pinned family packages resolve from PyPI,
-# not from workspace members.
-# scripts/workspace.py still reads both and their members.
-exclude = ["packages/probity-ratchet", "packages/agent-evidence-observer", "packages/agent-evidence-mcp", "harnesses/agent-evidence-plugins", "packages/evaluator-replay-kit"]
+# Unified-lock trial, 2026-11-01 (research/1140-gemini-share-1101-2026-11-01/LOCK-TRIAL.md). One lock holds
+# probityai, probity-verify and evaluator-replay-kit, the members whose tests pass under it (Python floor 3.11).
+# Each exclusion below is measured, with the error text in LOCK-TRIAL.md:
+# - packages/probity-ratchet: uv refuses it ("Nested workspaces are not supported": it declares its own
+#   [tool.uv.workspace] for probity-ratchet-cases), and its git-sourced benchmark extras, overrides and
+#   dependency-metadata only apply from a workspace root.
+# - packages/agent-evidence-observer: requires Python >=3.12, which lifts the whole lock from >=3.11 to >=3.12;
+#   its path source for probity-verify must become a workspace source; 3 tests fail and 50 error under the
+#   unified lock on the box (the errors are in tests/launch/test_docker_launch.py).
+# - packages/agent-evidence-mcp: its PyPI-pinned family tests fail under the unified lock (11 of 46 tests fail:
+#   verify_sample, verify_claim and the stdio server test), and uv wants an explicit workspace source for
+#   probity-verify.
+# - harnesses/agent-evidence-plugins is not a distribution: it pins probity-verify from PyPI for its tests.
+# scripts/workspace.py still reads the excluded packages and their members.
+exclude = ["packages/probity-ratchet", "packages/agent-evidence-observer", "packages/agent-evidence-mcp", "harnesses/agent-evidence-plugins"]
 
 [tool.uv]
 package = false
