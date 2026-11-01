@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterShellExecution": [
+      { "command": "python3 scripts/verify_bundle.py --hook" }
+    ],
+    "afterMCPExecution": [
+      { "command": "python3 scripts/verify_bundle.py --hook" }
+    ],
+    "afterFileEdit": [
+      { "command": "python3 scripts/verify_bundle.py --hook" }
+    ]
+  }
+}
