@@ -1,6 +1,6 @@
 # Release a checked Python distribution
 
-PyPI 0.2.4 is the latest published release, and the source is 0.3.0. The
+PyPI 0.3.0 is the latest published release, and the source is 0.4.0. The
 release carries the eight source-coverage inputs as package resources, added in
 source 0.1.1, and reads DSSE envelopes and completion receipts; the
 [changelog](../CHANGELOG.md) lists every change. The sample inputs remain authored

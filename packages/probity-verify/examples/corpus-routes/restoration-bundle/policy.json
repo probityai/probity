@@ -1,0 +1,13 @@
+{
+  "assessments": {
+    "bundle-consistent": {
+      "claim_type": "restoration_bundle/v1",
+      "records": [
+        "r1.json",
+        "r2.json",
+        "r3.json"
+      ]
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "record.json": {
+      "length": 959,
+      "path": "record.json",
+      "sha256": "8ff4e87d4a8555b45904fcb604babb6d9ddb7350578b44bf8c6e3e2faa716617"
+    }
+  },
+  "case_id": "allow-confirmed-first-attempt",
+  "schema_version": "probity-case/v1"
+}

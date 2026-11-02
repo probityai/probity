@@ -704,7 +704,7 @@ wheels = [
 
 [[package]]
 name = "probity-verify"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "packages/probity-verify" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
