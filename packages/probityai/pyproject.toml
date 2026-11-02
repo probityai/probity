@@ -35,8 +35,6 @@ test = ["pytest>=9.2.0,<10"]
 [project.scripts]
 probityai = "probityai.cli:main"
 
-[tool.uv.sources]
-probity-verify = { workspace = true }
 
 [tool.setuptools]
 include-package-data = false

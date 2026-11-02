@@ -67,7 +67,3 @@ pytest_plugins = ["src/probity_observer/done/pytest_plugins/", "*/probity-plugin
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
-
-[tool.uv.sources]
-# The done extra takes probity-verify from this repository, so a source checkout tests the verifier it ships beside.
-probity-verify = { path = "../probity-verify" }

@@ -36,7 +36,7 @@ SAMPLES = {
 
 
 def _samples_dir() -> Path:
-    return Path(str(resources.files("probity_verify") / "samples"))
+    return Path(str(resources.files("probity_verify.samples")))
 
 
 def _corpora_dir() -> Path:
