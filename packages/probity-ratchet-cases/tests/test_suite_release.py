@@ -22,7 +22,7 @@ def test_every_recorded_digest_is_a_sha256_and_versions_never_repeat_a_digest_ch
     assert list(json.loads(DIGESTS_PATH.read_text(encoding="utf-8"))) == list(digests)
 
 
-def test_the_package_has_no_runtime_dependencies_and_supports_python_310() -> None:
+def test_the_package_has_no_runtime_dependencies_and_supports_python_312() -> None:
     text = (PACKAGE / "pyproject.toml").read_text(encoding="utf-8")
     assert re.search(r"^dependencies = \[\]$", text, re.M)
-    assert re.search(r'^requires-python = ">=3\.10"$', text, re.M)
+    assert re.search(r'^requires-python = ">=3\.12"$', text, re.M)

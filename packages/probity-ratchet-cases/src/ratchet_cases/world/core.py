@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from ratchet_cases.types import ToolCall, ToolResult, canonical_json, sha256_hex
@@ -38,7 +38,7 @@ _ISO = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def parse_time(text: str) -> datetime:
-    return datetime.strptime(text, _ISO).replace(tzinfo=timezone.utc)
+    return datetime.strptime(text, _ISO).replace(tzinfo=UTC)
 
 
 def format_time(moment: datetime) -> str:
