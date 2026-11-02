@@ -81,3 +81,7 @@ reader; and the journal recorded exactly the attempts and lookups the owner saw.
 
 It does not establish that your own `send` and `lookup` code talk to your service correctly:
 the scenarios stand in for the owner. Test those against your service's sandbox.
+
+## Lock
+
+This package keeps its own `uv.lock` and stays outside the root workspace: it targets Python 3.11 and later and its only runtime dependency is jcs-admit, so one root lock would only narrow it.
