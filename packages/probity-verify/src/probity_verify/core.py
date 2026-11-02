@@ -23,12 +23,15 @@ from .adapters import (
     done_receipt,
     event_absence,
     execution_evidence,
+    jcs_canonical,
     operand_lineage,
     probe_observed,
     protected_paths,
+    restoration,
     source_coverage,
     spend_reservation,
     tool_claim_match,
+    uncertain_effect,
 )
 from .common import CaseError
 from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
@@ -53,6 +56,10 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "completion_claim/v1": completion_claim.adjudicate,
     "done_receipt/v2": done_receipt.adjudicate,
     "adversarial_execution_evidence/v1": execution_evidence.adjudicate,
+    "uncertain_effect/v1": uncertain_effect.adjudicate,
+    "restoration_record/v1": restoration.adjudicate_record,
+    "restoration_bundle/v1": restoration.adjudicate_bundle,
+    "jcs_canonical/v1": jcs_canonical.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

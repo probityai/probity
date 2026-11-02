@@ -38,7 +38,7 @@ with the first failing check. Corpus `allow` maps to `supported`, `deny` to `con
 `restoration_record/v1` takes one artifact, `record`: a decoded in-toto Statement whose
 `predicateType` names one of the five restoration-evidence predicates. Strict JSON first, then the
 predicate document's rules in table order. Accepted reasons are the predicate's own
-(`authorization-recorded`, `sweep-recorded`, `decision-recorded`, `joint-authority-recorded`,
+(`authorization-recorded`, `sweep-recorded`, `decision-recorded`, `assignment-recorded`,
 `boundary-recorded`); a failure is `contradicted` with the rule code.
 
 `restoration_bundle/v1` takes `records`, a list of artifact names, and applies B1 (every record
