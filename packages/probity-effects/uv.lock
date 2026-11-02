@@ -623,7 +623,7 @@ provides-extras = ["testing"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "agent-evidence-vectors", specifier = "==0.31.2" },
+    { name = "agent-evidence-vectors", specifier = "~=0.31.2" },
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "langgraph", specifier = "==1.2.19" },
     { name = "pytest", specifier = ">=9.2.0,<10" },

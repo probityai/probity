@@ -40,7 +40,7 @@ probity_effects = "probity_effects.pytest_plugin"
 # This member's own tests: the frameworks the adapters drive, pinned to the versions measured.
 dev = [
     "pytest>=9.2.0,<10",
-    "agent-evidence-vectors==0.31.2",
+    "agent-evidence-vectors~=0.31.2",
     "langgraph==1.2.19",
     "httpx>=0.28,<1",
 ]
