@@ -49,17 +49,6 @@ atlas = [
 telemetry = [
     "raindrop-ai==0.0.75",
 ]
-bench = [
-    # the transfer driver persists its runs in Atlas
-    "pymongo>=4.10",
-    "agentdojo==0.1.35",
-    "litellm==1.106.6",
-    "terminal-bench==0.2.18",
-    "tau-bench",
-    "tool-sandbox",
-    "tau2",
-    "audioop-lts==0.2.2 ; python_full_version >= '3.13'",
-]
 gepa = [
     "gepa==0.1.4",
 ]
@@ -107,7 +96,8 @@ follow_untyped_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# langsmith (pulled in by the bench extra through langchain-core) registers a pytest plugin whose import calls
-# asyncio.iscoroutinefunction, deprecated on Python 3.14, so -W error fails collection before any test runs.
-# The suite uses nothing from that plugin.
-addopts = "-W error -p no:langsmith_plugin"
+# tests/bench needs the benchmark libraries, which only harnesses/ratchet-bench installs; its CI job runs them
+# there with `-o addopts=` and the flags below. langsmith (pulled in by the benchmarks through langchain-core)
+# registers a pytest plugin whose import calls asyncio.iscoroutinefunction, deprecated on Python 3.14, so
+# -W error fails collection before any test runs. The suite uses nothing from that plugin.
+addopts = "-W error -p no:langsmith_plugin --ignore=tests/bench"

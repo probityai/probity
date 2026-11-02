@@ -27,15 +27,30 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-      - run: uv sync --all-groups --all-extras
-      - run: uv run ruff check
-      - run: uv run ruff format --check
-      - run: uv run mypy src
-      - run: uv run mypy --config-file ../probity-ratchet-cases/pyproject.toml ../probity-ratchet-cases/src
+      # The type check covers ratchet.bench, so it runs in the benchmark harness's environment.
+      - run: uv sync --project ../../harnesses/ratchet-bench --all-groups
+      - run: uv run --project ../../harnesses/ratchet-bench ruff check
+      - run: uv run --project ../../harnesses/ratchet-bench ruff format --check
+      - run: uv run --project ../../harnesses/ratchet-bench mypy src
+      - run: uv run --project ../../harnesses/ratchet-bench mypy --config-file ../probity-ratchet-cases/pyproject.toml ../probity-ratchet-cases/src
       - run: python3 scripts/readme-lint.py README.md
       - run: python3 scripts/readme-lint.py ../probity-ratchet-cases/README.md
       # check-docs imports ratchet_cases to count the case families, so it runs inside the synced virtualenv
-      - run: uv run python scripts/check-docs.py
+      - run: uv run --project ../../harnesses/ratchet-bench python scripts/check-docs.py
+
+  # ratchet.bench and tests/bench, in the benchmark harness's environment and its own lock
+  # (harnesses/ratchet-bench). The tests use fakes for the store, so no Atlas service is needed.
+  bench:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv sync --project ../../harnesses/ratchet-bench --all-groups
+      - name: pytest tests/bench
+        run: >-
+          uv run --project ../../harnesses/ratchet-bench python -m pytest -q -o addopts= -W error
+          -p no:langsmith_plugin -rfEs --tb=short tests/bench
 
   # The signed v3 refusal example: offline verification of the pinned results file, so the example cannot rot.
   refusal-example:
@@ -57,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.10", "3.12"]
+        python: ["3.12", "3.14"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # No cache: the job installs one wheel and pytest, and two matrix legs saving one cache key race.
@@ -88,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.10", "3.12"]
+        python: ["3.12"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
