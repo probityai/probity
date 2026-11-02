@@ -14,11 +14,11 @@ import json
 
 import pytest
 from done_run import honest_records
+from jcs_admit import dsse
 from probity_observer.witness.checkpoint import signer
 from probity_observer.witness.server import WitnessLog, init_witness
 from probity_verify import adjudicate
 from probity_verify.cli import main
-from probityai import dsse
 from test_done_receipt import build as build_receipt
 from witness_run import HOST_OPERATOR, external, pin, written
 
