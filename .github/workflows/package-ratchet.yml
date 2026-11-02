@@ -27,8 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-      # The type check covers ratchet.bench, so it runs in the benchmark harness's environment.
-      - run: uv sync --project ../../harnesses/ratchet-bench --all-groups
+      # The type check covers ratchet.bench, so it runs in the benchmark harness's environment. It installs
+      # non-editable: probity-verify's editable install is an import hook mypy cannot follow.
+      - run: uv sync --project ../../harnesses/ratchet-bench --all-groups --no-editable
       - run: uv run --project ../../harnesses/ratchet-bench ruff check
       - run: uv run --project ../../harnesses/ratchet-bench ruff format --check
       - run: uv run --project ../../harnesses/ratchet-bench mypy src

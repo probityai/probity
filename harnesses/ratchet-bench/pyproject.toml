@@ -44,8 +44,9 @@ override-dependencies = ["litellm==1.106.6", "filelock>=4.2.1"]
 # The ratchet and its case suite from this tree, editable, so the harness tests the code beside it.
 probity-ratchet = { path = "../../packages/probity-ratchet", editable = true }
 probity-ratchet-cases = { path = "../../packages/probity-ratchet-cases", editable = true }
-# The verifier from this tree, built as a wheel: its editable install is an import hook mypy cannot follow.
-probity-verify = { path = "../../packages/probity-verify", editable = false }
+# probity-verify comes from this tree too: probity-ratchet is a root workspace member, so uv applies the
+# root's `probity-verify = { workspace = true }` source to it, and a second, different source here would conflict.
+probity-verify = { path = "../../packages/probity-verify", editable = true }
 tau-bench = { git = "https://github.com/sierra-research/tau-bench", rev = "59a200c6d575d595120f1cb70fea53cef0632f6b" }
 tau2 = { git = "https://github.com/sierra-research/tau2-bench", rev = "4ce7c0397c1eb65c9bbe59aeacfe1ca44a1cd699" }
 tool-sandbox = { git = "https://github.com/apple/ToolSandbox", rev = "c8571d7854316d2e1c5f288e59fe1e34e53f6dd1" }
