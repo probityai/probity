@@ -17,8 +17,10 @@ members = ["packages/*"]
 #   verify_sample, verify_claim and the stdio server test), and uv wants an explicit workspace source for
 #   probity-verify.
 # - harnesses/agent-evidence-plugins is not a distribution: it pins probity-verify from PyPI for its tests.
+# - packages/probity-effects: its tests install the agent frameworks its adapters drive (LangGraph first), and
+#   their dependency trees would bind every member's lock.
 # scripts/workspace.py still reads the excluded packages and their members.
-exclude = ["packages/probity-ratchet", "packages/agent-evidence-observer", "packages/agent-evidence-mcp", "harnesses/agent-evidence-plugins"]
+exclude = ["packages/probity-ratchet", "packages/agent-evidence-observer", "packages/agent-evidence-mcp", "packages/probity-effects", "harnesses/agent-evidence-plugins"]
 
 [tool.uv]
 package = false

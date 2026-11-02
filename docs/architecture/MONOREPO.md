@@ -15,8 +15,8 @@ tests/               tests of the repository tools
 ```
 
 Members today: `probity-verify`, `probityai` (the `probityai` command), `probity-ratchet` (with
-`probity-ratchet-cases` inside it), `agent-evidence-observer`, `agent-evidence-mcp` and
-`evaluator-replay-kit`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
+`probity-ratchet-cases` inside it), `agent-evidence-observer`, `agent-evidence-mcp`,
+`evaluator-replay-kit` and `probity-effects`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
 publishes nothing or carries a name other than its distribution's.
 
 ## Decisions
