@@ -1274,17 +1274,17 @@ wheels = [
 
 [[package]]
 name = "jcs-admit"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/af/c5/f8dace82f946b92008e25a08168e56d56a95aaac81cc7c2daa3e62a188ae/jcs_admit-0.1.0.tar.gz", hash = "sha256:dfe09e446a4a478334842eb7445bedfa61c512c1809e6f2a3be45409c878cae5", size = 60390, upload-time = "2026-10-20T02:24:35.553Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2e/f4/b7953d008ee6a202417acfe281aac97316776ac3d30d9067cc419d57aef4/jcs_admit-0.1.1.tar.gz", hash = "sha256:9907e886ae5c198e49421e2bbc07f6f630743be2662608b33c3dbd6e707d26fa", size = 60653, upload-time = "2026-11-02T07:36:35.851Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/fe/f9d7850e50545a9d9abbb9c080e9a347f9eab2578c3d8d8f7845ba2c09e4/jcs_admit-0.1.0-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f1e8c5705579078cc5ff64bdb031f6a981f43db5a24fe7812504e1463003765d", size = 530670, upload-time = "2026-10-20T02:24:23.659Z" },
-    { url = "https://files.pythonhosted.org/packages/c9/ea/3eb071e62b12a8030afffbcb025ba8b627538447f5037ad6139c2badeb35/jcs_admit-0.1.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:82148364fe2a2aca3af1fbb33dce64e51c244959231c6c22a04d712212098aee", size = 495920, upload-time = "2026-10-20T02:24:25.344Z" },
-    { url = "https://files.pythonhosted.org/packages/56/c2/16fecd94781e31b7a9356f9f048da1cd93363fd66329379d2fc03ae62b6f/jcs_admit-0.1.0-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:c9342daeee4e623552ed24e7493066784e009a9d898a7beb0cdbf0ab0c83aba7", size = 549597, upload-time = "2026-10-20T02:24:26.881Z" },
-    { url = "https://files.pythonhosted.org/packages/93/74/8520b59f3badae16248f3ec0c8634cc88a71384ac9c7141bcff93c81c7bb/jcs_admit-0.1.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:5506b8265d8c23759ddb0c6673d8f832a070503bbabcec01680b1f97527541b0", size = 578922, upload-time = "2026-10-20T02:24:29.061Z" },
-    { url = "https://files.pythonhosted.org/packages/50/7a/c743597b9a0581b7f910d367903a494e7915269c15060ff3219acbcfd22e/jcs_admit-0.1.0-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:f850733f135414507610d1f7d703711958734cfa50f16fc236182f551ce24fdc", size = 726286, upload-time = "2026-10-20T02:24:30.807Z" },
-    { url = "https://files.pythonhosted.org/packages/4c/a7/735b1fd0fb61d852a41a21a0699a48d8361bcedd4a84491b66e1a36a8a30/jcs_admit-0.1.0-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:7b8295d9b3fd8873be79189456bfc199339c609e7479fae54bacc54494f771ec", size = 783940, upload-time = "2026-10-20T02:24:32.396Z" },
-    { url = "https://files.pythonhosted.org/packages/2b/b7/30563a659710fd703a30c98f06079cb2a543f99daf1e88c4d5bd7a416cb7/jcs_admit-0.1.0-cp310-abi3-win_amd64.whl", hash = "sha256:9675034f3c555cde9361392a85e89e2bfbfedcc08eab9259503926ec2c24e46b", size = 416937, upload-time = "2026-10-20T02:24:33.906Z" },
+    { url = "https://files.pythonhosted.org/packages/82/a5/e4ff173d059d775d0c2b6d094b2413ae950b13e880a4cd114fe0a18a4ef9/jcs_admit-0.1.1-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:037f5c6e697de85d9de032cd23c1ee70d923627ce0a0e9fd80f7c5638d39bfb4", size = 537246, upload-time = "2026-11-02T07:36:26.077Z" },
+    { url = "https://files.pythonhosted.org/packages/24/a9/b76237dd9ab983c40323b67d283568bdc12942b6f75d30d220eef4a8c9ab/jcs_admit-0.1.1-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:2054cb55fb50b9a01349857737935e442d2aa3c9e0a7248d87ac3f6c4b026c97", size = 502052, upload-time = "2026-11-02T07:36:27.629Z" },
+    { url = "https://files.pythonhosted.org/packages/17/a5/5ca6538d13215677908acae3de845eaca4ff53dff4595771603a7ad8e864/jcs_admit-0.1.1-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:68f3a23ca44000b421f237ac7aff5ad5e713246533325760c727cb70f56d179a", size = 553364, upload-time = "2026-11-02T07:36:29.021Z" },
+    { url = "https://files.pythonhosted.org/packages/db/32/9a9e2d60750859693cd7b6e60b395496398121baaf3b9dea7f797a9a78f1/jcs_admit-0.1.1-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:8410cd66597f9cb9d9c28d38fd925a3f5d1c59c3a8fc1d3cee12fad8417e0ebb", size = 584408, upload-time = "2026-11-02T07:36:30.506Z" },
+    { url = "https://files.pythonhosted.org/packages/8e/8f/044d0dd0bf4738e8797edc3795ce7d315de6e28da711d50fcc1d89d25247/jcs_admit-0.1.1-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:2d831a12318fe218a4016ed65bedc5e4890e16a8fdd4f61af250c20a70fa01a9", size = 730489, upload-time = "2026-11-02T07:36:31.804Z" },
+    { url = "https://files.pythonhosted.org/packages/14/f3/ef50f5e2b209e1abc217b5d44d1e9f5075daf3311c199abb5ba033790950/jcs_admit-0.1.1-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:826831cf55d266bb40d1a33042035c24a1e79f64b8f6a24f83977e73722125ed", size = 788398, upload-time = "2026-11-02T07:36:33.036Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/eb/4b59316e7ef3d6b0bcc1481f4034710831ea610373510352e430f30973a1/jcs_admit-0.1.1-cp310-abi3-win_amd64.whl", hash = "sha256:c22fd38298955554e3fa7d39ea2394de1ff62ce911fcae2cea10aa014229e55a", size = 422346, upload-time = "2026-11-02T07:36:34.652Z" },
 ]
 
 [[package]]
@@ -1832,11 +1832,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = "==1.2.3" },
+    { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = "==1.3.0" },
     { name = "agent-evidence-vocabulary", specifier = "~=0.8.0" },
     { name = "cryptography", specifier = ">=50.0.2,<51" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.170.8,<7" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0,<10" },
     { name = "pyyaml", specifier = ">=6.0.2,<7" },
     { name = "uvicorn", marker = "extra == 'a2a'", specifier = "==0.54.0" },
 ]

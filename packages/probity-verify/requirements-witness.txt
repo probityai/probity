@@ -1,4 +1,4 @@
-agent-evidence-observer @ git+https://github.com/probityai/agent-evidence-observer@1e8fb5bb18dbef58ef3eef110d342c72b15dc2ed
+agent-evidence-observer==0.1.3
     # via -r requirements-witness.in
 agent-evidence-vocabulary==0.8.0
     # via -r requirements-witness.in
@@ -12,12 +12,14 @@ hypothesis==6.170.1
     # via -r requirements-witness.in
 iniconfig==2.3.1
     # via pytest
+jcs-admit==0.1.1
+    # via
+    #   -r requirements-witness.in
+    #   agent-evidence-observer
 packaging==26.3
     # via pytest
 pluggy==1.7.0
     # via pytest
-probityai @ git+https://github.com/probityai/jcs-admit@58a48b2f33b55cafb72de9f187f0fa53eed74d95#subdirectory=python
-    # via agent-evidence-observer
 pycparser==3.12
     # via cffi
 pygments==2.21.0
