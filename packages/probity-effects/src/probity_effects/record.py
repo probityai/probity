@@ -8,7 +8,7 @@ import hashlib
 import json
 import threading
 from collections.abc import Mapping
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import Any
 
 import jcs_admit
@@ -60,7 +60,7 @@ def stamp(moment: datetime) -> str:
 
 
 def parse(text: str) -> datetime:
-    return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    return datetime.fromisoformat(text)
 
 
 class Clock:
@@ -77,7 +77,7 @@ class Clock:
 
     def now(self) -> datetime:
         with self._lock:
-            current = datetime.now(timezone.utc)
+            current = datetime.now(UTC)
             if self._last is not None and current < self._last:
                 current = self._last
             self._last = current

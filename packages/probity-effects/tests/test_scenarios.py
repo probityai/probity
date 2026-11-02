@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-
 from probity_effects import EffectCall, EffectGuard, Journal
 from probity_effects.langgraph import effect_tool
 from probity_effects.testing import (

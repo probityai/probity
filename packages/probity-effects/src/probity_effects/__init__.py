@@ -6,7 +6,14 @@ journal that is also the operation's uncertain-effect/v1 record.
 
 from probity_effects.guard import EffectGuard, EffectOutcomeUnknown, Outcome
 from probity_effects.journal import Journal
-from probity_effects.owner import EffectCall, EffectOwner, Lookup, NoEffect, Reply, classify_failure
+from probity_effects.owner import (
+    EffectCall,
+    EffectOwner,
+    Lookup,
+    NoEffect,
+    Reply,
+    classify_failure,
+)
 from probity_effects.record import CONTRACT_ID, args_digest, derive_key
 
 __all__ = [

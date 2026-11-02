@@ -9,7 +9,6 @@ import socket
 import urllib.error
 
 import pytest
-
 from probity_effects import (
     CONTRACT_ID,
     EffectGuard,

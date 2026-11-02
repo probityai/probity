@@ -8,7 +8,7 @@ import threading
 import time
 from collections.abc import Callable, Generator, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from probity_effects.journal import Attempt, Journal
@@ -239,7 +239,7 @@ class EffectGuard:
             return False
         if owner.key_retention_seconds is None:
             return True
-        age = (datetime.now(timezone.utc) - parse(pending.dispatched_at)).total_seconds()
+        age = (datetime.now(UTC) - parse(pending.dispatched_at)).total_seconds()
         return age <= owner.key_retention_seconds
 
     def _settled(self, key: str, answer: bool | None, why: str, *, sent: int = 0, error: str | None = None) -> Outcome:
