@@ -136,11 +136,18 @@ def links_of(path: Path) -> list[str]:
 
 
 def tracked_paths() -> set[Path]:
-    """Every file git tracks, plus each directory that holds one: what a reader of the repository can open."""
+    """Every file git tracks in the whole repository, plus each directory that holds one: what a reader can open.
+
+    The package sits inside a monorepo, so its pages link to sibling packages and harnesses; the listing is
+    of the repository, not only of this directory.
+    """
+    top = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], cwd=ROOT, check=True, capture_output=True, text=True
+    ).stdout.strip()
     listed = subprocess.run(
-        ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True, text=True
+        ["git", "ls-files", "-z"], cwd=top, check=True, capture_output=True, text=True
     ).stdout.split("\0")
-    files = {(ROOT / name).resolve() for name in listed if name}
+    files = {(Path(top) / name).resolve() for name in listed if name}
     return files | {parent for f in files for parent in f.parents}
 
 
