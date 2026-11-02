@@ -65,6 +65,24 @@ form, and must be `contradicted`: with `no_canonical_form` for the RFC 8785 clau
 `canonical_bytes_differ` for the rule-3 vectors, whose input still carries `signatures`. The default
 target is `card-signing-input`, which owns every vector.
 
+### `observed_effect/v1` (`vectors-observed-effect`)
+
+The assessment names an `envelope` artifact (a DSSE envelope) and the `observer_public_key`, plus
+optional `blobs`, `expected_code_digest` and `expected_invocation_binding`. Every trust input comes
+from the consumer's policy, never from the record. The claim: the envelope is a conforming Observed
+Effect record under that key. The rules run in the corpus's order and the first refusal is the code.
+
+A conforming record is `supported` / `record_conforms`, and the decision's `vantage` is `independent`
+only when the record's effects were independently observed. Both refusals are `contradicted` with the
+code as the reason. The check keeps the corpus's verdict (`valid`, `invalid` or `malformed`), because
+the corpus scores a verifier that collapses the last two as wrong. It also carries what a consumer may
+read: `derived_tier`, recomputed and never copied, `effects_independently_observed` and
+`absence_established`. The route compares those, the verdict and the codes. The one `indeterminate`
+member agrees when the verdict is among its declared readings.
+
+Four rules are not forced by any member, because none carries `codeDigest` or `invocationBinding`:
+`code-digest-shape`, `code-digest-policy`, `invocation-binding-shape` and `invocation-binding-policy`.
+
 ## Why the rules are ported, not imported
 
 The rule code of each claim type is a port of the corpus's own reader, at the commit named in each

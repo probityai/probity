@@ -24,6 +24,7 @@ from .adapters import (
     event_absence,
     execution_evidence,
     jcs_canonical,
+    observed_effect,
     operand_lineage,
     probe_observed,
     protected_paths,
@@ -60,6 +61,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "restoration_record/v1": restoration.adjudicate_record,
     "restoration_bundle/v1": restoration.adjudicate_bundle,
     "jcs_canonical/v1": jcs_canonical.adjudicate,
+    "observed_effect/v1": observed_effect.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

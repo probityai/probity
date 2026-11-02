@@ -480,9 +480,9 @@ def _rule_timestamp_grammar(state: _State) -> None:
     if not _timestamp_ok(pred["issuedAt"]):
         raise Malformed("timestamp-not-utc-basic:issuedAt")
     commitment = _commitment(pred)
-    if commitment is not None and "committedAt" in commitment:
-        if not _timestamp_ok(commitment["committedAt"]):
-            raise Malformed("timestamp-not-utc-basic:priorCommitment.committedAt")
+    if (commitment is not None and "committedAt" in commitment
+            and not _timestamp_ok(commitment["committedAt"])):
+        raise Malformed("timestamp-not-utc-basic:priorCommitment.committedAt")
 
 
 def _rule_interval_order(state: _State) -> None:
@@ -751,10 +751,10 @@ def _unobserved_spans(coverage: dict[str, Any]) -> list[dict[str, str]]:
     for span in spans:
         if not isinstance(span, dict) or set(span) != {"from", "to"}:
             raise Malformed("unobserved-interval-malformed")
-        for bound in ("from", "to"):
-            if not _timestamp_ok(span[bound]):
+        for edge in ("from", "to"):
+            if not _timestamp_ok(span[edge]):
                 raise Malformed(
-                    f"timestamp-not-utc-basic:coverage.unobservedIntervals.{bound}"
+                    f"timestamp-not-utc-basic:coverage.unobservedIntervals.{edge}"
                 )
     return spans
 
@@ -1132,7 +1132,7 @@ def verify(raw: bytes, policy: Policy) -> Report:
         )
     except Malformed as exc:
         return Report("malformed", [exc.code])
-    except Exception:
+    except (KeyError, TypeError, ValueError, RecursionError, ArithmeticError):
         return Report("malformed", ["not-parseable"])
     if not isinstance(statement, dict):
         return Report("malformed", ["not-parseable"])
@@ -1173,7 +1173,7 @@ def _verify_envelope(envelope: dict[str, Any], payload: bytes, state: _State) ->
     try:
         signature = base64.b64decode(envelope["signatures"][0]["sig"], validate=True)
         public_key = bytes.fromhex(state.policy.observer_public_key)
-    except Exception:
+    except (KeyError, IndexError, TypeError, ValueError):
         return Report("malformed", ["envelope-signature-unreadable"], state.derived_tier)
     if len(public_key) != 32 or not isinstance(envelope.get("payloadType"), str):
         return Report("malformed", ["envelope-signature-unreadable"], state.derived_tier)
@@ -1190,11 +1190,6 @@ def report_check(report: Report) -> dict[str, Any]:
             "verdict": report.verdict, "codes": report.codes, "derived_tier": report.derived_tier,
             "effects_independently_observed": report.effects_independently_observed,
             "absence_established": report.absence_established}
-
-
-def _hex_key(value: Any) -> str:
-    key = _digest(value, "assessment.observer_public_key")
-    return key
 
 
 def _pinned_blobs(artifacts: dict, artifact_root: Path, names: Any) -> dict[str, bytes] | None:
@@ -1219,7 +1214,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     optional = {"blobs", "expected_code_digest", "expected_invocation_binding"}
     case_id, artifacts, assessment = assessment_for(
         case, policy, CLAIM_TYPE, {"envelope", "observer_public_key"}, optional)
-    key = _hex_key(assessment["observer_public_key"])
+    key = _digest(assessment["observer_public_key"], "assessment.observer_public_key")
     raw, binding = bound(artifacts, artifact_root, assessment["envelope"], "assessment.envelope")
     scope = {"envelope": binding, "predicate_type": PREDICATE_TYPE, "observer_public_key": key,
              "limit": LIMIT}

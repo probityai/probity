@@ -12,6 +12,7 @@ with the corpus's reason. docs/corpus-routes.md states the mapping.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -20,10 +21,15 @@ from typing import Any
 
 import pytest
 from probity_verify import adjudicate
-from probity_verify.adapters import jcs_canonical, uncertain_effect
+from probity_verify.adapters import jcs_canonical, observed_effect, uncertain_effect
 from probity_verify.common import CaseError
 
 DATA = Path(__file__).resolve().parent / "data"
+# No member of the corpus carries codeDigest or invocationBinding, and none pins either on the
+# consumer side, so the corpus cannot force these four. The two shape rules are tested directly
+# below; the two policy rules have no member and no test here.
+UNFORCED_OBSERVED_RULES = frozenset({"code-digest-shape", "code-digest-policy",
+                                     "invocation-binding-shape", "invocation-binding-policy"})
 
 
 def _manifest(name: str) -> dict[str, Any]:
@@ -169,6 +175,94 @@ def test_a2a_jcs_rfc8785(tmp_path: Path, entry: dict[str, Any]) -> None:
 def test_rfc8785_target_count_matches_manifest() -> None:
     owned = [e for e in JCS["vectors"] if not e["path"].startswith("a2-")]
     assert len(owned) == JCS["targets"]["rfc8785"]["vectors"]
+
+
+# vectors-observed-effect ----------------------------------------------------------------------
+
+OBSERVED = _manifest("observed-effect")
+OBSERVER_KEY = OBSERVED["keys"]["observer"]["publicKey"]
+
+
+def _observed(tmp_path: Path, entry: dict[str, Any]) -> dict:
+    """Judge one member under the consumer inputs the corpus publishes: the key and the blob."""
+    source = DATA / "observed-effect" / entry["file"]
+    (tmp_path / "envelope.json").write_bytes(source.read_bytes())
+    blob = next(iter(OBSERVED["blobs"].values()))
+    (tmp_path / "blob.bin").write_bytes(blob.encode("utf-8"))
+    return _judge(entry["id"], tmp_path, ["envelope.json", "blob.bin"],
+                  {"claim_type": "observed_effect/v1", "envelope": "envelope.json",
+                   "observer_public_key": OBSERVER_KEY, "blobs": ["blob.bin"]})
+
+
+def test_observed_effect_manifest_is_complete() -> None:
+    assert len(OBSERVED["vectors"]) == 80
+    assert {entry["kind"] for entry in OBSERVED["vectors"]} == {"accept", "reject", "indeterminate"}
+
+
+@pytest.mark.parametrize("entry", OBSERVED["vectors"], ids=lambda e: e["slug"])
+def test_observed_effect_member(tmp_path: Path, entry: dict[str, Any]) -> None:
+    result = _observed(tmp_path, entry)
+    check = result["checks"][0]
+    if entry["kind"] == "indeterminate":
+        assert check["verdict"] in {reading["verdict"] for reading in entry["readings"]}
+        return
+    expected = entry["expected"]
+    assert check["verdict"] == expected["verdict"]
+    if expected["verdict"] == "valid":
+        assert (result["decision"], result["reason"]) == ("supported", "record_conforms")
+        assert check["derived_tier"] == expected["derivedTier"]
+        assert check["effects_independently_observed"] == expected["effectsIndependentlyObserved"]
+        assert check["absence_established"] == expected["absenceEstablished"]
+    else:
+        assert result["decision"] == "contradicted"
+        assert check["codes"] == expected["codes"]
+        assert result["reason"] == expected["codes"][0]
+
+
+def test_observed_effect_refuses_under_another_observer_key(tmp_path: Path) -> None:
+    entry = next(e for e in OBSERVED["vectors"] if e["kind"] == "accept")
+    source = DATA / "observed-effect" / entry["file"]
+    (tmp_path / "envelope.json").write_bytes(source.read_bytes())
+    result = _judge(entry["id"], tmp_path, ["envelope.json"],
+                    {"claim_type": "observed_effect/v1", "envelope": "envelope.json",
+                     "observer_public_key": OBSERVED["keys"]["observedParty"]["publicKey"]})
+    assert result["decision"] == "contradicted"
+    assert result["checks"][0]["verdict"] == "invalid"
+
+
+def test_observed_effect_huge_exponent_is_not_parseable_not_a_crash() -> None:
+    payload = base64.b64encode(b'{"n": 1e99999999999999999999}').decode()
+    report = observed_effect.verify(json.dumps({"payload": payload}).encode(),
+                                    observed_effect.Policy(observed_effect.PREDICATE_TYPE, "00"))
+    assert report.verdict == "malformed"
+
+
+@pytest.mark.parametrize(("rule", "member"), [
+    (observed_effect._rule_code_digest_shape, "codeDigest"),
+    (observed_effect._rule_invocation_binding_shape, "invocationBinding"),
+])
+def test_observed_effect_join_keys_refuse_a_wrong_shape(rule: Any, member: str) -> None:
+    policy = observed_effect.Policy(observed_effect.PREDICATE_TYPE, "00")
+    rule(observed_effect._State({}, {}, policy))  # the member is optional
+    with pytest.raises(observed_effect.Malformed):
+        rule(observed_effect._State({}, {member: "not-an-object"}, policy))
+
+
+@pytest.mark.parametrize("name", [name for name, _ in observed_effect.RULES])
+def test_observed_effect_rule_mutations(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, name: str) -> None:
+    """Every rule changes some member's verdict or code, except the two no member can reach."""
+    monkeypatch.setattr(observed_effect, "RULES",
+                        tuple(rule for rule in observed_effect.RULES if rule[0] != name))
+    changed = 0
+    for entry in OBSERVED["vectors"]:
+        if entry["kind"] == "indeterminate":
+            continue
+        check = _observed(tmp_path, entry)["checks"][0]
+        expected = entry["expected"]
+        changed += (check["verdict"], check["codes"]) != (expected["verdict"],
+                                                          expected.get("codes", []))
+    assert (changed > 0) == (name not in UNFORCED_OBSERVED_RULES)
 
 
 # Mutation controls: each rule changes some member's verdict -----------------------------------
