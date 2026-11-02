@@ -10,7 +10,7 @@ It is for anyone testing a tool-using agent, or a guard or defense around one, w
 pip install probity-ratchet-cases==0.2.0
 ```
 
-Python 3.10 or later. No runtime dependencies.
+Python 3.12 or later. No runtime dependencies.
 
 ## Try it in 30 seconds
 

@@ -18,7 +18,7 @@ Verified by Probity (github.com/probityai/probity). The `probityai` command line
 
 ## Quick start
 
-Check a sample claim with the released package. You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
+Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
 samples="$(uvx --from probity-verify==0.3.0 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"

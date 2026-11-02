@@ -10,7 +10,7 @@ Install the released package: `pip install probityai==0.1.0`.
 
 ## Quick start
 
-You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/). Nothing to clone: the sample case and policies ship inside the wheel.
+You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Nothing to clone: the sample case and policies ship inside the wheel.
 
 ```sh
 samples="$(uvx --from probityai==0.1.0 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
