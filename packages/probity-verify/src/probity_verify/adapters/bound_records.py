@@ -22,7 +22,8 @@ def decision(case_id: str, claim_type: str, scope: dict, decision_value: str, re
             "scope": scope, "checks": checks or []}
 
 
-def assessment_for(case: Any, policy: Any, claim_type: str, required: set[str]) -> tuple[str, dict, dict]:
+def assessment_for(case: Any, policy: Any, claim_type: str, required: set[str],
+                   optional: set[str] = frozenset()) -> tuple[str, dict, dict]:
     """The case id, the case's artifact map and the claim's assessment, each checked for shape."""
     case = _object(case, "case", {"schema_version", "case_id", "artifacts"})
     policy = _object(policy, "policy", {"schema_version", "assessments"}, {"witnesses"})
@@ -31,7 +32,8 @@ def assessment_for(case: Any, policy: Any, claim_type: str, required: set[str]) 
     case_id = _string(case["case_id"], "case_id")
     if not isinstance(case["artifacts"], dict) or not isinstance(policy["assessments"], dict):
         raise CaseError("artifacts and assessments: expected objects")
-    assessment = _object(policy["assessments"].get(case_id), "assessment", required | {"claim_type"})
+    assessment = _object(policy["assessments"].get(case_id), "assessment",
+                         required | {"claim_type"}, optional)
     if assessment["claim_type"] != claim_type:
         raise CaseError("unsupported claim_type")
     return case_id, case["artifacts"], assessment
