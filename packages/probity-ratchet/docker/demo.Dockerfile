@@ -1,7 +1,7 @@
 # The no-build demo image: the ratchet tool, a local Atlas store (mongod + mongot) and the scripted
 # double-refund scenario. No GPU, no model key, no account, and no network once the image is pulled.
 #
-#   docker build -f docker/demo.Dockerfile -t ratchet-demo:dev .
+#   docker build -f packages/probity-ratchet/docker/demo.Dockerfile -t ratchet-demo:dev .   (from the repository root)
 #   docker run --rm ratchet-demo:dev ratchet demo double-refund
 #
 # Every `ratchet` command starts the in-container store on first use and waits until it answers
@@ -23,18 +23,19 @@ ENV UV_PYTHON_INSTALL_DIR=/opt/python \
     UV_COMPILE_BYTECODE=1
 WORKDIR /opt/ratchet
 RUN uv python install 3.14.8
-COPY pyproject.toml uv.lock README.md LICENSE ./
-COPY probity-ratchet-cases/ probity-ratchet-cases/
-COPY src/ src/
-COPY keys/ keys/
-RUN uv sync --locked --no-dev --extra atlas --python 3.14.8 \
+# The workspace root and its one lock, and the three members the ratchet installs from this tree.
+COPY pyproject.toml uv.lock ./
+COPY packages/probity-ratchet/ packages/probity-ratchet/
+COPY packages/probity-ratchet-cases/ packages/probity-ratchet-cases/
+COPY packages/probity-verify/ packages/probity-verify/
+RUN uv sync --frozen --package probity-ratchet --no-dev --extra atlas --python 3.14.8 \
     && /opt/ratchet/.venv/bin/ratchet --help > /dev/null
 
 FROM ${ATLAS_IMAGE}
 USER root
 COPY --from=build /opt/python /opt/python
 COPY --from=build /opt/ratchet /opt/ratchet
-COPY --chmod=755 docker/demo/ratchet-store docker/demo/ratchet /usr/local/bin/
+COPY --chmod=755 packages/probity-ratchet/docker/demo/ratchet-store packages/probity-ratchet/docker/demo/ratchet /usr/local/bin/
 RUN mkdir -p /data/ratchet-demo && chown mongod:mongod /data/ratchet-demo
 # Root only until the entrypoint has fixed the hostname and file limit; it then drops to mongod.
 USER root

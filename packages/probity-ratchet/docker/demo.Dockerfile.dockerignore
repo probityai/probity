@@ -1,16 +1,23 @@
-# Build context for docker/demo.Dockerfile: only what the image installs. Nothing else, so no local
-# state, record, key seed or capture can reach the image.
+# Build context (the repository root) for packages/probity-ratchet/docker/demo.Dockerfile: only what the image
+# installs. Nothing else, so no local state, record, key seed or capture can reach the image.
 *
 !pyproject.toml
 !uv.lock
-!README.md
-!LICENSE
-!keys/ratchet-decisions.pub
-!src/
-!probity-ratchet-cases/pyproject.toml
-!probity-ratchet-cases/README.md
-!probity-ratchet-cases/LICENSE
-!probity-ratchet-cases/src/
-!docker/demo/
+!packages/probity-ratchet/pyproject.toml
+!packages/probity-ratchet/README.md
+!packages/probity-ratchet/LICENSE
+!packages/probity-ratchet/keys/ratchet-decisions.pub
+!packages/probity-ratchet/src/
+!packages/probity-ratchet/docker/demo/
+!packages/probity-ratchet-cases/pyproject.toml
+!packages/probity-ratchet-cases/README.md
+!packages/probity-ratchet-cases/LICENSE
+!packages/probity-ratchet-cases/src/
+!packages/probity-verify/pyproject.toml
+!packages/probity-verify/README.md
+!packages/probity-verify/LICENSE
+!packages/probity-verify/MANIFEST.in
+!packages/probity-verify/src/
+!packages/probity-verify/examples/source-coverage/
 **/__pycache__
 **/*.pyc

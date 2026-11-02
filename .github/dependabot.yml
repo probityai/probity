@@ -8,8 +8,15 @@ updates:
   - package-ecosystem: uv
     directory: /
     schedule:
-      interval: weekly
+      interval: daily
+    open-pull-requests-limit: 5
     groups:
+      # Our own family first, so a release of one of them reaches every member the same day.
+      family:
+        patterns:
+          - "agent-evidence-*"
+          - "probity-verify"
+          - "jcs-admit"
       python:
         patterns: ["*"]
   - package-ecosystem: github-actions
@@ -20,37 +27,12 @@ updates:
       actions:
         patterns: ["*"]
   - package-ecosystem: uv
-    directory: /packages/probity-ratchet
-    schedule:
-      interval: weekly
-    groups:
-      python:
-        patterns: ["*"]
-  - package-ecosystem: uv
-    directory: /packages/agent-evidence-observer
-    schedule:
-      interval: weekly
-    groups:
-      python:
-        patterns: ["*"]
-  - package-ecosystem: uv
     directory: /examples/checkout-runner
     schedule:
       interval: weekly
     groups:
       python:
         patterns: ["*"]
-  - package-ecosystem: uv
-    directory: /packages/agent-evidence-mcp
-    schedule:
-      interval: daily
-    open-pull-requests-limit: 5
-    groups:
-      family:
-        patterns:
-          - "agent-evidence-*"
-          - "probity-verify"
-          - "jcs-admit"
   - package-ecosystem: docker
     directory: /packages/agent-evidence-mcp
     schedule:

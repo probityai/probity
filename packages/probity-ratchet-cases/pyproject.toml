@@ -25,7 +25,7 @@ agentdojo = ["agentdojo==0.1.35"]
 ratchet_cases = "ratchet_cases.tau2:register"
 
 [project.urls]
-Source = "https://github.com/probityai/probity/tree/main/packages/probity-ratchet/probity-ratchet-cases"
+Source = "https://github.com/probityai/probity/tree/main/packages/probity-ratchet-cases"
 Issues = "https://github.com/probityai/probity/issues"
 
 [project.scripts]

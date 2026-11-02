@@ -1,6 +1,6 @@
 # Moved from packages/agent-evidence-mcp/.github/workflows/ci.yml when the package was imported;
-# its steps run from packages/agent-evidence-mcp. The package keeps its own uv lock and is excluded
-# from the root uv workspace. The README shape check is the root lint job's.
+# its steps run from packages/agent-evidence-mcp. The package is a member of the root uv workspace;
+# these jobs install it with pip-style resolution on each supported Python. The README shape check is the root lint job's.
 name: package-agent-evidence-mcp
 
 on:

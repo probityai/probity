@@ -14,8 +14,8 @@ tests/               tests of the repository tools
 .github/workflows/   ci.yml (entry point), one reusable workflow per member, python-build.yml, release.yml
 ```
 
-Members today: `probity-verify`, `probityai` (the `probityai` command), `probity-ratchet` (with
-`probity-ratchet-cases` inside it), `agent-evidence-observer`, `agent-evidence-mcp` and
+Members today: `probity-verify`, `probityai` (the `probityai` command), `probity-ratchet`,
+`probity-ratchet-cases`, `agent-evidence-observer`, `agent-evidence-mcp` and
 `evaluator-replay-kit`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
 publishes nothing or carries a name other than its distribution's.
 
@@ -24,7 +24,7 @@ publishes nothing or carries a name other than its distribution's.
 | Topic | Decision | Reason |
 | --- | --- | --- |
 | Member names | A member's directory, distribution, import package and tag prefix come from its own `pyproject.toml`. Nothing reads the repository name. | A repository rename or a renamed member changes one file. `scripts/workspace.py` finds members by scanning `packages/*/pyproject.toml`. |
-| Locking | The root `uv.lock` resolves `probity-verify` and `probityai` together. `agent-evidence-mcp`, `agent-evidence-observer` and `probity-ratchet` (with `probity-ratchet-cases`) keep their own locks, and `evaluator-replay-kit` sits outside the root workspace; the root `pyproject.toml` says why for each. | Members that depend on each other are tested together against the versions they will meet. A member whose Python floor, git-sourced extras or PyPI-pinned tests would bind every other member keeps its own lock instead. |
+| Locking | One root `uv.lock` resolves every member under `packages/`. Its Python floor is the strictest member's. `probity-ratchet`'s git-sourced bench extras, overrides and dependency metadata sit in the root `pyproject.toml`, because uv reads them only there. No member declares its own workspace or keeps its own lock; `scripts/workspace.py` refuses one that does. | Members that depend on each other are tested together against the versions they will meet, and one `uv sync --all-packages` gives a contributor the whole stack. |
 | Root project | The root `pyproject.toml` is not a package (`package = false`). It holds the workspace, the `dev` group, the root pytest configuration and the shared ruff configuration. | Nothing is published from the root, so no member inherits metadata by accident. |
 | Lint and types | One `[tool.ruff]` table at the root, ruff's default rule set, run on the whole tree in CI. No type checker yet. | One configuration applies to every member. Widening the rule set (98 findings under E, F, W, I, B and UP on 2026-10-17) and adding a type checker are each one change to this table and its fixes. |
 | Tests | `uv run python -m pytest` at the root runs `tests/` and every member's tests. Each member also runs alone from its directory with its own pytest configuration. | Test file basenames are unique across the workspace; pytest refuses a duplicate at collection, so a clash cannot hide a module. |

@@ -89,7 +89,8 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python: ['3.11', '3.14']
+        # The lock's floor (3.12, set by its strictest member) and the newest Python.
+        python: ['3.12', '3.14']
     defaults:
       run:
         working-directory: packages/probityai

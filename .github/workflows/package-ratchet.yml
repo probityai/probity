@@ -1,8 +1,7 @@
 name: package-ratchet
 
-# Every check of packages/probity-ratchet (probity-ratchet and probity-ratchet-cases),
-# run from the package directory, which is its own uv workspace with its own
-# lock. ci.yml calls this when a change touches either distribution or a
+# Every check of packages/probity-ratchet and packages/probity-ratchet-cases, run from
+# packages/probity-ratchet against the root workspace's one lock. ci.yml calls this when a change touches either distribution or a
 # shared file. The jobs are the ones probityai/ratchet ran before its import
 # (ci.yml; the build and wheel checks of release-cases.yml are the cases jobs
 # here). Releases go through release.yml.
@@ -32,9 +31,9 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run mypy src
-      - run: uv run mypy --config-file probity-ratchet-cases/pyproject.toml probity-ratchet-cases/src
+      - run: uv run mypy --config-file ../probity-ratchet-cases/pyproject.toml ../probity-ratchet-cases/src
       - run: python3 scripts/readme-lint.py README.md
-      - run: python3 scripts/readme-lint.py probity-ratchet-cases/README.md
+      - run: python3 scripts/readme-lint.py ../probity-ratchet-cases/README.md
       # check-docs imports ratchet_cases to count the case families, so it runs inside the synced virtualenv
       - run: uv run python scripts/check-docs.py
 
@@ -73,11 +72,11 @@ jobs:
       - name: selftest, and the shipped digest equals the one DIGESTS.json records
         run: |
           "$RUNNER_TEMP/cases/bin/ratchet-cases" selftest
-          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' probity-ratchet-cases/src/ratchet_cases/__init__.py)
-          want="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' probity-ratchet-cases/src/ratchet_cases/cases/DIGESTS.json "$version")"
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' ../probity-ratchet-cases/src/ratchet_cases/__init__.py)
+          want="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' ../probity-ratchet-cases/src/ratchet_cases/cases/DIGESTS.json "$version")"
           test "$("$RUNNER_TEMP/cases/bin/ratchet-cases" digest)" = "$want"
       - name: pytest against the installed wheel
-        working-directory: packages/probity-ratchet/probity-ratchet-cases
+        working-directory: packages/probity-ratchet-cases
         run: '"$RUNNER_TEMP/cases/bin/python" -m pytest -q -W error -p no:cacheprovider'
 
   # The AgentDojo benign-twin suite against the AgentDojo release it pins, from the installed wheel and its
@@ -102,7 +101,7 @@ jobs:
           wheel="$(ls dist/probity_ratchet_cases-*.whl)"
           uv pip install --python "$RUNNER_TEMP/twins/bin/python" "${wheel}[agentdojo]" pytest==9.1.1
       - name: pytest the twins against the installed wheel
-        working-directory: packages/probity-ratchet/probity-ratchet-cases
+        working-directory: packages/probity-ratchet-cases
         run: '"$RUNNER_TEMP/twins/bin/python" -m pytest -q -W error -p no:cacheprovider tests_agentdojo'
 
   # retail_faults against tau2-bench itself. tau2-bench is not on PyPI under its own name (the PyPI project
@@ -141,7 +140,7 @@ jobs:
       # utilities at import time. That one warning comes from tau2-bench and is ignored by its exact text;
       # every other warning still fails the job.
       - name: faulted retail tasks, graded on the live databases
-        working-directory: packages/probity-ratchet/probity-ratchet-cases
+        working-directory: packages/probity-ratchet-cases
         run: >-
           "$RUNNER_TEMP/t2/bin/python" -m pytest -q -p no:cacheprovider tests_tau2
           -W error -W "ignore:'audioop' is deprecated and slated for removal in Python 3.13:DeprecationWarning"
@@ -215,7 +214,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: build the demo image
-        run: docker build -f docker/demo.Dockerfile -t ratchet-demo:ci .
+        working-directory: .
+        run: docker build -f packages/probity-ratchet/docker/demo.Dockerfile -t ratchet-demo:ci .
       - name: run the reviewer sequence
         run: docker/demo/check.sh ratchet-demo:ci
       - name: image size
