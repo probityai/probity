@@ -136,7 +136,7 @@ def links_of(path: Path) -> list[str]:
 
 
 def tracked_paths() -> set[Path]:
-    """Every file git tracks in the whole repository, plus each directory that holds one: what a reader can open.
+    """Every file git tracks in the repository, plus each directory that holds one: what a reader can open.
 
     The package sits inside a monorepo, so its pages link to sibling packages and harnesses; the listing is
     of the repository, not only of this directory.
