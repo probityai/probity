@@ -1,0 +1,11 @@
+cryptography<47,>=46
+
+[aae]
+rfc8785==0.1.4
+
+[inspect]
+inspect-ai==0.3.273
+
+[test]
+pytest<10,>=8
+hypothesis<7,>=6
