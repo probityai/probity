@@ -4,14 +4,12 @@
 # CI recompiles onto a copy of this file (scripts/check-lock-current.sh), so a new
 # upstream release of a transitive dependency does not redden it; refresh the pins
 # with --upgrade when you mean to.
-# It is a separate environment, not a probity-verify extra: the pinned observer
-# depends on the jcs-admit Python binding at a commit that still published it as
-# probityai, the name of the probity command in this workspace, so the two
-# cannot share one lock or one environment. jcs-admit now publishes the binding
-# as jcs-admit; once the observer moves to it, this becomes a witness extra.
+# It stays a separate environment from the probity-verify extras. The observer
+# and jcs-admit now come from PyPI as published releases.
 # probity-verify itself is installed with --no-deps, so its own dependencies
 # are listed here.
-agent-evidence-observer[witness] @ git+https://github.com/probityai/agent-evidence-observer@1e8fb5bb18dbef58ef3eef110d342c72b15dc2ed
+jcs-admit==0.1.1
+agent-evidence-observer[witness]==0.1.3
 cryptography==50.0.2
 agent-evidence-vocabulary==0.8.0
 pyyaml==6.0.3

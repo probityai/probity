@@ -328,7 +328,7 @@ def test_verify_dsse_refuses_a_key_it_was_not_signed_by() -> None:
     envelope, _ = _signed(b'{"a":1}')
     _, other = _signed(b"x", key_id="k2", seed=bytes(range(1, 33)))
     out = call("verify_dsse", {"envelope": envelope, "trusted_keys": [{"key_id": "k2", "public_key_hex": other}]})
-    assert out["verified"] is False and out["error"] == "ThresholdNotMet"
+    assert out["verified"] is False and out["error"] == "NoValidSignature"
 
 
 def test_verify_dsse_refuses_a_tampered_payload() -> None:
