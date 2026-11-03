@@ -4,6 +4,7 @@ The guard reconciles with the service that owns the effect before anything is se
 journal that is also the operation's uncertain-effect/v1 record.
 """
 
+from probity_effects._tool import UnnamedOperation
 from probity_effects.guard import EffectGuard, EffectOutcomeUnknown, Outcome
 from probity_effects.journal import Journal
 from probity_effects.owner import (
@@ -27,6 +28,7 @@ __all__ = [
     "NoEffect",
     "Outcome",
     "Reply",
+    "UnnamedOperation",
     "args_digest",
     "classify_failure",
     "derive_key",
