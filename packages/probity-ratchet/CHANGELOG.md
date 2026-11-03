@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4 (2026-11-02)
+
+- `agent-evidence-vectors>=0.31.0,<1.0` (was `~=0.31.0`). 0.3.3 could not install beside agent-evidence-vectors 0.32.1,
+  so the family-resolves check failed. The range now spans the vectors releases, as in agent-evidence-mcp. The lock
+  moves to agent-evidence-vectors 0.32.1.
+
 ## 0.3.3 (2026-11-01)
 
 - The project links on the PyPI page name the renamed package folder, `packages/probity-ratchet`. 0.3.2 pointed at
