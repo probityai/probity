@@ -101,8 +101,9 @@ RECORD_CHECKS = textwrap.dedent(
             else:
                 assert event == incomplete["event"], record
             checked += 1
-        if (record / "retained-head.json").is_file():
-            verify_ledger_head(record / "ledger.jsonl", strict_loads((record / "retained-head.json").read_bytes()), keys["witness"])
+        head = record / ("fork-head.json" if (record / "fork-head.json").is_file() else "retained-head.json")
+        if head.is_file():
+            verify_ledger_head(record / "ledger.jsonl", strict_loads(head.read_bytes()), keys["witness"])
             checked += 1
         if (record / "start-checkpoint.json").is_file() and (record / "packet.json").is_file():
             packet = strict_loads((record / "packet.json").read_bytes())
