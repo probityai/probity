@@ -1,0 +1,70 @@
+/home/runner/work/_temp/adk-nested-producer/lib/python3.13/site-packages/probity_adk_nested/producer.py:114: UserWarning: [EXPERIMENTAL] EventsCompactionConfig: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  config = (None if case == "no-config" else EventsCompactionConfig(
+/home/runner/work/_temp/adk-nested-producer/lib/python3.13/site-packages/google/adk/models/llm_request.py:306: UserWarning: [EXPERIMENTAL] feature FeatureName.JSON_SCHEMA_FOR_FUNC_DECL is enabled.
+  declaration = tool._get_declaration()
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Dropping function calls with no matching function response: ['adk-6f3ecede-131b-4696-a8b9-8a1625c8d38a']
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Dropping function calls with no matching function response: ['adk-0990403e-ca83-4e4e-92d9-647af56e1ff6']
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Dropping function calls with no matching function response: ['adk-1700eb56-9dd1-449a-a011-c7e3fd5e3a12', 'adk-aed4b2d1-3793-4969-99e6-22913024587b']
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Dropping function calls with no matching function response: ['adk-82f1f384-48a7-4198-9571-49f12fc165e6']
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent leaf and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Skipping missing token usage metadata for agent middle and model probity-fixed-script
+Dropping function calls with no matching function response: ['adk-3619a838-e001-4e19-b86e-18df0be9b732']
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Dropping function calls with no matching function response: ['adk-f25a98fd-bfcf-44c0-9793-e684496fdfe0', 'adk-9391a7ee-d4cd-403b-b0ea-f4d9779ec48a']

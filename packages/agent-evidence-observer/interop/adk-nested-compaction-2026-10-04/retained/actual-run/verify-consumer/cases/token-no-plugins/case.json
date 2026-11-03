@@ -1,0 +1,1 @@
+{"artifacts":{"capability":{"length":253,"path":"capability.json","sha256":"079896356aac9e25ae97087534162bce45542be40ef72285168341a612a06d9e"},"observation":{"length":435,"path":"observation.json","sha256":"6430442d4b898602690cd0873c4e5c4d9dae40b54366720fe8db58d4def7a5c3"}},"case_id":"token-no-plugins","schema_version":"probity-case/v1"}
