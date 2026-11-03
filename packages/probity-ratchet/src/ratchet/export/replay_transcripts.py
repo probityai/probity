@@ -1,8 +1,8 @@
 """Replay a guard over Claude Code session transcripts before it is installed as a hook.
 
 Every tool call in every transcript is shown to the guard with the inputs the live hook would build
-(`ratchet.export.hookrt`): the call, the coding view {"cwd", "git_branch"} and the events before the call.
-Checks run in batches through the sandboxed guard runtime, the same isolation as a live run. The report
+(`ratchet.export.transcript`): the call, the coding view {"cwd", "git_branch"} and the events before the
+call. Checks run in batches through the selected guard runtime (`ratchet.agent.guard_api`). The report
 counts calls, fires and guard errors per session and tool; with an expected set of tool use ids it also
 says whether the guard fired on exactly those calls.
 
@@ -26,8 +26,8 @@ from typing import Any, overload
 
 from ratchet_cases.types import Event, ToolCall, sha256_hex
 
-from ratchet.agent.guards import GuardDecision, GuardItem, GuardRuntime
-from ratchet.export.hookrt import Transcript, parse_transcript, reads_history
+from ratchet.agent.guard_api import GuardDecision, GuardItem, GuardRuntime, guard_runtime
+from ratchet.export.transcript import Transcript, parse_transcript, reads_history
 from ratchet.types import Guard
 
 
@@ -259,7 +259,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     expect = None
     if args.expect is not None:
         expect = [x.strip() for x in args.expect.read_text(encoding="utf-8").splitlines() if x.strip()]
-    with GuardRuntime(workers=args.workers) as runtime:
+    with guard_runtime(workers=args.workers) as runtime:
         report = replay_transcripts(
             guard, discover(args.paths), runtime, chunk=args.chunk, expect=expect, progress=_progress
         )

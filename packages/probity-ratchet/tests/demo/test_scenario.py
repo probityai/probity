@@ -10,7 +10,7 @@ from typing import Any
 
 from ratchet_cases.types import Trace
 
-from ratchet.agent.guards import GuardRuntime
+from ratchet.agent.guard_open import OpenGuardRuntime
 from ratchet.demo.scenario import DB_ENV, URI_ENV, demo_cases, follow_up, run_demo
 from ratchet.demo.signing import KEY_NOTE
 from ratchet.demo.worker import NAME, ScriptedDemoWorker
@@ -60,7 +60,7 @@ def test_the_demo_admits_one_guard_rejects_the_other_and_activates() -> None:
     store, signer = MemStore(), Signer.generate()
     activator = MemoryActivator(store.by_id.get)
     cases = demo_cases()
-    with GuardRuntime() as runtime:
+    with OpenGuardRuntime() as runtime:
         r = run_demo(store, activator, WorldSimulator(cases), SandboxRunner(runtime), signer, cases=cases)
     assert r.admitted.admitted and not r.rejected.admitted
     assert not r.rejected.check("replay").passed

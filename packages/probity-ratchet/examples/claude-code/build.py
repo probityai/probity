@@ -3,12 +3,12 @@
     uv run python examples/claude-code/build.py
 
 1. Replay `no_force_push_main.py` over every session in `transcripts/` (synthetic, invented for this
-   example) through the sandboxed guard runtime, and require that it fires on exactly the tool calls in
+   example) through the selected guard runtime, and require that it fires on exactly the tool calls in
    `expected_fires.txt` with no guard error.
 2. Record the result as a Ratchet decision and sign it (DSSE, Ed25519). The key comes from
    RATCHET_SIGNING_KEY when set; otherwise a fresh key is made for this build and only its public half is
    kept, in `public_key.txt`.
-3. Export the admitted guard as a Claude Code PreToolUse hook in `hooks/`, plus the `settings.json`
+3. Export the admitted guard as an emit-only Claude Code PreToolUse hook in `hooks/`, plus the `settings.json`
    fragment that installs it.
 """
 
@@ -21,7 +21,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ratchet.agent.guards import GuardRuntime
+from ratchet.agent.guard_api import guard_runtime
 from ratchet.export.claude_code import export_hook, settings_entry
 from ratchet.export.replay_transcripts import discover, replay_transcripts
 from ratchet.improve.admit import Check, Decision
@@ -40,7 +40,7 @@ def main() -> int:
         (HERE / "no_force_push_main.py").read_text(encoding="utf-8"),
     )
     expected = (HERE / "expected_fires.txt").read_text(encoding="utf-8").split()
-    with GuardRuntime(workers=2) as runtime:
+    with guard_runtime(workers=2) as runtime:
         report = replay_transcripts(guard, discover([HERE / "transcripts"]), runtime, expect=expected)
     (HERE / "replay.json").write_text(json.dumps(report.to_payload(), indent=2) + "\n", encoding="utf-8")
     if not report.passed:

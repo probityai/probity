@@ -46,15 +46,17 @@ which the harness depends on at an exact version. It has no runtime dependencies
 ## The guard sandbox
 
 A guard is untrusted model output. Its source defines `check(call, view, history)` and returns a reason
-string to block or `None` to allow. Each guard runs in its own child process (`python -I -S`, empty
-environment) that applies, before it reads the source:
+string to block or `None` to allow. The engine reaches guards only through `ratchet.agent.guard_api`: its
+`GuardRuntime` protocol, its decision types and `guard_runtime()`, which returns the runtime registered under
+the `ratchet.guards` entry-point group, or the open runtime this package ships.
 
-- resource limits for CPU, memory and time,
-- a new network namespace with no network,
-- a seccomp filter,
-- a Landlock file-system ruleset.
+The open runtime (`ratchet.agent.guard_open`) runs each guard in its own child process (`python -I -S`,
+empty environment) with resource limits for CPU, memory and time. It is not an isolation boundary: there is
+no network namespace, syscall filter or file-system ruleset. Isolation is a demand the deployment states in
+`RATCHET_GUARD_REQUIRE`; a runtime that cannot apply a demanded layer refuses to start, and the open runtime
+refuses every layer but `rlimits`. An enforcing runtime that applies a network namespace, seccomp and
+Landlock plugs in through the entry-point group.
 
-The child reports which layers took effect, and the runtime refuses to start one that lacks a required layer.
 Every evaluation re-executes the module source, so a guard carries no state from one call to the next and a
 replay gives the same answer as the live run. A guard that fails to compile, raises, returns something other
 than a string, runs too long or kills its process blocks the call, and the error is recorded.

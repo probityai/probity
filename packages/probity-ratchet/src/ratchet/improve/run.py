@@ -26,7 +26,7 @@ from typing import Any
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from ratchet_cases.cases import all_cases
 
-from ratchet.agent.guards import GuardRuntime
+from ratchet.agent.guard_api import guard_runtime
 from ratchet.agent.model import ModelClient, ModelConfig, ModelError, SeededTransport
 from ratchet.agent.seed import seed_harness
 from ratchet.agent.worker import run_case
@@ -169,7 +169,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         Store(a.uri, a.db) as store,
         ModelClient(agent_cfg, transport=None if a.seed is None else SeededTransport(a.seed)) as model,
         contextlib.ExitStack() as stack,
-        GuardRuntime() as runtime,
+        guard_runtime() as runtime,
         ProcessReferee(factory_name("case_suite_parts", referee_config), referee_config) as referee,
     ):
         store.setup(wait_search=False)

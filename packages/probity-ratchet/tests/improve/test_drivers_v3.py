@@ -115,6 +115,7 @@ def world(monkeypatch: pytest.MonkeyPatch, inprocess_referee: Callable[..., Any]
     """The fake billing world behind the real referee factory: suite, worker, store, sandbox."""
     import ratchet_cases.cases as cases_mod
 
+    import ratchet.agent.guard_api as guard_api_mod
     import ratchet.agent.guards as guards_mod
     import ratchet.agent.seed as seed_mod
     import ratchet.agent.worker as worker_mod
@@ -133,6 +134,7 @@ def world(monkeypatch: pytest.MonkeyPatch, inprocess_referee: Callable[..., Any]
     monkeypatch.setattr(worldsim_mod, "WorldSimulator", lambda cases: FakeSimulator())
     monkeypatch.setattr(sandbox_mod, "SandboxRunner", lambda rt: LocalRunner())
     monkeypatch.setattr(guards_mod, "GuardRuntime", _Ctx)
+    monkeypatch.setattr(guard_api_mod, "guard_runtime", _Ctx)
     monkeypatch.setattr(seed_mod, "seed_harness", lambda: LOOP_SEED)
     monkeypatch.setattr(atlas_mod, "Store", FakeAtlas)
     monkeypatch.setattr(

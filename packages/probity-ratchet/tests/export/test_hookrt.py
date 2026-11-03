@@ -490,14 +490,35 @@ def test_serve_sessions_turns_away_other_users(
     sock = private_runtime_dir / "u.sock"
     thread = serving(config(ALLOW_GUARD), sock)
     monkeypatch.setattr(os, "getuid", lambda: -5)
-    with pytest.raises((ValueError, OSError)):  # turned away unanswered: an empty reply or a reset
+    with pytest.raises((ValueError, OSError)) as turned_away:  # unanswered: an empty reply or a reset
         hookrt._exchange(sock, hook_event(None, "c", "ls"))
+    assert not isinstance(turned_away.value, ConnectionRefusedError)  # it reached a listening server
     monkeypatch.undo()
     monkeypatch.setattr(socket, "SO_PEERCRED", None, raising=False)
     monkeypatch.delattr(socket, "SO_PEERCRED")
     assert hookrt._exchange(sock, hook_event(None, "c", "ls")) == Verdict(None)
     sock.unlink()
     thread.join(timeout=5)
+
+
+def test_serve_sessions_publishes_its_socket_only_once_listening(
+    monkeypatch: pytest.MonkeyPatch, private_runtime_dir: Path
+) -> None:
+    sock = private_runtime_dir / "l.sock"
+    seen: list[bool] = []
+
+    class Watched(socket.socket):
+        def listen(self, *args: Any) -> None:
+            seen.append(sock.exists())
+            super().listen(*args)
+
+    monkeypatch.setattr(hookrt.socket, "socket", Watched)
+    thread = serving(config(ALLOW_GUARD), sock)
+    assert seen == [False]  # a client that finds the path can always connect
+    assert hookrt._exchange(sock, hook_event(None, "c", "ls")) == Verdict(None)
+    sock.unlink()
+    thread.join(timeout=5)
+    assert not thread.is_alive() and not sock.with_suffix(".bind").exists()
 
 
 def test_ask_server_needs_a_hook_file_and_a_private_dir(

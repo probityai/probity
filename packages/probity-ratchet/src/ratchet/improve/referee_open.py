@@ -118,8 +118,8 @@ def parts(config: Mapping[str, Any], model: Any, stack: ExitStack, **overrides: 
 
 
 def _guard_runner(stack: ExitStack) -> Any:
-    """The sandboxed guard runner the referee replays candidate guards with."""
-    from ratchet.agent.guards import GuardRuntime
+    """The guard runner the referee replays candidate guards with, over the selected guard runtime."""
+    from ratchet.agent.guard_api import guard_runtime
     from ratchet.improve.sandbox import SandboxRunner
 
-    return SandboxRunner(stack.enter_context(GuardRuntime()))
+    return SandboxRunner(stack.enter_context(guard_runtime()))

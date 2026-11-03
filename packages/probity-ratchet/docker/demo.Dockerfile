@@ -41,12 +41,9 @@ RUN mkdir -p /data/ratchet-demo && chown mongod:mongod /data/ratchet-demo
 USER root
 WORKDIR /data/ratchet-demo
 # The store listens on loopback only, without auth, inside this container.
-# Docker's default seccomp profile refuses user namespaces, so guard children cannot apply the netns
-# layer here; seccomp still refuses every socket and Landlock every TCP bind and connect.
 ENV RATCHET_MONGODB_URI="mongodb://127.0.0.1:27017/?directConnection=true" \
     RATCHET_DB=ratchet_demo \
     RATCHET_DEMO_DIR=/data/ratchet-demo \
-    RATCHET_GUARD_REQUIRE=rlimits,seccomp,landlock \
     RATCHET_VENV=/opt/ratchet/.venv
 # Healthy means the store answers search-index calls. It reports unhealthy, and starts nothing, until the
 # store is up (the default command starts it; a `docker exec ratchet ...` starts it on first use otherwise).

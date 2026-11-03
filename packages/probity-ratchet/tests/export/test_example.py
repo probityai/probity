@@ -8,10 +8,11 @@ from pathlib import Path
 import pytest
 from ratchet_cases.types import ToolCall, sha256_hex
 
-from ratchet.agent.guards import GuardItem, GuardRuntime
+from ratchet.agent.guard_api import GuardItem
+from ratchet.agent.guard_open import OpenGuardRuntime
 from ratchet.export.claude_code import admitted_guard, harness_from_json, public_key, verify_hook
-from ratchet.export.hookrt import reads_history
 from ratchet.export.replay_transcripts import discover, replay_transcripts
+from ratchet.export.transcript import reads_history
 from ratchet.improve.receipt import verify
 from ratchet.types import Guard
 from ratchet.verify.dsse import keyid_of
@@ -111,11 +112,11 @@ CASES = [
 
 
 @pytest.fixture(scope="module")
-def runtime() -> GuardRuntime:
-    return GuardRuntime(workers=2)
+def runtime() -> OpenGuardRuntime:
+    return OpenGuardRuntime(workers=2)
 
 
-def test_guard_blocks_exactly_the_destructive_pushes(runtime: GuardRuntime) -> None:
+def test_guard_blocks_exactly_the_destructive_pushes(runtime: OpenGuardRuntime) -> None:
     items = [
         GuardItem(GUARD, ToolCall("Bash", {"command": c}, f"c{i}"), {"git_branch": b, "cwd": "/r"}, [])
         for i, (c, b, _) in enumerate(CASES)
@@ -147,6 +148,7 @@ def test_committed_artifacts_agree() -> None:
     assert header["decision_receipt_sha256"] == sha256_hex(envelope) == provenance.decision_receipt_sha256
     assert header["harness_version"] == harness.version == decision["candidate"]
     assert header["decision_signers"] == keyid_of(key)
+    assert header["hook_kind"] == "emit"
     replay = json.loads((EXAMPLE / "replay.json").read_text(encoding="utf-8"))
     assert replay == decision["checks"][0]["evidence"]
     assert replay["passed"] is True and replay["errors"] == 0
@@ -158,6 +160,6 @@ def test_committed_artifacts_agree() -> None:
 
 def test_replay_over_the_example_transcripts_meets_its_expectation() -> None:
     expected = (EXAMPLE / "expected_fires.txt").read_text(encoding="utf-8").split()
-    with GuardRuntime(workers=1) as rt:
+    with OpenGuardRuntime(workers=1) as rt:
         report = replay_transcripts(GUARD, discover([EXAMPLE / "transcripts"]), rt, expect=expected)
     assert report.passed is True and len(report.fires) == 3

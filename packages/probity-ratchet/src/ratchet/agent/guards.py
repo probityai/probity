@@ -12,7 +12,8 @@ the next and a replay gives the same answer as the live run. Guards may import t
 Each guard gets its own child process (`python -I -S`, empty environment), so one guard can never forge
 another guard's decision. The child applies rlimits, a new network namespace, a seccomp filter and a
 Landlock ruleset before it reads the guard source (see `_guard_child`), and reports which layers took
-effect; the runtime refuses to start a child that lacks a required layer.
+effect; the runtime refuses to start a child that lacks a required layer, and an empty `require` means
+every layer. The decision types and limits live in `ratchet.agent.guard_api`.
 
 The child's code is read once, when this module is imported (`CHILD_SOURCE`), and handed to every child on its
 command line. A parent and its children therefore always speak one protocol version: a checkout that changes
@@ -48,135 +49,55 @@ import time
 from collections import deque
 from collections.abc import Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from ratchet_cases.types import Event, ToolCall
 
+from ratchet.agent.guard_api import (
+    ALL_LAYERS,
+    GUARD_ERROR_REASON,
+    INFRASTRUCTURE_ERROR_REASON,
+    REQUIRE_ENV,
+    DecisionKind,
+    GuardDecision,
+    GuardInfrastructureError,
+    GuardItem,
+    GuardLimits,
+    GuardSourceError,
+    SandboxUnavailableError,
+    compile_guard,
+    required_layers,
+)
+from ratchet.agent.guard_api import error_decision as _error_decision
+from ratchet.agent.guard_api import infrastructure_decision as _infra_decision
 from ratchet.types import Guard
 
-GUARD_ERROR_REASON = "guard error"
-INFRASTRUCTURE_ERROR_REASON = "guard infrastructure error"
-DecisionKind = Literal["verdict", "guard_error", "infrastructure_error"]
+__all__ = [
+    "ALL_LAYERS",
+    "GUARD_ERROR_REASON",
+    "INFRASTRUCTURE_ERROR_REASON",
+    "REQUIRE_ENV",
+    "DecisionKind",
+    "GuardDecision",
+    "GuardInfrastructureError",
+    "GuardItem",
+    "GuardLimits",
+    "GuardProcess",
+    "GuardRuntime",
+    "GuardSourceError",
+    "SandboxUnavailableError",
+    "compile_guard",
+    "required_layers",
+]
+
 CHILD_PATH = Path(__file__).with_name("_guard_child.py")
 # Read once, with this module, so a running parent never starts a child of another version (module docstring).
 CHILD_SOURCE = CHILD_PATH.read_text(encoding="utf-8")
-ALL_LAYERS = ("rlimits", "netns", "seccomp", "landlock")
-NETWORK_LAYERS = ("netns", "seccomp")
-REQUIRE_ENV = "RATCHET_GUARD_REQUIRE"
-
-
-def required_layers(value: str | None = None) -> tuple[str, ...]:
-    """The isolation layers a child must apply: all four, or the comma list in RATCHET_GUARD_REQUIRE.
-
-    The list may drop a layer the host cannot provide (Docker's default seccomp profile refuses the user
-    namespace that `netns` needs), never network isolation itself: it must keep `netns` or `seccomp`, and it
-    may name only known layers.
-    """
-    raw = os.environ.get(REQUIRE_ENV, "") if value is None else value
-    if not raw.strip():
-        return ALL_LAYERS
-    layers = tuple(dict.fromkeys(x.strip() for x in raw.split(",") if x.strip()))
-    unknown = [x for x in layers if x not in ALL_LAYERS]
-    if unknown:
-        raise ValueError(f"{REQUIRE_ENV} names unknown layers {unknown}; known: {', '.join(ALL_LAYERS)}")
-    if not any(x in layers for x in NETWORK_LAYERS):
-        raise ValueError(f"{REQUIRE_ENV} must keep network isolation: name netns or seccomp")
-    return layers
-
-
-class GuardSourceError(ValueError):
-    """Guard source was rejected: it does not compile or does not define a callable `check`."""
-
-
-class SandboxUnavailableError(RuntimeError):
-    """The child could not apply an isolation layer the runtime requires."""
-
-
-class GuardInfrastructureError(RuntimeError):
-    """The sandbox, not the guard, failed: startup or transport ran past its bound, or the child died
-    before the guard started. Carries every decision of the batch so a caller can see what completed."""
-
-    def __init__(self, message: str, decisions: Sequence[GuardDecision] = ()) -> None:
-        super().__init__(message)
-        self.decisions = list(decisions)
-
-
-@dataclass(frozen=True)
-class GuardLimits:
-    call_timeout_s: float = 2.0  # CPU time of one guard evaluation
-    guard_wall_grace_s: float = 5.0  # extra wall time from the start marker before the parent kills
-    transport_timeout_s: float = 60.0  # encode, pipe and decode one request, under any machine load
-    startup_timeout_s: float = 60.0  # interpreter start, preloads and lockdown
-    cpu_s: int = 3600  # whole-process CPU backstop; a child serves one shard of a batch
-    memory_mb: int = 512
-    # Layers that must take effect or the child is refused. Network isolation is required by the
-    # contract; netns and seccomp each provide it, and both are required by default on Linux.
-    require: tuple[str, ...] = field(default_factory=required_layers)
-    # Use at most this Landlock ABI, to run the sandbox as it runs on an older kernel. None uses the
-    # kernel's own ABI. Isolation never depends on it: seccomp alone refuses signals and sockets.
-    landlock_max_abi: int | None = None
-
-
-@dataclass(frozen=True)
-class GuardDecision:
-    guard_id: str
-    blocked: bool
-    reason: str | None
-    error: str | None = None
-    elapsed_s: float = 0.0
-    kind: DecisionKind = "verdict"
-
-    def __post_init__(self) -> None:
-        if self.kind != "verdict" and not (isinstance(self.error, str) and self.error.strip()):
-            raise ValueError(f"a {self.kind} decision must carry its error message, got {self.error!r}")
-
-    def to_payload(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass(frozen=True)
-class GuardItem:
-    """One evaluation for batch mode."""
-
-    guard: Guard
-    call: ToolCall
-    view: Mapping[str, Any]
-    history: Sequence[Event] = field(default_factory=list)
-
-
-def _error_decision(guard_id: str, error: str, elapsed: float = 0.0) -> GuardDecision:
-    return GuardDecision(
-        guard_id=guard_id,
-        blocked=True,
-        reason=GUARD_ERROR_REASON,
-        error=error,
-        elapsed_s=elapsed,
-        kind="guard_error",
-    )
-
-
-def _infra_decision(guard_id: str, error: str) -> GuardDecision:
-    return GuardDecision(
-        guard_id=guard_id,
-        blocked=True,
-        reason=INFRASTRUCTURE_ERROR_REASON,
-        error=error,
-        kind="infrastructure_error",
-    )
 
 
 def _excerpt(reply: Mapping[str, Any]) -> str:
     return json.dumps(reply, sort_keys=True, default=str)[:300]
-
-
-def compile_guard(source: str) -> None:
-    """Parent-side syntax check. Compiling never executes the source."""
-    try:
-        compile(source, "<guard>", "exec")
-    except (SyntaxError, ValueError) as exc:
-        raise GuardSourceError(f"guard source does not compile: {exc}") from exc
 
 
 class _ChildDiedError(Exception):
@@ -215,7 +136,8 @@ class GuardProcess:
             "cpu_s": self.limits.cpu_s,
             "memory_mb": self.limits.memory_mb,
             "timeout_s": self.limits.call_timeout_s,
-            "require": list(self.limits.require),
+            # Nothing demanded means every layer: this runtime exists to isolate.
+            "require": list(self.limits.require or ALL_LAYERS),
             "landlock_max_abi": self.limits.landlock_max_abi,
         }
         guard_bound = self.limits.call_timeout_s + self.limits.guard_wall_grace_s

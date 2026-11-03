@@ -62,7 +62,7 @@ def _fake_lookups(monkeypatch: pytest.MonkeyPatch, seen: dict[str, Any]) -> None
 
     monkeypatch.setattr(run, "load_proposer", proposer)
     monkeypatch.setattr(run, "load_parent_chooser", chooser)
-    for name in ("Store", "ModelClient", "GuardRuntime", "ProcessReferee"):
+    for name in ("Store", "ModelClient", "guard_runtime", "ProcessReferee"):
         monkeypatch.setattr(run, name, _Ctx)
 
 

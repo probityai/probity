@@ -650,10 +650,14 @@ def serve_sessions(config: HookConfig, path: Path, idle_s: float = SERVER_IDLE_S
     with contextlib.suppress(FileNotFoundError):
         path.unlink()
     listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    staging = path.with_suffix(".bind")  # the socket appears at `path` only once it is listening
+    with contextlib.suppress(FileNotFoundError):
+        staging.unlink()
     try:
-        listener.bind(str(path))
-        path.chmod(0o600)
+        listener.bind(str(staging))
+        staging.chmod(0o600)
         listener.listen(16)
+        staging.rename(path)
         listener.settimeout(min(idle_s, 1.0))
         last = time.monotonic()
         while True:
@@ -680,8 +684,9 @@ def serve_sessions(config: HookConfig, path: Path, idle_s: float = SERVER_IDLE_S
     finally:
         listener.close()
         server.close()
-        with contextlib.suppress(FileNotFoundError):
-            path.unlink()
+        for leftover in (staging, path):
+            with contextlib.suppress(FileNotFoundError):
+                leftover.unlink()
         lock.close()
 
 

@@ -3,7 +3,7 @@
 The agent is the scripted demo worker (`ratchet.demo.worker`), which calls no model, so the parent's two
 runs agree and the candidate's two runs agree by construction. Everything else is the production path: the
 real case suite (the duplicate-refund traps of two families with their benign twins), the real worker and
-graders, the sandboxed guard runtime, counterfactual replay, the admission rule, a signed receipt, and
+graders, the selected guard runtime, counterfactual replay, the admission rule, a signed receipt, and
 activation by compare-and-swap in Atlas. Every stored record names the scripted worker, and the evaluator
 identity carries it in its model config, so no output can be read as a live-model result.
 
@@ -29,7 +29,7 @@ from ratchet_cases.cases import all_cases
 from ratchet_cases.cases.model import Case
 from ratchet_cases.types import Trace, sha256_hex
 
-from ratchet.agent.guards import GuardRuntime
+from ratchet.agent.guard_api import guard_runtime, required_layers
 from ratchet.agent.seed import seed_harness
 from ratchet.agent.worker import run_case
 from ratchet.demo.signing import demo_signer, pubkey_path, signing_label
@@ -282,7 +282,6 @@ def main(db: str, uri: str | None = None, reset: bool = False) -> int:
     """The CLI entry: Atlas store, sandboxed guard runtime, and a demo signing key generated for this run."""
     from pymongo import MongoClient
 
-    from ratchet.agent.guards import required_layers
     from ratchet.improve.sandbox import SandboxRunner
     from ratchet.improve.worldsim import WorldSimulator
     from ratchet.store.activation import MongoActivator
@@ -306,7 +305,7 @@ def main(db: str, uri: str | None = None, reset: bool = False) -> int:
             print(f"error: database {db} already holds a demo run; pass --reset to start it again")
             return 2
         signer = demo_signer(pem)
-        with Store(uri, db) as store, GuardRuntime() as runtime:
+        with Store(uri, db) as store, guard_runtime() as runtime:
             store.setup(wait_search=False)
             r = run_demo(store, MongoActivator(client, db), WorldSimulator(cases), SandboxRunner(runtime),
                          signer, cases=cases, log=lambda m: print(m, flush=True),
@@ -320,7 +319,8 @@ def main(db: str, uri: str | None = None, reset: bool = False) -> int:
     print(f"activation          {r.activation or 'not activated'}")
     print(f"signed by           DEMO key {signer.keyid[:12]} (generated for this run; not the pinned key)")
     print(f"demo public key     {pem}")
-    print(f"guard sandbox       required layers: {', '.join(required_layers())}")
+    layers = ", ".join(required_layers()) or "none"
+    print(f"guard runtime       {type(runtime).__name__}, required layers: {layers}")
     print("next, on the decisions above:")
     for line in follow_up(r, db, uri, pem, env):
         print(f"  {line}")

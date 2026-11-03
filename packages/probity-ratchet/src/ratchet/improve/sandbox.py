@@ -1,10 +1,10 @@
-"""Replay through the agent lane's sandboxed guard runtime: the same isolation as a live run."""
+"""Replay through the selected guard runtime (`ratchet.agent.guard_api`), the one a live run uses."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
-from ratchet.agent.guards import GuardInfrastructureError, GuardItem, GuardRuntime
+from ratchet.agent.guard_api import GuardInfrastructureError, GuardItem, GuardRuntime
 from ratchet.improve.replay import GuardInput, Verdict
 from ratchet.types import Guard
 
