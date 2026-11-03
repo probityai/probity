@@ -127,8 +127,8 @@ The `probity-verify` publisher used for 0.1.1 names repository `probity-verify`,
 
 ### Install line and versions
 
-The README's pinned install line is `pip install probity-verify==0.1.1`, the current PyPI release. When
+The README's pinned install line is `pip install probity-verify==0.3.0`, the current PyPI release. When
 `probityai` is first released, the README's install line becomes `pip install probityai==X.Y.Z`.
 `probityai` depends on `probity-verify>=0.2.0`, the first release that registers `verify`, so
-`probity-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai`
+`probity-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai` <!-- version-pins: keep -->
 pins the lowest member release that registers each of its subcommands.

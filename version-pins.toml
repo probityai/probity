@@ -1,0 +1,36 @@
+# Where each version the repository README and the architecture pages name is decided.
+# Each package built here is read from its manifest; each package another repository
+# releases is a family lock line. The pin-refresh workflow moves the locks and rewrites
+# the pages hourly, and the package configs (packages/*/version-pins.toml,
+# harnesses/*/version-pins.toml) are refreshed in the same run.
+repository = "probityai/probity"
+
+[[own]]
+key = "pypi:probityai"
+manifest = "packages/probityai/pyproject.toml"
+publisher = "probityai/probity"
+tag = "probityai-v{version}"
+
+[[own]]
+key = "pypi:probity-verify"
+manifest = "packages/probity-verify/pyproject.toml"
+publisher = "probityai/probity"
+tag = "probity-verify-v{version}"
+
+[[own]]
+key = "pypi:probity-ratchet"
+manifest = "packages/probity-ratchet/pyproject.toml"
+publisher = "probityai/probity"
+tag = "probity-ratchet-v{version}"
+
+[[own]]
+key = "pypi:agent-evidence-observer"
+manifest = "packages/agent-evidence-observer/pyproject.toml"
+publisher = "probityai/probity"
+tag = "agent-evidence-observer-v{version}"
+
+[family]
+"pypi:agent-evidence-vectors" = "0.32.1"
+
+[scan]
+include = ["README.md", "docs/architecture/**/*.md"]
