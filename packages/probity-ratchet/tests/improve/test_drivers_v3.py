@@ -124,6 +124,8 @@ def world(monkeypatch: pytest.MonkeyPatch, inprocess_referee: Callable[..., Any]
     import ratchet.store.atlas as atlas_mod
 
     FakeAtlas.dbs = {}
+    # These drivers re-judge a decision stored in Atlas, which only the hosted referee factory reads.
+    monkeypatch.setenv("RATCHET_REFEREE_FACTORY", "ratchet.improve.referee_live")
     for mod in (run_det, run_v3):
         monkeypatch.setattr(mod, "ProcessReferee", inprocess_referee)
     monkeypatch.setattr(cases_mod, "all_cases", lambda: CASES)

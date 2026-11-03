@@ -107,7 +107,9 @@ The other admission policies run in the same referee. `run_det` (ruling 2 on a d
 repeatability probe, the parent-discordance stop, a receipt naming the endpoint configuration digest),
 `run_v3` (stochastic policy v3: the interleaved schedule, the identity controls, `admit_v3`) and the
 improver-instruction comparison (`instruction_search`, several candidates through `decide_many`) name the
-factory `ratchet.improve.referee_live:policy_parts` and pass the worker's endpoint configuration by file and
+factory `policy_parts` of the module `ratchet.improve.referee.factory_name` selects (the referee
+configuration's `factory`, else `RATCHET_REFEREE_FACTORY`, else the open file-store referee
+`ratchet.improve.referee_open`; the v3 driver is operated by the referee) and pass the worker's endpoint configuration by file and
 digest (`ratchet.improve.endpoints`); the referee builds the seeded clients. Each driver receives counts and
 signed verdicts. The per-case held-out tables go to a results file the referee signs with the decision key,
 with each decision's verification bundle beside it (`ratchet.improve.results`); `python -m

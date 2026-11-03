@@ -897,6 +897,18 @@ class RefereeCore:
 # ---------------------------------------------------------------------------------------------------------
 
 Factory = Callable[[Mapping[str, Any]], RefereeParts]
+REFEREE_FACTORY_ENV = "RATCHET_REFEREE_FACTORY"
+OPEN_FACTORY = "ratchet.improve.referee_open"
+
+
+def factory_name(role: str, config: Mapping[str, Any], env: Mapping[str, str] | None = None) -> str:
+    """The `module:function` a referee process is built by. `role` is `case_suite_parts` or
+    `policy_parts`; the module is the configuration's `factory`, else RATCHET_REFEREE_FACTORY, else the
+    open file-store referee (`ratchet.improve.referee_open`). Another module defines the same two
+    functions."""
+    environ = os.environ if env is None else env
+    module = str(config.get("factory") or environ.get(REFEREE_FACTORY_ENV) or OPEN_FACTORY)
+    return f"{module}:{role}"
 
 
 def load_factory(name: str) -> Factory:
