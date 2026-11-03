@@ -36,11 +36,10 @@ from ratchet.demo.signing import demo_signer, pubkey_path, signing_label
 from ratchet.demo.worker import LABEL, NAME, ScriptedDemoWorker
 from ratchet.improve.activate import Activator
 from ratchet.improve.admit import Decision, admit, awaiting_confirmation
-from ratchet.improve.diagnose import diagnose
 from ratchet.improve.evaluate import CaseLike, EvalReport, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity
+from ratchet.improve.failures import Diagnoser, OverfitScreen, installed_diagnoser, installed_overfit_screen
 from ratchet.improve.loop import ImproveStore, frozen_suite_digest
-from ratchet.improve.overfit import training_literals
 from ratchet.improve.receipt import Signer, receipt
 from ratchet.improve.replay import GuardRunner, ReplayReport, WalkCache, replay
 from ratchet.improve.sim import Simulator
@@ -163,11 +162,16 @@ def run_demo(
     cases: Sequence[CaseLike] | None = None,
     log: Callable[[str], None] = lambda _m: None,
     signing: dict[str, Any] | None = None,
+    diagnoser: Diagnoser | None = None,
+    overfit: OverfitScreen | None = None,
 ) -> DemoResult:
     """Run the scenario and store every record. Raises when the active harness is not the seed parent.
 
     `signing` is what each signed decision records about its key; by default, that `signer` is a demo key.
+    `diagnoser` and `overfit` default to the installed failure-finding implementation, else the open baseline.
     """
+    diagnose = diagnoser or installed_diagnoser()
+    screen = overfit or installed_overfit_screen()
     signing = signing or signing_label(signer)
     cases = list(cases if cases is not None else demo_cases())
     model = ScriptedDemoWorker()
@@ -199,7 +203,7 @@ def run_demo(
     failing = {k: v for c in clusters for k, v in c.traces.items()}
     passing = [t for t in p1.traces if t.outcome.passed]
     benign = [t for t in p1.traces if t.case_id in benign_ids]
-    literals = training_literals(train)
+    literals = screen.training_literals(train)
     visible = sorted(c.id for c in cases if c.split == "train")
     targets = [m.id for m in members]
 
@@ -214,7 +218,7 @@ def run_demo(
         _persist(store, c1, "candidate", candidate=cand.version)
         kw: dict[str, Any] = {
             "parent_runs": (p1, p2), "cand_eval": c1, "replays": {guard.id: rep}, "composed": composed,
-            "literals": literals, "visible_case_ids": visible, "evaluator": evaluator,
+            "literals": literals, "overfit": screen, "visible_case_ids": visible, "evaluator": evaluator,
             "context": _context(guard, cand, clusters[0].id, targets, signing),
         }  # fmt: skip
         d = admit(parent, cand, confirm_eval=None, **kw)

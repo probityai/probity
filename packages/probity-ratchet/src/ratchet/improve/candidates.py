@@ -14,7 +14,7 @@ from typing import Any, Literal
 from ratchet_cases.types import sha256_hex
 
 from ratchet.canonical import canonical_json
-from ratchet.improve.diagnose import FailureCluster, FailurePoint
+from ratchet.improve.failures import FailureCluster, FailurePoint
 from ratchet.types import Guard, Harness, Procedure
 
 Kind = Literal["guard", "procedure", "prompt_edit"]

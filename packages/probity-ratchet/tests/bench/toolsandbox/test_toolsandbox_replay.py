@@ -15,7 +15,7 @@ from ratchet.bench.toolsandbox.replay import (
     user_replies,
 )
 from ratchet.bench.toolsandbox.runner import ToolSandboxRunner, seed_harness
-from ratchet.improve.diagnose import locate
+from ratchet.improve.failures import locate
 
 
 def _trace(

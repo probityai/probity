@@ -16,7 +16,7 @@ from typing import Any, Protocol
 from ratchet_cases.types import Event, ToolCall, Trace, sha256_hex
 
 from ratchet.canonical import canonical_json
-from ratchet.improve.diagnose import FailurePoint
+from ratchet.improve.failures import FailurePoint
 from ratchet.improve.sim import Simulator, Walk, call_of
 from ratchet.types import Guard
 
