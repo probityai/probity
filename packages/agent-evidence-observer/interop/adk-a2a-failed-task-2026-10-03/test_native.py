@@ -1,33 +1,41 @@
-"""Native fault controls for installed, source-pinned ADK/A2A execution."""
+"""Fault controls over the retained, source-pinned ADK/A2A task failure packets."""
 from __future__ import annotations
 
 import copy
-import importlib.metadata
 import json
 import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from hypothesis import given, strategies as st
 
-from probity_adk_failure import producer as producer_module
-from probity_adk_failure.contract import CASES, decode, encode, identity, population, sha
-from probity_adk_failure.producer import produce
+from probity_adk_failure.contract import CASES, decode, encode, identity, load, population, sha
 from probity_adk_failure.reader import checked_file, publish_saved, verify_case, verify_saved
-from probity_adk_failure.source import qualify_sdk
+from probity_adk_failure.source import sdk_hashes
 
 VARIANT = os.environ.get("ADK_FAILURE_VARIANT", "proposed-fix")
+RETAINED = Path(__file__).resolve().parent / "retained"
+
+
+def withheld_sources():
+    """Return the retained digests of source files withheld from the packet, keyed by manifest path."""
+    prefix = f"native-{VARIANT}/packet/source/"
+    held = load(RETAINED / "WITHHELD-SOURCES.json")
+    return {name.removeprefix(prefix): digest for name, digest in held.items() if name.startswith(prefix)}
 
 
 @pytest.fixture(scope="session")
 def native(tmp_path_factory):
-    """Run the real server, transport, Runner and broker once per selected pin."""
+    """Copy the retained run of the selected pin and restore its empty target directories."""
     root = tmp_path_factory.mktemp("native") / "run"
-    policy = produce(root, VARIANT)
-    return root, policy
+    shutil.copytree(RETAINED / f"native-{VARIANT}", root)
+    for history in (root / "packet").rglob("history.jsonl"):
+        (history.parent / "work").mkdir(exist_ok=True)
+    return root, load(root / "host-policy.json")
 
 
 def case_copy(native, tmp_path, case="failed-after", streaming=True):
@@ -47,11 +55,6 @@ def reselect(root, pins, file, value):
 
 class TestNativeTaskEffects:
     class TestPassingCases:
-        def test_producer_runs_installed_source(self):
-            selected = importlib.metadata.distribution("probity-adk-failure-reference")
-            expected = Path(selected.locate_file("probity_adk_failure/producer.py"))
-            assert Path(producer_module.__file__).resolve() == expected.resolve()
-
         @pytest.mark.parametrize("case,streaming", population())
         def test_each_native_case_preserves_effect_and_remote_state(self, native, case, streaming):
             root, policy = native
@@ -66,7 +69,7 @@ class TestNativeTaskEffects:
 
         def test_population_has_matching_controls_and_zero_model_inference(self, native):
             root, policy = native
-            report = verify_saved(root / "packet", policy)
+            report = verify_saved(root / "packet", policy, withheld_sources())
             assert report["remoteTasks"] == 11
             assert report["committedEffects"] == 9
             assert report["modelInferenceCalls"] == 0
@@ -88,23 +91,27 @@ class TestNativeTaskEffects:
 
         def test_permit_publication_only(self, native, tmp_path):
             root, policy = native
-            report = publish_saved(root / "packet", policy, tmp_path / "publication")
+            report = publish_saved(root / "packet", policy, tmp_path / "publication", withheld_sources())
             assert [row["case"] for row in report["records"]] == ["permit-streamed", "permit-nonstreamed"]
             assert json.loads((tmp_path / "publication/published.json").read_bytes()) == report
 
-        def test_installed_reader_has_no_native_frameworks(self, native):
-            reader = os.environ["ADK_FAILURE_READER_PYTHON"]
+        def test_installed_reader_has_no_native_frameworks(self, native, tmp_path):
+            reader = os.environ.get("ADK_FAILURE_READER_PYTHON", sys.executable)
             probe = subprocess.run([reader, "-I", "-B", "-c",
                 "import importlib.metadata as m; packages={d.metadata['Name'].lower() for d in m.distributions()}; assert 'google-adk' not in packages and 'a2a-sdk' not in packages"], capture_output=True, text=True, check=False)
             assert probe.returncode == 0, probe.stderr
             root, policy = native
+            held = tmp_path / "withheld.json"
+            held.write_bytes(encode(withheld_sources()))
             arguments = [reader, "-I", "-B", "-m", "probity_adk_failure.reader", str(root / "packet"),
-                         "--host-policy", str(root / "host-policy.json"), "--policy-sha256", sha(encode(policy))]
+                         "--host-policy", str(root / "host-policy.json"), "--policy-sha256", sha(encode(policy)),
+                         "--withheld", str(held)]
             first = subprocess.run(arguments, capture_output=True, text=True, check=False)
             second = subprocess.run(arguments, capture_output=True, text=True, check=False)
             assert first.returncode == second.returncode == 0, first.stderr + second.stderr
             assert first.stdout == second.stdout
             assert json.loads(first.stdout)["committedEffects"] == 9
+            assert first.stdout.encode() == (RETAINED / f"{VARIANT}-reader-report.json").read_bytes()
 
     class TestFailingCases:
         @pytest.mark.parametrize("field,value,reason", [
@@ -238,7 +245,7 @@ class TestNativeTaskEffects:
             selected["cases"].pop("failed-after-streamed")
             reason = "planned population differs"
             with pytest.raises(ValueError, match="^" + reason + "$"), caplog.at_level("WARNING"):
-                publish_saved(root / "packet", selected, tmp_path / "publication")
+                publish_saved(root / "packet", selected, tmp_path / "publication", withheld_sources())
             assert reason in caplog.messages
             assert not (tmp_path / "publication").exists()
 
@@ -249,14 +256,56 @@ class TestNativeTaskEffects:
             (target / "source/extra.py").write_text("different source\n")
             reason = "retained source population differs"
             with pytest.raises(ValueError, match="^" + reason + "$"), caplog.at_level("WARNING"):
-                verify_saved(target, policy)
+                verify_saved(target, policy, withheld_sources())
+            assert reason in caplog.messages
+
+        @pytest.fixture
+        def packet_copy(self, native, tmp_path):
+            target = tmp_path / "packet"
+            shutil.copytree(native[0] / "packet", target)
+            return target
+
+        def test_withheld_source_is_accepted_only_with_the_manifest_digest(self, native, packet_copy, caplog):
+            _, policy = native
+            held = withheld_sources()
+            assert held
+            assert verify_saved(packet_copy, policy, held)["remoteTasks"] == 11
+            name = sorted(held)[0]
+            reason = "withheld source digest differs from manifest"
+            with pytest.raises(ValueError, match="^" + reason + "$"), caplog.at_level("WARNING"):
+                verify_saved(packet_copy, policy, {**held, name: "00" * 32})
+            assert reason in caplog.messages
+
+        def test_unlisted_missing_source_is_refused(self, native, packet_copy, caplog):
+            _, policy = native
+            held = withheld_sources()
+            reason = "retained source population differs"
+            with pytest.raises(ValueError, match="^" + reason + "$"), caplog.at_level("WARNING"):
+                verify_saved(packet_copy, policy, dict(list(held.items())[1:]))
+            assert reason in caplog.messages
+
+        def test_present_withheld_source_must_match_its_digest(self, native, packet_copy, caplog):
+            _, policy = native
+            held = withheld_sources()
+            name = sorted(held)[0]
+            (packet_copy / "source" / name).write_bytes(b"different bytes\n")
+            reason = "artifact digest differs from host selection"
+            with pytest.raises(ValueError, match="^" + reason + "$"), caplog.at_level("WARNING"):
+                verify_saved(packet_copy, policy, held)
+            assert reason in caplog.messages
+
+        def test_withheld_entry_outside_the_manifest_is_refused(self, native, packet_copy, caplog):
+            _, policy = native
+            reason = "withheld source digest differs from manifest"
+            with pytest.raises(ValueError, match="^" + reason + "$"), caplog.at_level("WARNING"):
+                verify_saved(packet_copy, policy, {**withheld_sources(), "probity_observer/other.py": "00" * 32})
             assert reason in caplog.messages
 
 
 class TestSelectedSourceAndJson:
     class TestPassingCases:
         def test_all_native_importable_source_is_selected(self):
-            assert len(qualify_sdk(VARIANT)) == 905
+            assert len(sdk_hashes(VARIANT)) == 905
 
         @given(st.dictionaries(st.text(max_size=30), st.integers(), max_size=10))
         def test_finite_unsigned_json_roundtrip(self, value):
@@ -292,5 +341,5 @@ class TestSelectedSourceAndJson:
         def test_unknown_sdk_variant(self, caplog):
             reason = "unknown SDK variant"
             with pytest.raises(ValueError, match="^" + reason + "$"), caplog.at_level("WARNING"):
-                qualify_sdk("unselected-head")
+                sdk_hashes("unselected-head")
             assert reason in caplog.messages

@@ -76,6 +76,11 @@ def qualify_sdk() -> dict[str, Path]:
     return files
 
 
+def sdk_hashes() -> dict[str, str]:
+    """Return the primary-source SHA-256 of every selected SDK file."""
+    return {name: metadata["sha256"] for name, metadata in sdk_selection()["files"].items()}
+
+
 def expected_sources() -> dict[str, str]:
     """Get trusted reader/core hashes plus primary selected SDK source hashes."""
     result = {

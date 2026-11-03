@@ -85,6 +85,13 @@ def qualify_sdk(variant: str) -> dict[str, Path]:
     return files
 
 
+def sdk_hashes(variant: str) -> dict[str, str]:
+    """Return the primary-source SDK hashes selected for one pin."""
+    require(variant in REVISIONS, "unknown SDK variant")
+    selected = sdk_selection()
+    return {**selected["adk"][variant], **selected["a2a"]}
+
+
 def expected_sources(variant: str) -> dict[str, str]:
     """Get trusted reader/core hashes plus primary selected SDK source hashes."""
     require(variant in REVISIONS, "unknown SDK variant")
