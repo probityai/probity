@@ -1,0 +1,1 @@
+{"artifacts":{"capability":{"length":273,"path":"capability.json","sha256":"c8ab784baf278ed1f60d76df83397fa86d530af91083c0d5e82039336b3e206d"},"observation":{"length":499,"path":"observation.json","sha256":"4edaa2de2db6bdaf38b88213dde19d6c86c5f85cc8834c2a22da491f660de7bf"}},"case_id":"approval-granted/later-plain-text","schema_version":"probity-case/v1"}
