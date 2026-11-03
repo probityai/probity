@@ -19,9 +19,8 @@ from probity_witness_operator.protocol import FORMAT as NATIVE_FORMAT
 from probity_witness_operator.protocol import request_bytes as native_request
 from probity_witness_operator.protocol import require, sha
 
-from .protocol import FORMAT
+from .protocol import BUNDLE_FILES, FORMAT
 from .protocol import request_bytes as authorization_request
-from .worker import BUNDLE_FILES
 
 UIDS = {"issuer": 65529, "gateway": 65530, "witness": 65531, "consumer": 65533, "workload": 65534}
 CONTENT = b"one permitted operator effect\n"

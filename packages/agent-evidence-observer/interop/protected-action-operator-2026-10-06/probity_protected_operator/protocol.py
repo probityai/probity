@@ -20,6 +20,7 @@ from probity_witness_operator.protocol import (
 FORMAT = "probity-authorization-witness-v0"
 REPLY_DOMAIN = FORMAT + "-reply"
 MAX_JOURNAL = 65536
+BUNDLE_FILES = ("dispatch-state.json", "authorization.jsonl", "history.jsonl", "witness-ledger.jsonl", "packet.json")
 CHECKPOINT_FIELDS = {"count", "head", "keyid", "signature"}
 
 

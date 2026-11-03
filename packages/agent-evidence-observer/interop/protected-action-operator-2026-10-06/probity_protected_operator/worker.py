@@ -45,10 +45,9 @@ from probity_witness_operator.store import (
 )
 
 from .client import AuthorizationClient
-from .protocol import checkpoint_prefix, journal_entries
+from .protocol import BUNDLE_FILES, checkpoint_prefix, journal_entries
 from .store import AuthorizationConfiguration, AuthorizationStore
 
-BUNDLE_FILES = ("dispatch-state.json", "authorization.jsonl", "history.jsonl", "witness-ledger.jsonl", "packet.json")
 OPERATIONS = {
     "issuer": {"run"},
     "gateway": {"init", "serve"},

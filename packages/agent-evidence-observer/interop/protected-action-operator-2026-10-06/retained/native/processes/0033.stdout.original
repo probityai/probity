@@ -1,0 +1,1 @@
+{"acknowledged":true,"pid":6839,"protocolError":null,"replyHex":"7b226572726f72223a227265747279206772616e7420646966666572732066726f6d2074686520636f6d706c6574656420616374696f6e222c226f6b223a66616c73657d0a","response":{"error":"retry grant differs from the completed action","ok":false},"role":"workload","transportError":null,"uid":65534}
