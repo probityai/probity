@@ -63,6 +63,11 @@ def load_withheld(path: Path, directory: Path) -> dict[str, str]:
     return {name.removeprefix(base): digest for name, digest in value.items() if name.startswith(base)}
 
 
+def _found(directory: Path) -> set[str]:
+    """Name every regular file under a retained source directory."""
+    return {str(path.relative_to(directory)) for path in directory.rglob("*") if path.is_file()}
+
+
 def _check_present(directory: Path, name: str, digest: str) -> None:
     """Require one present retained source to be a plain file with the selected bytes."""
     path = directory / name
@@ -78,7 +83,7 @@ def verify_sources(directory: Path, expected: dict[str, str], withheld: dict[str
     the selected digest; every present file must still match byte for byte.
     """
     withheld = withheld or {}
-    found = {str(path.relative_to(directory)) for path in directory.rglob("*") if path.is_file()}
+    found = _found(directory)
     require(found <= set(expected), "retained source population differs")
     for name in set(expected) - found:
         require(withheld.get(name) == expected[name], "retained source is absent without a matching withheld digest")
