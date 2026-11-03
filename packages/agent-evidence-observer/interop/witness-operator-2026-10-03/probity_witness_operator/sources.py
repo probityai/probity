@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import importlib.metadata as metadata
+import json
 from pathlib import Path
-
-from probity_observer.crypto import strict_loads
 
 from .protocol import require, sha
 
@@ -58,7 +57,7 @@ def load_withheld(path: Path, directory: Path) -> dict[str, str]:
     directory : Path
         Source directory of the retained packet that the names are made relative to.
     """
-    value = strict_loads(path.read_bytes())
+    value = json.loads(path.read_bytes())
     require(isinstance(value, dict) and list(value) == sorted(value), "withheld source record is not a sorted object")
     base = directory.resolve().relative_to(path.resolve().parent).as_posix() + "/"
     return {name.removeprefix(base): digest for name, digest in value.items() if name.startswith(base)}
