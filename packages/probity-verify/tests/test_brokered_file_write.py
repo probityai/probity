@@ -470,7 +470,7 @@ def test_retained_capture_replays_byte_for_byte_through_the_installed_cli(tmp_pa
 def test_retained_binding_refuses_each_tamper(tmp_path, edit, match):
     retained = copy_retained(tmp_path)
     withheld = json.loads((retained / "WITHHELD-SOURCES.json").read_bytes())
-    some = sorted(withheld)[0]
+    some = min(withheld)
     if edit == "flip-retained-byte":
         target = retained / "native/completed/head.json"
         target.write_bytes(target.read_bytes() + b" ")
