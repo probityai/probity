@@ -209,12 +209,15 @@ def run(wheel: Path, optimized: bool) -> None:
         }), False)
         entry_points = f"{info}/entry_points.txt"
         raw_entry_points = members[entry_points][1]
-        command_line = b"agent-evidence-admit = probity_observer.admission:main\n"
-        if command_line not in raw_entry_points:
+        command_line = b"agent-evidence-read-native = probity_observer.native_reader:main\n"
+        verifier_line = b"agent-evidence-observer = probity_observer.cli:main\n"
+        if command_line not in raw_entry_points or verifier_line not in raw_entry_points:
             raise RuntimeError("Declared command control input is missing")
         for name, changed in (
             ("missing-console-command", raw_entry_points.replace(command_line, b"")),
-            ("redirected-console-command", raw_entry_points.replace(command_line, b"agent-evidence-admit = probity_observer.cli:main\n")),
+            ("redirected-console-command", raw_entry_points.replace(command_line, b"agent-evidence-read-native = probity_observer.cli:main\n")),
+            ("redirected-verifier-command", raw_entry_points.replace(
+                verifier_line, b"agent-evidence-observer = probity_observer.native_reader:main\n")),
             ("repeated-console-command", raw_entry_points + command_line),
             ("undeclared-entry-point-group", raw_entry_points + b"\n[unrelated_group]\nextra = unrelated.module:main\n"),
             ("entry-point-defaults", b"[DEFAULT]\nhidden = unrelated.module:main\n" + raw_entry_points),
