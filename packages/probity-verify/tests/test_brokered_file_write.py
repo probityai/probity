@@ -436,3 +436,74 @@ def test_generic_control_json_keeps_utf8_without_encoding_inference(encoding):
         parse_json(raw, max_bytes=1024, max_depth=8, max_nodes=64)
     assert parse_json('{"control":"café"}'.encode(), max_bytes=1024,
                       max_depth=8, max_nodes=64) == {"control": "café"}
+
+
+CONTROLLER = runpy.run_path(str(ROOT / "scripts/check-brokered-file-write.py"))
+RETAINED = ROOT / "examples/brokered-file-write/retained"
+VERIFIER = str(Path(sys.executable).parent / "probity-verify")
+
+
+def copy_retained(tmp_path):
+    import shutil
+    target = tmp_path / "retained"
+    shutil.copytree(RETAINED, target)
+    return target
+
+
+def test_retained_capture_replays_byte_for_byte_through_the_installed_cli(tmp_path):
+    result = subprocess.run([sys.executable, str(ROOT / "scripts/check-brokered-file-write.py"), "--verifier", VERIFIER,
+                             "--output", str(tmp_path / "replay")], capture_output=True, timeout=300, check=False)
+    assert result.returncode == 0, result.stderr
+    report = json.loads((tmp_path / "replay/RESULTS.json").read_bytes())
+    assert report["valid"] is True and report["retained_withheld_sources"] > 0
+    assert [row["mode"] for row in report["native"]] == ["completed", "after-seal", "before-terminal"]
+    assert [row["actual_process_exit"] for row in report["native"]] == [0, 74, 74]
+
+
+@pytest.mark.parametrize("edit,match", [
+    ("flip-retained-byte", "differs from the manifest"),
+    ("delete-unlisted", "missing or differs"),
+    ("stray-file", "outside the manifest"),
+    ("withheld-digest", "present or differs"),
+    ("withheld-file-present", "present or differs"),
+])
+def test_retained_binding_refuses_each_tamper(tmp_path, edit, match):
+    retained = copy_retained(tmp_path)
+    withheld = json.loads((retained / "WITHHELD-SOURCES.json").read_bytes())
+    some = sorted(withheld)[0]
+    if edit == "flip-retained-byte":
+        target = retained / "native/completed/head.json"
+        target.write_bytes(target.read_bytes() + b" ")
+    elif edit == "delete-unlisted":
+        (retained / "native/completed/head.json").unlink()
+    elif edit == "stray-file":
+        (retained / "native/extra.txt").write_bytes(b"x")
+    elif edit == "withheld-digest":
+        withheld[some] = "0" * 64
+        (retained / "WITHHELD-SOURCES.json").write_bytes(ENCODE(withheld))
+    else:
+        (retained / some).parent.mkdir(parents=True, exist_ok=True)
+        (retained / some).write_bytes(b"not the withheld bytes")
+    with pytest.raises(ValueError, match=match):
+        CONTROLLER["bind_retained"](retained)
+
+
+def test_replay_refuses_a_changed_retained_decision(tmp_path):
+    retained = copy_retained(tmp_path)
+    manifest = json.loads((retained / "manifest.json").read_bytes())
+    row = next(item for item in manifest["files"] if item["path"] == "native/completed/assert-true.stdout")
+    path = retained / row["path"]
+    path.write_bytes(path.read_bytes().replace(b"supported", b"contradicted", 1))
+    row.update(bytes=path.stat().st_size, sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    (retained / "manifest.json").write_bytes(ENCODE(manifest))
+    process_path = retained / "native/completed/assert-true.process.json"
+    process = json.loads(process_path.read_bytes())
+    process["stdout"].update(bytes=path.stat().st_size, sha256=row["sha256"])
+    process_path.write_bytes(ENCODE(process))
+    process_row = next(item for item in manifest["files"] if item["path"] == "native/completed/assert-true.process.json")
+    process_row.update(bytes=process_path.stat().st_size, sha256=hashlib.sha256(process_path.read_bytes()).hexdigest())
+    (retained / "manifest.json").write_bytes(ENCODE(manifest))
+    output = tmp_path / "replay"
+    output.mkdir()
+    rows = CONTROLLER["replay_mode"](retained, output, VERIFIER, "completed")
+    assert [item["valid"] for item in rows["results"]] == [False, True]

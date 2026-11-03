@@ -124,6 +124,9 @@ jobs:
           if-no-files-found: error
           path: packages/probity-verify/.build/source-coverage-report.json
 
+  # Replays the retained brokered-file-write capture (real hard exits, retained
+  # reports, policies and decisions) through a separately installed Verify CLI.
+  # The producing run is operated by the operator's runtime; nothing is produced here.
   brokered-file-write:
     runs-on: ubuntu-24.04
     env:
@@ -135,57 +138,30 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: '3.12'
-      - name: retain the exact public producer package source
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$B/producer-source"
-          git -C "$B/producer-source" init
-          git -C "$B/producer-source" remote add origin https://github.com/probityai/agent-evidence-observer.git
-          git -C "$B/producer-source" fetch --depth=1 --filter=blob:none origin 753932b42b00ab8257396112c529f840396f0ce7
-          git -C "$B/producer-source" checkout FETCH_HEAD -- pyproject.toml README.md LICENSE src
-          git -C "$B/producer-source" rev-parse FETCH_HEAD > "$B/producer-revision.txt"
-          git -C "$B/producer-source" ls-tree -r FETCH_HEAD > "$B/producer-tree.txt"
-      - name: build and install separate producer and consumer environments
+      - name: build and install the consumer environment
         shell: bash
         run: |
           set -euo pipefail
           uv build --wheel --out-dir "$B/wheels"
-          uv venv --python 3.12 "$B/producer"
           uv venv --python 3.12 "$B/consumer"
-          uv pip install --python "$B/producer/bin/python" "$B/producer-source"
           uv pip install --python "$B/consumer/bin/python" "$B"/wheels/*.whl
-          uv pip freeze --python "$B/producer/bin/python" > "$B/producer-dependencies.txt"
           uv pip freeze --python "$B/consumer/bin/python" > "$B/consumer-dependencies.txt"
           "$B/consumer/bin/python" -I -c 'import importlib.util; assert importlib.util.find_spec("probity_observer") is None'
-      - name: retain real hard exits and installed reader decisions
+      - name: replay the retained capture through the installed reader
         run: >-
           "$B/consumer/bin/python" -I
           scripts/check-brokered-file-write.py
-          --producer-python "$B/producer/bin/python"
           --verifier "$B/consumer/bin/probity-verify"
-          --output "$B/native"
-      - name: bind the bounded public capture
-        if: always()
-        run: python3 scripts/manifest-brokered-file-write.py .build/brokered-file-write
+          --output "$B/replay"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: brokered-file-write-installed-native
+          name: brokered-file-write-retained-replay
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
           path: |
-            ${{ env.B }}/manifest.json
-            ${{ env.B }}/native
-            ${{ env.B }}/wheels
-            ${{ env.B }}/producer-source/pyproject.toml
-            ${{ env.B }}/producer-source/README.md
-            ${{ env.B }}/producer-source/LICENSE
-            ${{ env.B }}/producer-source/src
-            ${{ env.B }}/producer-revision.txt
-            ${{ env.B }}/producer-tree.txt
-            ${{ env.B }}/producer-dependencies.txt
+            ${{ env.B }}/replay
             ${{ env.B }}/consumer-dependencies.txt
 
   distribution:
