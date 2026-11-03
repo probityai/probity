@@ -40,6 +40,9 @@ PROGRAM = textwrap.dedent(
     from ratchet.improve.receipt import Signer
 
     loop.load_proposer = lambda name, model: ChatProposer(model)
+    failures.entry_points = lambda group: []  # the open defaults, whatever distributions are installed
+    failures.installed_diagnoser.cache_clear()
+    failures.installed_overfit_screen.cache_clear()
     assert failures.installed_diagnoser() is failures.open_diagnose
     assert isinstance(failures.installed_overfit_screen(), failures.OpenOverfitScreen)
 

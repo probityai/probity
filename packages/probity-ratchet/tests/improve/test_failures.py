@@ -118,7 +118,7 @@ def test_ids_inside_longer_tokens_do_not_match() -> None:
 
 
 def test_admission_names_the_screen_that_ran() -> None:
-    check = check_overfit(PARENT, PARENT, Literals(ids={"ch_1"}))
+    check = check_overfit(PARENT, PARENT, Literals(ids={"ch_1"}), OpenOverfitScreen())
     assert check.passed and check.evidence["screen"] == "open-literals"
     assert check.evidence["screened"] == {"ids": 1, "amounts": 0, "names": 0}
 
