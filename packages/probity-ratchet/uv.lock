@@ -51,11 +51,11 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-vectors"
-version = "0.31.0"
+version = "0.32.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e2/f7/4b1c0674afdae3a5104ee29e9aa33bc85ffbe6c4f379813e63304a3ff49c/agent_evidence_vectors-0.31.0.tar.gz", hash = "sha256:ee3a20eb9d20d149cfd5d4f731c3653b8ea1e29e7f0dbbabec9118f686a90554", size = 3939832, upload-time = "2026-10-31T02:18:17.114Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/b7/acd297f4e71db52ca7bf56b8ba9792c5336f6db3d7af0f303d69623eb160/agent_evidence_vectors-0.32.1.tar.gz", hash = "sha256:2ff1eaab695202ff1bd301bace4e1b550c4ddbba18277ad834548c584358dc05", size = 4205550, upload-time = "2026-11-03T00:55:38.418Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/82/894d46b4159581a65e5b6bb31960493afb9446fc10b924bd578b3462ed57/agent_evidence_vectors-0.31.0-py3-none-any.whl", hash = "sha256:6a9e43def25fcd69ca7bc4cee749d42a48752be0672e594dbd85f00c7078450a", size = 11301142, upload-time = "2026-10-31T02:18:14.293Z" },
+    { url = "https://files.pythonhosted.org/packages/85/26/f1f87752c67587f01c14d130c8a8604a47953bb63def424580c9d4281bc3/agent_evidence_vectors-0.32.1-py3-none-any.whl", hash = "sha256:89c6d12be8b92d0fd303cd40392c19d9bea03f6506a9ff7cf87fd04d0a26e44b", size = 11723022, upload-time = "2026-11-03T00:55:36.034Z" },
 ]
 
 [[package]]
@@ -3955,7 +3955,7 @@ wheels = [
 
 [[package]]
 name = "probity-ratchet"
-version = "0.3.3"
+version = "0.3.4"
 source = { editable = "." }
 dependencies = [
     { name = "agent-evidence-vectors" },
@@ -3999,7 +3999,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-evidence-vectors", specifier = "~=0.31.0" },
+    { name = "agent-evidence-vectors", specifier = ">=0.31.0,<0.33" },
     { name = "agentdojo", marker = "extra == 'bench'", specifier = "==0.1.35" },
     { name = "audioop-lts", marker = "python_full_version >= '3.13' and extra == 'bench'", specifier = "==0.2.2" },
     { name = "cryptography", specifier = ">=44" },
