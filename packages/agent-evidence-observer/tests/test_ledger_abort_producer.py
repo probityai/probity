@@ -11,7 +11,8 @@ from typing import Any
 import pytest
 from hypothesis import HealthCheck, given, settings, strategies as st
 
-from probity_observer import Broker, LedgerWitness, SigningKey, VerificationError, Witness, verify_incomplete, verify_ledger_head, verify_ledger_receipts
+from probity_observer import LedgerWitness, SigningKey, VerificationError, Witness, verify_incomplete, verify_ledger_head, verify_ledger_receipts
+from probity_observer.broker import Broker
 from probity_observer.broker import recover_interrupted
 from probity_observer.history import append_history, read_history
 from probity_observer.ledger import read_ledger

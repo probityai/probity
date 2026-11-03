@@ -11,7 +11,8 @@ from typing import Any
 import pytest
 from hypothesis import HealthCheck, given, settings, strategies as st
 
-from probity_observer import Broker, LedgerWitness, SigningKey, VerificationError, verify_ledger_head, verify_packet
+from probity_observer import LedgerWitness, SigningKey, VerificationError, verify_ledger_head, verify_packet
+from probity_observer.broker import Broker
 from probity_observer.crypto import digest, verify_signature
 from probity_observer.history import GENESIS
 from probity_observer.ledger import HEAD_DOMAIN, read_ledger

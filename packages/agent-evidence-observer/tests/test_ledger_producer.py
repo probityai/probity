@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from probity_observer import Broker, LedgerWitness, SigningKey, VerificationError, verify_ledger_receipts, verify_packet
+from probity_observer import LedgerWitness, SigningKey, VerificationError, verify_ledger_receipts, verify_packet
+from probity_observer.broker import Broker
 from probity_observer.broker import recover_interrupted
 from probity_observer.history import append_history
 from probity_observer.ledger import read_ledger

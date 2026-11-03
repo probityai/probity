@@ -8,14 +8,9 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from probity_observer import (
-    AdmissionPolicy,
-    AdmissionStore,
-    Broker,
-    LedgerWitness,
-    SigningKey,
-    VerificationError,
-)
+from probity_observer import LedgerWitness, SigningKey, VerificationError
+from probity_observer.admission import AdmissionPolicy, AdmissionStore
+from probity_observer.broker import Broker
 from probity_observer.crypto import canonical, digest
 
 

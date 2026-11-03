@@ -20,14 +20,9 @@ from typing import Any
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
-from probity_observer import (
-    AdmissionPolicy,
-    AdmissionStore,
-    Broker,
-    LedgerWitness,
-    SigningKey,
-    VerificationError,
-)
+from probity_observer import LedgerWitness, SigningKey, VerificationError
+from probity_observer.admission import AdmissionPolicy, AdmissionStore
+from probity_observer.broker import Broker
 from probity_observer.authorization import AuthorizedBroker, issue_grant
 from probity_observer.crypto import canonical, digest, strict_loads
 from probity_observer.grant_records import (

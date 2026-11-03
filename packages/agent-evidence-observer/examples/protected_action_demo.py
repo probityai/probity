@@ -20,14 +20,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 import cryptography
-from probity_observer import (
-    AdmissionPolicy,
-    AdmissionStore,
-    Broker,
-    LedgerWitness,
-    SigningKey,
-    VerificationError,
-)
+from probity_observer import LedgerWitness, SigningKey, VerificationError
+from probity_observer.admission import AdmissionPolicy, AdmissionStore
+from probity_observer.broker import Broker
 from probity_observer.authorization import AuthorizedBroker, issue_grant
 from probity_observer.crypto import canonical, digest
 from probity_observer.grant_records import (
