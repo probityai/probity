@@ -1,17 +1,20 @@
 {
-  "schema": "probity-target-recovery-provenance-v1",
-  "nativeSourceRevision": "48c30d246e5c8a11163973f25435676dc837c7ca",
-  "fixtureSha256": "94117b13bff70d6b9fc2ef5ae100fc746d8522c48168c4c30fb07b5ec66720ec",
-  "fixtureBytes": 60516,
-  "reportSha256": "f145808749520d60262b72b5c8aa0a733fb4c1374a4d463b1da0a7def427cea5",
   "cases": 7,
-  "targetProcesses": 14,
-  "scope": "original same-team local native run; source selected before execution; comparison authored with runner, not blind custody",
   "doesNotAssert": [
     "power-loss",
     "general-exactly-once",
     "remote-identity",
     "independent-custody",
     "production-containment"
-  ]
+  ],
+  "fixtureBytes": 39520,
+  "fixtureForm": "hash-only: four embedded source files named in WITHHELD-SOURCES.json are not carried",
+  "fixtureSha256": "31c64d7e4e4ab6ee5ac74b994e4afaa53933f05f7899d54a3255a99dc1e53c03",
+  "nativeSourceRevision": "48c30d246e5c8a11163973f25435676dc837c7ca",
+  "originalFixtureBytes": 60516,
+  "originalFixtureSha256": "94117b13bff70d6b9fc2ef5ae100fc746d8522c48168c4c30fb07b5ec66720ec",
+  "reportSha256": "f145808749520d60262b72b5c8aa0a733fb4c1374a4d463b1da0a7def427cea5",
+  "schema": "probity-target-recovery-provenance-v1",
+  "scope": "original same-team local native run; source selected before execution; comparison authored with runner, not blind custody",
+  "targetProcesses": 14
 }

@@ -1,0 +1,9 @@
+{
+  "command": [
+    "/home/runner/work/_temp/target-reader/bin/probity-read-target-recovery",
+    "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/target-recovery-2026-10-02/fresh-run",
+    "--pins-file",
+    "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/target-recovery-2026-10-02/host-receipts/selected-pins.json"
+  ],
+  "timeoutSeconds": 15
+}

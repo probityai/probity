@@ -53,22 +53,28 @@ def select(packet: Path, pins: Path, policy: Path, digest: str, output: Path) ->
     (output / 'selected-pins.json').chmod(0o400)
 
 
-def gate(packet: Path, pins: Path, policy: Path, digest: str, reader: Path, output: Path) -> dict:
-    """Retain the complete selected-reader outcome and refuse on every invalid path."""
+def gate(packet: Path, pins: Path, policy: Path, digest: str, reader: Path, output: Path, withheld: Path | None = None) -> dict:
+    """Retain the complete selected-reader outcome and refuse on every invalid path.
+
+    ``withheld`` is the host-selected record of source members absent from a
+    retained packet; it is passed to the reader unchanged.
+    """
     output.mkdir(parents=True, exist_ok=False)
     report = {'decision': 'refuse', 'profile': PROFILE, 'plannedAttempts': 7, 'reason': None, 'readerReturncode': None, 'policySha256': digest}
     try:
         select(packet, pins, policy, digest, output)
-        execute(packet, output / 'selected-pins.json', reader, output, report)
+        execute(packet, output / 'selected-pins.json', reader, output, report, withheld)
     except (ValueError, OSError, TypeError, KeyError) as error:
         report['reason'] = str(error)
     (output / 'gate-report.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
 
 
-def execute(packet: Path, selected: Path, reader: Path, output: Path, report: dict) -> None:
+def execute(packet: Path, selected: Path, reader: Path, output: Path, report: dict, withheld: Path | None = None) -> None:
     """Bound child time and output retention, preserving errors and timeout streams."""
     command = [str(reader.resolve(strict=True)), str(packet.resolve()), '--pins-file', str(selected.resolve())]
+    if withheld is not None:
+        command += ['--withheld-sources', str(withheld.resolve(strict=True))]
     (output / 'launch.json').write_text(json.dumps({'command': command, 'timeoutSeconds': 15}, indent=2) + '\n')
     with (output / 'reader.stdout').open('wb') as stdout, (output / 'reader.stderr').open('wb') as stderr:
         try:
@@ -112,7 +118,8 @@ if __name__ == '__main__':
     parser.add_argument('--policy-sha256', required=True)
     parser.add_argument('--reader', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--withheld-sources', type=Path, default=None)
     args = parser.parse_args()
-    decision = gate(args.packet, args.pins_file, args.policy_file, args.policy_sha256, args.reader, args.output)
+    decision = gate(args.packet, args.pins_file, args.policy_file, args.policy_sha256, args.reader, args.output, args.withheld_sources)
     print(json.dumps(decision, indent=2))
     raise SystemExit(0 if decision['decision'] == 'publish' else 1)
