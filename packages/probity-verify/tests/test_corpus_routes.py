@@ -20,14 +20,16 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from probity_verify import adjudicate
 from probity_verify.adapters import jcs_canonical, observed_effect, uncertain_effect
 from probity_verify.common import CaseError
 
 DATA = Path(__file__).resolve().parent / "data"
 # No member of the corpus carries codeDigest or invocationBinding, and none pins either on the
-# consumer side, so the corpus cannot force these four. The two shape rules are tested directly
-# below; the two policy rules have no member and no test here.
+# consumer side, so the corpus cannot force these four. The join-key tests below force them with a
+# member re-signed under a test key.
 UNFORCED_OBSERVED_RULES = frozenset({"code-digest-shape", "code-digest-policy",
                                      "invocation-binding-shape", "invocation-binding-policy"})
 
@@ -69,6 +71,70 @@ def test_uncertain_effect_member(entry: dict[str, Any]) -> None:
     expected = entry["expected"]
     assert (result["decision"], result["reason"]) == (
         _expected(expected["decision"]), expected["reason"])
+
+
+def _uncertain_record(reason: str) -> dict[str, Any]:
+    """A member's record, parsed; the reason names the member."""
+    entry = next(e for e in UNCERTAIN["vectors"] if e["expected"]["reason"] == reason)
+    return json.loads((DATA / "uncertain-effect" / entry["path"] / "record.json").read_bytes())
+
+
+def _judge_uncertain(tmp_path: Path, text: str) -> dict:
+    (tmp_path / "record.json").write_text(text, encoding="utf-8")
+    return _judge("c", tmp_path, ["record.json"],
+                  {"claim_type": "uncertain_effect/v1", "record": "record.json"})
+
+
+@pytest.mark.parametrize("spelling", ['NaN', 'true', '-1', '1.5', '"2"', '[2]'])
+def test_uncertain_effect_owner_count_must_be_a_count(tmp_path: Path, spelling: str) -> None:
+    """Each spelling of a two-effect ledger once read as at most one effect, or crashed a check."""
+    text = json.dumps(_uncertain_record("duplicate_effect"))
+    assert '"ownerEffects": 2' in text
+    with pytest.raises(CaseError):
+        _judge_uncertain(tmp_path, text.replace('"ownerEffects": 2', '"ownerEffects": ' + spelling))
+
+
+def test_uncertain_effect_refuses_a_repeated_member(tmp_path: Path) -> None:
+    """A parser that keeps the last member reads this record as one effect; others read two."""
+    text = json.dumps(_uncertain_record("duplicate_effect"))
+    with pytest.raises(CaseError, match="duplicate"):
+        _judge_uncertain(tmp_path, text.replace('"ownerEffects": 2',
+                                                '"ownerEffects": 2, "ownerEffects": 1'))
+
+
+def _set(record: dict[str, Any], path: tuple[Any, ...], value: Any) -> None:
+    for step in path[:-1]:
+        record = record[step]
+    record[path[-1]] = value
+
+
+@pytest.mark.parametrize(("reason", "path", "value"), [
+    ("retry_after_unknown", ("attempts", 0, "reply"), "timed_out"),
+    ("retry_after_unknown", ("effectOwner", "deduplicatesByKey"), "false"),
+    ("retry_after_unknown", ("effectOwner", "keyRetentionSeconds"), True),
+    ("unknown_released", ("reservation", "charged"), "false"),
+    ("outcome_disagrees_with_authority", ("reported", "outcome"), "done"),
+    ("outcome_settled_without_authority", ("reported", "outcome"), "done"),
+    ("effect_after_stop_reported_quiescent", ("stop", "reported"), "idle"),
+    ("authority_used_after_revocation", ("stop", "authorityChecks", 0, "result"), "ACCEPTED"),
+    ("dispatch_beyond_lease", ("leases",), False),
+    ("effect_after_stop_reported_quiescent", ("stop",), "stopped"),
+], ids=lambda part: "-".join(map(str, part)) if isinstance(part, tuple) else str(part))
+def test_uncertain_effect_refuses_a_value_outside_the_contract(
+        tmp_path: Path, reason: str, path: tuple[Any, ...], value: Any) -> None:
+    record = _uncertain_record(reason)
+    _set(record, path, value)
+    with pytest.raises(CaseError):
+        _judge_uncertain(tmp_path, json.dumps(record))
+
+
+def test_uncertain_effect_refuses_a_final_flag_that_is_not_a_flag(tmp_path: Path) -> None:
+    """A truthy word must not read as the final answer that protects a resend."""
+    record = _uncertain_record("retry_after_unknown")
+    record["reconciliations"].append({"at": record["attempts"][-1]["dispatchedAt"],
+                                      "idempotencyKey": "k", "result": "absent", "final": "no"})
+    with pytest.raises(CaseError):
+        _judge_uncertain(tmp_path, json.dumps(record))
 
 
 # vectors-restart-records ----------------------------------------------------------------------
@@ -248,6 +314,62 @@ def test_observed_effect_join_keys_refuse_a_wrong_shape(rule: Any, member: str) 
         rule(observed_effect._State({}, {member: "not-an-object"}, policy))
 
 
+def _joined(tmp_path: Path, join_keys: dict[str, Any], **pins: str) -> dict:
+    """Judge an accepted member re-signed with these join keys, under the consumer's pins."""
+    # A self-vantage member carries no prior commitment, so the test key signs the whole record.
+    entry = next(e for e in OBSERVED["vectors"] if e["slug"] == "voluntary-self-vantage")
+    envelope = json.loads((DATA / "observed-effect" / entry["file"]).read_bytes())
+    statement = json.loads(base64.b64decode(envelope["payload"]))
+    statement["predicate"].update(join_keys)
+    payload = json.dumps(statement).encode()
+    key = Ed25519PrivateKey.generate()
+    signature = key.sign(observed_effect._pae(envelope["payloadType"], payload))
+    envelope["payload"] = base64.b64encode(payload).decode()
+    envelope["signatures"] = [{"keyid": envelope["signatures"][0]["keyid"],
+                               "sig": base64.b64encode(signature).decode()}]
+    (tmp_path / "envelope.json").write_text(json.dumps(envelope), encoding="utf-8")
+    (tmp_path / "blob.bin").write_bytes(next(iter(OBSERVED["blobs"].values())).encode("utf-8"))
+    public = key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+    return _judge(entry["id"], tmp_path, ["envelope.json", "blob.bin"],
+                  {"claim_type": "observed_effect/v1", "envelope": "envelope.json",
+                   "observer_public_key": public, "blobs": ["blob.bin"], **pins})
+
+
+JOIN_KEYS = [("codeDigest", "expected_code_digest", "code-digest"),
+             ("invocationBinding", "expected_invocation_binding", "invocation-binding")]
+
+
+@pytest.mark.parametrize(("member", "pin", "_code"), JOIN_KEYS)
+def test_observed_effect_join_key_equal_to_the_pin_conforms(
+        tmp_path: Path, member: str, pin: str, _code: str) -> None:
+    result = _joined(tmp_path, {member: {"sha256": "a" * 64}}, **{pin: "a" * 64})
+    assert (result["decision"], result["reason"]) == ("supported", "record_conforms")
+
+
+@pytest.mark.parametrize(("member", "pin", "code"), JOIN_KEYS)
+def test_observed_effect_refuses_another_join_key_than_the_pin(
+        tmp_path: Path, member: str, pin: str, code: str) -> None:
+    result = _joined(tmp_path, {member: {"sha256": "b" * 64}}, **{pin: "a" * 64})
+    assert (result["decision"], result["reason"]) == ("contradicted", code + "-mismatch")
+    assert result["checks"][0]["verdict"] == "invalid"
+
+
+@pytest.mark.parametrize(("_member", "pin", "code"), JOIN_KEYS)
+def test_observed_effect_refuses_a_record_without_the_pinned_join_key(
+        tmp_path: Path, _member: str, pin: str, code: str) -> None:
+    result = _joined(tmp_path, {}, **{pin: "a" * 64})
+    assert (result["decision"], result["reason"]) == ("contradicted", code + "-required")
+
+
+@pytest.mark.parametrize(("_member", "pin", "_code"), JOIN_KEYS)
+@pytest.mark.parametrize("value", ["", "A" * 64, "a" * 63])
+def test_observed_effect_a_malformed_pin_blames_the_policy_not_the_record(
+        tmp_path: Path, _member: str, pin: str, _code: str, value: str) -> None:
+    """The consumer's pin is the policy's defect: no verdict, never a refusal of a good record."""
+    with pytest.raises(CaseError, match=pin):
+        _joined(tmp_path, {}, **{pin: value})
+
+
 @pytest.mark.parametrize("name", [name for name, _ in observed_effect.RULES])
 def test_observed_effect_rule_mutations(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path, name: str) -> None:
@@ -263,6 +385,49 @@ def test_observed_effect_rule_mutations(
         changed += (check["verdict"], check["codes"]) != (expected["verdict"],
                                                           expected.get("codes", []))
     assert (changed > 0) == (name not in UNFORCED_OBSERVED_RULES)
+
+
+# Input too deep to walk: no verdict on any claim type ------------------------------------------
+
+@pytest.mark.parametrize("depth", [2000, 50_000])
+@pytest.mark.parametrize("claim", ["uncertain", "restoration", "observed", "jcs"])
+def test_input_nested_past_the_walkers_gets_no_verdict(
+        tmp_path: Path, claim: str, depth: int) -> None:
+    nested = "[" * depth + "]" * depth
+    assessment: dict[str, Any] = {"claim_type": "jcs_canonical/v1", "target": "rfc8785",
+                                  "input": "input.json", "claimed": "claimed.bin"}
+    names = ["input.json", "claimed.bin"]
+    (tmp_path / "claimed.bin").write_bytes(b"[]")
+    if claim == "uncertain":
+        text = '{"contractId":' + nested + "}"
+        assessment = {"claim_type": "uncertain_effect/v1", "record": "input.json"}
+        names = ["input.json"]
+    elif claim == "restoration":
+        text = '{"_type":"x","predicateType":"y","predicate":' + nested + "}"
+        assessment = {"claim_type": "restoration_record/v1", "record": "input.json"}
+        names = ["input.json"]
+    elif claim == "observed":
+        statement = ('{"_type":"https://in-toto.io/Statement/v1","predicate":{"n":' + nested
+                     + "}}")
+        text = json.dumps({"payload": base64.b64encode(statement.encode()).decode()})
+        assessment = {"claim_type": "observed_effect/v1", "envelope": "input.json",
+                      "observer_public_key": "00" * 32}
+        names = ["input.json"]
+    else:
+        text = nested
+    (tmp_path / "input.json").write_text(text, encoding="utf-8")
+    with pytest.raises(CaseError):
+        _judge("c", tmp_path, names, assessment)
+
+
+def test_a_canonicalizer_out_of_stack_never_says_no_canonical_form(tmp_path: Path) -> None:
+    """Depth 500 has a canonical form, and the canonicalizer's frames run out first."""
+    (tmp_path / "input.json").write_text("[" * 500 + "]" * 500, encoding="utf-8")
+    (tmp_path / "claimed.bin").write_bytes(b"[]")
+    with pytest.raises(CaseError, match="too deeply"):
+        _judge("c", tmp_path, ["input.json", "claimed.bin"],
+               {"claim_type": "jcs_canonical/v1", "target": "rfc8785", "input": "input.json",
+                "claimed": "claimed.bin"})
 
 
 # Mutation controls: each rule changes some member's verdict -----------------------------------

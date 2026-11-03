@@ -9,25 +9,33 @@ reason. The rules are a port of probityai/agent-evidence-vectors at commit
 317df600f9a1503f32bcc2742b9f111036bdee32, ``packaging/agent_evidence_vectors/uncertaineffect.py``.
 
 A record that passes every check is ``supported`` with reason ``effect_held``; a failing check is
-``contradicted`` with the check's name. A record that is not a JSON object carrying the fields the
-checks read raises :class:`CaseError`.
+``contradicted`` with the check's name. A record that is not strict JSON, or that is not an object
+carrying the fields the checks read within the contract's domains, raises :class:`CaseError`: the
+port adds that refusal, because a repeated member or a word outside a closed list would otherwise
+read as a pass.
 """
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from ..common import CaseError
+from ..json_input import parse_json
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "uncertain_effect/v1"
 CONTRACT_ID = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/uncertain-effect"
 ACCEPTED = "effect_held"
 UNKNOWN_REPLIES = ("timeout", "connection_lost")
+REPLIES = ("confirmed", "no_effect", *UNKNOWN_REPLIES)
+ANSWERS = ("present", "absent")
+OUTCOMES = ("committed", "not_run", "unknown")
+STOP_REPORTS = ("quiescent", "effect_after_stop", "not_established")
+AUTHORITY_ANSWERS = ("accepted", "refused")
+MAX_RECORD_BYTES = 16 * 1024 * 1024
 CHECKS = (
     "contract_id_missing",
     "contract_id_unknown",
@@ -198,11 +206,66 @@ def first_failure(record: Record) -> str | None:
     return None
 
 
+def _require(condition: bool, field: str) -> None:
+    if not condition:
+        raise ValueError(field + " is outside the contract")
+
+
+def _word(item: dict[str, Any], name: str, allowed: tuple[str, ...]) -> None:
+    _require(name not in item or item[name] in allowed, name)
+
+
+def _flag(item: dict[str, Any], name: str) -> None:
+    _require(isinstance(item.get(name, False), bool), name)
+
+
+def _objects(record: Record, name: str) -> list[dict[str, Any]]:
+    items = record.get(name)
+    _require(items is None or (isinstance(items, list)
+                               and all(isinstance(item, dict) for item in items)), name)
+    return items or []
+
+
+def _object(record: Record, name: str) -> dict[str, Any]:
+    item = record.get(name)
+    _require(item is None or isinstance(item, dict), name)
+    return item or {}
+
+
+def _retention_seconds(owner: dict[str, Any]) -> None:
+    value = owner.get("keyRetentionSeconds")
+    _require(value is None or (type(value) in (int, float) and value >= 0), "keyRetentionSeconds")
+
+
+def check_domains(record: Record) -> None:
+    """Refuse a value the contract does not allow, before any check reads it.
+
+    The checks branch on truthiness and on closed word lists, so ``"final": "no"`` would read as
+    final, an unlisted reply as a known outcome and ``true`` as a count of at most one effect. Each
+    turns a refusal into a pass. Only carried fields are judged: a record refused early need not
+    carry the rest, and a missing field stays the checks' concern.
+    """
+    count = record.get("ownerEffects", 0)
+    _require(type(count) is int and count >= 0, "ownerEffects")
+    for item in _objects(record, "attempts"):
+        _word(item, "reply", REPLIES)
+    for item in _objects(record, "reconciliations"):
+        _word(item, "result", ANSWERS)
+        _flag(item, "final")
+    _objects(record, "leases")
+    owner = _object(record, "effectOwner")
+    _flag(owner, "deduplicatesByKey")
+    _retention_seconds(owner)
+    _word(_object(record, "reported"), "outcome", OUTCOMES)
+    _flag(_object(record, "reservation"), "charged")
+    stop = _object(record, "stop")
+    _word(stop, "reported", STOP_REPORTS)
+    for item in _objects(stop, "authorityChecks"):
+        _word(item, "result", AUTHORITY_ANSWERS)
+
+
 def _record(data: bytes) -> Record:
-    try:
-        record = json.loads(data.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
-        raise CaseError(f"record: not UTF-8 JSON ({exc})") from exc
+    record = parse_json(data, max_bytes=MAX_RECORD_BYTES, max_depth=32, max_nodes=32768)
     if not isinstance(record, dict):
         raise CaseError("record: expected a JSON object")
     return record
@@ -218,6 +281,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     record = _record(data)
     errors = (KeyError, TypeError, ValueError, AttributeError)
     try:
+        check_domains(record)
         failure = first_failure(record)
     except errors as exc:
         raise CaseError(f"record: lacks a field the checks read ({exc!r})") from exc

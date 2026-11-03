@@ -155,7 +155,10 @@ def adjudicate(
     claim_type = assessment.get("claim_type")
     if not isinstance(claim_type, str) or claim_type not in registry:
         raise CaseError("unsupported claim_type")
-    result = registry[claim_type](case, policy, artifact_root)
+    try:
+        result = registry[claim_type](case, policy, artifact_root)
+    except RecursionError as error:
+        raise CaseError("an input is nested too deeply to judge") from error
     try:
         unchanged = _control_bytes(case, policy) == control_bytes
     except CaseError:

@@ -18,7 +18,7 @@ satisfies its contract. The verifier reads only the record bytes, never the expe
 | `supported`, reason = the contract's accepted reason | every rule of the contract holds | accept / allow / MUST-ACCEPT |
 | `contradicted`, reason = the first rule that fails | the record's own bytes refute the claim | reject / deny / MUST-REJECT, with the same reason |
 | `not_established` | a bound artifact is missing or unbound | never a corpus verdict; always a disagreement |
-| `CaseError` (CLI exit 2) | the case or policy is malformed | never a corpus verdict; always a disagreement |
+| `CaseError` (CLI exit 2) | the case or policy is malformed, or an input nests too deeply to walk | never a corpus verdict; always a disagreement |
 
 A route agrees with a member only when the decision and the reason both match. A rule failure is
 `contradicted` and never `not_established`: the record was read, and it fails the contract.
@@ -32,6 +32,13 @@ effect for the operation, and the outcome the runtime reported is one the effect
 support. The thirteen checks run in the corpus's order (`contract_id_missing` to
 `stop_straddle_reported_settled`). All pass: `supported` / `effect_held`. Otherwise `contradicted`
 with the first failing check. Corpus `allow` maps to `supported`, `deny` to `contradicted`.
+
+The record is strict JSON (no repeated member, no NaN), and each carried field stays in the contract's
+domain: `ownerEffects` is a non-negative integer, `final`, `deduplicatesByKey` and `charged` are booleans,
+and `reply`, `result`, `reported.outcome`, `stop.reported` and each authority check's `result` are words
+from closed lists. Anything else raises `CaseError` before a check runs, because the checks branch on
+truthiness and on those lists: `"final": "no"` would read as final, and a repeated `ownerEffects` would
+read as whichever copy the parser kept. A pass that rests on such a value is not a pass.
 
 ### `restoration_record/v1` and `restoration_bundle/v1` (`vectors-restart-records`)
 
@@ -80,8 +87,12 @@ read: `derived_tier`, recomputed and never copied, `effects_independently_observ
 `absence_established`. The route compares those, the verdict and the codes. The one `indeterminate`
 member agrees when the verdict is among its declared readings.
 
+A pin in `expected_code_digest` or `expected_invocation_binding` is a lowercase SHA-256. Any other value
+is the policy's defect and raises `CaseError`; it never refuses the record.
+
 Four rules are not forced by any member, because none carries `codeDigest` or `invocationBinding`:
 `code-digest-shape`, `code-digest-policy`, `invocation-binding-shape` and `invocation-binding-policy`.
+`tests/test_corpus_routes.py` forces them with a member re-signed under a test key.
 
 ## Why the rules are ported, not imported
 

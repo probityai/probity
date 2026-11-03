@@ -134,13 +134,13 @@
     },
     {
       "path": "src/probity_verify/adapters/jcs_canonical.py",
-      "bytes": 6512,
-      "sha256": "3a1e424e8f3acf34c0fb92cb201adc97fa867828c8a9f12188ebd82710851daf"
+      "bytes": 6494,
+      "sha256": "425c5d072cefe672908f1e2fa38c60244078e06b6027f1531df8a2acaedc0d3a"
     },
     {
       "path": "src/probity_verify/adapters/observed_effect.py",
-      "bytes": 54696,
-      "sha256": "a12ed9106ec37c845625999cb421891ab99ba8674b3180f83154502405edbfe1"
+      "bytes": 54671,
+      "sha256": "b85edeb611d5b2ce08ac024dbe3c400b490973305d4204ab7609194b7b4d56f7"
     },
     {
       "path": "src/probity_verify/adapters/operand_lineage.py",
@@ -179,8 +179,8 @@
     },
     {
       "path": "src/probity_verify/adapters/uncertain_effect.py",
-      "bytes": 10223,
-      "sha256": "88cd65776369ef525ddc5d77f3b59c33fdf579059c3370ff32d5e5a653e4a9e0"
+      "bytes": 12888,
+      "sha256": "5ca955a641049fff4ac3a1c36fb13cf868db02b357145cf2d70476b7438956b5"
     },
     {
       "path": "src/probity_verify/adapters/witnessed.py",
@@ -209,8 +209,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 10291,
-      "sha256": "e0b327ce1cc85fe85f6ea054799357d8fcc9157b80df61e2b5dc1dd07283d197"
+      "bytes": 10417,
+      "sha256": "f514c676c1a86a1832dcfe3cb6966993b466d6d6d6e1370ec48cff8b61f46ea3"
     },
     {
       "path": "src/probity_verify/dsse.py",

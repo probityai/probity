@@ -10,6 +10,9 @@ over them instead of `0 of M`. [Reference routes](docs/corpus-routes.md) states 
 - `jcs_canonical/v1`: RFC 8785 canonical bytes, and the A2A Agent Card signing input.
 - `observed_effect/v1`: a signed Observed Effect record under a key the consumer pins.
 
+An input nested too deeply to walk now raises `CaseError` on every claim type, instead of a `RecursionError` or a
+verdict about its bytes.
+
 ## 0.3.0
 
 Bundles now name the release that wrote them, and bundles written by earlier releases replay again. This is a

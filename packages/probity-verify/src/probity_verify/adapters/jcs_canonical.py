@@ -122,7 +122,7 @@ def canonical(target: str, text: str) -> bytes:
         value = json.loads(text, object_pairs_hook=_no_duplicates)
     except Refusal:
         raise
-    except (ValueError, RecursionError) as exc:
+    except ValueError as exc:
         raise Refusal(f"not JSON text: {exc}") from exc
     if target == "card-signing-input" and isinstance(value, dict):
         value = {key: item for key, item in value.items() if key != "signatures"}

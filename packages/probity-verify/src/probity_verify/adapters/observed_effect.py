@@ -33,7 +33,7 @@ from typing import Any
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-from ..common import CaseError, _digest, _string
+from ..common import CaseError, _digest
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "observed_effect/v1"
@@ -1132,7 +1132,7 @@ def verify(raw: bytes, policy: Policy) -> Report:
         )
     except Malformed as exc:
         return Report("malformed", [exc.code])
-    except (KeyError, TypeError, ValueError, RecursionError, ArithmeticError):
+    except (KeyError, TypeError, ValueError, ArithmeticError):
         return Report("malformed", ["not-parseable"])
     if not isinstance(statement, dict):
         return Report("malformed", ["not-parseable"])
@@ -1206,7 +1206,7 @@ def _pinned_blobs(artifacts: dict, artifact_root: Path, names: Any) -> dict[str,
 
 
 def _pin(assessment: dict, name: str) -> str:
-    return _string(assessment[name], "assessment." + name) if name in assessment else ""
+    return _digest(assessment[name], "assessment." + name) if name in assessment else ""
 
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
