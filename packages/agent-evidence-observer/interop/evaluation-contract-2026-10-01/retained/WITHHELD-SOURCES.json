@@ -1,0 +1,6 @@
+{
+  "native-ticket-run/sources/interop/evaluation-contract-2026-10-01/inspect_ticket.py": "de358ad8365e9f427a76e79622e9bb027334a6868ceb814ca25465d35236ea31",
+  "native-ticket-run/sources/src/probity_observer/aae_ticket.py": "0e0655920ee4e2169abb4fcb24993a07adf5d9edea2d2299ac378bace59ee4c4",
+  "native-ticket-run/sources/src/probity_observer/authorization.py": "002c57628edee8d6a8d7ac0877f785eae9dc526ecc74435dbd96a691922a3ed3",
+  "native-ticket-run/sources/src/probity_observer/ticket_service.py": "dd4058a79aa51a7dee535e4a47c0bad6bc041cd70f989f6ae85f9dc58a771c88"
+}

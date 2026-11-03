@@ -1,0 +1,7 @@
+{
+  "artifact": "five-tier-contract-reference",
+  "downloadedAt": "2026-11-03T16:13:00Z",
+  "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "runId": 41665290596,
+  "workflow": "package-observer-evaluation-contract.yml"
+}

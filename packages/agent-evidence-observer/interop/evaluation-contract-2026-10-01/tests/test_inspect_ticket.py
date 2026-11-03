@@ -9,18 +9,26 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("inspect_ai")
-pytest.importorskip("rfc8785")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import inspect_ticket as bridge
-from evaluation_contract import ContractError, decode, encode
+import inspect_ticket_reader as bridge
+from evaluation_contract import ContractError, decode, encode, withheld_for
 from probity_observer.crypto import VerificationError, canonical
 
 
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD = withheld_for(RETAINED / "WITHHELD-SOURCES.json", RETAINED / "native-ticket-run")
+
+
+def verify_saved(root, pins):
+    """Read a retained-form packet; omitted sources are those the record lists."""
+    return verify_saved(root, pins, WITHHELD)
+
+
 @pytest.fixture(scope="module")
-def native_packet(tmp_path_factory):
-    root = tmp_path_factory.mktemp("native-ticket") / "run"
-    report = bridge.run(root, "test-checkout")
+def native_packet():
+    """The packet retained from the latest successful main run."""
+    root = RETAINED / "native-ticket-run"
+    report = decode((root / "report.json").read_bytes())
     return root, decode((root / "consumer-pins.json").read_bytes()), report
 
 
@@ -69,12 +77,12 @@ def rewrite(root, pins, name, transform, *, join_http=False):
 
 def refused(root, pins, reason):
     with pytest.raises((ContractError, VerificationError), match=reason):
-        bridge.verify_saved(root, pins)
+        verify_saved(root, pins)
 
 
 def test_actual_native_task_authority_and_effect_axes(native_packet):
     root, pins, report = native_packet
-    assert bridge.verify_saved(root, pins) == report
+    assert verify_saved(root, pins) == report
     records = {r["attemptId"]: r for r in report["records"]}
     assert len(records) == 6
     assert records["permit-task-fail"]["taskOutcome"] == "fail"
@@ -134,7 +142,7 @@ def test_incomplete_native_selection_keeps_effect_separate(packet):
         log["samples"][0]["completed_at"] = None
         log["samples"][0]["scores"] = {}
     rewrite(root, pins, "permit-pass-native.json", incomplete)
-    record = bridge.verify_saved(root, pins)["records"][0]
+    record = verify_saved(root, pins)["records"][0]
     assert record["status"] == "incomplete"
     assert record["taskOutcome"] == "unknown"
     assert record["effectOutcome"] == "verified-local-ticket-update"
@@ -191,13 +199,34 @@ def test_extra_artifact_not_silently_ignored(packet):
 
 def test_source_substitution_refused(packet):
     root, pins = packet
+    (root / "sources" / bridge.SOURCE_FILES[1]).write_bytes(b"changed")
+    refused(root, pins, "ticket_source_pin")
+
+
+def test_withheld_source_replaced_by_other_bytes_refused(packet):
+    root, pins = packet
     (root / "sources" / bridge.SOURCE_FILES[0]).write_bytes(b"changed")
     refused(root, pins, "ticket_source_pin")
 
 
+def test_unlisted_absent_source_refused(packet):
+    root, pins = packet
+    (root / "sources" / bridge.SOURCE_FILES[1]).unlink()
+    refused(root, pins, "ticket_source_population")
+
+
+def test_withheld_digest_must_equal_manifest(packet):
+    root, pins = packet
+    name = "sources/" + bridge.SOURCE_FILES[0]
+    wrong = {**WITHHELD, name: "0" * 64}
+    with pytest.raises(ContractError) as caught:
+        bridge.verify_saved(root, pins, wrong)
+    assert "ticket_source_pin" in str(caught.value)
+
+
 def test_source_symlink_refused(packet):
     root, pins = packet
-    original = root / "sources" / bridge.SOURCE_FILES[0]
+    original = root / "sources" / bridge.SOURCE_FILES[1]
     saved = root / "selected-source"
     original.rename(saved)
     original.symlink_to(saved)
@@ -216,7 +245,7 @@ def test_missing_started_attempt_stays_unknown_in_population(packet):
     raw = encode(manifest)
     (root / "artifact-manifest.json").write_bytes(raw)
     pins["artifactManifestSha256"] = bridge.sha(raw)
-    report = bridge.verify_saved(root, pins)
+    report = verify_saved(root, pins)
     assert report["plannedAttempts"] == 6
     assert report["records"][0]["status"] == "start-unknown"
     assert report["records"][0]["effectOutcome"] == "unknown"
@@ -226,7 +255,7 @@ def test_reader_invokes_neither_framework_nor_network(native_packet, monkeypatch
     root, pins, report = native_packet
     monkeypatch.setattr(bridge, "http_bytes", lambda *a: pytest.fail("offline reader made HTTP request"))
     monkeypatch.setattr(bridge, "execute", lambda *a: pytest.fail("offline reader executed framework"))
-    assert bridge.verify_saved(root, pins) == report
+    assert verify_saved(root, pins) == report
 
 
 def test_extra_original_native_log_refused(packet):
