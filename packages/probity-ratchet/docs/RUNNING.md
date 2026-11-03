@@ -30,8 +30,8 @@ records that a demo key signed it. `ratchet verify` checks a demo decision again
 because a demo key is never the pinned key. `docker/demo/check.sh` runs this sequence with `--network none` and
 fails unless every step gives the answer above; CI runs it on every push.
 
-Inside the image, guard children apply rlimits, seccomp and Landlock but not a network namespace: Docker's
-default seccomp profile refuses the user namespace that layer needs. Seccomp still refuses every socket.
+Inside the image, guards run in the open guard runtime: one child per guard with resource limits, which is
+not an isolation boundary. The demo's guards are its own scripted ones.
 
 From a checkout instead, with the store of section 1 running, `uv run ratchet demo double-refund` uses that store when
 `RATCHET_MONGODB_URI` is unset and prints the follow-up commands with the variables they need.
@@ -76,7 +76,7 @@ cluster's connection string in `RATCHET_MONGODB_URI`.
 | `VOYAGE_API_KEY` | embeddings for failure retrieval |
 | `RAINDROP_WRITE_KEY` | with `--raindrop` and the `telemetry` extra, sends runs and decisions to Raindrop |
 | `RATCHET_IMPROVER_URI` | the improver's connection string, a database user with no access to held-out cases |
-| `RATCHET_GUARD_REQUIRE` | isolation layers a guard child must apply (default `rlimits,netns,seccomp,landlock`; must keep `netns` or `seccomp`) |
+| `RATCHET_GUARD_REQUIRE` | isolation layers the guard runtime must apply, comma separated from `rlimits,netns,seccomp,landlock` (default none; the open runtime provides only `rlimits` and refuses any other) |
 | `RATCHET_DEMO_DIR` | where `ratchet demo` writes its public key (default `.ratchet-demo`) |
 
 Nothing is hard-coded and nothing secret is written to a trace, a log or the store.
