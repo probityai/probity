@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-effects"
-version = "0.1.0"
+version = "0.2.0"
 description = "Keep one effect per agent tool call when its reply is lost: reconcile before resend, record the trail, test it in CI"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,7 +12,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{name = "Sankalp Gilda"}]
 dependencies = ["jcs-admit~=0.1.1"]
-keywords = ["ai-agents", "langgraph", "tool-calls", "idempotency", "retries", "exactly-once"]
+keywords = ["ai-agents", "langgraph", "openai-agents", "ag2", "tool-calls", "idempotency", "retries", "exactly-once"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: Pytest",
