@@ -44,7 +44,7 @@ from ratchet_cases.cases.model import Case
 from ratchet_cases.types import Event, EventKind, Outcome, ToolCall, ToolResult, Trace
 from ratchet_cases.world import World
 
-from ratchet.agent.guards import GuardDecision, GuardRuntime
+from ratchet.agent.guard_api import GuardDecision, GuardRuntime, guard_runtime
 from ratchet.agent.model import ChatModel, Message, ModelError, ModelTurn, ToolSpec
 from ratchet.types import Harness, Procedure
 
@@ -386,7 +386,7 @@ def run_case(
     ran out or the model failed) is graded and then marked failed with an `incomplete` reason."""
     rid = run_id or default_run_id(harness, case, model.name)
     own_runtime = runtime is None
-    guards = runtime or GuardRuntime()
+    guards = runtime or guard_runtime()
     try:
         run = _Run(harness, case, model, rid, world_factory(case), guards, limits or RunLimits(), store)
         saved = store.resume(rid) if store is not None else None

@@ -243,7 +243,7 @@ class LiveBackend:
     ) -> EvolveSummary:
         from ratchet_cases.cases import all_cases
 
-        from ratchet.agent.guards import GuardRuntime
+        from ratchet.agent.guard_api import guard_runtime
         from ratchet.agent.worker import run_case
         from ratchet.improve.loop import Lab, evolve, frozen_suite_digest
         from ratchet.improve.sandbox import SandboxRunner
@@ -260,7 +260,7 @@ class LiveBackend:
         }
         with (
             self.referee(config) as referee,
-            GuardRuntime() as runtime,
+            guard_runtime() as runtime,
         ):
             lab = Lab(
                 cases=[c for c in cases if c.split != "heldout"],
@@ -295,10 +295,10 @@ class LiveBackend:
         return {"kind": "atlas", "db": f"{self.env.get(DB_ENV, 'ratchet')}_heldout"}
 
     def runner(self) -> AbstractContextManager[GuardRunner]:
-        from ratchet.agent.guards import GuardRuntime
+        from ratchet.agent.guard_api import guard_runtime
         from ratchet.improve.sandbox import SandboxRunner
 
-        return _Sandbox(GuardRuntime(), SandboxRunner)
+        return _Sandbox(guard_runtime(), SandboxRunner)
 
     def simulator(self) -> Simulator:
         from ratchet_cases.cases import all_cases
