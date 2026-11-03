@@ -48,7 +48,7 @@ A second implementation can check the digests without Inspect. Write the cover a
 JSON, claim its canonical bytes, and pin the manifest's digest as the claimed
 bytes' SHA-256 in a `jcs_canonical/v1` case for `probity-verify` 0.4.0 or later:
 `supported` means the digest is the SHA-256 of the cover's RFC 8785 form.
-`tests/test_inspect_sealed_manifest.py` builds that case.
+`interop/inspect-sealed-manifest-2026-11-03/test_real_run.py` builds that case.
 
 ## What it does not show
 

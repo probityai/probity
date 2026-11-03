@@ -25,3 +25,4 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -e '.[test,inspect,done]'
       - run: python -m pytest -q tests/test_inspect_sealed_manifest.py
+      - run: python -m pytest -q interop/inspect-sealed-manifest-2026-11-03/test_real_run.py
