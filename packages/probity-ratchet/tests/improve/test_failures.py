@@ -43,7 +43,9 @@ def test_the_open_diagnoser_groups_failures_by_the_graders_reason() -> None:
     assert {m.case_id for m in dup.members} == {"timeout-1", "timeout-2"}
     assert all(m.tool == "payments_refund" for m in dup.members)
     assert set(dup.traces) == {"bad-1", "bad-2"}
-    assert all(isinstance(c, FailureCluster) and isinstance(m, FailurePoint) for c in clusters for m in c.members)
+    assert all(
+        isinstance(c, FailureCluster) and isinstance(m, FailurePoint) for c in clusters for m in c.members
+    )
 
 
 def test_the_open_diagnoser_ids_are_stable_and_the_payload_shape_is_unchanged() -> None:
@@ -84,7 +86,9 @@ def test_a_summarizer_writes_the_summary_and_never_decides_membership() -> None:
 
 
 def _calls(n: int = 1) -> list[tuple[str, dict[str, Any]]]:
-    return [("payments_refund", {"charge_id": f"ch_{n}", "note": "duplicate", "email": "maya@fastmail.example"})]
+    return [
+        ("payments_refund", {"charge_id": f"ch_{n}", "note": "duplicate", "email": "maya@fastmail.example"})
+    ]
 
 
 def test_the_open_screen_takes_specific_tool_argument_strings_only() -> None:

@@ -134,13 +134,15 @@ def test_suite_cases_are_supplied_only_for_the_suite_the_decision_names() -> Non
 
 
 def _overfit(doc: dict[str, Any]) -> Evidence:
-    from ..improve.fakes import make_trace
+    from improve.fakes import make_trace
 
     train = [make_trace("timeout-1", [("payments_refund", {"charge_id": "ch_1"})], "run-a")]
     copied = Guard("g", "for ch_1", "def check(call, view, history):\n    return None\n")
     p = parent()
     out = Evidence()
-    _recompute_overfit(doc, p, p.child(guards=[copied], created_by="improver"), train, OpenOverfitScreen(), out)
+    _recompute_overfit(
+        doc, p, p.child(guards=[copied], created_by="improver"), train, OpenOverfitScreen(), out
+    )
     return out
 
 
@@ -151,6 +153,7 @@ def test_the_overfit_check_is_recomputed_under_the_screen_that_made_it() -> None
 
 
 def test_the_overfit_check_is_not_recomputed_under_another_screen() -> None:
-    for evidence in ({"screen": "private"}, {}):  # a record from before screens were named is the legacy screen's
+    # A record from before screens were named is the legacy screen's.
+    for evidence in ({"screen": "private"}, {}):
         out = _overfit({"checks": [{"name": "overfit_lint", "evidence": evidence}]})
         assert out.recomputed == {} and "not recomputed" in out.notes[0]
