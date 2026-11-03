@@ -108,10 +108,14 @@ def test_a_member_that_declares_its_own_workspace_is_refused(tmp_path):
         workspace.members(tmp_path)
 
 
-def test_the_root_workspace_holds_every_member_and_excludes_none():
+def test_the_root_workspace_holds_every_member_but_the_one_with_its_own_lock():
     root = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())
-    assert root["tool"]["uv"]["workspace"] == {"members": ["packages/*"]}
-    assert not list((Path(__file__).parents[1] / "packages").glob("*/uv.lock"))
+    assert root["tool"]["uv"]["workspace"] == {
+        "members": ["packages/*"],
+        "exclude": ["packages/probity-effects"],
+    }
+    locks = {p.parent.name for p in (Path(__file__).parents[1] / "packages").glob("*/uv.lock")}
+    assert locks == {"probity-effects"}
 
 
 def test_a_hatch_dynamic_version_is_read_from_its_file(tmp_path):
