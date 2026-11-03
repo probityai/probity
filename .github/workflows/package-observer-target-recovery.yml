@@ -47,6 +47,8 @@ jobs:
           python -m ruff check --isolated target_common.py target_worker.py target_run.py target_reader.py host_gate.py tests
           python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' target_common.py target_worker.py target_run.py target_reader.py host_gate.py tests
           python -m pytest -q --junitxml=test-results.xml
+      - name: Verify the retained original packet with public observer code
+        run: python verify_retained.py
       - name: Execute every native target process restart and crash case
         run: timeout --signal=TERM --kill-after=5s 120s python target_run.py fresh-run --source-revision "$GITHUB_SHA" > fresh-report.json
       - name: Build actual Observer and additive reader distributions
