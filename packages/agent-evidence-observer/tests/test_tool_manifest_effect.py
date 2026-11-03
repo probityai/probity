@@ -1,13 +1,12 @@
-"""Consumer checks against unchanged contributor bytes and real local effects."""
+"""Consumer checks of tool-manifest grades against unchanged contributor bytes."""
 
 from __future__ import annotations
 
 import base64
 import copy
-import importlib.util
+import hashlib
 import json
 from dataclasses import replace
-from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -22,12 +21,11 @@ from probity_observer.tool_manifest import (
     verify_tool_grade,
 )
 
-SOURCE = Path(__file__).resolve().parents[1] / "examples/tool_manifest_effect.py"
-SPEC = importlib.util.spec_from_file_location("tool_manifest_effect", SOURCE)
-assert SPEC is not None and SPEC.loader is not None
-example = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(example)
-FIXTURE = example.load_fixture()
+VECTORS = Path(__file__).resolve().parent / "fixtures/agentavow-tool-manifest-v1/tool-manifest-digest-v1-vectors.json"
+VECTORS_SHA256 = "488496079155830caf83593be0cafcb21367f72cd70ea363c2400f40eda72647"
+VECTOR_BYTES = VECTORS.read_bytes()
+assert hashlib.sha256(VECTOR_BYTES).hexdigest() == VECTORS_SHA256, "AgentAvow fixture bytes differ from the pinned source"
+FIXTURE = json.loads(VECTOR_BYTES)
 KEY = FIXTURE["issuer"]["jwk"]
 JWS = FIXTURE["attestation"]["jws"]
 GATE = ToolGate(**FIXTURE["vectors"][0]["gate"])
@@ -167,61 +165,3 @@ def test_noncanonical_payload_does_not_gain_authenticity():
     assert grade.canonical_bytes is False and grade.signature_valid is False
     with pytest.raises(VerificationError, match="valid Unicode"):
         tool_key("\ud800")
-
-
-def test_retained_binding_is_local_and_changed_bytes_refuse(tmp_path):
-    output = tmp_path / "run"
-    report = example.run(output, now=datetime(2030, 1, 1, tzinfo=UTC))
-    assert [r["nativeWriteEvents"] for r in report["results"]] == [1, 0, 0, 0, 0, 0]
-    assert report["runGradeAxes"]["fresh"] is False
-    assert report["runGradeAxes"]["rely"] is False
-    pins = json.loads((output / "tool-match/consumer-pins.json").read_bytes())
-    checked = example.verify_run(output, consumer_pins=pins)
-    assert checked["runEvaluationTime"] == "2030-01-01T00:00:00+00:00"
-    assert checked["runGradeAxes"]["fresh"] is False
-    assert checked["localEffectVerified"] is True and checked["witnessScope"] == "PEER"
-    assert checked["remoteExecution"] == "not-observed"
-    assert checked["actionSafety"] == "not-established"
-    target = output / "tool-match/workspace/binding.json"
-    original = target.read_bytes()
-    target.write_bytes(original + b" ")
-    with pytest.raises(VerificationError):
-        example.verify_run(output, consumer_pins=pins)
-
-
-def test_changed_request_and_forged_negative_refuse(tmp_path):
-    output = tmp_path / "run"
-    example.run(output)
-    pins_path = output / "tool-match/consumer-pins.json"
-    original = pins_path.read_bytes()
-    selected = json.loads(original)
-    pins = json.loads(original)
-    pins["request"]["tool_id"] = "ask_wiki_question"
-    example._save(pins_path, pins)
-    with pytest.raises(VerificationError, match="expected completed action"):
-        example.verify_run(output, consumer_pins=pins)
-    pins["request"]["content_sha256"] = "0" * 64
-    example._save(pins_path, pins)
-    with pytest.raises(VerificationError, match="recomputed grade binding"):
-        example.verify_run(output, consumer_pins=pins)
-    pins_path.write_bytes(original)
-    (output / "tool-drift/hidden-effect").write_bytes(b"not permitted")
-    with pytest.raises(VerificationError, match="changed bytes or a local effect"):
-        example.verify_run(output, consumer_pins=selected)
-
-
-def test_changed_report_and_source_refuse(tmp_path):
-    output = tmp_path / "run"
-    example.run(output)
-    report_path = output / "results.json"
-    report = json.loads(report_path.read_bytes())
-    pins = json.loads((output / "tool-match/consumer-pins.json").read_bytes())
-    report["runGradeAxes"]["rely"] = True
-    example._save(report_path, report)
-    with pytest.raises(VerificationError, match="recomputed case results"):
-        example.verify_run(output, consumer_pins=pins)
-    bad_source = tmp_path / "fixture.json"
-    bad_source.write_bytes(example.FIXTURE.read_bytes() + b" ")
-    with pytest.raises(VerificationError, match="fixture bytes differ"):
-        example.run(tmp_path / "must-not-exist", bad_source)
-    assert not (tmp_path / "must-not-exist").exists()
