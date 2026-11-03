@@ -113,7 +113,8 @@ def edit_readback(execution: dict[str, Any]) -> None:
         "unsigned-effect-edit",
     ],
 )
-def test_semantic_refusal_after_hash_reselection(packet: Path, withheld: dict[str, str], tmp_path: Path, name: str
+def test_semantic_refusal_after_hash_reselection(
+    packet: Path, withheld: dict[str, str], tmp_path: Path, name: str
 ) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
@@ -134,7 +135,8 @@ def test_semantic_refusal_after_hash_reselection(packet: Path, withheld: dict[st
         ("maxElapsedSeconds", 9000),
     ],
 )
-def test_plan_budget_reselection_refused(packet: Path, withheld: dict[str, str], tmp_path: Path, field: str, value: Any
+def test_plan_budget_reselection_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path, field: str, value: Any
 ) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
@@ -146,7 +148,9 @@ def test_plan_budget_reselection_refused(packet: Path, withheld: dict[str, str],
         verify_saved(root, reselect(root), withheld)
 
 
-def test_source_substitution_refused(packet: Path, withheld: dict[str, str], tmp_path: Path) -> None:
+def test_source_substitution_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
     (root / "sources/adapter/reader.py").write_bytes(b"# replacement")
@@ -154,7 +158,9 @@ def test_source_substitution_refused(packet: Path, withheld: dict[str, str], tmp
         verify_saved(root, selected(root), withheld)
 
 
-def test_missing_population_refused(packet: Path, withheld: dict[str, str], tmp_path: Path) -> None:
+def test_missing_population_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
     (root / "artifacts/deny.json").unlink()
@@ -162,7 +168,9 @@ def test_missing_population_refused(packet: Path, withheld: dict[str, str], tmp_
         verify_saved(root, reselect(root), withheld)
 
 
-def test_source_symlink_refused(packet: Path, withheld: dict[str, str], tmp_path: Path) -> None:
+def test_source_symlink_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
     path = root / "sources/adapter/reader.py"
@@ -185,7 +193,9 @@ def test_pins_required_by_cli() -> None:
     assert "--pins-file" in result.stderr
 
 
-def test_duplicate_json_refused(packet: Path, withheld: dict[str, str], tmp_path: Path) -> None:
+def test_duplicate_json_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
     path = root / "artifacts/permit.json"
