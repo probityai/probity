@@ -503,9 +503,6 @@ V3_GATES = ("replay", "stochastic_v3", "cohort_size", "cohort_qualified", "effec
             "overfit_lint", "authority")  # fmt: skip
 
 
-_V3_SEPARATE = ("cohort_size", "cohort_qualified", "effective_change", "zero_benign_twin_interventions")
-
-
 def admit_v3(
     parent: Harness,
     candidate: Harness,
@@ -525,7 +522,13 @@ def admit_v3(
 ) -> Decision:
     """A decision under stochastic policy v3. It never claims zero regressions: its evaluation gate is
     `stochastic_v3`, whose evidence carries every count, decline and classification change."""
-    from ratchet.improve.stochastic import POLICY, candidate_gate, cohort_size, effective_change
+    from ratchet.improve.stochastic import (
+        POLICY,
+        SEPARATE_CHECKS,
+        candidate_gate,
+        cohort_size,
+        effective_change,
+    )
 
     if candidate.parent != parent.version:
         raise ValueError(f"candidate {candidate.version} is not a child of {parent.version}")
@@ -533,7 +536,7 @@ def admit_v3(
     gate = candidate_gate(cohort, comparison, benign_interventions, any(change.values()))
     checks = [
         replay_check,
-        Check("stochastic_v3", all(v for k, v in gate["checks"].items() if k not in _V3_SEPARATE),
+        Check("stochastic_v3", all(v for k, v in gate["checks"].items() if k not in SEPARATE_CHECKS),
               {"gate": gate, "comparison": dict(comparison), "scope": dict(scope)}),
         Check("cohort_size", gate["checks"]["cohort_size"], cohort_size(comparison["cases"])),
         Check("cohort_qualified", cohort["status"] == "QUALIFIED", {"cohort": dict(cohort)}),
