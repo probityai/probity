@@ -27,7 +27,7 @@ jobs:
           python-version: '3.12'
       - name: Install producer and test environment
         run: |
-          python -m pip install -e '.[test,inspect]' build
+          python -m pip install -e '.[test,inspect-historical]' build
           python -m pip install -e 'interop/a2a-native-2026-10-02[test]'
       - name: Check reader process and failure controls
         run: python -m pytest -q tests/test_native_reader.py --junitxml=native-consumer-tests.xml

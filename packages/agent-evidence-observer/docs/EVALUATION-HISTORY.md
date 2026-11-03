@@ -19,7 +19,7 @@ trusted real-time precedence and independent custody remain unestablished.
 The native example requires the optional dependency:
 
 ```sh
-python -m pip install -e '.[test,inspect]'
+python -m pip install -e '.[test,inspect-historical]'
 python examples/evaluation_history_demo.py --output-dir evaluation-receipts
 ```
 
