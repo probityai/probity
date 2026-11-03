@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "statement.json": {
+      "length": 1892,
+      "path": "statement.json",
+      "sha256": "9319b6c60acc1e282f81d6824fb5bdb1d43c6d21a2105c6258459257ea312636"
+    }
+  },
+  "case_id": "incident-action-authorization-control",
+  "schema_version": "probity-case/v1"
+}

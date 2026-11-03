@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "envelope.json": {
+      "length": 2847,
+      "path": "envelope.json",
+      "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
+    }
+  },
+  "case_id": "mutation-none-read-only",
+  "schema_version": "probity-case/v1"
+}

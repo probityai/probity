@@ -23,12 +23,16 @@ from .adapters import (
     done_receipt,
     event_absence,
     execution_evidence,
+    jcs_canonical,
+    observed_effect,
     operand_lineage,
     probe_observed,
     protected_paths,
+    restoration,
     source_coverage,
     spend_reservation,
     tool_claim_match,
+    uncertain_effect,
 )
 from .common import CaseError
 from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
@@ -53,6 +57,11 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "completion_claim/v1": completion_claim.adjudicate,
     "done_receipt/v2": done_receipt.adjudicate,
     "adversarial_execution_evidence/v1": execution_evidence.adjudicate,
+    "uncertain_effect/v1": uncertain_effect.adjudicate,
+    "restoration_record/v1": restoration.adjudicate_record,
+    "restoration_bundle/v1": restoration.adjudicate_bundle,
+    "jcs_canonical/v1": jcs_canonical.adjudicate,
+    "observed_effect/v1": observed_effect.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
@@ -146,7 +155,10 @@ def adjudicate(
     claim_type = assessment.get("claim_type")
     if not isinstance(claim_type, str) or claim_type not in registry:
         raise CaseError("unsupported claim_type")
-    result = registry[claim_type](case, policy, artifact_root)
+    try:
+        result = registry[claim_type](case, policy, artifact_root)
+    except RecursionError as error:
+        raise CaseError("an input is nested too deeply to judge") from error
     try:
         unchanged = _control_bytes(case, policy) == control_bytes
     except CaseError:

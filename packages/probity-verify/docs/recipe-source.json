@@ -242,6 +242,51 @@
       "documentation": "docs/adapters.md",
       "expected_decision": "supported",
       "scope": "Conformance-corpus statement signed with a published test key; the key carries no trust outside the corpus."
+    },
+    {
+      "task": "Check a trail whose effect may have happened after a lost reply",
+      "claim_type": "uncertain_effect/v1",
+      "case": "examples/corpus-routes/uncertain-effect/case.json",
+      "policy": "examples/corpus-routes/uncertain-effect/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; it does not establish that the trail was recorded truthfully."
+    },
+    {
+      "task": "Check one restoration-evidence record",
+      "claim_type": "restoration_record/v1",
+      "case": "examples/corpus-routes/restoration-record/case.json",
+      "policy": "examples/corpus-routes/restoration-record/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; unsigned, and a pass is no finding that the decision was right."
+    },
+    {
+      "task": "Check a restoration-evidence bundle",
+      "claim_type": "restoration_bundle/v1",
+      "case": "examples/corpus-routes/restoration-bundle/case.json",
+      "policy": "examples/corpus-routes/restoration-bundle/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; unsigned, and a pass is no finding that the decision was right."
+    },
+    {
+      "task": "Check canonical bytes for an A2A Agent Card signature",
+      "claim_type": "jcs_canonical/v1",
+      "case": "examples/corpus-routes/jcs-canonical/case.json",
+      "policy": "examples/corpus-routes/jcs-canonical/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Vector A2-001 of a2aproject/a2a-tck; it recomputes bytes and checks no signature."
+    },
+    {
+      "task": "Check a signed Observed Effect record",
+      "claim_type": "observed_effect/v1",
+      "case": "examples/corpus-routes/observed-effect/case.json",
+      "policy": "examples/corpus-routes/observed-effect/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
     }
   ]
 }

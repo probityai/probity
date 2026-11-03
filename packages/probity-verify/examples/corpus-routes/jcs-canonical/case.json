@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "claimed.bin": {
+      "length": 84,
+      "path": "claimed.bin",
+      "sha256": "5c2bca9897e131fc40df54c44eb3f8220a64b046f85aaaf87a0d6414f6b1d235"
+    },
+    "input.json": {
+      "length": 168,
+      "path": "input.json",
+      "sha256": "f1225fcf01abf4804f237c5c74cca432e40a001c23fea6c9b765b310f4d1c521"
+    }
+  },
+  "case_id": "A2-001",
+  "schema_version": "probity-case/v1"
+}

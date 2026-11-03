@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "r1.json": {
+      "length": 1892,
+      "path": "r1.json",
+      "sha256": "9319b6c60acc1e282f81d6824fb5bdb1d43c6d21a2105c6258459257ea312636"
+    },
+    "r2.json": {
+      "length": 2679,
+      "path": "r2.json",
+      "sha256": "c864e1b41caf7a10e19cbfc08940e164c117fef8833660c76e7b864a80e4b834"
+    },
+    "r3.json": {
+      "length": 4157,
+      "path": "r3.json",
+      "sha256": "81c99939127c22e31a4af4eda46558143f397035b99d36960f0a7342670c6543"
+    }
+  },
+  "case_id": "bundle-consistent",
+  "schema_version": "probity-case/v1"
+}

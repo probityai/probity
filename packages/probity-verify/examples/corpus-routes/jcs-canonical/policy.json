@@ -1,0 +1,11 @@
+{
+  "assessments": {
+    "A2-001": {
+      "claim_type": "jcs_canonical/v1",
+      "claimed": "claimed.bin",
+      "input": "input.json",
+      "target": "card-signing-input"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
