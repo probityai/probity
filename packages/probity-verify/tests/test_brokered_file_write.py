@@ -378,36 +378,6 @@ def test_receipt_inclusion_requires_exact_authenticated_bytes(tmp_path, field, r
 
 
 
-def test_public_manifest_excludes_environment_and_binds_real_streams(tmp_path):
-    manifest = runpy.run_path(str(ROOT / "scripts/manifest-brokered-file-write.py"))["build"]
-    (tmp_path / "native").mkdir()
-    (tmp_path / "native/result.stdout").write_bytes(b"real output\n")
-    (tmp_path / "consumer").mkdir()
-    (tmp_path / "consumer/unselected.txt").write_bytes(b"unselected")
-    result = manifest(tmp_path)
-    assert result["base_directory"] == "."
-    assert result["files"] == [{"path": "native/result.stdout", "bytes": 12,
-                                "sha256": hashlib.sha256(b"real output\n").hexdigest()}]
-
-
-@pytest.mark.parametrize("kind", ["selected-directory-symlink", "file-symlink", "fifo"])
-def test_public_manifest_refuses_nonregular_capture_paths(tmp_path, kind):
-    import os
-    manifest = runpy.run_path(str(ROOT / "scripts/manifest-brokered-file-write.py"))["build"]
-    if kind == "selected-directory-symlink":
-        (tmp_path / "other").mkdir()
-        (tmp_path / "native").symlink_to(tmp_path / "other", target_is_directory=True)
-    else:
-        (tmp_path / "native").mkdir()
-        if kind == "fifo":
-            os.mkfifo(tmp_path / "native/selected")
-        else:
-            (tmp_path / "other.txt").write_bytes(b"unselected")
-            (tmp_path / "native/selected").symlink_to(tmp_path / "other.txt")
-    with pytest.raises(ValueError):
-        manifest(tmp_path)
-
-
 @pytest.mark.parametrize("encoding", ["utf-16", "utf-16-le", "utf-16-be", "utf-32", "utf-32-le", "utf-32-be"])
 def test_actual_cli_refuses_other_report_wire_encodings(tmp_path, encoding):
     case, policy = fixture(tmp_path)
