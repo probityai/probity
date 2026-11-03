@@ -1,0 +1,342 @@
+# Copyright (c) 2026, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import operator
+import time
+from collections.abc import Callable
+from copy import copy
+from types import EllipsisType
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, get_args
+
+from typing_extensions import dataclass_transform
+
+from ._serialization import deserialize_payload, event_to_dict
+from .conditions import Condition, NotCondition, OpCondition, OrCondition, TypeCondition, check_eq
+
+try:
+    import annotationlib as _annotationlib
+except ImportError:
+    _annotationlib = None
+
+
+_REPR_MAX_LEN = 80
+
+
+def truncate_repr(value: Any, max_len: int = _REPR_MAX_LEN) -> str:
+    """Repr a value, truncating long ``str``/``bytes`` payloads with a length tag.
+
+    Audio buffers, transcripts, and tool argument JSON can be megabytes; the
+    default ``repr`` would dump them in full and make logs unreadable. The cap
+    is on the repr output (not raw length) since each non-printable byte
+    expands to four characters when reprd.
+    """
+    if isinstance(value, (str, bytes)):
+        full = repr(value)
+        if len(full) > max_len:
+            quote = full[-1]
+            return f"{full[:max_len]}...{quote} (len={len(value)})"
+    return repr(value)
+
+
+def is_conversational(event: Any) -> bool:
+    """True for events that drive history management (compaction, summary input).
+
+    "Conversational" means the durable transcript replayed to the model — model
+    and human turns, tool calls/results, summaries — not transient artifacts
+    (chunks) or persisted telemetry (``UsageEvent``).
+    """
+    cls = type(event)
+    return not getattr(cls, "__transient__", False) and getattr(cls, "__conversational__", True)
+
+
+_ReplayRole: TypeAlias = Literal["anchor", "turn"]
+_REPLAY_ROLES = frozenset(get_args(_ReplayRole))
+
+
+class ProviderReplay:
+    """Marker: provider-native state a provider needs back to reconstruct a turn.
+
+    History shaping (``ConversationPolicy``, trimming, compaction) must keep these.
+    Dropping one costs the turn its tool calls — loudly on the OpenAI Responses API,
+    which rejects the request, and silently on xAI, which answers 200 without them.
+
+    Subclasses declare ``__replay_role__``, since the two roles need opposite
+    remedies (see :mod:`ag2._replay`): ``"anchor"`` for an item the builtin calls of
+    one response are paired with, ``"turn"`` for an object standing in for a whole
+    assistant turn. Declared rather than inferred from the bases, so a turn carrier
+    that happens to subclass ``ModelReasoning`` is not filed as an anchor.
+    """
+
+    # Annotation only, so a subclass that forgets it still fails the check below.
+    __replay_role__: ClassVar[_ReplayRole]
+
+    # No ``__transient__`` here on purpose: ``ModelReasoning`` is transient and would
+    # shadow it under the natural base order, so subclasses declare their own.
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if getattr(cls, "__transient__", False):
+            raise TypeError(
+                f"{cls.__name__} is a ProviderReplay but is __transient__; "
+                "a transient event is never replayed. Set __transient__ = False."
+            )
+        if getattr(cls, "__replay_role__", None) not in _REPLAY_ROLES:
+            raise TypeError(
+                f"{cls.__name__} is a ProviderReplay but declares no valid __replay_role__; "
+                f"set one of {sorted(_REPLAY_ROLES)} — see ProviderReplay's docstring."
+            )
+
+
+class FieldInfo:
+    # Set only on the copies ``__get__`` binds to an owner class.
+    event_class: type
+
+    def __init__(
+        self,
+        default: Any = Ellipsis,
+        *,
+        default_factory: Callable[[], Any] | EllipsisType = Ellipsis,
+        init: bool = True,
+        repr: bool = True,
+        compare: bool = True,
+        hash: bool | None = None,
+        kw_only: bool = True,
+    ) -> None:
+        self.name = ""
+
+        self.init = init
+        self.repr = repr
+        self.compare = compare
+        self.hash = hash
+        self.kw_only = kw_only
+
+        self._default = default
+        self._default_factory = default_factory
+
+    def get_default(self) -> Any:
+        if self._default_factory is not Ellipsis:
+            return self._default_factory()
+        return self._default
+
+    def __get__(self, instance: Any | None, owner: type) -> Any:
+        if instance is None:
+            # A copy bound to ``owner``: subclasses share this descriptor, and
+            # recording the owner on it lets any other read retarget a
+            # condition between ``Event.field`` and its comparison.
+            bound = copy(self)
+            bound.event_class = owner
+            return bound
+        return instance.__dict__.get(self.name)
+
+    def __set__(self, instance: Any, value: Any) -> None:
+        instance.__dict__[self.name] = value
+
+    # On the class a field compares into a condition (the DSL); `object` promises a `bool`.
+    def __eq__(self, other: Any) -> Condition:  # type: ignore[override]
+        return OpCondition(check_eq, self.name, other, self.event_class)
+
+    # On the class a field compares into a condition (the DSL); `object` promises a `bool`.
+    def __ne__(self, other: Any) -> Condition:  # type: ignore[override]
+        return OpCondition(operator.ne, self.name, other, self.event_class)
+
+    def __lt__(self, other: Any) -> Condition:
+        return OpCondition(operator.lt, self.name, other, self.event_class)
+
+    def __le__(self, other: Any) -> Condition:
+        return OpCondition(operator.le, self.name, other, self.event_class)
+
+    def __gt__(self, other: Any) -> Condition:
+        return OpCondition(operator.gt, self.name, other, self.event_class)
+
+    def __ge__(self, other: Any) -> Condition:
+        return OpCondition(operator.ge, self.name, other, self.event_class)
+
+    def is_(self, other: Any) -> Condition:
+        return OpCondition(operator.is_, self.name, other, self.event_class)
+
+
+if TYPE_CHECKING:
+    # A field's declared type is the type of its *value*, not of the descriptor
+    # that stands in for it, so a checker that saw ``FieldInfo`` here would reject
+    # every declaration. Declaring the specifier as a function returning ``Any`` is
+    # the shape ``dataclasses.field`` and pydantic's ``Field`` use in their stubs,
+    # for the same reason. ``default`` is keyword-only here although the runtime
+    # takes it positionally: a checker reads a field specifier's default by name
+    # only, so ``Field("")`` would silently make the field required.
+    def Field(  # noqa: N802 - the public name of the specifier; lowercase would rename the API
+        *,
+        default: Any = Ellipsis,
+        default_factory: Callable[[], Any] | EllipsisType = Ellipsis,
+        init: bool = True,
+        repr: bool = True,
+        compare: bool = True,
+        hash: bool | None = None,
+        kw_only: bool = True,
+    ) -> Any: ...
+
+else:
+    Field = FieldInfo
+
+
+# On the metaclass rather than on ``BaseEvent``: the decorator applied to a class
+# transforms that class's *subclasses*, so ``BaseEvent``'s own fields — ``created_at``
+# — never reached a subclass's synthesised ``__init__`` and every ``created_at=`` was
+# read as an unexpected keyword. Applied to the metaclass it transforms every class
+# built from it, ``BaseEvent`` included.
+@dataclass_transform(
+    kw_only_default=True,
+    field_specifiers=(Field,),
+)
+class _ConditionMeta(type):
+    """Metaclass providing class-level condition operators (~, |, or_, not_)."""
+
+    def __init__(cls, name: str, bases: tuple[type, ...], namespace: dict[str, Any], **kwargs: Any) -> None:
+        super().__init__(name, bases, namespace, **kwargs)
+        _process_fields(cls)
+
+    def __or__(cls, other: Any) -> Any:
+        return TypeCondition(cls).or_(other)
+
+    def or_(cls, other: Any) -> OrCondition:
+        return TypeCondition(cls).or_(other)
+
+    def __invert__(cls) -> NotCondition:
+        return cls.not_()
+
+    def not_(cls) -> NotCondition:
+        return TypeCondition(cls).not_()
+
+
+_MISSING = object()
+
+
+def _process_fields(cls: type) -> None:
+    """Process annotations and set up Field descriptors for a class."""
+    fields: dict[str, FieldInfo] = {}
+
+    # Get annotations in a Python 3.14+ compatible way (PEP 649: lazy annotation evaluation
+    # means __annotations__ is no longer eagerly populated in the class namespace dict).
+    if _annotationlib is not None:
+        annotations = _annotationlib.get_annotations(cls, format=_annotationlib.Format.FORWARDREF)
+    else:
+        annotations = vars(cls).get("__annotations__", {})
+
+    own_namespace = vars(cls)
+    for field_name in annotations:
+        raw = own_namespace.get(field_name, _MISSING)
+        if raw is _MISSING:
+            field = FieldInfo()
+        elif isinstance(raw, FieldInfo):
+            field = raw
+        else:
+            field = FieldInfo(raw)
+
+        if not field.name:
+            field.name = field_name
+
+        fields[field_name] = field
+        setattr(cls, field_name, field)
+
+    # Stamped on every event class here and read back with `getattr`; `type` does not declare it.
+    cls._event_fields_ = fields  # type: ignore[attr-defined]
+
+
+class BaseEvent(metaclass=_ConditionMeta):
+    # Subclasses may set ``__transient__ = True`` to mark themselves as
+    # ephemeral streaming / lifecycle artifacts that should NOT be persisted
+    # to durable storage by default.  Examples: ModelMessageChunk (superseded
+    # by ModelResponse), TaskProgress (superseded by TaskCompleted), observer
+    # lifecycle bookkeeping.
+    # NOTE: no type annotation — must NOT be processed as an event Field.
+    __transient__ = False
+
+    # True = durable transcript replayed to the model (drives history management).
+    # Persisted telemetry sets False (e.g. UsageEvent). No type annotation.
+    __conversational__ = True
+
+    # Auto-populated Unix timestamp (seconds since epoch) for every event.
+    # compare=False: timestamps don't affect equality checks.
+    # repr=False: keeps repr() output clean.
+    created_at: float = Field(default_factory=time.time, compare=False, repr=False)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # MRO walk: map positional args and collect defaults.
+        positional_names: list[str] = []
+        defaults: dict[str, Any] = {}
+        seen: set[str] = set()
+
+        for klass in reversed(type(self).__mro__):
+            for name, f in getattr(klass, "_event_fields_", {}).items():
+                if name not in seen:
+                    if not f.kw_only:
+                        positional_names.append(name)
+                    if name not in kwargs:
+                        default = f.get_default()
+                        if default is not Ellipsis:
+                            defaults[name] = default
+                seen.add(name)
+
+        if args:
+            if len(args) > len(positional_names):
+                raise TypeError(
+                    f"{type(self).__name__}() takes {len(positional_names)} "
+                    f"positional argument(s) but {len(args)} were given"
+                )
+            for name, value in zip(positional_names, args):
+                if name in kwargs:
+                    raise TypeError(f"{type(self).__name__}() got multiple values for argument '{name}'")
+                kwargs[name] = value
+                defaults.pop(name, None)
+
+        # Apply defaults first, then user-provided kwargs so that
+        # property setters (e.g. content -> _content) aren't overwritten
+        # by a field default applied afterwards.
+        for key, value in defaults.items():
+            setattr(self, key, value)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __eq__(self, other: object) -> bool:
+        if type(self) is not type(other):
+            return NotImplemented
+
+        for klass in type(self).__mro__:
+            for name, f in getattr(klass, "_event_fields_", {}).items():
+                if f.compare and getattr(self, name) != getattr(other, name):
+                    return False
+
+        return True
+
+    def __repr__(self) -> str:
+        hidden = set()
+        for klass in type(self).__mro__:
+            for name, f in getattr(klass, "_event_fields_", {}).items():
+                if not f.repr:
+                    hidden.add(name)
+
+        fields = ", ".join(
+            f"{k}={truncate_repr(v)}" for k, v in self.__dict__.items() if not k.startswith("_") and k not in hidden
+        )
+        return f"{self.__class__.__name__}({fields})"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize this event to a JSON-compatible dictionary."""
+        return event_to_dict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "BaseEvent":
+        """Reconstruct an event from a serialized dictionary.
+
+        Filters input to only fields known by this class (via MRO Field
+        descriptors), then constructs via ``cls(**filtered)``.
+        """
+        # Collect known field names across the MRO
+        known_fields: set[str] = set()
+        for klass in cls.__mro__:
+            for name in getattr(klass, "_event_fields_", {}):
+                known_fields.add(name)
+
+        # Deserialize nested events/special types, then filter to known fields
+        deserialized = deserialize_payload(data)
+        filtered = {k: v for k, v in deserialized.items() if k in known_fields}
+        return cls(**filtered)

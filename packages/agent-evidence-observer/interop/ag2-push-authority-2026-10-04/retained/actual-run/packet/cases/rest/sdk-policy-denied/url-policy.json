@@ -1,0 +1,1 @@
+{"dispatch":[],"dispatchMode":"allow","registration":[{"accepted":false,"policy":"sdk","sequence":0,"url":"http://127.0.0.1/private"},{"accepted":false,"policy":"sdk","sequence":1,"url":"http://169.254.169.254/latest"},{"accepted":false,"policy":"sdk","sequence":2,"url":"file:///etc/passwd"}],"registrationMode":"sdk"}

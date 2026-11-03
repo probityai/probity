@@ -1,0 +1,280 @@
+# Copyright (c) 2026, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import json
+from collections.abc import AsyncIterator, Iterable, Sequence
+from itertools import chain
+from typing import TYPE_CHECKING, Any, TypedDict, cast
+
+from aiobotocore.session import AioSession
+from botocore.config import Config as BotocoreConfig
+from fast_depends.library.serializer import SerializerProto
+from typing_extensions import Required
+
+from ag2.config.client import LLMClient
+from ag2.context import ConversationContext
+from ag2.events import (
+    BaseEvent,
+    ModelMessage,
+    ModelMessageChunk,
+    ModelReasoning,
+    ModelResponse,
+    ToolCallEvent,
+    ToolCallsEvent,
+    Usage,
+)
+from ag2.response import ResponseProto
+from ag2.tools.schemas import ToolSchema
+
+from .mappers import convert_messages, normalize_usage, response_proto_to_output_config, tool_to_api
+
+if TYPE_CHECKING:
+    from types_aiobotocore_bedrock_runtime.client import BedrockRuntimeClient
+    from types_aiobotocore_bedrock_runtime.type_defs import (
+        ConverseRequestTypeDef,
+        ConverseStreamRequestTypeDef,
+        GuardrailConfigurationTypeDef,
+        InferenceConfigurationTypeDef,
+        MessageTypeDef,
+        OutputConfigTypeDef,
+        PerformanceConfigurationTypeDef,
+        ToolTypeDef,
+    )
+
+
+class CreateOptions(TypedDict, total=False):
+    model: Required[str]
+
+    stream: bool
+    max_tokens: int
+    temperature: float
+    top_p: float
+    stop_sequences: list[str]
+    additional_model_request_fields: dict[str, Any]
+    additional_model_response_field_paths: list[str]
+    guardrail_config: dict[str, Any]
+    performance_config: dict[str, Any]
+    request_metadata: dict[str, str]
+
+
+class BedrockClient(LLMClient):
+    """Amazon Bedrock client for the Converse API (aiobotocore)."""
+
+    def __init__(
+        self,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        profile_name: str | None = None,
+        region_name: str | None = None,
+        endpoint_url: str | None = None,
+        timeout: float | None = None,
+        max_retries: int | None = None,
+        botocore_config: Any | None = None,
+        session: AioSession | None = None,
+        create_options: CreateOptions | None = None,
+    ) -> None:
+        self._session = session or AioSession(profile=profile_name)
+
+        config = botocore_config
+        if config is None and (timeout is not None or max_retries is not None):
+            config_kwargs: dict[str, Any] = {}
+            if timeout is not None:
+                config_kwargs["connect_timeout"] = timeout
+                config_kwargs["read_timeout"] = timeout
+            if max_retries is not None:
+                config_kwargs["retries"] = {"max_attempts": max_retries, "mode": "standard"}
+            config = BotocoreConfig(**config_kwargs)
+
+        self._client_kwargs: dict[str, Any] = {}
+        if aws_access_key_id is not None:
+            self._client_kwargs["aws_access_key_id"] = aws_access_key_id
+        if aws_secret_access_key is not None:
+            self._client_kwargs["aws_secret_access_key"] = aws_secret_access_key
+        if aws_session_token is not None:
+            self._client_kwargs["aws_session_token"] = aws_session_token
+        if region_name is not None:
+            self._client_kwargs["region_name"] = region_name
+        if endpoint_url is not None:
+            self._client_kwargs["endpoint_url"] = endpoint_url
+        if config is not None:
+            self._client_kwargs["config"] = config
+
+        self._create_options: CreateOptions = cast("CreateOptions", create_options or {})
+        self._streaming = self._create_options.get("stream", False)
+        self._model: str = self._create_options["model"]
+
+    async def __call__(
+        self,
+        messages: Sequence[BaseEvent],
+        context: "ConversationContext",
+        *,
+        tools: Iterable[ToolSchema],
+        response_schema: ResponseProto | None,
+        serializer: SerializerProto,
+    ) -> ModelResponse:
+        if response_schema and response_schema.system_prompt:
+            prompt: Iterable[str] = chain(context.prompt, (response_schema.system_prompt,))
+        else:
+            prompt = context.prompt
+
+        bedrock_messages = convert_messages(messages, serializer)
+        tools_list = [tool_to_api(t) for t in tools]
+
+        kwargs: ConverseRequestTypeDef = {
+            "modelId": self._model,
+            "messages": cast("list[MessageTypeDef]", bedrock_messages),
+        }
+
+        system_text = "\n".join(prompt)
+        if system_text:
+            kwargs["system"] = [{"text": system_text}]
+
+        inference_config: InferenceConfigurationTypeDef = {}
+        if (max_tokens := self._create_options.get("max_tokens")) is not None:
+            inference_config["maxTokens"] = max_tokens
+        if (temperature := self._create_options.get("temperature")) is not None:
+            inference_config["temperature"] = temperature
+        if (top_p := self._create_options.get("top_p")) is not None:
+            inference_config["topP"] = top_p
+        if (stop_sequences := self._create_options.get("stop_sequences")) is not None:
+            inference_config["stopSequences"] = stop_sequences
+        if inference_config:
+            kwargs["inferenceConfig"] = inference_config
+
+        # Converse rejects an empty tools list
+        if tools_list:
+            kwargs["toolConfig"] = {"tools": cast("list[ToolTypeDef]", tools_list)}
+
+        if output_config := response_proto_to_output_config(response_schema):
+            kwargs["outputConfig"] = cast("OutputConfigTypeDef", output_config)
+
+        if (request_fields := self._create_options.get("additional_model_request_fields")) is not None:
+            kwargs["additionalModelRequestFields"] = request_fields
+        if (response_paths := self._create_options.get("additional_model_response_field_paths")) is not None:
+            kwargs["additionalModelResponseFieldPaths"] = response_paths
+        if (guardrail := self._create_options.get("guardrail_config")) is not None:
+            kwargs["guardrailConfig"] = cast("GuardrailConfigurationTypeDef", guardrail)
+        if (performance := self._create_options.get("performance_config")) is not None:
+            kwargs["performanceConfig"] = cast("PerformanceConfigurationTypeDef", performance)
+        if (request_metadata := self._create_options.get("request_metadata")) is not None:
+            kwargs["requestMetadata"] = request_metadata
+
+        async with cast(
+            "BedrockRuntimeClient",
+            self._session.create_client("bedrock-runtime", **self._client_kwargs),
+        ) as client:
+            if self._streaming:
+                stream_kwargs = cast("ConverseStreamRequestTypeDef", kwargs)
+                stream_response = await client.converse_stream(**stream_kwargs)
+                return await self._process_stream(
+                    cast("AsyncIterator[dict[str, Any]]", stream_response["stream"]), context
+                )
+
+            response = await client.converse(**kwargs)
+            return await self._process_completion(cast("dict[str, Any]", response), context)
+
+    async def _process_completion(
+        self,
+        response: dict[str, Any],
+        context: "ConversationContext",
+    ) -> ModelResponse:
+        content_blocks = ((response.get("output") or {}).get("message") or {}).get("content") or []
+
+        text_parts: list[str] = []
+        calls: list[ToolCallEvent] = []
+        for block in content_blocks:
+            if (reasoning := block.get("reasoningContent")) and (
+                reasoning_text := (reasoning.get("reasoningText") or {}).get("text")
+            ):
+                await context.send(ModelReasoning(reasoning_text))
+
+            if text := block.get("text"):
+                text_parts.append(text)
+
+            if tool_use := block.get("toolUse"):
+                calls.append(
+                    ToolCallEvent(
+                        id=tool_use["toolUseId"],
+                        name=tool_use["name"],
+                        arguments=json.dumps(tool_use.get("input") or {}),
+                    )
+                )
+
+        model_msg: ModelMessage | None = None
+        if text_parts:
+            model_msg = ModelMessage("".join(text_parts))
+            await context.send(model_msg)
+
+        return ModelResponse(
+            message=model_msg,
+            tool_calls=ToolCallsEvent(calls),
+            usage=normalize_usage(response.get("usage") or {}),
+            # Converse does not echo the model back — report the configured id
+            model=self._model,
+            provider="bedrock",
+            finish_reason=response.get("stopReason"),
+        )
+
+    async def _process_stream(
+        self,
+        stream: AsyncIterator[dict[str, Any]],
+        context: "ConversationContext",
+    ) -> ModelResponse:
+        full_content: str = ""
+        usage = Usage()
+        finish_reason: str | None = None
+        calls: list[ToolCallEvent] = []
+
+        # toolUse input arrives as partial JSON strings, accumulated by contentBlockIndex
+        tool_accs: dict[int, dict[str, str]] = {}
+
+        async for event in stream:
+            if block_start := event.get("contentBlockStart"):
+                if tool_use := (block_start.get("start") or {}).get("toolUse"):
+                    tool_accs[block_start["contentBlockIndex"]] = {
+                        "id": tool_use["toolUseId"],
+                        "name": tool_use["name"],
+                        "arguments": "",
+                    }
+
+            elif block_delta := event.get("contentBlockDelta"):
+                delta = block_delta.get("delta") or {}
+                if text := delta.get("text"):
+                    full_content += text
+                    await context.send(ModelMessageChunk(text))
+                if (reasoning := delta.get("reasoningContent")) and (reasoning_text := reasoning.get("text")):
+                    await context.send(ModelReasoning(reasoning_text))
+                if (tool_use := delta.get("toolUse")) and (
+                    acc := tool_accs.get(block_delta["contentBlockIndex"])
+                ) is not None:
+                    acc["arguments"] += tool_use.get("input") or ""
+
+            elif block_stop := event.get("contentBlockStop"):
+                if (acc := tool_accs.pop(block_stop["contentBlockIndex"], None)) is not None:
+                    calls.append(ToolCallEvent(id=acc["id"], name=acc["name"], arguments=acc["arguments"] or "{}"))
+
+            elif message_stop := event.get("messageStop"):
+                finish_reason = message_stop.get("stopReason")
+
+            elif metadata := event.get("metadata"):
+                usage = normalize_usage(metadata.get("usage") or {})
+
+        # Flush accumulators whose contentBlockStop never arrived
+        for acc in tool_accs.values():
+            calls.append(ToolCallEvent(id=acc["id"], name=acc["name"], arguments=acc["arguments"] or "{}"))
+
+        message: ModelMessage | None = None
+        if full_content:
+            message = ModelMessage(full_content)
+            await context.send(message)
+
+        return ModelResponse(
+            message=message,
+            tool_calls=ToolCallsEvent(calls),
+            usage=usage,
+            model=self._model,
+            provider="bedrock",
+            finish_reason=finish_reason,
+        )
