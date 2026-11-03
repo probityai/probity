@@ -2,7 +2,8 @@
 
 Run from the repository root: uv run python examples/refusal-v3-cell/verify.py
 
-The verifier recounts and regrades the 80 parent and candidate executions from their traces. This script
+The verifier regrades the 160 executions (parent, two identity controls, candidate) from their traces and
+decides the decision again from them with the public policy rule. This script
 then reads the signed decision and prints what it says. Exit status is 0 only when every check holds.
 """
 
@@ -42,15 +43,15 @@ def main() -> int:
     if run.returncode != 0 or "1 of 1 decisions verified" not in run.stdout:
         return fail(f"offline verification did not pass:\n{run.stdout}{run.stderr}")
     regraded = re.search(r'"regraded": (\d+)', run.stdout)
-    if regraded is None or int(regraded.group(1)) != 80:
-        return fail("the verifier did not regrade 80 executions")
+    if regraded is None or int(regraded.group(1)) != 160:
+        return fail("the verifier did not regrade 160 executions")
     payload = json.loads(base64.b64decode(json.loads(DSSE.read_text())["payload"]))
     (decision,) = payload["decisions"]
     if decision["decision_id"] != DECISION_ID:
         return fail(f"unexpected decision {decision['decision_id']}")
     if decision["admitted"] or "cohort_qualified" not in decision["failed"]:
         return fail("the signed decision is not a refusal for an unqualified cohort")
-    print("regraded 80 executions from their traces")
+    print("regraded 160 executions from their traces, decided again from them")
     print("decision verified, candidate refused, reason: identity controls breached")
     return 0
 

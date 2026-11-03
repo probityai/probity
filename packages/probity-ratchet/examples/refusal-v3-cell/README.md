@@ -10,7 +10,7 @@ uv run python examples/refusal-v3-cell/verify.py
 ```
 
 ```text
-regraded 80 executions from their traces
+regraded 160 executions from their traces, decided again from them
 decision verified, candidate refused, reason: identity controls breached
 ```
 

@@ -171,9 +171,10 @@ def test_v3_counts_are_recounted_from_the_signed_execution_records(tmp_path: Pat
     path = _v3(tmp_path, signer)
     report = verify_results(path.read_bytes(), signer.public_key, path.parent)
     assert report.ok, report.reason
-    (detail,) = report.recomputed
-    assert detail["cases"] == 3 and detail["executions"] == 2 * 3 * 40
-    assert report.authenticated_only == ["v3_identity_controls"]
+    detail = report.recomputed[0]
+    assert detail["cases"] == 3 and detail["executions"] == 4 * 3 * 40  # parent, two controls, candidate
+    assert report.authenticated_only == []
+    assert {"id": "v3_identity_controls", "arms": 2} in report.recomputed
     _resign(path, signer, lambda d: d["decisions"][0]["per_case"][0].update(arm=41))
     assert verify_results(path.read_bytes(), signer.public_key, path.parent).reason.startswith(
         "v3_count_mismatch"
