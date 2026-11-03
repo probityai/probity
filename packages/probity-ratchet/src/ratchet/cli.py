@@ -276,11 +276,10 @@ class LiveBackend:
 
     def referee(self, config: Mapping[str, Any]) -> AbstractContextManager[Any]:
         """The held-out side of `ratchet evolve`: the case-suite referee, in a process of its own."""
-        from ratchet.improve.referee import ProcessReferee
+        from ratchet.improve.referee import ProcessReferee, factory_name
 
-        return ProcessReferee(
-            "ratchet.improve.referee_live:case_suite_parts", config, env=self._referee_env()
-        )
+        env = self._referee_env()
+        return ProcessReferee(factory_name("case_suite_parts", config, env), config, env=env)
 
     def _referee_env(self) -> dict[str, str]:
         """The referee process's environment: this process's, plus this backend's store settings."""

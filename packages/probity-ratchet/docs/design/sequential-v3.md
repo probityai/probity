@@ -148,7 +148,7 @@ the rules say:
 2. Flat cases (0 or 40 of 40) never stop early under tight limits. A boundary that conditions on the
    parent's own count could settle them early. Its bad region is then conditional, and the guarantee has
    to be rechecked.
-3. Implementation, in `ratchet.improve.run_v3`, is a scheduling change (blocks of 10, then a settle
+3. Implementation, in the v3 driver the referee operates, is a scheduling change (blocks of 10, then a settle
    check) plus frozen policy fields: looks, spending exponent, the boundary table for each limit in use,
    the per-case limits and the calibration cohort they came from, and the aggregate bias bound. A
    receipt records each arm and case's stop look and reason. The evaluator identity must include the

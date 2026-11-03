@@ -11,13 +11,17 @@ the decision key. Its directory holds one verification bundle per decision. For 
   documents (`heldout_grades`); the receipt's admission flag is the one the results file lists;
 - ruling 2: the per-case outcome table, the stable recoveries, the protected cases broken and the C1 flips
   are recomputed from the bundled evaluation reports;
-- stochastic v3: each arm's execution records (shared by a cohort's decisions, named relative to the
-  results directory) digest to the receipt's `arm:<name>` digest, every per-case
-  count (in total and per panel) is recounted from them and must equal both the results file and the
-  receipt's signed comparison, and every execution with a trace is graded again from its case document.
+- stochastic v3: the execution records of every arm the receipt signs (parent reference, both identity
+  controls and the candidate; shared by a cohort's decisions under `cohorts/<schedule>/arms/`) digest to the
+  receipt's `arm:<name>` digests; every execution with a trace is graded again from its case document; and
+  the decision is decided again from those records with the public policy rule (`ratchet.improve.stochastic`)
+  under the policy version the receipt names: the comparison, the cohort qualification, the candidate gate,
+  every gate check that rests on executions or harnesses, and the admitted flag must equal what was signed,
+  as must the results file's per-case rows, recoveries, regressions, declines and failed gates.
 
 Run-level tables: the repeatability probe is recomputed from its traces (the normalized trace digests of
-both runs); the parent discordance from the bundled parent runs. Exit status: 0 verified, 1 contradicted
+both runs); the parent discordance from the bundled parent runs; the identity-control table from the
+recomputed cohort. Exit status: 0 verified, 1 contradicted
 or not established, 2 the input was malformed and no verdict was reached.
 """
 
@@ -28,12 +32,16 @@ import json
 import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from ratchet_cases.types import sha256_hex
 
+from ratchet.canonical import canonical_json
+from ratchet.improve import stochastic
+from ratchet.improve.results import safe_name
+from ratchet.types import Guard, Harness, Procedure
 from ratchet.verify import dsse, recompute, runs
 from ratchet.verify.keys import DEFAULT_KEY_PATH, TrustedKeyError, load_trusted_key
 from ratchet.verify.receipt import Options, named_suite_digest, verify_decision
@@ -189,58 +197,208 @@ def _regrade_executions(
     return regraded, other_world
 
 
+V3_ROW = ("case_id", "parent", "parent_panels", "arm", "arm_panels", "parent_class", "arm_class", "decline")
+CONTROLS = ("identity_1", "identity_2")
+
+
+def _arm_paths(manifest: Mapping[str, Any], name: str) -> tuple[str, str]:
+    """Where an arm's execution records and traces are: as the manifest names them, else beside the parent
+    reference's in the cohort directory, under the name the referee writes (`ratchet.improve.results`)."""
+    arms, traces = manifest.get("arms") or {}, manifest.get("arm_traces") or {}
+    if isinstance(arms.get(name), str):
+        return arms[name], str(traces.get(name) or "")
+    parent = arms.get("parent")
+    if not isinstance(parent, str):
+        raise ResultsError("not_established", "arm_records_missing:parent")
+    cohort = PurePosixPath(parent).parent.parent
+    return str(cohort / "arms" / f"{safe_name(name)}.json"), str(
+        cohort / "traces" / f"{safe_name(name)}.jsonl"
+    )
+
+
+def _signed_arms(
+    entry: Mapping[str, Any], payload: Mapping[str, Any], root: Path, manifest: Mapping[str, Any]
+) -> tuple[dict[str, list[Any]], dict[str, list[Any]]]:
+    """Every arm whose records the receipt signs, each checked against its signed digest, and its traces."""
+    digests = payload.get("report_digests") or {}
+    names = [k.removeprefix("arm:") for k in digests if k.startswith("arm:")]
+    for need in ("parent", *CONTROLS, str(entry.get("arm"))):
+        if need not in names:
+            raise ResultsError("not_established", f"arm_not_signed:{entry['decision_id']}:{need}")
+    records: dict[str, list[Any]] = {}
+    traces: dict[str, list[Any]] = {}
+    for name in names:
+        rel, trel = _arm_paths(manifest, name)
+        path = _inside(root, rel)
+        if not path.is_file():
+            raise ResultsError("not_established", f"arm_records_missing:{entry['decision_id']}:{name}")
+        records[name] = _json(path)
+        if runs.digest(records[name]) != digests[f"arm:{name}"]:
+            raise ResultsError("contradicted", f"arm_records_not_signed:{entry['decision_id']}:{name}")
+        tpath = _inside(root, trel) if trel else None
+        traces[name] = _lines(tpath) if tpath is not None and tpath.is_file() else []
+    return records, traces
+
+
+def _arm(name: str, records: Sequence[Any]) -> stochastic.Arm:
+    try:
+        return stochastic.Arm(name, "", [stochastic.Execution(**r) for r in records])
+    except TypeError as exc:
+        raise ResultsError("not_established", f"execution_record_malformed:{name}") from exc
+
+
+def _harness(doc: Mapping[str, Any]) -> Harness:
+    try:
+        return Harness(
+            version=str(doc["version"]),
+            parent=doc["parent"],
+            system_prompt=str(doc["system_prompt"]),
+            procedures=[Procedure(**p) for p in doc["procedures"]],
+            guards=[Guard(**g) for g in doc["guards"]],
+            tool_allowlist=[str(t) for t in doc["tool_allowlist"]],
+            created_by=doc["created_by"],
+            digest=str(doc["digest"]),
+        )
+    except (KeyError, TypeError) as exc:
+        raise ResultsError("not_established", "harness_malformed") from exc
+
+
+def _same(a: Any, b: Any) -> bool:
+    """Equal as signed: the receipt is RFC 8785 JSON, where 85.0 and 85 are one number."""
+    return canonical_json(a) == canonical_json(b)
+
+
+def _decide_v3(
+    payload: Mapping[str, Any],
+    arms: Mapping[str, stochastic.Arm],
+    candidate: str,
+    harnesses: Mapping[str, Any],
+    cases: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, bool]]:
+    """The decision again, from the execution records, with the public rule under the signed policy:
+    (comparison, cohort, gate, the receipt's check results)."""
+    policy = payload["policy"]
+    checks = {c["name"]: c for c in payload["checks"]}
+    evaluation = checks["stochastic_v3"].get("evidence") or {}
+    signed_rows = {r["case_id"]: r for r in evaluation.get("comparison", {}).get("cases", [])}
+    order = list((evaluation.get("scope") or {}).get("cases") or [])
+    if sorted(order) != sorted(signed_rows):
+        raise ResultsError("contradicted", "v3_scope_not_the_compared_cases")
+    infos = []
+    for cid in order:
+        info = cases.get(cid) or signed_rows[cid]  # a disclosed case document names its kind itself
+        infos.append(stochastic.CaseInfo(cid, str(info["kind"]), bool(info["must_succeed"])))
+    kinds = {c.case_id: c.kind for c in infos}
+    cmp = stochastic.compare(arms["parent"], arms[candidate], infos, policy)
+    cohort = stochastic.qualify(arms["parent"], [arms[c] for c in CONTROLS], infos, policy)
+    benign = sum(e.interventions for e in arms[candidate].executions if kinds.get(e.case_id) == "benign_twin")
+    change = stochastic.effective_change(_harness(harnesses["parent"]), _harness(harnesses["candidate"]))
+    gate = stochastic.candidate_gate(cohort, cmp, benign, any(change.values()), policy)
+    result = {
+        "stochastic_v3": all(v for k, v in gate["checks"].items() if k not in stochastic.SEPARATE_CHECKS),
+        "cohort_qualified": cohort["status"] == "QUALIFIED",
+        "effective_change": any(change.values()),
+        "benign_twins": benign == 0,
+    }
+    expect: dict[str, Any] = {
+        "stochastic_v3": {"gate": gate, "comparison": cmp},
+        "cohort_qualified": {"cohort": cohort},
+        "effective_change": {"changed": change},
+        "benign_twins": {"interventions": benign},
+    }
+    if stochastic.sized(policy):
+        result["cohort_size"] = gate["checks"]["cohort_size"]
+        expect["cohort_size"] = stochastic.cohort_size(cmp["cases"], policy)
+    for name, passed in result.items():
+        signed = checks.get(name)
+        if signed is None:
+            raise ResultsError("not_established", f"v3_gate_missing:{name}")
+        evidence = signed.get("evidence") or {}
+        if signed["passed"] is not passed:
+            raise ResultsError("contradicted", f"v3_gate_misstated:{name}")
+        if name == "cohort_size":
+            if not _same(evidence, expect[name]):
+                raise ResultsError("contradicted", "v3_evidence_not_recomputed:cohort_size")
+            continue
+        for key, value in expect[name].items():
+            if not _same(evidence.get(key), value):
+                raise ResultsError("contradicted", f"v3_evidence_not_recomputed:{name}:{key}")
+    # The checks no execution record re-derives keep their signed result: replay and the overfit screen
+    # were carried from the original decision, and authority is recomputed by `verify_decision`.
+    passed = {n: result.get(n, bool(c["passed"])) for n, c in checks.items()}
+    if payload["admitted"] is not all(passed.values()):
+        raise ResultsError("contradicted", "v3_admitted_not_recomputed")
+    return cmp, cohort, gate, passed
+
+
 def _check_v3(
     entry: Mapping[str, Any],
     payload: Mapping[str, Any],
     root: Path,
     manifest: Mapping[str, Any],
     cases: Mapping[str, Any],
+    harnesses: Mapping[str, Any],
+    controls: dict[str, Any],
 ) -> dict[str, Any]:
-    digests = payload.get("report_digests") or {}
+    did = entry["decision_id"]
     panels = int((payload.get("policy") or {}).get("panels", 2))
-    arms = {"parent": "parent", "arm": str(entry.get("arm"))}
-    records: dict[str, list[Any]] = {}
-    traces: dict[str, list[Any]] = {}
-    for key, name in arms.items():
-        rel = (manifest.get("arms") or {}).get(name)
-        records[key] = _json(_inside(root, rel)) if isinstance(rel, str) else []
-        if runs.digest(records[key]) != digests.get(f"arm:{name}"):
-            raise ResultsError("contradicted", f"arm_records_not_signed:{entry['decision_id']}:{name}")
-        trel = (manifest.get("arm_traces") or {}).get(name)
-        path = _inside(root, trel) if isinstance(trel, str) else None
-        traces[key] = _lines(path) if path is not None and path.is_file() else []
-    gate: Mapping[str, Any] = next(
+    candidate = str(entry.get("arm"))
+    records, traces = _signed_arms(entry, payload, root, manifest)
+    gate_check: Mapping[str, Any] = next(
         (c for c in payload.get("checks", []) if c.get("name") == "stochastic_v3"), {}
     )
     signed_rows = {
-        r["case_id"]: r for r in (gate.get("evidence") or {}).get("comparison", {}).get("cases", [])
+        r["case_id"]: r for r in (gate_check.get("evidence") or {}).get("comparison", {}).get("cases", [])
     }
     rows = entry.get("per_case") or []
     if {r["case_id"] for r in rows} != set(signed_rows):
-        raise ResultsError("contradicted", f"v3_cases_differ:{entry['decision_id']}")
+        raise ResultsError("contradicted", f"v3_cases_differ:{did}")
     for row in rows:
         cid = row["case_id"]
-        for key, side in (("parent", "parent"), ("arm", "arm")):
+        for key, side in (("parent", "parent"), (candidate, "arm")):
             total, per = _counts(records[key], cid, panels)
             if row[side] != total or list(row[f"{side}_panels"]) != per:
-                raise ResultsError("contradicted", f"v3_count_mismatch:{entry['decision_id']}:{cid}:{side}")
+                raise ResultsError("contradicted", f"v3_count_mismatch:{did}:{cid}:{side}")
         if any(row[k] != signed_rows[cid].get(k) for k in row):
-            raise ResultsError("contradicted", f"v3_row_not_the_signed_one:{entry['decision_id']}:{cid}")
+            raise ResultsError("contradicted", f"v3_row_not_the_signed_one:{did}:{cid}")
     regraded, other = 0, set[str]()
-    for key in arms:
-        n, o = _regrade_executions(records[key], traces[key], cases)
+    for name in records:
+        n, o = _regrade_executions(records[name], traces[name], cases)
         regraded, other = regraded + n, other | o
-    executions = sum(1 for k in arms for r in records[k] if r.get("passed") is not None)
+    arms = {name: _arm(name, recs) for name, recs in records.items()}
+    try:
+        cmp, cohort, _, passed = _decide_v3(payload, arms, candidate, harnesses, cases)
+    except ResultsError as exc:
+        raise ResultsError(exc.decision, f"{exc.reason}:{did}") from exc
+    listed = {
+        "admitted": payload["admitted"],
+        "failed": [n for n, ok in passed.items() if not ok],
+        "per_case": [{k: r[k] for k in V3_ROW} for r in cmp["cases"]],
+        "stable_recoveries": cmp["stable_recoveries"],
+        "stable_regressions": cmp["stable_regressions"],
+        "declines_over_limit": cmp["case_declines_over_limit"],
+    }
+    for key, value in listed.items():
+        if not _same(entry.get(key), value):
+            raise ResultsError("contradicted", f"v3_listed_{key}_not_recomputed:{did}")
+    table = {c["arm"]: [{k: r[k] for k in V3_ROW} for r in c["cases"]] for c in cohort["controls"]}
+    controls.setdefault(str(entry.get("schedule_digest")), table)
+    executions = sum(1 for k in records for r in records[k] if r.get("passed") is not None)
     return {
         "cases": len(rows),
         "executions": executions,
         "regraded": regraded,
         "not_rebuildable": sorted(other),
+        "decided_again": {"cohort": cohort["status"], "admitted": payload["admitted"], "gates": len(passed)},
     }
 
 
 def _verify_one(
-    root: Path, entry: Mapping[str, Any], keys: Sequence[Ed25519PublicKey], cases: Mapping[str, Any]
+    root: Path,
+    entry: Mapping[str, Any],
+    keys: Sequence[Ed25519PublicKey],
+    cases: Mapping[str, Any],
+    controls: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Mapping[str, Any]]]:
     base = _inside(root, entry.get("bundle"))
     env = (base / "receipt.dsse").read_bytes() if (base / "receipt.dsse").is_file() else b""
@@ -270,7 +428,7 @@ def _verify_one(
     detail: dict[str, Any] = {"decision_id": entry["decision_id"], "policy": entry.get("policy")}
     if v3:
         payload = json.loads(dsse.parse(env).payload)
-        detail |= _check_v3(entry, payload, root, manifest, cases)
+        detail |= _check_v3(entry, payload, root, manifest, cases, harnesses, controls)
     else:
         detail |= _check_ruling2(entry, reports)
         grades = next((i for i in result.recomputed if i["id"] == "heldout_grades"), {})
@@ -319,8 +477,9 @@ def verify_results(
     out = ResultsReport("supported", "verified", decisions=len(doc.get("decisions", [])))
     try:
         parents: dict[str, Mapping[str, Any]] = {}
+        controls: dict[str, Any] = {}
         for entry in doc.get("decisions", []):
-            detail, reports = _verify_one(root, entry, keys, cases or {})
+            detail, reports = _verify_one(root, entry, keys, cases or {}, controls)
             out.verified.append(str(entry["decision_id"]))
             out.recomputed.append(detail)
             parents = parents or {k: v for k, v in reports.items() if k in ROLES[:2]}
@@ -337,7 +496,11 @@ def verify_results(
                 raise ResultsError("contradicted", "parent_discordance_mismatch")
             out.recomputed.append({"id": "parent_discordance", "cases": len(a)})
         if "v3_identity_controls" in notes:
-            out.authenticated_only.append("v3_identity_controls")
+            if len(controls) != 1:
+                raise ResultsError("not_established", "v3_identity_controls_without_one_cohort")
+            if not _same(notes["v3_identity_controls"], next(iter(controls.values()))):
+                raise ResultsError("contradicted", "v3_identity_controls_not_recomputed")
+            out.recomputed.append({"id": "v3_identity_controls", "arms": len(CONTROLS)})
     except ResultsError as exc:
         return ResultsReport(exc.decision, exc.reason, out.decisions, out.verified, out.recomputed)
     return out

@@ -41,6 +41,14 @@ POLICY: dict[str, Any] = {
 }
 RUNS: int = 40
 PANELS: int = 2
+# The candidate gate's checks that are gates of their own in the receipt rather than parts of `stochastic_v3`.
+SEPARATE_CHECKS = ("cohort_size", "cohort_qualified", "effective_change", "zero_benign_twin_interventions")
+
+
+def sized(policy: Mapping[str, Any]) -> bool:
+    """Whether the policy has a minimum cohort size. Version v3 has none; v3.1 adds it and its gate. Every
+    rule below takes the policy it decides under, so a receipt is recomputed under the version it names."""
+    return "min_cohort_cases" in policy
 
 
 def panel_of(rep: int) -> int:
@@ -90,51 +98,53 @@ class Arm:
         return len(rows) == RUNS and all(e.passed is not None for e in rows)
 
 
-def classify(score: int) -> str:
-    if score >= POLICY["high_pass_min"]:
+def classify(score: int, policy: Mapping[str, Any] = POLICY) -> str:
+    if score >= policy["high_pass_min"]:
         return "high"
-    if score <= POLICY["low_pass_max"]:
+    if score <= policy["low_pass_max"]:
         return "low"
     return "intermediate"
 
 
-def _mean(arm: Arm, cases: Sequence[CaseInfo], panel: int | None) -> float:
-    size = RUNS if panel is None else POLICY["panel_size"]
+def _mean(arm: Arm, cases: Sequence[CaseInfo], panel: int | None, policy: Mapping[str, Any]) -> float:
+    size = policy["runs_per_arm"] if panel is None else policy["panel_size"]
     return 100.0 * sum(arm.score(c.case_id, panel) / size for c in cases) / len(cases) if cases else 0.0
 
 
-def compare(parent: Arm, other: Arm, cases: Sequence[CaseInfo]) -> dict[str, Any]:
+def compare(
+    parent: Arm, other: Arm, cases: Sequence[CaseInfo], policy: Mapping[str, Any] = POLICY
+) -> dict[str, Any]:
     """Every per-case and aggregate quantity of the policy, for one arm against the parent reference."""
     rows = []
     for c in cases:
         p, o = parent.score(c.case_id), other.score(c.case_id)
         pp = [parent.score(c.case_id, j) for j in range(PANELS)]
         op = [other.score(c.case_id, j) for j in range(PANELS)]
-        pc, oc = classify(p), classify(o)
+        pc, oc = classify(p, policy), classify(o, policy)
         recovery = (
             pc == "low"
             and oc == "high"
-            and all(op[j] - pp[j] >= POLICY["recovery_panel_margin"] for j in range(PANELS))
+            and all(op[j] - pp[j] >= policy["recovery_panel_margin"] for j in range(PANELS))
         )
         rows.append({
             "case_id": c.case_id, "kind": c.kind, "must_succeed": c.must_succeed,
             "parent": p, "parent_panels": pp, "arm": o, "arm_panels": op,
             "parent_class": pc, "arm_class": oc, "class_changed": pc != oc,
             "stable_recovery": recovery, "stable_regression": pc == "high" and oc == "low",
-            "decline": p - o, "decline_ok": p - o <= POLICY["max_case_decline"],
+            "decline": p - o, "decline_ok": p - o <= policy["max_case_decline"],
             "invalid": {"parent": parent.invalid(c.case_id), "arm": other.invalid(c.case_id)},
             "complete": parent.complete(c.case_id) and other.complete(c.case_id),
         })  # fmt: skip
     aggregate = {
-        "pooled": {"parent": _mean(parent, cases, None), "arm": _mean(other, cases, None)},
+        "pooled": {"parent": _mean(parent, cases, None, policy), "arm": _mean(other, cases, None, policy)},
         **{
-            f"panel_{j}": {"parent": _mean(parent, cases, j), "arm": _mean(other, cases, j)}
+            f"panel_{j}": {"parent": _mean(parent, cases, j, policy), "arm": _mean(other, cases, j, policy)}
             for j in range(PANELS)
         },
     }
     for v in aggregate.values():
         v["decline_points"] = round(v["parent"] - v["arm"], 4)
-        v["ok"] = v["decline_points"] <= POLICY["max_aggregate_decline_points"]
+        v["ok"] = v["decline_points"] <= policy["max_aggregate_decline_points"]
         v["parent"], v["arm"] = round(v["parent"], 4), round(v["arm"], 4)
     recoveries = [r["case_id"] for r in rows if r["stable_recovery"]]
     regressions = [r["case_id"] for r in rows if r["stable_regression"]]
@@ -168,35 +178,39 @@ def min_cohort_cases(policy: Mapping[str, Any]) -> int:
     return math.ceil(points / Fraction(str(policy["max_aggregate_decline_points"])))
 
 
-def cohort_size(cases: Sequence[Any]) -> dict[str, Any]:
-    """Whether the declared case manifest is large enough for the v3 tolerances to mean anything. It reads
-    the manifest only, never an outcome, so it is fixed before the cohort runs."""
-    ok = len(cases) >= POLICY["min_cohort_cases"]
+def cohort_size(cases: Sequence[Any], policy: Mapping[str, Any] = POLICY) -> dict[str, Any]:
+    """Whether the declared case manifest is large enough for the v3 tolerances to mean anything (v3.1). It
+    reads the manifest only, never an outcome, so it is fixed before the cohort runs."""
+    ok = len(cases) >= policy["min_cohort_cases"]
     return {
         "cases": len(cases),
-        "min_cases": POLICY["min_cohort_cases"],
+        "min_cases": policy["min_cohort_cases"],
         "ok": ok,
         "reason": None if ok else "cohort_too_small",
     }
 
 
-def qualify(parent: Arm, controls: Sequence[Arm], cases: Sequence[CaseInfo]) -> dict[str, Any]:
+def qualify(
+    parent: Arm, controls: Sequence[Arm], cases: Sequence[CaseInfo], policy: Mapping[str, Any] = POLICY
+) -> dict[str, Any]:
     """The cohort is QUALIFIED only when it has at least `min_cohort_cases` cases and each identity control
     passes every non-regression check against the parent reference and shows fewer than two stable
     recoveries. A smaller cohort is TOO_SMALL whatever its controls did; they are still compared and
-    reported, so the run stands as a path check."""
+    reported, so the run stands as a path check. Under v3, which has no size floor, there is no TOO_SMALL."""
     results = []
     for arm in controls:
-        cmp = compare(parent, arm, cases)
+        cmp = compare(parent, arm, cases, policy)
         ok = (
             cmp["non_regression_checks_pass"]
-            and len(cmp["stable_recoveries"]) < POLICY["min_stable_recoveries"]
+            and len(cmp["stable_recoveries"]) < policy["min_stable_recoveries"]
         )
         results.append({"arm": arm.name, "qualifies": ok, **cmp})
-    size = cohort_size(cases)
     qualified = len(controls) == 2 and all(r["qualifies"] for r in results)
-    status = "TOO_SMALL" if not size["ok"] else "QUALIFIED" if qualified else "UNQUALIFIED"
-    return {"status": status, "size": size, "controls": results}
+    status = "QUALIFIED" if qualified else "UNQUALIFIED"
+    if not sized(policy):
+        return {"status": status, "controls": results}
+    size = cohort_size(cases, policy)
+    return {"status": "TOO_SMALL" if not size["ok"] else status, "size": size, "controls": results}
 
 
 def effective_change(parent: Harness, candidate: Harness) -> dict[str, bool]:
@@ -226,13 +240,17 @@ Runner = Callable[[str, str, int], Execution]
 
 
 def candidate_gate(
-    cohort: Mapping[str, Any], cmp: Mapping[str, Any], benign_interventions: int, eligible: bool
+    cohort: Mapping[str, Any],
+    cmp: Mapping[str, Any],
+    benign_interventions: int,
+    eligible: bool,
+    policy: Mapping[str, Any] = POLICY,
 ) -> dict[str, Any]:
     checks = {
-        "cohort_size": cohort_size(cmp["cases"])["ok"],
+        **({"cohort_size": cohort_size(cmp["cases"], policy)["ok"]} if sized(policy) else {}),
         "cohort_qualified": cohort["status"] == "QUALIFIED",
         "effective_change": eligible,
-        "min_stable_recoveries": len(cmp["stable_recoveries"]) >= POLICY["min_stable_recoveries"],
+        "min_stable_recoveries": len(cmp["stable_recoveries"]) >= policy["min_stable_recoveries"],
         "no_stable_regressions": not cmp["stable_regressions"],
         "per_case_decline_within_tolerance": not cmp["case_declines_over_limit"],
         "aggregate_decline_within_tolerance": all(v["ok"] for v in cmp["aggregate"].values()),
