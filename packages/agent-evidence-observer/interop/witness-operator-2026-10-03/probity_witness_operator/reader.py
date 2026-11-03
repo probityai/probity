@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import probity_observer
 from probity_observer.crypto import canonical, strict_loads
 from probity_observer.grant_records import (
     ActionRequest,
@@ -19,9 +20,13 @@ from probity_observer.grant_records import (
 from probity_observer.history import read_history, verify_checkpoint
 from probity_observer.ledger import read_ledger, verify_ledger_head
 
-from .protocol import FORMAT, checked_identity, exact_fields, require, sha
-from .sources import verify_sources
-from .worker import CONTENT
+from .protocol import CONTENT, FORMAT, checked_identity, exact_fields, require, sha
+from .sources import load_withheld, verify_sources
+
+# The isolated child resolves both packages from the roots this process imported them from.
+_IMPORT_ROOTS = (str(Path(probity_observer.__file__).resolve().parent.parent), str(Path(__file__).resolve().parent.parent))
+_LAUNCH = ("import runpy, sys; sys.path[:0] = sys.argv[1:3]; del sys.argv[1:3]; "
+           "runpy.run_module('probity_witness_operator.retention', run_name='__main__', alter_sys=True)")
 
 CASES = ("permit", "failed-after", "unavailable-before", "unavailable-after", "lost-ack")
 
@@ -113,7 +118,7 @@ def _case(directory: Path, policy: dict[str, Any]) -> dict[str, Any]:
             "missingTerminals": len(summary["missingTerminals"]), "publicationDecision": "RELEASE" if release else "WITHHOLD"}
 
 
-def read(directory: Path, policy: dict[str, Any]) -> dict[str, Any]:
+def read(directory: Path, policy: dict[str, Any], withheld: dict[str, str] | None = None) -> dict[str, Any]:
     """Read one frozen native population under a separately selected host policy.
 
     Parameters
@@ -122,6 +127,10 @@ def read(directory: Path, policy: dict[str, Any]) -> dict[str, Any]:
         Retained public packet root; no private operator state is required.
     policy : dict
         Host-selected exact source/file population and public pins.
+    withheld : dict, optional
+        Source names (relative to the packet's source directory) whose bytes
+        were removed from a retained copy, with the digest the policy selects.
+        An absent source is accepted only when listed here with that digest.
 
     Returns
     -------
@@ -133,7 +142,7 @@ def read(directory: Path, policy: dict[str, Any]) -> dict[str, Any]:
     require(policy["format"] == FORMAT, "host policy format differs")
     require(set(policy["cases"]) == set(CASES), "host case population differs")
     require({path.name for path in directory.iterdir()} == {*CASES, "source", "fault-controls.json"}, "packet population differs")
-    verify_sources(directory / "source", policy["source"])
+    verify_sources(directory / "source", policy["source"], withheld)
     _faults(directory / "fault-controls.json", policy["faultControls"])
     records = [_case(directory / name, policy["cases"][name]) for name in CASES]
     return {"profile": FORMAT, "witnessScope": "PEER", "independentCustody": False, "modelInferenceCalls": 0,
@@ -144,7 +153,7 @@ def read(directory: Path, policy: dict[str, Any]) -> dict[str, Any]:
 
 def _retain_command(ledger: Path, candidate: Path, retained: Path, key: str, pins: dict[str, str], selection: list[str]) -> subprocess.CompletedProcess[bytes]:
     """Exercise the installed public retention CLI under exact public input pins."""
-    return subprocess.run([sys.executable, "-I", "-B", "-m", "probity_witness_operator.retention",
+    return subprocess.run([sys.executable, "-I", "-B", "-c", _LAUNCH, *_IMPORT_ROOTS,
                            str(ledger), str(candidate), str(retained), "--witness-key", key,
                            "--ledger-sha256", pins[ledger.name], "--candidate-sha256", pins[candidate.name],
                            *selection], capture_output=True, timeout=10)
@@ -190,10 +199,12 @@ def main() -> None:
     parser.add_argument("packet", type=Path)
     parser.add_argument("--host-policy", type=Path, required=True)
     parser.add_argument("--policy-sha256", required=True)
+    parser.add_argument("--withheld-sources", type=Path, help="WITHHELD-SOURCES.json of a hash-only retained copy")
     arguments = parser.parse_args()
     require(not arguments.host_policy.resolve().is_relative_to(arguments.packet.resolve()), "host policy must be outside packet")
     require(sha(arguments.host_policy.read_bytes()) == arguments.policy_sha256, "host policy pin differs")
-    sys.stdout.buffer.write(canonical(read(arguments.packet, load(arguments.host_policy))) + b"\n")
+    withheld = load_withheld(arguments.withheld_sources, arguments.packet / "source") if arguments.withheld_sources else None
+    sys.stdout.buffer.write(canonical(read(arguments.packet, load(arguments.host_policy), withheld)) + b"\n")
 
 
 if __name__ == "__main__":

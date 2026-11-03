@@ -5,6 +5,8 @@ from __future__ import annotations
 import importlib.metadata as metadata
 from pathlib import Path
 
+from probity_observer.crypto import strict_loads
+
 from .protocol import require, sha
 
 PACKAGES = ("agent-evidence-observer", "probity-witness-operator-reference")
@@ -46,12 +48,35 @@ def retain_sources(directory: Path) -> dict[str, str]:
     return {name: sha(path.read_bytes()) for name, path in sources.items()}
 
 
-def verify_sources(directory: Path, expected: dict[str, str]) -> None:
-    """Refuse changes or additions to the retained physical source population."""
+def load_withheld(path: Path, directory: Path) -> dict[str, str]:
+    """Read a retained copy's withheld-source record as names under one source directory.
+
+    Parameters
+    ----------
+    path : Path
+        JSON object mapping paths, relative to the record's own directory, to SHA-256.
+    directory : Path
+        Source directory of the retained packet that the names are made relative to.
+    """
+    value = strict_loads(path.read_bytes())
+    require(isinstance(value, dict) and list(value) == sorted(value), "withheld source record is not a sorted object")
+    base = directory.resolve().relative_to(path.resolve().parent).as_posix() + "/"
+    return {name.removeprefix(base): digest for name, digest in value.items() if name.startswith(base)}
+
+
+def verify_sources(directory: Path, expected: dict[str, str], withheld: dict[str, str] | None = None) -> None:
+    """Refuse changes or additions to the retained physical source population.
+
+    A selected name may be absent only when ``withheld`` lists it with exactly
+    the selected digest; every present file must still match byte for byte.
+    """
+    withheld = withheld or {}
     found = {str(path.relative_to(directory)) for path in directory.rglob("*") if path.is_file()}
-    require(found == set(expected), "retained source population differs")
-    for name, digest in expected.items():
+    require(found <= set(expected), "retained source population differs")
+    for name in set(expected) - found:
+        require(withheld.get(name) == expected[name], "retained source is absent without a matching withheld digest")
+    for name in found:
         path = directory / name
         require(not path.is_symlink(), "retained source is a symlink")
         require(path.resolve().is_relative_to(directory.resolve()), "retained source escapes directory")
-        require(sha(path.read_bytes()) == digest, "retained source bytes differ")
+        require(sha(path.read_bytes()) == expected[name], "retained source bytes differ")

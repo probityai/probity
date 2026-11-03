@@ -17,9 +17,7 @@ from probity_observer.crypto import canonical, strict_loads
 from probity_observer.grant_records import ActionRequest, GrantPolicy
 
 from .client import WitnessClient
-from .protocol import require, sha
-
-CONTENT = b"effect committed through public witness port\n"
+from .protocol import CONTENT, require, sha
 
 
 def _cannot_read(path: Path) -> bool:
