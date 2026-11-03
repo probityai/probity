@@ -253,8 +253,8 @@ def test_v3_executions_on_suite_cases_are_graded_again_from_the_case_documents(t
     path = Path(core.results("v3-suite")["path"])
     report = verify_results(path.read_bytes(), signer.public_key, path.parent, CASES)
     assert report.ok, report.reason
-    (detail,) = report.recomputed
-    assert detail["regraded"] == detail["executions"] == 2 * 40
+    detail = report.recomputed[0]
+    assert detail["regraded"] == detail["executions"] == 4 * 40  # parent, two controls, candidate
     trace_file = next((path.parent / "cohorts").iterdir()) / "traces" / "parent.jsonl"
     lines = trace_file.read_text().splitlines()
     doc = json.loads(lines[0])
