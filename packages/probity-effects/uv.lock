@@ -3,18 +3,18 @@ revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and sys_platform != 'emscripten'",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
     "(python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version < '3.12' and sys_platform == 'emscripten')",
 ]
 
 [[package]]
 name = "agent-evidence-vectors"
-version = "0.31.2"
+version = "0.32.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/aa/29/a1e0983b0909791367004165b8bf5fe54bd60c46d895e91a150584792862/agent_evidence_vectors-0.31.2.tar.gz", hash = "sha256:36d4f0a1885a8f03c65cd257ae5642b7510b03505713eb6484d79173e7716d30", size = 4129586, upload-time = "2026-11-02T05:54:18.292Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/b7/acd297f4e71db52ca7bf56b8ba9792c5336f6db3d7af0f303d69623eb160/agent_evidence_vectors-0.32.1.tar.gz", hash = "sha256:2ff1eaab695202ff1bd301bace4e1b550c4ddbba18277ad834548c584358dc05", size = 4205550, upload-time = "2026-11-03T00:55:38.418Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/2e/513bae547b947b49c6cc472ca4d1a143f9c6221373b7e8b06c81b8a64504/agent_evidence_vectors-0.31.2-py3-none-any.whl", hash = "sha256:896ac929811a1660938a6650aa1e534390cb58598a9a4f9c60ce8664f151e6c5", size = 11648022, upload-time = "2026-11-02T05:54:15.268Z" },
+    { url = "https://files.pythonhosted.org/packages/85/26/f1f87752c67587f01c14d130c8a8604a47953bb63def424580c9d4281bc3/agent_evidence_vectors-0.32.1-py3-none-any.whl", hash = "sha256:89c6d12be8b92d0fd303cd40392c19d9bea03f6506a9ff7cf87fd04d0a26e44b", size = 11723022, upload-time = "2026-11-03T00:55:36.034Z" },
 ]
 
 [[package]]
@@ -1042,7 +1042,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-evidence-vectors", marker = "extra == 'testing'", specifier = "~=0.31.2" },
+    { name = "agent-evidence-vectors", marker = "extra == 'testing'", specifier = "~=0.32.1" },
     { name = "jcs-admit", specifier = "~=0.1.1" },
     { name = "pytest", marker = "extra == 'testing'", specifier = ">=8,<10" },
 ]
@@ -1050,7 +1050,7 @@ provides-extras = ["testing"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "agent-evidence-vectors", specifier = "~=0.31.2" },
+    { name = "agent-evidence-vectors", specifier = "~=0.32.1" },
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "langgraph", specifier = "==1.2.19" },
     { name = "openai-agents", specifier = "==0.24.0" },

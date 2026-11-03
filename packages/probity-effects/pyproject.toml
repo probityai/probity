@@ -31,7 +31,7 @@ Issues = "https://github.com/probityai/probity/issues"
 
 [project.optional-dependencies]
 # What a user installs to run the lost-reply scenarios against their own tools.
-testing = ["pytest>=8,<10", "agent-evidence-vectors~=0.31.2"]
+testing = ["pytest>=8,<10", "agent-evidence-vectors~=0.32.1"]
 
 [project.entry-points.pytest11]
 probity_effects = "probity_effects.pytest_plugin"
@@ -42,7 +42,7 @@ probity_effects = "probity_effects.pytest_plugin"
 # This member's own tests: the frameworks the adapters drive, pinned to the versions measured.
 dev = [
     "pytest>=9.2.0,<10",
-    "agent-evidence-vectors~=0.31.2",
+    "agent-evidence-vectors~=0.32.1",
     "langgraph==1.2.19",
     "openai-agents==0.24.0",
     "httpx>=0.28,<1",

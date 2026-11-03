@@ -3,7 +3,7 @@
 ## LangGraph
 
 Measured on Mon 2 Nov 2026 with langgraph 1.2.19 and the eight runtime scenarios of
-agent-evidence-vectors 0.31.2 (`vectors-uncertain-effect`), on Python 3.12. The plain tool posts
+agent-evidence-vectors 0.32.1 (`vectors-uncertain-effect`), on Python 3.12. The plain tool posts
 the write with httpx and raises on failure, as an ordinary `@tool` does; the guarded tool is
 `effect_tool` from this package. Each cell is the number of effects the counting owner holds
 afterwards. A scenario passes when the effect count and the reported outcome are ones the scenario
