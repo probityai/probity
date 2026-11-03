@@ -12,7 +12,7 @@ from probity_observer.dispatch_records import verify_dispatch_bundle
 from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.history import verify_checkpoint
 from probity_observer.ledger import verify_ledger_head
-from probity_witness_operator.protocol import require
+from probity_witness_operator.protocol import history_entries, require
 
 from .protocol import BUNDLE_FILES, checkpoint_prefix, journal_entries
 
@@ -36,7 +36,7 @@ def _dispatch(directory: Path, config: dict[str, Any], retained: dict[str, Any])
                                execution_digest=config["executionDigest"], decision_digest=config.get("decisionDigest"))
 
 
-def _bundle(directory: Path, selection: dict[str, Any], candidate: dict[str, Any], last: bool, admitted: bool) -> dict[str, Any]:
+def _bundle(directory: Path, selection: dict[str, Any], admitted: bool, candidate: dict[str, Any]) -> dict[str, Any]:
     """Check one captured bundle against the heads the consumer held outside it.
 
     The full dispatch relation is replayed for the final bundle of a case the consumer admitted.
@@ -45,25 +45,38 @@ def _bundle(directory: Path, selection: dict[str, Any], candidate: dict[str, Any
     key = config["witnessKey"]
     entries = journal_entries((directory / "authorization.jsonl").read_bytes(), config, selection["beforeRoot"])
     checkpoint_prefix(entries, selection["initialAuthorizationCheckpoint"], key)
-    ledger = directory / "witness-ledger.jsonl"
-    receipts = verify_ledger_head(ledger, selection["initialNativeHead"], key)["count"]
-    if last:
-        verify_checkpoint(entries, candidate["authorization"], key)
-        require(verify_ledger_head(ledger, candidate["native"], key)["count"] == candidate["native"]["count"] == receipts, "candidate native head is not current")
-    verified = admitted and last
-    if verified:
+    receipts = verify_ledger_head(directory / "witness-ledger.jsonl", selection["initialNativeHead"], key)["count"]
+    if admitted:
         _dispatch(directory, config, candidate["authorization"])
-    return {"bundle": directory.name, "journalPhases": len(entries), "nativeReceipts": receipts, "dispatchBundleVerified": verified}
+    return {"bundle": directory.name, "journalPhases": len(entries), "nativeReceipts": receipts, "dispatchBundleVerified": admitted}
+
+
+def _latest(directory: Path, suffix: str) -> Path:
+    """Select the last numbered witness export of one kind."""
+    exports = sorted((directory / "witness-exports").glob("*-" + suffix))
+    require(bool(exports), "witness export is missing")
+    return exports[-1]
+
+
+def _heads(directory: Path, key: str, candidate: dict[str, Any]) -> dict[str, Any]:
+    """Authenticate the consumer's candidate heads against the witness's exported histories."""
+    ledger = _latest(directory, "native-ledger.jsonl")
+    native = verify_ledger_head(ledger, candidate["native"], key)
+    require(native["count"] == candidate["native"]["count"], "candidate native head is not current")
+    entries = history_entries(_latest(directory, "authorization.jsonl").read_bytes())
+    verify_checkpoint(entries, candidate["authorization"], key)
+    return {"nativeReceipts": native["count"], "authorizationEntries": len(entries)}
 
 
 def _case(directory: Path) -> dict[str, Any]:
-    """Replay every captured bundle of one case under its separately recorded selection."""
+    """Replay every captured bundle and the candidate heads of one case under its recorded selection."""
     selection = load(directory / "host-selection.json")
     candidate = load(directory / "candidate-heads.json")
     names = [name for name in BUNDLES if (directory / name).is_dir()]
     require(bool(names), "case has no captured bundle")
     admitted = (directory / "consumer-after-admission-admission.json").is_file()
-    return {"bundles": [_bundle(directory / name, selection, candidate, name == names[-1], admitted) for name in names]}
+    bundles = [_bundle(directory / name, selection, admitted and name == names[-1], candidate) for name in names]
+    return {"bundles": bundles, "heads": _heads(directory, selection["dispatchConfiguration"]["witnessKey"], candidate)}
 
 
 def read(packet: Path) -> dict[str, Any]:
