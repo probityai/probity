@@ -36,11 +36,10 @@ from pathlib import Path
 from typing import Any
 
 from ratchet.improve import endpoints as ep
-from ratchet.improve.diagnose import FailureCluster, FailurePoint
 from ratchet.improve.evaluate import CaseLike, EvalReport, RunCase, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity
+from ratchet.improve.failures import FailureCluster, FailurePoint, installed_overfit_screen
 from ratchet.improve.loop import frozen_suite_digest
-from ratchet.improve.overfit import training_literals
 from ratchet.improve.referee import ProcessReferee, Request
 from ratchet.types import Harness
 
@@ -152,7 +151,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 c_train,
                 [cluster],
                 {g.id: cluster.id for g in candidate.guards if g.id not in old},
-                training_literals(p_train.train_traces()),
+                installed_overfit_screen().training_literals(p_train.train_traces()),
                 sorted(c.id for c in train_cases),
                 {"original_decision": found["source"]},
                 f"det:{parent.version}->{candidate.version}:{endpoints.digest[:12]}",
