@@ -1,0 +1,16 @@
+{
+  "allow_dynamic_registration": false,
+  "bound_at": "2026-10-01T00:00:00Z",
+  "catalog_hash": "sha256:7ff19ed04cf206aa87d69faafd48163c4ace2855fa09ddb8d3c3f35e1ca4c8a3",
+  "rug_pull_policy": "deny-and-alert",
+  "tools": [
+    {
+      "description_hash": "sha256:2a953fc4c61b22a86dced2ac33e1082974446bf36191c79fcc38895370690ee0",
+      "endpoint_id": "spiffe://lab.example/broker",
+      "schema_hash": "sha256:7b8783a9d17ea69ca19151353b5a8d476c593b7c117983933c42092c894911c6",
+      "tool_id": "org.probity.files.replace",
+      "tool_name": "replace",
+      "version": "1.0.0"
+    }
+  ]
+}

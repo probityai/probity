@@ -1,0 +1,739 @@
+{
+  "cases": {
+    "declared-tool-not-approved-operation": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "mismatch"
+        },
+        {
+          "axis": "action-run",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-run_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-attempt_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-request_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-target_path",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-content_sha256",
+          "reason": "exact values match",
+          "status": "matched"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "refused",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "effect-bytes-differ": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "matched"
+        },
+        {
+          "axis": "action-run",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-run_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-attempt_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-request_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-target_path",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-content_sha256",
+          "reason": "expected and observed values differ",
+          "status": "mismatch"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "refused",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "effect-target-differs": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "matched"
+        },
+        {
+          "axis": "action-run",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-run_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-attempt_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-request_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-target_path",
+          "reason": "expected and observed values differ",
+          "status": "mismatch"
+        },
+        {
+          "axis": "effect-content_sha256",
+          "reason": "exact values match",
+          "status": "matched"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "refused",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "matched-local-fixture": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "matched"
+        },
+        {
+          "axis": "action-run",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-run_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-attempt_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-request_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-target_path",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-content_sha256",
+          "reason": "exact values match",
+          "status": "matched"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "matched",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "missing-effect": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "matched"
+        },
+        {
+          "axis": "action-run",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect",
+          "reason": "effect observation or action is absent",
+          "status": "missing"
+        }
+      ],
+      "effectSource": null,
+      "outcome": "incomplete",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "missing-grant": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "authorization",
+          "reason": "local verifier result is absent",
+          "status": "missing"
+        },
+        {
+          "axis": "effect",
+          "reason": "effect observation or action is absent",
+          "status": "missing"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "incomplete",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "missing-runtime": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "runtime",
+          "reason": "runtime observation is absent",
+          "status": "missing"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "matched"
+        },
+        {
+          "axis": "action-run",
+          "reason": "required comparison value is absent",
+          "status": "missing"
+        },
+        {
+          "axis": "effect-run_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-attempt_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-request_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-target_path",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-content_sha256",
+          "reason": "exact values match",
+          "status": "matched"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "incomplete",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": null,
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "runtime-digest-drift": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "expected and observed values differ",
+          "status": "mismatch"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "matched"
+        },
+        {
+          "axis": "action-run",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-run_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-attempt_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-request_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-target_path",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-content_sha256",
+          "reason": "exact values match",
+          "status": "matched"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "refused",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    },
+    "wrong-live-instance": {
+      "authorizationInput": "caller-supplied local verifier result; signatures are not rerun",
+      "checks": [
+        {
+          "axis": "manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "instance",
+          "reason": "expected and observed values differ",
+          "status": "mismatch"
+        },
+        {
+          "axis": "system_prompt",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "policy_bundle",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "tool_manifest",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-version",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "model-bytes",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-subject",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "action-tool",
+          "reason": "exact tool membership checked",
+          "status": "matched"
+        },
+        {
+          "axis": "action-run",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-run_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-attempt_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-request_id",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-target_path",
+          "reason": "exact values match",
+          "status": "matched"
+        },
+        {
+          "axis": "effect-content_sha256",
+          "reason": "exact values match",
+          "status": "matched"
+        }
+      ],
+      "effectSource": "same-operator-broker-target-readback",
+      "outcome": "refused",
+      "profile": "probity-declaration-action-reference-v0",
+      "runtimeSource": "same-operator-file-readback-fixture",
+      "scope": "listed comparisons only; authenticity, permission, native validity and custody not established"
+    }
+  },
+  "fixtureKind": "same-operator reference case; no trained model or isolation claim",
+  "limits": [
+    "comparisons are not native validity or consumer admission",
+    "different local keys do not establish independent custody",
+    "no hardware measurement or complete runtime history"
+  ],
+  "native": {
+    "status": "not-run"
+  },
+  "payloadSha256": "sha256:a3f0a8a19cc5a1775799e164b91a9292f1a2bb8224d02ad3f2c47517cff74269"
+}
