@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 from agent_evidence_vectors.run_vectors import ed25519_verify, jcs_dumps
@@ -168,3 +169,17 @@ def _evidence_codes(receipt: dict[str, Any], evidence: dict[str, Any]) -> list[s
 def request_digest(request: Any) -> str:
     """sha256 over the JCS form of a request: the gate's action_ref construction."""
     return sha256_hex(jcs_dumps(request))
+
+
+def idempotency_key(gate_id: str, receipt_id: str) -> str:
+    """Scoped to the trusted gate, the permit and the simulator namespace."""
+    return sha256_hex(jcs_dumps({
+        "profile": "agent-checkout-runner/idempotency-v1",
+        "gate": gate_id,
+        "receipt_id": receipt_id,
+        "provider_namespace": "local-simulator",
+    }))
+
+
+def iso_ms(value: str) -> int:
+    return int(datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc).timestamp() * 1000)
