@@ -2,21 +2,30 @@
 import copy
 import shutil
 import sqlite3
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
 from authority_common import CASES, decode, encode, sha
-from authority_reader import verify_saved
-from authority_run import run
+from authority_reader import verify_saved as read_packet
 from authority_worker import gate
-from lg_common import PacketError
+from lg_common import PacketError, withheld_for, withheld_in
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD = withheld_for(RETAINED / "WITHHELD-SOURCES.json", RETAINED / "fresh-run")
+
+
+def verify_saved(root, pins):
+    """Read a retained-form packet; omitted sources are those the record lists."""
+    return read_packet(root, pins, WITHHELD)
 
 
 @pytest.fixture(scope="module")
-def packet(tmp_path_factory):
-    root = tmp_path_factory.mktemp("authority") / "run"
-    report = run(root, "pytest-exact-source")
+def packet():
+    """Return the eight-case packet retained from the latest successful main run."""
+    root = RETAINED / "fresh-run"
+    report = decode((RETAINED / "fresh-report.json").read_bytes())
     return root, decode((root / "consumer-pins.json").read_bytes()), report
 
 
@@ -154,13 +163,14 @@ def test_retained_original_native_fixture_replays(tmp_path):
     from pathlib import Path
     profile = Path(__file__).resolve().parents[1]
     provenance = decode((profile / "provenance.json").read_bytes())
-    archive = profile / "native-fixture.zip"
+    archive = RETAINED / "native-fixture.zip"
     assert sha(archive.read_bytes()) == provenance["archiveSha256"]
     with zipfile.ZipFile(archive) as retained:
         assert len(retained.namelist()) == provenance["memberCount"]
         assert all((tmp_path / name).resolve().is_relative_to(tmp_path.resolve()) for name in retained.namelist())
         retained.extractall(tmp_path)
-    report = verify_saved(tmp_path, provenance["consumerPins"])
+    withheld = withheld_in(RETAINED / "WITHHELD-SOURCES.json", "native-fixture.zip/")
+    report = read_packet(tmp_path, provenance["consumerPins"], withheld)
     assert report == decode((profile / "recorded-report.json").read_bytes())
 
 

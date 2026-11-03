@@ -7,7 +7,7 @@ from datetime import timezone
 from pathlib import Path
 from typing import Any
 
-from lg_common import decode, encode, read, require, sha
+from lg_common import check_source_files, decode, encode, read, require, sha, withheld_for
 from lg_reader import (
     aware_time,
     checkpoint_identity,
@@ -175,23 +175,20 @@ def recovery(case: dict, value: dict, selected: Any, now: Any) -> str:
     return "incomplete-no-automatic-replay" if name == "restart-pending" else "verified-local-ticket-update"
 
 
-def source_records(root: Path, plan: dict) -> None:
+def source_records(root: Path, plan: dict, withheld: dict[str, str]) -> None:
     """Verify the exact old/new adapter source population and dependency manifest."""
     raw = read(root, "sources-before-run.json")
     require(sha(raw) == plan["sourcesSha256"], "source-manifest-pin")
     sources = decode(raw)
     expected = {"adapter/" + name for name in ("lg_common.py", "lg_reader.py", "lg_run.py", "durable_run.py", "durable_reader.py", "durable_worker.py")} | {"observer/" + name for name in ("aae_ticket.py", "aae_enforce.py", "authorization.py", "crypto.py", "ticket_service.py")}
-    require(set(sources) == expected, "source-population")
-    require({str(p.relative_to(root / "sources")) for p in (root / "sources").rglob("*") if p.is_file()} == expected, "source-file-population")
-    for name, pin in sources.items():
-        require(sha(read(root / "sources", name)) == pin, "source-file-pin")
+    check_source_files(root, sources, expected, withheld, ("source-population", "source-file-population", "source-file-pin"))
     env_raw = read(root, "environment-before-run.json")
     require(sha(env_raw) == plan["environmentSha256"], "environment-pin")
     environment = decode(env_raw)
     require(environment["packages"]["langgraph"]["version"] == "1.0.10" and environment["packages"]["langgraph-checkpoint-sqlite"]["version"] == "3.1.1", "environment-framework")
 
 
-def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
+def verify_saved(root: Path, pins: dict[str, Any], withheld: dict[str, str] | None = None) -> dict[str, Any]:
     """Read bounded selected files without framework, network or SQLite execution."""
     require(not root.is_symlink() and not any(p.is_symlink() for p in root.rglob("*")), "packet-symlink")
     require(set(pins) == {"planSha256", "artifactManifestSha256", "evaluationTime"}, "consumer-pin-fields")
@@ -204,7 +201,7 @@ def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
     same([case["id"] for case in plan["cases"]], list(CASES), "plan-population")
     require(set(manifest) == {name + ".json" for name in CASES}, "artifact-population")
     require({p.name for p in (root / "attempts").iterdir()} == set(manifest), "artifact-file-population")
-    source_records(root, plan)
+    source_records(root, plan, withheld or {})
     selected, now = aware_time(plan["selectedTime"], "selected-time"), aware_time(pins["evaluationTime"], "consumer-time")
     require(now >= selected, "consumer-time")
     records = [verify_attempt(root, plan, manifest, case, selected, now) for case in plan["cases"]]
@@ -227,5 +224,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path)
     args = parser.parse_args()
-    print(json.dumps(verify_saved(args.output, decode(args.pins_file.read_bytes())), indent=2))
+    withheld = withheld_for(args.withheld_sources, args.output) if args.withheld_sources else None
+    print(json.dumps(verify_saved(args.output, decode(args.pins_file.read_bytes()), withheld), indent=2))

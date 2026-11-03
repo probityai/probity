@@ -92,3 +92,35 @@ def project(value: Any) -> Any:
     if isinstance(value, (tuple, list)):
         return [project(item) for item in value]
     return value
+
+
+def withheld_in(file: Path, prefix: str) -> dict[str, str]:
+    """Digests of embedded sources a retained record omits, keyed inside ``prefix``."""
+    pairs = json.loads(read(file.parent, file.name), object_pairs_hook=list)
+    value = dict(pairs)
+    require(len(value) == len(pairs) and list(value) == sorted(value), "withheld-form")
+    require(
+        all(isinstance(d, str) and len(d) == 64 and not set(d) - set("0123456789abcdef") for d in value.values()),
+        "withheld-digest",
+    )
+    return {k[len(prefix):]: d for k, d in value.items() if k.startswith(prefix)}
+
+
+def withheld_for(file: Path, packet: Path) -> dict[str, str]:
+    """Omitted-source digests for a packet stored under the list's own directory."""
+    base = file.resolve().parent
+    require(packet.resolve().is_relative_to(base), "withheld-location")
+    return withheld_in(file, packet.resolve().relative_to(base).as_posix() + "/")
+
+
+def check_source_files(root: Path, sources: dict[str, str], expected: set[str], withheld: dict[str, str], reasons: tuple[str, str, str]) -> None:
+    """Match the embedded sources to the manifest; withheld files need exact digests."""
+    population, files, pin = reasons
+    require(set(sources) == expected, population)
+    present = {str(p.relative_to(root / "sources")) for p in (root / "sources").rglob("*") if p.is_file()}
+    omitted = expected - present
+    require(present <= expected and omitted == {n.removeprefix("sources/") for n in withheld}, files)
+    for name in omitted:
+        require(withheld["sources/" + name] == sources[name], pin)
+    for name in present:
+        require(sha(read(root / "sources", name)) == sources[name], pin)

@@ -1,0 +1,18 @@
+{
+  "durable-fixture.zip/sources/adapter/durable_run.py": "f055e20203bab26d590bb28f88858bf6b1caa02aed5657373e8aaa19dec2d5be",
+  "durable-fixture.zip/sources/adapter/durable_worker.py": "9258052fb66c4e2be37f77329da0094fbc8c3bdc5915a34db6966639ab784a4a",
+  "durable-fixture.zip/sources/adapter/lg_run.py": "8f2dec692d630b3731c76b92c043f91adf32602889ae024c60d20596790b7551",
+  "durable-fixture.zip/sources/observer/aae_ticket.py": "ac12299c5d3bd5de030937d55358031a6ba72f152571ef20c521437fabe54743",
+  "durable-fixture.zip/sources/observer/authorization.py": "35e28320cc6aa344938d9e678efa6de9b803b7b22e2431e8e918a8b57c08e4a9",
+  "durable-fixture.zip/sources/observer/ticket_service.py": "c6df218d6a81c21ab99ff2549b07f0691ff00e4e44b3f7520562d5c90fcdbda7",
+  "durable-run/sources/adapter/durable_run.py": "f055e20203bab26d590bb28f88858bf6b1caa02aed5657373e8aaa19dec2d5be",
+  "durable-run/sources/adapter/durable_worker.py": "9258052fb66c4e2be37f77329da0094fbc8c3bdc5915a34db6966639ab784a4a",
+  "durable-run/sources/adapter/lg_run.py": "c22b5436bd62ef1a3732972d7ba51a29a2c6258163ac5a100c06f88e8ac51267",
+  "durable-run/sources/observer/aae_ticket.py": "0e0655920ee4e2169abb4fcb24993a07adf5d9edea2d2299ac378bace59ee4c4",
+  "durable-run/sources/observer/authorization.py": "002c57628edee8d6a8d7ac0877f785eae9dc526ecc74435dbd96a691922a3ed3",
+  "durable-run/sources/observer/ticket_service.py": "dd4058a79aa51a7dee535e4a47c0bad6bc041cd70f989f6ae85f9dc58a771c88",
+  "fresh-run/sources/adapter/lg_run.py": "c22b5436bd62ef1a3732972d7ba51a29a2c6258163ac5a100c06f88e8ac51267",
+  "fresh-run/sources/observer/aae_ticket.py": "0e0655920ee4e2169abb4fcb24993a07adf5d9edea2d2299ac378bace59ee4c4",
+  "fresh-run/sources/observer/authorization.py": "002c57628edee8d6a8d7ac0877f785eae9dc526ecc74435dbd96a691922a3ed3",
+  "fresh-run/sources/observer/ticket_service.py": "dd4058a79aa51a7dee535e4a47c0bad6bc041cd70f989f6ae85f9dc58a771c88"
+}
