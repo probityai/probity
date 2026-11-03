@@ -63,6 +63,14 @@ def load_withheld(path: Path, directory: Path) -> dict[str, str]:
     return {name.removeprefix(base): digest for name, digest in value.items() if name.startswith(base)}
 
 
+def _check_present(directory: Path, name: str, digest: str) -> None:
+    """Require one present retained source to be a plain file with the selected bytes."""
+    path = directory / name
+    require(not path.is_symlink(), "retained source is a symlink")
+    require(path.resolve().is_relative_to(directory.resolve()), "retained source escapes directory")
+    require(sha(path.read_bytes()) == digest, "retained source bytes differ")
+
+
 def verify_sources(directory: Path, expected: dict[str, str], withheld: dict[str, str] | None = None) -> None:
     """Refuse changes or additions to the retained physical source population.
 
@@ -75,7 +83,4 @@ def verify_sources(directory: Path, expected: dict[str, str], withheld: dict[str
     for name in set(expected) - found:
         require(withheld.get(name) == expected[name], "retained source is absent without a matching withheld digest")
     for name in found:
-        path = directory / name
-        require(not path.is_symlink(), "retained source is a symlink")
-        require(path.resolve().is_relative_to(directory.resolve()), "retained source escapes directory")
-        require(sha(path.read_bytes()) == expected[name], "retained source bytes differ")
+        _check_present(directory, name, expected[name])
