@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from ratchet.improve.failures import OpenOverfitScreen
 from ratchet.types import Guard, Harness, Procedure
-from ratchet.view.evidence import collect, rebuild_candidate, stored_reports
+from ratchet.view.evidence import Evidence, _recompute_overfit, collect, rebuild_candidate, stored_reports
 
 from .fakes import FakeStore, eval_doc, scenario
 
@@ -130,3 +131,26 @@ def test_suite_cases_are_supplied_only_for_the_suite_the_decision_names() -> Non
     assert _matching_suite_cases({}, out) == {} and out.notes == []
     assert _matching_suite_cases({"evaluator": {"components": {"suite_file": "0" * 64}}}, out) == {}
     assert out.notes == ["the installed case suite is not the decision's; held-out runs are not regraded"]
+
+
+def _overfit(doc: dict[str, Any]) -> Evidence:
+    from ..improve.fakes import make_trace
+
+    train = [make_trace("timeout-1", [("payments_refund", {"charge_id": "ch_1"})], "run-a")]
+    copied = Guard("g", "for ch_1", "def check(call, view, history):\n    return None\n")
+    p = parent()
+    out = Evidence()
+    _recompute_overfit(doc, p, p.child(guards=[copied], created_by="improver"), train, OpenOverfitScreen(), out)
+    return out
+
+
+def test_the_overfit_check_is_recomputed_under_the_screen_that_made_it() -> None:
+    doc = {"checks": [{"name": "overfit_lint", "evidence": {"screen": "open-literals"}}]}
+    out = _overfit(doc)
+    assert [h["literal"] for h in out.recomputed["overfit_lint"]["hits"]] == ["ch_1"] and out.notes == []
+
+
+def test_the_overfit_check_is_not_recomputed_under_another_screen() -> None:
+    for evidence in ({"screen": "private"}, {}):  # a record from before screens were named is the legacy screen's
+        out = _overfit({"checks": [{"name": "overfit_lint", "evidence": evidence}]})
+        assert out.recomputed == {} and "not recomputed" in out.notes[0]
