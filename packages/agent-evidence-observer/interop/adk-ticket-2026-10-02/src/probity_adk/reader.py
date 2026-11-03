@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from probity_observer.authorization import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.crypto import VerificationError, digest
-from probity_observer.ticket_service import (
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_state import (
     DOMAIN,
-    _checked,
-    _state_schema,
+    checked_record,
+    state_schema,
     verify_ticket_result,
 )
 
@@ -38,12 +38,33 @@ from .contract import (
     same,
     sha,
     tool_count,
+    withheld_for,
 )
 from .native_defaults import DEFAULTS
 
 
+def check_sources(
+    root: Path, source: dict[str, Any], withheld: dict[str, str]
+) -> None:
+    """Match embedded sources to the manifest; a withheld file needs its exact digest."""
+    present = {
+        str(p.relative_to(root / "sources"))
+        for p in (root / "sources").rglob("*")
+        if p.is_file()
+    }
+    omitted = set(source) - present
+    same(sorted(present), sorted(set(source) - omitted), "source-files")
+    same(sorted(omitted), sorted(name.removeprefix("sources/") for name in withheld), "source-withheld")
+    for name in omitted:
+        same(withheld["sources/" + name], source[name], "source-withheld-digest")
+    for name in present:
+        same(sha(read(root / "sources", name)), source[name], "source-bytes")
+
+
 def selected_packet(
-    root: Path, selected: dict[str, Any]
+    root: Path,
+    selected: dict[str, Any],
+    withheld: dict[str, str] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], datetime]:
     """Authenticate exact files, source manifest and complete selected population."""
     same(
@@ -74,14 +95,7 @@ def selected_packet(
     require(
         isinstance(source, dict) and 100 <= len(source) <= 2000, "source-population"
     )
-    actual = {
-        str(p.relative_to(root / "sources"))
-        for p in (root / "sources").rglob("*")
-        if p.is_file()
-    }
-    same(sorted(actual), sorted(source), "source-files")
-    for name, expected in source.items():
-        same(sha(read(root / "sources", name)), expected, "source-bytes")
+    check_sources(root, source, withheld or {})
     same(
         decode(read(root / "sources", "distribution/versions.json"))["google-adk"],
         VERSION,
@@ -155,8 +169,8 @@ def check_entry(entry: dict[str, Any], run_id: str, reference: datetime) -> None
         GrantPolicy(**entry["policy"]),
         now=reference.replace(microsecond=0),
     )
-    state = _checked(entry["initial"]["receipt"], entry["serviceKey"])
-    _state_schema(state, receipt=True)
+    state = checked_record(entry["initial"]["receipt"], entry["serviceKey"])
+    state_schema(state, receipt=True)
     configuration = digest(
         DOMAIN + "-configuration",
         {key: entry[key] for key in ("request", "policy", "serviceKey")},
@@ -828,8 +842,10 @@ def verify_case(
     }
 
 
-def verify_saved(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
-    plan, artifacts, reference = selected_packet(root, selected)
+def verify_saved(
+    root: Path, selected: dict[str, Any], withheld: dict[str, str] | None = None
+) -> dict[str, Any]:
+    plan, artifacts, reference = selected_packet(root, selected, withheld)
     start = check_plan(plan, reference)
     records = [
         verify_case(entry, artifacts[entry["id"] + ".json"], start, reference)
@@ -862,9 +878,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path)
     args = parser.parse_args()
     try:
-        report = verify_saved(args.output, decode(args.pins_file.read_bytes()))
+        withheld = (
+            withheld_for(args.withheld_sources, args.output)
+            if args.withheld_sources
+            else None
+        )
+        report = verify_saved(
+            args.output, decode(args.pins_file.read_bytes()), withheld
+        )
     except (VerificationError, ValueError, TypeError, KeyError, OSError):
         print(
             encode(
