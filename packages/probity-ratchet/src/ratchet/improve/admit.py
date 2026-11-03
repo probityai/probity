@@ -34,7 +34,7 @@ from ratchet_cases.types import sha256_hex
 
 from ratchet.canonical import CANONICALIZATION, canonical_json
 from ratchet.improve.evaluate import CaseResult, EvalReport
-from ratchet.improve.overfit import Literals, lint
+from ratchet.improve.failures import Literals, OverfitScreen, installed_overfit_screen
 from ratchet.improve.receipt import HUMAN_APPROVAL_TYPE, ReceiptError, verify
 from ratchet.improve.replay import ReplayReport
 from ratchet.types import Harness
@@ -268,10 +268,14 @@ def rates(parent_eval: EvalReport, cand_eval: EvalReport) -> dict[str, Any]:
     return {"parent": of(parent_eval), "candidate": of(cand_eval)}
 
 
-def check_overfit(parent: Harness, candidate: Harness, literals: Literals) -> Check:
-    hits = lint(parent, candidate, literals)
+def check_overfit(
+    parent: Harness, candidate: Harness, literals: Literals, screen: OverfitScreen | None = None
+) -> Check:
+    """The overfit screen's verdict: `screen`, else the installed one, else the open baseline."""
+    screen = screen or installed_overfit_screen()
+    hits = screen.lint(parent, candidate, literals)
     screened = {"ids": len(literals.ids), "amounts": len(literals.amounts), "names": len(literals.names)}
-    return Check("overfit_lint", not hits, {"hits": hits, "screened": screened})
+    return Check("overfit_lint", not hits, {"hits": hits, "screened": screened, "screen": screen.name})
 
 
 def _approval(
@@ -450,6 +454,7 @@ def admit(
     trusted_humans: Mapping[str, Ed25519PublicKey] | None = None,
     context: Mapping[str, Any] | None = None,
     extended: ExtendedChange | None = None,
+    overfit: OverfitScreen | None = None,
 ) -> Decision:
     """`parent_runs` are the parent's two fresh runs (the first over every case, the second at least over
     the held-out cases); `confirm_eval` is the candidate's confirming fresh held-out run, or None before it
@@ -463,7 +468,7 @@ def admit(
         check_fresh(parent_runs, cand_eval, confirm_eval),
         check_no_regression(parent_runs, cand_runs),
         check_benign_twins(cand_runs),
-        check_overfit(parent, candidate, literals),
+        check_overfit(parent, candidate, literals, overfit),
         authority,
         check_cost(parent_runs[0], cand_eval),
     ]

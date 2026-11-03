@@ -28,7 +28,7 @@ from ratchet_cases.types import Trace, sha256_hex
 
 from ratchet.canonical import canonical_json
 from ratchet.improve.candidates import Candidate, Instructions, Proposal, collect
-from ratchet.improve.diagnose import FailureCluster, FailurePoint
+from ratchet.improve.failures import FailureCluster, FailurePoint
 from ratchet.improve.llm import Chat, Meter
 from ratchet.improve.replay import ReplayReport, WalkCache
 from ratchet.types import Harness
@@ -120,7 +120,7 @@ class FixedProposer:
     `changes` maps a failure cluster id to the changes proposed for it; the key `"*"` applies to every
     cluster. A change is the dict `make_candidate` reads: `{"kind": "guard", "description", "source"}`,
     `{"kind": "procedure", "name", "when", "steps"}` or `{"kind": "prompt_edit", "text"}`, each with an
-    optional `"rationale"`. Cluster ids are deterministic (`ratchet.improve.diagnose`), so a declared list
+    optional `"rationale"`. Cluster ids are deterministic (`ratchet.improve.failures`), so a declared list
     names the same clusters on every run. It never repairs a guard and never revises its instructions,
     whose text records the digest of the declared list."""
 
