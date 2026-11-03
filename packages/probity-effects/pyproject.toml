@@ -45,6 +45,7 @@ dev = [
     "agent-evidence-vectors~=0.32.1",
     "langgraph==1.2.19",
     "openai-agents==0.24.0",
+    "ag2==1.2.2",
     "httpx>=0.28,<1",
 ]
 
