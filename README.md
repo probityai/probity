@@ -44,7 +44,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | layer | package | what it is | install |
 | --- | --- | --- | --- |
 | evidence | [agent-evidence-mcp](packages/agent-evidence-mcp/README.md) | offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors | `pip install agent-evidence-mcp==0.2.5` |
-| evidence | [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | `pip install agent-evidence-observer==0.1.3` |
+| evidence | [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | `pip install agent-evidence-observer==0.2.0` |
 | evidence | [agent-evidence-admission](https://github.com/probityai/agent-evidence-vectors) | checks an artifact has the digest its SBOM or attestation names (in agent-evidence-vectors) | `pip install agent-evidence-admission==0.2.0` |
 | evidence | [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | versioned terms for claims about agent execution evidence (in agent-evidence-vectors) | `pip install agent-evidence-vocabulary==0.8.0` |
 | evidence | [agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors) | conformance corpora and reference verifiers | `pip install agent-evidence-vectors==0.32.1` |

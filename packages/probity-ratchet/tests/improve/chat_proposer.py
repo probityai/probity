@@ -14,7 +14,7 @@ from typing import Any
 from ratchet_cases.types import Trace
 
 from ratchet.improve.candidates import Candidate, Instructions, Proposal, collect, make_candidate
-from ratchet.improve.diagnose import FailureCluster, FailurePoint, excerpt
+from ratchet.improve.failures import FailureCluster, FailurePoint, excerpt
 from ratchet.improve.llm import Chat, Meter, ask_json
 from ratchet.improve.replay import ReplayReport, WalkCache
 from ratchet.types import Harness

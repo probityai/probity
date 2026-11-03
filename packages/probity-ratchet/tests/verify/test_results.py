@@ -30,7 +30,7 @@ from ratchet.canonical import canonical_json
 from ratchet.improve.activate import MemoryActivator
 from ratchet.improve.evaluate import evaluate
 from ratchet.improve.evaluator import evaluator_identity
-from ratchet.improve.overfit import Literals
+from ratchet.improve.failures import Literals
 from ratchet.improve.receipt import Signer
 from ratchet.improve.referee import RefereeCore, RefereeParts, Request
 from ratchet.verify import dsse

@@ -4,7 +4,8 @@ from dataclasses import replace
 
 from ratchet_cases.types import Event
 
-from ratchet.improve.diagnose import diagnose, excerpt, locate, normalize, render_event
+from ratchet.improve.diagnose import diagnose
+from ratchet.improve.failures import excerpt, locate, normalize, render_event
 from ratchet.improve.sim import RecordedViews
 
 from .fakes import FakeSimulator, bad_timeout, good_plain, lazy, without_views

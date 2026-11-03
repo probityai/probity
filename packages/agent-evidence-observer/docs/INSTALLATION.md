@@ -1,13 +1,13 @@
 # Install Observer and choose a native reader
 
-The root distribution, `agent-evidence-observer` 0.1.3, is available on
-[PyPI](https://pypi.org/project/agent-evidence-observer/0.1.3/). It requires
+The root distribution, `agent-evidence-observer` 0.2.0, is available on
+[PyPI](https://pypi.org/project/agent-evidence-observer/0.2.0/). It requires
 Python 3.12 or later and uses Apache-2.0 terms. With Python 3.12 and
 [uv](https://docs.astral.sh/uv/), install it in its own environment:
 
 ```sh
 uv venv observer-release-env --python python3.12
-uv pip install --python observer-release-env/bin/python 'agent-evidence-observer==0.1.3'
+uv pip install --python observer-release-env/bin/python 'agent-evidence-observer==0.2.0'
 ```
 
 This installs the root package. The profile distributions below remain separate
@@ -63,7 +63,8 @@ Select packet hashes, reader hashes and keys through the consumer's accepted pro
 The root wheel contains `probity_observer` modules and the Apache license.
 It does not contain the `interop/` scripts, profile wheels, native frameworks,
 model weights, retained experiment packets or selected consumer policies.
-The `inspect` extra supplies the historical Inspect 0.3.281 dependency, not every profile.
+The `inspect` extra installs Inspect 0.3.287 and the hook that [seals each finished log](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSPECT-SEALED-MANIFEST.md).
+The `inspect-historical` extra keeps Inspect 0.3.281 for the profiles qualified on it; the two extras cannot share an environment.
 The current source includes RFC8785 canonicalization as a core dependency.
 
 For maintainers, `scripts/compile-observer-locks.sh` regenerates the affected

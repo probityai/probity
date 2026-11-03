@@ -11,24 +11,17 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable, Iterator
-from dataclasses import dataclass, field
 from typing import Any
 
 from ratchet_cases.types import Trace
 
+from ratchet.improve.failures import Literals, new_text
 from ratchet.types import Harness
 
 _ID = re.compile(r"\b[A-Za-z]{1,6}[_-][A-Za-z0-9_-]*\d[A-Za-z0-9_-]*\b")
 _NAME_KEYS = {"name", "full_name", "customer_name", "email", "to", "from"}
 _AMOUNT_KEY = re.compile(r"cents|amount|total|price", re.IGNORECASE)
 _COMMON_AMOUNTS = {100, 1000}
-
-
-@dataclass
-class Literals:
-    ids: set[str] = field(default_factory=set)
-    amounts: set[int] = field(default_factory=set)
-    names: set[str] = field(default_factory=set)
 
 
 def _walk(value: Any, key: str = "") -> Iterator[tuple[str, Any]]:
@@ -62,21 +55,6 @@ def training_literals(traces: Iterable[Trace]) -> Literals:
                         lit.names.add(value)
     lit.amounts -= _COMMON_AMOUNTS
     return lit
-
-
-def new_text(parent: Harness, candidate: Harness) -> list[tuple[str, str]]:
-    """(where, text) for every piece of text the candidate adds to its parent."""
-    old_g, old_p = {g.id for g in parent.guards}, {p.id for p in parent.procedures}
-    out = [(f"guard {g.id}", f"{g.description}\n{g.source}") for g in candidate.guards if g.id not in old_g]
-    out += [
-        (f"procedure {p.id}", "\n".join([p.name, p.when, *p.steps]))
-        for p in candidate.procedures
-        if p.id not in old_p
-    ]
-    if candidate.system_prompt != parent.system_prompt:
-        added = candidate.system_prompt.removeprefix(parent.system_prompt.rstrip())
-        out.append(("system prompt", added))
-    return out
 
 
 def lint(parent: Harness, candidate: Harness, literals: Literals) -> list[dict[str, str]]:

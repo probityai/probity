@@ -40,10 +40,9 @@ from ratchet.canonical import canonical_json
 from ratchet.improve import wire
 from ratchet.improve.activate import Activation, Activator
 from ratchet.improve.admit import Check, Decision, ExtendedChange, admit, admit_v3, awaiting_confirmation
-from ratchet.improve.diagnose import FailureCluster
 from ratchet.improve.evaluate import CaseLike, EvalReport, RunCase, _one, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity, require_same
-from ratchet.improve.overfit import Literals
+from ratchet.improve.failures import FailureCluster, Literals
 from ratchet.improve.policies import RULING_2, c1_flips, normalized, rebuild
 from ratchet.improve.receipt import Signer, receipt
 from ratchet.improve.replay import GuardRunner, ReplayReport, WalkCache, replay

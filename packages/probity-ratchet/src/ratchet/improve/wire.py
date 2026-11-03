@@ -12,9 +12,8 @@ from typing import Any
 
 from ratchet_cases.types import Cost, Event, Outcome, Trace
 
-from ratchet.improve.diagnose import FailureCluster, FailurePoint
 from ratchet.improve.evaluate import CaseResult, EvalReport
-from ratchet.improve.overfit import Literals
+from ratchet.improve.failures import FailureCluster, FailurePoint, Literals
 from ratchet.types import Guard, Harness, Procedure
 
 Doc = dict[str, Any]
