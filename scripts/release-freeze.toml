@@ -1,0 +1,75 @@
+# Paths that no release may carry. scripts/check-dist-clean.py --freeze reads this file in every
+# release build (release.yml passes `release: true` to python-build.yml) and refuses a wheel or
+# source distribution holding a listed path. Pull-request builds do not read it, so the tree can
+# move these files out in steps while main stays green. An entry ending in `/` names a directory;
+# any other entry names one file. Both match at a path-component boundary at any depth, so one
+# entry covers the wheel layout and the source distribution layout.
+#
+# A path leaves this file only in the change that removes it from the member, never earlier.
+
+[distribution.agent-evidence-observer]
+refuse = [
+    "probity_observer/broker.py",
+    "probity_observer/authorization.py",
+    "probity_observer/admission.py",
+    "probity_observer/protected_dispatch.py",
+    "probity_observer/protected_isolation.py",
+    "probity_observer/protected_probe.py",
+    "probity_observer/ticket_service.py",
+    "probity_observer/aae_dispatch.py",
+    "probity_observer/aae_ticket.py",
+    "probity_observer/boundary_probe.py",
+    "probity_observer/workload_runner.py",
+    "probity_observer/producer_cli.py",
+    "probity_observer/aae_effect_writer.py",
+    "probity_observer/probe_agent.py",
+    "probity_observer/done/harvest.py",
+    "probity_observer/done/strengthen.py",
+    "probity_observer/done/zeroshot.py",
+    "probity_observer/done/prompts/",
+    "probity_observer/done/visible_calls.txt",
+    "probity_observer/done/visible_detect.py",
+    "probity_observer/done/visible_isolate.py",
+    "probity_observer/done/visible_rules.py",
+    "probity_observer/done/visible_runner.py",
+    "probity_observer/done/visible_runner.txt",
+    "probity_observer/done/visible_static.py",
+    "tests/test_aae_dispatch.py",
+    "tests/test_aae_ticket.py",
+    "tests/test_admission.py",
+    "tests/test_authorization.py",
+    "tests/test_dispatch_adversarial.py",
+    "tests/test_dispatch_witness_ports.py",
+    "tests/test_protected_action_demo.py",
+    "tests/test_protected_dispatch.py",
+    "tests/test_protected_isolation.py",
+    "tests/test_ticket_service.py",
+]
+
+[distribution.probity-ratchet]
+refuse = [
+    "ratchet/improve/archive.py",
+    "ratchet/improve/instruction_search.py",
+    "ratchet/improve/propose.py",
+    "ratchet/improve/recall.py",
+    "ratchet/improve/referee_live.py",
+    "ratchet/improve/stochastic.py",
+    "ratchet/improve/run_v3.py",
+    "ratchet/improve/countersign.py",
+    "ratchet/improve/diagnose.py",
+    "ratchet/improve/overfit.py",
+    "ratchet/agent/guards.py",
+    "ratchet/agent/_guard_child.py",
+    "ratchet/export/mcp_gateway.py",
+    "ratchet/export/hookrt.py",
+    "ratchet/bench/",
+    "tests/bench/",
+    "tests/improve/test_diagnose.py",
+    "tests/improve/test_overfit.py",
+    "tests/improve/test_countersign.py",
+    "tests/improve/test_stochastic.py",
+    "tests/agent/test_guards.py",
+    "tests/agent/test_guard_child.py",
+    "tests/export/test_mcp_gateway.py",
+    "tests/export/test_hookrt.py",
+]
