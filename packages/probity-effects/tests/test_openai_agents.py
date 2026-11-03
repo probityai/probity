@@ -50,6 +50,8 @@ def async_order_tools(owner, journal):
 def test_guarded_function_tool_passes(lost_reply_scenario, variant):
     verdict = run_openai_agents_scenario(order_tools, lost_reply_scenario, variant=variant)
     assert verdict.passed, verdict.problems
+    # The owner said the first call of definite-no-effect did nothing, so a second call is the first effect.
+    assert verdict.effects in ((0, 1) if lost_reply_scenario["id"] == "definite-no-effect" else (1,))
 
 
 @pytest.mark.parametrize("variant", OPENAI_AGENTS_VARIANTS)
