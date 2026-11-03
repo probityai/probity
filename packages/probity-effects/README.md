@@ -6,10 +6,10 @@ Keep one effect per agent tool call when its reply is lost: the guard asks the s
 the effect before anything is sent again, records each operation as an `uncertain-effect/v1`
 record, and tests your tools against eight lost-reply scenarios in CI.
 
-It's for teams whose LangGraph or OpenAI Agents SDK agents create orders, move money or open tickets,
-and who cannot afford a retry policy, a resumed thread or a model calling again to repeat the write.
+It's for teams whose LangGraph, OpenAI Agents SDK or AG2 agents create orders, move money or open
+tickets, and who cannot afford a retry policy, a resumed thread or a model calling again to repeat the write.
 
-Install the released package: `pip install probity-effects==0.1.0`.
+Install the released package: `pip install probity-effects==0.2.0`.
 
 ## Quick start
 
@@ -84,6 +84,24 @@ result = await Runner.run(agent, "Order one A-1", context={"thread_id": conversa
 
 Use the same `thread_id` for every run of one conversation.
 
+## In an AG2 agent
+
+```python
+from probity_effects.ag2 import effect_tool
+
+@effect_tool(orders, journal=Journal.open("effects.jsonl"))
+def create_order(sku: str, quantity: int, effect: EffectCall) -> dict:
+    """Create an order."""
+    ...                                    # the same body as above
+
+agent = Agent("orders", config=config, tools=[create_order])
+await agent.ask("Order one A-1", stream=stream, variables={"thread_id": conversation_id})
+```
+
+Asking again on the same stream is the same conversation. Pass a `thread_id` to resume in a new
+process. AG2 turns any tool exception into a tool error for the model, so `on_unknown="raise"` does
+not stop an AG2 run.
+
 ## In CI
 
 ```python
@@ -98,12 +116,14 @@ def test_survives_lost_replies(lost_reply_scenario, variant):
 `pip install probity-effects[testing]` adds the scenarios from agent-evidence-vectors. `make_tools(owner, journal)`
 builds your tools; each scenario runs on four LangGraph paths and is judged by the owner's counts,
 the reference reader's verdict on the record, and the journal's agreement with the owner. For the
-Agents SDK use `OPENAI_AGENTS_VARIANTS` and `run_openai_agents_scenario`, with three paths.
+Agents SDK use `OPENAI_AGENTS_VARIANTS` and `run_openai_agents_scenario`, and for AG2 `AG2_VARIANTS` and
+`run_ag2_scenario`, with three paths each.
 
 ## Status
 
-Version 0.1.0, alpha, on PyPI. The OpenAI Agents SDK adapter here on main reaches PyPI in the next
-release; AG2 follows.
+Version 0.2.0, alpha, with adapters for LangGraph, the OpenAI Agents SDK and AG2. Version 0.1.0 told a
+second caller with the same arguments that a write was committed when it was never sent, if the
+tool had no thread and no `key_from`; 0.2.0 refuses such a call, so upgrade.
 
 ## Documentation
 

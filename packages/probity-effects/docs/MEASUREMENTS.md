@@ -77,3 +77,30 @@ These results depend on the guard. With each change below, and nothing else, the
 
 Reproduce with `uv run python -m pytest tests/test_openai_agents.py` in `packages/probity-effects`;
 `test_control_plain_tool` asserts every plain count and pass total above.
+
+## AG2
+
+Measured on Mon 2 Nov 2026 with ag2 1.2.2 and the same eight scenarios, through `Agent.ask` with a
+scripted model client, so no model is involved. The plain tool is an ordinary `@tool` that posts the
+write with httpx and raises on failure; the guarded tool is `effect_tool` from
+`probity_effects.ag2`. AG2 has no tool retry setting: `RetryMiddleware` retries model calls. Each
+cell is the number of effects the counting owner holds afterwards.
+
+| scenario | plain, one ask | plain, asked again | plain, model calls again | guarded, every path |
+| --- | --- | --- | --- | --- |
+| confirmed | 1 | 1 | 1 | 1 |
+| commit-then-lost-reply | 1 | 2 | 2 | 1 |
+| commit-then-lost-reply-deduplicating | 1 | 1 | 1 | 1 |
+| owner-unreachable-after-lost-reply | 1 | 2 | 2 | 1 |
+| lost-before-commit | 0 | 1 | 1 | 1 |
+| late-commit-after-missed-lookup | 0 | 2 | 2 | 1 |
+| definite-no-effect | 0 | 1 | 1 | 0 or 1 |
+| lease-lost-after-lost-reply | 1 | 2 | 2 | 1 |
+| scenarios passed | 3 of 8 | 4 of 8 | 4 of 8 | 8 of 8 on each of three paths |
+
+The guarded tool's three paths are one ask, a process that stops right after the first send and a
+supervisor that asks again from the journal file with the same `thread_id`, and a model calling
+again. The same three changes make the same 24 runs fail: 7 with no reconcile, 10 with a new thread
+per call, and 8 with an empty journal on resume, all of them the resume path.
+
+Reproduce with `uv run python -m pytest tests/test_ag2.py` in `packages/probity-effects`.

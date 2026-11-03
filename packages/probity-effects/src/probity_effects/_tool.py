@@ -81,11 +81,11 @@ class GuardedBody:
             return dict(bound.arguments)
 
         if self.asynchronous:
-            async def tool(tool_context: Any, /, *args: Any, **kwargs: Any) -> Any:
+            async def tool(tool_context: Any, *args: Any, **kwargs: Any) -> Any:
                 scope, token = read(tool_context)
                 return await self.arun(arguments(args, kwargs), scope=scope, fencing_token=token)
         else:
-            def tool(tool_context: Any, /, *args: Any, **kwargs: Any) -> Any:
+            def tool(tool_context: Any, *args: Any, **kwargs: Any) -> Any:
                 scope, token = read(tool_context)
                 return self.run(arguments(args, kwargs), scope=scope, fencing_token=token)
 

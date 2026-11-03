@@ -10,6 +10,7 @@ exactly the dispatches and lookups the owner saw.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import dataclasses
 import itertools
 import json
@@ -30,6 +31,8 @@ from probity_effects.owner import EffectCall, EffectOwner, Lookup, NoEffect
 LANGGRAPH_VARIANTS = ("default", "retry", "resume", "model-retry")
 #: The framework paths an OpenAI Agents SDK tool is driven through.
 OPENAI_AGENTS_VARIANTS = ("default", "session-resume", "model-retry")
+#: The framework paths an AG2 tool is driven through.
+AG2_VARIANTS = ("default", "reask", "model-retry")
 #: How a tool result says the write is not settled: the SDK's own error text, and the guard's.
 UNSETTLED = ("An error occurred", "outcome unknown", "not run")
 ToolsFactory = Callable[[EffectOwner, Journal], Sequence[Any]]
@@ -158,7 +161,7 @@ class SimulatedStop(BaseException):
     """The process stops between the owner's answer and the journal's note of it."""
 
 
-def _stopping(owner: EffectOwner) -> EffectOwner:
+def _stopping(owner: EffectOwner, signal: Callable[[], Any] | None = None) -> EffectOwner:
     sender = owner.send
     if sender is None:
         raise TypeError("the scenario owner carries a send")
@@ -167,6 +170,8 @@ def _stopping(owner: EffectOwner) -> EffectOwner:
         try:
             sender(call)
         finally:
+            if signal is not None:
+                signal()
             raise SimulatedStop()
 
     return dataclasses.replace(owner, send=send)
@@ -354,3 +359,119 @@ def _agent(tools: Sequence[Any], tool: str | None, arguments: dict[str, Any], va
 
     return Agent(name="scenario", instructions="Perform the operation.", tools=[*tools],
                  model=ScriptedModel([{"responder": respond}] * 8))
+
+
+def run_ag2_scenario(make_tools: ToolsFactory, scenario: dict[str, Any], *, variant: str = "default",
+                     tool: str | None = None, args: dict[str, Any] | None = None) -> Verdict:
+    """Drive the tools ``make_tools(owner, journal)`` builds through one scenario and judge the run.
+
+    ``tool`` and ``args`` work as in :func:`run_langgraph_scenario`. The variants are the paths a lost
+    reply takes in AG2, whose ``RetryMiddleware`` retries model calls only: ``default`` (one ask, and the
+    model finishes after the first tool result), ``reask`` (the process stops right after the first send,
+    and a supervisor asks again on the same stream from the journal file while the write is not settled)
+    and ``model-retry`` (the model calls the tool again while the write is not settled).
+    """
+    with scenario_owner(scenario) as run, tempfile.TemporaryDirectory() as work:
+        path = Path(work) / "journal.jsonl"
+        drive_ag2(make_tools, run, path, variant=variant, tool=tool, args=args)
+        return judge(run, Journal.open(path), variant=variant)
+
+
+def drive_ag2(make_tools: ToolsFactory, run: ScenarioRun, journal_path: Path | None, *, variant: str = "default",
+              tool: str | None = None, args: dict[str, Any] | None = None) -> str:
+    """Run one scenario through ``Agent.ask``; returns the error the run ended with, if any."""
+    if variant not in AG2_VARIANTS:
+        raise ValueError(f"variant is one of {AG2_VARIANTS}")
+    arguments = dict(args if args is not None else run.scenario["operation"]["args"])
+    return asyncio.run(_ag2_asks(make_tools, run, journal_path, variant, tool, arguments))
+
+
+class _AG2Model:
+    """A scripted model client: it calls the tool, then finishes or, if told to, calls again."""
+
+    def __init__(self, tool: str, arguments: dict[str, Any], recalls: int) -> None:
+        self.tool, self.arguments, self.recalls = tool, json.dumps(arguments), recalls
+        self.calls = itertools.count(1)
+        self.unsettled = "the tool was not called"
+
+    async def __call__(self, messages: Sequence[Any], context: Any, **kwargs: Any) -> Any:
+        from ag2.events import (
+            ModelMessage,
+            ModelResponse,
+            ToolCallEvent,
+            ToolCallsEvent,
+            ToolResultsEvent,
+        )
+
+        if isinstance(messages[-1], ToolResultsEvent):
+            self.unsettled = _ag2_unsettled(messages[-1])
+            if not (self.recalls and self.unsettled):
+                message = ModelMessage("done")
+                await context.send(message)
+                return ModelResponse(message)
+            self.recalls -= 1
+        call = ToolCallEvent(name=self.tool, arguments=self.arguments, id=f"call-{next(self.calls)}")
+        return ModelResponse(tool_calls=ToolCallsEvent([call]))
+
+
+def _ag2_unsettled(results: Any) -> str:
+    from ag2.events import TextInput, ToolErrorEvent
+
+    last = results.results[-1]
+    text = "".join(part.content for part in last.result.parts if isinstance(part, TextInput))
+    return text if isinstance(last, ToolErrorEvent) or text.startswith(UNSETTLED) else ""
+
+
+async def _until_stopped(ask: Any, stopped: asyncio.Event) -> None:
+    """Await an ask, and abandon it when the process stops: AG2 does not unwind a stop as an error."""
+    asking, stopping = asyncio.ensure_future(ask), asyncio.ensure_future(stopped.wait())
+    await asyncio.wait({asking, stopping}, return_when=asyncio.FIRST_COMPLETED)
+    stopping.cancel()
+    if not stopped.is_set():
+        await asking
+        return
+    asking.cancel()
+    with contextlib.suppress(asyncio.CancelledError, SimulatedStop):
+        await asking
+    stopped.clear()
+    raise SimulatedStop()
+
+
+async def _ag2_asks(make_tools: ToolsFactory, run: ScenarioRun, journal_path: Path | None, variant: str,
+                    tool: str | None, arguments: dict[str, Any]) -> str:
+    from ag2 import Agent
+    from ag2.stream import MemoryStream
+    from ag2.testing import TestConfig
+
+    class Config(TestConfig):
+        def copy(self) -> Any:
+            return self
+
+        def create(self) -> Any:
+            return model
+
+    asking = variant == "reask"
+    loop, stopped = asyncio.get_running_loop(), asyncio.Event()
+    first_owner = _stopping(run.owner, lambda: loop.call_soon_threadsafe(stopped.set)) if asking else run.owner
+    tools = make_tools(first_owner, Journal.open(journal_path))
+    effect = next((item for item in tools if tool is None or item.name == tool), None)
+    if effect is None:
+        raise ValueError(f"no tool named {tool!r}")
+    model = _AG2Model(effect.name, arguments, 2 if variant == "model-retry" else 0)
+    variables = {"thread_id": "lost-reply-scenario", "fencing_token": run.fencing_token}
+    stream, prompt = MemoryStream(), "perform the operation"
+    for _ in range(3 if asking else 1):
+        try:
+            agent = Agent("scenario", config=Config(), tools=[*tools])
+            await _until_stopped(agent.ask(prompt, stream=stream, variables=variables), stopped)
+        except SimulatedStop:
+            # A new process holds the journal file and the thread id; an in-memory stream did not survive.
+            tools = make_tools(run.owner, Journal.open(journal_path))
+            stream, prompt = MemoryStream(), "the run stopped, try again"
+            continue
+        except Exception as error:  # noqa: BLE001 - the error is the run's result
+            return f"{type(error).__name__}: {error}"
+        if not model.unsettled:
+            return ""
+        prompt = "that did not go through, try again"
+    return model.unsettled
