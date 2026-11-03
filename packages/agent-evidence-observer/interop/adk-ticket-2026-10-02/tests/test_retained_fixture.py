@@ -11,8 +11,8 @@ from probity_adk.reader import verify_saved
 
 RETAINED = Path(__file__).resolve().parents[1] / "retained"
 ARCHIVE = "native-fixture-37058694970.zip"
-# Hash-only form of the archive uploaded by CI run 37058694970: embedded copies of
-# the runtime sources are removed and listed with their digests in WITHHELD-SOURCES.json.
+# Hash-only form of the archive uploaded by CI run 37058694970: embedded runtime
+# sources are removed and listed with their digests in WITHHELD-SOURCES.json.
 RETAINED_SHA256 = "c408fc0615bcdf74acf228bee649fb00b9b1c7881a24ad3eddf10b8efd6bf5b6"
 
 

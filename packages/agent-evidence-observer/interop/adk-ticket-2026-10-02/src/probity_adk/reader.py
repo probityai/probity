@@ -43,10 +43,8 @@ from .contract import (
 from .native_defaults import DEFAULTS
 
 
-def check_sources(
-    root: Path, source: dict[str, Any], withheld: dict[str, str]
-) -> None:
-    """Match embedded sources to the manifest; a withheld file needs its exact digest."""
+def check_sources(root: Path, source: dict[str, Any], withheld: dict[str, str]) -> None:
+    """Match embedded sources to the manifest; withheld files need exact digests."""
     present = {
         str(p.relative_to(root / "sources"))
         for p in (root / "sources").rglob("*")
@@ -54,7 +52,8 @@ def check_sources(
     }
     omitted = set(source) - present
     same(sorted(present), sorted(set(source) - omitted), "source-files")
-    same(sorted(omitted), sorted(name.removeprefix("sources/") for name in withheld), "source-withheld")
+    listed = sorted(name.removeprefix("sources/") for name in withheld)
+    same(sorted(omitted), listed, "source-withheld")
     for name in omitted:
         same(withheld["sources/" + name], source[name], "source-withheld-digest")
     for name in present:
