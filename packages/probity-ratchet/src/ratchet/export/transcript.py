@@ -31,7 +31,6 @@ from typing import Any
 
 from ratchet.export.hook_emit import coding_view
 
-
 # --- transcript parsing -----------------------------------------------------------------------------------
 
 

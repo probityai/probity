@@ -315,7 +315,8 @@ def main(db: str, uri: str | None = None, reset: bool = False) -> int:
     print(f"activation          {r.activation or 'not activated'}")
     print(f"signed by           DEMO key {signer.keyid[:12]} (generated for this run; not the pinned key)")
     print(f"demo public key     {pem}")
-    print(f"guard runtime       {type(runtime).__name__}, required layers: {', '.join(required_layers()) or 'none'}")
+    layers = ", ".join(required_layers()) or "none"
+    print(f"guard runtime       {type(runtime).__name__}, required layers: {layers}")
     print("next, on the decisions above:")
     for line in follow_up(r, db, uri, pem, env):
         print(f"  {line}")

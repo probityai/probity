@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 from ratchet_cases.types import Event
 
-from ratchet.agent.guards import CHILD_PATH, GuardLimits, GuardRuntime
-from ratchet.export import hookrt
+from ratchet.agent.guard_open import OpenGuardRuntime
+from ratchet.export import hook_emit
 from ratchet.export.replay_transcripts import (
     Prefix,
     TranscriptReplayReport,
@@ -15,6 +15,7 @@ from ratchet.export.replay_transcripts import (
     main,
     replay_transcripts,
 )
+from ratchet.export.transcript import recorded_history
 from ratchet.types import Guard
 
 from .synth import Session, hook_event
@@ -64,7 +65,7 @@ def test_prefix_is_a_read_only_window() -> None:
 def test_replay_fires_on_exactly_the_expected_calls(tmp_path: Path) -> None:
     root = corpus(tmp_path)
     guard = Guard("no-rm", "", NO_RM)
-    with GuardRuntime(workers=2) as rt:
+    with OpenGuardRuntime(workers=2) as rt:
         report = replay_transcripts(guard, discover([root]), rt, chunk=2, expect=["a2", "c1"])
     assert report.passed is True and report.missed == [] and report.unexpected == []
     assert (report.sessions, report.calls, report.unreadable, report.malformed_lines) == (3, 5, 0, 0)
@@ -78,7 +79,7 @@ def test_replay_fires_on_exactly_the_expected_calls(tmp_path: Path) -> None:
 
 def test_replay_reports_misses_unexpected_fires_and_errors(tmp_path: Path) -> None:
     root = corpus(tmp_path)
-    with GuardRuntime(workers=1) as rt:
+    with OpenGuardRuntime(workers=1) as rt:
         wrong = replay_transcripts(Guard("no-rm", "", NO_RM), discover([root]), rt, expect=["b1"])
         broken = replay_transcripts(Guard("crash", "", CRASH_ON_RM), discover([root]), rt)
     assert wrong.passed is False and wrong.missed == ["b1"] and wrong.unexpected == ["a2", "c1"]
@@ -90,18 +91,13 @@ def test_replay_reports_misses_unexpected_fires_and_errors(tmp_path: Path) -> No
 def test_replay_shows_the_guard_what_the_live_hook_shows_it(tmp_path: Path) -> None:
     root = corpus(tmp_path)
     path = root / "proj" / "s-1.jsonl"
-    with GuardRuntime(workers=1) as rt:
+    with OpenGuardRuntime(workers=1) as rt:
         report = replay_transcripts(Guard("echo", "", ECHO), [("s-1", path)], rt)
     replayed = {f.call_id: json.loads(f.reason) for f in report.fires}
-    child, lim = CHILD_PATH.read_text(encoding="utf-8"), GuardLimits()
-    spec = hookrt.SandboxSpec(
-        "echo", ECHO, child, lim.cpu_s, lim.memory_mb, lim.call_timeout_s, lim.startup_timeout_s, lim.require
-    )
-    config = hookrt.HookConfig(spec, hookrt._sha256(ECHO), hookrt._sha256(child))
+    config = hook_emit.EmitConfig("echo", hook_emit._sha256(ECHO))
     for call_id, command in (("a1", "ls"), ("a2", "rm -rf build")):
-        live = json.loads(
-            str(hookrt.decide(config, hook_event(path, call_id, command, cwd="/work/repo")).block)
-        )
+        record = hook_emit.make_record(config, hook_event(path, call_id, command, cwd="/work/repo"))
+        live = {"kinds": [e["kind"] for e in recorded_history(record)]}
         assert live["kinds"] == replayed[call_id]["kinds"]
         assert replayed[call_id]["view"] == {"cwd": "/work/repo", "git_branch": "main"}
     assert replayed["a2"]["kinds"] == ["model", "tool_call", "tool_result"]
@@ -113,13 +109,13 @@ def test_replay_counts_unreadable_and_malformed_input(tmp_path: Path) -> None:
     odd = tmp_path / "odd.jsonl"
     odd.write_text("not json\n" + Session().bash("x", "rm a").text(), encoding="utf-8")
     sessions = [*discover([bad, odd]), ("gone", tmp_path / "missing.jsonl")]
-    with GuardRuntime(workers=1) as rt:
+    with OpenGuardRuntime(workers=1) as rt:
         report = replay_transcripts(Guard("no-rm", "", NO_RM), sessions, rt)
     assert (report.unreadable, report.sessions, report.malformed_lines, len(report.fires)) == (2, 1, 1, 1)
 
 
 def test_summary_carries_counts_and_never_content(tmp_path: Path) -> None:
-    with GuardRuntime(workers=1) as rt:
+    with OpenGuardRuntime(workers=1) as rt:
         report = replay_transcripts(
             Guard("no-rm", "", NO_RM), discover([corpus(tmp_path)]), rt, expect=["a2"]
         )
@@ -134,7 +130,7 @@ def test_summary_carries_counts_and_never_content(tmp_path: Path) -> None:
 
 def test_progress_is_reported_after_each_batch(tmp_path: Path) -> None:
     seen: list[int] = []
-    with GuardRuntime(workers=1) as rt:
+    with OpenGuardRuntime(workers=1) as rt:
         replay_transcripts(
             Guard("no-rm", "", NO_RM),
             discover([corpus(tmp_path)]),

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import stat
 import subprocess
 import sys
@@ -10,17 +11,18 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from ratchet_cases.types import Event, ToolCall, sha256_hex
+from ratchet_cases.types import sha256_hex
 
-from ratchet.agent.guards import CHILD_PATH, GuardLimits, GuardRuntime
-from ratchet.export import hookrt
+from ratchet.agent.guard_api import GuardLimits
+from ratchet.export import claude_code, hook_emit
 from ratchet.export.claude_code import (
-    HEADER_KEYS,
-    RUNTIME_PATH,
+    EMIT_HEADER_KEYS,
+    EMIT_RUNTIME_PATH,
     ExportError,
     admitted_guard,
     export_hook,
     harness_from_json,
+    hook_body,
     main,
     public_key,
     py_literal,
@@ -28,10 +30,9 @@ from ratchet.export.claude_code import (
     render_hook,
     settings_entry,
     text_sha256,
-    tuple_literal,
     verify_hook,
 )
-from ratchet.export.hookrt import parse_transcript
+from ratchet.export.transcript import parse_transcript, recorded_history
 from ratchet.improve.admit import Check, Decision
 from ratchet.improve.receipt import Signer, receipt
 from ratchet.types import Guard, Harness
@@ -125,25 +126,26 @@ def test_py_literal_is_exact(text: str) -> None:
     assert py_literal("a\nb") == 'r"""a\nb"""'
     assert py_literal('x\n"""') == "r'''x\n\"\"\"'''"
     assert py_literal("one line") == '"one line"'
-    assert tuple_literal([]) == "()" and tuple_literal(["a"]) == '("a",)'
-    assert tuple_literal(["a", "b"]) == '("a", "b")'
 
 
 def render(signer: Signer, source: str = NO_RM, limits: GuardLimits | None = None) -> str:
     h = harness(source)
     guard, prov = admitted_guard(h, "no-rm", receipt(decision(h), signer), keys(signer))
-    return render_hook(guard, prov, limits)
+    return render_hook(guard, prov, limits or GuardLimits(require=()))
 
 
 def test_rendered_hook_carries_and_matches_its_header(signer: Signer) -> None:
     text = render(signer)
     header = verify_hook(text)
-    assert set(header) == set(HEADER_KEYS)
-    assert header["sandbox_child_sha256"] == text_sha256(CHILD_PATH.read_text(encoding="utf-8"))
-    assert header["hook_runtime_sha256"] == text_sha256(RUNTIME_PATH.read_text(encoding="utf-8"))
-    assert header["sandbox_require"] == "rlimits,netns,seccomp,landlock"
+    assert set(header) == set(EMIT_HEADER_KEYS)
+    assert header["hook_kind"] == "emit"
+    assert header["hook_runtime_sha256"] == text_sha256(EMIT_RUNTIME_PATH.read_text(encoding="utf-8"))
     assert text.startswith("#!/usr/bin/env python3\n")
-    assert read_header(render(signer, limits=GuardLimits(require=())))["sandbox_require"] == "none"
+
+
+def test_emit_hook_refuses_required_isolation(signer: Signer) -> None:
+    with pytest.raises(ExportError, match="enforces nothing"):
+        render(signer, limits=GuardLimits(require=("seccomp",)))
 
 
 def test_verify_hook_catches_every_kind_of_edit(signer: Signer) -> None:
@@ -151,10 +153,8 @@ def test_verify_hook_catches_every_kind_of_edit(signer: Signer) -> None:
     with pytest.raises(ExportError, match="guard_sha256"):
         verify_hook(text.replace('startswith("rm ")', 'startswith("rmdir ")'))
     with pytest.raises(ExportError, match="hook_runtime_sha256"):
-        verify_hook(text.replace('GUARD_ERROR_REASON = "guard error"', 'GUARD_ERROR_REASON = "ok"'))
-    with pytest.raises(ExportError, match="sandbox_child_sha256"):
-        verify_hook(text.replace('"statistics",', '"statistics", "os",', 1))
-    head = read_header(text)
+        verify_hook(text.replace('RECORDS_DIR = "ratchet-records"', 'RECORDS_DIR = "elsewhere"'))
+    head = read_header(text, EMIT_HEADER_KEYS)
     with pytest.raises(ExportError, match="GUARD_SHA256"):
         verify_hook(text.replace(f'GUARD_SHA256 = "{head["guard_sha256"]}"', f'GUARD_SHA256 = "{"0" * 64}"'))
     with pytest.raises(ExportError, match="RUNTIME_SHA256"):
@@ -166,61 +166,62 @@ def test_verify_hook_catches_every_kind_of_edit(signer: Signer) -> None:
     with pytest.raises(ExportError, match="missing"):
         verify_hook(text.replace("# decided_at:", "# decided:"))
     with pytest.raises(ExportError, match="markers"):
-        verify_hook(text.replace("# <<< ratchet hook runtime <<<", ""))
+        verify_hook(text.replace(hook_emit.RUNTIME_END, ""))
+    with pytest.raises(ExportError, match="no hook_kind"):
+        verify_hook(text.replace("# hook_kind:", "# kind:"))
+    with pytest.raises(ExportError, match="no hook body 'enforce'"):
+        verify_hook(text.replace("# hook_kind: emit", "# hook_kind: enforce"))
 
 
-def run_hook_file(path: Path, event: dict[str, Any]) -> subprocess.CompletedProcess[str]:
+def run_hook_file(path: Path, event: dict[str, Any], records: Path) -> subprocess.CompletedProcess[str]:
+    env = {**os.environ, hook_emit.RECORDS_ENV: str(records)}
     return subprocess.run(
-        [sys.executable, str(path)], input=json.dumps(event), capture_output=True, text=True, timeout=60
+        [sys.executable, str(path)],
+        input=json.dumps(event),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=env,
     )
 
 
-def test_installed_hook_decides_like_the_guard_runtime(signer: Signer, tmp_path: Path) -> None:
+def test_installed_hook_records_and_allows(signer: Signer, tmp_path: Path) -> None:
     h = harness()
     out = tmp_path / "hooks" / "ratchet_no_rm.py"
-    export_hook(h, "no-rm", receipt(decision(h), signer), keys(signer), out)
+    export_hook(h, "no-rm", receipt(decision(h), signer), keys(signer), out, GuardLimits(require=()))
     assert out.stat().st_mode & stat.S_IXUSR
     transcript = Session().prompt("tidy up").bash("c1", "ls").result("c1", "a b").bash("c2", "rm -rf a")
     path = transcript.write(tmp_path / "s.jsonl")
+    records = tmp_path / "records"
 
-    blocked = run_hook_file(out, hook_event(path, "c2", "rm -rf a"))
-    assert blocked.returncode == 2
-    reason = json.loads(blocked.stdout)["hookSpecificOutput"]["permissionDecisionReason"]
-    assert reason == "blocked by guard no-rm: rm is not allowed (3 earlier events)"
-    assert blocked.stderr == reason + "\n"
-    history = [
-        Event(e["seq"], e["kind"], e["payload"], e["ts"])
-        for e in parse_transcript(transcript.text().splitlines()).events[:3]
-    ]
-    with GuardRuntime(workers=1) as rt:
-        direct = rt.check(h.guards[0], ToolCall("Bash", {"command": "rm -rf a"}, "c2"), {}, history)
-    assert reason == f"blocked by guard no-rm: {direct.reason}"
-
-    allowed = run_hook_file(out, hook_event(path, "c1", "ls"))
-    assert (allowed.returncode, allowed.stdout, allowed.stderr) == (0, "", "")
+    done = run_hook_file(out, hook_event(path, "c2", "rm -rf a"), records)
+    assert (done.returncode, done.stdout, done.stderr) == (0, "", "")
+    [line] = (records / "00000000-0000-4000-8000-000000000001.jsonl").read_text().splitlines()
+    record = json.loads(line)
+    assert record["call"] == {
+        "name": "Bash",
+        "args": {"command": "rm -rf a", "description": "run"},
+        "call_id": "c2",
+    }
+    assert record["integrity_error"] is None and record["error"] is None
+    assert record["guard_sha256"] == text_sha256(NO_RM)
+    expected = parse_transcript(transcript.text().splitlines()).events[:3]
+    assert recorded_history(record) == expected
 
 
-@pytest.mark.parametrize(
-    ("old", "new", "message"),
-    [
-        ('startswith("rm ")', 'startswith("never ")', "guard source does not match its recorded digest"),
-        (
-            'GUARD_ERROR_REASON = "guard error"',
-            'GUARD_ERROR_REASON = "ok"',
-            "hook runtime does not match its recorded digest",
-        ),
-        ("# <<< ratchet hook runtime <<<", "", "hook runtime does not match its recorded digest"),
-        ('"statistics",', '"statistics", "os",', "sandbox child does not match its recorded digest"),
-    ],
-)
-def test_tampered_hook_denies_every_call(
-    signer: Signer, tmp_path: Path, old: str, new: str, message: str
-) -> None:
+def test_tampered_or_broken_hook_still_allows(signer: Signer, tmp_path: Path) -> None:
     path = tmp_path / "hook.py"
-    path.write_text(render(signer).replace(old, new, 1), encoding="utf-8")
-    result = run_hook_file(path, hook_event(None, "c", "ls"))
-    assert result.returncode == 2
-    assert message in result.stderr
+    path.write_text(render(signer).replace('RECORDS_DIR = "ratchet-records"', 'RECORDS_DIR = "x"'), "utf-8")
+    records = tmp_path / "records"
+    done = run_hook_file(path, hook_event(None, "c", "ls"), records)
+    assert (done.returncode, done.stdout) == (0, "")
+    record = json.loads((records / "00000000-0000-4000-8000-000000000001.jsonl").read_text())
+    assert record["integrity_error"] == "hook runtime does not match its recorded digest"
+    (tmp_path / "blocker").write_text("a file, not a directory")
+    done = run_hook_file(path, hook_event(None, "c", "ls"), tmp_path / "blocker")
+    assert done.returncode == 0 and "not recorded" in done.stderr
+    bad = subprocess.run([sys.executable, str(path)], input="[]", capture_output=True, text=True, timeout=60)
+    assert bad.returncode == 0 and "not a JSON object" in bad.stderr
 
 
 def test_generated_hook_is_lint_and_format_clean(signer: Signer, tmp_path: Path) -> None:
@@ -231,6 +232,39 @@ def test_generated_hook_is_lint_and_format_clean(signer: Signer, tmp_path: Path)
             [sys.executable, "-m", "ruff", *args], capture_output=True, text=True, check=False
         )
         assert done.returncode == 0, done.stdout + done.stderr
+
+
+class _Body:
+    kind = "test-body"
+
+    def render(self, guard: Guard, provenance: Any, limits: GuardLimits) -> str:
+        return f"# hook_kind: {self.kind}\n# guard: {guard.id} {','.join(limits.require)}\n"
+
+    def verify(self, text: str) -> dict[str, str]:
+        return {"hook_kind": self.kind, "verified": "yes"}
+
+
+class _EntryPoint:
+    name = "test-body"
+
+    def load(self) -> Any:
+        return _Body
+
+
+def test_hook_bodies_come_from_the_entry_point_group(signer: Signer, monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake(group: str) -> list[_EntryPoint]:
+        assert group == "ratchet.hooks"
+        return [_EntryPoint()]
+
+    monkeypatch.setattr(claude_code, "entry_points", fake)
+    h = harness()
+    guard, prov = admitted_guard(h, "no-rm", receipt(decision(h), signer), keys(signer))
+    text = render_hook(guard, prov, GuardLimits(require=("seccomp",)), "test-body")
+    assert text == "# hook_kind: test-body\n# guard: no-rm seccomp\n"
+    assert verify_hook(text) == {"hook_kind": "test-body", "verified": "yes"}
+    assert hook_body().kind == "emit"
+    with pytest.raises(ExportError, match="installed: emit, test-body"):
+        hook_body("missing")
 
 
 def test_settings_entry_blocks_when_the_hook_cannot_start() -> None:
@@ -270,11 +304,10 @@ def test_command_line_exports_and_verifies(
     assert main([*args, "--out", ".claude/hooks/no_rm.py", "--require", ""]) == 0
     printed = capsys.readouterr().out
     assert '"${CLAUDE_PROJECT_DIR}/.claude/hooks/no_rm.py"' in printed
-    assert read_header((tmp_path / ".claude/hooks/no_rm.py").read_text())["sandbox_require"] == "none"
     assert main(["--verify", ".claude/hooks/no_rm.py"]) == 0
     assert json.loads(capsys.readouterr().out)["guard_id"] == "no-rm"
     absolute = tmp_path / "abs.py"
-    assert main([*args, "--out", str(absolute)]) == 0
+    assert main([*args, "--out", str(absolute), "--require", ""]) == 0
     assert f'"{absolute}"' in capsys.readouterr().out
 
 
@@ -284,6 +317,9 @@ def test_command_line_refuses(signer: Signer, tmp_path: Path, monkeypatch: pytes
     assert main(args) == 1
     assert main([*args, "--out", "h.py"]) == 1
     assert main([*args[:-1], "abcd", "--out", "h.py"]) == 1
+    good = write_inputs(tmp_path, signer)
+    assert main([*good, "--out", "h.py", "--require", "netns"]) == 1
+    assert main([*good, "--out", "h.py", "--require", "", "--hook", "nope"]) == 1
     assert not (tmp_path / "h.py").exists()
     with pytest.raises(ExportError):
         public_key("zz")
@@ -292,32 +328,3 @@ def test_command_line_refuses(signer: Signer, tmp_path: Path, monkeypatch: pytes
 def test_harness_round_trips_through_json() -> None:
     h = harness()
     assert harness_from_json(json.loads(json.dumps(asdict(h)))) == h
-
-
-def test_decide_starts_and_reuses_the_session_server(signer: Signer, tmp_path: Path) -> None:
-    h = harness()
-    out = tmp_path / "hook.py"
-    prov = export_hook(h, "no-rm", receipt(decision(h), signer), keys(signer), out)
-    lim = GuardLimits()
-    child = CHILD_PATH.read_text(encoding="utf-8")
-    spec = hookrt.SandboxSpec(
-        "no-rm",
-        NO_RM,
-        child,
-        lim.cpu_s,
-        lim.memory_mb,
-        lim.call_timeout_s,
-        lim.startup_timeout_s,
-        lim.require,
-    )
-    runtime = RUNTIME_PATH.read_text(encoding="utf-8")
-    cfg = hookrt.HookConfig(spec, prov.guard_sha256, text_sha256(child), text_sha256(runtime), str(out))
-    path = Session().bash("c1", "ls").result("c1", "a").bash("c2", "rm -rf a").write(tmp_path / "s.jsonl")
-    event = hook_event(path, "c2", "rm -rf a")
-    first = hookrt.decide(cfg, event)
-    assert first == hookrt.decide(cfg, event, use_server=False)
-    assert first.block == "rm is not allowed (3 earlier events)"
-    directory = hookrt.socket_dir()
-    assert directory is not None
-    assert (directory / f"{hookrt.server_key(cfg)}.sock").exists()
-    assert hookrt.decide(cfg, hook_event(path, "c1", "ls")) == hookrt.Verdict(None)

@@ -101,7 +101,11 @@ def evaluate(code: Any, call: ToolCall, view: Any, history: list[Event], timeout
     except GuardTimeout:
         return {"block": None, "error": "timeout", "guard_s": time.perf_counter() - started}
     except BaseException as exc:
-        return {"block": None, "error": f"{type(exc).__name__}: {exc}"[:500], "guard_s": time.perf_counter() - started}
+        return {
+            "block": None,
+            "error": f"{type(exc).__name__}: {exc}"[:500],
+            "guard_s": time.perf_counter() - started,
+        }
     finally:
         signal.setitimer(signal.ITIMER_PROF, 0)
     elapsed = time.perf_counter() - started
