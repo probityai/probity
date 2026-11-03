@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 (unreleased)
+## 0.4.0 (2026-11-03)
 
 The verifier now judges four corpora of agent-evidence-vectors, so the Action's reference stage can report a count
 over them instead of `0 of M`. [Reference routes](docs/corpus-routes.md) states what each check means.
