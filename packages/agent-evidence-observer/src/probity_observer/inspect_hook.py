@@ -38,7 +38,7 @@ def _seal_if_missing(location: str) -> None:
     description="Seals each finished log into a detached manifest of execution and results digests.",
 )
 class SealedManifestHooks(Hooks):
-    """Writes ``<log>.sealed.json`` beside every finished log."""
+    """Writes ``<log>.sealed`` beside every finished log."""
 
     def enabled(self) -> bool:
         return os.environ.get(SWITCH, "").strip().lower() not in OFF_VALUES

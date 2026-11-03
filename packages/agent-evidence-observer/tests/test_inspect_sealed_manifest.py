@@ -162,7 +162,7 @@ def test_a_real_mockllm_run_writes_a_manifest_beside_the_log_through_the_entry_p
     location = _run(tmp_path, epochs=2)
     manifest = json.loads(binding.manifest_path(location).read_text(encoding="utf-8"))
 
-    assert binding.manifest_path(location).name == Path(location).name + ".sealed.json"
+    assert binding.manifest_path(location).name == Path(location).name + ".sealed"
     assert manifest["schema"] == binding.SCHEMA
     assert manifest["status"] == "success"
     assert manifest["counts"] == {"samples_in_log": 4, "samples_with_error": 0, "dataset_samples": 2,
@@ -175,6 +175,14 @@ def test_a_real_mockllm_run_writes_a_manifest_beside_the_log_through_the_entry_p
     assert "execution-truth" in manifest["doesNotAssert"]
     result = binding.verify(location)
     assert result is not None and result.established
+
+
+def test_inspect_does_not_list_the_manifest_as_a_log(tmp_path: Path) -> None:
+    from inspect_ai.log import list_eval_logs
+
+    location = _run(tmp_path)
+    assert binding.manifest_path(location).exists()
+    assert [Path(info.name).name for info in list_eval_logs(str(tmp_path / "logs"))] == [Path(location).name]
 
 
 def test_the_hook_does_not_write_into_the_log(tmp_path: Path) -> None:
@@ -208,7 +216,7 @@ def test_inspect_eval_cli_with_the_extra_writes_the_manifest(tmp_path: Path) -> 
     done = subprocess.run(command, capture_output=True, text=True, check=False, timeout=240, cwd=tmp_path)
     assert done.returncode == 0, done.stderr
     written = sorted(path.name for path in logs.iterdir())
-    assert len(written) == 2 and written[1] == written[0] + ".sealed.json"
+    assert len(written) == 2 and written[1] == written[0] + ".sealed"
     result = binding.verify(str(logs / written[0]))
     assert result is not None and result.established
 

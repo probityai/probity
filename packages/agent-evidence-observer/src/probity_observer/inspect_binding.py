@@ -39,7 +39,8 @@ import rfc8785
 SCHEMA = "agent-evidence-observer/inspect-sealed-manifest/v1"
 EXECUTION_COVER = "agent-evidence-observer/inspect-execution-cover/v1"
 RESULTS_COVER = "agent-evidence-observer/inspect-results-cover/v1"
-MANIFEST_SUFFIX = ".sealed.json"
+# Not .json or .eval: Inspect lists any such name that starts like a log as a log.
+MANIFEST_SUFFIX = ".sealed"
 
 EXECUTION_EVAL_FIELDS: tuple[str, ...] = (
     "eval_id", "run_id", "created", "task", "task_id", "task_version", "task_file",
@@ -213,7 +214,7 @@ def build_manifest(location: str, log: Mapping[str, Any], sealed_at: str | None 
 
 
 def seal(location: str) -> dict[str, Any] | None:
-    """Seal a finished log into ``<log>.sealed.json`` beside it and return the manifest.
+    """Seal a finished log into ``<log>.sealed`` beside it and return the manifest.
 
     Returns None for a remote location, which is left unsealed: no manifest means nothing
     was captured. Raises on a local log it cannot read or a manifest it cannot write.
