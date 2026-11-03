@@ -32,7 +32,7 @@ Every attempt output contains its normalized record without its own `output` ref
 From this directory, run the native example with:
 
 ```sh
-python -m pip install -e '.[test]' -e '../..[inspect]'
+python -m pip install -e '.[test]' -e '../..[inspect-historical]'
 python inspect_demo.py native-run-001
 ```
 

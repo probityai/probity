@@ -20,7 +20,7 @@ The A2A child retains six declared attempts: five starts, two complete/scored (o
 From the repository root:
 
 ```sh
-python -m pip install -e '.[inspect]' -e 'interop/a2a-native-2026-10-02[test]' pytest==9.1.1 hypothesis==6.168.3
+python -m pip install -e '.[inspect-historical]' -e 'interop/a2a-native-2026-10-02[test]' pytest==9.1.1 hypothesis==6.168.3
 python -m pytest -q interop/five-tier-v0-2026-10-02/tests
 # The output folder must not exist. The process-group envelope is an outer limit.
 timeout --signal=TERM --kill-after=5s 185s python interop/five-tier-v0-2026-10-02/run.py fresh-v0-run

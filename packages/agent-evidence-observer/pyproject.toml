@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-evidence-observer"
-version = "0.1.3"
+version = "0.2.0"
 description = "Record brokered agent writes and check selected native reports offline"
 readme = "README.md"
 license = "Apache-2.0"
@@ -33,7 +33,8 @@ Issues = "https://github.com/probityai/probity/issues"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "hypothesis>=6,<7", "jsonschema>=4,<5"]
-inspect = ["inspect-ai==0.3.281"]
+inspect = ["inspect-ai==0.3.287"]
+inspect-historical = ["inspect-ai==0.3.281"]
 witness = ["jcs-admit~=0.1.0"]
 cover = ["coverage>=7.10,<8"]
 done = [
@@ -53,6 +54,9 @@ probity-done = "probity_observer.done.cli:main"
 [project.entry-points."probityai.cli_subcommands"]
 done = "probity_observer.done.cli:register"
 
+[project.entry-points.inspect_ai]
+agent_evidence_observer = "probity_observer.inspect_hook"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -67,6 +71,11 @@ pytest_plugins = ["src/probity_observer/done/pytest_plugins/", "*/probity-plugin
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.uv]
+# Two Inspect pins cannot share one environment: the historical profiles keep the release they were
+# qualified on, the inspect extra follows the current one.
+conflicts = [[{ extra = "inspect" }, { extra = "inspect-historical" }]]
 
 [tool.uv.sources]
 # The done extra takes probity-verify from this repository, so a source checkout tests the verifier it ships beside.
