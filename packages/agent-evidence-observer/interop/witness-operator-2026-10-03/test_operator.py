@@ -222,18 +222,19 @@ class TestOperator:
             with pytest.raises(VerificationError, match="ledger is shorter than the retained witness head"):
                 case.store.export()
 
-        def test_resigned_fork_refuses_retained_prefix(self, retained_case: Case) -> None:
-            case = retained_case
-            case.store.handle(request_bytes("checkpoint", BEGIN))
-            case.store.handle(request_bytes("checkpoint", FULL))
+        def test_resigned_fork_refuses_retained_prefix(self, case: Case) -> None:
+            def register(tag: str) -> None:
+                for interval in ("first", "second"):
+                    raw = write_begin(case.root / (tag + interval + ".jsonl"), case.observer, interval)
+                    case.store.handle(request_bytes("checkpoint", raw))
+
+            register("authentic-")
             retained = case.store.head
             case.store.ledger.write_bytes(b"")
-            fresh = OperatorStore(case.config, case.retained, sha(case.retained.read_bytes()))
-            case.store = fresh
-            other_begin, other_full = retained_histories("failed-after")
-            case.store.handle(request_bytes("checkpoint", other_begin))
-            case.store.handle(request_bytes("checkpoint", other_full))
-            assert case.store.head["count"] == retained["count"]
+            case.store = OperatorStore(case.config, case.retained, sha(case.retained.read_bytes()))
+            register("alternate-")
+            assert case.store.head["count"] == retained["count"] == 2
+            assert case.store.head["head"] != retained["head"]
             with pytest.raises(VerificationError, match="ledger does not extend the retained witness head"):
                 case.reopen(retained)
 
