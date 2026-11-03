@@ -14,8 +14,9 @@ from probity_observer.history import verify_checkpoint
 from probity_observer.ledger import verify_ledger_head
 from probity_witness_operator.protocol import require
 
-from .protocol import BUNDLE_FILES, FORMAT, checkpoint_prefix, journal_entries
+from .protocol import BUNDLE_FILES, checkpoint_prefix, journal_entries
 
+RUN_FORMAT = "probity-protected-operator-run-v0"
 BUNDLES = ("bundle", "after-restart-bundle")
 
 
@@ -77,10 +78,10 @@ def read(packet: Path) -> dict[str, Any]:
         unsigned; every checked record carries signatures verified here.
     """
     report = load(packet / "report.json")
-    require(report["format"] == FORMAT and report["status"] == "passed", "retained run report differs")
+    require(report["format"] == RUN_FORMAT and report["status"] == "passed", "retained run report differs")
     names = sorted(path.name for path in (packet / "cases").iterdir())
     require(names == sorted(report["cases"]), "case population differs from the run report")
-    return {"profile": FORMAT, "witnessScope": report["witnessScope"], "evidenceVantage": report["evidenceVantage"],
+    return {"profile": RUN_FORMAT, "witnessScope": report["witnessScope"], "evidenceVantage": report["evidenceVantage"],
             "cases": {name: _case(packet / "cases" / name) for name in names}}
 
 
