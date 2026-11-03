@@ -395,7 +395,13 @@ class _AG2Model:
         self.unsettled = "the tool was not called"
 
     async def __call__(self, messages: Sequence[Any], context: Any, **kwargs: Any) -> Any:
-        from ag2.events import ModelMessage, ModelResponse, ToolCallEvent, ToolCallsEvent, ToolResultsEvent
+        from ag2.events import (
+            ModelMessage,
+            ModelResponse,
+            ToolCallEvent,
+            ToolCallsEvent,
+            ToolResultsEvent,
+        )
 
         if isinstance(messages[-1], ToolResultsEvent):
             self.unsettled = _ag2_unsettled(messages[-1])

@@ -14,7 +14,13 @@ from ag2.testing import TestConfig
 from agent_evidence_vectors import uncertaineffect_runtime
 from probity_effects import EffectCall, EffectOutcomeUnknown, EffectOwner, Lookup
 from probity_effects.ag2 import effect_tool
-from probity_effects.testing import AG2_VARIANTS, drive_ag2, lost_reply_scenarios, run_ag2_scenario, scenario_owner
+from probity_effects.testing import (
+    AG2_VARIANTS,
+    drive_ag2,
+    lost_reply_scenarios,
+    run_ag2_scenario,
+    scenario_owner,
+)
 
 
 def order_tools(owner, journal):
