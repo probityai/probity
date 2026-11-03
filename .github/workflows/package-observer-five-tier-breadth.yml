@@ -18,6 +18,10 @@ on:
       - '.github/workflows/package-observer-five-tier-breadth.yml'
 permissions:
   contents: read
+
+env:
+  # These profiles were qualified on the log directories Inspect writes by itself.
+  AGENT_EVIDENCE_INSPECT_SEAL: 'off'
 defaults:
   run:
     working-directory: packages/agent-evidence-observer
