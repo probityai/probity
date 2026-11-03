@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tomllib
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -99,18 +100,22 @@ def test_every_member_has_its_own_publish_job_in_environment_pypi():
         assert "name: pypi\n" in body and f"name: python-distributions-{name}\n" in body
 
 
-def test_a_package_that_is_its_own_workspace_brings_its_members(tmp_path):
-    _member(tmp_path, "probity-ratchet", "probity-ratchet", "0.2.0", ["probity-ratchet-cases==0.3.0"])
+def test_a_member_that_declares_its_own_workspace_is_refused(tmp_path):
+    _member(tmp_path, "probity-ratchet", "probity-ratchet", "0.2.0", [])
     manifest = tmp_path / "packages/probity-ratchet/pyproject.toml"
     manifest.write_text(manifest.read_text() + '\n[tool.uv.workspace]\nmembers = ["cases"]\n')
-    cases = tmp_path / "packages/probity-ratchet/cases"
-    cases.mkdir()
-    (cases / "pyproject.toml").write_text('[project]\nname = "probity-ratchet-cases"\nversion = "0.3.0"\n')
-    table = workspace.members(tmp_path)
-    assert table["probity-ratchet-cases"].directory == "packages/probity-ratchet/cases"
-    assert workspace.changed(["packages/probity-ratchet/cases/x.py"], tmp_path) == {
-        "probity-ratchet": True, "probity-ratchet-cases": True}
-    assert workspace.requires("probity-ratchet", tmp_path) == ["packages/probity-ratchet/cases", "packages/probity-ratchet"]
+    with pytest.raises(SystemExit, match="declares its own uv workspace"):
+        workspace.members(tmp_path)
+
+
+def test_the_root_workspace_holds_every_member_but_the_one_with_its_own_lock():
+    root = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())
+    assert root["tool"]["uv"]["workspace"] == {
+        "members": ["packages/*"],
+        "exclude": ["packages/probity-effects"],
+    }
+    locks = {p.parent.name for p in (Path(__file__).parents[1] / "packages").glob("*/uv.lock")}
+    assert locks == {"probity-effects"}
 
 
 def test_a_hatch_dynamic_version_is_read_from_its_file(tmp_path):

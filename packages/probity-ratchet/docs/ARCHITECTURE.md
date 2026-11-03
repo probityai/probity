@@ -18,9 +18,9 @@ failures --> diagnose --> propose --> replay --> fresh evaluation --> admit --> 
 6. The referee activates: it moves the active-version pointer only from the expected version, after it
    checks the stored receipt.
 
-## The case suite (`probity-ratchet-cases/`)
+## The case suite (`../probity-ratchet-cases/`)
 
-The simulated company and the cases ship as their own package, [`probity-ratchet-cases`](../probity-ratchet-cases/README.md),
+The simulated company and the cases ship as their own package, [`probity-ratchet-cases`](../../probity-ratchet-cases/README.md),
 which the harness depends on at an exact version. It has no runtime dependencies.
 
 | Module | Job |

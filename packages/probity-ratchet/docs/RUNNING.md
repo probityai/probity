@@ -126,13 +126,16 @@ An admitted guard exports to a single-file Claude Code `PreToolUse` hook. See
 
 ```sh
 uv sync --all-groups --all-extras
-uv run ruff check && uv run ruff format --check && uv run mypy src
+uv sync --project ../../harnesses/ratchet-bench --all-groups
+uv run ruff check && uv run ruff format --check && uv run --project ../../harnesses/ratchet-bench mypy src
 uv run pytest
+uv run --project ../../harnesses/ratchet-bench python -m pytest -o addopts= -W error -p no:langsmith_plugin tests/bench
 python3 scripts/readme-lint.py README.md
 python3 scripts/check-docs.py
 ```
 
-The store's integration tests need the local Atlas container from step 1.
+The store's integration tests need the local Atlas container from step 1. `ratchet.bench` and `tests/bench` need the
+benchmark libraries, which only [harnesses/ratchet-bench](../../../harnesses/ratchet-bench/README.md) installs.
 
 ## 7. Benchmarks
 
@@ -140,10 +143,10 @@ Each benchmark adapter has a module entry point that writes its raw records to a
 step that renders `docs/results/`:
 
 ```sh
-uv run python -m ratchet.bench.agentdojo --help
-uv run python -m ratchet.bench.tau --help
-uv run python -m ratchet.bench.terminal --help
-uv run python -m ratchet.bench.transfer --help
+uv run --project ../../harnesses/ratchet-bench python -m ratchet.bench.agentdojo --help
+uv run --project ../../harnesses/ratchet-bench python -m ratchet.bench.tau --help
+uv run --project ../../harnesses/ratchet-bench python -m ratchet.bench.terminal --help
+uv run --project ../../harnesses/ratchet-bench python -m ratchet.bench.transfer --help
 ```
 
 The results pages say which subset ran, with task counts.

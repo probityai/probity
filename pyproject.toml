@@ -1,29 +1,28 @@
 # Workspace root. It is not a package: each member under packages/ declares its
 # own distribution, version, licence and release tag. uv resolves every member
 # together into the one uv.lock beside this file.
+#
+# Every member publishes the same Python floor, 3.12, which is the lock's floor, so the lock is an exact
+# proof for every wheel we publish. harnesses/ holds no distribution and is not a member; the ratchet
+# benchmark harness (harnesses/ratchet-bench) keeps its git sources, overrides and its own lock there, so
+# no uv call under this root inherits a benchmark's resolution settings.
 
 [tool.uv.workspace]
 members = ["packages/*"]
-# Unified-lock trial, 2026-11-01 (research/1140-gemini-share-1101-2026-11-01/LOCK-TRIAL.md). One lock holds
-# probityai, probity-verify and evaluator-replay-kit, the members whose tests pass under it (Python floor 3.11).
-# Each exclusion below is measured, with the error text in LOCK-TRIAL.md:
-# - packages/probity-ratchet: uv refuses it ("Nested workspaces are not supported": it declares its own
-#   [tool.uv.workspace] for probity-ratchet-cases), and its git-sourced benchmark extras, overrides and
-#   dependency-metadata only apply from a workspace root.
-# - packages/agent-evidence-observer: requires Python >=3.12, which lifts the whole lock from >=3.11 to >=3.12;
-#   its path source for probity-verify must become a workspace source; 3 tests fail and 50 error under the
-#   unified lock on the box (the errors are in tests/launch/test_docker_launch.py).
-# - packages/agent-evidence-mcp: its PyPI-pinned family tests fail under the unified lock (11 of 46 tests fail:
-#   verify_sample, verify_claim and the stdio server test), and uv wants an explicit workspace source for
-#   probity-verify.
-# - harnesses/agent-evidence-plugins is not a distribution: it pins probity-verify from PyPI for its tests.
-# - packages/probity-effects: its tests install the agent frameworks its adapters drive (LangGraph first), and
-#   their dependency trees would bind every member's lock.
-# scripts/workspace.py still reads the excluded packages and their members.
-exclude = ["packages/probity-ratchet", "packages/agent-evidence-observer", "packages/agent-evidence-mcp", "packages/probity-effects", "harnesses/agent-evidence-plugins"]
+# packages/probity-effects is not a member of the one lock: its tests install the agent frameworks its adapters
+# drive (LangGraph first), and their dependency trees would bind every member's resolution. It keeps its own lock.
+exclude = ["packages/probity-effects"]
 
+[tool.uv.sources]
+# Members that depend on each other resolve to the tree beside them, so every change is tested against
+# the versions it ships with.
+probity-verify = { workspace = true }
+probity-ratchet-cases = { workspace = true }
 [tool.uv]
 package = false
+# Two Inspect pins cannot share one environment: the historical profiles keep the release they were
+# qualified on, the inspect extra follows the current one.
+conflicts = [[{ package = "agent-evidence-observer", extra = "inspect" }, { package = "agent-evidence-observer", extra = "inspect-historical" }]]
 
 [dependency-groups]
 dev = ["pytest>=9.2.0,<10", "hypothesis>=6.170.13,<7", "ruff==0.17.3"]
@@ -38,7 +37,7 @@ addopts = ["--strict-markers"]
 # One lint configuration for every member. Ruff's default rule set for now;
 # widening it is one change here that applies to the whole workspace.
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 # packages/agent-evidence-observer brings its own checks; its interop experiments are frozen
 # with recorded file digests. Row CONS-ORG-OBSERVER-RUFF holds the rest.
 extend-exclude = ["packages/*/vectors-*/cases", "packages/agent-evidence-observer"]

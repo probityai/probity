@@ -1,9 +1,10 @@
 """The verifier is our public package, not a copy: assert the ranges, the lock and that they run.
 
 Each in-family dependency is a range, so the family installs together at its latest releases: a
-compatible release (`~=X.Y.Z`), or for a package whose releases outrun this one the window `>=F,<C`
-(`WINDOWED`). For a member of this workspace scripts/family_resolves.py holds the window to its version.
-The lock names one version per package, from the index with a hash per file. The
+compatible release (`~=X.Y.Z`), or for a member of this workspace the window `>=F,<C` that
+scripts/family_resolves.py holds to the member's version (`WINDOWED`).
+The repository's one root lock names one version per package: the verifier from this tree (it is a
+member of the same workspace), every other in-family package from the index with a hash per file. The
 tests hold the lock to the range and the installed package to the lock: a bump that moves only one of
 them fails.
 """
@@ -23,6 +24,7 @@ from packaging.requirements import Requirement
 from packaging.version import Version
 
 ROOT = Path(__file__).resolve().parents[2]
+LOCK = ROOT.parents[1] / "uv.lock"  # the workspace root's one lock
 PYPI = {"registry": "https://pypi.org/simple"}
 WINDOWED = {"probity-verify", "agent-evidence-vectors"}  # ranges spanning a release series
 
@@ -46,8 +48,8 @@ def requirement(name: str) -> Requirement:
 
 
 def locked(name: str) -> dict[str, Any]:
-    """The single `uv.lock` entry for `name`, whose version the manifest range must admit."""
-    packages = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))["package"]
+    """The single root `uv.lock` entry for `name`, whose version the manifest range must admit."""
+    packages = tomllib.loads(LOCK.read_text(encoding="utf-8"))["package"]
     entries = [pkg for pkg in packages if pkg["name"] == name]
     assert len(entries) == 1, f"uv.lock must hold one {name}, found {len(entries)}"
     (entry,) = entries
@@ -64,11 +66,11 @@ def assert_hash_pinned_from_pypi(entry: dict[str, Any]) -> None:
     assert entry.get("wheels"), "the lock must name a wheel, so the image builds none"
 
 
-def test_probity_verify_is_the_hash_pinned_release_from_pypi() -> None:
-    dist = metadata.distribution("probity-verify")
-    assert dist.version == locked("probity-verify")["version"]
-    assert dist.read_text("direct_url.json") is None  # from the index, not a git checkout or a path
-    assert_hash_pinned_from_pypi(locked("probity-verify"))
+def test_probity_verify_is_the_workspace_member_inside_the_window() -> None:
+    """The lock takes the verifier from packages/probity-verify, the version this ratchet ships beside."""
+    entry = locked("probity-verify")
+    assert entry["source"] == {"editable": "packages/probity-verify"}
+    assert metadata.distribution("probity-verify").version == entry["version"]
 
 
 def test_the_demo_image_build_installs_no_system_package() -> None:
@@ -106,8 +108,9 @@ def test_a_range_the_lock_falls_outside_fails(
     manifest = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     old = f'"{declared(name)}"'
     (tmp_path / "pyproject.toml").write_text(manifest.replace(old, f'"{name}~=999.0.0"'), encoding="utf-8")
-    (tmp_path / "uv.lock").write_bytes((ROOT / "uv.lock").read_bytes())
+    (tmp_path / "uv.lock").write_bytes(LOCK.read_bytes())
     monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
+    monkeypatch.setattr(sys.modules[__name__], "LOCK", tmp_path / "uv.lock")
     with pytest.raises(AssertionError):
         locked(name)
 

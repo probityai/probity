@@ -7,7 +7,7 @@ name = "probityai"
 version = "0.1.1"
 description = "The probityai command: verify agent evidence offline, one entry point for the evidence tools"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 dependencies = ["probity-verify>=0.3.0,<0.6"]
@@ -35,8 +35,6 @@ test = ["pytest>=9.2.0,<10"]
 [project.scripts]
 probityai = "probityai.cli:main"
 
-[tool.uv.sources]
-probity-verify = { workspace = true }
 
 [tool.setuptools]
 include-package-data = false

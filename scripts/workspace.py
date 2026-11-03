@@ -4,10 +4,9 @@
     python3 scripts/workspace.py release-target <tag>    # JSON {distribution, directory, version}
     python3 scripts/workspace.py requires <distribution> # member directories it needs, itself last
 
-Members are the directories under packages/ that hold a pyproject.toml, and the
-members a package that is its own uv workspace declares (packages/probity-ratchet, which
-the root workspace excludes because its Python floor and benchmark extras would
-bind every other member, declares probity-ratchet-cases). A member
+Members are the directories under packages/ that hold a pyproject.toml; every one of
+them is a member of the one root uv workspace and its one lock. A member that declares
+its own [tool.uv.workspace] is refused, as uv refuses it. A member
 is changed when a file under its directory changed, when a workspace member it
 depends on changed, or when a shared file changed (anything outside packages/
 and harnesses/, except documentation). Directories under harnesses/ are not
@@ -61,14 +60,11 @@ def _version(manifest: Path) -> str:
 def members(root: Path = ROOT) -> dict[str, Member]:
     """Return every member by distribution name."""
     found = {}
-    manifests = []
     for manifest in sorted((root / "packages").glob("*/pyproject.toml")):
-        manifests.append(manifest)
-        nested = tomllib.loads(manifest.read_text()).get("tool", {}).get("uv", {}).get("workspace", {})
-        for pattern in nested.get("members", []):
-            manifests += sorted(manifest.parent.glob(f"{pattern}/pyproject.toml"))
-    for manifest in manifests:
-        project = tomllib.loads(manifest.read_text())["project"]
+        data = tomllib.loads(manifest.read_text())
+        if "workspace" in data.get("tool", {}).get("uv", {}):
+            raise SystemExit(f"{manifest} declares its own uv workspace; every member belongs to the root one")
+        project = data["project"]
         name = project["name"]
         if name in found:
             raise SystemExit(f"two members declare the distribution {name!r}")

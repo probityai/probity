@@ -43,7 +43,7 @@ def check() -> dict[str, object]:
     helped = _run(str(command), "--help")
     if helped.returncode != 0 or "verify" not in helped.stdout:
         raise SystemExit(f"--help does not list verify: {helped.stdout!r}")
-    samples = resources.files("probity_verify") / "samples"
+    samples = resources.files("probity_verify.samples")
     with tempfile.TemporaryDirectory(prefix="probityai-installed-") as out:
         for item in samples.iterdir():
             if item.name.endswith((".json", ".html", ".txt")):

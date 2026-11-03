@@ -11,7 +11,7 @@ Install the released package: `pip install probity-verify==0.4.0`.
 
 ## Quick start
 
-Check a sample claim with the released package. You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/); nothing to clone, and a cold run takes about seven seconds. Version 0.4.0 ships the sample case and policies inside the wheel:
+Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); nothing to clone, and a cold run takes about seven seconds. Version 0.4.0 ships the sample case and policies inside the wheel:
 
 ```sh
 samples="$(uvx --from probity-verify==0.4.0 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"

@@ -10,7 +10,7 @@ It is for anyone testing a tool-using agent, or a guard or defense around one, w
 pip install probity-ratchet-cases==0.2.0
 ```
 
-Python 3.10 or later. No runtime dependencies.
+Python 3.12 or later. No runtime dependencies.
 
 ## Try it in 30 seconds
 
@@ -66,7 +66,7 @@ Version 0.2.0. `ratchet_cases.SUITE_DIGEST` is computed from the shipped cases a
 
 | Page | What is in it |
 |---|---|
-| [Source](https://github.com/probityai/probity/tree/main/packages/probity-ratchet/probity-ratchet-cases) | The package in the Ratchet repository |
+| [Source](https://github.com/probityai/probity/tree/main/packages/probity-ratchet-cases) | The package in the Ratchet repository |
 | [Ratchet](https://github.com/probityai/probity/tree/main/packages/probity-ratchet) | The harness that turns failures on these cases into proven guards |
 | [Releases](https://github.com/probityai/probity/releases) | Wheels, provenance attestations and digests |
 

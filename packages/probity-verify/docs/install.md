@@ -2,7 +2,7 @@
 
 Probity Verify checks a claim against local evidence and a consumer-held policy.
 Use it when you need a decision you can replay from the same bytes.
-Python 3.11 or newer and [uv](https://docs.astral.sh/uv/) are required.
+Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are required.
 
 Version 0.4.0 is published on [PyPI](https://pypi.org/project/probity-verify/0.4.0/).
 Its wheel modules are identical to the source at tag `probity-verify-v0.4.0`, commit

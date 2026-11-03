@@ -16,7 +16,7 @@ uv sync
 Python 3.12 or later. The guard sandbox needs Linux.
 
 ```sh
-pip install probity-ratchet-cases==0.2.0 && ratchet-cases selftest   # the case suite alone: probity-ratchet-cases/README.md
+pip install probity-ratchet-cases==0.2.0 && ratchet-cases selftest   # the case suite alone: ../probity-ratchet-cases/README.md
 ```
 
 ## Try it in 30 seconds

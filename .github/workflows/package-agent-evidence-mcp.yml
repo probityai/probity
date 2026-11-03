@@ -1,6 +1,6 @@
 # Moved from packages/agent-evidence-mcp/.github/workflows/ci.yml when the package was imported;
-# its steps run from packages/agent-evidence-mcp. The package keeps its own uv lock and is excluded
-# from the root uv workspace. The README shape check is the root lint job's.
+# its steps run from packages/agent-evidence-mcp. The package is a member of the root uv workspace;
+# these jobs install it with pip-style resolution on each supported Python. The README shape check is the root lint job's.
 name: package-agent-evidence-mcp
 
 on:
@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.12", "3.13"]
+        python: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -37,7 +37,7 @@ jobs:
         run: .venv/bin/python scripts/mutation_check.py
       - name: the server answers over stdio from the built wheel
         run: |
-          uv build
+          uv build --out-dir dist
           uv venv --python ${{ matrix.python }} "$RUNNER_TEMP/wheel-venv"
           uv pip install --python "$RUNNER_TEMP/wheel-venv/bin/python" dist/*.whl
           "$RUNNER_TEMP/wheel-venv/bin/python" scripts/wheel_smoke.py "$RUNNER_TEMP/wheel-venv/bin/agent-evidence-mcp"

@@ -45,7 +45,7 @@ DOMAIN = "retail"
 TIMEOUT = "Error: timeout"
 
 
-class FaultKind(str, enum.Enum):
+class FaultKind(enum.StrEnum):
     """When the fault strikes, relative to the call's effect on the database."""
 
     TIMEOUT_AFTER_COMMIT = "timeout_after_commit"
@@ -226,7 +226,7 @@ def grade(task: Task, environment: Environment) -> Grade:
     )
 
 
-class Policy(str, enum.Enum):
+class Policy(enum.StrEnum):
     """What a scripted agent does when a write call reports an error."""
 
     RECONCILE = "reconcile"  # read the record; retry only if the change is absent

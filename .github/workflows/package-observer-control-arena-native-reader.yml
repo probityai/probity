@@ -15,6 +15,9 @@ on:
       - '.github/workflows/package-observer-control-arena-native-reader.yml'
 permissions:
   contents: read
+# Frozen experiments: no uv call here reads the repository's uv settings (pyproject.toml, uv.toml).
+env:
+  UV_NO_CONFIG: "1"
 defaults:
   run:
     working-directory: packages/agent-evidence-observer

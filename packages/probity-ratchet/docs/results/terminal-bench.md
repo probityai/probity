@@ -6,7 +6,7 @@ printed with its denominator. Commands: `python -m ratchet.bench.terminal oracle
 ## Protocol
 
 - Task suite: the 89-task Terminal-Bench 2.0 repository at commit `2fd12b88aafdd04a52c298e3940bcb189f9766d6`,
-  run with `terminal-bench==0.2.18` pinned in the bench extra. Each task runs in its own prebuilt image
+  run with `terminal-bench==0.2.18` pinned in harnesses/ratchet-bench. Each task runs in its own prebuilt image
   (`docker_image` in its `task.toml`) with the task's CPU and memory limits, on shared-core Hetzner boxes.
 - The agent runs in Ratchet's worker loop under a Ratchet harness, with two tools: `run_command(cmd,
   timeout_s)` and `write_file(path, content)`. Its time limit is the task's own agent timeout, in wall time.
