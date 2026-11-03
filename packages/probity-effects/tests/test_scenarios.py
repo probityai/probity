@@ -5,7 +5,14 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from probity_effects import EffectCall, EffectGuard, Journal
+from probity_effects import (
+    EffectCall,
+    EffectGuard,
+    EffectOwner,
+    Journal,
+    Lookup,
+    UnnamedOperation,
+)
 from probity_effects.langgraph import effect_tool
 from probity_effects.testing import (
     LANGGRAPH_VARIANTS,
@@ -82,3 +89,33 @@ def test_control_plain_tool_duplicates_when_the_model_calls_again():
     counts = plain_effects("model-retry")
     assert counts["commit-then-lost-reply"] == 2
     assert counts["confirmed"] == 1
+
+
+def test_a_langgraph_call_with_no_thread_and_no_key_sends_nothing():
+    ledger = []
+    owner = EffectOwner("orders", lookup=lambda key: Lookup(present=False))
+
+    @effect_tool(owner)
+    def create_order(sku: str, effect: EffectCall) -> str:
+        """Create an order."""
+        ledger.append(effect.key)
+        return "created"
+
+    with pytest.raises(UnnamedOperation):
+        create_order.invoke({"sku": "A-1"})
+    assert ledger == []
+
+
+def test_two_langgraph_threads_asking_for_the_same_write_each_get_it():
+    ledger = []
+    owner = EffectOwner("orders", lookup=lambda key: Lookup(present=False))
+
+    @effect_tool(owner)
+    def create_order(sku: str, effect: EffectCall) -> str:
+        """Create an order."""
+        ledger.append(effect.key)
+        return "created"
+
+    for thread in ("a", "b"):
+        create_order.invoke({"sku": "A-1"}, {"configurable": {"thread_id": thread}})
+    assert len(set(ledger)) == 2

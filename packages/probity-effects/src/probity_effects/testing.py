@@ -9,7 +9,9 @@ exactly the dispatches and lookups the owner saw.
 
 from __future__ import annotations
 
+import asyncio
 import dataclasses
+import itertools
 import json
 import tempfile
 import urllib.error
@@ -26,6 +28,10 @@ from probity_effects.owner import EffectCall, EffectOwner, Lookup, NoEffect
 
 #: The framework paths a LangGraph tool is driven through.
 LANGGRAPH_VARIANTS = ("default", "retry", "resume", "model-retry")
+#: The framework paths an OpenAI Agents SDK tool is driven through.
+OPENAI_AGENTS_VARIANTS = ("default", "session-resume", "model-retry")
+#: How a tool result says the write is not settled: the SDK's own error text, and the guard's.
+UNSETTLED = ("An error occurred", "outcome unknown", "not run")
 ToolsFactory = Callable[[EffectOwner, Journal], Sequence[Any]]
 
 
@@ -261,3 +267,90 @@ def _graph(tools: Sequence[Any], tool: str | None, arguments: dict[str, Any], va
     graph.add_conditional_edges("model", tools_condition)
     graph.add_edge("tools", "model")
     return graph.compile(checkpointer=saver)
+
+
+def run_openai_agents_scenario(make_tools: ToolsFactory, scenario: dict[str, Any], *, variant: str = "default",
+                               tool: str | None = None, args: dict[str, Any] | None = None) -> Verdict:
+    """Drive the tools ``make_tools(owner, journal)`` builds through one scenario and judge the run.
+
+    ``tool`` and ``args`` work as in :func:`run_langgraph_scenario`. The variants are the paths a lost
+    reply takes in the SDK, which has no tool retry setting: ``default`` (one run, and the model finishes
+    after the first tool result), ``session-resume`` (the process stops right after the first send, and a
+    supervisor runs the same ``SQLiteSession`` again from the journal file while the write is not settled)
+    and ``model-retry`` (the model calls the tool again while the write is not settled).
+    """
+    with scenario_owner(scenario) as run, tempfile.TemporaryDirectory() as work:
+        path = Path(work) / "journal.jsonl"
+        drive_openai_agents(make_tools, run, path, variant=variant, tool=tool, args=args)
+        return judge(run, Journal.open(path), variant=variant)
+
+
+def drive_openai_agents(make_tools: ToolsFactory, run: ScenarioRun, journal_path: Path | None, *,
+                        variant: str = "default", tool: str | None = None,
+                        args: dict[str, Any] | None = None) -> str:
+    """Run one scenario through ``Runner.run``; returns the error the run ended with, if any."""
+    if variant not in OPENAI_AGENTS_VARIANTS:
+        raise ValueError(f"variant is one of {OPENAI_AGENTS_VARIANTS}")
+    from agents import set_tracing_disabled
+
+    set_tracing_disabled(True)
+    arguments = dict(args if args is not None else run.scenario["operation"]["args"])
+    with tempfile.TemporaryDirectory() as work:
+        return asyncio.run(_agents_turns(make_tools, run, journal_path, Path(work) / "session.db",
+                                         variant, tool, arguments))
+
+
+async def _agents_turns(make_tools: ToolsFactory, run: ScenarioRun, journal_path: Path | None, session_path: Path,
+                        variant: str, tool: str | None, arguments: dict[str, Any]) -> str:
+    from agents import Runner, SQLiteSession
+
+    resuming = variant == "session-resume"
+    session = SQLiteSession("lost-reply-scenario", session_path) if resuming else None
+    context = {"thread_id": "lost-reply-scenario", "fencing_token": run.fencing_token}
+    tools = make_tools(_stopping(run.owner) if resuming else run.owner, Journal.open(journal_path))
+    call_ids = itertools.count(1)
+    prompt, ended = "perform the operation", ""
+    for _ in range(3 if resuming else 1):
+        agent = _agent(tools, tool, arguments, variant, call_ids)
+        try:
+            result = await Runner.run(agent, prompt, context=context, session=session)
+        except SimulatedStop:
+            tools = make_tools(run.owner, Journal.open(journal_path))
+            prompt = "the run stopped, try again"
+            continue
+        except Exception as error:  # noqa: BLE001 - the error is the run's result
+            return f"{type(error).__name__}: {error}"
+        text = _last_tool_output(result)
+        if not text.startswith(UNSETTLED):
+            return ""
+        ended, prompt = text, "that did not go through, try again"
+    return ended
+
+
+def _last_tool_output(result: Any) -> str:
+    outputs = [str(item.output) for item in result.new_items if item.type == "tool_call_output_item"]
+    return outputs[-1] if outputs else ""
+
+
+def _agent(tools: Sequence[Any], tool: str | None, arguments: dict[str, Any], variant: str,
+           call_ids: Iterator[int]) -> Any:
+    from agents import Agent
+    from agents.testing import ScriptedModel, assistant_message, function_call
+
+    effect = next((item for item in tools if tool is None or item.name == tool), None)
+    if effect is None:
+        raise ValueError(f"no tool named {tool!r}")
+    recalls = {"left": 2 if variant == "model-retry" else 0}
+
+    def respond(call: Any) -> list[Any]:
+        items = call.input if isinstance(call.input, list) else []
+        last = items[-1] if items else {}
+        answered = last.get("type") == "function_call_output" if isinstance(last, dict) else False
+        if answered:
+            if not (recalls["left"] and str(last.get("output", "")).startswith(UNSETTLED)):
+                return [assistant_message("done")]
+            recalls["left"] -= 1
+        return [function_call(effect.name, arguments, call_id=f"call-{next(call_ids)}")]
+
+    return Agent(name="scenario", instructions="Perform the operation.", tools=[*tools],
+                 model=ScriptedModel([{"responder": respond}] * 8))

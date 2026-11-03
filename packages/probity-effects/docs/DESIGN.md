@@ -39,6 +39,7 @@ idempotency key, is:
 | `EffectGuard` | Reconcile before resend, over a journal. Synchronous and asynchronous drivers share one policy. |
 | `Journal` | Append-only events, in memory or a JSON-lines file written ahead of every dispatch. Exports records. |
 | `probity_effects.langgraph.effect_tool` | Turns a tool body into a LangChain tool that never lets a lost reply escape as an exception. |
+| `probity_effects.openai_agents.effect_function_tool` | The same for an OpenAI Agents SDK function tool. |
 | `probity_effects.testing` and the pytest plugin | Drive your tool through the framework's own paths against the eight lost-reply scenarios that agent-evidence-vectors ships, and judge each run three ways. |
 
 ## The policy
@@ -70,6 +71,7 @@ reader's checks for the run the guard actually performed.
 | Python | 3.11 and later. | Python 3.10 reached end of life in October 2026, and agent-evidence-vectors needs 3.11. |
 | Canonical form | `jcs-admit` for RFC 8785 bytes of the arguments digest. | Verifiers in other languages recompute the same digest. |
 | Default key | SHA-256 over the canonical scope (the thread), tool name and arguments; `key_from` names an argument that carries a business key instead. | A model that calls the tool again with the same arguments, or a resumed thread, lands on the same key. Two intended identical writes in one thread need an explicit key. |
+| No thread and no key | Refused with `UnnamedOperation`; nothing is sent. | A key made from the tool and its arguments alone is the same for everyone, so the second person to ask for an identical write would be told it was committed when it was never sent. |
 | Unknown | Reported to the model as a tool result that says not to call again; `on_unknown="raise"` stops the run instead. | An exception would hand the decision back to the retry machinery that caused the duplicate. |
 | Owner count | `Journal.record(key, owner_effects=n)` takes the owner's own count; `Journal.trail(key)` exports the runtime's half alone. | Only the owner's ledger knows how many effects it holds; the journal does not invent it. |
 

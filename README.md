@@ -51,7 +51,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | product | [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | `pip install probityai==0.1.1` |
 | product | [probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | `pip install probity-verify==0.3.0` |
 | product | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | `pip install probity-ratchet==0.3.3` |
-| product | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | `pip install probity-effects==0.1.0` (first release pending) |
+| product | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | `pip install probity-effects==0.1.0` |
 | product | [evaluator-replay-kit](packages/evaluator-replay-kit/README.md) | replays a lab's agent action record and flags a changed or missing step | `pip install "git+https://github.com/probityai/probity@evaluator-replay-kit-v0.1.0#subdirectory=packages/evaluator-replay-kit"` (not on PyPI) |
 
 The Claude Code and Cursor plugins ship from [harnesses/agent-evidence-plugins](harnesses/agent-evidence-plugins/README.md).

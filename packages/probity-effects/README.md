@@ -6,8 +6,8 @@ Keep one effect per agent tool call when its reply is lost: the guard asks the s
 the effect before anything is sent again, records each operation as an `uncertain-effect/v1`
 record, and tests your tools against eight lost-reply scenarios in CI.
 
-It's for teams whose LangGraph agents create orders, move money or open tickets, and who cannot
-afford a retry policy, a resumed thread or a model calling again to repeat the write.
+It's for teams whose LangGraph or OpenAI Agents SDK agents create orders, move money or open tickets,
+and who cannot afford a retry policy, a resumed thread or a model calling again to repeat the write.
 
 Install the released package: `pip install probity-effects==0.1.0`.
 
@@ -62,9 +62,27 @@ def create_order(sku: str, quantity: int, effect: EffectCall) -> dict:
     return reply.json()
 ```
 
-Pass `create_order` to `ToolNode` or `create_react_agent` as usual. A lost reply never reaches
-LangGraph's retry machinery as an exception; an outcome the owner cannot confirm comes back to
-the model as `outcome unknown`, and calling again sends nothing until the owner answers.
+Pass `create_order` to `ToolNode` or `create_react_agent` as usual, and give the graph a `thread_id`.
+A lost reply never reaches LangGraph's retry machinery as an exception; an outcome the owner cannot
+confirm comes back to the model as `outcome unknown`, and calling again sends nothing until the
+owner answers. A call with no `thread_id` and no `key_from` is refused and sends nothing.
+
+## In an OpenAI Agents SDK agent
+
+```python
+from agents import Agent, Runner
+from probity_effects.openai_agents import effect_function_tool
+
+@effect_function_tool(orders, journal=Journal.open("effects.jsonl"))
+def create_order(sku: str, quantity: int, effect: EffectCall) -> dict:
+    """Create an order."""
+    ...                                    # the same body as above
+
+agent = Agent(name="orders", tools=[create_order])
+result = await Runner.run(agent, "Order one A-1", context={"thread_id": conversation_id})
+```
+
+Use the same `thread_id` for every run of one conversation.
 
 ## In CI
 
@@ -79,19 +97,20 @@ def test_survives_lost_replies(lost_reply_scenario, variant):
 
 `pip install probity-effects[testing]` adds the scenarios from agent-evidence-vectors. `make_tools(owner, journal)`
 builds your tools; each scenario runs on four LangGraph paths and is judged by the owner's counts,
-the reference reader's verdict on the record, and the journal's agreement with the owner.
+the reference reader's verdict on the record, and the journal's agreement with the owner. For the
+Agents SDK use `OPENAI_AGENTS_VARIANTS` and `run_openai_agents_scenario`, with three paths.
 
 ## Status
 
-Version 0.1.0, alpha; its first PyPI release is pending. The LangGraph adapter ships first; the
-OpenAI Agents SDK and AG2 follow.
+Version 0.1.0, alpha, on PyPI. The OpenAI Agents SDK adapter here on main reaches PyPI in the next
+release; AG2 follows.
 
 ## Documentation
 
 | page | read it for |
 | --- | --- |
 | [Design](https://github.com/probityai/probity/blob/main/packages/probity-effects/docs/DESIGN.md) | the shape, the policy, the record and every decision |
-| [Measurements](https://github.com/probityai/probity/blob/main/packages/probity-effects/docs/MEASUREMENTS.md) | a plain LangGraph tool against the guarded one on every scenario and path |
+| [Measurements](https://github.com/probityai/probity/blob/main/packages/probity-effects/docs/MEASUREMENTS.md) | a plain tool against the guarded one on every scenario, framework and path |
 | [Releasing](https://github.com/probityai/probity/blob/main/packages/probity-effects/docs/RELEASING.md) | cut a release of this member |
 
 ## License
