@@ -248,3 +248,30 @@ def test_mutation_the_old_rule_reports_the_cell_unqualified(monkeypatch: pytest.
     parent, id1, id2 = (_recorded(n) for n in ("parent", "identity_1", "identity_2"))
     cases = [CaseInfo("policy_changed.v6", "trap", False)]
     assert qualify(parent, [id1, id2], cases)["status"] == "UNQUALIFIED"
+
+
+V3_POLICY = {k: v for k, v in POLICY.items() if k != "min_cohort_cases"} | {"version": "v3"}
+
+
+def test_a_v3_receipt_is_decided_under_v3_which_has_no_cohort_size_floor() -> None:
+    """The one-case cell under the version its receipt names: no size gate, no TOO_SMALL, and the identity
+    controls alone make it UNQUALIFIED; under v3.1 the same records are TOO_SMALL."""
+    parent, id1, id2 = (_recorded(n) for n in ("parent", "identity_1", "identity_2"))
+    cases = [CaseInfo("policy_changed.v6", "trap", False)]
+    v3 = qualify(parent, [id1, id2], cases, V3_POLICY)
+    assert v3["status"] == "UNQUALIFIED" and "size" not in v3
+    assert qualify(parent, [id1, id2], cases)["status"] == "TOO_SMALL"
+    gate = candidate_gate(v3, compare(parent, id1, cases, V3_POLICY), 0, True, V3_POLICY)
+    assert "cohort_size" not in gate["checks"] and not gate["checks"]["cohort_qualified"]
+    assert "cohort_size" in candidate_gate(v3, compare(parent, id1, cases), 0, True)["checks"]
+
+
+def test_every_threshold_is_read_from_the_policy_it_is_given() -> None:
+    """A policy with a looser per-case decline accepts what the published one refuses."""
+    parent = arm("parent", {"a": (15, 15)})
+    worse = arm("worse", {"a": (10, 10)})
+    one = [CaseInfo("a", "trap", False)]
+    assert compare(parent, worse, one)["case_declines_over_limit"] == ["a"]
+    loose = {**POLICY, "max_case_decline": 10}
+    assert compare(parent, worse, one, loose)["case_declines_over_limit"] == []
+    assert classify(25, {**POLICY, "high_pass_min": 25}) == "high" and classify(25) == "intermediate"

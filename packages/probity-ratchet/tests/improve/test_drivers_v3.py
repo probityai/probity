@@ -115,6 +115,7 @@ def world(monkeypatch: pytest.MonkeyPatch, inprocess_referee: Callable[..., Any]
     """The fake billing world behind the real referee factory: suite, worker, store, sandbox."""
     import ratchet_cases.cases as cases_mod
 
+    import ratchet.agent.guard_api as guard_api_mod
     import ratchet.agent.guards as guards_mod
     import ratchet.agent.seed as seed_mod
     import ratchet.agent.worker as worker_mod
@@ -124,6 +125,8 @@ def world(monkeypatch: pytest.MonkeyPatch, inprocess_referee: Callable[..., Any]
     import ratchet.store.atlas as atlas_mod
 
     FakeAtlas.dbs = {}
+    # These drivers re-judge a decision stored in Atlas, which only the hosted referee factory reads.
+    monkeypatch.setenv("RATCHET_REFEREE_FACTORY", "ratchet.improve.referee_live")
     for mod in (run_det, run_v3):
         monkeypatch.setattr(mod, "ProcessReferee", inprocess_referee)
     monkeypatch.setattr(cases_mod, "all_cases", lambda: CASES)
@@ -131,6 +134,7 @@ def world(monkeypatch: pytest.MonkeyPatch, inprocess_referee: Callable[..., Any]
     monkeypatch.setattr(worldsim_mod, "WorldSimulator", lambda cases: FakeSimulator())
     monkeypatch.setattr(sandbox_mod, "SandboxRunner", lambda rt: LocalRunner())
     monkeypatch.setattr(guards_mod, "GuardRuntime", _Ctx)
+    monkeypatch.setattr(guard_api_mod, "guard_runtime", _Ctx)
     monkeypatch.setattr(seed_mod, "seed_harness", lambda: LOOP_SEED)
     monkeypatch.setattr(atlas_mod, "Store", FakeAtlas)
     monkeypatch.setattr(

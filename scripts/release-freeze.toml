@@ -47,13 +47,14 @@ refuse = [
 ]
 
 [distribution.probity-ratchet]
+# ratchet/improve/stochastic.py and its test stay in the release: the stochastic rule is the published
+# policy-v3 decision rule, and a public install needs it to decide a signed v3 decision again.
 refuse = [
     "ratchet/improve/archive.py",
     "ratchet/improve/instruction_search.py",
     "ratchet/improve/propose.py",
     "ratchet/improve/recall.py",
     "ratchet/improve/referee_live.py",
-    "ratchet/improve/stochastic.py",
     "ratchet/improve/run_v3.py",
     "ratchet/improve/countersign.py",
     "ratchet/improve/diagnose.py",
@@ -67,7 +68,6 @@ refuse = [
     "tests/improve/test_diagnose.py",
     "tests/improve/test_overfit.py",
     "tests/improve/test_countersign.py",
-    "tests/improve/test_stochastic.py",
     "tests/agent/test_guards.py",
     "tests/agent/test_guard_child.py",
     "tests/export/test_mcp_gateway.py",

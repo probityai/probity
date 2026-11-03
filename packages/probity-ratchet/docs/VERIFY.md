@@ -109,7 +109,7 @@ procedures unchanged and in order, parent prompt a prefix, unique ids, digest eq
 
 ## Referee results files
 
-A driver that runs a policy through the referee (`run_det`, `run_v3`, `instruction_search`) gets counts and
+A driver that runs a policy through the referee (`run_det`, the v3 driver, `instruction_search`) gets counts and
 signed verdicts back. The per-case held-out tables go to `<name>.dsse` in the referee's results directory: a
 DSSE envelope (payload type `application/vnd.ratchet.referee-results+json`) signed with the decision key,
 listing each decision with its receipt digest and table, and the run-level tables (the repeatability probe,
@@ -185,7 +185,7 @@ for a run. Rotation: pass several keys to `verify_decision`.
 
 Every run signs with the pinned key or refuses to start (`Signer.for_decisions`); there is no fallback to a
 fresh key, because a decision signed by an unpublished key can never be checked. Decisions recorded before
-that rule by a per-run key are countersigned with `python -m ratchet.improve.countersign --db <db>`: the pinned
+that rule by a per-run key are countersigned by the referee, which operates the countersigning tool: the pinned
 key's signature is added beside the run's own (DSSE carries several), only when the stored decision still
 equals its signed payload, and the decision records `countersigned` with the date. `ratchet verify` then names
 the pinned key and the run key it was first signed with.
