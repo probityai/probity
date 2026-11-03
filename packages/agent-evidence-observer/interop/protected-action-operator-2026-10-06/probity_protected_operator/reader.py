@@ -36,8 +36,11 @@ def _dispatch(directory: Path, config: dict[str, Any], retained: dict[str, Any])
                                execution_digest=config["executionDigest"], decision_digest=config.get("decisionDigest"))
 
 
-def _bundle(directory: Path, selection: dict[str, Any], candidate: dict[str, Any], last: bool) -> dict[str, Any]:
-    """Check one captured bundle against the heads the consumer held outside it."""
+def _bundle(directory: Path, selection: dict[str, Any], candidate: dict[str, Any], last: bool, admitted: bool) -> dict[str, Any]:
+    """Check one captured bundle against the heads the consumer held outside it.
+
+    The full dispatch relation is replayed for the final bundle of a case the consumer admitted.
+    """
     config = selection["dispatchConfiguration"]
     key = config["witnessKey"]
     entries = journal_entries((directory / "authorization.jsonl").read_bytes(), config, selection["beforeRoot"])
@@ -48,10 +51,10 @@ def _bundle(directory: Path, selection: dict[str, Any], candidate: dict[str, Any
     if last:
         verify_checkpoint(entries, candidate["authorization"], key)
         require(receipts == candidate["native"]["count"], "candidate native head is not current")
-    complete = len(entries) == 3
-    if complete:
+    verified = admitted and last
+    if verified:
         _dispatch(directory, config, candidate["authorization"])
-    return {"bundle": directory.name, "journalPhases": len(entries), "nativeReceipts": receipts, "dispatchBundleVerified": complete}
+    return {"bundle": directory.name, "journalPhases": len(entries), "nativeReceipts": receipts, "dispatchBundleVerified": verified}
 
 
 def _case(directory: Path) -> dict[str, Any]:
@@ -60,7 +63,8 @@ def _case(directory: Path) -> dict[str, Any]:
     candidate = load(directory / "candidate-heads.json")
     names = [name for name in BUNDLES if (directory / name).is_dir()]
     require(bool(names), "case has no captured bundle")
-    return {"bundles": [_bundle(directory / name, selection, candidate, name == names[-1]) for name in names]}
+    admitted = (directory / "consumer-after-admission-admission.json").is_file()
+    return {"bundles": [_bundle(directory / name, selection, candidate, name == names[-1], admitted) for name in names]}
 
 
 def read(packet: Path) -> dict[str, Any]:
