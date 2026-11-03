@@ -6,10 +6,10 @@ text copies. The loop, admission, the demo and the evidence view take both by ar
 `ratchet.failures` entry-point group names the installed implementation (entries `diagnoser` and `overfit`,
 each a zero-argument factory), and without an installed entry the open baselines in this module run.
 
-The open baselines are deliberately small. `open_diagnose` makes one cluster per distinct grader reason, with the
-step located by grading intermediate states when a simulator is supplied. `OpenOverfitScreen` flags a candidate
-that repeats, word for word, a string the training traces passed to a tool. They are enough to run, replay
-and verify every published record; a richer implementation plugs in through the entry points.
+The open baselines are deliberately small. `open_diagnose` makes one cluster per distinct grader reason, with
+the step located by grading intermediate states when a simulator is supplied. `OpenOverfitScreen` flags a
+candidate that repeats, word for word, a string the training traces passed to a tool. They are enough to run,
+replay and verify every published record; a richer implementation plugs in through the entry points.
 """
 
 from __future__ import annotations
