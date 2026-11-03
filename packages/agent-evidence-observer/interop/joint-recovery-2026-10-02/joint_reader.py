@@ -12,7 +12,6 @@ import sys
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 from joint_common import (
@@ -30,18 +29,19 @@ from joint_common import (
     require,
     same,
     sha,
+    withheld_sources,
 )
 from probity_observer.crypto import VerificationError, canonical, strict_loads
 from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
-from probity_observer.ticket_service import TicketStore
 from probity_observer.ticket_state import (
     checked_record,
+    load_ticket_capture,
     state_schema,
     verify_ticket_result,
 )
 
 
-def selections(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
+def selections(root: Path, pins: dict[str, Any], withheld: dict[str, str]) -> dict[str, Any]:
     """Require exact externally selected manifest and finite host policy.
 
     Parameters
@@ -51,6 +51,9 @@ def selections(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
     pins : dict
         Exact plan/artifact SHA256 values and evaluation clock chosen outside
         the candidate. Pins carried inside a packet do not select themselves.
+    withheld : dict
+        Host-selected source members kept out of the retained packet, by name
+        and SHA-256. Each must match the manifest's pin exactly.
 
     Returns
     -------
@@ -70,21 +73,27 @@ def selections(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
     require(isinstance(plan["sourceRevision"], str) and len(plan["sourceRevision"]) == 40, "source-revision")
     same([plan["environment"]["packages"][name] for name in ("langgraph", "langgraph-checkpoint-sqlite")], ["1.0.10", "3.1.1"], "framework-selection")
     require(datetime.fromisoformat(pins["evaluationTime"]) >= datetime.fromisoformat(plan["selectedTime"]), "evaluation-time")
-    manifest(root, plan)
+    manifest(root, plan, withheld)
     return plan
 
 
-def manifest(root: Path, plan: dict[str, Any]) -> None:
-    """Authenticate every original member and refuse added/private source files."""
+def manifest(root: Path, plan: dict[str, Any], withheld: dict[str, str]) -> None:
+    """Authenticate every original member and refuse added/private source files.
+
+    A member may be absent from disk only when the caller's withheld record
+    names it with exactly the digest the manifest pins; every present member
+    still matches byte for byte, and any other absence refuses.
+    """
     selected = load(root, "artifact-manifest.json")
     actual = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()} - {"artifact-manifest.json", "consumer-pins.json", "report.json"}
-    same(sorted(selected), sorted(actual), "artifact-population")
+    absent = {name for name, digest in selected.items() if name not in actual and withheld.get(name) == digest}
+    same(sorted(selected), sorted(actual | absent), "artifact-population")
     for name, digest in selected.items():
-        require(sha(read(root, name)) == digest, "artifact-pin")
+        require(name in absent or sha(read(root, name)) == digest, "artifact-pin")
     source_names = {"sources/joint/" + name for name in ("joint_common.py", "joint_run.py", "joint_worker.py", "joint_target.py", "joint_reader.py", "joint_host_gate.py")} | {"sources/authority/" + name for name in ("authority_common.py", "authority_worker.py")} | {"sources/langgraph/" + name for name in ("lg_common.py", "lg_run.py", "durable_worker.py")} | {"sources/target/" + name for name in ("target_common.py", "target_run.py")} | {"sources/observer/" + name for name in ("authorization.py", "crypto.py", "ticket_service.py")}
     same(sorted(plan["sources"]), sorted(source_names), "source-population")
     for name, digest in plan["sources"].items():
-        require(sha(read(root, name)) == digest, "source-pin")
+        require(withheld[name] == digest if name in absent else sha(read(root, name)) == digest, "source-pin")
 
 
 def signed_state(value: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
@@ -266,16 +275,17 @@ def native_store(root: Path, case: dict[str, Any], value: dict[str, Any]) -> Non
     same(value["targetSnapshot"], "native/" + name + "-target.sqlite", "target-snapshot-name")
     path = root / value["targetSnapshot"]
     require(read(root, value["targetSnapshot"]).startswith(b"SQLite format 3\x00"), "target-snapshot-format")
-    store = TicketStore(path, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), SimpleNamespace(public_hex=case["serviceKey"]), retained_head=value["prior"]["receipt"])
+    request, policy = ActionRequest(**case["request"]), GrantPolicy(**case["policy"])
     with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro&immutable=1", uri=True)) as connection:
         if name == "target-rollback-after":
             try:
-                store._load(connection)
+                load_ticket_capture(connection, request, policy, case["serviceKey"], retained_head=value["prior"]["receipt"])
             except VerificationError as error:
                 same(str(error), "ticket history predates retained head", "rollback-snapshot-refusal")
                 return
             require(False, "rollback-snapshot-admitted")
-        state, content = store._load(connection)
+        capture = load_ticket_capture(connection, request, policy, case["serviceKey"], retained_head=value["prior"]["receipt"])
+        state, content = capture.state, capture.content
     payload = signed_state(value["final"], case)
     same(state, {key: payload[key] for key in state}, "native-target-state")
     same(None if content is None else content.hex(), value["final"]["contentHex"], "native-target-content")
@@ -406,7 +416,7 @@ def target_argv(plan: dict[str, Any], case: dict[str, Any], target: dict[str, An
     same(target["command"], expected, "target-launch-argv")
 
 
-def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
+def verify_saved(root: Path, pins: dict[str, Any], withheld: dict[str, str] | None = None) -> dict[str, Any]:
     """Reconstruct originals without native framework, network or signing key.
 
     Parameters
@@ -415,6 +425,8 @@ def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
         Retained original packet selected by the host.
     pins : dict
         Explicit external source/artifact/evaluation selections.
+    withheld : dict, optional
+        Host-selected source members absent from the packet, by name and digest.
 
     Returns
     -------
@@ -429,7 +441,7 @@ def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
         population, result-release boundary or explicit nonclaim differs.
     """
     require(not root.is_symlink() and not any(path.is_symlink() for path in root.rglob("*")), "packet-symlink")
-    plan = selections(root, pins)
+    plan = selections(root, pins, withheld or {})
     records = []
     pids = []
     for case in plan["cases"]:
@@ -460,8 +472,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("packet", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path, default=None)
     args = parser.parse_args()
-    sys.stdout.buffer.write(canonical(verify_saved(args.packet, load(args.pins_file.parent, args.pins_file.name))))
+    sys.stdout.buffer.write(canonical(verify_saved(args.packet, load(args.pins_file.parent, args.pins_file.name), withheld_sources(args.withheld_sources))))
 
 
 if __name__ == "__main__":
