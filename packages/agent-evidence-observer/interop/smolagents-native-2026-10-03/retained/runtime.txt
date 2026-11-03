@@ -1,0 +1,2 @@
+3.13.15
+/home/runner/work/_temp/smolagents-native/producer/lib/python3.13/site-packages/smolagents/__init__.py
