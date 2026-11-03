@@ -47,6 +47,8 @@ jobs:
           python -m ruff check --isolated recovery_*.py probity_pydantic_recovery tests
           python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' recovery_*.py probity_pydantic_recovery tests
           timeout --signal=TERM --kill-after=5s 180s python -m pytest -q tests --junitxml=test-results.xml
+      - name: Verify the retained original packet with public observer code
+        run: python verify_retained.py
       - name: Execute and retain a fresh native original
         run: timeout --signal=TERM --kill-after=5s 240s python recovery_run.py fresh-run --source-revision "$GITHUB_SHA" > fresh-report.json
       - name: Install a framework-free reader and check host selection
