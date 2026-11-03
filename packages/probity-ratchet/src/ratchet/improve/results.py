@@ -41,7 +41,8 @@ def bundle_id(decision_id: str) -> str:
     return sha256_hex(decision_id.encode("utf-8"))[:16]
 
 
-def _safe(name: str) -> str:
+def safe_name(name: str) -> str:
+    """The file name an arm or role is written under."""
     return name.replace(":", "_").replace("/", "_")
 
 
@@ -89,14 +90,14 @@ class Ledger:
         manifest: dict[str, Any] = {"decision_id": decision_id, "reports": {}, "traces": {}, "harnesses": {}}
         if cohort is not None:
             # Relative to the results directory: a cohort's records are shared by its decisions.
-            manifest["arms"] = {a: f"{cohort}/arms/{_safe(a)}.json" for a in arms}
-            manifest["arm_traces"] = {a: f"{cohort}/traces/{_safe(a)}.jsonl" for a in arms}
+            manifest["arms"] = {a: f"{cohort}/arms/{safe_name(a)}.json" for a in arms}
+            manifest["arm_traces"] = {a: f"{cohort}/traces/{safe_name(a)}.jsonl" for a in arms}
         for role, doc in reports.items():
-            name = _safe(role)
+            name = safe_name(role)
             _dump(base / "reports" / f"{name}.json", doc)
             manifest["reports"][role] = f"reports/{name}.json"
         for role, docs in traces.items():
-            name = _safe(role)
+            name = safe_name(role)
             _jsonl(base / "traces" / f"{name}.jsonl", docs)
             manifest["traces"][role] = f"traces/{name}.jsonl"
         for role, doc in harnesses.items():
@@ -119,7 +120,7 @@ class Ledger:
         line = json.dumps(doc, sort_keys=True) + "\n"
         with (
             self._lock,
-            (self.root / cohort / "traces" / f"{_safe(arm)}.jsonl").open("a", encoding="utf-8") as f,
+            (self.root / cohort / "traces" / f"{safe_name(arm)}.jsonl").open("a", encoding="utf-8") as f,
         ):
             f.write(line)
 
@@ -127,7 +128,7 @@ class Ledger:
         if self.root is None or cohort is None:
             return
         for arm, docs in records.items():
-            _dump(self.root / cohort / "arms" / f"{_safe(arm)}.json", list(docs))
+            _dump(self.root / cohort / "arms" / f"{safe_name(arm)}.json", list(docs))
 
     def add(self, entry: Mapping[str, Any]) -> None:
         with self._lock:
@@ -139,7 +140,7 @@ class Ledger:
     def run_traces(self, name: str, docs: Sequence[Any]) -> None:
         """The traces behind a run-level table (the repeatability probe's two runs), for recomputing it."""
         if self.root is not None:
-            _jsonl(self.root / "runs" / f"{_safe(name)}.jsonl", docs)
+            _jsonl(self.root / "runs" / f"{safe_name(name)}.jsonl", docs)
 
     def note(self, key: str, value: Any) -> None:
         """A run-level table (repeatability, discordance, identity controls) for the results document."""
