@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuse a built distribution that carries a private name or a file nobody listed.
 
-    DIST_CLEAN_PRIVATE_NAMES=... python3 scripts/check-dist-clean.py [--allowlist FILE] [--distribution NAME] <file>...
+    DIST_CLEAN_PRIVATE_NAMES=... python3 scripts/check-dist-clean.py [--allowlist FILE] [--freeze FILE] [--distribution NAME] <file>...
     python3 scripts/check-dist-clean.py --self-test
 
 Each file is a wheel, a zip, a source distribution (.tar.gz) or a crate (.crate). Every
@@ -12,7 +12,11 @@ member is opened and checked three ways:
 * its bytes may not contain a private name, matched as a substring without regard to case;
 * when an allowlist is given, its path must match a pattern the allowlist names for that
   distribution and archive kind (`sdist` or `wheel`). A file the allowlist does not name is
-  a failure, so a new top-level directory has to be listed on purpose.
+  a failure, so a new top-level directory has to be listed on purpose;
+* when a freeze file is given (a release build), its path may not be one the freeze file
+  lists for that distribution. A listed path ending in `/` names a directory; any other
+  names one file. Either matches at a path-component boundary at any depth, so one entry
+  covers the wheel and the source distribution layouts.
 
 The private names are not written in this repository. They come from the environment
 variable DIST_CLEAN_PRIVATE_NAMES (one name per line), which CI fills from a repository
@@ -115,6 +119,23 @@ def load_allowlist(path: Path, distribution: str) -> dict[str, list[str]]:
     return {k: list(v) for k, v in table[distribution].items()}
 
 
+def load_freeze(path: Path, distribution: str) -> tuple[str, ...]:
+    """The paths ``distribution`` may not ship; a distribution with no table ships none of them."""
+    table = tomllib.loads(path.read_text()).get("distribution", {})
+    return tuple(table.get(distribution, {}).get("refuse", ()))
+
+
+def frozen(rel: str, refuse: tuple[str, ...]) -> str | None:
+    """The freeze entry ``rel`` matches, or None."""
+    padded = "/" + rel
+    for entry in refuse:
+        if entry.endswith("/") and ("/" + entry) in padded + "/":
+            return entry
+        if not entry.endswith("/") and padded.endswith("/" + entry):
+            return entry
+    return None
+
+
 def _name_hits(data: bytes, needles: tuple[bytes, ...]) -> list[tuple[int, int]]:
     """Every (line number, list entry number) where a private name occurs, found without regard to case."""
     lowered = data.lower()
@@ -139,7 +160,12 @@ def check_path(rel: str) -> str | None:
     return None
 
 
-def scan(path: Path, needles: tuple[bytes, ...], allowlist: dict[str, list[str]] | None = None) -> list[str]:
+def scan(
+    path: Path,
+    needles: tuple[bytes, ...],
+    allowlist: dict[str, list[str]] | None = None,
+    refuse: tuple[str, ...] = (),
+) -> list[str]:
     """Return one failure line per offending member or content hit; empty means clean."""
     kind = _kind(path)
     failures: list[str] = []
@@ -151,6 +177,9 @@ def scan(path: Path, needles: tuple[bytes, ...], allowlist: dict[str, list[str]]
         failures.extend(f"{path.name}: {member}:{line}: private name #{index}" for line, index in _name_hits(data, needles))
         if allowlist is not None and not any(fnmatch.fnmatchcase(rel, p) for p in allowlist.get(kind, [])):
             failures.append(f"{path.name}: {member}: not on the {kind} allowlist")
+        entry = frozen(rel, refuse)
+        if entry:
+            failures.append(f"{path.name}: {member}: frozen path {entry}")
     return failures
 
 
@@ -198,6 +227,19 @@ def _self_test() -> int:
             if bool(got) != bool(want_min):
                 print(f"SELF-TEST FAIL {label}: expected {'a failure' if want_min else 'clean'}, got {got}")
                 ok = False
+        refuse = ("pkg/held.py", "pkg/bench/")
+        frozen_cases: dict[str, tuple[dict[str, bytes], bool]] = {
+            "freeze-clean": (base, False),
+            "freeze-file": ({**base, "src/pkg/held.py": b"x = 1\n"}, True),
+            "freeze-dir": ({**base, "src/pkg/bench/run.py": b"x = 1\n"}, True),
+            "freeze-boundary": ({**base, "src/pkg/unheld.py": b"x = 1\n", "src/pkg/benchmark.py": b"x\n"}, False),
+        }
+        wide = {"sdist": ["pyproject.toml", "src/*"]}
+        for label, (files, want) in frozen_cases.items():
+            got = [g for g in scan(build(f"{label}.tar.gz", files), needles, wide, refuse) if "frozen path" in g]
+            if bool(got) != want:
+                print(f"SELF-TEST FAIL {label}: expected {'a frozen path' if want else 'none'}, got {got}")
+                ok = False
     print("self-test " + ("passed" if ok else "FAILED"))
     return 0 if ok else 1
 
@@ -207,6 +249,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("files", nargs="*", type=Path)
     ap.add_argument("--allowlist", type=Path)
     ap.add_argument("--distribution")
+    ap.add_argument("--freeze", type=Path, help="TOML of paths a release of --distribution may not carry")
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--names-sha256", default=PRIVATE_NAMES_SHA256,
                     help="digest the name list must match (default: the pinned digest of the real list)")
@@ -229,10 +272,19 @@ def main(argv: list[str]) -> int:
         except (KeyError, OSError, tomllib.TOMLDecodeError) as exc:
             print(f"allowlist unreadable: {exc}", file=sys.stderr)
             return 2
+    refuse: tuple[str, ...] = ()
+    if args.freeze:
+        if not args.distribution:
+            ap.error("--freeze needs --distribution")
+        try:
+            refuse = load_freeze(args.freeze, args.distribution)
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            print(f"freeze file unreadable: {exc}", file=sys.stderr)
+            return 2
     failed = False
     for path in args.files:
         try:
-            problems = scan(path, needles, allow)
+            problems = scan(path, needles, allow, refuse)
         except (ValueError, OSError, tarfile.TarError, zipfile.BadZipFile) as exc:
             print(f"cannot read {path}: {exc}", file=sys.stderr)
             return 2

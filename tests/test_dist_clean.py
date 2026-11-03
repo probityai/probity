@@ -142,6 +142,34 @@ def test_command_exits_one_on_a_planted_file_and_zero_when_clean(tmp_path):
     assert run(clean, digest=dist_clean.PRIVATE_NAMES_SHA256) == 2
 
 
+@pytest.mark.parametrize(("member", "frozen"), [
+    ("src/pkg/held.py", True),
+    ("pkg/held.py", True),
+    ("src/pkg/bench/run.py", True),
+    ("src/pkg/unheld.py", False),
+    ("src/pkg/benchmark.py", False),
+    ("src/other/pkg/held.py", True),
+])
+def test_a_release_build_refuses_a_frozen_path(tmp_path, member, frozen):
+    refuse = ("pkg/held.py", "pkg/bench/")
+    wide = {"sdist": ["PKG-INFO", "pyproject.toml", "src/*"], "wheel": ["pkg/*"]}
+    files = {**BASE, member: b"x = 1\n"}
+    archive = _wheel(tmp_path, {member: b"x\n"}) if not member.startswith("src/") else _sdist(tmp_path, files)
+    found = [f for f in dist_clean.scan(archive, NEEDLES, wide, refuse) if "frozen path" in f]
+    assert bool(found) is frozen
+    assert not [f for f in dist_clean.scan(archive, NEEDLES, wide) if "frozen path" in f]
+
+
+def test_the_freeze_file_names_only_listed_distributions_and_reads_each_one():
+    import tomllib
+    table = tomllib.loads((SCRIPTS / "release-freeze.toml").read_text())["distribution"]
+    listed = set(tomllib.loads((SCRIPTS / "dist-allowlist.toml").read_text())["distribution"])
+    assert set(table) <= listed
+    for name in table:
+        assert dist_clean.load_freeze(SCRIPTS / "release-freeze.toml", name)
+    assert dist_clean.load_freeze(SCRIPTS / "release-freeze.toml", "probity-verify") == ()
+
+
 def test_self_test_passes():
     assert dist_clean._self_test() == 0
 

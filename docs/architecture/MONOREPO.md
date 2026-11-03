@@ -103,6 +103,12 @@ the same variable in its environment. A new
 member needs its own table in the allowlist (a test pins this). A PyPI file cannot be replaced, so
 this check is the only point at which a leak is cheap to fix.
 
+A release build (`release.yml`, and `build-from-tag.py`) also passes `--freeze
+scripts/release-freeze.toml`, which lists paths no release may carry. A wheel or source
+distribution that still holds one is refused, so a member whose tree still carries a listed file
+cannot be released until that file leaves it. Pull-request builds do not read the freeze file, so
+the tree can change in steps while `main` stays green.
+
 ### PyPI trusted publishers to enter
 
 Every PyPI project released from this repository has the same publisher: owner `probityai`, repository

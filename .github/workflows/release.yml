@@ -75,6 +75,7 @@ jobs:
     uses: ./.github/workflows/python-build.yml
     with:
       distribution: ${{ needs.resolve.outputs.distribution }}
+      release: true
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
