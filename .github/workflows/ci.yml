@@ -71,6 +71,10 @@ jobs:
         run: uv run --frozen --only-group dev ruff check .
       - name: workspace tools
         run: uv run --frozen --only-group dev python -m pytest tests
+      - name: every publish job has a tag the pypi environment allows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/check_release_environment.py
       - name: every README stays one screen and every link in it resolves
         run: |
           python3 scripts/readme-lint-test.py

@@ -1,8 +1,8 @@
 """The verifier is our public package, not a copy: assert the ranges, the lock and that they run.
 
 Each in-family dependency is a range, so the family installs together at its latest releases: a
-compatible release (`~=X.Y.Z`), or for a member of this workspace the window `>=F,<C` that
-scripts/family_resolves.py holds to the member's version (`WINDOWED`).
+compatible release (`~=X.Y.Z`), or for a package whose releases outrun this one the window `>=F,<C`
+(`WINDOWED`). For a member of this workspace scripts/family_resolves.py holds the window to its version.
 The lock names one version per package, from the index with a hash per file. The
 tests hold the lock to the range and the installed package to the lock: a bump that moves only one of
 them fails.
@@ -24,7 +24,7 @@ from packaging.version import Version
 
 ROOT = Path(__file__).resolve().parents[2]
 PYPI = {"registry": "https://pypi.org/simple"}
-WINDOWED = {"probity-verify"}  # the member of this workspace, whose release series the window spans
+WINDOWED = {"probity-verify", "agent-evidence-vectors"}  # ranges spanning a release series
 
 
 def declared(name: str) -> str:
