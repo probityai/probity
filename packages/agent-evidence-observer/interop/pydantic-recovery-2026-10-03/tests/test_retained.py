@@ -39,7 +39,7 @@ def test_retained_report_equals_retained_reader_output() -> None:
     report = verify_saved(packet, load(packet / "consumer-pins.json"), WITHHELD)
     assert canonical(report) + b"\n" == (RETAINED / "host-receipts/reader.stdout").read_bytes()
     assert report["status"] == "verified" and report["providerCalls"] == 0
-    assert strict_loads((RETAINED / "host-repeat/reader.stdout").read_bytes()) == report
+    assert strict_loads((RETAINED / "host-repeat/reader.stdout").read_bytes().rstrip(b"\n")) == report
 
 
 def test_every_withheld_member_is_pinned_by_the_manifest_and_absent() -> None:
