@@ -30,7 +30,7 @@ from ratchet.canonical import canonical_json
 from ratchet.improve.activate import MemoryActivator
 from ratchet.improve.evaluate import evaluate
 from ratchet.improve.evaluator import evaluator_identity
-from ratchet.improve.overfit import Literals
+from ratchet.improve.failures import Literals
 from ratchet.improve.receipt import Signer
 from ratchet.improve.referee import RefereeCore, RefereeParts, Request
 from ratchet.verify import dsse
@@ -171,9 +171,10 @@ def test_v3_counts_are_recounted_from_the_signed_execution_records(tmp_path: Pat
     path = _v3(tmp_path, signer)
     report = verify_results(path.read_bytes(), signer.public_key, path.parent)
     assert report.ok, report.reason
-    (detail,) = report.recomputed
-    assert detail["cases"] == 3 and detail["executions"] == 2 * 3 * 40
-    assert report.authenticated_only == ["v3_identity_controls"]
+    detail = report.recomputed[0]
+    assert detail["cases"] == 3 and detail["executions"] == 4 * 3 * 40  # parent, two controls, candidate
+    assert report.authenticated_only == []
+    assert {"id": "v3_identity_controls", "arms": 2} in report.recomputed
     _resign(path, signer, lambda d: d["decisions"][0]["per_case"][0].update(arm=41))
     assert verify_results(path.read_bytes(), signer.public_key, path.parent).reason.startswith(
         "v3_count_mismatch"
@@ -252,8 +253,8 @@ def test_v3_executions_on_suite_cases_are_graded_again_from_the_case_documents(t
     path = Path(core.results("v3-suite")["path"])
     report = verify_results(path.read_bytes(), signer.public_key, path.parent, CASES)
     assert report.ok, report.reason
-    (detail,) = report.recomputed
-    assert detail["regraded"] == detail["executions"] == 2 * 40
+    detail = report.recomputed[0]
+    assert detail["regraded"] == detail["executions"] == 4 * 40  # parent, two controls, candidate
     trace_file = next((path.parent / "cohorts").iterdir()) / "traces" / "parent.jsonl"
     lines = trace_file.read_text().splitlines()
     doc = json.loads(lines[0])

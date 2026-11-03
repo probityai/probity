@@ -1,0 +1,10 @@
+{
+  "assessments": {
+    "mutation-none-read-only": {
+      "claim_type": "observed_effect/v1",
+      "envelope": "envelope.json",
+      "observer_public_key": "4f2a59edc8367deb40047ce83ee7f5ce711a57d93abbda9d1ce8588c56a3ce88"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

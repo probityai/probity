@@ -77,6 +77,10 @@ jobs:
         run: uv run --frozen --only-group dev ruff check .
       - name: workspace tools
         run: uv run --frozen --only-group dev python -m pytest tests
+      - name: every publish job has a tag the pypi environment allows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/check_release_environment.py
       - name: every README stays one screen and every link in it resolves
         run: |
           python3 scripts/readme-lint-test.py
@@ -200,9 +204,23 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
+  package-probity-effects:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['probity-effects']
+    uses: ./.github/workflows/package-probity-effects.yml
+
+  probity-effects-distribution:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['probity-effects']
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: probity-effects
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
+
   ci-ok:
     if: always()
-    needs: [changes, lint, probity-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution, package-agent-evidence-plugins, package-evaluator-replay-kit, evaluator-replay-kit-distribution]
+    needs: [changes, lint, probity-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution, package-agent-evidence-plugins, package-evaluator-replay-kit, evaluator-replay-kit-distribution, package-probity-effects, probity-effects-distribution]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed

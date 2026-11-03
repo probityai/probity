@@ -26,7 +26,7 @@ from packaging.version import Version
 ROOT = Path(__file__).resolve().parents[2]
 LOCK = ROOT.parents[1] / "uv.lock"  # the workspace root's one lock
 PYPI = {"registry": "https://pypi.org/simple"}
-WINDOWED = {"probity-verify"}  # the member of this workspace, whose release series the window spans
+WINDOWED = {"probity-verify", "agent-evidence-vectors"}  # ranges spanning a release series
 
 
 def declared(name: str) -> str:

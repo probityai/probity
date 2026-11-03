@@ -13,95 +13,20 @@ located at the trace's last event.
 
 from __future__ import annotations
 
-import json
-import re
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
-from typing import Any, Literal
+from collections.abc import Callable, Sequence
 
-from ratchet_cases.types import Event, Trace, sha256_hex
+from ratchet_cases.types import Trace, sha256_hex
 
 from ratchet.canonical import canonical_json
 from ratchet.improve.evaluate import is_infra_failure
-from ratchet.improve.sim import Simulator, Walk, call_of, last_seq
-
-Mode = Literal["commission", "omission", "unlocated"]
-
-_QUOTED = re.compile(r"'[^']*'|\"[^\"]*\"")
-_IDLIKE = re.compile(r"\b[\w.-]*\d[\w.-]*\b")
-# Record ids, emails and slugs: any token joining word characters with "@", ".", "-" or "_".
-_COMPOUND = re.compile(r"[\w]+(?:[@.\-_][\w]+)+")
-_SPACE = re.compile(r"\s+")
-
-
-def normalize(text: str) -> str:
-    """A reason with its specifics removed, so the same mechanism on different records matches."""
-    out = _QUOTED.sub("<s>", text.lower())
-    out = _COMPOUND.sub("<id>", out)
-    out = _IDLIKE.sub("<id>", out)
-    return _SPACE.sub(" ", out).strip()
-
-
-@dataclass(frozen=True)
-class FailurePoint:
-    run_id: str
-    case_id: str
-    seq: int
-    reason: str
-    mode: Mode
-    tool: str
-
-    @property
-    def id(self) -> str:
-        return f"{self.run_id}@{self.seq}"
-
-
-@dataclass(frozen=True)
-class FailureCluster:
-    id: str
-    key: dict[str, str]
-    members: list[FailurePoint]
-    summary: str = ""
-    traces: dict[str, Trace] = field(default_factory=dict, compare=False, repr=False)
-
-    def to_payload(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "key": self.key,
-            "summary": self.summary,
-            "members": [asdict(m) | {"id": m.id} for m in self.members],
-        }
-
-
-def _norms(reasons: Sequence[str] | None) -> set[str]:
-    return {normalize(r) for r in reasons or ()}
-
-
-def locate(trace: Trace, walk: Walk | None, reason: str) -> tuple[int, Mode]:
-    """The seq of the event that caused `reason`, and whether it was an act or an omission."""
-    end = last_seq(trace)
-    if walk is None or walk.initial_reasons is None or any(s.reasons_after is None for s in walk.steps):
-        return _locate_by_mention(trace, reason)
-    n = normalize(reason)
-    holds = [n in _norms(s.reasons_after) for s in walk.steps]
-    i = len(holds)
-    while i > 0 and holds[i - 1]:
-        i -= 1
-    if i == len(holds) or (i == 0 and n in _norms(walk.initial_reasons)):
-        return end, "omission"
-    return walk.steps[i].seq, "commission"
-
-
-def _locate_by_mention(trace: Trace, reason: str) -> tuple[int, Mode]:
-    """Without intermediate grading: the last tool call whose arguments name an id the reason names."""
-    ids = set(_IDLIKE.findall(reason))
-    hit: int | None = None
-    for e in trace.events:
-        if e.kind == "tool_call" and ids & set(_IDLIKE.findall(json.dumps(call_of(e)["args"]))):
-            hit = e.seq
-    if hit is not None:
-        return hit, "commission"
-    return last_seq(trace), "unlocated"
+from ratchet.improve.failures import (
+    FailureCluster,
+    FailurePoint,
+    Summarizer,
+    locate,
+    normalize,
+)
+from ratchet.improve.sim import Simulator, Walk, call_of
 
 
 def _features(trace: Trace, seq: int) -> dict[str, str]:
@@ -139,21 +64,6 @@ def _key(trace: Trace, point: FailurePoint) -> dict[str, str]:
     return {"reason": normalize(point.reason), "mode": point.mode, **_features(trace, point.seq)}
 
 
-def render_event(e: Event, limit: int = 400) -> str:
-    body = json.dumps(e.payload, sort_keys=True, default=str)
-    if len(body) > limit:
-        body = body[:limit] + "...(truncated)"
-    return f"[{e.seq}] {e.kind}: {body}"
-
-
-def excerpt(trace: Trace, seq: int, before: int = 8, after: int = 2) -> str:
-    """The events around `seq`, the failing step marked, for a model to read."""
-    idx = next((i for i, e in enumerate(trace.events) if e.seq >= seq), len(trace.events) - 1)
-    lo, hi = max(0, idx - before), min(len(trace.events), idx + after + 1)
-    lines = [render_event(e) + ("    <== FAILING STEP" if e.seq == seq else "") for e in trace.events[lo:hi]]
-    return "\n".join(lines)
-
-
 def _default_summary(key: dict[str, str], n: int) -> str:
     what = "did" if key["mode"] == "commission" else "never did"
     bits = [f"{n} failure(s): the agent {what} something that led to '{key['reason']}'"]
@@ -164,10 +74,6 @@ def _default_summary(key: dict[str, str], n: int) -> str:
     if key["repeat"]:
         bits.append(f"repeating an earlier call ({key['repeat']})")
     return ", ".join(bits) + "."
-
-
-# A cluster's key, its members and their traces in; a one-sentence mechanism, or None for the default, out.
-Summarizer = Callable[[Mapping[str, str], Sequence[FailurePoint], Mapping[str, Trace]], str | None]
 
 
 def diagnose(

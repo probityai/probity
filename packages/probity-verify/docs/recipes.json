@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "probity-verify",
-      "project.version": "0.3.0",
+      "project.version": "0.4.0",
       "project.requires-python": ">=3.12",
       "project.dependencies": [
         "cryptography>=50.0.2,<51",
@@ -59,7 +59,7 @@
         }
       }
     },
-    "sha256": "c4090cf62af479f65420f50be79aec5ad1d5aae5a0420cefc5db6d3606e389dc"
+    "sha256": "33dada9280edaede24f0d9d1f20e4227e7f9613f8547db29edfd4290153805fe"
   },
   "implementation": [
     {
@@ -91,6 +91,11 @@
       "path": "src/probity_verify/adapters/authority_anchor.py",
       "bytes": 7524,
       "sha256": "70fc8d4df585411e65117b2c62828a619158d26ef03475304ae56617a435ea52"
+    },
+    {
+      "path": "src/probity_verify/adapters/bound_records.py",
+      "bytes": 2402,
+      "sha256": "fd662d59b3bc2dddd0a40e71bbe806d459f3e8fe8461eb541e40bc41024c0a1a"
     },
     {
       "path": "src/probity_verify/adapters/brokered_file_write.py",
@@ -128,6 +133,16 @@
       "sha256": "9c786c4458c3726c809d1500889bdfec244cccd137ed36b330bbe00cfd649669"
     },
     {
+      "path": "src/probity_verify/adapters/jcs_canonical.py",
+      "bytes": 6494,
+      "sha256": "425c5d072cefe672908f1e2fa38c60244078e06b6027f1531df8a2acaedc0d3a"
+    },
+    {
+      "path": "src/probity_verify/adapters/observed_effect.py",
+      "bytes": 54671,
+      "sha256": "b85edeb611d5b2ce08ac024dbe3c400b490973305d4204ab7609194b7b4d56f7"
+    },
+    {
       "path": "src/probity_verify/adapters/operand_lineage.py",
       "bytes": 12072,
       "sha256": "a24ae4f5e3b0517a1a9030c8a698128061be65bd0aa8d0880d9b4c99a74fa83b"
@@ -143,6 +158,11 @@
       "sha256": "f7ba513e68cc72384b48a0b88deed7ec1b950055ed5c5d8229a5764e3ee58d22"
     },
     {
+      "path": "src/probity_verify/adapters/restoration.py",
+      "bytes": 31923,
+      "sha256": "1ec90315f6e18348c1481255fcb4b61554ef9a830e06ddc1caae24339144e041"
+    },
+    {
       "path": "src/probity_verify/adapters/source_coverage.py",
       "bytes": 9102,
       "sha256": "a6765b4fe87f62f66b6595b8753bd55753dd66ca320d5bd11e8dc7e11e783128"
@@ -156,6 +176,11 @@
       "path": "src/probity_verify/adapters/tool_claim_match.py",
       "bytes": 22170,
       "sha256": "c2c494d4808c270b537254485fa2104000b52853d7d1f09f9d558b1a6e85a44f"
+    },
+    {
+      "path": "src/probity_verify/adapters/uncertain_effect.py",
+      "bytes": 12888,
+      "sha256": "5ca955a641049fff4ac3a1c36fb13cf868db02b357145cf2d70476b7438956b5"
     },
     {
       "path": "src/probity_verify/adapters/witnessed.py",
@@ -184,8 +209,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 9932,
-      "sha256": "82c7d36aa78f472b303994e2d2a33d44169f43a2d0b36b0d32801e9f6db181ef"
+      "bytes": 10417,
+      "sha256": "f514c676c1a86a1832dcfe3cb6966993b466d6d6d6e1370ec48cff8b61f46ea3"
     },
     {
       "path": "src/probity_verify/dsse.py",
@@ -1508,6 +1533,201 @@
           "path": "examples/execution-evidence/statement.json",
           "bytes": 3869,
           "sha256": "fcb846afff2d6979e356bb33f144f24ed526d818ffee6ab9e78d4d3788daf99d"
+        }
+      ]
+    },
+    {
+      "task": "Check a trail whose effect may have happened after a lost reply",
+      "claim_type": "uncertain_effect/v1",
+      "case": "examples/corpus-routes/uncertain-effect/case.json",
+      "policy": "examples/corpus-routes/uncertain-effect/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; it does not establish that the trail was recorded truthfully.",
+      "case_id": "allow-confirmed-first-attempt",
+      "expected_reason": "effect_held",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/corpus-routes/uncertain-effect/case.json",
+        "--policy",
+        "examples/corpus-routes/uncertain-effect/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/uncertain-effect/case.json",
+          "bytes": 270,
+          "sha256": "42aa8b3a4788698e08480bbf39d1c4e54b6b65613f698ef153016693038e222d"
+        },
+        {
+          "path": "examples/corpus-routes/uncertain-effect/policy.json",
+          "bytes": 186,
+          "sha256": "882918408d576e47a69a40ae8a8a3e43f96490c191513bb6d8a45ff28d920011"
+        },
+        {
+          "path": "examples/corpus-routes/uncertain-effect/record.json",
+          "bytes": 959,
+          "sha256": "8ff4e87d4a8555b45904fcb604babb6d9ddb7350578b44bf8c6e3e2faa716617"
+        }
+      ]
+    },
+    {
+      "task": "Check one restoration-evidence record",
+      "claim_type": "restoration_record/v1",
+      "case": "examples/corpus-routes/restoration-record/case.json",
+      "policy": "examples/corpus-routes/restoration-record/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; unsigned, and a pass is no finding that the decision was right.",
+      "case_id": "incident-action-authorization-control",
+      "expected_reason": "authorization-recorded",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/corpus-routes/restoration-record/case.json",
+        "--policy",
+        "examples/corpus-routes/restoration-record/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/restoration-record/case.json",
+          "bytes": 285,
+          "sha256": "c50e80710d69cc0d49f5e5f8a5ba1d377da634df450246880d2e166b1e5879e5"
+        },
+        {
+          "path": "examples/corpus-routes/restoration-record/policy.json",
+          "bytes": 199,
+          "sha256": "360c3ef296c597ad77310f7515ec5c64cbca4bc26e66a208cda888a1a8906724"
+        },
+        {
+          "path": "examples/corpus-routes/restoration-record/statement.json",
+          "bytes": 1892,
+          "sha256": "9319b6c60acc1e282f81d6824fb5bdb1d43c6d21a2105c6258459257ea312636"
+        }
+      ]
+    },
+    {
+      "task": "Check a restoration-evidence bundle",
+      "claim_type": "restoration_bundle/v1",
+      "case": "examples/corpus-routes/restoration-bundle/case.json",
+      "policy": "examples/corpus-routes/restoration-bundle/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; unsigned, and a pass is no finding that the decision was right.",
+      "case_id": "bundle-consistent",
+      "expected_reason": "bundle-consistent",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/corpus-routes/restoration-bundle/case.json",
+        "--policy",
+        "examples/corpus-routes/restoration-bundle/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/restoration-bundle/case.json",
+          "bytes": 559,
+          "sha256": "ccca8c6fdcc3f30b53b29aace7f96d0ef5108dfc946e611e0260981cd94cae5e"
+        },
+        {
+          "path": "examples/corpus-routes/restoration-bundle/policy.json",
+          "bytes": 229,
+          "sha256": "77713253e612f46ced5b6936f9bda443c1328830d58e863fd178fb0e5ec673d4"
+        },
+        {
+          "path": "examples/corpus-routes/restoration-bundle/r1.json",
+          "bytes": 1892,
+          "sha256": "9319b6c60acc1e282f81d6824fb5bdb1d43c6d21a2105c6258459257ea312636"
+        },
+        {
+          "path": "examples/corpus-routes/restoration-bundle/r2.json",
+          "bytes": 2679,
+          "sha256": "c864e1b41caf7a10e19cbfc08940e164c117fef8833660c76e7b864a80e4b834"
+        },
+        {
+          "path": "examples/corpus-routes/restoration-bundle/r3.json",
+          "bytes": 4157,
+          "sha256": "81c99939127c22e31a4af4eda46558143f397035b99d36960f0a7342670c6543"
+        }
+      ]
+    },
+    {
+      "task": "Check canonical bytes for an A2A Agent Card signature",
+      "claim_type": "jcs_canonical/v1",
+      "case": "examples/corpus-routes/jcs-canonical/case.json",
+      "policy": "examples/corpus-routes/jcs-canonical/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Vector A2-001 of a2aproject/a2a-tck; it recomputes bytes and checks no signature.",
+      "case_id": "A2-001",
+      "expected_reason": "canonical_bytes_match",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/corpus-routes/jcs-canonical/case.json",
+        "--policy",
+        "examples/corpus-routes/jcs-canonical/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/jcs-canonical/case.json",
+          "bytes": 405,
+          "sha256": "83d02fb33112a371216cd007e50037655e53d6bdeb50dfe166782e87b03eea2e"
+        },
+        {
+          "path": "examples/corpus-routes/jcs-canonical/policy.json",
+          "bytes": 228,
+          "sha256": "2c220b5753d93dcada1720355244dc5290797ac0adc885d268e8edf2d660de32"
+        },
+        {
+          "path": "examples/corpus-routes/jcs-canonical/claimed.bin",
+          "bytes": 84,
+          "sha256": "5c2bca9897e131fc40df54c44eb3f8220a64b046f85aaaf87a0d6414f6b1d235"
+        },
+        {
+          "path": "examples/corpus-routes/jcs-canonical/input.json",
+          "bytes": 168,
+          "sha256": "f1225fcf01abf4804f237c5c74cca432e40a001c23fea6c9b765b310f4d1c521"
+        }
+      ]
+    },
+    {
+      "task": "Check a signed Observed Effect record",
+      "claim_type": "observed_effect/v1",
+      "case": "examples/corpus-routes/observed-effect/case.json",
+      "policy": "examples/corpus-routes/observed-effect/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus.",
+      "case_id": "mutation-none-read-only",
+      "expected_reason": "record_conforms",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/corpus-routes/observed-effect/case.json",
+        "--policy",
+        "examples/corpus-routes/observed-effect/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/observed-effect/case.json",
+          "bytes": 269,
+          "sha256": "9321ccc0fe4e4f64e403f68d63657028c9a03c4ab77316ebc26a2c061f574cf9"
+        },
+        {
+          "path": "examples/corpus-routes/observed-effect/policy.json",
+          "bytes": 280,
+          "sha256": "8252c7fc29d7c07b40744e7183ba54cf7b1d7e99c3eaf80c7f343efd91986eed"
+        },
+        {
+          "path": "examples/corpus-routes/observed-effect/envelope.json",
+          "bytes": 2847,
+          "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
         }
       ]
     }

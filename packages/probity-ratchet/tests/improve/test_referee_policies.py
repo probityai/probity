@@ -16,7 +16,7 @@ import pytest
 from ratchet.improve.activate import MemoryActivator
 from ratchet.improve.evaluate import EvalReport, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity
-from ratchet.improve.overfit import Literals
+from ratchet.improve.failures import Literals
 from ratchet.improve.receipt import Signer, verify
 from ratchet.improve.referee import (
     ProcessReferee,

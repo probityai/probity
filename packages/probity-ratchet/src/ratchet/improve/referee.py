@@ -40,10 +40,9 @@ from ratchet.canonical import canonical_json
 from ratchet.improve import wire
 from ratchet.improve.activate import Activation, Activator
 from ratchet.improve.admit import Check, Decision, ExtendedChange, admit, admit_v3, awaiting_confirmation
-from ratchet.improve.diagnose import FailureCluster
 from ratchet.improve.evaluate import CaseLike, EvalReport, RunCase, _one, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity, require_same
-from ratchet.improve.overfit import Literals
+from ratchet.improve.failures import FailureCluster, Literals
 from ratchet.improve.policies import RULING_2, c1_flips, normalized, rebuild
 from ratchet.improve.receipt import Signer, receipt
 from ratchet.improve.replay import GuardRunner, ReplayReport, WalkCache, replay
@@ -897,6 +896,18 @@ class RefereeCore:
 # ---------------------------------------------------------------------------------------------------------
 
 Factory = Callable[[Mapping[str, Any]], RefereeParts]
+REFEREE_FACTORY_ENV = "RATCHET_REFEREE_FACTORY"
+OPEN_FACTORY = "ratchet.improve.referee_open"
+
+
+def factory_name(role: str, config: Mapping[str, Any], env: Mapping[str, str] | None = None) -> str:
+    """The `module:function` a referee process is built by. `role` is `case_suite_parts` or
+    `policy_parts`; the module is the configuration's `factory`, else RATCHET_REFEREE_FACTORY, else the
+    open file-store referee (`ratchet.improve.referee_open`). Another module defines the same two
+    functions."""
+    environ = os.environ if env is None else env
+    module = str(config.get("factory") or environ.get(REFEREE_FACTORY_ENV) or OPEN_FACTORY)
+    return f"{module}:{role}"
 
 
 def load_factory(name: str) -> Factory:

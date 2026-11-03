@@ -2,7 +2,7 @@
 
 > Record brokered agent writes and check selected native reports offline.
 
-Source-only root package `agent-evidence-observer` 0.1.3, Python 3.12 or later,
+Source-only root package `agent-evidence-observer` 0.2.0, Python 3.12 or later,
 Apache-2.0. Pin a reviewed commit or retained wheel. The root install supplies
 the broker, admission command and bounded Inspect/A2A and Atomic reader entry points.
 Other native profiles have separate install units or source workflows.
@@ -12,6 +12,7 @@ Other native profiles have separate install units or source workflows.
 - [Install and choose a profile](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md): exact source install, expected output, root commands and all separate package manifests.
 - [Record brokered writes](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/RUNNING.md): run the demo and verify its PEER packet.
 - [Read retained Inspect or A2A execution](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/NATIVE-CONSUMER-CI.md): normally installed wrapper, matching source checkout, separately selected inputs and fail-closed consumer action.
+- [Seal an Inspect log](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSPECT-SEALED-MANIFEST.md): `pip install 'agent-evidence-observer[inspect]'` writes a detached manifest of execution and results digests beside each finished log, so a restamp is not a regrade.
 - [Read Atomic delegation tests](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/ATOMIC-NATIVE-READER.md): installed offline reader, native executable custody and selected-input controls.
 - [Read current Inspect results](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/inspect-current-host-2026-10-03/README.md): separate pinned reader package and native producer/consumer workflow.
 - [Read LangGraph or Pydantic AI packets](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/README.md): dedicated source-checked reader wheels and their explicit upgrade contract.

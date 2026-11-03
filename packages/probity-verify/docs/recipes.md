@@ -32,6 +32,11 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check a contract's oracle-free probes on a split whose behavioural tests passed](done-receipt.md) | `probe_observed/v1` | `supported` | Synthetic verifier grade; PEER scope. |
 | [Detect a done receipt that reports verdicts its records do not give](done-receipt.md) | `done_receipt/v2` | `contradicted` | Synthetic records and an unsigned receipt Statement; PEER scope. |
 | [Check an adversarial execution evidence statement](adapters.md) | `adversarial_execution_evidence/v1` | `supported` | Conformance-corpus statement signed with a published test key; the key carries no trust outside the corpus. |
+| [Check a trail whose effect may have happened after a lost reply](corpus-routes.md) | `uncertain_effect/v1` | `supported` | Authored synthetic corpus member; it does not establish that the trail was recorded truthfully. |
+| [Check one restoration-evidence record](corpus-routes.md) | `restoration_record/v1` | `supported` | Authored synthetic corpus member; unsigned, and a pass is no finding that the decision was right. |
+| [Check a restoration-evidence bundle](corpus-routes.md) | `restoration_bundle/v1` | `supported` | Authored synthetic corpus member; unsigned, and a pass is no finding that the decision was right. |
+| [Check canonical bytes for an A2A Agent Card signature](corpus-routes.md) | `jcs_canonical/v1` | `supported` | Vector A2-001 of a2aproject/a2a-tck; it recomputes bytes and checks no signature. |
+| [Check a signed Observed Effect record](corpus-routes.md) | `observed_effect/v1` | `supported` | Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus. |
 
 ## Retrieve a command
 
@@ -43,7 +48,7 @@ The JSON `distribution.status` describes package-name availability: `probity-ver
 It does not assert that the source candidate bound by `package_metadata` has been uploaded.
 The separate `fixture_scope` describes where the indexed case and policy files live.
 
-The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.2.4 with the sample inputs its wheel carries.
+The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.4.0 with the sample inputs its wheel carries.
 For this index, install its own checkout, then use the index's `argv` from that checkout root.
 Replace its first argument with your installed executable's path when the environment is separate.
 The index binds its inputs and implementation to exact bytes.

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -3974,7 +3974,7 @@ wheels = [
 
 [[package]]
 name = "probity-ratchet"
-version = "0.3.3"
+version = "0.3.4"
 source = { editable = "../../packages/probity-ratchet" }
 dependencies = [
     { name = "agent-evidence-vectors" },
@@ -3999,7 +3999,7 @@ telemetry = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-evidence-vectors", specifier = "~=0.31.0" },
+    { name = "agent-evidence-vectors", specifier = ">=0.31.0,<1.0" },
     { name = "cryptography", specifier = ">=44" },
     { name = "gepa", marker = "extra == 'gepa'", specifier = "==0.1.4" },
     { name = "httpx", specifier = ">=0.27" },
@@ -4031,7 +4031,7 @@ provides-extras = ["agentdojo"]
 
 [[package]]
 name = "probity-verify"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "../../packages/probity-verify" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },

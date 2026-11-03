@@ -21,6 +21,9 @@ permissions:
 # Frozen experiments: no uv call here reads the repository's uv settings (pyproject.toml, uv.toml).
 env:
   UV_NO_CONFIG: "1"
+  # These profiles were qualified on the log directories Inspect writes by itself.
+  AGENT_EVIDENCE_INSPECT_SEAL: 'off'
+
 defaults:
   run:
     working-directory: packages/agent-evidence-observer
@@ -37,7 +40,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install selected native frameworks and regression dependencies
-        run: python -m pip install -e '.[inspect]' -e 'interop/a2a-native-2026-10-02[test]' pytest==9.1.1 hypothesis==6.168.3 ruff==0.16.10
+        run: python -m pip install -e '.[inspect-historical]' -e 'interop/a2a-native-2026-10-02[test]' pytest==9.1.1 hypothesis==6.168.3 ruff==0.16.10
       - name: Refuse changed native joins, transactions and rehashed wrappers
         run: python -m pytest -q interop/five-tier-v0-2026-10-02/tests --junitxml=five-tier-v0-tests.xml
       - name: Check focused lint and bounded production complexity

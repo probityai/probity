@@ -64,7 +64,8 @@ def main(argv: list[str]) -> int:
             _run([sys.executable, "-m", "build", "--no-isolation", "--outdir", str(built), directory], tree, env)
         files = sorted(str(p) for p in out.iterdir() if p.suffix == ".whl" or p.name.endswith(".tar.gz"))
         check = subprocess.run([sys.executable, "scripts/check-dist-clean.py", "--allowlist",
-                                "scripts/dist-allowlist.toml", "--distribution", target["distribution"], *files],
+                                "scripts/dist-allowlist.toml", "--freeze", "scripts/release-freeze.toml",
+                                "--distribution", target["distribution"], *files],
                                cwd=tree, check=False)
         if check.returncode:
             print(f"REFUSED: {args.tag} built from {commit} fails the distribution check", file=sys.stderr)

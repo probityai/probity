@@ -1,0 +1,9 @@
+{
+  "assessments": {
+    "allow-confirmed-first-attempt": {
+      "claim_type": "uncertain_effect/v1",
+      "record": "record.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

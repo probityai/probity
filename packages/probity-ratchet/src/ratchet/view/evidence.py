@@ -23,9 +23,8 @@ from typing import Any
 from ratchet_cases.types import Trace, sha256_hex
 
 from ratchet.canonical import CANONICALIZATION, canonicalizer
-from ratchet.improve.diagnose import FailurePoint
 from ratchet.improve.evaluate import EvalReport
-from ratchet.improve.overfit import lint, training_literals
+from ratchet.improve.failures import FailurePoint, OverfitScreen, installed_overfit_screen
 from ratchet.improve.replay import GuardRunner, WalkCache, replay
 from ratchet.improve.sim import Simulator
 from ratchet.types import Guard, Harness, Procedure
@@ -221,14 +220,39 @@ def _recompute_replays(
         out.recomputed[f"replay:{guard.id}"] = report.to_payload()
 
 
+LEGACY_SCREEN = "ratchet-overfit"  # what screened every decision recorded before the check named its screen
+
+
+def _recompute_overfit(
+    doc: Mapping[str, Any],
+    parent: Harness,
+    candidate: Harness,
+    train: list[Trace],
+    screen: OverfitScreen,
+    out: Evidence,
+) -> None:
+    checks = doc.get("checks") or []
+    check: Mapping[str, Any] = next((c for c in checks if c.get("name") == "overfit_lint"), {})
+    recorded = (check.get("evidence") or {}).get("screen", LEGACY_SCREEN)
+    if recorded != screen.name:
+        out.notes.append(
+            f"overfit_lint was screened by {recorded!r}, not by the installed {screen.name!r}; not recomputed"
+        )
+        return
+    out.recomputed["overfit_lint"] = {"hits": screen.lint(parent, candidate, screen.training_literals(train))}
+
+
 def collect(
     store: ViewStore,
     doc: Mapping[str, Any],
     runner: Callable[[], Any] | None = None,
     simulator: Simulator | None = None,
+    overfit: OverfitScreen | None = None,
 ) -> Evidence:
     """Everything the store can supply for one decision document. `runner` is a context-manager factory for
-    the guard runtime; without it (and a simulator) replay is not recomputed."""
+    the guard runtime; without it (and a simulator) replay is not recomputed. The overfit screen is
+    recomputed with `overfit`, else the installed screen, and only when that is the screen that made the
+    decision: another screen's hits say nothing about it."""
     out = Evidence()
     by_digest = stored_reports(store, doc.get("canonicalization"))
     for name, digest in (doc.get("report_digests") or {}).items():
@@ -250,7 +274,7 @@ def collect(
     out.harnesses["candidate"] = harness_doc(candidate)
     train, _, _ = _generation_traces(store, doc)
     if train:
-        out.recomputed["overfit_lint"] = {"hits": lint(parent, candidate, training_literals(train))}
+        _recompute_overfit(doc, parent, candidate, train, overfit or installed_overfit_screen(), out)
     old = {g.id for g in parent.guards}
     added = [g for g in candidate.guards if g.id not in old]
     if added and runner is not None and simulator is not None:

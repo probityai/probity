@@ -15,8 +15,8 @@ tests/               tests of the repository tools
 ```
 
 Members today: `probity-verify`, `probityai` (the `probityai` command), `probity-ratchet`,
-`probity-ratchet-cases`, `agent-evidence-observer`, `agent-evidence-mcp` and
-`evaluator-replay-kit`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
+`probity-ratchet-cases`, `agent-evidence-observer`, `agent-evidence-mcp`,
+`evaluator-replay-kit` and `probity-effects`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
 publishes nothing or carries a name other than its distribution's.
 
 ## Decisions
@@ -103,6 +103,12 @@ the same variable in its environment. A new
 member needs its own table in the allowlist (a test pins this). A PyPI file cannot be replaced, so
 this check is the only point at which a leak is cheap to fix.
 
+A release build (`release.yml`, and `build-from-tag.py`) also passes `--freeze
+scripts/release-freeze.toml`, which lists paths no release may carry. A wheel or source
+distribution that still holds one is refused, so a member whose tree still carries a listed file
+cannot be released until that file leaves it. Pull-request builds do not read the freeze file, so
+the tree can change in steps while `main` stays green.
+
 ### PyPI trusted publishers to enter
 
 Every PyPI project released from this repository has the same publisher: owner `probityai`, repository
@@ -127,8 +133,8 @@ The `probity-verify` publisher used for 0.1.1 names repository `probity-verify`,
 
 ### Install line and versions
 
-The README's pinned install line is `pip install probity-verify==0.1.1`, the current PyPI release. When
+The README's pinned install line is `pip install probity-verify==0.3.0`, the current PyPI release. When
 `probityai` is first released, the README's install line becomes `pip install probityai==X.Y.Z`.
 `probityai` depends on `probity-verify>=0.2.0`, the first release that registers `verify`, so
-`probity-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai`
+`probity-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai` <!-- version-pins: keep -->
 pins the lowest member release that registers each of its subcommands.

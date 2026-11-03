@@ -9,6 +9,9 @@
 
 [tool.uv.workspace]
 members = ["packages/*"]
+# packages/probity-effects is not a member of the one lock: its tests install the agent frameworks its adapters
+# drive (LangGraph first), and their dependency trees would bind every member's resolution. It keeps its own lock.
+exclude = ["packages/probity-effects"]
 
 [tool.uv.sources]
 # Members that depend on each other resolve to the tree beside them, so every change is tested against
@@ -17,6 +20,9 @@ probity-verify = { workspace = true }
 probity-ratchet-cases = { workspace = true }
 [tool.uv]
 package = false
+# Two Inspect pins cannot share one environment: the historical profiles keep the release they were
+# qualified on, the inspect extra follows the current one.
+conflicts = [[{ package = "agent-evidence-observer", extra = "inspect" }, { package = "agent-evidence-observer", extra = "inspect-historical" }]]
 
 [dependency-groups]
 dev = ["pytest>=9.2.0,<10", "hypothesis>=6.170.13,<7", "ruff==0.17.3"]

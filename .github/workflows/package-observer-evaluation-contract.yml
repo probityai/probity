@@ -16,6 +16,9 @@ permissions:
 # Frozen experiments: no uv call here reads the repository's uv settings (pyproject.toml, uv.toml).
 env:
   UV_NO_CONFIG: "1"
+  # These profiles were qualified on the log directories Inspect writes by itself.
+  AGENT_EVIDENCE_INSPECT_SEAL: 'off'
+
 defaults:
   run:
     working-directory: packages/agent-evidence-observer
@@ -34,7 +37,7 @@ jobs:
       - name: Install standalone test dependencies
         run: python -m pip install -e '.[test]'
       - name: Install pinned native mock harness and Observer adapter
-        run: python -m pip install -e '../..[inspect]'
+        run: python -m pip install -e '../..[inspect-historical]'
       - name: Check declared populations and mutation controls
         run: python -m pytest -q --junitxml=test-results.xml
       - name: Retain five-tier synthetic contract exercise

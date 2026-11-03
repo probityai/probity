@@ -79,6 +79,7 @@ signer keyid `b61d7e39c111`). To check it:
 python -m ratchet.verify.results docs/results/v3-cell/v3-cell-results/v3-cell.dsse --case-suite
 ```
 
-It prints `supported verified: 1 of 1 decisions verified`. It recounts and regrades the 80 parent and
-candidate executions from their traces. The identity-control arms are authenticated (their digests are in
-the receipt) but are not recounted.
+It prints `supported verified: 1 of 1 decisions verified`. It regrades the 160 executions of the parent,
+both identity controls and the candidate from their traces, and decides the decision again from them with the
+public policy rule (`ratchet.improve.stochastic`) under v3: the comparison, the cohort qualification, every
+gate check and the refusal must equal what was signed.

@@ -36,15 +36,15 @@
       "id": "https://probityai.github.io/probity/verifiers/probity-verify"
     }
   },
-  "version": "0.3.0",
+  "version": "0.4.0",
   "workflows": [
     {
       "path": ".github/workflows/release.yml",
-      "sha256": "bf05d1b4a5550b7f6a9a13427cc93bc512414127c130a4bcca6743a6863ba471"
+      "sha256": "7d4145968d3c69dcebfda422deee10748a03227f9a5206c53cef49a6331c8b4a"
     },
     {
       "path": ".github/workflows/python-build.yml",
-      "sha256": "ebef8bd8da15f70f16925cb09c2d959d5118d34f3ff2a39a97d870be3d88150e"
+      "sha256": "6c7745be0c9d76dbfb285242d24cfd7d095e177b5a1652f094ced4e0e3281421"
     }
   ]
 }

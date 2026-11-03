@@ -1,0 +1,47 @@
+name: pin-refresh
+
+# Moves every family lock (the root version-pins.toml and the package configs) and the
+# pages they hold to the newest releases as a pull request, runs ci.yml on it and
+# merges it when green. A finished release run triggers it at once; the hourly run is
+# the path for releases made in other repositories, which reach this repository within
+# an hour, inside the one-day grace registry-verify allows.
+
+on:
+  schedule:
+    - cron: "35 * * * *"
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "why it runs now"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: pin-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+      - uses: probityai/.github/actions/pin-refresh@ca2ba06de3bc0fb385e81a338873cbf26a3eaaf5 # main
+        with:
+          configs: |
+            version-pins.toml
+            packages/agent-evidence-mcp/version-pins.toml
+            packages/evaluator-replay-kit/version-pins.toml
+            harnesses/agent-evidence-plugins/version-pins.toml
+          ci: ci.yml
+          token: ${{ github.token }}

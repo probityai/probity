@@ -12,7 +12,7 @@ Every tool is read-only and offline, sets `readOnlyHint`, `destructiveHint: fals
 | `lookup_term` | `term` (exact key) | section, status, allowed values, definition and source path; otherwise close terms |
 | `check_artifact_digest` | `document` (TEA, CycloneDX or in-toto text) and one of `artifact_text`, `artifact_base64` | `admitted`, the matched digest and every digest the document names |
 | `canonicalize_json` | `document` (JSON text), `profile`: `rfc8785` (default) or `ijson` | the RFC 8785 canonical text, its hex and SHA-256, from the `jcs-admit` crate; a refusal returns the crate's variant and fields (`DuplicateMember`, `StringNotScalar`, and `UnsafeInteger` under `ijson`) |
-| `verify_dsse` | `envelope` (DSSE JSON), `trusted_keys` (a list of `public_key_hex` with an optional `key_id`, at most 16), `threshold` | `verified`, `payload_type`, the accepted key ids, and the payload (base64, first 16 KB) with its SHA-256, from the `dsse` crate; a refusal returns the crate's variant (`ThresholdNotMet`, `MalformedEnvelope`) |
+| `verify_dsse` | `envelope` (DSSE JSON), `trusted_keys` (a list of `public_key_hex` with an optional `key_id`, at most 16), `threshold` | `verified`, `payload_type`, the accepted key ids, and the payload (base64, first 16 KB) with its SHA-256, from the `dsse` crate; a refusal returns the crate's variant (`NoValidSignature`, `ThresholdNotMet`, `MalformedEnvelope`) |
 
 `verify_claim` writes the supplied `artifacts` to a temporary directory, refuses absolute paths and `..`, and removes the directory afterwards. A case binds its artifacts by digest, so changing an artifact's bytes returns a binding error rather than a different verdict.
 

@@ -36,11 +36,18 @@ from ratchet_cases.types import Trace, sha256_hex
 from ratchet.canonical import canonical_json
 from ratchet.improve.activate import ActivationError
 from ratchet.improve.candidates import Candidate, Instructions
-from ratchet.improve.diagnose import FailureCluster, FailurePoint, diagnose
 from ratchet.improve.evaluate import CaseLike, EvalReport, RunCase, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity
+from ratchet.improve.failures import (
+    Diagnoser,
+    FailureCluster,
+    FailurePoint,
+    Literals,
+    OverfitScreen,
+    installed_diagnoser,
+    installed_overfit_screen,
+)
 from ratchet.improve.llm import Chat, Meter
-from ratchet.improve.overfit import Literals, lint, training_literals
 from ratchet.improve.proposer import DEFAULT_PROPOSER, ParentChooser, Proposer, load_proposer
 from ratchet.improve.referee import Referee, Totals, Verdict
 from ratchet.improve.replay import GuardRunner, ReplayReport, WalkCache, replay
@@ -84,6 +91,10 @@ class Lab:
     # Level 2 splits case families in two: the improver's instructions are tuned on clusters from the
     # first half and compared on clusters from the second. None means the sorted families, halved.
     evaluation_families: frozenset[str] | None = None
+    # What finds the failures and screens a change for copied literals. None: the installed implementation
+    # of the `ratchet.failures` entry-point group, else the open baseline.
+    diagnoser: Diagnoser | None = None
+    overfit: OverfitScreen | None = None
 
     def family_split(self) -> tuple[frozenset[str], frozenset[str]]:
         families = sorted({c.family for c in self.cases})
@@ -471,14 +482,16 @@ def evolve(
 
         # The firewall: from here to the shortlist, only training traces are read.
         train = parent_eval.train_traces()
+        literals = (lab.overfit or installed_overfit_screen()).training_literals(train)
         g = _Gen(gen, parent, parent_eval, (p1, p2), evaluator, WalkCache(lab.simulator),
-                 training_literals(train), visible, benign_ids, rec, meter)  # fmt: skip
+                 literals, visible, benign_ids, rec, meter)  # fmt: skip
         if select_parent is not None:
             choice = select_parent(parent.version, gen)
             rec.archive = choice.to_payload()
             g.archive_context = choice.decision_context()
             if choice.rebase_required:
                 g.inspiration = store.get_harness(choice.version)
+        diagnose = lab.diagnoser or installed_diagnoser()
         clusters = diagnose(train, lab.simulator, _summarizer(proposer, meter))[: lab.max_clusters]
         rec.clusters = [c.to_payload() for c in clusters]
         if not clusters:
@@ -605,11 +618,12 @@ def _propose_all(
             rejected += [(cl.id, f"[{arm}] {r['reason']}") for r in prop.rejected]
             tried += [_Tried(c, arm) for c in prop.candidates]
     clusters = {c.id: c for _, _, batch in arms.values() for c in batch}
+    screen = lab.overfit or installed_overfit_screen()
     check_s = 0.0
     checks = 0
     for t in tried:
         score = arms[t.arm][1]
-        t.lint_hits = lint(g.parent, t.candidate.harness, g.literals)
+        t.lint_hits = screen.lint(g.parent, t.candidate.harness, g.literals)
         if t.lint_hits:
             t.status = "screened: overfit_lint"
             score.screened_out += 1
@@ -617,7 +631,8 @@ def _propose_all(
         if t.candidate.kind != "guard":
             continue
         _proof_replay(t, g, clusters[t.candidate.cluster_id], train, lab)
-        t.lint_hits = lint(g.parent, t.candidate.harness, g.literals)  # a repaired guard is screened again
+        # A repaired guard is screened again.
+        t.lint_hits = screen.lint(g.parent, t.candidate.harness, g.literals)
         if t.lint_hits:
             t.status = "screened: overfit_lint"
             score.screened_out += 1

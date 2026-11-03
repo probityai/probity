@@ -23,6 +23,11 @@ on:
       distribution:
         required: true
         type: string
+      release:
+        # A release build also refuses every path scripts/release-freeze.toml lists.
+        required: false
+        type: boolean
+        default: false
     secrets:
       # The private names scripts/check-dist-clean.py refuses, one per line. They live only in
       # this secret; the check fails closed when it is empty (a fork's pull request, for one).
@@ -58,6 +63,7 @@ jobs:
         env:
           PYTHONHASHSEED: '0'
           DISTRIBUTION: ${{ inputs.distribution }}
+          RELEASE_BUILD: ${{ inputs.release }}
           DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
         run: |
           set -euo pipefail
@@ -73,7 +79,9 @@ jobs:
           done
           python -m twine check --strict dist/*
           python scripts/check-dist-clean.py --self-test
-          python scripts/check-dist-clean.py --allowlist scripts/dist-allowlist.toml --distribution "$DISTRIBUTION" dist/*
+          freeze=()
+          [ "$RELEASE_BUILD" = "true" ] && freeze=(--freeze scripts/release-freeze.toml)
+          python scripts/check-dist-clean.py --allowlist scripts/dist-allowlist.toml "${freeze[@]}" --distribution "$DISTRIBUTION" dist/*
           if [ -f "$target/scripts/check-artifacts.py" ]; then
             python "$target/scripts/check-artifacts.py" dist/*.whl dist/*.tar.gz
           fi

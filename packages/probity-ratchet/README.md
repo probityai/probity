@@ -35,7 +35,7 @@ blocked by guard no-force-push-main: force push to main rewrites shared history;
 
 Before export, the guard was replayed over six recorded Claude Code sessions: it fired on the three calls it was written for and on none of the other twelve (`examples/claude-code/replay.json`). The hook's header names the receipt (the signed decision) that admitted it; `uv run python -m ratchet.export.claude_code --verify examples/claude-code/hooks/ratchet_no_force_push_main.py` checks that receipt.
 
-A signed refusal you can check offline is in `examples/refusal-v3-cell/`: `uv run python examples/refusal-v3-cell/verify.py` regrades 80 executions and prints `decision verified, candidate refused, reason: identity controls breached`. "Decision verified" is not "candidate accepted": it says the signed record is genuine, and here the record is a refusal. It is single-cell evidence from one run by the operator.
+A signed refusal you can check offline is in `examples/refusal-v3-cell/`: `uv run python examples/refusal-v3-cell/verify.py` regrades 160 executions, decides the decision again from them and prints `decision verified, candidate refused, reason: identity controls breached`. "Decision verified" is not "candidate accepted": it says the signed record is genuine, and here the record is a refusal. It is single-cell evidence from one run by the operator.
 
 ## What it does
 

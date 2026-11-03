@@ -1,0 +1,9 @@
+{
+  "assessments": {
+    "incident-action-authorization-control": {
+      "claim_type": "restoration_record/v1",
+      "record": "statement.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

@@ -7,9 +7,9 @@ The endpoint configuration is a JSON file (`ratchet.improve.endpoints`): the end
 temperature, the fixed seed, and either how the endpoint was served (`serving`) or the batch-size-one
 fields. Its digest, `endpoint_config_digest`, is part of the evaluator and of every receipt.
 
-This process runs the training cases only. The referee (`ProcessReferee`, factory
-`ratchet.improve.referee_live:policy_parts`) opens the same endpoint file, refuses it when its digest is not
-the one named here, and runs the held-out side in its own process:
+This process runs the training cases only. The referee (`ProcessReferee`, factory `policy_parts` of the
+module `ratchet.improve.referee.factory_name` selects) opens the same endpoint file, refuses it when its
+digest is not the one named here, and runs the held-out side in its own process:
 
 1. Repeatability: held-out cases (three by default, `--repeat-heldout 0` for all) run twice each; every pair
    must produce the same normalized trace (`ratchet.improve.policies.normalized`).
@@ -36,15 +36,12 @@ from pathlib import Path
 from typing import Any
 
 from ratchet.improve import endpoints as ep
-from ratchet.improve.diagnose import FailureCluster, FailurePoint
 from ratchet.improve.evaluate import CaseLike, EvalReport, RunCase, evaluate_many
 from ratchet.improve.evaluator import evaluator_identity
+from ratchet.improve.failures import FailureCluster, FailurePoint, installed_overfit_screen
 from ratchet.improve.loop import frozen_suite_digest
-from ratchet.improve.overfit import training_literals
-from ratchet.improve.referee import ProcessReferee, Request
+from ratchet.improve.referee import ProcessReferee, Request, factory_name
 from ratchet.types import Harness
-
-FACTORY = "ratchet.improve.referee_live:policy_parts"
 
 
 def _args(argv: Sequence[str] | None) -> argparse.Namespace:
@@ -138,7 +135,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parent = seed_harness()
     spread = ep.RoundRobin(endpoints, run_case)
     try:
-        with ProcessReferee(FACTORY, referee_config) as referee, Store(uri, a.db) as store:
+        with (
+            ProcessReferee(factory_name("policy_parts", referee_config), referee_config) as referee,
+            Store(uri, a.db) as store,
+        ):
             found = referee.candidate(a.candidate, parent)
             candidate = wire.harness(found["harness"])
             with Store(uri, a.candidate.split(":")[0]) as source:
@@ -152,7 +152,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 c_train,
                 [cluster],
                 {g.id: cluster.id for g in candidate.guards if g.id not in old},
-                training_literals(p_train.train_traces()),
+                installed_overfit_screen().training_literals(p_train.train_traces()),
                 sorted(c.id for c in train_cases),
                 {"original_decision": found["source"]},
                 f"det:{parent.version}->{candidate.version}:{endpoints.digest[:12]}",

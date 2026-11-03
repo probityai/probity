@@ -39,7 +39,7 @@ from ratchet.improve.proposer import (
     load_proposer,
 )
 from ratchet.improve.receipt import TRUSTED_KEY_ENV
-from ratchet.improve.referee import ProcessReferee
+from ratchet.improve.referee import ProcessReferee, factory_name
 from ratchet.improve.sandbox import SandboxRunner
 from ratchet.improve.worldsim import WorldSimulator
 from ratchet.store.atlas import Store
@@ -170,7 +170,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ModelClient(agent_cfg, transport=None if a.seed is None else SeededTransport(a.seed)) as model,
         contextlib.ExitStack() as stack,
         GuardRuntime() as runtime,
-        ProcessReferee("ratchet.improve.referee_live:case_suite_parts", referee_config) as referee,
+        ProcessReferee(factory_name("case_suite_parts", referee_config), referee_config) as referee,
     ):
         store.setup(wait_search=False)
         improver = FallbackChat([stack.enter_context(ModelClient(c)) for c in improver_cfgs])
