@@ -36,6 +36,7 @@ from .contract import (
     require,
     script,
     sha,
+    withheld_for,
 )
 
 
@@ -49,7 +50,7 @@ def same(actual: Any, expected: Any, reason: str) -> None:
 
 
 def selected_packet(
-    output: Path, selected: dict[str, Any]
+    output: Path, selected: dict[str, Any], withheld: dict[str, str] | None = None
 ) -> tuple[dict[str, Any], dict[str, bytes]]:
     """Authenticate exact finite file populations against out-of-packet pins.
 
@@ -94,16 +95,21 @@ def selected_packet(
         require(sha(raw) == selected[field], "external pin differs: " + field)
         values[name] = decode(raw)
     sources = values["source-manifest-before-run.json"]
-    expected_sources = {
+    present = {
         str(path.relative_to(output / "sources"))
         for path in (output / "sources").rglob("*")
         if path.is_file()
     }
-    require(set(sources) == expected_sources, "source file population differs")
-    for name, pin in sources.items():
+    omitted = set(sources) - present
+    listed = {name.removeprefix("sources/") for name in withheld or {}}
+    require(
+        present <= set(sources) and omitted == listed, "source file population differs"
+    )
+    for name in omitted:
+        require(withheld[f"sources/{name}"] == sources[name], "source bytes differ")
+    for name in present:
         require(
-            name in expected_sources and sha(read(output / "sources", name)) == pin,
-            "source bytes differ",
+            sha(read(output / "sources", name)) == sources[name], "source bytes differ"
         )
     require(
         "pydantic_ai/agent/__init__.py" in sources
@@ -664,7 +670,9 @@ def verify_case(
     }
 
 
-def verify_saved(output: Path, selected: dict[str, Any]) -> dict[str, Any]:
+def verify_saved(
+    output: Path, selected: dict[str, Any], withheld: dict[str, str] | None = None
+) -> dict[str, Any]:
     """Verify a bounded packet offline without importing the agent framework.
 
     Parameters
@@ -690,7 +698,7 @@ def verify_saved(output: Path, selected: dict[str, Any]) -> dict[str, Any]:
         dispatch another HTTP effect.
     """
     try:
-        plan, artifacts = selected_packet(output, selected)
+        plan, artifacts = selected_packet(output, selected, withheld)
         reference = datetime.fromisoformat(selected["evaluationTime"])
         check_plan(plan, reference)
         records = [
@@ -722,9 +730,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--pins-file", required=True, type=Path)
+    parser.add_argument("--withheld-sources", type=Path)
     args = parser.parse_args()
     try:
-        report = verify_saved(args.output, decode(args.pins_file.read_bytes()))
+        withheld = (
+            withheld_for(args.withheld_sources, args.output)
+            if args.withheld_sources
+            else None
+        )
+        report = verify_saved(
+            args.output, decode(args.pins_file.read_bytes()), withheld
+        )
     except VerificationError as error:
         print(encode({"status": "refused", "reason": str(error)}).decode())
         raise SystemExit(1) from error
