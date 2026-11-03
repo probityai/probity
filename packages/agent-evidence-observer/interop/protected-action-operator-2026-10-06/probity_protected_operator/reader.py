@@ -46,11 +46,10 @@ def _bundle(directory: Path, selection: dict[str, Any], candidate: dict[str, Any
     entries = journal_entries((directory / "authorization.jsonl").read_bytes(), config, selection["beforeRoot"])
     checkpoint_prefix(entries, selection["initialAuthorizationCheckpoint"], key)
     ledger = directory / "witness-ledger.jsonl"
-    verify_ledger_head(ledger, selection["initialNativeHead"], key)
-    receipts = verify_ledger_head(ledger, candidate["native"], key)["count"]
+    receipts = verify_ledger_head(ledger, selection["initialNativeHead"], key)["count"]
     if last:
         verify_checkpoint(entries, candidate["authorization"], key)
-        require(receipts == candidate["native"]["count"], "candidate native head is not current")
+        require(verify_ledger_head(ledger, candidate["native"], key)["count"] == candidate["native"]["count"] == receipts, "candidate native head is not current")
     verified = admitted and last
     if verified:
         _dispatch(directory, config, candidate["authorization"])
