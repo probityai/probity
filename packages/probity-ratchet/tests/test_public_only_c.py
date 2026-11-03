@@ -44,6 +44,7 @@ PROGRAM = textwrap.dedent(
     assert factory_name("policy_parts", {"factory": "own.mod"}, hosted) == "own.mod:policy_parts"
     print("open factory")
 
+    from ratchet.verify import dsse
     from ratchet.verify.keys import DEFAULT_KEY_PATH, load_trusted_key
     from ratchet.verify.receipt import verify_decision
     from ratchet.verify.results import verify_results
@@ -62,8 +63,22 @@ PROGRAM = textwrap.dedent(
         assert report.ok, (path, report.reason)
         print("receipt", path.parent.name, report.decision)
 
+    # The hook example's decision admits one guard on replayed transcripts and names no evaluator, so the
+    # decision verifier cannot establish it; the export's own check verifies it under the example's key.
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    from ratchet.export.claude_code import verify_admission
+    from ratchet.improve import wire
+
+    example = root / "examples" / "claude-code"
+    example_key = Ed25519PublicKey.from_public_bytes(bytes.fromhex((example / "public_key.txt").read_text()))
+    envelope = (example / "receipt.json").read_bytes()
+    harness = wire.harness(json.loads((example / "harness.json").read_text()))
+    decision = verify_admission(harness, envelope, {dsse.keyid_of(example_key): example_key})
+    assert decision["admitted"] is True
+    assert verify_decision(envelope, example_key).reason == "payload_field_invalid:evaluator"
+    print("hook example admitted")
+
     from ratchet.improve.receipt import Signer, countersign, verify
-    from ratchet.verify import dsse
     from ratchet.verify.adapter import DECISION_PAYLOAD_TYPE
 
     run_key, pinned = Signer.generate(), Signer.generate()
@@ -96,4 +111,5 @@ def test_the_engine_runs_and_verifies_every_published_decision_without_the_hoste
     assert lines[:2] == ["imported", "open factory"]
     assert "results v3-cell.dsse supported 1" in lines
     assert "receipt bdb5bd9b003912c4 supported" in lines
+    assert "hook example admitted" in lines
     assert lines[-1] == "countersigned 2"
