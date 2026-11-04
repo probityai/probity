@@ -19,11 +19,8 @@ fixtures = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixtures)
 
 
-def invoke(tmp: Path, profile: str, change: str | None = None) -> subprocess.CompletedProcess[str]:
-    """Invoke the public gate with the original native archive and external policy."""
-    packet, pins = fixtures.selected_packet(profile, tmp / 'original')
-    listed = fixtures.withheld_list(packet)
-    policy = tmp / 'host-policy.json'
+def policy_value(profile: str, pins: Path, listed: Path, change: str | None) -> dict:
+    """Host policy for the original record, with one optional deliberate change."""
     value = {'schema': 'probity-framework-host-gate-v1', 'reader': profile,
              'profile': ('probity-langgraph-aae-ticket-v0' if profile == 'langgraph'
                          else 'probity-pydantic-ai-ticket-v0'),
@@ -35,6 +32,15 @@ def invoke(tmp: Path, profile: str, change: str | None = None) -> subprocess.Com
                   'withheld-digest': {'withheldSha256': '0' * 64}}.get(change, {}))
     if change == 'withheld-unpinned':
         del value['withheldSha256']
+    return value
+
+
+def invoke(tmp: Path, profile: str, change: str | None = None) -> subprocess.CompletedProcess[str]:
+    """Invoke the public gate with the original native archive and external policy."""
+    packet, pins = fixtures.selected_packet(profile, tmp / 'original')
+    listed = fixtures.withheld_list(packet)
+    policy = tmp / 'host-policy.json'
+    value = policy_value(profile, pins, listed, change)
     policy.write_text(json.dumps(value))
     digest = hashlib.sha256(policy.read_bytes()).hexdigest()
     if change == 'policy-digest':
