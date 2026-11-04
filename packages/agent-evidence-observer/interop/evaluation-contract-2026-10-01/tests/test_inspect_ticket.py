@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import json
 import shutil
+import socket
 import sys
 from pathlib import Path
 
@@ -253,8 +254,8 @@ def test_missing_started_attempt_stays_unknown_in_population(packet):
 
 def test_reader_invokes_neither_framework_nor_network(native_packet, monkeypatch):
     root, pins, report = native_packet
-    monkeypatch.setattr(bridge, "http_bytes", lambda *a: pytest.fail("offline reader made HTTP request"))
-    monkeypatch.setattr(bridge, "execute", lambda *a: pytest.fail("offline reader executed framework"))
+    monkeypatch.setattr(socket.socket, "connect", lambda *a: pytest.fail("offline reader opened a connection"))
+    assert not hasattr(bridge, "execute")
     assert verify_saved(root, pins) == report
 
 
