@@ -1,0 +1,15 @@
+{
+  "fresh-current-run/packet/sources/adapter/producer.py": "fa1b06b4c8bd0b1810720e2599caaf42e0458982b421644a82372c553c76bd46",
+  "fresh-current-run/packet/sources/observer/aae_dispatch.py": "70e6e669d24fbfd5275b25217523ea55d3da1495bb16e0834ff7a8de2a1cf6bb",
+  "fresh-current-run/packet/sources/observer/aae_ticket.py": "ac12299c5d3bd5de030937d55358031a6ba72f152571ef20c521437fabe54743",
+  "fresh-current-run/packet/sources/observer/admission.py": "5b9f68dbfc59b1c088b7de9c41e81fabdf2e3a72426e8766845d0cea28b2af0f",
+  "fresh-current-run/packet/sources/observer/authorization.py": "35e28320cc6aa344938d9e678efa6de9b803b7b22e2431e8e918a8b57c08e4a9",
+  "fresh-current-run/packet/sources/observer/broker.py": "9e36cc446dd63112bfda8555df9319345f825d74c5794ac0b037c92d235c0bd8",
+  "fresh-current-run/packet/sources/observer/probe_agent.py": "3699eeb662610fea2d8403294fad3239cbecf3dfcaeb542ceb2c40abdb0897f6",
+  "fresh-current-run/packet/sources/observer/protected_dispatch.py": "91c748e4e21bcbc347fdaab129785671765214758f043482f8f31af043e12b34",
+  "fresh-current-run/packet/sources/observer/protected_isolation.py": "6d99ddca3f03ada6c05ff21f4796ec3b8eea7097c1119b38e53239b16e44809d",
+  "fresh-current-run/packet/sources/observer/protected_probe.py": "9e89109a168837662c434f0988e6ab8d90d6dd6e472b516c27ad8b8b16f8138f",
+  "fresh-current-run/packet/sources/observer/ticket_service.py": "c6df218d6a81c21ab99ff2549b07f0691ff00e4e44b3f7520562d5c90fcdbda7",
+  "wheels/agent_evidence_observer-0.0.1-py3-none-any.whl": "1883bac2390a7e5fea1abc11d13a63c6931d6a2f82d0c97e1d279b50f7d00244",
+  "wheels/probity_adk_reference-0.0.1-py3-none-any.whl": "fc9906b4be1bfb8825404d4a73ce491c9c72b5f990f738011697221b07cd5f2c"
+}

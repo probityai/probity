@@ -1,0 +1,1241 @@
+/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/models/llm_request.py:306: UserWarning: [EXPERIMENTAL] feature FeatureName.JSON_SCHEMA_FOR_FUNC_DECL is enabled.
+  declaration = tool._get_declaration()
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Node execution failed with exception
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 585, in _run_with_trace
+    raise tool_error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+Root node probity_ticket failed.
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner_utils.py", line 250, in _drive_root_node
+    await root_ctx._run_node_internal(  # pylint: disable=protected-access
+    ...<3 lines>...
+    )
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/context.py", line 515, in _run_node_internal
+    return await _dynamic_node_scheduler.run_node_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<12 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_dynamic_node_scheduler.py", line 740, in run_node_internal
+    raise DynamicNodeFailError(
+    ...<3 lines>...
+    )
+google.adk.workflow._errors.DynamicNodeFailError: Dynamic node probity_ticket failed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/runners.py", line 877, in _cleanup_root_task
+    await task
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner_utils.py", line 259, in _drive_root_node
+    raise e.error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 585, in _run_with_trace
+    raise tool_error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Node execution failed with exception
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 585, in _run_with_trace
+    raise tool_error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 235, in dispatch_ticket
+    raise RuntimeError(AFTER_ERROR)
+RuntimeError: selected producer failure after committed HTTP effect
+Root node probity_ticket failed.
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner_utils.py", line 250, in _drive_root_node
+    await root_ctx._run_node_internal(  # pylint: disable=protected-access
+    ...<3 lines>...
+    )
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/context.py", line 515, in _run_node_internal
+    return await _dynamic_node_scheduler.run_node_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<12 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_dynamic_node_scheduler.py", line 740, in run_node_internal
+    raise DynamicNodeFailError(
+    ...<3 lines>...
+    )
+google.adk.workflow._errors.DynamicNodeFailError: Dynamic node probity_ticket failed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/runners.py", line 877, in _cleanup_root_task
+    await task
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner_utils.py", line 259, in _drive_root_node
+    raise e.error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 585, in _run_with_trace
+    raise tool_error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 235, in dispatch_ticket
+    raise RuntimeError(AFTER_ERROR)
+RuntimeError: selected producer failure after committed HTTP effect
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Error in plugin 'probity_reflect_retry' during 'on_tool_error_callback' callback: selected producer failure before HTTP dispatch
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 306, in _run_callbacks
+    result = await callback_method(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 215, in on_tool_error_callback
+    return await self._handle_tool_error(tool, tool_args, tool_context, error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 254, in _handle_tool_error
+    raise self._ensure_exception(error)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Node execution failed with exception
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 306, in _run_callbacks
+    result = await callback_method(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 215, in on_tool_error_callback
+    return await self._handle_tool_error(tool, tool_args, tool_context, error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 254, in _handle_tool_error
+    raise self._ensure_exception(error)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 573, in _run_with_trace
+    error_response = await _tool_error_handler.run_on_tool_error_callbacks(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_error_handler.py", line 110, in run_on_tool_error_callbacks
+    await invocation_context.plugin_manager.run_on_tool_error_callback(
+    ...<4 lines>...
+    )
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 269, in run_on_tool_error_callback
+    return await self._run_callbacks(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 322, in _run_callbacks
+    raise RuntimeError(error_message) from e
+RuntimeError: Error in plugin 'probity_reflect_retry' during 'on_tool_error_callback' callback: selected producer failure before HTTP dispatch
+Root node probity_ticket failed.
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 306, in _run_callbacks
+    result = await callback_method(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 215, in on_tool_error_callback
+    return await self._handle_tool_error(tool, tool_args, tool_context, error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 254, in _handle_tool_error
+    raise self._ensure_exception(error)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/runners.py", line 877, in _cleanup_root_task
+    await task
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner_utils.py", line 259, in _drive_root_node
+    raise e.error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 573, in _run_with_trace
+    error_response = await _tool_error_handler.run_on_tool_error_callbacks(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_error_handler.py", line 110, in run_on_tool_error_callbacks
+    await invocation_context.plugin_manager.run_on_tool_error_callback(
+    ...<4 lines>...
+    )
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 269, in run_on_tool_error_callback
+    return await self._run_callbacks(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 322, in _run_callbacks
+    raise RuntimeError(error_message) from e
+RuntimeError: Error in plugin 'probity_reflect_retry' during 'on_tool_error_callback' callback: selected producer failure before HTTP dispatch
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Error in plugin 'probity_reflect_retry' during 'on_tool_error_callback' callback: selected producer failure before HTTP dispatch
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 306, in _run_callbacks
+    result = await callback_method(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 215, in on_tool_error_callback
+    return await self._handle_tool_error(tool, tool_args, tool_context, error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 254, in _handle_tool_error
+    raise self._ensure_exception(error)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Node execution failed with exception
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 306, in _run_callbacks
+    result = await callback_method(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 215, in on_tool_error_callback
+    return await self._handle_tool_error(tool, tool_args, tool_context, error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 254, in _handle_tool_error
+    raise self._ensure_exception(error)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 573, in _run_with_trace
+    error_response = await _tool_error_handler.run_on_tool_error_callbacks(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_error_handler.py", line 110, in run_on_tool_error_callbacks
+    await invocation_context.plugin_manager.run_on_tool_error_callback(
+    ...<4 lines>...
+    )
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 269, in run_on_tool_error_callback
+    return await self._run_callbacks(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 322, in _run_callbacks
+    raise RuntimeError(error_message) from e
+RuntimeError: Error in plugin 'probity_reflect_retry' during 'on_tool_error_callback' callback: selected producer failure before HTTP dispatch
+Root node probity_ticket failed.
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 306, in _run_callbacks
+    result = await callback_method(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 215, in on_tool_error_callback
+    return await self._handle_tool_error(tool, tool_args, tool_context, error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/reflect_retry_tool_plugin.py", line 254, in _handle_tool_error
+    raise self._ensure_exception(error)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 567, in _run_with_trace
+    function_response = await tool_runner()
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 695, in call_tool
+    return await _call_tool_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 656, in _call_tool_async
+    result: object = await tool.run_async(args=args, tool_context=tool_context)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 431, in run_async
+    return await self._invoke_callable(self.func, args_to_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/tools/function_tool.py", line 535, in _invoke_callable
+    return target(**args_to_call)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/probity_adk/producer.py", line 201, in dispatch_ticket
+    raise RuntimeError(BEFORE_ERROR)
+RuntimeError: selected producer failure before HTTP dispatch
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/runners.py", line 877, in _cleanup_root_task
+    await task
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner_utils.py", line 259, in _drive_root_node
+    raise e.error
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 138, in run
+    await self._execute_node(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 307, in _execute_node
+    await self._run_node_loop(ctx, node_input)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_node_runner.py", line 321, in _run_node_loop
+    async for event in agen:
+    ...<8 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_base_node.py", line 190, in run
+    async for item in agen:
+    ...<12 lines>...
+        yield Event(output=validated)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 683, in _run_impl
+    async for event in agen:
+    ...<4 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/workflow/_llm_agent_wrapper.py", line 490, in run_llm_agent_as_node
+    async for event in run_iter:
+    ...<31 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 328, in run_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 422, in _run_with_lifecycle
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/utils/_runner_utils.py", line 42, in _with_caller_context
+    async for item in a:
+    ...<4 lines>...
+        context.detach(token)
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/base_agent.py", line 392, in _run
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/agents/llm_agent.py", line 632, in _run_async_impl
+    async for event in agen:
+    ...<8 lines>...
+        should_pause = True
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 333, in run_async
+    async for event in agen:
+    ...<3 lines>...
+        break
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 433, in _run_one_step_async
+    async for event in agen:
+    ...<5 lines>...
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 534, in _postprocess_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/base_llm_flow.py", line 588, in _postprocess_handle_function_calls_async
+    async for event in agen:
+      yield event
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/core/_function_call_postprocessor.py", line 77, in postprocess_handle_function_calls_async
+    if function_response_event := await functions.handle_function_calls_async(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, function_call_event, llm_request.tools_dict
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 278, in handle_function_calls_async
+    return await functions.handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_functions.py", line 258, in handle_function_call_list_async
+    return await _handle_function_call_list_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 305, in handle_function_call_list_async
+    return await _execute_prepared_function_calls_async(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_calls, agent
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 279, in _execute_prepared_function_calls_async
+    return await _execute_prepared_function_calls(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 254, in _execute_prepared_function_calls
+    maybe_function_response_events = await _gather_or_cancel(tasks)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_batch_executor.py", line 191, in _gather_or_cancel
+    return list(await asyncio.gather(*tasks))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 701, in _execute_single_prepared_call_async
+    return await _execute_single_prepared_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        invocation_context, prepared_call, agent, tool_runner=call_tool
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 644, in _execute_single_prepared_call
+    tel_ctx.function_response_event = await _run_with_trace()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_caller.py", line 573, in _run_with_trace
+    error_response = await _tool_error_handler.run_on_tool_error_callbacks(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/flows/llm_flows/tools/_error_handler.py", line 110, in run_on_tool_error_callbacks
+    await invocation_context.plugin_manager.run_on_tool_error_callback(
+    ...<4 lines>...
+    )
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 269, in run_on_tool_error_callback
+    return await self._run_callbacks(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/runner/work/_temp/adk-producer/lib/python3.13/site-packages/google/adk/plugins/plugin_manager.py", line 322, in _run_callbacks
+    raise RuntimeError(error_message) from e
+RuntimeError: Error in plugin 'probity_reflect_retry' during 'on_tool_error_callback' callback: selected producer failure before HTTP dispatch
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference
+Skipping missing token usage metadata for agent probity_ticket and model probity-scripted-no-inference

@@ -11,9 +11,24 @@ from typing import Any
 import pytest
 
 
+HERE = Path(__file__).resolve().parent
+RETAINED = HERE / "retained"
+
+
 @pytest.fixture
 def packet() -> Path:
-    return Path(os.environ["ADK_CURRENT_RETAINED_PACKET"])
+    return Path(
+        os.environ.get(
+            "ADK_CURRENT_RETAINED_PACKET", str(RETAINED / "fresh-current-run" / "packet")
+        )
+    )
+
+
+@pytest.fixture
+def withheld(packet: Path) -> dict[str, str]:
+    from probity_adk.contract import withheld_for
+
+    return withheld_for(RETAINED / "WITHHELD-SOURCES.json", packet)
 
 
 def pins(packet: Path) -> dict[str, Any]:
@@ -32,10 +47,11 @@ def pins(packet: Path) -> dict[str, Any]:
     )
 
 
-def test_actual_original_and_repeat(packet: Path) -> None:
+def test_actual_original_and_repeat(packet: Path, withheld: dict[str, str]) -> None:
     from probity_adk.reader import verify_saved
 
-    a, b = verify_saved(packet, pins(packet)), verify_saved(packet, pins(packet))
+    a = verify_saved(packet, pins(packet), withheld)
+    b = verify_saved(packet, pins(packet), withheld)
     assert a == b and a["plannedAttempts"] == 12
     assert a["resources"]["modelCalls"] == 25
     assert a["resources"]["toolCalls"] == 18
@@ -82,7 +98,7 @@ def mutate(record: dict[str, Any], mutation: str) -> None:
     ],
 )
 def test_reselected_semantic_mutants(
-    packet: Path, tmp_path: Path, case: str, mutation: str
+    packet: Path, withheld: dict[str, str], tmp_path: Path, case: str, mutation: str
 ) -> None:
     from probity_adk.contract import encode, sha
     from probity_adk.reader import verify_saved
@@ -100,4 +116,4 @@ def test_reselected_semantic_mutants(
     selection = pins(packet)
     selection["artifactManifestSha256"] = sha(encode(manifest))
     with pytest.raises((ValueError, TypeError, KeyError)):
-        verify_saved(changed, selection)
+        verify_saved(changed, selection, withheld)
