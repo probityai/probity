@@ -35,7 +35,7 @@ endpoint under v3 as written: the noise is larger than the per-case tolerance.
 This cell checks the referee path end to end on a live model. It is one held-out case, so it is a check of
 the path and not a new admission result.
 
-- Command: `python -m ratchet.improve.run_v3 --endpoints-file v3.json --cases policy_changed.v6
+- Command (the driver is run by the operator's runtime and is no longer shipped): `python -m ratchet.improve.run_v3 --endpoints-file v3.json --cases policy_changed.v6
   --candidate ratchet_improve_oss:b972467a3b9a --schedule-seed 20261011 --workers 2 --db ratchet_v3_cell
   --out docs/results/v3-cell/v3-cell.json`, from `main` at `9115509`.
 - Model: `gpt-oss-120b`, served by vLLM 0.26.0 on one B200 on HiPerGator, temperature 0.0, `seed_base`

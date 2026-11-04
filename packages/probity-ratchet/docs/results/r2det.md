@@ -10,7 +10,7 @@ mode and the two signed ruling-2 decisions made on it, for the candidates the li
 > **Note, 2026-10-17.** These runs predate the referee path. On 2026-10-11 `ratchet.improve.run_det` read
 > the held-out cases, ran them and signed in its own process; every number below comes from that run and
 > stands as recorded. The driver now runs the training cases only and hands the held-out side to the
-> referee (`ratchet.improve.referee`, factory `ratchet.improve.referee_live:policy_parts`), which takes the
+> referee (`ratchet.improve.referee`, with the referee factory the operator's runtime supplies), which takes the
 > endpoint configuration by file and digest. In a run on the referee path, the per-case tables on this page
 > (the repeatability digests per case, the P1/P2 discordance, and each decision's held-out outcomes,
 > recoveries and broken protected cases) come from the referee-signed results file

@@ -107,7 +107,7 @@ signed with the decision key). `ratchet show`, `verify` and `report` read both s
 
 The other admission policies run in the same referee. `run_det` (ruling 2 on a deterministic endpoint: the
 repeatability probe, the parent-discordance stop, a receipt naming the endpoint configuration digest),
-`run_v3` (stochastic policy v3: the interleaved schedule, the identity controls, `admit_v3`) and the
+`run_v3` (stochastic policy v3: the interleaved schedule, the identity controls, `admit_v3`; its driver is run by the operator's runtime) and the
 improver-instruction comparison (`instruction_search`, several candidates through `decide_many`) name the
 factory `policy_parts` of the module `ratchet.improve.referee.factory_name` selects (the referee
 configuration's `factory`, else `RATCHET_REFEREE_FACTORY`, else the open file-store referee
