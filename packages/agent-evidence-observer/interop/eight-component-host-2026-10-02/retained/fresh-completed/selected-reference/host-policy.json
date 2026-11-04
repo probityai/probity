@@ -1,0 +1,85 @@
+{
+  "doesNotAssert": [
+    "independent-effect-custody",
+    "outside-recurring-adoption",
+    "production-issuer-identity",
+    "general-containment",
+    "blind-evaluation",
+    "distributed-exactly-once",
+    "power-loss-recovery"
+  ],
+  "effectOffsetSeconds": 10,
+  "grantValiditySeconds": 60,
+  "opa": {
+    "consumer": {
+      "accepted_results": [
+        "pass"
+      ],
+      "allowed_network_postures": {
+        "sinkhole": true
+      },
+      "demanded_classes": [
+        "XA"
+      ],
+      "expected_catch_policy_digest": "846c2ccf97b5a5f4da335fe733e7f4f786ffd224ce582fb5a9685d52184abdc3",
+      "expected_corpus_digest": "cc1bdef2ffca96d86a636e5a9fb27a4a111836773e0dd1368d8de94f413979be",
+      "expected_substrate_digest": "018bbaf3710e526b0653abafbd3bd3c3356150d747db166021f1e107446c85bb"
+    }
+  },
+  "publicKeys": {
+    "envelope": "487088f95a88b8ea070638633a57c15688f25ed93afbca7527f58c57afce919b",
+    "issuer": "0b5c045677a099be27a33ad570e22118cd77940c22325534d9a995f6fc1b2430",
+    "service": "7d5662a0cf397483a8f756a855757ae8aae00edbf117e675408ae7b82a0dfdea"
+  },
+  "referenceTime": "2026-10-02T12:00:00Z",
+  "request": {
+    "attempt_id": "host-selected",
+    "principal_id": "host-operator",
+    "request_id": "single-content-ticket",
+    "run_id": "eight-component-host",
+    "target_path": "/work/tickets/eight-component",
+    "tenant_id": "probity-example",
+    "tool_id": "ticket-update"
+  },
+  "requiredVectorTier": "attested",
+  "schema": "probity-eight-component-host-policy-v1",
+  "substratePublicKeys": [
+    "496cbe15e391eccd3a0864f2709df0eeb4f5b6c1bad750c95cc80ee49bceae62"
+  ],
+  "verify": {
+    "assessments": {
+      "atlas-provenance-nonclaims": {
+        "claim_type": "source_text_coverage/v1",
+        "record_artifact": "record",
+        "record_sha256": "a820e2ef176b65f4173317f9c533a6b2fd2c189e3fd25b0e600bf2ab1bf928ef",
+        "record_version": "eight-component-selected-nonclaims-v1",
+        "required_spans": [
+          {
+            "id": "independent-custody",
+            "text": "\"independentEffectCustody\": \"not-established\""
+          },
+          {
+            "id": "outside-recurring-use",
+            "text": "\"outsideRecurringUse\": \"not-established\""
+          }
+        ],
+        "source_window": {
+          "end": "2026-10-02T23:59:59Z",
+          "start": "2026-10-02T00:00:00Z"
+        },
+        "source_witness": "atlas-retained-provenance"
+      }
+    },
+    "schema_version": "probity-policy/v1",
+    "witnesses": {
+      "atlas-retained-provenance": {
+        "artifact": "source",
+        "authority": "Host-selected existing Probity-operated provenance bytes; source commit date window is an author selection, not independent capture custody",
+        "captured_at": "2026-10-02T00:00:00Z",
+        "sha256": "e00e9f5031fb4e64a5363a05dcba333e569d5c228f96b2e9f42e2ebb381f9f2b",
+        "source_format": "text_utf8/v1",
+        "source_url": "https://github.com/probityai/agent-evidence-atlas/blob/58c89e18033a3c5fdd10d1a9b65497e25093dcc8/experiments/authority-recovery-2026-10-02/provenance.json"
+      }
+    }
+  }
+}

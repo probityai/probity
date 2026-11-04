@@ -1,0 +1,19 @@
+{
+  "result": [
+    {
+      "expressions": [
+        {
+          "value": {
+            "admitted": true,
+            "errors": []
+          },
+          "text": "{\"admitted\":data.sigstore.isCompliant,\"errors\":data.sigstore.errors}",
+          "location": {
+            "row": 1,
+            "col": 1
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "command": [
+    "/home/runner/work/_temp/kit-tools/opa",
+    "eval",
+    "--format=json",
+    "--input",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/verified-payload.json",
+    "--data",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/opa-consumer.json",
+    "--data",
+    "/home/runner/work/_temp/kit-trusted/selected-sources/agent-evidence-admission/rego/execution_evidence.rego",
+    "{\"admitted\":data.sigstore.isCompliant,\"errors\":data.sigstore.errors}"
+  ],
+  "returnCode": 0,
+  "stderrBytes": 0,
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 347,
+  "stdoutSha256": "c9f40d02ddbe905c4a646dd01114de683cbf6a16ccec860635f6da61dbd73b4d",
+  "timedOut": false,
+  "wallSeconds": 0.043093
+}

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/opt/hostedtoolcache/Python/3.13.17/x64/bin/python",
+    "-I",
+    "-B",
+    "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/target_worker.py",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/target-1.config.json",
+    "cde791ec4980da80ed283ac97b56b43caf94c9d2ff271d8184048a86d26e1416",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/target-1.endpoint.json"
+  ]
+}

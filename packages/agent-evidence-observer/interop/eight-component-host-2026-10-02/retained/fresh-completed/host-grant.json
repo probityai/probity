@@ -1,0 +1,45 @@
+{
+  "admitted": true,
+  "doesNotAssert": [
+    "independent-effect-custody",
+    "outside-recurring-adoption",
+    "production-issuer-identity",
+    "general-containment",
+    "blind-evaluation",
+    "distributed-exactly-once",
+    "power-loss-recovery"
+  ],
+  "gate": "host-issued-grant",
+  "grant": {
+    "expiresAt": "2026-10-02T12:01:00Z",
+    "issuedAt": "2026-10-02T12:00:00Z",
+    "issuerKey": "0b5c045677a099be27a33ad570e22118cd77940c22325534d9a995f6fc1b2430",
+    "profile": "probity-protected-action-reference-v0",
+    "request": {
+      "attempt_id": "host-selected",
+      "content_sha256": "f249eee4f2d93a43304cbf235ebf3de1b254198a68577ea3a24194a99267cf96",
+      "principal_id": "host-operator",
+      "request_id": "single-content-ticket",
+      "run_id": "eight-component-host",
+      "target_path": "/work/tickets/eight-component",
+      "tenant_id": "probity-example",
+      "tool_id": "ticket-update"
+    },
+    "signature": "YEkaohvScKF03qCKLHhEqFTlbSNe2GbXNObfm2YyZhjKt2Gqm+EGQdKfkvJ6NpF/roStFuqa62GSJYGHtPRACA=="
+  },
+  "grantPolicy": {
+    "issuer_key": "0b5c045677a099be27a33ad570e22118cd77940c22325534d9a995f6fc1b2430",
+    "max_validity_seconds": 60
+  },
+  "request": {
+    "attempt_id": "host-selected",
+    "content_sha256": "f249eee4f2d93a43304cbf235ebf3de1b254198a68577ea3a24194a99267cf96",
+    "principal_id": "host-operator",
+    "request_id": "single-content-ticket",
+    "run_id": "eight-component-host",
+    "target_path": "/work/tickets/eight-component",
+    "tenant_id": "probity-example",
+    "tool_id": "ticket-update"
+  },
+  "signerAuthorityEffectRoles": "distinct-host-selected-keys"
+}
