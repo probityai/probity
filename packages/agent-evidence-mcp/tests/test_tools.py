@@ -357,3 +357,12 @@ def test_verify_dsse_rejects_malformed_inputs() -> None:
     _, public = _signed(b"{}")
     out = call("verify_dsse", {"envelope": "not json", "trusted_keys": [{"key_id": "k1", "public_key_hex": public}]})
     assert out["verified"] is False and out["error"] == "MalformedEnvelope"
+
+
+def test_reported_version_is_the_released_version() -> None:
+    import tomllib
+
+    import agent_evidence_mcp
+
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    assert agent_evidence_mcp.__version__ == tomllib.loads(pyproject.read_text())["project"]["version"]
