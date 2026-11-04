@@ -4064,7 +4064,7 @@ provides-extras = ["agentdojo"]
 
 [[package]]
 name = "probity-verify"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "packages/probity-verify" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
@@ -4085,7 +4085,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = "==1.3.0" },
-    { name = "agent-evidence-vocabulary", specifier = "~=0.8.0" },
+    { name = "agent-evidence-vocabulary", specifier = ">=0.8.0,<0.10" },
     { name = "cryptography", specifier = ">=50.0.2,<51" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.170.8,<7" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0,<10" },

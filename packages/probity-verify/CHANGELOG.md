@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `agent-evidence-vocabulary` is now `>=0.8.0,<0.10`, so the verifier installs beside vocabulary 0.9.0 as well as
+  0.8.x. No identifier the verifier reads moved, and the test suite passes against both.
+
 ## 0.4.0 (2026-11-03)
 
 The verifier now judges four corpora of agent-evidence-vectors, so the Action's reference stage can report a count
