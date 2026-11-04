@@ -7,7 +7,7 @@ import json
 import logging
 from pathlib import Path
 
-from lg_common import PacketError, decode
+from lg_common import PacketError, decode, withheld_for
 from lg_reader import verify_saved
 
 LOGGER = logging.getLogger(__name__)
@@ -18,7 +18,9 @@ def main() -> None:
 
     The required ``--pins-file`` supplies a consumer-selected plan digest,
     artifact-manifest digest and historical evaluation time. This command
-    never selects the producer's convenience pin file automatically. The
+    never selects the producer's convenience pin file automatically. The optional
+    ``--withheld-sources`` file lists producer sources a retained packet keeps as
+    digests only; the packet must sit under that file's directory. The
     verification semantics are entirely those of :func:`lg_reader.verify_saved`;
     packaging adds no authorization or custody claim.
 
@@ -37,9 +39,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--pins-file", required=True, type=Path)
+    parser.add_argument("--withheld-sources", type=Path)
     args = parser.parse_args()
     try:
-        report = verify_saved(args.output, decode(args.pins_file.read_bytes()))
+        withheld = withheld_for(args.withheld_sources, args.output) if args.withheld_sources else None
+        report = verify_saved(args.output, decode(args.pins_file.read_bytes()), withheld)
     except (PacketError, OSError, ValueError) as error:
         reason = str(error) if isinstance(error, PacketError) else type(error).__name__
         LOGGER.warning("LangGraph reader refused: %s", reason)
