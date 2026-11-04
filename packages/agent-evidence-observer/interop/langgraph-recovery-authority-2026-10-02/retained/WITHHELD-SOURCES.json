@@ -1,0 +1,16 @@
+{
+  "fresh-run/sources/adapter/authority_run.py": "9b39af83f753c5cb582bf00837cd0282361eb36f88045cfe37394171527935d2",
+  "fresh-run/sources/adapter/authority_worker.py": "2440e44eafbb85986fa40b762fd3047b4a7729b274ae7cba7d45eadc7cfeabcd",
+  "fresh-run/sources/adapter/durable_worker.py": "9258052fb66c4e2be37f77329da0094fbc8c3bdc5915a34db6966639ab784a4a",
+  "fresh-run/sources/adapter/lg_run.py": "c22b5436bd62ef1a3732972d7ba51a29a2c6258163ac5a100c06f88e8ac51267",
+  "fresh-run/sources/observer/aae_ticket.py": "0e0655920ee4e2169abb4fcb24993a07adf5d9edea2d2299ac378bace59ee4c4",
+  "fresh-run/sources/observer/authorization.py": "002c57628edee8d6a8d7ac0877f785eae9dc526ecc74435dbd96a691922a3ed3",
+  "fresh-run/sources/observer/ticket_service.py": "dd4058a79aa51a7dee535e4a47c0bad6bc041cd70f989f6ae85f9dc58a771c88",
+  "native-fixture.zip/sources/adapter/authority_run.py": "9b39af83f753c5cb582bf00837cd0282361eb36f88045cfe37394171527935d2",
+  "native-fixture.zip/sources/adapter/authority_worker.py": "c5bc0b4fc156a3e789e62382f1228782caf9023f4ef7ab20448a87cbabde4331",
+  "native-fixture.zip/sources/adapter/durable_worker.py": "9258052fb66c4e2be37f77329da0094fbc8c3bdc5915a34db6966639ab784a4a",
+  "native-fixture.zip/sources/adapter/lg_run.py": "8f2dec692d630b3731c76b92c043f91adf32602889ae024c60d20596790b7551",
+  "native-fixture.zip/sources/observer/aae_ticket.py": "ac12299c5d3bd5de030937d55358031a6ba72f152571ef20c521437fabe54743",
+  "native-fixture.zip/sources/observer/authorization.py": "35e28320cc6aa344938d9e678efa6de9b803b7b22e2431e8e918a8b57c08e4a9",
+  "native-fixture.zip/sources/observer/ticket_service.py": "c6df218d6a81c21ab99ff2549b07f0691ff00e4e44b3f7520562d5c90fcdbda7"
+}

@@ -7,7 +7,7 @@ name = "probity-langgraph-ticket-reader"
 version = "0.0.2"
 description = "Offline historical and durable-restart protected-ticket readers"
 requires-python = ">=3.12"
-dependencies = ["agent-evidence-observer[aae]==0.0.1"]
+dependencies = ["agent-evidence-observer==0.2.0"]
 license = "MIT"
 license-files = ["LICENSE"]
 

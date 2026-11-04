@@ -1,0 +1,7 @@
+{
+  "artifact": "openai-agents-native-ticket",
+  "downloadedAt": "2026-11-03T15:59:37Z",
+  "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "runId": 41665290743,
+  "workflow": "package-observer-openai-agents-ticket.yml"
+}

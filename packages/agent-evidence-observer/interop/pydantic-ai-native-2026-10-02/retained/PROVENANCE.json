@@ -1,0 +1,7 @@
+{
+  "artifact": "pydantic-ai-native-ticket",
+  "downloadedAt": "2026-11-03T16:03:16Z",
+  "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "runId": 41665291357,
+  "workflow": "package-observer-pydantic-ai-native.yml"
+}

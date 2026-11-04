@@ -15,10 +15,10 @@
   "durableTests": 38,
   "reselectedSemanticMutations": 23,
   "fixture": {
-    "path": "durable-fixture.zip",
-    "sha256": "18c47994affce21192578dc63887c7c93e38932d2ffd24d8b7e64744b96a309e",
-    "bytes": 252320,
-    "files": 71
+    "path": "retained/durable-fixture.zip",
+    "sha256": "d515984bc20d258bf2a261f3e18a6fcefaa6e816a1bd3b8e50408437b23c74c4",
+    "bytes": 226150,
+    "files": 65
   },
   "selectedPins": {
     "artifactManifestSha256": "3f144a27ee0908faa3b93217e16a422f629323366c2c4dcedac3020497a89600",

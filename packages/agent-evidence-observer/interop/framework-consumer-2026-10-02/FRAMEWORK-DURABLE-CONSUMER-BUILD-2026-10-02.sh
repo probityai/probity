@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Build the explicitly selected additive reader wheel; never overwrite output.
+# Build the additive durable reader wheel from this package's source bytes; never overwrite output.
+# PACKAGE_DIR is the packages/agent-evidence-observer directory of a checkout.
 set -euo pipefail
 if [[ $# -ne 2 ]]; then
-  printf '%s\n' 'usage: FRAMEWORK-DURABLE-CONSUMER-BUILD-2026-10-02.sh OBSERVER_CHECKOUT NEW_OUTPUT_DIR' >&2
+  printf '%s\n' 'usage: FRAMEWORK-DURABLE-CONSUMER-BUILD-2026-10-02.sh PACKAGE_DIR NEW_OUTPUT_DIR' >&2
   exit 2
 fi
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
@@ -23,6 +24,10 @@ from pathlib import Path
 root = Path(sys.argv[1])
 contract = json.loads(Path(sys.argv[2]).read_bytes())
 selected = Path(sys.argv[3])
+tree = {p.relative_to(root).as_posix() for p in (root / 'src/probity_observer').rglob('*') if p.is_file() and '__pycache__' not in p.parts}
+chosen = {name for name in contract['source_files'] if name.startswith('src/probity_observer/')}
+if tree != chosen:
+    raise SystemExit('source selection refused: observer files differ: ' + ', '.join(sorted(tree ^ chosen)))
 for name, pin in contract['source_files'].items():
     path = root / name
     if not path.resolve().is_relative_to(root):
@@ -42,7 +47,7 @@ print('selected durable reader source/metadata bytes verified', file=sys.stderr)
 PY
 checkout=$stage/selected
 mkdir -p -- "$output" "$stage/observer/src" "$stage/langgraph"
-cp -- "$checkout/pyproject.toml" "$checkout/LICENSE" "$stage/observer/"
+cp -- "$checkout/pyproject.toml" "$checkout/LICENSE" "$checkout/README.md" "$stage/observer/"
 cp -R -- "$checkout/src/probity_observer" "$stage/observer/src/"
 cp -- "$checkout/LICENSE" "$stage/langgraph/"
 selected_profile=$checkout/interop/framework-consumer-2026-10-02
