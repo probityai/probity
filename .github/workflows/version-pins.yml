@@ -1,0 +1,63 @@
+name: version-pins
+
+# Holds every version README.md and docs/architecture name to its owner (a package
+# manifest, or the family lock in version-pins.toml), and once a day compares the
+# manifests, tags, registries and family lock: a pin that lags the newest release
+# by more than one release or one day fails here. pin-refresh moves the lock.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - version-pins.toml
+      - README.md
+      - "docs/architecture/**"
+      - "packages/*/pyproject.toml"
+      - .github/workflows/version-pins.yml
+  pull_request:
+    paths:
+      - version-pins.toml
+      - README.md
+      - "docs/architecture/**"
+      - "packages/*/pyproject.toml"
+      - .github/workflows/version-pins.yml
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+  schedule:
+    - cron: "47 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pins:
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: every pinned version on a page agrees with its owner
+        uses: probityai/.github/actions/version-pins@27c2b8a1dc13ce58e47b020c7300c9196d6a6dd7 # main
+        with:
+          command: check
+
+  registry:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_run' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: manifests, tags, registries and the family lock agree
+        uses: probityai/.github/actions/version-pins@27c2b8a1dc13ce58e47b020c7300c9196d6a6dd7 # main
+        with:
+          command: registry
