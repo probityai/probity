@@ -1,19 +1,9 @@
 # Probity
 
-[![CI](https://img.shields.io/github/actions/workflow/status/probityai/probity/ci.yml?label=CI)](https://github.com/probityai/probity/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/probity-verify?label=probity-verify)](https://pypi.org/project/probity-verify/)
-[![Downloads](https://static.pepy.tech/badge/probity-verify)](https://pepy.tech/projects/probity-verify)
-[![Licence](https://img.shields.io/github/license/probityai/probity)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity)
-
-<p>
-<a href="https://pepy.tech/projects/probityai"><img alt="probityai total downloads" src="https://static.pepy.tech/personalized-badge/probityai?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probityai%20downloads"></a>
-<a href="https://pepy.tech/projects/probity-ratchet"><img alt="probity-ratchet total downloads" src="https://static.pepy.tech/personalized-badge/probity-ratchet?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probity%20ratchet%20downloads"></a>
-<a href="https://pepy.tech/projects/probity-ratchet-cases"><img alt="probity-ratchet-cases total downloads" src="https://static.pepy.tech/personalized-badge/probity-ratchet-cases?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probity%20ratchet%20cases%20downloads"></a>
-<a href="https://pepy.tech/projects/agent-evidence-observer"><img alt="agent-evidence-observer total downloads" src="https://static.pepy.tech/personalized-badge/agent-evidence-observer?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=agent%20evidence%20observer%20downloads"></a>
-<a href="https://pepy.tech/projects/probity-effects"><img alt="probity-effects total downloads" src="https://static.pepy.tech/personalized-badge/probity-effects?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probity%20effects%20downloads"></a>
-<a href="https://pepy.tech/projects/agent-evidence-mcp"><img alt="agent-evidence-mcp total downloads" src="https://static.pepy.tech/personalized-badge/agent-evidence-mcp?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=agent%20evidence%20mcp%20downloads"></a>
-</p>
+[![CI](https://img.shields.io/github/actions/workflow/status/probityai/probity/ci.yml?style=flat-square&color=4c6278&label=CI)](https://github.com/probityai/probity/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/probityai/probity?style=flat-square&color=4c6278&label=license)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat-square&color=4c6278&label=stars)](https://github.com/probityai/probity/stargazers)
+[![Downloads](https://img.shields.io/pepy/dt/probity-verify?style=flat-square&color=4c6278&label=downloads)](https://pepy.tech/projects/probity-verify)
 
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier, an observer that records agent runs, and the tools around them. The conformance corpus, vocabulary and admission rules live in https://github.com/probityai/agent-evidence-vectors.
 
@@ -50,19 +40,28 @@ A selected passage is in the source capture but missing from the stored report. 
 
 Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer: formats and checks any tool can pin without adopting ours. `probity*` is the product built on it. Each package keeps its own version and release tag, `<name>-v<version>`.
 
-| layer | package | what it is | install |
-| --- | --- | --- | --- |
-| evidence | [agent-evidence-mcp](packages/agent-evidence-mcp/README.md) | offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors | `pip install agent-evidence-mcp==0.2.5` |
-| evidence | [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | `pip install agent-evidence-observer==0.2.0` |
-| evidence | [agent-evidence-admission](https://github.com/probityai/agent-evidence-vectors) | checks an artifact has the digest its SBOM or attestation names (in agent-evidence-vectors) | `pip install agent-evidence-admission==0.2.0` |
-| evidence | [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | versioned terms for claims about agent execution evidence (in agent-evidence-vectors) | `pip install agent-evidence-vocabulary==0.8.0` |
-| evidence | [agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors) | conformance corpora and reference verifiers | `pip install agent-evidence-vectors==0.32.1` |
-| product | [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | `pip install probityai==0.1.1` |
-| product | [probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | `pip install probity-verify==0.4.1` |
-| product | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | `pip install probity-ratchet==0.3.4` |
-| product | [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | agent task cases graded on final state: a simulated company, tool faults, exact graders | `pip install probity-ratchet-cases==0.2.0` |
-| product | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | `pip install probity-effects==0.2.0` |
-| product | [evaluator-replay-kit](packages/evaluator-replay-kit/README.md) | replays a lab's agent action record and flags a changed or missing step | `pip install "git+https://github.com/probityai/probity@evaluator-replay-kit-v0.1.0#subdirectory=packages/evaluator-replay-kit"` (not on PyPI) |
+**Evidence layer**
+
+| package | what it is | version | downloads |
+| --- | --- | :---: | :---: |
+| [agent-evidence-mcp](packages/agent-evidence-mcp/README.md) | offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors | [![agent-evidence-mcp version](https://img.shields.io/pypi/v/agent-evidence-mcp?style=flat-square&color=4c6278&label=)](https://pypi.org/project/agent-evidence-mcp/) | [![agent-evidence-mcp downloads](https://img.shields.io/pepy/dt/agent-evidence-mcp?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/agent-evidence-mcp) |
+| [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | [![agent-evidence-observer version](https://img.shields.io/pypi/v/agent-evidence-observer?style=flat-square&color=4c6278&label=)](https://pypi.org/project/agent-evidence-observer/) | [![agent-evidence-observer downloads](https://img.shields.io/pepy/dt/agent-evidence-observer?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/agent-evidence-observer) |
+| [agent-evidence-admission](https://github.com/probityai/agent-evidence-vectors) | checks an artifact has the digest its SBOM or attestation names (in agent-evidence-vectors) | [![agent-evidence-admission version](https://img.shields.io/pypi/v/agent-evidence-admission?style=flat-square&color=4c6278&label=)](https://pypi.org/project/agent-evidence-admission/) | [![agent-evidence-admission downloads](https://img.shields.io/pepy/dt/agent-evidence-admission?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/agent-evidence-admission) |
+| [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | versioned terms for claims about agent execution evidence (in agent-evidence-vectors) | [![agent-evidence-vocabulary version](https://img.shields.io/pypi/v/agent-evidence-vocabulary?style=flat-square&color=4c6278&label=)](https://pypi.org/project/agent-evidence-vocabulary/) | [![agent-evidence-vocabulary downloads](https://img.shields.io/pepy/dt/agent-evidence-vocabulary?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/agent-evidence-vocabulary) |
+| [agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors) | conformance corpora and reference verifiers | [![agent-evidence-vectors version](https://img.shields.io/pypi/v/agent-evidence-vectors?style=flat-square&color=4c6278&label=)](https://pypi.org/project/agent-evidence-vectors/) | [![agent-evidence-vectors downloads](https://img.shields.io/pepy/dt/agent-evidence-vectors?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/agent-evidence-vectors) |
+
+**Product**
+
+| package | what it is | version | downloads |
+| --- | --- | :---: | :---: |
+| [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | [![probityai version](https://img.shields.io/pypi/v/probityai?style=flat-square&color=4c6278&label=)](https://pypi.org/project/probityai/) | [![probityai downloads](https://img.shields.io/pepy/dt/probityai?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/probityai) |
+| [probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | [![probity-verify version](https://img.shields.io/pypi/v/probity-verify?style=flat-square&color=4c6278&label=)](https://pypi.org/project/probity-verify/) | [![probity-verify downloads](https://img.shields.io/pepy/dt/probity-verify?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/probity-verify) |
+| [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | [![probity-ratchet version](https://img.shields.io/pypi/v/probity-ratchet?style=flat-square&color=4c6278&label=)](https://pypi.org/project/probity-ratchet/) | [![probity-ratchet downloads](https://img.shields.io/pepy/dt/probity-ratchet?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/probity-ratchet) |
+| [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | agent task cases graded on final state: a simulated company, tool faults, exact graders | [![probity-ratchet-cases version](https://img.shields.io/pypi/v/probity-ratchet-cases?style=flat-square&color=4c6278&label=)](https://pypi.org/project/probity-ratchet-cases/) | [![probity-ratchet-cases downloads](https://img.shields.io/pepy/dt/probity-ratchet-cases?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/probity-ratchet-cases) |
+| [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | [![probity-effects version](https://img.shields.io/pypi/v/probity-effects?style=flat-square&color=4c6278&label=)](https://pypi.org/project/probity-effects/) | [![probity-effects downloads](https://img.shields.io/pepy/dt/probity-effects?style=flat-square&color=4c6278&label=)](https://pepy.tech/projects/probity-effects) |
+| [evaluator-replay-kit](packages/evaluator-replay-kit/README.md) | replays a lab's agent action record and flags a changed or missing step | [![evaluator-replay-kit version](https://img.shields.io/badge/-v0.1.0-4c6278?style=flat-square&color=4c6278)](https://github.com/probityai/probity/tags) | not on PyPI |
+
+Install any of them pinned to the version shown: `pip install <package>==<version>`. evaluator-replay-kit installs from its tag: `pip install "git+https://github.com/probityai/probity@evaluator-replay-kit-v0.1.0#subdirectory=packages/evaluator-replay-kit"`.
 
 The Claude Code and Cursor plugins ship from [harnesses/agent-evidence-plugins](harnesses/agent-evidence-plugins/README.md).
 
