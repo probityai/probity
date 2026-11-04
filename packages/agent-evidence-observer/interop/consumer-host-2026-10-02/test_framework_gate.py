@@ -22,14 +22,19 @@ spec.loader.exec_module(fixtures)
 def invoke(tmp: Path, profile: str, change: str | None = None) -> subprocess.CompletedProcess[str]:
     """Invoke the public gate with the original native archive and external policy."""
     packet, pins = fixtures.selected_packet(profile, tmp / 'original')
+    listed = fixtures.withheld_list(packet)
     policy = tmp / 'host-policy.json'
     value = {'schema': 'probity-framework-host-gate-v1', 'reader': profile,
              'profile': ('probity-langgraph-aae-ticket-v0' if profile == 'langgraph'
                          else 'probity-pydantic-ai-ticket-v0'),
              'plannedAttempts': 6 if profile == 'langgraph' else 5,
-             'pinsSha256': hashlib.sha256(pins.read_bytes()).hexdigest()}
+             'pinsSha256': hashlib.sha256(pins.read_bytes()).hexdigest(),
+             'withheldSha256': hashlib.sha256(listed.read_bytes()).hexdigest()}
     value.update({'population': {'plannedAttempts': 100},
-                  'profile': {'profile': 'other-native-profile'}}.get(change, {}))
+                  'profile': {'profile': 'other-native-profile'},
+                  'withheld-digest': {'withheldSha256': '0' * 64}}.get(change, {}))
+    if change == 'withheld-unpinned':
+        del value['withheldSha256']
     policy.write_text(json.dumps(value))
     digest = hashlib.sha256(policy.read_bytes()).hexdigest()
     if change == 'policy-digest':
@@ -44,7 +49,7 @@ def invoke(tmp: Path, profile: str, change: str | None = None) -> subprocess.Com
         (output / 'report.json').write_text('{"status":"verified"}')
     return subprocess.run([sys.executable, str(HERE / 'framework_gate.py'),
         '--packet', str(packet), '--pins', str(pins), '--policy', str(policy),
-        '--policy-sha256', digest, '--reader-bin', str(Path(sys.executable).parent),
+        '--policy-sha256', digest, '--withheld-sources', str(listed), '--reader-bin', str(Path(sys.executable).parent),
         '--output', str(output)], capture_output=True, text=True, timeout=60, check=False)
 
 
@@ -59,14 +64,14 @@ class TestFrameworkGate:
             assert json.loads((receipt / 'child-status.json').read_bytes())['returncode'] == 0
             assert (receipt / 'report.json').read_bytes() == (receipt / 'reader.stdout').read_bytes()
             assert set(p.name for p in receipt.iterdir()) == {'host-policy.json', 'selected-pins.json',
-                'launch.json', 'child-status.json', 'reader.stdout', 'reader.stderr', 'report.json', 'gate.json'}
+                'launch.json', 'withheld-sources.json', 'child-status.json', 'reader.stdout', 'reader.stderr', 'report.json', 'gate.json'}
             report = json.loads((receipt / 'report.json').read_bytes())
             assert report['independentCustody'] == 'not-established'
 
     class TestFailingCases:
         @pytest.mark.parametrize('profile', ['langgraph', 'pydantic'])
         @pytest.mark.parametrize('change', ['population', 'profile', 'policy-digest',
-            'pins-digest', 'reader-refusal', 'stale-output'])
+            'pins-digest', 'withheld-digest', 'withheld-unpinned', 'reader-refusal', 'stale-output'])
         def test_refuses_without_publication(self, profile: str, change: str, tmp_path: Path) -> None:
             result = invoke(tmp_path, profile, change)
             assert result.returncode == 1

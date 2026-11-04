@@ -15,25 +15,34 @@ import pytest
 import rfc8785
 
 ROOT = Path(__file__).resolve().parent
-DURABLE_ARCHIVE_SHA256 = "53226e9a77526c67c759e582b9f40b4512fff78ca64fad99bc99d2e5a4d97ed8"
+# The retained archive is the original successful Ubuntu CI artifact (see the durable run
+# in DURABLE-INSTALL-2026-10-02.md) rewritten so the producer sources are kept as digests
+# only, listed in retained/WITHHELD-SOURCES.json. This pin selects the rewritten bytes.
+DURABLE_ARCHIVE_SHA256 = "cec578c4c9b72057a9859e064a9e418ccb2cc76d854d3918228c6393b80e81cd"
 
 
 def selected_durable_packet(destination: Path) -> tuple[Path, Path]:
     """Authenticate the original successful Ubuntu ZIP and externally copy pins."""
-    archive = ROOT / "fixtures/langgraph-durable.zip"
+    archive = ROOT / "retained/langgraph-durable.zip"
     assert hashlib.sha256(archive.read_bytes()).hexdigest() == DURABLE_ARCHIVE_SHA256
     with zipfile.ZipFile(archive) as bundle:
         assert all(not Path(name).is_absolute() and ".." not in Path(name).parts for name in bundle.namelist())
-        bundle.extractall(destination)
-    packet = destination / "durable-run"
+        bundle.extractall(destination / archive.name)
+    (destination / "WITHHELD-SOURCES.json").write_bytes((ROOT / "retained/WITHHELD-SOURCES.json").read_bytes())
+    packet = destination / archive.name / "durable-run"
     policy = destination / "selected-durable-pins.json"
     policy.write_bytes((packet / "consumer-pins.json").read_bytes())
     return packet, policy
 
 
+def withheld_list(packet: Path) -> Path:
+    """Find the withheld-source list ``selected_durable_packet`` placed above the archive."""
+    return next(p / "WITHHELD-SOURCES.json" for p in packet.parents if (p / "WITHHELD-SOURCES.json").is_file())
+
+
 def invoke(packet: Path, pins: Path | None, command: str = "probity-langgraph-durable-read") -> subprocess.CompletedProcess[str]:
     """Run the installed command from its environment without source PYTHONPATH."""
-    args = [str(Path(sys.executable).parent / command), str(packet)]
+    args = [str(Path(sys.executable).parent / command), str(packet), "--withheld-sources", str(withheld_list(packet))]
     if pins is not None:
         args += ["--pins-file", str(pins)]
     return subprocess.run(args, capture_output=True, text=True, timeout=30, check=False)
