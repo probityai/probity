@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import copy
-import json
 import shutil
 import socket
 import sys
@@ -14,7 +13,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import inspect_ticket_reader as bridge
 from evaluation_contract import ContractError, decode, encode, withheld_for
 from probity_observer.crypto import VerificationError, canonical
-
 
 RETAINED = Path(__file__).resolve().parents[1] / "retained"
 WITHHELD = withheld_for(RETAINED / "WITHHELD-SOURCES.json", RETAINED / "native-ticket-run")
