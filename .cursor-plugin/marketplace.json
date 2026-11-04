@@ -1,0 +1,12 @@
+{
+  "name": "agent-evidence-plugins",
+  "owner": { "name": "Probity AI" },
+  "metadata": { "description": "Verify claims about AI systems against supplied evidence, offline" },
+  "plugins": [
+    {
+      "name": "agent-evidence",
+      "source": "packages/agent-evidence-mcp",
+      "description": "Verify claims about AI systems against supplied evidence and replay the agent-evidence conformance vectors, offline and read-only."
+    }
+  ]
+}

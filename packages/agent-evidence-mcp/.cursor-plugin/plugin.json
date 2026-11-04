@@ -1,0 +1,13 @@
+{
+  "name": "agent-evidence",
+  "version": "0.2.5",
+  "description": "Verify claims about AI systems against supplied evidence and replay the agent-evidence conformance vectors, offline and read-only.",
+  "author": {"name": "Probity AI"},
+  "homepage": "https://github.com/probityai/probity/tree/main/packages/agent-evidence-mcp",
+  "repository": "https://github.com/probityai/probity/tree/main/packages/agent-evidence-mcp",
+  "license": "Apache-2.0",
+  "keywords": ["mcp", "evidence", "verification", "conformance"],
+  "logo": "https://avatars.githubusercontent.com/u/331036858?s=200&v=4",
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
+}
