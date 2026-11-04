@@ -3,8 +3,8 @@
 The additive `probity-langgraph-durable-restart-v0` profile runs real LangGraph
 1.0.10 and its native `langgraph-checkpoint-sqlite` 3.1.1 `SqliteSaver` in separate
 OS processes. The original six-case in-memory profile, its retained packets and
-source lock keep their original scope. This runner selects a new plan before any
-worker starts and retains its own sources, dependencies, checkpoints and HTTP bytes.
+source lock keep their original scope. The operator's runtime selected a new plan before any
+worker started and retained its own sources, dependencies, checkpoints and HTTP bytes.
 
 | Attempt | Exit and recovery | Protected ticket result |
 |---|---|---|
@@ -36,15 +36,14 @@ checkout using the original README instructions. From this profile directory:
 
 ```sh
 ../../.venv-lg/bin/python -m pytest -q tests
-../../.venv-lg/bin/python durable_run.py fresh-durable-run --source-revision "$(git rev-parse HEAD)"
-cp fresh-durable-run/consumer-pins.json /tmp/langgraph-durable-selected-pins.json
-../../.venv-lg/bin/python durable_reader.py fresh-durable-run --pins-file /tmp/langgraph-durable-selected-pins.json
+cp retained/durable-run/consumer-pins.json /tmp/langgraph-durable-selected-pins.json
+../../.venv-lg/bin/python durable_reader.py retained/durable-run --pins-file /tmp/langgraph-durable-selected-pins.json --withheld-sources retained/WITHHELD-SOURCES.json
 ```
 
-The output must not exist. Each worker has a 30-second timeout, each HTTP request
-has a 5-second timeout and 64 KiB response limit, and the offline reader caps each
-file at 8 MiB. CI bounds the full fresh packet at 180 seconds and retains artifacts
-for 90 days. Installation/worker/reader errors fail rather than skip a case.
+The packet was produced by the operator's runtime, which ran each worker with a
+30-second timeout, each HTTP request with a 5-second timeout and 64 KiB response
+limit; the offline reader caps each file at 8 MiB. Worker errors fail rather than
+skip a case.
 
 The offline reader imports no LangGraph and accesses no network or SQLite store.
 It checks the exact plan/source/dependency population; native history, parent
