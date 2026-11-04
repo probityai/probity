@@ -12,7 +12,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from probity_observer.crypto import SigningKey, canonical
 from probity_observer.grant_records import ActionRequest, GrantPolicy
 
-from .service import ApsRefundStore, parse_native_clock
+from .service import ApsRefundStore
+from .verification import parse_native_clock
 
 
 def load_store(runtime: dict[str, Any], *, fault: str | None = None) -> ApsRefundStore:

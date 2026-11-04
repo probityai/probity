@@ -16,7 +16,12 @@ from probity_observer.authorization import issue_grant
 from probity_observer.crypto import SigningKey, canonical
 from probity_observer.grant_records import ActionRequest, GrantPolicy, validate_utc_time
 
-from .service import parse_native_clock, refund_operation_id, sdk_digest, verify_aps
+from .verification import (
+    parse_native_clock,
+    refund_operation_id,
+    sdk_digest,
+    verify_aps,
+)
 
 NOW = datetime(2026, 10, 5, 20, 0, 0, tzinfo=timezone.utc)
 

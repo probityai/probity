@@ -25,7 +25,7 @@ from probity_observer.ticket_state import (
     verify_ticket_capture,
 )
 
-from .service import (
+from .verification import (
     parse_native_clock,
     refund_decision_digest,
     verify_aps,

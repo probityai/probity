@@ -1,0 +1,2 @@
+protected action refused: APS host clock must use UTC millisecond precision
+public refund capture refused: public host request, grant policy or clock is malformed

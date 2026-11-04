@@ -13,16 +13,17 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from probity_observer.crypto import VerificationError, canonical
+from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.ticket_service import http_json, running_server
+
 from probity_aps_refund.fixture import NOW, provision, select_action
-from probity_aps_refund.service import (
+from probity_aps_refund.verification import (
     parse_native_clock,
     verify_aps,
     verify_refund_result,
 )
 from probity_aps_refund.worker import load_store
-from probity_observer.crypto import VerificationError, canonical
-from probity_observer.grant_records import ActionRequest, GrantPolicy
-from probity_observer.ticket_service import http_json, running_server
 
 PROFILE = Path(__file__).resolve().parent
 
@@ -434,7 +435,7 @@ def test_incomplete_capture_requires_current_local_authority(tmp_path: Path, off
 @pytest.mark.parametrize("kind", ["empty-observations", "changed-frozen-report"])
 def test_native_observations_require_actual_sdk_and_frozen_report(case: dict[str, Any], kind: str) -> None:
     """Historical checks cannot silently accept no observations or another SDK decision."""
-    from probity_aps_refund.service import verify_aps_observations
+    from probity_aps_refund.verification import verify_aps_observations
     arguments = {"node": Path(case["node"]), "verifier": Path(case["verifier"]),
         "verifier_sha256": case["verifierSha256"], "sdk_sha256": case["sdkSha256"]}
     report = verify_aps(case["evidence"], now=NOW, **arguments)
