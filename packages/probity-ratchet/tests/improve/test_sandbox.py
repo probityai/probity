@@ -6,7 +6,7 @@ import pytest
 
 from ratchet.agent import guards
 from ratchet.agent.guards import GuardRuntime
-from ratchet.improve.diagnose import diagnose
+from ratchet.improve.failures import open_diagnose as diagnose
 from ratchet.improve.replay import WalkCache, replay
 from ratchet.improve.sandbox import SandboxRunner
 from ratchet.types import Guard

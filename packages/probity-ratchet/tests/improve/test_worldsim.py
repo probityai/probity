@@ -10,7 +10,7 @@ from ratchet_cases.types import Trace
 from ratchet.agent.model import ScriptedModel, scripted_turn
 from ratchet.agent.seed import seed_harness
 from ratchet.agent.worker import run_case
-from ratchet.improve.diagnose import diagnose
+from ratchet.improve.failures import open_diagnose as diagnose
 from ratchet.improve.replay import WalkCache, replay
 from ratchet.improve.worldsim import WorldSimulator
 from ratchet.types import Guard
