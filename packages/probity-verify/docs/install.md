@@ -4,9 +4,9 @@ Probity Verify checks a claim against local evidence and a consumer-held policy.
 Use it when you need a decision you can replay from the same bytes.
 Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are required.
 
-Version 0.4.0 is published on [PyPI](https://pypi.org/project/probity-verify/0.4.0/).
-Its wheel modules are identical to the source at tag `probity-verify-v0.4.0`, commit
-`92d8e71d5216b1165f5d1ce9326844975c99b710`, and the wheel carries the source-coverage
+Version 0.4.1 is published on [PyPI](https://pypi.org/project/probity-verify/0.4.1/).
+Its wheel modules are identical to the source at tag `probity-verify-v0.4.1`, commit
+`52de3e2c0e8952e1a53cb5db8b6e51c2367e1269`, and the wheel carries the source-coverage
 sample inputs as package resources. The [release guide](RELEASING.md) gives the
 installed-resource recipe and the artifact checks.
 
@@ -16,7 +16,7 @@ Run these commands from a new working directory:
 
 ```sh
 uv venv --python 3.12 verify-env
-uv pip install --python verify-env/bin/python probity-verify==0.4.0
+uv pip install --python verify-env/bin/python probity-verify==0.4.1
 samples="$(verify-env/bin/python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
 verify-env/bin/probity-verify "$samples/case.json" --policy "$samples/policy-june.json"
 ```
@@ -32,11 +32,11 @@ The release files and their SHA-256 digests are recorded in [release.json](relea
 
 | file | SHA-256 |
 | --- | --- |
-| `probity_verify-0.4.0-py3-none-any.whl` | `8b7c45b8431e25dd90ae7c4ccea926bf1931457bc34ceb13195f67383fa0f595` |
-| `probity_verify-0.4.0.tar.gz` | `3cc4b0498d991995ec934c240b84a927990669b8044083ffcb7b342c54302bbc` |
+| `probity_verify-0.4.1-py3-none-any.whl` | `7ca6da4a96c20b775e70a7967106c94f5c1cb5179021cfe2e67ad1433b76b749` |
+| `probity_verify-0.4.1.tar.gz` | `d7a03cb479d909b2bdcf6fb64eca16210ec38fc92a4e9744ce35635065607f45` |
 
 To require these digests at install time, put the line
-`probity-verify==0.4.0 --hash=sha256:8b7c45b8431e25dd90ae7c4ccea926bf1931457bc34ceb13195f67383fa0f595`
+`probity-verify==0.4.1 --hash=sha256:7ca6da4a96c20b775e70a7967106c94f5c1cb5179021cfe2e67ad1433b76b749`
 in a requirements file and install it with `uv pip install --require-hashes -r`.
 
 The packet includes:

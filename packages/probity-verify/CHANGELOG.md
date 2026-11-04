@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 (2026-11-04)
 
 - `agent-evidence-vocabulary` is now `>=0.8.0,<0.10`, so the verifier installs beside vocabulary 0.9.0 as well as
   0.8.x. No identifier the verifier reads moved, and the test suite passes against both.
