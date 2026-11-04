@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/**', '.github/workflows/package-observer-adk-current-consumer.yml']
+    paths: ['packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/**', 'packages/agent-evidence-observer/interop/adk-ticket-2026-10-02/**', 'packages/agent-evidence-observer/src/probity_observer/**', 'packages/agent-evidence-observer/pyproject.toml', '.github/workflows/package-observer-adk-current-consumer.yml']
   pull_request:
     branches: [main]
-    paths: ['packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/**', '.github/workflows/package-observer-adk-current-consumer.yml']
+    paths: ['packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/**', 'packages/agent-evidence-observer/interop/adk-ticket-2026-10-02/**', 'packages/agent-evidence-observer/src/probity_observer/**', 'packages/agent-evidence-observer/pyproject.toml', '.github/workflows/package-observer-adk-current-consumer.yml']
 
 permissions:
   contents: read
@@ -19,7 +19,8 @@ defaults:
     working-directory: packages/agent-evidence-observer
 
 jobs:
-  current-native-consumer:
+  retained-consumer:
+    name: Retained installed-consumer packet
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -29,64 +30,33 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: probityai/agent-evidence-observer
-          ref: c774e0711e4a30c31cdfb184c1e4495a249fbdd0
-          path: packages/agent-evidence-observer/selected-reference
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: probityai/agent-evidence-observer
-          ref: 4a50e61471355611121a578f3a4c22daa931d419
-          path: packages/agent-evidence-observer/selected-observer
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: google/adk-python
-          ref: e94c2e726a269e0f04e2e4b202f5c131c80c20de
-          path: packages/agent-evidence-observer/selected-adk
-          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.13.15'
-      - name: Build original reader wheels and normally install selected current SDK
+      - name: Build the reader wheels from this repository and install the reader environment
         run: |
           set -euo pipefail
           profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03"
-          python -m venv "$RUNNER_TEMP/adk-producer"
-          "$RUNNER_TEMP/adk-producer/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements.lock" -r "$profile/build.lock"
-          env -u PYTHONDONTWRITEBYTECODE "$RUNNER_TEMP/adk-producer/bin/python" -m pip wheel --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-observer" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-reference/interop/adk-ticket-2026-10-02" --wheel-dir "$RUNNER_TEMP/adk-wheels"
-          "$RUNNER_TEMP/adk-producer/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/adk-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/adk-wheels/probity_adk_reference-0.0.1-py3-none-any.whl"
-          "$RUNNER_TEMP/adk-producer/bin/python" -m pip install --no-compile --no-deps --no-build-isolation --force-reinstall "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-adk"
-          "$RUNNER_TEMP/adk-producer/bin/python" -m pip check
+          python -m venv "$RUNNER_TEMP/adk-build"
+          "$RUNNER_TEMP/adk-build/bin/python" -m pip install --no-compile --require-hashes -r "$profile/build.lock"
+          env -u PYTHONDONTWRITEBYTECODE "$RUNNER_TEMP/adk-build/bin/python" -m pip wheel --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-ticket-2026-10-02" --wheel-dir "$RUNNER_TEMP/adk-wheels"
           python -m venv "$RUNNER_TEMP/adk-reader"
-          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
-          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/adk-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/adk-wheels/probity_adk_reference-0.0.1-py3-none-any.whl"
-          "$RUNNER_TEMP/adk-reader/bin/python" -m pip check
-      - name: Verify trusted host controls and actual current native population
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock" -r "$profile/requirements-test-reader.lock"
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP"/adk-wheels/agent_evidence_observer-*.whl "$RUNNER_TEMP"/adk-wheels/probity_adk_reference-*.whl
+      - name: Replay the retained packet with the public reader
         run: |
           set -euo pipefail
           profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03"
-          ADK_CURRENT_READER_PYTHON="$RUNNER_TEMP/adk-reader/bin/python" PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$RUNNER_TEMP/adk-producer/bin/python" -I -B -m pytest -c /dev/null -o "cache_dir=$RUNNER_TEMP/adk-pytest-cache" "$profile/test_bootstrap.py" "$profile/test_publish_reference.py" -q --junitxml="$profile/bootstrap-results.xml"
-          "$RUNNER_TEMP/adk-producer/bin/python" -I -B "$profile/bootstrap.py" --producer "$RUNNER_TEMP/adk-producer/bin/python" --reader "$RUNNER_TEMP/adk-reader/bin/python" --wheels "$RUNNER_TEMP/adk-wheels" --sdk-checkout "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-adk" --output "$profile/fresh-current-run"
-      - name: Check original native semantics in the framework-free reader
+          "$RUNNER_TEMP/adk-reader/bin/python" -I -B "$profile/verify_retained.py"
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$RUNNER_TEMP/adk-reader/bin/python" -I -B -m pytest -c /dev/null -o "cache_dir=$RUNNER_TEMP/adk-pytest-cache" "$profile/test_publish_reference.py" "$profile/test_native_current.py" -q --junitxml="$RUNNER_TEMP/adk-results.xml"
+      - name: Publish the retained packet through the installed gate
         run: |
           set -euo pipefail
           profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03"
-          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-test-reader.lock"
-          ADK_CURRENT_RETAINED_PACKET="$profile/fresh-current-run/packet" PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$RUNNER_TEMP/adk-reader/bin/python" -I -B -m pytest -c /dev/null -o "cache_dir=$RUNNER_TEMP/adk-pytest-cache" "$profile/test_native_current.py" -q --junitxml="$profile/native-results.xml"
-      - name: Retain actual source, raw native bytes, installation and gate receipts
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: current-adk-installed-consumer
-          path: |
-            packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/fresh-current-run/
-            packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/*-results.xml
-            ${{ runner.temp }}/adk-wheels/
-          if-no-files-found: error
-          retention-days: 90
+          run="$profile/retained/fresh-current-run"
+          policy_sha="$(sha256sum "$run/host-policy.json" | cut -d ' ' -f 1)"
+          "$RUNNER_TEMP/adk-reader/bin/python" -I -B "$profile/publish_reference.py" "$run/packet" --policy "$run/host-policy.json" --policy-sha256 "$policy_sha" --python "$RUNNER_TEMP/adk-reader/bin/python" --reader "$RUNNER_TEMP/adk-reader/bin/probity-adk-read" --withheld-sources "$profile/retained/WITHHELD-SOURCES.json" --output "$RUNNER_TEMP/adk-publication"
+          cmp "$RUNNER_TEMP/adk-publication/publication-receipt.json" "$run/publication/publication-receipt.json"
 
   upstream-full-tox:
     name: Patched ADK full tox (${{ matrix.tox }})
