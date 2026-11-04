@@ -207,5 +207,7 @@ def test_evolve_runs_the_real_loop_against_atlas_and_the_views_read_it_back(
     assert "head:" in out
     assert store.lineage()
     buf2 = io.StringIO()
-    assert main(["show", "lineage"], backend=LiveBackend(env), console=Console(file=buf2, width=140)) == 0
+    # The views read the referee's file store beside Atlas, so the lineage shows the referee's activation.
+    backend = EndToEnd(env, tmp_path / "referee")
+    assert main(["show", "lineage"], backend=backend, console=Console(file=buf2, width=140)) == 0
     assert "ACTIVE rev 1" in buf2.getvalue()
