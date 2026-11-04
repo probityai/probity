@@ -7,9 +7,9 @@ import pytest
 
 from ratchet.canonical import canonical_json
 from ratchet.improve.admit import admit, awaiting_confirmation, check_fresh, check_structure
-from ratchet.improve.failures import open_diagnose as diagnose
 from ratchet.improve.evaluate import EvalReport, evaluate
 from ratchet.improve.failures import OpenOverfitScreen
+from ratchet.improve.failures import open_diagnose as diagnose
 from ratchet.improve.receipt import HUMAN_APPROVAL_TYPE, Signer, receipt, verify
 from ratchet.improve.replay import ReplayReport, WalkCache, replay
 from ratchet.types import Guard, Harness

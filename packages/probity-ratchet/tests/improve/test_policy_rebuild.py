@@ -1,4 +1,4 @@
-"""Rebuilding a judged candidate from its stored decision, and the normal form the policies compare traces in."""
+"""Rebuilding a judged candidate from its stored decision, and the normal form policies compare traces in."""
 
 from __future__ import annotations
 
