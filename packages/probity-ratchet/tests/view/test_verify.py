@@ -19,7 +19,7 @@ from ratchet.view.verify import (
     verify_envelope,
 )
 
-from .fakes import decision_doc
+from .fakes import countersigned_fields, decision_doc
 
 SIGNER = Signer.from_seed_hex("11" * 32)
 OTHER = Signer.from_seed_hex("22" * 32)
@@ -134,10 +134,8 @@ def test_render_of_failure_has_no_payload_line() -> None:
 def test_a_countersigned_decision_names_the_pinned_key_and_the_run_key() -> None:
     from datetime import UTC, datetime
 
-    from ratchet.improve.countersign import countersign_doc
-
     doc = signed_doc(OTHER)
-    doc.update(countersign_doc(doc, SIGNER, datetime(2026, 10, 11, tzinfo=UTC)) or {})
+    doc.update(countersigned_fields(doc, SIGNER, datetime(2026, 10, 11, tzinfo=UTC)))
     res = verify_decision(doc, keys())
     assert res.ok and res.keyid == SIGNER.keyid
     assert f"first signed by per-run key {OTHER.keyid[:12]}" in res.detail[-1]
