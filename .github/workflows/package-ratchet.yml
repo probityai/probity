@@ -36,7 +36,8 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run mypy src
-      - run: uv run mypy --config-file ../probity-ratchet-cases/pyproject.toml ../probity-ratchet-cases/src
+      # agentdojo and tau2 are installed only by the cases-agentdojo and cases-tau2 jobs below, which test against them.
+      - run: uv run mypy --config-file ../probity-ratchet-cases/pyproject.toml --ignore-missing-imports ../probity-ratchet-cases/src
       - run: python3 scripts/readme-lint.py README.md
       - run: python3 scripts/readme-lint.py ../probity-ratchet-cases/README.md
       # check-docs imports ratchet_cases to count the case families, so it runs inside the synced virtualenv
