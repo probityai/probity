@@ -1,7 +1,7 @@
 # Release the root Python package
 
-The root distribution is `agent-evidence-observer` 0.2.0. It installs the
-`probity_observer` modules and five declared console commands. Separate
+The root distribution is `agent-evidence-observer` 0.1.4. It installs the
+`probity_observer` modules and six declared console commands. Separate
 `interop/` distributions keep their own names, dependencies, source pins and
 qualification. Publishing the root wheel does not publish those profiles.
 See [installation and profile selection](INSTALLATION.md).
@@ -19,13 +19,17 @@ project's compatible backend minimum remains `setuptools>=77.0.3`, so the
 separate profiles can keep their tested, hash-pinned build environments.
 
 The workflow installs the wheel in a separate environment and runs
-`scripts/check-installed.py` from an outside directory. The root broker demo
-must create a replayable write, accept its retry and verify the retained packet.
-A repeated demo must refuse a nonempty destination without changing its files.
-An altered retained effect must fail verification. The workflow rebuilds and
-installs the source distribution, then repeats the same installed consumer.
+`scripts/check-installed.py` from an outside directory. The installed
+`agent-evidence-observer verify` command must verify the committed retained
+broker packet under `scripts/fixtures/broker-packet/` and report `verified`
+with `witnessScope: PEER`; verifying must leave the packet's files unchanged.
+A temporary copy with one byte appended to a retained effect must fail with a
+nonzero exit and no verified result. The workflow rebuilds and installs the
+source distribution, then repeats the same installed consumer. The packet was
+produced once by the operator's runtime; the repository holds only its retained
+bytes and the public verifier.
 
-Both successful results retain `witnessScope: PEER`. The two local keys share
+The successful result retains `witnessScope: PEER`. The two local keys share
 one operator. `noDetectedGap` concerns the broker's checked file-tree snapshots;
 it does not establish complete agent coverage or an independently operated
 witness. The release checks do not run every separate framework profile.
@@ -47,7 +51,7 @@ attestation is separate from a PyPI Publish attestation and registry publication
 
 ## Publish with a bound source tag
 
-Only a non-prerelease GitHub release can reach the publish job. Its `agent-evidence-observer-v0.2.0`
+Only a non-prerelease GitHub release can reach the publish job. Its `agent-evidence-observer-v0.1.4`
 tag must match the root metadata and point to a commit on main. The publish job
 downloads the checked files from the build job. It receives `contents: read`
 and `id-token: write`. It has no account-token or password fallback.
