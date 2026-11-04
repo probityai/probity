@@ -15,8 +15,9 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          repository: probityai/agent-evidence-observer
-          ref: 55c3921cf299407176f2121083c7f39aff12165f
+          repository: probityai/probity
+          # Replace with the reviewed immutable commit of the reader source.
+          ref: REVIEWED_READER_SOURCE_COMMIT
           path: reader-source
           persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -26,8 +27,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --require-hashes --only-binary=:all: -r reader-source/interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock --report "$RUNNER_TEMP/install.json"
-          bash reader-source/interop/framework-consumer-2026-10-02/FRAMEWORK-DURABLE-CONSUMER-BUILD-2026-10-02.sh reader-source "$RUNNER_TEMP/wheels"
+          python -m pip install --require-hashes --only-binary=:all: -r reader-source/packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock --report "$RUNNER_TEMP/install.json"
+          bash reader-source/packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/FRAMEWORK-DURABLE-CONSUMER-BUILD-2026-10-02.sh reader-source/packages/agent-evidence-observer "$RUNNER_TEMP/wheels"
           python -m pip install --no-index --no-deps "$RUNNER_TEMP/wheels/"*.whl
           python -m pip check
       - name: Gate the selected record

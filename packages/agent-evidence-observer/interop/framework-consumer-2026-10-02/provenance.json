@@ -7,13 +7,15 @@
     "langgraph": {
       "run": 37003859466,
       "artifact": 11224761369,
-      "sha256": "e2e28cfcd4af7fc4dbff2fa91640fd2fc23b95e2d32369d75551a264b118b8fd"
+      "originalSha256": "e2e28cfcd4af7fc4dbff2fa91640fd2fc23b95e2d32369d75551a264b118b8fd",
+      "retainedSha256": "2ef47107844b32854ad6c340854285a84f4a4f3e5cdb93e6081796970f072ba4"
     },
     "pydantic": {
       "run": 37003617436,
       "artifact": 11225051391,
-      "sha256": "e79cf593e91902f1ce4b483850a6f3dba186637e5f223e0931cf8333384782d2"
+      "originalSha256": "e79cf593e91902f1ce4b483850a6f3dba186637e5f223e0931cf8333384782d2",
+      "retainedSha256": "f365a72ac3dabf6578fd48f328e3bfc0a29b2148d47d75ef69f835aac0015460"
     }
   },
-  "scope": "Installed reader reconstruction of original native packets; no new native producer execution or outside CI adoption."
+  "scope": "Installed reader reconstruction of original native packets; no new native producer execution or outside CI adoption. The retained archives omit the producing operation's source files and keep their digests in retained/WITHHELD-SOURCES.json."
 }
