@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 import threading
 from collections.abc import Iterator, Mapping
-from contextlib import AbstractContextManager, closing, contextmanager
+from contextlib import AbstractContextManager, ExitStack, closing, contextmanager
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,7 @@ from rich.console import Console
 
 from ratchet.canonical import canonical_json
 from ratchet.cli import LiveBackend, main
-from ratchet.improve.receipt import DECISION_TYPE, Signer
+from ratchet.improve.receipt import DECISION_TYPE, TRUSTED_KEY_ENV, Signer
 from ratchet.improve.replay import GuardRunner
 from ratchet.improve.sim import RecordedViews, Simulator
 from ratchet.store.atlas import Store
@@ -168,28 +169,38 @@ class JsonModel:
 
 
 class EndToEnd(LiveBackend):
+    def __init__(self, env: Mapping[str, Any], referee_dir: Path) -> None:
+        super().__init__(env)
+        self.referee_dir = referee_dir
+
     def model(self) -> object:
         return JsonModel()
+
+    def referee_store(self) -> dict[str, Any]:
+        """The open referee keeps a signed file store, so the held-out side writes to a directory while the
+        improver's side runs against Atlas."""
+        return {"kind": "file", "dir": str(self.referee_dir)}
 
     def referee(self, config: Mapping[str, Any]) -> AbstractContextManager[Any]:
         """The case-suite referee on this test's scripted model, in this process (the process boundary is
         tested in tests/improve/test_referee.py)."""
         from ratchet.improve.referee import RefereeCore
-        from ratchet.improve.referee_live import case_suite_parts_with
+        from ratchet.improve.referee_open import parts
 
-        return closing(RefereeCore(case_suite_parts_with(config, JsonModel())))
+        stack = ExitStack()
+        return closing(RefereeCore(parts(config, JsonModel(), stack)))
 
 
 def test_evolve_runs_the_real_loop_against_atlas_and_the_views_read_it_back(
-    atlas_db: tuple[str, str, Store], decision_key: Signer, monkeypatch: pytest.MonkeyPatch
+    atlas_db: tuple[str, str, Store], decision_key: Signer, tmp_path: Path
 ) -> None:
     uri, db, store = atlas_db
-    monkeypatch.setenv("RATCHET_REFEREE_MONGODB_URI", uri)  # the referee reads its store from its environment
     buf = io.StringIO()
-    env = {"RATCHET_MONGODB_URI": uri, "RATCHET_DB": db}
+    # The views read the referee's file store, trusting the decision key this test pinned.
+    env = {"RATCHET_MONGODB_URI": uri, "RATCHET_DB": db, TRUSTED_KEY_ENV: os.environ[TRUSTED_KEY_ENV]}
     code = main(
         ["evolve", "--generations", "1", "--workers", "4"],
-        backend=EndToEnd(env),
+        backend=EndToEnd(env, tmp_path / "referee"),
         console=Console(file=buf, width=140),
     )
     out = buf.getvalue()
@@ -198,5 +209,6 @@ def test_evolve_runs_the_real_loop_against_atlas_and_the_views_read_it_back(
     assert "head:" in out
     assert store.lineage()
     buf2 = io.StringIO()
-    assert main(["show", "lineage"], backend=LiveBackend(env), console=Console(file=buf2, width=140)) == 0
+    backend = EndToEnd(env, tmp_path / "referee")
+    assert main(["show", "lineage"], backend=backend, console=Console(file=buf2, width=140)) == 0
     assert "ACTIVE rev 1" in buf2.getvalue()

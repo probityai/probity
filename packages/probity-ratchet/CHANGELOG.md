@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 (2026-11-03)
+
+- Removed from the package: the hosted referee factories (`ratchet.improve.referee_live`), the stochastic v3 driver
+  (`ratchet.improve.run_v3`), the countersigning tool (`ratchet.improve.countersign`), the clustering diagnoser and the
+  overfit screen implementation (`ratchet.improve.diagnose`, `ratchet.improve.overfit`), the sandboxed guard runtime and
+  its child process (`ratchet.agent.guards`, `ratchet.agent._guard_child`), the MCP gateway and the hook runtime
+  (`ratchet.export.mcp_gateway`, `ratchet.export.hookrt`), and the benchmark drivers (`ratchet.bench`). The operations they
+  carried (running the held-out referee at scale, countersigning stored decisions, enforcing guards in a sandbox, running
+  the benchmarks) are run by the operator's runtime.
+- Everything a reader needs stays: the open referee over a signed file store, the open guard runtime, the emit-only Claude
+  Code hook, the open diagnoser and overfit screen on their seams, the published stochastic v3 decision rule, receipt
+  countersigning in `ratchet.improve.receipt`, and the verifier. `ratchet verify` and `ratchet.verify.results` decide every
+  published v3 decision again from its execution records, and every receipt and results file under `docs/results` verifies
+  with this package alone.
+- The benchmark environment (`harnesses/ratchet-bench`) is gone with the drivers. The recorded results pages stay.
+
 ## 0.3.4 (2026-11-02)
 
 - `agent-evidence-vectors>=0.31.0,<1.0` (was `~=0.31.0`). 0.3.3 could not install beside agent-evidence-vectors 0.32.1,

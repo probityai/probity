@@ -1,6 +1,6 @@
 [project]
 name = "probity-ratchet"
-version = "0.3.4"
+version = "0.4.0"
 description = "An agent harness that turns each failure into a proven guard or procedure, with every version and proof kept in MongoDB Atlas."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -84,20 +84,9 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 strict = true
 python_version = "3.12"
 
-[[tool.mypy.overrides]]
-# AgentDojo ships typed source without a py.typed marker; analyse it rather than treat it as Any.
-module = ["agentdojo", "agentdojo.*"]
-follow_untyped_imports = true
-
-[[tool.mypy.overrides]]
-# tool_sandbox ships typed source without a py.typed marker; analyse it rather than treat it as Any.
-module = ["tool_sandbox", "tool_sandbox.*"]
-follow_untyped_imports = true
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# tests/bench needs the benchmark libraries, which only harnesses/ratchet-bench installs; its CI job runs them
-# there with `-o addopts=` and the flags below. langsmith (pulled in by the benchmarks through langchain-core)
-# registers a pytest plugin whose import calls asyncio.iscoroutinefunction, deprecated on Python 3.14, so
-# -W error fails collection before any test runs. The suite uses nothing from that plugin.
-addopts = "-W error -p no:langsmith_plugin --ignore=tests/bench"
+# langsmith (pulled in by some installs through langchain-core) registers a pytest plugin whose import calls
+# asyncio.iscoroutinefunction, deprecated on Python 3.14, so -W error fails collection before any test runs.
+# The suite uses nothing from that plugin.
+addopts = "-W error -p no:langsmith_plugin"

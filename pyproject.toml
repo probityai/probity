@@ -3,9 +3,7 @@
 # together into the one uv.lock beside this file.
 #
 # Every member publishes the same Python floor, 3.12, which is the lock's floor, so the lock is an exact
-# proof for every wheel we publish. harnesses/ holds no distribution and is not a member; the ratchet
-# benchmark harness (harnesses/ratchet-bench) keeps its git sources, overrides and its own lock there, so
-# no uv call under this root inherits a benchmark's resolution settings.
+# proof for every wheel we publish. harnesses/ holds no distribution and is not a member.
 
 [tool.uv.workspace]
 members = ["packages/*"]

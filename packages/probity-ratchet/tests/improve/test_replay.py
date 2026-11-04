@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 import pytest
 
-from ratchet.improve.diagnose import diagnose
+from ratchet.improve.failures import open_diagnose as diagnose
 from ratchet.improve.replay import GuardInput, Verdict, WalkCache, replay
 from ratchet.types import Guard
 

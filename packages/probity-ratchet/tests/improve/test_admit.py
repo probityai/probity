@@ -7,9 +7,9 @@ import pytest
 
 from ratchet.canonical import canonical_json
 from ratchet.improve.admit import admit, awaiting_confirmation, check_fresh, check_structure
-from ratchet.improve.diagnose import diagnose
 from ratchet.improve.evaluate import EvalReport, evaluate
-from ratchet.improve.overfit import training_literals
+from ratchet.improve.failures import OpenOverfitScreen
+from ratchet.improve.failures import open_diagnose as diagnose
 from ratchet.improve.receipt import HUMAN_APPROVAL_TYPE, Signer, receipt, verify
 from ratchet.improve.replay import ReplayReport, WalkCache, replay
 from ratchet.types import Guard, Harness
@@ -62,7 +62,8 @@ def _admit(cand: Harness, pe: EvalReport | None = None, ce: EvalReport | None = 
     return admit(
         PARENT, cand, parent_runs=(pe, rerun), cand_eval=ce, confirm_eval=confirm,
         replays=_replays(cand, pe) if replays is None else replays, composed=kw.pop("composed", None),
-        literals=training_literals(pe.train_traces()), visible_case_ids=["timeout-1", "timeout-2", "plain-3"],
+        literals=OpenOverfitScreen().training_literals(pe.train_traces()),
+        visible_case_ids=["timeout-1", "timeout-2", "plain-3"],
         evaluator=kw.pop("evaluator", {"version": "ev1"}), **kw,
     )  # fmt: skip
 

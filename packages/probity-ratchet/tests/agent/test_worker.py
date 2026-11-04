@@ -9,7 +9,8 @@ from ratchet_cases.cases.model import Case, Expect
 from ratchet_cases.types import Outcome, ToolCall, ToolResult, Trace
 from ratchet_cases.world import World
 
-from ratchet.agent.guards import GUARD_ERROR_REASON, GuardInfrastructureError, GuardLimits, GuardRuntime
+from ratchet.agent.guard_api import GUARD_ERROR_REASON, GuardInfrastructureError, GuardLimits
+from ratchet.agent.guard_open import OpenGuardRuntime as GuardRuntime
 from ratchet.agent.model import ModelError, ModelTurn, ScriptedModel, scripted_turn
 from ratchet.agent.worker import (
     READ_PROCEDURE,

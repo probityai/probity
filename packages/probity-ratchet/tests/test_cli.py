@@ -16,6 +16,7 @@ from view.fakes import (
     RULES,
     FakeRunner,
     FakeStore,
+    countersigned_fields,
     decision_doc,
     eval_doc,
     info,
@@ -600,8 +601,6 @@ def test_show_decision_envelope_out_and_verify_a_file(tmp_path: Path) -> None:
 def test_verify_a_jsonl_log_shows_the_pinned_countersignature(tmp_path: Path) -> None:
     from datetime import UTC, datetime
 
-    from ratchet.improve.countersign import countersign_doc
-
     pub = SIGNER.public_key.public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
     run_key = Signer.from_seed_hex("55" * 32)
     rows = []
@@ -610,7 +609,7 @@ def test_verify_a_jsonl_log_shows_the_pinned_countersignature(tmp_path: Path) ->
         env = run_key.sign(DECISION_TYPE, canonical_json(body))
         rows.append({**body, "decision_id": f"p->{cand}", "keyid": run_key.keyid,
                      "envelope": base64.b64encode(env).decode()})  # fmt: skip
-    rows[0].update(countersign_doc(rows[0], SIGNER, datetime(2026, 10, 12, tzinfo=UTC)) or {})
+    rows[0].update(countersigned_fields(rows[0], SIGNER, datetime(2026, 10, 12, tzinfo=UTC)))
     log = tmp_path / "decisions.jsonl"
     log.write_text("\n".join(json.dumps({"decision": r}) for r in rows) + "\n", encoding="utf-8")
     code, out = run(["verify", "p->c1", "--jsonl", str(log), "--pubkey", pub], FakeBackend())

@@ -5,10 +5,12 @@ from __future__ import annotations
 import base64
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from typing import Any
 
 from ratchet_cases.types import Cost, Event, Outcome, Trace
 
+from ratchet.improve.receipt import Signer, countersign
 from ratchet.improve.replay import GuardInput, Verdict, WalkCache
 from ratchet.improve.sim import RecordedViews
 from ratchet.store import ChangeEvent
@@ -149,6 +151,16 @@ def sample_guards() -> list[Guard]:
         Guard("g-any-mail", "block all mail", "src", ["r-t3@3"]),
         Guard("g-broken", "raises", "src", []),
     ]
+
+
+def countersigned_fields(doc: Mapping[str, Any], signer: Signer, now: datetime) -> dict[str, Any]:
+    """The fields a stored decision gains when `signer` countersigns its envelope: the two-signature
+    envelope and the record of who countersigned and when."""
+    signed = countersign(base64.b64decode(str(doc["envelope"])), signer)
+    return {
+        "envelope": base64.b64encode(signed).decode("ascii"),
+        "countersigned": {"keyid": signer.keyid, "at": now.isoformat(), "note": "countersigned"},
+    }
 
 
 def decision_doc(
