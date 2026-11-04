@@ -6,13 +6,22 @@
 [![Licence](https://img.shields.io/github/license/probityai/probity)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity)
 
+<p>
+<a href="https://pepy.tech/projects/probityai"><img alt="probityai total downloads" src="https://static.pepy.tech/personalized-badge/probityai?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probityai%20downloads"></a>
+<a href="https://pepy.tech/projects/probity-ratchet"><img alt="probity-ratchet total downloads" src="https://static.pepy.tech/personalized-badge/probity-ratchet?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probity%20ratchet%20downloads"></a>
+<a href="https://pepy.tech/projects/probity-ratchet-cases"><img alt="probity-ratchet-cases total downloads" src="https://static.pepy.tech/personalized-badge/probity-ratchet-cases?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probity%20ratchet%20cases%20downloads"></a>
+<a href="https://pepy.tech/projects/agent-evidence-observer"><img alt="agent-evidence-observer total downloads" src="https://static.pepy.tech/personalized-badge/agent-evidence-observer?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=agent%20evidence%20observer%20downloads"></a>
+<a href="https://pepy.tech/projects/probity-effects"><img alt="probity-effects total downloads" src="https://static.pepy.tech/personalized-badge/probity-effects?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=probity%20effects%20downloads"></a>
+<a href="https://pepy.tech/projects/agent-evidence-mcp"><img alt="agent-evidence-mcp total downloads" src="https://static.pepy.tech/personalized-badge/agent-evidence-mcp?period=total&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=agent%20evidence%20mcp%20downloads"></a>
+</p>
+
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier, an observer that records agent runs, and the tools around them. The conformance corpus, vocabulary and admission rules live in https://github.com/probityai/agent-evidence-vectors.
 
 <p align="center"><picture><source media="(min-width: 1012px)" srcset="https://raw.githubusercontent.com/probityai/probityai.github.io/main/figures/f3-missing-not-clean/5/wide-auto.svg"><img src="https://raw.githubusercontent.com/probityai/probityai.github.io/main/figures/f3-missing-not-clean/5/narrow-auto.svg" alt="A report.txt of six passages, one fewer than its source. A reader that sees only the report finds nothing to flag and thinks it fine. probity-verify lays the same report over source.html, pairs each source passage with its record passage, finds that the fifth has nothing to pair with, and returns contradicted, reason selected_span_missing_from_record."></picture></p>
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `uv add probity-verify==0.3.0`, or `pip install probity-verify==0.3.0`.
+Install the released verifier: `uv add probity-verify==0.4.1`, or `pip install probity-verify==0.4.1`.
 
 Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai==0.1.1`, or `pip install probityai==0.1.1`.
 
@@ -21,8 +30,8 @@ Verified by Probity (github.com/probityai/probity). The `probityai` command line
 Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
-samples="$(uvx --from probity-verify==0.3.0 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
-uvx probity-verify==0.3.0 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from probity-verify==0.4.1 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
+uvx probity-verify==0.4.1 "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -49,7 +58,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | evidence | [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | versioned terms for claims about agent execution evidence (in agent-evidence-vectors) | `pip install agent-evidence-vocabulary==0.8.0` |
 | evidence | [agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors) | conformance corpora and reference verifiers | `pip install agent-evidence-vectors==0.32.1` |
 | product | [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | `pip install probityai==0.1.1` |
-| product | [probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | `pip install probity-verify==0.3.0` |
+| product | [probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | `pip install probity-verify==0.4.1` |
 | product | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | `pip install probity-ratchet==0.3.4` |
 | product | [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | agent task cases graded on final state: a simulated company, tool faults, exact graders | `pip install probity-ratchet-cases==0.2.0` |
 | product | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | `pip install probity-effects==0.2.0` |
