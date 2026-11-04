@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 import threading
 from collections.abc import Iterator, Mapping
 from contextlib import AbstractContextManager, ExitStack, closing, contextmanager
@@ -19,7 +20,7 @@ from rich.console import Console
 
 from ratchet.canonical import canonical_json
 from ratchet.cli import LiveBackend, main
-from ratchet.improve.receipt import DECISION_TYPE, Signer
+from ratchet.improve.receipt import DECISION_TYPE, TRUSTED_KEY_ENV, Signer
 from ratchet.improve.replay import GuardRunner
 from ratchet.improve.sim import RecordedViews, Simulator
 from ratchet.store.atlas import Store
@@ -195,7 +196,8 @@ def test_evolve_runs_the_real_loop_against_atlas_and_the_views_read_it_back(
 ) -> None:
     uri, db, store = atlas_db
     buf = io.StringIO()
-    env = {"RATCHET_MONGODB_URI": uri, "RATCHET_DB": db}
+    # The views read the referee's file store, trusting the decision key this test pinned.
+    env = {"RATCHET_MONGODB_URI": uri, "RATCHET_DB": db, TRUSTED_KEY_ENV: os.environ[TRUSTED_KEY_ENV]}
     code = main(
         ["evolve", "--generations", "1", "--workers", "4"],
         backend=EndToEnd(env, tmp_path / "referee"),
@@ -207,7 +209,6 @@ def test_evolve_runs_the_real_loop_against_atlas_and_the_views_read_it_back(
     assert "head:" in out
     assert store.lineage()
     buf2 = io.StringIO()
-    # The views read the referee's file store beside Atlas, so the lineage shows the referee's activation.
     backend = EndToEnd(env, tmp_path / "referee")
     assert main(["show", "lineage"], backend=backend, console=Console(file=buf2, width=140)) == 0
     assert "ACTIVE rev 1" in buf2.getvalue()
