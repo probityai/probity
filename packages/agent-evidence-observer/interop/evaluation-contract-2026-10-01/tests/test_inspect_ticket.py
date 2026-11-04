@@ -21,7 +21,7 @@ WITHHELD = withheld_for(RETAINED / "WITHHELD-SOURCES.json", RETAINED / "native-t
 
 def verify_saved(root, pins):
     """Read a retained-form packet; omitted sources are those the record lists."""
-    return verify_saved(root, pins, WITHHELD)
+    return bridge.verify_saved(root, pins, WITHHELD)
 
 
 @pytest.fixture(scope="module")
