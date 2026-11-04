@@ -1,7 +1,7 @@
 # Release agent-evidence-mcp
 
 1. Change `version` in `pyproject.toml`, and the version fields in `server.json`, `gemini-extension.json` (at the
-   repository root), `.claude-plugin/plugin.json` and `.mcp.json`, in one commit. Move the install lines in `README.md` and
+   repository root), `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json` and `.mcp.json`, in one commit. Move the install lines in `README.md` and
    `docs/install.md` to the same version.
 2. Packages of our own family take a floor and a cap at the next major (`>=X.Y.Z,<1`), never an exact pin and never `~=0.X.Y`: on a 0.x package that form stops at the next minor, and the family
    releases a minor for every additive change (`~=0.26.0` kept 0.30.0 out and failed `family-resolves` for two days). The

@@ -99,5 +99,5 @@ jobs:
       - name: manifests parse
         working-directory: packages/agent-evidence-mcp
         run: |
-          for f in server.json .mcp.json .claude-plugin/plugin.json; do python3 -m json.tool "$f" > /dev/null; done
+          for f in server.json .mcp.json .claude-plugin/plugin.json .cursor-plugin/plugin.json ../../.cursor-plugin/marketplace.json; do python3 -m json.tool "$f" > /dev/null; done
           python3 -m json.tool ../../gemini-extension.json > /dev/null
