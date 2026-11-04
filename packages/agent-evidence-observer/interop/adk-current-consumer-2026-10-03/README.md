@@ -12,39 +12,30 @@ retained October 2 originals remain unchanged. This placement adds trusted
 source selection and a small consumer sample. It is installation and current
 source compatibility, not a previously installed version upgrade.
 
-## Run with selected installations
+## Retained installed-consumer run
 
-The workflow checks out immutable producer and target sources, builds ordinary
-wheels with selected setuptools 84.0.0 / wheel 0.48.0 and a fixed build timestamp,
-installs the current ADK source with selected flit-core3.12.0, and supplies
-separate producer and reader environments. Dependency locks include hashes.
-No provider credentials are used; the native model supplies fixed public
-synthetic calls and performs no inference or provider request.
-
-The host authenticates both original wheel digests, all 32 installed reference
-and Observer Python files, SDK version and full SDK Python source population.
-Before imports it rejects bytecode caches, alternate native-module files and
-linked package entries. The interpreter, dependency installation, Python site
-initialization and host working directory remain trusted. Python isolation and
-`-B` alone do not authenticate an arbitrary hostile installation.
+`retained/` holds the packet from the successful installed-consumer run on the
+selected ADK source: the twelve cases, the pre-run plan and source manifest, the
+host policy, the reader report and the two publication gate receipts. The
+frozen observer modules, the producer adapter and the two built wheels are held
+as SHA-256 digests in `retained/WITHHELD-SOURCES.json`; the producing operation
+is run by the operator's runtime and is not part of this tree. The 778 selected
+SDK Python files stay in the packet and are checked against
+`native-source-selection.json`.
 
 ```sh
 # Starting directory: interop/adk-current-consumer-2026-10-03
 set -eu
-../../.venv/bin/python bootstrap.py \
-  --producer /absolute/producer-env/bin/python \
-  --reader /absolute/reader-env/bin/python \
-  --wheels /absolute/selected-wheels \
-  --output /absolute/new-current-run
+python -I -B verify_retained.py
 ```
 
-The exact twelve cases, unique run identity, 25-model/18-tool population and
-120-second execution bound are selected before native imports. The trusted
-launcher retains the complete plan outside the candidate before the first
-effect. Keys, timestamps and synthetic initial rows are created by this same
-operator and remain disclosed. Post-run consumer pins are independently
-computed from original bytes in this host process; producer convenience pins
-are not used as host selection.
+The command exits 0 only when the retained host policy matches its pin, the kept
+sources plus the withheld digests equal the manifest chosen before the run, the
+public reader (the ADK reference package in `../adk-ticket-2026-10-02` with the
+public observer) reproduces the retained report bytes, and the retained
+publication receipt names that report. The workflow builds the reader
+environment from this repository at the pushed commit, with hash-selected
+dependencies and build tools.
 
 ## Use the maintained publication sample
 
@@ -85,12 +76,8 @@ unclosed capture even after the mutant's artifact hashes are reselected.
 ```sh
 # Starting directory: interop/adk-current-consumer-2026-10-03
 set -eu
-ADK_CURRENT_READER_PYTHON=/absolute/reader-env/bin/python \
-  ../../.venv/bin/python -m pytest -c /dev/null -o cache_dir=/absolute/owned-pytest-cache \
-  test_bootstrap.py test_publish_reference.py -q
-ADK_CURRENT_RETAINED_PACKET=/absolute/current-run/packet \
-  /absolute/reader-env/bin/python -I -B -m pytest -c /dev/null \
-  -o cache_dir=/absolute/owned-pytest-cache test_native_current.py -q
+/absolute/reader-env/bin/python -I -B -m pytest -c /dev/null \
+  -o cache_dir=/absolute/owned-pytest-cache test_publish_reference.py test_native_current.py -q
 ```
 
 The observed native report preserves error after committed effect and incomplete
