@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import pytest
 from agents import agent_span, custom_span, generation_span, set_trace_processors, trace
-from probity_observer.crypto import VerificationError
 
 from probity_openai.contract import encode
 from probity_openai.processor import LocalTraceProcessor
-from probity_openai.producer import execute, host
-from probity_openai.reader import check_trace
 
 
 @pytest.mark.parametrize("capture", [False, True])
@@ -48,28 +44,6 @@ def test_callback_serialization_failure_has_no_payload_or_log(capsys: Any) -> No
     assert value["events"] == []
     assert "synthetic-sensitive" not in encode(value).decode()
     assert capsys.readouterr() == ("", "")
-
-
-def test_sdk_execution_survives_collector_failure_but_publication_refuses(
-    tmp_path: Path, monkeypatch: Any
-) -> None:
-    from datetime import datetime, timezone
-
-    import probity_openai.processor as module
-
-    class FailingProcessor(LocalTraceProcessor):
-        def _payload(self, item: Any) -> dict[str, Any]:
-            raise RuntimeError("synthetic-local-capture-error")
-
-    monkeypatch.setattr(module, "LocalTraceProcessor", FailingProcessor)
-    entry, store = host(tmp_path, "test", "permit")
-    execution = execute(entry, store)
-    assert store.readback()["revision"] == 1
-    assert execution["terminal"]["status"] == "complete"
-    assert execution["trace"]["failures"] > 0
-    now = datetime.now(timezone.utc)
-    with pytest.raises(VerificationError, match="capture-completion"):
-        check_trace(entry, execution, 2, now, now)
 
 
 def test_closed_processor_counts_late_callbacks() -> None:

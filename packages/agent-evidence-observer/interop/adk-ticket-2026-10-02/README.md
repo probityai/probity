@@ -151,7 +151,7 @@ effect custody remain separate goals. The synthetic service and captured history
 are same-operator; signed evidence retains PEER scope. No model-quality, real MCP
 transport, blind comparison, process-restart or power-loss claim is made.
 
-The retained original [native CI artifact](native-fixture-37058694970.zip) and
+The retained [native CI artifact](retained/native-fixture-37058694970.zip), with runtime sources omitted and listed in `retained/WITHHELD-SOURCES.json`, and
 [recorded run](recorded-run.json) authenticate the successful 12-case Ubuntu run
 37058694970. The installed reader reproduces the retained reader and report bytes
 without ADK or MCP. Source provenance distinguishes the reviewed implementation,

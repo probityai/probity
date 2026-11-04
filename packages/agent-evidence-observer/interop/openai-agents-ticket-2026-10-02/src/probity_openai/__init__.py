@@ -1,1 +1,1 @@
-"""Bounded Agents SDK producer and framework-free selected packet reader."""
+"""Bounded Agents SDK trace processor and framework-free selected packet reader."""
