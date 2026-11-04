@@ -1,8 +1,8 @@
 """Retain actual offline replay, including a signed but fabricated success.
 
 All keys and fixture sources in this demonstration belong to one operator.
-The protected action is generated before replay; no pre-effect replay gate,
-external custody, native protocol conformance, or durable admission is added.
+The protected action is a retained run of the operator's runtime; no pre-effect
+replay gate, external custody, native protocol conformance, or durable admission is added.
 """
 
 from __future__ import annotations

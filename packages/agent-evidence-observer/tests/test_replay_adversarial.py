@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from fixture_records import load, materialize
 
 from probity_observer.attribution import sign_consumption
 from probity_observer.crypto import (
@@ -119,8 +120,8 @@ MUTATIONS: dict[str, Callable[[ReplayRun], None]] = {
 @pytest.fixture
 def run(tmp_path: Path) -> ReplayRun:
     """Generate native positive bytes and select pins outside candidate reports."""
-    native = tmp_path / "native"
-    report = DEMO.run_action(native)
+    native = materialize("protected-action", tmp_path)
+    report = load(native / "demo-report.json")
     inputs = DEMO._inputs(native, report)
     signer = SigningKey.generate()
     policy = DEMO._policy(inputs, SYNTHETIC_REVISION, signer)
