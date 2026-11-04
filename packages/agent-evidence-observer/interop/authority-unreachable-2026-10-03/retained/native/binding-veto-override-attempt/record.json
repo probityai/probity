@@ -1,0 +1,144 @@
+{
+  "keyid": "320b4aa91775377a35e2a26007ea7ce1c0333c32530789392776e301c942f005",
+  "payload": {
+    "attempts": [
+      {
+        "decision": "deny",
+        "reason": "binding veto recorded for request",
+        "receipt": null,
+        "returnStatus": "failed"
+      }
+    ],
+    "authorityEvidence": {
+      "keyid": "4e58395ffcc81ae486d1aa663efdd31d1c850e0be5c519be872e0a10fa3bf938",
+      "payload": {
+        "observedAt": 1791028810,
+        "principalId": "approver-1",
+        "sourceRevision": "controlled-status-snapshot-1",
+        "status": "active"
+      },
+      "signature": "S8i/wuBON23eGHWx10sR1J+tCLRg8Irj/IZCo2w6B0AyCIwGIyOl3w87xedWqvDfznnr66eWi/D0tCP/7wMkAA=="
+    },
+    "authorityLatest": null,
+    "caseId": "binding-veto-override-attempt",
+    "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+    "coverage": "one-local-native-ticket-and-service-events",
+    "custody": "author-operated-local",
+    "decisionAt": 1791028810,
+    "delegationHops": [
+      {
+        "actions": [
+          "ticket-update"
+        ],
+        "delegate": "orchestrator-1",
+        "delegator": "grantor-1",
+        "targets": [
+          "/work/tickets/publication-1"
+        ]
+      },
+      {
+        "actions": [
+          "ticket-update"
+        ],
+        "delegate": "approver-1",
+        "delegator": "orchestrator-1",
+        "targets": [
+          "/work/tickets/publication-1"
+        ]
+      }
+    ],
+    "delegationRoot": "grantor-1",
+    "dispatchContentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+    "evidenceAgeSeconds": 0,
+    "faultInjection": [],
+    "freshnessLimitSeconds": 180,
+    "grant": {
+      "expiresAt": "2026-10-03T12:02:00Z",
+      "issuedAt": "2026-10-03T12:00:00Z",
+      "issuerKey": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+      "profile": "probity-protected-action-reference-v0",
+      "request": {
+        "attempt_id": "attempt-1",
+        "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+        "principal_id": "approver-1",
+        "request_id": "request-1",
+        "run_id": "binding-veto-override-attempt",
+        "target_path": "/work/tickets/publication-1",
+        "tenant_id": "tenant-1",
+        "tool_id": "ticket-update"
+      },
+      "signature": "0JQVJEdr4dcMG68FIgmEvJ6xaAhUWl5OSzr+LhX3DwTurFC2xmhAv48RBvCAaXxlmfnEBID7+0u7St/Ajd8zAQ=="
+    },
+    "grantPolicy": {
+      "issuer_key": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+      "max_validity_seconds": 300
+    },
+    "humanReachable": false,
+    "priorFallback": true,
+    "profile": "authority-unreachable-reference-v0",
+    "readback": {
+      "contentHex": null,
+      "effectId": null,
+      "receipt": {
+        "keyid": "c501a62db9100dbed8b6997378c0231ba46e51c57727655d784b7bc62e784c5e",
+        "payload": {
+          "authorityKey": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+          "configuration": "424759e8ff32af0ca617f07a71be1f42549b2b432aa5c7d7f0d2a490c2990269",
+          "contentDigest": null,
+          "coverage": "one-native-ticket-row-and-service-events",
+          "effectId": null,
+          "effectTime": null,
+          "eventCount": 1,
+          "eventHead": "83aa0d3ee88726d545cc8bb60a5de08d1b3b0a00c5d0c959f87a09e3f457dca8",
+          "format": "probity-http-ticket-v0",
+          "grantDigest": null,
+          "intentTime": null,
+          "phase": "ready",
+          "request": {
+            "attempt_id": "attempt-1",
+            "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+            "principal_id": "approver-1",
+            "request_id": "request-1",
+            "run_id": "binding-veto-override-attempt",
+            "target_path": "/work/tickets/publication-1",
+            "tenant_id": "tenant-1",
+            "tool_id": "ticket-update"
+          },
+          "revision": 0,
+          "revoked": false,
+          "witnessScope": "PEER"
+        },
+        "signature": "K2UvgO4txfDrurNHxrMBTuQSaBBLf25PLu3D5KRne1bw4baaeJDK+0595Ov6ztYva3tObSCpwP40xSeYZC0lDA=="
+      },
+      "revision": 0,
+      "tenantId": "tenant-1",
+      "ticketId": "publication-1"
+    },
+    "request": {
+      "attempt_id": "attempt-1",
+      "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "principal_id": "approver-1",
+      "request_id": "request-1",
+      "run_id": "binding-veto-override-attempt",
+      "target_path": "/work/tickets/publication-1",
+      "tenant_id": "tenant-1",
+      "tool_id": "ticket-update"
+    },
+    "requestDeadline": 1791028920,
+    "residualRisks": [],
+    "taskTerminal": "failed",
+    "vetoEvidence": {
+      "keyid": "4e58395ffcc81ae486d1aa663efdd31d1c850e0be5c519be872e0a10fa3bf938",
+      "payload": {
+        "decidedAt": 1791028805,
+        "decision": "veto",
+        "requestId": "request-1",
+        "runId": "binding-veto-override-attempt",
+        "sourceRevision": "controlled-oversight-decision-1"
+      },
+      "signature": "1PDRhwOSOdEqZjQGN10f45cvr+dPwxevPpDuKgv4KjnlyXak+6TdTj+3r54zLw3QFbKlcaknSWaulU53Zcp8DA=="
+    },
+    "witnessScope": "PEER"
+  },
+  "signature": "0VdMQC4wbtB8DpPkwVFUKb9nBUwdFv1I9KjJ6Iyh/nYaVBqQn+u+mtybtm2U5EnSjWjkRbLnQ8cu59C5jjPaBg=="
+}

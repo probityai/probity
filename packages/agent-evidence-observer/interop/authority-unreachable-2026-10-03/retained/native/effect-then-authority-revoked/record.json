@@ -1,0 +1,172 @@
+{
+  "keyid": "320b4aa91775377a35e2a26007ea7ce1c0333c32530789392776e301c942f005",
+  "payload": {
+    "attempts": [
+      {
+        "decision": "allow",
+        "reason": null,
+        "receipt": {
+          "keyid": "c501a62db9100dbed8b6997378c0231ba46e51c57727655d784b7bc62e784c5e",
+          "payload": {
+            "authorityKey": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+            "configuration": "c0df4c7d658c0273be31cdea70b430be999796b0d418c41b59768bc7e18317a0",
+            "contentDigest": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+            "coverage": "one-native-ticket-row-and-service-events",
+            "effectId": "35d2bd41a538b8d07731aa2cd6cbd9e1ce958ad4c56f8fdeed64a1adfe5dd512",
+            "effectTime": "2026-10-03T12:00:10Z",
+            "eventCount": 3,
+            "eventHead": "9e8852db0e2f7e9b7cb4fdc0612fea7539dc851e0a242fae8ccde4a84e7163f5",
+            "format": "probity-http-ticket-v0",
+            "grantDigest": "1d996bc246520b8325c21494a7f512318191bb5bd69219297ad285294d6016f3",
+            "intentTime": "2026-10-03T12:00:10Z",
+            "phase": "completed",
+            "request": {
+              "attempt_id": "attempt-1",
+              "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+              "principal_id": "approver-1",
+              "request_id": "request-1",
+              "run_id": "effect-then-authority-revoked",
+              "target_path": "/work/tickets/publication-1",
+              "tenant_id": "tenant-1",
+              "tool_id": "ticket-update"
+            },
+            "revision": 1,
+            "revoked": false,
+            "witnessScope": "PEER"
+          },
+          "signature": "FNpBSjfyZU0LrZc5+zrvfhpQOtnDXfjwd78PtBI6jUHLWNOlDhTca8Nc3wTfyYmZOBuNfvgJ+kis1LmakX13AQ=="
+        },
+        "returnStatus": "completed"
+      },
+      {
+        "decision": "deny",
+        "reason": "ticket authority is revoked",
+        "receipt": null,
+        "returnStatus": "failed"
+      }
+    ],
+    "authorityEvidence": {
+      "keyid": "4e58395ffcc81ae486d1aa663efdd31d1c850e0be5c519be872e0a10fa3bf938",
+      "payload": {
+        "observedAt": 1791028810,
+        "principalId": "approver-1",
+        "sourceRevision": "controlled-status-snapshot-1",
+        "status": "active"
+      },
+      "signature": "S8i/wuBON23eGHWx10sR1J+tCLRg8Irj/IZCo2w6B0AyCIwGIyOl3w87xedWqvDfznnr66eWi/D0tCP/7wMkAA=="
+    },
+    "authorityLatest": null,
+    "caseId": "effect-then-authority-revoked",
+    "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+    "coverage": "one-local-native-ticket-and-service-events",
+    "custody": "author-operated-local",
+    "decisionAt": 1791028810,
+    "delegationHops": [
+      {
+        "actions": [
+          "ticket-update"
+        ],
+        "delegate": "orchestrator-1",
+        "delegator": "grantor-1",
+        "targets": [
+          "/work/tickets/publication-1"
+        ]
+      },
+      {
+        "actions": [
+          "ticket-update"
+        ],
+        "delegate": "approver-1",
+        "delegator": "orchestrator-1",
+        "targets": [
+          "/work/tickets/publication-1"
+        ]
+      }
+    ],
+    "delegationRoot": "grantor-1",
+    "dispatchContentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+    "evidenceAgeSeconds": 0,
+    "faultInjection": [],
+    "freshnessLimitSeconds": 180,
+    "grant": {
+      "expiresAt": "2026-10-03T12:02:00Z",
+      "issuedAt": "2026-10-03T12:00:00Z",
+      "issuerKey": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+      "profile": "probity-protected-action-reference-v0",
+      "request": {
+        "attempt_id": "attempt-1",
+        "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+        "principal_id": "approver-1",
+        "request_id": "request-1",
+        "run_id": "effect-then-authority-revoked",
+        "target_path": "/work/tickets/publication-1",
+        "tenant_id": "tenant-1",
+        "tool_id": "ticket-update"
+      },
+      "signature": "UGpgeO+aQ+0JRN3l7Ycocnlvc2IiDPOF8bZqtwCDb++hUaw1ey6tPzZm94nt+6Xd+7eYYVGuvjqT2CH8XGEDBA=="
+    },
+    "grantPolicy": {
+      "issuer_key": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+      "max_validity_seconds": 300
+    },
+    "humanReachable": false,
+    "priorFallback": true,
+    "profile": "authority-unreachable-reference-v0",
+    "readback": {
+      "contentHex": "7b22636174616c6f677565536861323536223a2232356634663832656461356265663862626461303931376163323634306562323733653461666136313237643465363839623732663563303233353239666538222c2264657374696e6174696f6e223a2264657374696e6174696f6e2d31222c226d65646961536861323536223a2263303432376163653737313861303831643530643237346138356561373631373631346533663461373235663238656637343065633132303632393135376638222c2274657874223a22617070726f7665642074657874227d",
+      "effectId": "35d2bd41a538b8d07731aa2cd6cbd9e1ce958ad4c56f8fdeed64a1adfe5dd512",
+      "receipt": {
+        "keyid": "c501a62db9100dbed8b6997378c0231ba46e51c57727655d784b7bc62e784c5e",
+        "payload": {
+          "authorityKey": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+          "configuration": "c0df4c7d658c0273be31cdea70b430be999796b0d418c41b59768bc7e18317a0",
+          "contentDigest": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+          "coverage": "one-native-ticket-row-and-service-events",
+          "effectId": "35d2bd41a538b8d07731aa2cd6cbd9e1ce958ad4c56f8fdeed64a1adfe5dd512",
+          "effectTime": "2026-10-03T12:00:10Z",
+          "eventCount": 4,
+          "eventHead": "97143ac7d4a5fd08716378c6ece3ff409e72fcd953319cd46d80d4ee0c86dfed",
+          "format": "probity-http-ticket-v0",
+          "grantDigest": "1d996bc246520b8325c21494a7f512318191bb5bd69219297ad285294d6016f3",
+          "intentTime": "2026-10-03T12:00:10Z",
+          "phase": "completed",
+          "request": {
+            "attempt_id": "attempt-1",
+            "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+            "principal_id": "approver-1",
+            "request_id": "request-1",
+            "run_id": "effect-then-authority-revoked",
+            "target_path": "/work/tickets/publication-1",
+            "tenant_id": "tenant-1",
+            "tool_id": "ticket-update"
+          },
+          "revision": 1,
+          "revoked": true,
+          "witnessScope": "PEER"
+        },
+        "signature": "OwCjzI3aLIhOwwoNX9FtB2K7YlBAhZPUdmb/Lnw+w3iFMawMlm4N0hOpc7eHOip228TMcLXD9HhwsCKS4W0tCA=="
+      },
+      "revision": 1,
+      "tenantId": "tenant-1",
+      "ticketId": "publication-1"
+    },
+    "request": {
+      "attempt_id": "attempt-1",
+      "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "principal_id": "approver-1",
+      "request_id": "request-1",
+      "run_id": "effect-then-authority-revoked",
+      "target_path": "/work/tickets/publication-1",
+      "tenant_id": "tenant-1",
+      "tool_id": "ticket-update"
+    },
+    "requestDeadline": 1791028920,
+    "residualRisks": [
+      "revocation-propagation-unmeasured"
+    ],
+    "taskTerminal": "failed",
+    "vetoEvidence": null,
+    "witnessScope": "PEER"
+  },
+  "signature": "4cz+kNQyUiDet1QESm7FMP7X05qs9ZoYjEEJ/k52dkMH2K65fPEw3w9ztjl+az7TA4LihepeixanTrRkXsE5AA=="
+}

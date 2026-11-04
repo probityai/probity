@@ -1,0 +1,118 @@
+{
+  "keyid": "320b4aa91775377a35e2a26007ea7ce1c0333c32530789392776e301c942f005",
+  "payload": {
+    "attempts": [
+      {
+        "decision": "deny",
+        "reason": "no pre-authorized fallback",
+        "receipt": null,
+        "returnStatus": "failed"
+      }
+    ],
+    "authorityEvidence": {
+      "keyid": "4e58395ffcc81ae486d1aa663efdd31d1c850e0be5c519be872e0a10fa3bf938",
+      "payload": {
+        "observedAt": 1791028810,
+        "principalId": "approver-1",
+        "sourceRevision": "controlled-status-snapshot-1",
+        "status": "active"
+      },
+      "signature": "S8i/wuBON23eGHWx10sR1J+tCLRg8Irj/IZCo2w6B0AyCIwGIyOl3w87xedWqvDfznnr66eWi/D0tCP/7wMkAA=="
+    },
+    "authorityLatest": null,
+    "caseId": "unreachable-no-fallback",
+    "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+    "coverage": "one-local-native-ticket-and-service-events",
+    "custody": "author-operated-local",
+    "decisionAt": 1791028810,
+    "delegationHops": [
+      {
+        "actions": [
+          "ticket-update"
+        ],
+        "delegate": "orchestrator-1",
+        "delegator": "grantor-1",
+        "targets": [
+          "/work/tickets/publication-1"
+        ]
+      },
+      {
+        "actions": [
+          "ticket-update"
+        ],
+        "delegate": "approver-1",
+        "delegator": "orchestrator-1",
+        "targets": [
+          "/work/tickets/publication-1"
+        ]
+      }
+    ],
+    "delegationRoot": "grantor-1",
+    "dispatchContentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+    "evidenceAgeSeconds": 0,
+    "faultInjection": [],
+    "freshnessLimitSeconds": 180,
+    "grant": null,
+    "grantPolicy": {
+      "issuer_key": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+      "max_validity_seconds": 300
+    },
+    "humanReachable": false,
+    "priorFallback": false,
+    "profile": "authority-unreachable-reference-v0",
+    "readback": {
+      "contentHex": null,
+      "effectId": null,
+      "receipt": {
+        "keyid": "c501a62db9100dbed8b6997378c0231ba46e51c57727655d784b7bc62e784c5e",
+        "payload": {
+          "authorityKey": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+          "configuration": "d468897ae6485c389ff3e5d4955b5bd0a06c8c8bbd57c4edc1df9be0aa4dc492",
+          "contentDigest": null,
+          "coverage": "one-native-ticket-row-and-service-events",
+          "effectId": null,
+          "effectTime": null,
+          "eventCount": 1,
+          "eventHead": "b18976d5d8587cccd7670afe448f3e83729e08c2ceb6f2b386759f3cdb22d746",
+          "format": "probity-http-ticket-v0",
+          "grantDigest": null,
+          "intentTime": null,
+          "phase": "ready",
+          "request": {
+            "attempt_id": "attempt-1",
+            "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+            "principal_id": "approver-1",
+            "request_id": "request-1",
+            "run_id": "unreachable-no-fallback",
+            "target_path": "/work/tickets/publication-1",
+            "tenant_id": "tenant-1",
+            "tool_id": "ticket-update"
+          },
+          "revision": 0,
+          "revoked": false,
+          "witnessScope": "PEER"
+        },
+        "signature": "SSiM9xVzpP3JAqUQ/y7gJkh4WctH2DviWW4fSYdOpyXvC0FG5myMZeu6GvWJiL+AO/T2UVPfnNyA0KCAO4vgCA=="
+      },
+      "revision": 0,
+      "tenantId": "tenant-1",
+      "ticketId": "publication-1"
+    },
+    "request": {
+      "attempt_id": "attempt-1",
+      "content_sha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "principal_id": "approver-1",
+      "request_id": "request-1",
+      "run_id": "unreachable-no-fallback",
+      "target_path": "/work/tickets/publication-1",
+      "tenant_id": "tenant-1",
+      "tool_id": "ticket-update"
+    },
+    "requestDeadline": 1791028920,
+    "residualRisks": [],
+    "taskTerminal": "failed",
+    "vetoEvidence": null,
+    "witnessScope": "PEER"
+  },
+  "signature": "8gpuWYUYqpyGEHZgM0dfPL28t6Q9z5H3hBnd14FcNZn+YxLaRvJy3ZlKahV/MHiYlhEL39paRegWzVc1XhZwDw=="
+}
