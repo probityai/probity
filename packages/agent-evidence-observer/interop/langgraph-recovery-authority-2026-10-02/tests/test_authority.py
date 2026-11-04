@@ -3,7 +3,6 @@ import copy
 import shutil
 import sqlite3
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
