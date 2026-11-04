@@ -98,6 +98,10 @@
    "layout": "ledger",
    "note": "two intervals a and b sharing one witness ledger"
   },
+  "protected-action": {
+   "layout": "native-action",
+   "note": "one authorized write with its grant, request, packet, policies and demo report"
+  },
   "repaired-bypass": {
    "layout": "packet",
    "note": "an unbrokered change detected and later removed"
