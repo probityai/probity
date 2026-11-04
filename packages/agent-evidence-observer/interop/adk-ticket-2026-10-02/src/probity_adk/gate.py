@@ -22,7 +22,12 @@ from .contract import (
 
 
 def gate(
-    reader: Path, packet: Path, policy: Path, policy_sha: str, output: Path
+    reader: Path,
+    packet: Path,
+    policy: Path,
+    policy_sha: str,
+    output: Path,
+    withheld: Path | None = None,
 ) -> dict[str, Any]:
     """Admit the selected population and retain child receipts."""
     require(reader.is_absolute() and reader.is_file(), "selected-reader-path")
@@ -41,6 +46,8 @@ def gate(
     frozen = output / "selected-policy.json"
     write(frozen, raw)
     command = [str(reader), str(packet.resolve()), "--pins-file", str(frozen.resolve())]
+    if withheld is not None:
+        command += ["--withheld-sources", str(withheld.resolve())]
     write(
         output / "launch.json", encode({"command": command, "policySha256": policy_sha})
     )
@@ -172,9 +179,15 @@ def main() -> None:
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--policy-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path)
     args = parser.parse_args()
     report = gate(
-        args.reader, args.packet, args.policy, args.policy_sha256, args.output
+        args.reader,
+        args.packet,
+        args.policy,
+        args.policy_sha256,
+        args.output,
+        args.withheld_sources,
     )
     print(encode(report).decode())
     raise SystemExit(0 if report["publicationDecision"] == "admitted" else 1)

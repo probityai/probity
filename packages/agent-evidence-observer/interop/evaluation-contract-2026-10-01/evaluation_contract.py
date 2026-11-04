@@ -12,6 +12,7 @@ import logging
 import math
 import re
 from collections import Counter
+from pathlib import Path
 from typing import Any, NoReturn
 
 LOGGER = logging.getLogger(__name__)
@@ -533,3 +534,22 @@ def validate(
         "history_sha256": expected_history_sha256,
         "boundary": "declared-population byte consistency; not execution, benchmark quality, signature verification or independent custody",
     }
+
+
+def withheld_in(file: Path, prefix: str) -> dict[str, str]:
+    """Digests of embedded sources a retained record omits, keyed inside ``prefix``."""
+    pairs = json.loads(file.read_bytes(), object_pairs_hook=list)
+    value = dict(pairs)
+    require(len(value) == len(pairs) and list(value) == sorted(value), "withheld_form")
+    require(
+        all(isinstance(d, str) and len(d) == 64 and not set(d) - set("0123456789abcdef") for d in value.values()),
+        "withheld_digest",
+    )
+    return {k[len(prefix):]: d for k, d in value.items() if k.startswith(prefix)}
+
+
+def withheld_for(file: Path, packet: Path) -> dict[str, str]:
+    """Omitted-source digests for a packet stored under the list's own directory."""
+    base = file.resolve().parent
+    require(packet.resolve().is_relative_to(base), "withheld_location")
+    return withheld_in(file, packet.resolve().relative_to(base).as_posix() + "/")

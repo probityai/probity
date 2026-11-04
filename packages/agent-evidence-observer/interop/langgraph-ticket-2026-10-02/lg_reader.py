@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from lg_common import CASES, PROFILE, VERSION, decode, encode, read, require, sha
+from lg_common import CASES, PROFILE, VERSION, check_source_files, decode, encode, read, require, sha, withheld_for
 from probity_observer.aae_enforce import enforce_check, native_digest
 from probity_observer.aae_ticket_records import (
     decision_commitment,
@@ -230,7 +230,7 @@ def effect_packet(case: dict[str, Any], packet: dict[str, Any], now: datetime) -
     verify_aae_ticket_result(**case["decision"], receipt=packet["response"], readback=packet["readback"], request=request, policy=policy, service_key=case["serviceKey"], grant=case["grant"], now=now)
 
 
-def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
+def verify_saved(root: Path, pins: dict[str, Any], withheld: dict[str, str] | None = None) -> dict[str, Any]:
     """Recompute finite graph and effect verdicts from separately selected pins.
 
     Parameters
@@ -258,7 +258,7 @@ def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
     same([case["id"] for case in plan["cases"]], list(CASES), "plan-population")
     require(set(manifest) == {name + ".json" for name in CASES}, "artifact-population")
     require({p.name for p in (root / "attempts").iterdir()} == set(manifest), "artifact-file-population")
-    verify_sources(root, plan)
+    verify_sources(root, plan, withheld or {})
     now = aware_time(pins["evaluationTime"], "consumer-time")
     selected_time = aware_time(plan.get("selectedTime"), "selected-time")
     require(now >= selected_time, "consumer-time")
@@ -279,16 +279,13 @@ def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
     return {"profile": PROFILE, "status": "verified", "plannedAttempts": 6, "records": records, "providerCalls": 0, "inputTokens": 0, "outputTokens": 0, "taskScope": "deterministic-real-framework-integration-control", "checkpointScope": "in-memory-same-process-native-snapshots", "effectScope": "selected-loopback-service-local-SQLite-row", "independentCustody": "not-established", "issuerAuthentication": "not-established", "exactlyOnce": "not-established", "priorSelection": "author-local-plan-consumer-must-select-pins", "peakMemoryBytes": None}
 
 
-def verify_sources(root: Path, plan: dict[str, Any]) -> None:
+def verify_sources(root: Path, plan: dict[str, Any], withheld: dict[str, str]) -> None:
     """Check the retained literal source population and installed runtime manifest."""
     raw = read(root, "sources-before-run.json")
     require(sha(raw) == plan["sourcesSha256"], "source-manifest-pin")
     sources = decode(raw)
     expected = {"adapter/" + name for name in ("lg_common.py", "lg_reader.py", "lg_run.py")} | {"observer/" + name for name in ("aae_ticket.py", "aae_enforce.py", "authorization.py", "crypto.py", "ticket_service.py")}
-    require(set(sources) == expected, "source-population")
-    require({str(p.relative_to(root / "sources")) for p in (root / "sources").rglob("*") if p.is_file()} == expected, "source-file-population")
-    for name, pin in sources.items():
-        require(sha(read(root / "sources", name)) == pin, "source-file-pin")
+    check_source_files(root, sources, expected, withheld, ("source-population", "source-file-population", "source-file-pin"))
     env_raw = read(root, "environment-before-run.json")
     require(sha(env_raw) == plan["environmentSha256"], "environment-pin")
     environment = decode(env_raw)
@@ -299,5 +296,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path)
     args = parser.parse_args()
-    print(json.dumps(verify_saved(args.output, decode(args.pins_file.read_bytes())), indent=2))
+    withheld = withheld_for(args.withheld_sources, args.output) if args.withheld_sources else None
+    print(json.dumps(verify_saved(args.output, decode(args.pins_file.read_bytes()), withheld), indent=2))

@@ -68,7 +68,7 @@ fabricated history by the trusted operator remains outside this profile's scope.
 An outside operator/host gate still requires actual acceptance and operation.
 
 The complete original clean Python 3.13.15 packet is retained in
-[`durable-fixture.zip`](durable-fixture.zip); [`durable-provenance.json`](durable-provenance.json)
+[`durable-fixture.zip`](retained/durable-fixture.zip); [`durable-provenance.json`](durable-provenance.json)
 binds its digest, exact implementation commit, selected consumer pins and measured
 control counts. The report also replayed successfully in a separate environment
 containing Observer and its cryptography/AAE dependencies without LangGraph.

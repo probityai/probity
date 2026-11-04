@@ -7,6 +7,7 @@ from datetime import timezone
 from pathlib import Path
 
 from authority_common import CASES, PROFILE, authority, decode, encode, read, require, sha, validate
+from lg_common import check_source_files, withheld_for
 from lg_reader import aware_time, checkpoint_identity, effect_packet, same, selection, snapshot_state
 from probity_observer.crypto import canonical
 
@@ -124,27 +125,24 @@ def selections(root, pins):
     return plan, manifest
 
 
-def sources(root, plan):
+def sources(root, plan, withheld):
     """Check literal adapter/base source and installed framework selections."""
     raw = read(root, "sources-before-run.json")
     require(sha(raw) == plan["sourcesSha256"], "source-manifest")
     source = decode(raw)
     expected = {"adapter/" + name for name in ("lg_common.py", "lg_run.py", "lg_reader.py", "durable_worker.py", "authority_common.py", "authority_worker.py", "authority_run.py", "authority_reader.py")} | {"observer/" + name for name in ("aae_ticket.py", "aae_enforce.py", "authorization.py", "crypto.py", "ticket_service.py")}
-    require(set(source) == expected, "source-population")
-    require({str(p.relative_to(root / "sources")) for p in (root / "sources").rglob("*") if p.is_file()} == expected, "source-file-population")
-    for name, digest in source.items():
-        require(sha(read(root / "sources", name)) == digest, "source-pin")
+    check_source_files(root, source, expected, withheld, ("source-population", "source-file-population", "source-pin"))
     environment = read(root, "environment-before-run.json")
     require(sha(environment) == plan["environmentSha256"], "environment-pin")
     packages = decode(environment)["packages"]
     same([packages["langgraph"]["version"], packages["langgraph-checkpoint-sqlite"]["version"]], ["1.0.10", "3.1.1"], "framework-selection")
 
 
-def verify_saved(root: Path, pins: dict):
+def verify_saved(root: Path, pins: dict, withheld: dict | None = None):
     """No framework, SQLite or network operations while reading bounded originals."""
     require(not root.is_symlink() and not any(p.is_symlink() for p in root.rglob("*")), "packet-symlink")
     plan, manifest = selections(root, pins)
-    sources(root, plan)
+    sources(root, plan, withheld or {})
     selected = aware_time(plan["selectedTime"], "selected-time")
     now = aware_time(pins["evaluationTime"], "evaluation-time")
     require(now >= selected, "evaluation-time")
@@ -156,5 +154,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path)
     args = parser.parse_args()
-    print(json.dumps(verify_saved(args.output, decode(args.pins_file.read_bytes())), indent=2))
+    withheld = withheld_for(args.withheld_sources, args.output) if args.withheld_sources else None
+    print(json.dumps(verify_saved(args.output, decode(args.pins_file.read_bytes()), withheld), indent=2))

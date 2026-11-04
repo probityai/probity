@@ -8,15 +8,24 @@ from typing import Any, Callable
 
 import pytest
 
-from durable_reader import CASES, REFUSALS, verify_saved
-from durable_run import run
-from lg_common import PacketError, decode, encode, read, sha
+from durable_reader import CASES, REFUSALS
+from durable_reader import verify_saved as read_packet
+from lg_common import PacketError, decode, encode, read, sha, withheld_for
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD = withheld_for(RETAINED / "WITHHELD-SOURCES.json", RETAINED / "durable-run")
+
+
+def verify_saved(root: Path, pins: dict) -> dict:
+    """Read a retained-form packet; omitted sources are those the record lists."""
+    return read_packet(root, pins, WITHHELD)
 
 
 @pytest.fixture(scope="module")
-def durable_packet(tmp_path_factory: pytest.TempPathFactory) -> tuple:
-    root = tmp_path_factory.mktemp("durable") / "run"
-    report = run(root, "pytest-exact-source")
+def durable_packet() -> tuple:
+    """Return the durable-restart packet retained from the latest successful main run."""
+    root = RETAINED / "durable-run"
+    report = decode((RETAINED / "durable-report.json").read_bytes())
     return root, decode(read(root, "consumer-pins.json")), report
 
 

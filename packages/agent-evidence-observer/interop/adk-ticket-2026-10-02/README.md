@@ -3,8 +3,11 @@
 This additive reference executes installed **Google ADK 2.11.0** `App`, `Runner`,
 `BaseLlm`, `FunctionTool`, `BasePlugin` and `ReflectAndRetryToolPlugin`. A scripted
 native model supplies fixed public synthetic calls; it performs no inference or
-remote provider request. The protected HTTP/SQLite target is separately selected
-Observer source `bf8c515d393951c6da73790e5e05effdb0c945a6`.
+remote provider request. The protected HTTP/SQLite target is run by the operator's
+runtime; this directory keeps the packet it produced under [retained](retained)
+(runtime sources withheld by digest, listed in `retained/WITHHELD-SOURCES.json`)
+and the readers that verify it with public code only:
+`python verify_retained.py`.
 
 The before-run plan declares twelve attempts, at most 25 model calls and 18 tool
 invocations, and a 120-second serial execution budget. It covers permit,
