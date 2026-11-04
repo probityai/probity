@@ -10,7 +10,6 @@ requires-python = ">=3.12"
 dependencies = ["agent-evidence-observer==0.1.4"]
 
 [project.scripts]
-probity-adk-responses-produce = "probity_adk_responses.producer:main"
 probity-adk-responses-read = "probity_adk_responses.reader:main"
 
 [tool.setuptools.packages.find]
