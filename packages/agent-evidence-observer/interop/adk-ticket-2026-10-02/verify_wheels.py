@@ -45,11 +45,11 @@ def verify(wheels: Path, selection: Path) -> dict:
             assert all(
                 line
                 in (
-                    b'Requires-Dist: google-adk==2.11.0; extra == "producer"',
-                    b'Requires-Dist: mcp==2.2.0; extra == "producer"',
+                    b'Requires-Dist: google-adk==2.11.0; extra == "plugin"',
+                    b'Requires-Dist: mcp==2.2.0; extra == "plugin"',
                 )
                 for line in sdk_lines
-            ), "reader default dependency includes producer SDK"
+            ), "reader default dependency includes plugin SDK"
             records.append(
                 {
                     "name": path.name,

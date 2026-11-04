@@ -1,7 +1,7 @@
 build/
 *.egg-info/
 fresh-run/
-.producer-env/
+.plugin-env/
 .reader-env/
 selected-observer/
 selected-wheels/
