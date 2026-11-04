@@ -3,6 +3,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/probityai/probity/ci.yml?label=CI)](https://github.com/probityai/probity/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/probity-verify?label=probity-verify)](https://pypi.org/project/probity-verify/)
 [![Downloads](https://static.pepy.tech/badge/probity-verify)](https://pepy.tech/projects/probity-verify)
+[![Monthly](https://static.pepy.tech/badge/probity-verify/month)](https://pepy.tech/projects/probity-verify)
 [![Licence](https://img.shields.io/github/license/probityai/probity)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat)](https://github.com/probityai/probity)
 
