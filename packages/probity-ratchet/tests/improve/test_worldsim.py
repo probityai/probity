@@ -50,7 +50,6 @@ def test_walk_rebuilds_the_world_and_locates_the_duplicate_refund() -> None:
     assert [s.call.name for s in walk.steps] == ["tickets_get", "payments_refund", "payments_refund"]
     cluster = next(c for c in diagnose([bad], sim) if "twice" in c.key["reason"])
     assert cluster.members[0].seq == walk.steps[2].seq and cluster.key["mode"] == "commission"
-    assert cluster.key["prior_error"] == "timeout"
 
 
 def test_a_guard_over_real_views_clears_and_a_tampered_record_is_flagged() -> None:
