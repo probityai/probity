@@ -15,6 +15,3 @@ probity-adk-responses-read = "probity_adk_responses.reader:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["probity_adk_responses*"]
-
-[tool.setuptools.package-data]
-probity_adk_responses = ["*.json"]
