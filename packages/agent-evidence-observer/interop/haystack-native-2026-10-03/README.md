@@ -2,20 +2,24 @@
 
 This profile gates native Haystack 3.3.0 tool writes and publishes verified evidence.
 It is for hosts that use `Pipeline`, `Agent`, and `Tool`.
-The source package depends on `agent-evidence-observer==0.2.0`.
+The producing operation is run by the operator's runtime. This directory holds the
+installed framework-free reader, the retained CI packet from the last producing run,
+and the reader's fault controls.
 
-From a selected source checkout, run the complete installed verification:
+From packages/agent-evidence-observer, run the retained verification:
 
 ```sh
-bash interop/haystack-native-2026-10-03/verify_install.sh /tmp/haystack-verification
+python -m venv reader
+reader/bin/python -m pip install --require-hashes -r interop/haystack-native-2026-10-03/requirements-reader.lock
+reader/bin/python -m pip install --no-deps . interop/haystack-native-2026-10-03
+reader/bin/python -I -B interop/haystack-native-2026-10-03/verify_retained.py
 ```
 
-The command builds two wheels, installs a separate reader without Haystack,
-runs the native controls, and writes a report plus one released record.
+The reader has no Haystack dependency. Embedded source bytes of the producing run are held
+as digests in `retained/WITHHELD-SOURCES.json`, which the reader accepts through `--withheld`.
 This source profile is version 0.0.1; no package-index release or outside adoption is claimed.
 
 | Document | Job |
 |---|---|
 | [Contract](PROFILE.md) | Native population, source selection, effect and publication boundaries |
-| [Producer](probity_haystack/producer.py) | Actual Haystack pipeline and signed broker dispatch |
 | [Reader](probity_haystack/reader.py) | Framework-free retained evidence verification |

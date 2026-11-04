@@ -3,7 +3,7 @@
 Haystack 3.3.0 comes from the official release whose tag resolves to
 `daa2d1ffacd083dcb1fc9a455adf541360a9e09c`. Its `Agent` invokes tools directly.
 This profile uses the current APIs without a standalone `ToolInvoker` compatibility path.
-Producer and reader dependencies have separate hash locks.
+The reader's dependencies are hash-locked.
 
 Every case runs a real `Pipeline`, `Agent`, `Tool`, and framework tracer.
 The chat generator supplies scripted replies. These are runtime fault controls,
@@ -27,14 +27,15 @@ and a successful final model message remain distinct. Step exhaustion and respon
 truncation withhold publication even when their framework call returns normally.
 
 The tracer records native operation names, declared scalar tags, ancestry, exceptions,
-and span closure. Content tags are deliberately omitted and listed. The producer
-retains the actual model input/output messages separately. It preserves trace ancestry
+and span closure. Content tags are deliberately omitted and listed. The producing
+operation retains the actual model input/output messages separately. It preserves trace ancestry
 through context variables, including Haystack tool worker threads, and restores the
 previous tracer after each run. This finite reference runs one tool per step;
 concurrent independent tool semantics are outside this measured population.
 
-Before native execution, the producer saves every installed Python source file from
-Haystack, this profile, and Observer. The host policy pins this complete source manifest,
+Before native execution, the producing operation saves every installed Python source file from
+Haystack, this profile, and Observer; the source bytes are held as digests in
+`retained/WITHHELD-SOURCES.json`. The host policy pins this complete source manifest,
 the native artifact bytes, action identity, issuer/observer/witness keys, and historical
 reference time. The reader receives the policy separately with an explicit SHA-256 pin.
 Candidate-provided keys or a candidate-selected manifest do not establish trust.
