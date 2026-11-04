@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from ratchet.agent import guards
-from ratchet.agent.guards import GuardRuntime
+from ratchet.agent import guard_open as guards
+from ratchet.agent.guard_open import OpenGuardRuntime as GuardRuntime
 from ratchet.improve.failures import open_diagnose as diagnose
 from ratchet.improve.replay import WalkCache, replay
 from ratchet.improve.sandbox import SandboxRunner
@@ -42,7 +42,7 @@ def test_replay_through_the_sandbox_matches_the_local_runner() -> None:
 def test_a_sandbox_failure_makes_replay_incomplete_not_a_fire() -> None:
     from collections.abc import Sequence
 
-    from ratchet.agent.guards import GuardInfrastructureError, GuardItem
+    from ratchet.agent.guard_api import GuardInfrastructureError, GuardItem
 
     class Broken(GuardRuntime):
         def batch(self, items: Sequence[GuardItem]) -> list:  # type: ignore[type-arg]
