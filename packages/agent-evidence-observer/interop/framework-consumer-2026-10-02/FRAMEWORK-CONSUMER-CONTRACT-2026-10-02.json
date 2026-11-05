@@ -103,8 +103,8 @@
       "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     "README.md": {
-      "git_blob_sha1": "e52e0d596c3363ed96f0556e31fac04e002060b7",
-      "sha256": "b0e4a7f75d474348e3f1c4f90f59fe7b67154ffb53a0f5738a6054b760de13c0"
+      "git_blob_sha1": "7a6d51ac02d09f68f58cfb14f78371cf696d5085",
+      "sha256": "f4a14cb9439a9ee89e9be4c8143124022c7a36a55042380739028410c053ac2d"
     },
     "interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock": {
       "git_blob_sha1": "1f91d7d6e4d504d56d5d5317880e206808cddc74",
@@ -143,44 +143,28 @@
       "sha256": "7470f8b7be432e54d0ecd0b5872c357743d185fac7f9437c2db1b4a3ca9acb2f"
     },
     "interop/pydantic-ai-native-2026-10-02/src/probity_pydantic/reader.py": {
-      "git_blob_sha1": "61d7fe7b7cbd58d8a9d6191af22359cdc78f8ec6",
-      "sha256": "0c4cb4d99b4e1005118468eaf534a7eaf4fc28fe80219ecccda8d24479f2a631"
+      "git_blob_sha1": "242eb7963e07ad6e4e8a2293e17300cf13ddfad8",
+      "sha256": "c3171e96c444882dfbe023fae323c7d5db29ed94c66d410f3db5d07eb6283eba"
     },
     "pyproject.toml": {
-      "git_blob_sha1": "4ebab297c379bed80437c934618a56e03b7ed9cb",
-      "sha256": "5be28e3abc235320ee0dc6f17c6500818df7c7434271f6a38858166d8023ff06"
+      "git_blob_sha1": "605942a9a299c039843b04b168b2e6011de1946f",
+      "sha256": "c4c0a229ed4f171831186421940b6ef5db864635850b93281ca8654b51fbfbc2"
     },
     "src/probity_observer/__init__.py": {
-      "git_blob_sha1": "03280944f8a7ee6c9696eca78c302ac6a77d8bf5",
-      "sha256": "6a34123cad5c795c96d9308bef3588991e33ea2fd78262b0fc07f0b38ae04e50"
+      "git_blob_sha1": "a6453183526ba57566fefddcb8f58b3c9cdb98ff",
+      "sha256": "89aa4fe4a0b93e665aa6ff6147f7ae544349fd4c77c7508e35a94f4763e6d212"
     },
     "src/probity_observer/aae_binding.py": {
       "git_blob_sha1": "69e746c7c3619d992e7151e5df5a04d5435dfa34",
       "sha256": "c1447cf5849e2174607b30ac9dcda3f82950ac030b7e374494f1884b963c1549"
     },
-    "src/probity_observer/aae_dispatch.py": {
-      "git_blob_sha1": "d5653ede54f856c2a44c27da008230b3a427e143",
-      "sha256": "12f2d60c62ee16ccbc23d677761d8663da4e7e338fe909e53d6b1414ddf7ec0a"
-    },
-    "src/probity_observer/aae_effect_writer.py": {
-      "git_blob_sha1": "7c212170aa8e4aaab9e75cae4d15cdb8b901d5b8",
-      "sha256": "ffd12cfec7a21239d3e4048cad7d95c6ca8dede512c1b49f80c8f936dde5a8b5"
-    },
     "src/probity_observer/aae_enforce.py": {
       "git_blob_sha1": "3aff211562c90eb59375f82469cfe14b44e3595d",
       "sha256": "5b79dacd2fbd873ae073af5186e606b5baa1c6c9d8e627a0387ae9fc7bb96a94"
     },
-    "src/probity_observer/aae_ticket.py": {
-      "git_blob_sha1": "fb0d51fe704c687305114a9c48e1fbf789b3bc26",
-      "sha256": "0e0655920ee4e2169abb4fcb24993a07adf5d9edea2d2299ac378bace59ee4c4"
-    },
     "src/probity_observer/aae_ticket_records.py": {
       "git_blob_sha1": "7a153ffc4bbec06590300b63de742cd188b80695",
       "sha256": "bb90c2666277ac3558034e7e145093a44fd7d22e038a767389ac82345c6f77d1"
-    },
-    "src/probity_observer/admission.py": {
-      "git_blob_sha1": "ef0162dd12516c13781cab09c08f4d965b74a01a",
-      "sha256": "5b9f68dbfc59b1c088b7de9c41e81fabdf2e3a72426e8766845d0cea28b2af0f"
     },
     "src/probity_observer/atomic_reader.py": {
       "git_blob_sha1": "9776eef7d8314e20db820ed5292d091e7cb26bff",
@@ -189,18 +173,6 @@
     "src/probity_observer/attribution.py": {
       "git_blob_sha1": "986aa9fe179ffd3e722b22aed71875f61003918b",
       "sha256": "9aa531cfbd99df6185c35220db157c78d1c7b97c7c99bd2e24caa3f498dd0dee"
-    },
-    "src/probity_observer/authorization.py": {
-      "git_blob_sha1": "00fb2c2ee8a91dca3e32fe766a9f339f13795d00",
-      "sha256": "002c57628edee8d6a8d7ac0877f785eae9dc526ecc74435dbd96a691922a3ed3"
-    },
-    "src/probity_observer/boundary_probe.py": {
-      "git_blob_sha1": "ddd9ba7e80c862d3f156825e4ae6435fbe25052b",
-      "sha256": "a38c9e69fd25ed1401ae5a3bd22959fac41710b6b5784211d75ec1153b47090e"
-    },
-    "src/probity_observer/broker.py": {
-      "git_blob_sha1": "fc59dfc23d99ead0bfe519f8e262ebac11834ad4",
-      "sha256": "6b37f7db4bb4319d4ff672298e3e20bef839f0f9a82183192b385bde697a60cc"
     },
     "src/probity_observer/cli.py": {
       "git_blob_sha1": "8f96700a84d9450c84bf4b5df9a4d1eefe2e6138",
@@ -403,8 +375,8 @@
       "sha256": "175467e7eac8381cc0a79c8f35efb80b406c99dbdc0b05bb5cec65afb41532c7"
     },
     "src/probity_observer/grant_records.py": {
-      "git_blob_sha1": "4f8f9d33760a324750a62c2165fc5bacea98bb4a",
-      "sha256": "a51c74997d81af6a046cb8336aa683b047c1967cd760a2bf08806cb80c20c990"
+      "git_blob_sha1": "aa3a1d52570ea265182d9b3dd0a6aac48edfcd72",
+      "sha256": "680820e43b2dd0d029eba04167056d91bd4b21b53fe05e095d9157178136f29e"
     },
     "src/probity_observer/history.py": {
       "git_blob_sha1": "4506eee2c5a34c3c236900367ea452c889108b8a",
@@ -458,26 +430,6 @@
       "git_blob_sha1": "129cfbdca0e9b165fe6ae5d36dde23393f9d65a7",
       "sha256": "880501767490ea8c439251df18c269c331522bb406b21bd59265a622bcd494db"
     },
-    "src/probity_observer/probe_agent.py": {
-      "git_blob_sha1": "315fbabe36079c8e4406fcefdafdb39496d43177",
-      "sha256": "3699eeb662610fea2d8403294fad3239cbecf3dfcaeb542ceb2c40abdb0897f6"
-    },
-    "src/probity_observer/producer_cli.py": {
-      "git_blob_sha1": "e759c35535606639d8019d21a04369427b76a5c3",
-      "sha256": "ca6e14e911ce5707e4b1efca4351774b11de2d3f6eebc5b6aa66f1626b1deeeb"
-    },
-    "src/probity_observer/protected_dispatch.py": {
-      "git_blob_sha1": "3ec1ed1bc7802f498a739f8e7cf60aeebba13e4e",
-      "sha256": "1bc06508f69886b398cfbd7b2c3d156bacb9e25dec78ba1537632274d10bb72f"
-    },
-    "src/probity_observer/protected_isolation.py": {
-      "git_blob_sha1": "9b09c60bc9b0f37abab07f13e9135544988b5ac8",
-      "sha256": "370d658bfd11b975b2bd4af3e2d8f24278874993b7e62621aabdc1a9d0ae308e"
-    },
-    "src/probity_observer/protected_probe.py": {
-      "git_blob_sha1": "a6d8b7635867ea36650eaa5a35214fe0c8826fd8",
-      "sha256": "9e89109a168837662c434f0988e6ab8d90d6dd6e472b516c27ad8b8b16f8138f"
-    },
     "src/probity_observer/record_oe.py": {
       "git_blob_sha1": "a40b36ae63ff3909bcc65a0e3034138f2d3c9bad",
       "sha256": "46cff51857717bfe5cfe589ee254a06a63c8ba2b880760acf03b4dda9359c051"
@@ -495,8 +447,8 @@
       "sha256": "9047fd5ff44c6909ee2bf25d50704914e8dcaaca4d38f25ee67ebf61ffc8f2b3"
     },
     "src/probity_observer/replay.py": {
-      "git_blob_sha1": "2fceea25c53dd47013581b2356d5a860b34bb861",
-      "sha256": "1ae98fbd8795bc2142e839fb6a3ce1e782ae4e1956f72c1754aafc929a5c4be7"
+      "git_blob_sha1": "3056a80498d8daf0c0e1c16b04f8c9785b0a87c0",
+      "sha256": "a3187ba3db9b2d0ea9a2cda1afba4d6d40dd406b80d62ac3e56eab9f2f30aadd"
     },
     "src/probity_observer/run_selection.py": {
       "git_blob_sha1": "c0d24f29aa369bf473235353cd63afc861c00a5b",
@@ -529,10 +481,6 @@
     "src/probity_observer/sensors/treedigest.py": {
       "git_blob_sha1": "5dd364b940b8e7af7a33319a788b039f376b4b29",
       "sha256": "710db66687c5911ac0d5dff86f7b3155bfa6ea263177e55d12ed7f240cbcb866"
-    },
-    "src/probity_observer/ticket_service.py": {
-      "git_blob_sha1": "078ed5951b25eb278286a46988cd5186bbc14fcc",
-      "sha256": "dd4058a79aa51a7dee535e4a47c0bad6bc041cd70f989f6ae85f9dc58a771c88"
     },
     "src/probity_observer/ticket_state.py": {
       "git_blob_sha1": "310722bb2fad65c835e6e4c9b54cb41dde690fc6",
@@ -581,10 +529,6 @@
     "src/probity_observer/workload.py": {
       "git_blob_sha1": "fe6b1a953efda6312bf8fb5b607c55cb4aacc3d4",
       "sha256": "77f3c0cef16874280b421d50fe1153333518064be8b9b01f8ebf716596c14cc8"
-    },
-    "src/probity_observer/workload_runner.py": {
-      "git_blob_sha1": "523d7329bc0431618d72461f05164b2379b12bc5",
-      "sha256": "7338fd3675f7515fdc155acaed33b776c528d11bee4e46f237e26ffadb577b6d"
     }
   },
   "status": "selected-from-workspace-source",
