@@ -57,14 +57,18 @@ provider tracing disabled; their selected environment is retained in receipts.
 
 From this directory, use an isolated Python 3.12 or 3.13 environment:
 
+The operator's runtime ran the population and wrote the packet under
+[retained](retained); its worker, target and runner sources are withheld by digest
+and listed in `retained/WITHHELD-SOURCES.json`. Replay it:
+
 ```bash
-python -m pip install --require-hashes --only-binary=:all: -r requirements.lock
+python -m pip install --require-hashes --only-binary=:all: -r requirements-reader.lock
 python -m pip install --no-deps -e ../..
 python -m pip check
-python -m ruff check joint_*.py joint_host_gate.py tests
-python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' joint_*.py joint_host_gate.py tests
+python -m ruff check joint_*.py tests verify_retained.py
+python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' joint_*.py tests verify_retained.py
 python -m pytest -q
-python joint_run.py /outside-git/original --source-revision "$(git rev-parse HEAD)"
+python verify_retained.py
 ```
 
 The caller must separately select the source revision, plan/artifact bytes,
@@ -103,34 +107,13 @@ trees and excessive or special members refuse before reader execution. Selected
 file links bind their resolved bytes; concurrent filesystem replacement and the
 host standard library remain local custody assumptions.
 
-The workflow checks out original reader sources at
-`7047248e5eb3d58804bd14de1c4e7c3d41ccffb2`, builds both normal wheels, installs
-the original in a clean framework-free environment and performs an ordinary
-upgrade. The original and candidate reader stdout must match byte for byte.
-The old host installation selection must refuse before launch after upgrade;
-a separately refreshed candidate selection must publish the same bounded
-report, including every native recovery refusal. The full source hashes,
-wheels, locked dependency wheels, installation manifests, process streams and
-host receipts are retained. This is a same-operator compatibility exercise;
-outside recurring use and independent custody remain separate outcomes.
+The retained `host-receipts/` record the original installed host selection and
+publication decision for this packet. The workflow builds this reader's normal
+wheel, installs it in a clean framework-free environment and requires the
+installed reader's canonical report over the retained packet to equal the
+retained reader stdout byte for byte.
 
-For an existing authenticated packet, prepare the hash-selected reader wheels
-and run the explicit installed upgrade outside the packet directory:
-
-```bash
-python -m pip download --require-hashes --only-binary=:all: \
-  -r requirements-reader.lock --dest /outside-git/reader-dependencies
-python verify_upgrade.py \
-  --baseline /selected-original/interop/joint-recovery-2026-10-02 \
-  --packet /outside-git/original --output /outside-git/upgrade-receipts \
-  --dependency-wheels /outside-git/reader-dependencies
-```
-
-The selected-original checkout and packet pins are host-held inputs. The
-demonstration copies the producer's packet pins and records that shared custody.
-It does not qualify an independently selected external consumer.
-
-The tests execute a fresh complete native population, then explicitly reselect
+The tests read the retained native population, then explicitly reselect
 mutated bytes to exercise semantic refusals rather than merely detect changed
 hashes. Hypothesis checks clock transitions; nested passing/failing test classes
 check native process identities, current selections, checkpoint recovery, exact

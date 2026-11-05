@@ -19,7 +19,6 @@ LOCKS = (
     "pydantic-ai-native-2026-10-02/requirements-reader.lock",
     "pydantic-recovery-2026-10-03/requirements.lock",
     "pydantic-recovery-2026-10-03/requirements-reader.lock",
-    "joint-recovery-2026-10-02/requirements.lock",
     "joint-recovery-2026-10-02/requirements-reader.lock",
     "target-recovery-2026-10-02/requirements.lock",
     "langgraph-ticket-2026-10-02/requirements.lock",

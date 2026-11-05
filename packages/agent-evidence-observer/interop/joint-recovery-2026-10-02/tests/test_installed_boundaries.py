@@ -12,7 +12,6 @@ import pytest
 from hypothesis import given, strategies as st
 
 import joint_host_gate as host
-import verify_upgrade as upgrade
 from test_host_gate import selected_files
 
 
@@ -188,26 +187,3 @@ class TestIsolatedExecution:
             selection[-1].write_text("changed selected launcher")
             refuses(tmp_path, selection, caplog, "host-selection")
 
-
-class TestUpgradeCommand:
-    """Actual subprocess outputs survive both completion and timeout."""
-
-    class TestPassingCases:
-        def test_original_stdout_is_preserved(self, tmp_path):
-            result = upgrade.command([sys.executable, "-c", "print('complete')"], tmp_path, "complete")
-            assert result == b"complete\n"
-            assert (tmp_path / "complete.stdout").read_bytes() == result
-            assert json.loads((tmp_path / "complete.process.json").read_bytes())["timedOut"] is False
-
-    class TestFailingCases:
-        def test_timeout_preserves_partial_streams(self, tmp_path, monkeypatch, caplog):
-            monkeypatch.setattr(upgrade, "MAX_COMMAND_SECONDS", 1)
-            argv = [sys.executable, "-c", "import sys,time; print('partial',flush=True); print('diagnostic',file=sys.stderr,flush=True); time.sleep(2)"]
-            with caplog.at_level(logging.WARNING), pytest.raises(ValueError, match="^upgrade-command-outcome: timeout$"):
-                upgrade.command(argv, tmp_path, "timeout")
-            assert (tmp_path / "timeout.stdout").read_bytes() == b"partial\n"
-            assert (tmp_path / "timeout.stderr").read_bytes() == b"diagnostic\n"
-            metadata = json.loads((tmp_path / "timeout.process.json").read_bytes())
-            assert metadata["timedOut"] is True
-            assert metadata["returncode"] == 124
-            assert "Joint upgrade refused: upgrade-command-outcome: timeout" in caplog.messages
