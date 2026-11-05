@@ -1,0 +1,7 @@
+{
+ "artifact": "eight-component-host-d1e92ccb7f5b679040fd18976fbc871fef5b0fb9",
+ "downloadedAt": "2026-11-04T02:32:05Z",
+ "headSha": "d1e92ccb7f5b679040fd18976fbc871fef5b0fb9",
+ "runId": 41347335755,
+ "workflow": "package-observer-eight-component-host.yml"
+}

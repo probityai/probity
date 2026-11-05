@@ -27,13 +27,15 @@ from probity_pydantic_recovery.common import (
     messages,
     read,
     require,
+    absent_members,
     sha,
+    withheld_sources,
     write,
 )
 from probity_pydantic_recovery.gate import reconstruct_admission
 
 
-def freeze(root: Path, selected: dict[str, Any], destination: Path) -> None:
+def freeze(root: Path, selected: dict[str, Any], destination: Path, withheld: dict[str, str]) -> None:
     """Authenticate and copy each consumed buffer before semantic reconstruction."""
     require(root.is_dir() and not root.is_symlink(), "packet-directory")
     require(not any(path.is_symlink() for path in root.rglob("*")), "packet-symlink")
@@ -42,15 +44,18 @@ def freeze(root: Path, selected: dict[str, Any], destination: Path) -> None:
     manifest = strict_loads(raw)
     require(type(manifest) is dict and len(manifest) < 3000, "file-population-bound")
     actual = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
-    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} == set(manifest), "artifact-population")
+    absent = absent_members(manifest, actual, withheld)
+    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} | absent == set(manifest), "artifact-population")
     write(destination / "artifact-manifest.json", raw, raw=True)
-    copy_selected(root, destination, manifest)
+    copy_selected(root, destination, manifest, absent)
 
 
-def copy_selected(root: Path, destination: Path, manifest: dict[str, str]) -> None:
+def copy_selected(root: Path, destination: Path, manifest: dict[str, str], absent: set[str]) -> None:
     """Hash and copy the same bounded bytes, never reopen a checked candidate."""
     total = 0
     for name, digest in manifest.items():
+        if name in absent:
+            continue
         path = Path(name)
         require(not path.is_absolute() and ".." not in path.parts, "artifact-path")
         raw = read(root / path)
@@ -60,7 +65,7 @@ def copy_selected(root: Path, destination: Path, manifest: dict[str, str]) -> No
         write(destination / path, raw, raw=True)
 
 
-def population(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
+def population(root: Path, selected: dict[str, Any], withheld: dict[str, str]) -> dict[str, Any]:
     """Admit the exact externally selected finite file/source population."""
     require(root.is_dir() and not root.is_symlink(), "packet-directory")
     require(not any(path.is_symlink() for path in root.rglob("*")), "packet-symlink")
@@ -69,12 +74,15 @@ def population(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
     require(selected["artifactManifestSha256"] == sha(read(root / "artifact-manifest.json")), "selected-manifest")
     manifest = load(root / "artifact-manifest.json")
     actual = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
-    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} == set(manifest), "artifact-population")
+    absent = absent_members(manifest, actual, withheld)
+    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} | absent == set(manifest), "artifact-population")
     require(len(manifest) < 3000, "file-population-bound")
     total = 0
     for name, digest in manifest.items():
         path = Path(name)
         require(not path.is_absolute() and ".." not in path.parts, "artifact-path")
+        if name in absent:
+            continue
         raw = read(root / path)
         total += len(raw)
         require(sha(raw) == digest, "artifact-hash")
@@ -243,9 +251,9 @@ def decision(root: Path, case: dict[str, Any], current: dict[str, Any], recovery
         return None
 
 
-def reconstruct(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
+def reconstruct(root: Path, selected: dict[str, Any], withheld: dict[str, str]) -> dict[str, Any]:
     """Reconstruct the bounded author-operated profile from external byte pins."""
-    plan = population(root, selected)
+    plan = population(root, selected, withheld)
     records, identities = [], []
     workers, targets = 0, 0
     for case in plan["cases"]:
@@ -260,13 +268,19 @@ def reconstruct(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
     return {"profile": PROFILE, "status": "verified", "plannedAttempts": len(CASES), "freshWorkers": workers, "freshTargets": targets, "providerCalls": 0, "model": "scripted-FunctionModel", "records": records, "witnessScope": "PEER", "doesNotAssert": NONCLAIMS}
 
 
-def verify_saved(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
-    """Reconstruct only the private copy of externally authenticated buffers."""
+def verify_saved(root: Path, selected: dict[str, Any], withheld: dict[str, str] | None = None) -> dict[str, Any]:
+    """Reconstruct only the private copy of externally authenticated buffers.
+
+    A manifest member may be absent from the packet only when ``withheld``
+    names it with exactly the pinned digest; every present member must still
+    match byte for byte and any other absence refuses.
+    """
+    withheld = withheld or {}
     try:
         with tempfile.TemporaryDirectory(prefix="probity-recovery-reader-") as directory:
             frozen = Path(directory)
-            freeze(root, selected, frozen)
-            return reconstruct(frozen, selected)
+            freeze(root, selected, frozen, withheld)
+            return reconstruct(frozen, selected, withheld)
     except VerificationError:
         raise
     except (KeyError, TypeError, ValueError, OSError, IndexError, AttributeError, sqlite3.Error, RecursionError) as error:
@@ -278,8 +292,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("packet", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path, default=None)
     args = parser.parse_args()
-    print(canonical(verify_saved(args.packet, load(args.pins_file))).decode())
+    print(canonical(verify_saved(args.packet, load(args.pins_file), withheld_sources(args.withheld_sources))).decode())
 
 
 if __name__ == "__main__":

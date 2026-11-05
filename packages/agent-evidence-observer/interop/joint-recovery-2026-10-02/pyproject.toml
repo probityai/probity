@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-joint-recovery-reader"
-version = "0.0.2"
+version = "0.0.3"
 requires-python = ">=3.12"
-dependencies = ["agent-evidence-observer==0.2.0"]
+dependencies = ["agent-evidence-observer==0.1.4"]
 description = "Selected offline reader for native joint worker, target and current-authority recovery"
 
 [project.scripts]

@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/opt/hostedtoolcache/Python/3.13.17/x64/bin/python",
+    "-I",
+    "-B",
+    "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/native_gate.py",
+    "atlas",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/atlas.config.json"
+  ],
+  "returnCode": 0,
+  "stderrBytes": 0,
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 711,
+  "stdoutSha256": "22d62ba9808bc82103b5c94448f52cee95c95646bc3ecefc6209cf52b652a1c5",
+  "timedOut": false,
+  "wallSeconds": 0.096194
+}

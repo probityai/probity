@@ -1,0 +1,1 @@
+{"SQLiteSha256":"e9caf5359309f87a494f59057c220408e2915d6f3c6d487c6c5959599e275513","exit":2,"independentCustody":false,"kind":"policy-precision-seconds","policySha256":"ebe9f175f7319f6967cab3c2c0e8ccb1f3ace413ccaf23f999d5f680a9e776f1","refusal":"native time precision must be milliseconds","witnessScope":"PEER"}

@@ -38,6 +38,13 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.13'
+      - name: Verify the retained run with public observer code
+        run: |
+          python -m venv "$RUNNER_TEMP/retained-venv"
+          "$RUNNER_TEMP/retained-venv/bin/python" -m pip install --require-hashes --only-binary=:all: -r requirements.lock
+          "$RUNNER_TEMP/retained-venv/bin/python" -m pip install --no-deps ../..
+          "$RUNNER_TEMP/retained-venv/bin/python" -I verify_retained.py
+          "$RUNNER_TEMP/retained-venv/bin/python" -m pytest -q tests/test_retained.py
       - name: Select original eight source snapshots and retain every Git stream
         run: |
           mkdir -p "$RUNNER_TEMP/kit-raw"

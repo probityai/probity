@@ -23,22 +23,26 @@
   "sourceFiles": {
     "PROTOCOL.md": "82f2f06dbd987e3a35eacd40cc43cc976755e6fd33503a654afa051aac40fb8f",
     "README.md": "71fffa59677418b1b7ad7c2136248c19357b3ea1fdabe570769b53ee5c1ff302",
+    "conftest.py": "83554d14656508c55f9af3d2639b14b4bcc4a8049e189f983cdb706ff743492a",
     "fixture.mjs": "953e362510bd7873c9826431d49bbe38f1ff5232d318a9e667ac77f26df8b872",
     "package-lock.json": "e20abb2507e42bd8dbfb8ec11af588057bdcd663af0481f491715419c3a8c87e",
     "package.json": "60346c4ea19bb54f995ae28de7412df6a3de47ab13d0acb6ee8481646d168744",
     "probity_aps_refund/__init__.py": "c7932b51c7259bcfd4f65e6a22a60859980bb59544692fdc7c6c2d20c53e7ccb",
-    "probity_aps_refund/fixture.py": "b16fda16906b75305a17228cff6f84f0f5f9c0a7c7841e9ab10d82b867edb009",
+    "probity_aps_refund/fixture.py": "35c28f1ae439ba5676e2de51bc9d2c255182ad7a370c0a4ab30e03dd414df030",
     "probity_aps_refund/native.py": "a29cc466d10b096225f3312be79c78756e7802df6efb2f7b9f1eac77a4e258bd",
-    "probity_aps_refund/reader.py": "d1baa535f2b4263282a9a6f3044d30f79a65eaf1202972b9dc10b73100bd448b",
-    "probity_aps_refund/service.py": "650dd63d5d8cac15a9e24ea9ed0ef35c09cdaf148ef35d6ba392d32c68792205",
-    "probity_aps_refund/worker.py": "17a012a758f25daeee8e1780782a50f40c5d57d023db9055a024d7f8db1a2a46",
+    "probity_aps_refund/reader.py": "4629e1481a79acf998f248d6b52f664cc1c1edef8eb25ddd9e23b2cf26c63730",
+    "probity_aps_refund/service.py": "99e91b0c87d240b0f733ef01ee50d1de8a5055759de694d2646d41c5f7a7345c",
+    "probity_aps_refund/verification.py": "94acc63c5d1fb227628000d42f4ab839bef2bac516fcd32f13073fdc636379ce",
+    "probity_aps_refund/worker.py": "c777ac86dd1e20b68d9d4689ebd869be651c2c7411113b5a17d2b2f514e3356a",
     "pyproject.toml": "0e6a3e0fac95608ebf54f0bce2a9b70364d428035d88338d3ebae59e7c25c11e",
     "requirements.in": "982c51223ec9764d6a080da2a6e77d8733ba8b9243f22f78399c1578762bdb80",
     "requirements.lock": "6893658bd1c30cd46619c1fd929e6f46afbded997310d68d42468c84dde99f24",
-    "test_controls.py": "eb37f696bf8718e1f2ade098bdd998bd53512b70e889a3f4e0b3f79575ca2338",
-    "test_reader.py": "bab60413f88901ed7859af2cf2feab64bb344f8557d5afe4fc893710c9837137",
+    "test_controls.py": "ba955f896d9dd4383170d3d706bfecaeff62d73b1ec16955f6afd35aec6b7967",
+    "test_reader.py": "c2bb8ccedb24e5d12b507137e82b8edb5f57f935c55ac78f24464d066f1b9879",
+    "test_reader_producer.py": "29263d651a0842a57510afc555404b4701a92c42cdacf07c0ce32b5b7b76935f",
     "verify-aps.mjs": "b0a6742b4c540e5fe4bea6d096b0c94a7e5c235c5c7ad288ba47c73f6e6d20a6",
-    "verify_install.sh": "7d32f11a779d9d008c6bd40cd8de1e8fe5a3f5e69a13933ac9256c1b4330fb56"
+    "verify_install.sh": "a20602a05fc432116b233789dc98064466a6a1df00e24deba93d28a0d1c52810",
+    "verify_retained.py": "c5fa50e43a22ad4e600880e2401e3ee8eb24f407d44952622a41b1897eacf899"
   },
   "witnessScope": "PEER"
 }

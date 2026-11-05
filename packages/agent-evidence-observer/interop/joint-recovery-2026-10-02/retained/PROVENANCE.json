@@ -1,0 +1,7 @@
+{
+ "artifact": "joint-recovery-df162fb8c9304f2846feb9f5145b0dd697c11010",
+ "downloadedAt": "2026-11-03T15:52:33Z",
+ "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+ "runId": 41665290603,
+ "workflow": "package-observer-joint-recovery.yml"
+}

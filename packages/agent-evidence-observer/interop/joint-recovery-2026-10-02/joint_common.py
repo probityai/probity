@@ -7,6 +7,7 @@ neither LangGraph nor the native process launcher.
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 from pathlib import Path
@@ -95,6 +96,38 @@ def load(root: Path, name: str) -> Any:
     except VerificationError as error:
         LOGGER.warning("Joint recovery refused: %s", error)
         raise
+
+
+def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Refuse a repeated member name in the withheld-source record."""
+    names = [name for name, _ in pairs]
+    require(len(names) == len(set(names)), "withheld-fields")
+    return dict(pairs)
+
+
+def withheld_sources(path: Path | None) -> dict[str, str]:
+    """Load the caller-selected record of source files kept out of a retained packet.
+
+    Parameters
+    ----------
+    path : pathlib.Path or None
+        Host-selected JSON object mapping a packet-relative member name to the
+        SHA-256 its manifest pins. ``None`` selects no withheld member.
+
+    Returns
+    -------
+    dict
+        Exact name-to-digest mapping. A name is accepted as absent from disk
+        only when the packet's own manifest pins the same digest.
+    """
+    if path is None:
+        return {}
+    try:
+        value = json.loads(read(path.parent, path.name), object_pairs_hook=_unique)
+    except ValueError as error:
+        raise VerificationError("withheld-fields") from error
+    require(isinstance(value, dict) and all(isinstance(name, str) and isinstance(digest, str) and len(digest) == 64 for name, digest in value.items()), "withheld-fields")
+    return value
 
 
 def write(path: Path, value: Any) -> None:

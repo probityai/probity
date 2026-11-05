@@ -1,0 +1,75 @@
+{
+  "componentHeads": {
+    "agent-evidence-admission": "20d8924d904a2597276209529ab8f60ceb1aaba9",
+    "agent-evidence-atlas": "58c89e18033a3c5fdd10d1a9b65497e25093dcc8",
+    "agent-evidence-observer": "c774e0711e4a30c31cdfb184c1e4495a249fbdd0",
+    "agent-evidence-vectors": "bbdef583c9241138e5c2b5d872bc77f7f539e9ac",
+    "agent-evidence-vocabulary": "8c80579ae613d7ae07982321e13a6091c402b2a8",
+    "dsse": "f6f6df4bef5544af76dc3f5b05909a2f24a8e51f",
+    "jcs-admit": "40ce923843167629f0ed044590d1319e6a711015",
+    "probity-verify": "e835ce2bd6a960e7a1cc2fa6522f16d55dce728a"
+  },
+  "componentVersions": {
+    "agent-evidence-observer": "0.0.1",
+    "agent-evidence-vectors": "0.15.0",
+    "probity-verify": "0.1.0"
+  },
+  "omissionMap": [
+    {
+      "reason": "host-only authority; fresh public keys and signed records retained; no independent custody claim",
+      "selection": "private authority seed bytes and installation seed-file bindings"
+    }
+  ],
+  "programs": [
+    {
+      "bytes": 16652,
+      "path": "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/trust.py",
+      "sha256": "9f3b57a8565288586a028b133929d60cb51bfcff6cb7a22f400655cb2db20fab"
+    },
+    {
+      "bytes": 10665,
+      "path": "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/native_gate.py",
+      "sha256": "7d323c85032f674a184358a6d919108ba1f8ea354acdae8f068bbe8ee6006fd9"
+    },
+    {
+      "bytes": 3532,
+      "path": "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/target_worker.py",
+      "sha256": "1afed529c6fda34bf05d2209f2a57230b744a0bb19c4d53266e0ef23f8fb32bb"
+    },
+    {
+      "bytes": 21143,
+      "path": "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/run_host.py",
+      "sha256": "69e1fb262075198899ee59551009c46605d3a6e55fe952a34854e1eea0e85fad"
+    }
+  ],
+  "sourceSelectionSha256": "1107cb0621b8b9227d5e7e8615c24bd1a2cee0ecb4cb1e7a15a1e3dd839540d6",
+  "tools": {
+    "byteGate": {
+      "bytes": 1038024,
+      "path": "/home/runner/work/_temp/kit-tools/bin/probity-host-byte-gate",
+      "sha256": "6f286ce3300c75edd44e8fc4f71cd19a1328d8c9b22ead3cdcbd3294f0687af9"
+    },
+    "opa": {
+      "bytes": 54258275,
+      "path": "/home/runner/work/_temp/kit-tools/opa",
+      "sha256": "65d700b14b99b354982b61031b40bdc8e316ea93dadd61818f066d1d9a69dcce"
+    }
+  },
+  "wheels": [
+    {
+      "bytes": 120341,
+      "path": "/home/runner/work/_temp/kit-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl",
+      "sha256": "c44b7c3ef9c188285e77a9859b5c581f779ed784bbb0ddc3b72be08571695206"
+    },
+    {
+      "bytes": 2418023,
+      "path": "/home/runner/work/_temp/kit-wheels/agent_evidence_vectors-0.15.0-py3-none-any.whl",
+      "sha256": "7508886b44cac3ed6b69a4da3e440cbfd37a36ae7ea18910eec1a01d8ee3ea28"
+    },
+    {
+      "bytes": 30263,
+      "path": "/home/runner/work/_temp/kit-wheels/probity_verify-0.1.0-py3-none-any.whl",
+      "sha256": "e7ed65fa51c314f3274334ad2dbbaf06103c731cbff20b2065ce460086b77020"
+    }
+  ]
+}

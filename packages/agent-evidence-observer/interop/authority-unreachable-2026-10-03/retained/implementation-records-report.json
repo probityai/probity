@@ -1,0 +1,641 @@
+{
+  "implementations": [
+    {
+      "checks": [
+        {
+          "detail": "manifest names revocation-trace-testnet-20261006T073712Z",
+          "id": "mintid-record-name",
+          "result": "pass"
+        },
+        {
+          "detail": "mintid-trace-manifest/2 derived=False",
+          "id": "mintid-manifest-schema",
+          "result": "pass"
+        },
+        {
+          "detail": "manifest 509a5047f3f52730",
+          "id": "mintid-digest-revocation-trace-testnet-20261006T073712Z.jsonl",
+          "result": "pass"
+        },
+        {
+          "detail": "manifest e984c1d8b0555298",
+          "id": "mintid-digest-revocation-trace-testnet-20261006T073712Z.md",
+          "result": "pass"
+        },
+        {
+          "detail": "0 decisions differ from the verifier log line",
+          "id": "mintid-decision-log-agrees",
+          "result": "pass"
+        },
+        {
+          "detail": "34 decisions derived from JSONL, 34 in the manifest",
+          "id": "mintid-manifest-decisions-rebuild",
+          "result": "pass"
+        },
+        {
+          "detail": "trigger-derived t0 1791272329.53 against manifest 1791272329.5303512",
+          "id": "mintid-issuer:agent_issuer-t0",
+          "result": "pass"
+        },
+        {
+          "detail": "a forced presentation was refused",
+          "id": "mintid-issuer:agent_issuer-refused",
+          "result": "pass"
+        },
+        {
+          "detail": "derived +9.3 s against manifest +9.3 s",
+          "id": "mintid-issuer:agent_issuer-first-refusal",
+          "result": "pass"
+        },
+        {
+          "detail": "0 acceptances after the first refusal",
+          "id": "mintid-issuer:agent_issuer-stays-denied",
+          "result": "pass"
+        },
+        {
+          "detail": "+9.3 s against the 185 s bound (t0 + A + K)",
+          "id": "mintid-issuer:agent_issuer-within-bound",
+          "result": "pass"
+        },
+        {
+          "detail": "holder refresh outcome credential_revoked",
+          "id": "mintid-issuer:agent_issuer-attributed",
+          "result": "pass"
+        },
+        {
+          "detail": "trigger-derived t0 1791272385.428 against manifest 1791272385.428598",
+          "id": "mintid-kill_switch:agent_kill_switch-t0",
+          "result": "pass"
+        },
+        {
+          "detail": "a forced presentation was refused",
+          "id": "mintid-kill_switch:agent_kill_switch-refused",
+          "result": "pass"
+        },
+        {
+          "detail": "derived +36.8 s against manifest +36.8 s",
+          "id": "mintid-kill_switch:agent_kill_switch-first-refusal",
+          "result": "pass"
+        },
+        {
+          "detail": "0 acceptances after the first refusal",
+          "id": "mintid-kill_switch:agent_kill_switch-stays-denied",
+          "result": "pass"
+        },
+        {
+          "detail": "+36.8 s against the 245 s bound (t0 + G + A + K)",
+          "id": "mintid-kill_switch:agent_kill_switch-within-bound",
+          "result": "pass"
+        },
+        {
+          "detail": "holder refresh outcome credential_revoked",
+          "id": "mintid-kill_switch:agent_kill_switch-attributed",
+          "result": "pass"
+        },
+        {
+          "detail": "trigger-derived t0 1791272475.0 against manifest 1791272475",
+          "id": "mintid-cascade:cascade_agent_1-t0",
+          "result": "pass"
+        },
+        {
+          "detail": "a forced presentation was refused",
+          "id": "mintid-cascade:cascade_agent_1-refused",
+          "result": "pass"
+        },
+        {
+          "detail": "derived +156.1 s against manifest +156.1 s",
+          "id": "mintid-cascade:cascade_agent_1-first-refusal",
+          "result": "pass"
+        },
+        {
+          "detail": "0 acceptances after the first refusal",
+          "id": "mintid-cascade:cascade_agent_1-stays-denied",
+          "result": "pass"
+        },
+        {
+          "detail": "+156.1 s against the 395 s bound (t_T + 7\u00b7H + A + K)",
+          "id": "mintid-cascade:cascade_agent_1-within-bound",
+          "result": "pass"
+        },
+        {
+          "detail": "holder refresh outcome credential_revoked",
+          "id": "mintid-cascade:cascade_agent_1-attributed",
+          "result": "pass"
+        },
+        {
+          "detail": "trigger-derived t0 1791272475.0 against manifest 1791272475",
+          "id": "mintid-cascade:cascade_agent_2-t0",
+          "result": "pass"
+        },
+        {
+          "detail": "a forced presentation was refused",
+          "id": "mintid-cascade:cascade_agent_2-refused",
+          "result": "pass"
+        },
+        {
+          "detail": "derived +35.1 s against manifest +35.1 s",
+          "id": "mintid-cascade:cascade_agent_2-first-refusal",
+          "result": "pass"
+        },
+        {
+          "detail": "0 acceptances after the first refusal",
+          "id": "mintid-cascade:cascade_agent_2-stays-denied",
+          "result": "pass"
+        },
+        {
+          "detail": "+35.1 s against the 395 s bound (t_T + 7\u00b7H + A + K)",
+          "id": "mintid-cascade:cascade_agent_2-within-bound",
+          "result": "pass"
+        },
+        {
+          "detail": "holder refresh outcome credential_revoked",
+          "id": "mintid-cascade:cascade_agent_2-attributed",
+          "result": "pass"
+        },
+        {
+          "detail": "trigger-derived t0 1791272647.403 against manifest 1791272647.40383",
+          "id": "mintid-emergency:agent_emergency-t0",
+          "result": "pass"
+        },
+        {
+          "detail": "a forced presentation was refused",
+          "id": "mintid-emergency:agent_emergency-refused",
+          "result": "pass"
+        },
+        {
+          "detail": "derived +4.5 s against manifest +4.5 s",
+          "id": "mintid-emergency:agent_emergency-first-refusal",
+          "result": "pass"
+        },
+        {
+          "detail": "0 acceptances after the first refusal",
+          "id": "mintid-emergency:agent_emergency-stays-denied",
+          "result": "pass"
+        },
+        {
+          "detail": "refused at head 68095, emergency root in block 68094",
+          "id": "mintid-emergency:agent_emergency-within-bound",
+          "result": "pass"
+        },
+        {
+          "detail": "holder refresh outcome credential_revoked",
+          "id": "mintid-emergency:agent_emergency-attributed",
+          "result": "pass"
+        }
+      ],
+      "contract": {
+        "authorityEvidence": {
+          "chainId": "mintid-testnet-2",
+          "heartbeatSeconds": 30,
+          "maxRootAgeSeconds": 180,
+          "policySha256": "9f02f1c77044017c9b411a7d069cbc4fd5311087fc09c91e4cfd1ec5e29c3577",
+          "source": "issuer status root on chain, proven at the decision"
+        },
+        "dispatchDecision": "accept or refuse with reason code and deciding condition; no indeterminate",
+        "implementationAndSource": {
+          "release": [
+            "public-v2026-10-06.2"
+          ],
+          "sourceRevision": "497509ebf0c3bbc9c1a924996018b67db6ca949f",
+          "trackedChanges": false
+        },
+        "lostResponse": "outside the implementation: committed effect belongs to the relying party",
+        "observedEffect": "not applicable: no executor; ends at the relying party's decision",
+        "plannedOrUnavailable": {
+          "fundedRecourse": "planned",
+          "subDelegation": "unavailable"
+        },
+        "presentationLifetime": {
+          "evidenceClass": "source-inspection",
+          "inRecord": false,
+          "seconds": 10,
+          "source": "identity-proof-core/holder/src/lib.rs PRESENTATION_LIFETIME_SECONDS at public-v2026-10-07"
+        },
+        "taskAndRecovery": "not applicable for the task; control recovery after refresh is measured",
+        "temporalRevocation": [
+          {
+            "agent": "agent_issuer",
+            "firstRefusal": {
+              "condition": 5,
+              "reason_code": "status_root_stale",
+              "root_epoch": 4796,
+              "root_height": 67942
+            },
+            "firstRefusalAlsoRefusedNeverRevokedControl": true,
+            "firstRefusalSecondsAfterTrigger": 9.3,
+            "lastAcceptedSecondsAfterTrigger": null,
+            "path": "issuer",
+            "requiredDenyPoint": {
+              "boundSeconds": 185,
+              "formula": "t0 + A + K"
+            },
+            "revocationAttributedBy": "holder refresh refused credential_revoked",
+            "triggerDefinition": "the issuer's removal of the agent (revoke response)",
+            "triggerUnix": 1791272329.5303512
+          },
+          {
+            "agent": "agent_kill_switch",
+            "firstRefusal": {
+              "condition": 5,
+              "reason_code": "status_root_stale",
+              "root_epoch": 4799,
+              "root_height": 67985
+            },
+            "firstRefusalAlsoRefusedNeverRevokedControl": false,
+            "firstRefusalSecondsAfterTrigger": 36.8,
+            "lastAcceptedSecondsAfterTrigger": 30.4,
+            "path": "kill_switch",
+            "requiredDenyPoint": {
+              "boundSeconds": 245,
+              "formula": "t0 + G + A + K"
+            },
+            "revocationAttributedBy": "holder refresh refused credential_revoked",
+            "triggerDefinition": "the recording of the nullifier on chain (block time of the relay's tx)",
+            "triggerUnix": 1791272385.428598
+          },
+          {
+            "agent": "cascade_agent_1",
+            "firstRefusal": {
+              "condition": 5,
+              "reason_code": "status_root_stale",
+              "root_epoch": 4806,
+              "root_height": 68084
+            },
+            "firstRefusalAlsoRefusedNeverRevokedControl": false,
+            "firstRefusalSecondsAfterTrigger": 156.1,
+            "lastAcceptedSecondsAfterTrigger": 149.5,
+            "path": "cascade",
+            "requiredDenyPoint": {
+              "boundSeconds": 395,
+              "formula": "t_T + 7\u00b7H + A + K"
+            },
+            "revocationAttributedBy": "holder refresh refused credential_revoked",
+            "triggerDefinition": "generation of the trigger root (the root carrying the principal's revocation)",
+            "triggerUnix": 1791272475
+          },
+          {
+            "agent": "cascade_agent_2",
+            "firstRefusal": {
+              "condition": 5,
+              "reason_code": "status_root_stale",
+              "root_epoch": 4802,
+              "root_height": 68027
+            },
+            "firstRefusalAlsoRefusedNeverRevokedControl": false,
+            "firstRefusalSecondsAfterTrigger": 35.1,
+            "lastAcceptedSecondsAfterTrigger": 20.9,
+            "path": "cascade",
+            "requiredDenyPoint": {
+              "boundSeconds": 395,
+              "formula": "t_T + 7\u00b7H + A + K"
+            },
+            "revocationAttributedBy": "holder refresh refused credential_revoked",
+            "triggerDefinition": "generation of the trigger root (the root carrying the principal's revocation)",
+            "triggerUnix": 1791272475
+          },
+          {
+            "agent": "agent_emergency",
+            "firstRefusal": {
+              "condition": 5,
+              "reason_code": "status_root_stale",
+              "root_epoch": 4807,
+              "root_height": 68094
+            },
+            "firstRefusalAlsoRefusedNeverRevokedControl": false,
+            "firstRefusalSecondsAfterTrigger": 4.5,
+            "lastAcceptedSecondsAfterTrigger": null,
+            "path": "emergency",
+            "requiredDenyPoint": {
+              "boundSeconds": 0,
+              "formula": "the emergency root's finalisation: measured in blocks below"
+            },
+            "revocationAttributedBy": "holder refresh refused credential_revoked",
+            "triggerDefinition": "the emergency root's submission (the issuer's answer; the bound itself is block-based)",
+            "triggerUnix": 1791272647.40383
+          }
+        ]
+      },
+      "custody": "author-operated public testnet; not independently reproduced",
+      "evidenceClass": "implementation-owned-runtime-trace",
+      "failed": [],
+      "implementation": "MintID"
+    },
+    {
+      "checks": [
+        {
+          "detail": "matches",
+          "id": "proofable-sha256sums-README.md",
+          "result": "pass"
+        },
+        {
+          "detail": "matches",
+          "id": "proofable-sha256sums-authority-effect-results.json",
+          "result": "pass"
+        },
+        {
+          "detail": "matches",
+          "id": "proofable-sha256sums-authority-effect-results.md",
+          "result": "pass"
+        },
+        {
+          "detail": "matches",
+          "id": "proofable-sha256sums-manifest.json",
+          "result": "pass"
+        },
+        {
+          "detail": "matches",
+          "id": "proofable-sha256sums-portable-proofs.json",
+          "result": "pass"
+        },
+        {
+          "detail": "matches",
+          "id": "proofable-sha256sums-trace.jsonl",
+          "result": "pass"
+        },
+        {
+          "detail": "matches",
+          "id": "proofable-sha256sums-verify-portable-proofs.mjs",
+          "result": "pass"
+        },
+        {
+          "detail": "matches",
+          "id": "proofable-manifest-trace-digest",
+          "result": "pass"
+        },
+        {
+          "detail": "6 records, manifest says 6",
+          "id": "proofable-trace-count",
+          "result": "pass"
+        },
+        {
+          "detail": "denied without a reason code: ",
+          "id": "proofable-denials-carry-reason",
+          "result": "pass"
+        },
+        {
+          "detail": "trace.jsonl -> post_dispatch_revoke.dispatch_sequence records, in order and in time, dispatch (ALLOW), the revocation event time with observed_in_flight true, the earlier action's platform-observed effect, and the next dispatch refused (DENY) with reason; authority-effect-results.json -> cases[post_dispatch_revoke].temporal_revocation carries the same ordering, keeping the refusal separate from the already-committed effect",
+          "id": "proofable-post-dispatch-deny-point-observed",
+          "result": "pass"
+        },
+        {
+          "detail": "3 public receipts",
+          "id": "proofable-receipts-public",
+          "result": "pass"
+        },
+        {
+          "detail": "11 envelopes, 11 manifest references, 11 trace qHashes, manifest count 11; trace-only [], file-only []",
+          "id": "proofable-envelope-count",
+          "result": "pass"
+        },
+        {
+          "detail": "11 envelopes: qHash recomputed and EIP-191 signer recovered from the published bytes, independently of the Proofable SDK",
+          "id": "proofable-receipt-envelope-verified",
+          "result": "pass"
+        }
+      ],
+      "contract": {
+        "authorityEvidence": {
+          "policyDigest": "not emitted by the deployed system; authority_policy_version is the policy identifier",
+          "source": "local authority state evaluated at dispatch"
+        },
+        "dispatchDecision": {
+          "binding_veto": "DENY",
+          "post_dispatch_revoke": "ALLOW",
+          "revoked_stale": "DENY",
+          "unreachable": "not_applicable_to_current_path"
+        },
+        "implementationAndSource": {
+          "deployedRevision": "e1217327a1568b39d5153686b8085471b5329cde",
+          "runId": "aaif-e1217327a-20261008",
+          "sourceRecordVisibility": "public_link_only_for_disclosed_receipts",
+          "sourceRuns": [
+            {
+              "records": 8,
+              "role": "eight-case authority suite",
+              "run_id": "aaif-e1217327a-20261008"
+            },
+            {
+              "records": 1,
+              "role": "ordered post-revocation probe",
+              "run_id": "aaif-e1217327a-20261008"
+            }
+          ]
+        },
+        "lostResponse": "not exercised in the published package",
+        "observedEffect": {
+          "binding_veto": "none_no_executor",
+          "post_dispatch_revoke": "observed_at_platform",
+          "revoked_stale": "none_no_dispatch",
+          "unreachable": "not_applicable"
+        },
+        "temporalRevocation": "trace.jsonl -> post_dispatch_revoke.dispatch_sequence records, in order and in time, dispatch (ALLOW), the revocation event time with observed_in_flight true, the earlier action's platform-observed effect, and the next dispatch refused (DENY) with reason; authority-effect-results.json -> cases[post_dispatch_revoke].temporal_revocation carries the same ordering, keeping the refusal separate from the already-committed effect",
+        "unreachableAuthority": "NOT_APPLICABLE_CURRENT_PATH"
+      },
+      "custody": "SELF (author-operated; no independent witness)",
+      "evidenceClass": "implementation-owned-runtime-results",
+      "failed": [],
+      "implementation": "Proofable"
+    },
+    {
+      "checks": [
+        {
+          "detail": "031dedf222541975",
+          "id": "alakris-sha256sums-README.md",
+          "result": "pass"
+        },
+        {
+          "detail": "b717776a07e56c52",
+          "id": "alakris-sha256sums-native-tests.xml",
+          "result": "pass"
+        },
+        {
+          "detail": "fa33001473063494",
+          "id": "alakris-sha256sums-reader-report.json",
+          "result": "pass"
+        },
+        {
+          "detail": "709d99f94ec01a7b",
+          "id": "alakris-sha256sums-reference-evidence.tar.gz",
+          "result": "pass"
+        },
+        {
+          "detail": "7c5985911bf2dfde",
+          "id": "alakris-sha256sums-source-discriminator-report.json",
+          "result": "pass"
+        },
+        {
+          "detail": "9981d73da3a7b677",
+          "id": "alakris-sha256sums-tests.xml",
+          "result": "pass"
+        },
+        {
+          "detail": "core/agent-core/src/core/content/publication_jobs.py 3a928ff97f2eb13d",
+          "id": "alakris-source-pin",
+          "result": "pass"
+        },
+        {
+          "detail": "18 of 18 cases match the 2026-10-04 operator rerun; added after that rerun, not rerun by the implementer: authority-source-unreachable, binding-veto-override-attempt, delegation-hop-amplified, revoked-authority-superseded-evidence",
+          "id": "alakris-rerun-reproduced",
+          "result": "pass"
+        },
+        {
+          "detail": "six controlled fingerprint inputs",
+          "id": "alakris-discriminator-reproduced",
+          "result": "pass"
+        }
+      ],
+      "contract": {
+        "approvedAction": {
+          "changed-external-destination": false,
+          "changed-media-reference": true,
+          "changed-platform-packaging": false,
+          "covered-body-direct-write": true,
+          "covered-title": true,
+          "same-reference-new-media-bytes": false
+        },
+        "dispatchDecision": "not measured on the deployed path",
+        "implementationAndSource": {
+          "publicationJobsSha256": "3a928ff97f2eb13d2138809d1aebbacd645a07210663d74e2d77bae7fa1002df",
+          "sourceCommit": "68054425873b9b373ce07359f8e994b817bee210"
+        },
+        "lostResponse": {
+          "deployedPath": "stated by the implementer: a retry after a lost response can duplicate",
+          "referenceShape": {
+            "effectObserved": true,
+            "publicationReady": false,
+            "taskTerminal": "failed"
+          }
+        },
+        "observedEffect": "not measured on the deployed path",
+        "originalTests": {
+          "failed": 2,
+          "passed": 35,
+          "tests": 37
+        }
+      },
+      "custody": "author-operated",
+      "evidenceClass": "source package, original tests and a rerun of this profile; no deployed-path trace",
+      "failed": [],
+      "implementation": "Alakris"
+    }
+  ],
+  "schema": "authority-unreachable-implementation-records/1",
+  "sources": [
+    {
+      "detail": "schema authority-unreachable-implementation-sources/1",
+      "id": "sources-schema",
+      "result": "pass"
+    },
+    {
+      "detail": "8 pinned, 8 present",
+      "id": "sources-alakris-complete",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/runs/2026-10-04/README.md sha256 031dedf222541975",
+      "id": "sources-alakris-README.md",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/runs/2026-10-04/SHA256SUMS sha256 f736adae1f2f4292",
+      "id": "sources-alakris-SHA256SUMS",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/runs/2026-10-04/native-tests.xml sha256 b717776a07e56c52",
+      "id": "sources-alakris-native-tests.xml",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/runs/2026-10-04/reader-report.json sha256 fa33001473063494",
+      "id": "sources-alakris-reader-report.json",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/runs/2026-10-04/reference-evidence.tar.gz sha256 709d99f94ec01a7b",
+      "id": "sources-alakris-reference-evidence.tar.gz",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/runs/2026-10-04/source-discriminator-report.json sha256 7c5985911bf2dfde",
+      "id": "sources-alakris-source-discriminator-report.json",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/manifest.json sha256 0cc5dd16cd924788",
+      "id": "sources-alakris-source-manifest.json",
+      "result": "pass"
+    },
+    {
+      "detail": "https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/ebd9dcf43977d425e5e80d9fc073a3998c61fcb5/runs/2026-10-04/tests.xml sha256 9981d73da3a7b677",
+      "id": "sources-alakris-tests.xml",
+      "result": "pass"
+    },
+    {
+      "detail": "3 pinned, 3 present",
+      "id": "sources-mintid-complete",
+      "result": "pass"
+    },
+    {
+      "detail": "https://gitlab.com/mintid/mintid/-/raw/b678e5cd6b5736e1795fd18d497fd8e501272dcd/test-harness/trace/records/revocation-trace-testnet-20261006T073712Z.jsonl sha256 509a5047f3f52730",
+      "id": "sources-mintid-revocation-trace-testnet-20261006T073712Z.jsonl",
+      "result": "pass"
+    },
+    {
+      "detail": "https://gitlab.com/mintid/mintid/-/raw/b678e5cd6b5736e1795fd18d497fd8e501272dcd/test-harness/trace/records/revocation-trace-testnet-20261006T073712Z.manifest.json sha256 a3cdc29b85ddaf7e",
+      "id": "sources-mintid-revocation-trace-testnet-20261006T073712Z.manifest.json",
+      "result": "pass"
+    },
+    {
+      "detail": "https://gitlab.com/mintid/mintid/-/raw/b678e5cd6b5736e1795fd18d497fd8e501272dcd/test-harness/trace/records/revocation-trace-testnet-20261006T073712Z.md sha256 e984c1d8b0555298",
+      "id": "sources-mintid-revocation-trace-testnet-20261006T073712Z.md",
+      "result": "pass"
+    },
+    {
+      "detail": "8 pinned, 8 present",
+      "id": "sources-proofable-complete",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/README.md sha256 e32b2580d2ff33d7",
+      "id": "sources-proofable-README.md",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/SHA256SUMS sha256 ec9222646d8edfa5",
+      "id": "sources-proofable-SHA256SUMS",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/authority-effect-results.json sha256 45c953291efce444",
+      "id": "sources-proofable-authority-effect-results.json",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/authority-effect-results.md sha256 60a6d77a1705c6e0",
+      "id": "sources-proofable-authority-effect-results.md",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/manifest.json sha256 90638a7e27b42ab7",
+      "id": "sources-proofable-manifest.json",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/portable-proofs.json sha256 74ef851d4001a572",
+      "id": "sources-proofable-portable-proofs.json",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/trace.jsonl sha256 96241d8409c4661f",
+      "id": "sources-proofable-trace.jsonl",
+      "result": "pass"
+    },
+    {
+      "detail": "https://raw.githubusercontent.com/proofable/docs/9851059900e29ba701bb0f4df2bf89a2107f430c/public/evidence/aaif/authority-at-dispatch/2026-10-08/verify-portable-proofs.mjs sha256 f7eb8f74885518b3",
+      "id": "sources-proofable-verify-portable-proofs.mjs",
+      "result": "pass"
+    }
+  ],
+  "sourcesFailed": []
+}

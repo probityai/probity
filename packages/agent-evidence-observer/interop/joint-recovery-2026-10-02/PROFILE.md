@@ -84,7 +84,7 @@ maintainer acceptance and a recurring outside gate remain separate outcomes.
 
 ## Installed reader upgrade and isolation
 
-Reader 0.0.2 preserves the 0.0.1 console commands, profile and canonical report.
+Reader 0.0.3 preserves the 0.0.1 console commands, profile and canonical report.
 Its packaged host gate now requires exactly one disabled system-site setting
 in `pyvenv.cfg`, rejects a bin-directory configuration override, and invokes the
 selected environment's Python with `-I`. The packet cannot supply installation

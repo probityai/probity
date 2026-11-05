@@ -1,0 +1,1 @@
+public refund capture refused: ticket history has unsupported event

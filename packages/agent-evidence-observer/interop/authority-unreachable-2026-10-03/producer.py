@@ -10,7 +10,12 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from authority_profile import (
+from probity_observer.authorization import issue_grant
+from probity_observer.crypto import SigningKey, VerificationError
+from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.ticket_service import TicketStore
+
+from authority_checks import (
     AUTHORITY_DOMAIN,
     CASE_IDS,
     CONTRACT_ID,
@@ -18,19 +23,15 @@ from authority_profile import (
     PROFILE,
     RECORD_DOMAIN,
     RESIDUAL_RISKS,
+    START,
     VETO_DOMAIN,
     content_bytes,
-    dispatch,
     reference_time,
     sign_record,
 )
-from probity_observer.authorization import issue_grant
-from probity_observer.crypto import SigningKey, VerificationError
-from probity_observer.grant_records import ActionRequest, GrantPolicy
-from probity_observer.ticket_service import TicketStore
+from authority_profile import dispatch
 
 NATIVE_REVISION = "9db0558cf8cc8112ea31b601fa7c7d3c2f38c907"
-START = 1791028800
 ROOT_GRANTOR = "grantor-1"
 
 

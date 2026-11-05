@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/runner/work/_temp/kit-tools/bin/probity-host-byte-gate",
+    "admit-sign",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/raw-aee.json",
+    "/home/runner/work/_temp/kit-trusted/keys/envelope.seed",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/envelope.json"
+  ],
+  "returnCode": 0,
+  "stderrBytes": 0,
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 313,
+  "stdoutSha256": "ceea44add78f7549604784b1c945267dfa7d0305d3068255480774188ba9cd57",
+  "timedOut": false,
+  "wallSeconds": 0.003742
+}

@@ -79,7 +79,7 @@ if len(files) != 2 or any(item["percent_covered"] < 80 for item in files.values(
     raise SystemExit("changed core file coverage incomplete or below 80")
 CORE_PY
 export APS_REFUND_COVERAGE_FILE="$evidence/.coverage"
-"$evidence/operator/bin/python" -I -B -m coverage run --rcfile="$profile/pyproject.toml" -m pytest -c /dev/null "$profile/test_controls.py" "$profile/test_reader.py" --import-mode=importlib -q -p no:cacheprovider --basetemp="$private_state/profile-tests" --junitxml="$evidence/profile-tests.xml"
+"$evidence/operator/bin/python" -I -B -m coverage run --rcfile="$profile/pyproject.toml" -m pytest -c /dev/null "$profile/test_controls.py" "$profile/test_reader.py" "$profile/test_reader_producer.py" --import-mode=importlib -q -p no:cacheprovider --basetemp="$private_state/profile-tests" --junitxml="$evidence/profile-tests.xml"
 "$evidence/operator/bin/python" -I -B - "$private_state/profile-tests" "$evidence/public-hostile-controls" <<'HOSTILE_PY'
 import hashlib, json, pathlib, shutil, sys
 source, destination = map(pathlib.Path, sys.argv[1:])
