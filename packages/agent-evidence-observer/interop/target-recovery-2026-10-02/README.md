@@ -18,15 +18,17 @@ the native intent window open for 150 ms: concurrent pending callers are refused
 only the admitted original request commits. This is a bounded reference behavior,
 not a general exactly-once guarantee.
 
-Run from this directory using Python 3.13:
+The producing operation is run by the operator's runtime; the packet it wrote is
+retained under [retained](retained), with its producer sources withheld by digest.
+Replay it from this directory using Python 3.13:
 
 ```sh
 python -m pip install --require-hashes --only-binary=:all: -r requirements.lock
 python -m pip install --no-deps -e ../..
 python -m pip check
 python -m pytest -q
-python target_run.py NEW_PACKET --source-revision EXACT_CHECKOUT_COMMIT
-python target_reader.py NEW_PACKET --pins-file HOST_SELECTED_PINS
+python verify_retained.py
+python target_reader.py retained/fresh-run --pins-file HOST_SELECTED_PINS --withheld-sources retained/WITHHELD-SOURCES.json
 ```
 
 The reader requires an explicit pins file. It checks the whole selected manifest,
