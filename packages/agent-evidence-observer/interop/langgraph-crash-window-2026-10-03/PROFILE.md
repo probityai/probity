@@ -54,18 +54,26 @@ the interpreter's recursion setting. Native checkpoint metadata is at most
 1 KiB and has exactly the selected `source`, integer `step` and empty `parents`
 fields. These additive restrictions preserve the original readers.
 
-Install the hash-selected native requirements from
-`../joint-recovery-2026-10-02/requirements.lock` and this exact Observer checkout.
-Run `python -m pytest -q tests` here, then
-`python crash_run.py fresh-run --source-revision <exact-commit>`.
+The operator's runtime ran the four cases and wrote the packet under [retained](retained);
+its worker, runner and target sources are withheld by digest and listed in
+`retained/WITHHELD-SOURCES.json`. Replay it with the joint reader's hash-selected
+reader dependencies and this exact Observer checkout:
+
+```sh
+python -m pip install --require-hashes --only-binary=:all: -r ../joint-recovery-2026-10-02/requirements-reader.lock
+python -m pip install --no-deps -e ../..
+python -m pytest -q tests
+python verify_retained.py
+```
+
 For separate offline consumption, build and normally install the Observer,
-joint reader0.0.2 and this reader0.0.1 wheels with the joint reader's hash-selected
+joint reader 0.0.3 and this reader 0.0.2 wheels with the joint reader's hash-selected
 reader dependencies. Select the plan/artifact pins outside the packet and run
-`<reader-venv>/bin/python -I -B <reader-venv>/bin/probity-read-langgraph-crash-window fresh-run --pins-file <outside-selected-pins>`.
+`<reader-venv>/bin/python -I -B <reader-venv>/bin/probity-read-langgraph-crash-window retained/fresh-run --pins-file <outside-selected-pins> --withheld-sources retained/WITHHELD-SOURCES.json`.
 The explicit `-B` prevents Python from rewriting installed bytecode caches;
 `-I` ignores environment-based bytecode settings. The consumer compares the
 entire selected installation before and after reader execution.
 The maintained workflow performs this framework-free installed replay and requires
-its canonical report to equal the native runner's report. Installation or execution
+its canonical report to equal the retained run report. Installation or execution
 errors fail the job; cases are never skipped. Same-operator CI, an installable
-reader and its fresh receipts do not establish outside acceptance or recurring use.
+reader and its receipts do not establish outside acceptance or recurring use.
