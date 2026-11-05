@@ -45,7 +45,7 @@ jobs:
         with:
           persist-credentials: false
       - name: every pinned version on a page agrees with its owner
-        uses: probityai/.github/actions/version-pins@3f085ef985e5c40d68d699c82121219ea3424811 # main
+        uses: probityai/.github/actions/version-pins@bfaca9ac2695e0bb5c669adaf19c7caad19761d3 # main
         with:
           command: check
 
@@ -58,6 +58,6 @@ jobs:
         with:
           persist-credentials: false
       - name: manifests, tags, registries and the family lock agree
-        uses: probityai/.github/actions/version-pins@3f085ef985e5c40d68d699c82121219ea3424811 # main
+        uses: probityai/.github/actions/version-pins@bfaca9ac2695e0bb5c669adaf19c7caad19761d3 # main
         with:
           command: registry
