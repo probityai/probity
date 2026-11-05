@@ -29,8 +29,36 @@ manifest = "packages/agent-evidence-observer/pyproject.toml"
 publisher = "probityai/probity"
 tag = "agent-evidence-observer-v{version}"
 
+[[own]]
+key = "pypi:agent-evidence-mcp"
+manifest = "packages/agent-evidence-mcp/pyproject.toml"
+publisher = "probityai/probity"
+tag = "agent-evidence-mcp-v{version}"
+
+# 0.2.0 was uploaded without a trusted-publisher record, so no publisher is declared; the
+# version comes from the __version__ its pyproject names.
+[[own]]
+key = "pypi:probity-ratchet-cases"
+manifest = "packages/probity-ratchet-cases/pyproject.toml"
+tag = "probity-ratchet-cases-v{version}"
+
+[[own]]
+key = "pypi:probity-effects"
+manifest = "packages/probity-effects/pyproject.toml"
+publisher = "probityai/probity"
+tag = "probity-effects-v{version}"
+
+# Released as a GitHub release of its tag; nothing goes to a registry. Its own pages keep
+# their version in packages/evaluator-replay-kit/version-pins.toml.
+[[own]]
+key = "github:evaluator-replay-kit"
+manifest = "packages/evaluator-replay-kit/pyproject.toml"
+tag = "evaluator-replay-kit-v{version}"
+
 [family]
 "pypi:agent-evidence-vectors" = "0.35.0"
+"pypi:agent-evidence-admission" = "0.2.0"
+"pypi:agent-evidence-vocabulary" = "0.9.0"
 
 [scan]
 include = ["README.md", "docs/architecture/**/*.md"]
