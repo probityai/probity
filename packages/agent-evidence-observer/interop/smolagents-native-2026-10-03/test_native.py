@@ -1,31 +1,50 @@
-"""Exercise actual native SDK closure and the separately installed reader."""
+"""Fault controls over the retained, source-pinned smolagents packet and the separately installed reader."""
 from __future__ import annotations
 
 import copy
-import importlib.metadata
 import json
 import logging
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from hypothesis import HealthCheck, given, settings, strategies as st
 
 from probity_observer.crypto import SigningKey
-from probity_smolagents import source
+from probity_smolagents import reader, source
 from probity_smolagents.contract import CASES, encode, load, sha
-from probity_smolagents.producer import produce
-from probity_smolagents.reader import publish_saved, verify_saved
+
+RETAINED = Path(__file__).resolve().parent / "retained"
+
+
+def withheld_sources():
+    """Return the retained digests of source files withheld from the packet, keyed by manifest path."""
+    held = load(RETAINED / "WITHHELD-SOURCES.json")
+    return {name.removeprefix("native/packet/source/"): digest for name, digest in held.items()
+            if name.startswith("native/packet/source/")}
+
+
+def verify_saved(root, policy):
+    """Read a packet with the retained withheld-source digests."""
+    return reader.verify_saved(root, policy, withheld_sources())
+
+
+def publish_saved(root, policy, destination):
+    """Publish from a packet with the retained withheld-source digests."""
+    return reader.publish_saved(root, policy, destination, withheld_sources())
 
 
 @pytest.fixture(scope="module")
 def original(tmp_path_factory):
-    """Execute the eight cases through the source-qualified installed SDK."""
+    """Copy the retained native run and restore its empty target directories."""
     output = tmp_path_factory.mktemp("native") / "capture"
-    policy = produce(output)
-    return output, policy
+    shutil.copytree(RETAINED / "native", output)
+    for history in (output / "packet").rglob("history.jsonl"):
+        (history.parent / "work").mkdir(exist_ok=True)
+    return output, load(output / "host-policy.json")
 
 
 @pytest.fixture
@@ -63,12 +82,19 @@ def refused(root, policy, destination, reason, caplog):
     assert not destination.exists()
 
 
+def withheld_path(root):
+    """Write the retained withheld-source digests beside a packet copy."""
+    path = root.parent / "withheld-sources.json"
+    path.write_bytes(encode(withheld_sources()))
+    return path
+
+
 def reader_command(root, policy_path, digest, destination=None):
     """Invoke only the independently installed reader environment."""
     command = [
-        os.environ["SMOLAGENTS_READER_PYTHON"], "-I", "-B", "-m",
+        os.environ.get("SMOLAGENTS_READER_PYTHON", sys.executable), "-I", "-B", "-m",
         "probity_smolagents.reader", str(root), "--host-policy", str(policy_path),
-        "--policy-sha256", digest,
+        "--policy-sha256", digest, "--withheld", str(withheld_path(root)),
     ]
     if destination:
         command += ["--publish", str(destination)]
@@ -109,7 +135,7 @@ class TestNativePopulation:
 
         def test_reader_runs_without_framework_and_repeats_bytes(self, selected, tmp_path):
             root, policy = selected
-            executable = os.environ["SMOLAGENTS_READER_PYTHON"]
+            executable = os.environ.get("SMOLAGENTS_READER_PYTHON", sys.executable)
             check = subprocess.run(
                 [executable, "-I", "-B", "-c",
                  "import importlib.util; assert importlib.util.find_spec('smolagents') is None"],
@@ -211,14 +237,46 @@ class TestNativePopulation:
                 policy["cases"]["unselected"] = copy.deepcopy(policy["cases"]["permit"])
             refused(root, policy, tmp_path / "publication", "planned population differs", caplog)
 
-        def test_reselected_source_population_changed(self, selected, tmp_path, caplog):
+        @pytest.mark.parametrize("owner,reason", [
+            ("sdk", "selected source population or bytes differ"),
+            ("retained", "retained source population differs"),
+        ])
+        def test_reselected_source_population_changed(self, selected, tmp_path, caplog, owner, reason):
             root, policy = selected
             manifest_path = root / "source-before-run.json"
             manifest = load(manifest_path)
-            del manifest[next(iter(manifest))]
+            sdk = source.sdk_hashes()
+            del manifest[next(name for name in sorted(manifest) if (name in sdk) == (owner == "sdk"))]
             manifest_path.write_bytes(encode(manifest))
             policy["sourceManifestSha256"] = sha(manifest_path.read_bytes())
-            refused(root, policy, tmp_path / "publication", "selected source population or bytes differ", caplog)
+            refused(root, policy, tmp_path / "publication", reason, caplog)
+
+        def test_withheld_source_digest_must_match_the_manifest(self, selected, tmp_path, caplog):
+            root, policy = selected
+            held = withheld_sources()
+            assert held
+            name = sorted(held)[0]
+            caplog.clear()
+            with caplog.at_level(logging.WARNING, logger="probity_smolagents"):
+                with pytest.raises(ValueError, match="^withheld source digest differs from manifest$"):
+                    reader.verify_saved(root, policy, {**held, name: "00" * 32})
+
+        def test_unlisted_missing_source_is_refused(self, selected, caplog):
+            root, policy = selected
+            held = withheld_sources()
+            caplog.clear()
+            with caplog.at_level(logging.WARNING, logger="probity_smolagents"):
+                with pytest.raises(ValueError, match="^retained source population differs$"):
+                    reader.verify_saved(root, policy, dict(list(held.items())[1:]))
+
+        def test_present_withheld_source_must_match_its_digest(self, selected, caplog):
+            root, policy = selected
+            held = withheld_sources()
+            (root / "source" / sorted(held)[0]).write_bytes(b"different bytes\n")
+            caplog.clear()
+            with caplog.at_level(logging.WARNING, logger="probity_smolagents"):
+                with pytest.raises(ValueError, match="^artifact digest differs from host selection$"):
+                    reader.verify_saved(root, policy, held)
 
         def test_reselected_sdk_yaml_bytes_changed(self, selected, tmp_path, caplog):
             root, policy = selected
@@ -246,7 +304,7 @@ class TestNativePopulation:
             target = tmp_path / "linked-prompts"
             path.rename(target)
             path.symlink_to(target, target_is_directory=True)
-            refused(root, policy, tmp_path / "publication", "artifact must be a regular file", caplog)
+            refused(root, policy, tmp_path / "publication", "retained source is not regular", caplog)
 
         def test_publication_inside_packet(self, selected, caplog):
             root, policy = selected
@@ -263,15 +321,6 @@ class TestNativePopulation:
                     publish_saved(root, policy, destination)
             assert "publication destination already exists" in caplog.text
             assert (destination / "published.json").read_bytes() == original
-
-        def test_existing_producer_capture_is_preserved(self, original, caplog):
-            output, policy = original
-            before = (output / "host-policy.json").read_bytes()
-            with caplog.at_level(logging.WARNING, logger="probity_smolagents"):
-                with pytest.raises(ValueError, match="^producer output already exists$"):
-                    produce(output)
-            assert "producer output already exists" in caplog.text
-            assert (output / "host-policy.json").read_bytes() == before
 
         @pytest.mark.parametrize("failure", ("pin", "inside", "native"))
         def test_installed_reader_refuses_without_output(self, selected, tmp_path, failure):
@@ -295,64 +344,12 @@ class TestNativePopulation:
             assert expected in result.stderr
 
 
-class TestInstalledSource:
+class TestSelectedSource:
     class TestPassingCases:
-        def test_qualifies_complete_sdk_python_and_yaml(self):
+        def test_selection_covers_complete_sdk_python_and_yaml(self):
             selected = source.sdk_selection()
-            assert len(source.qualify_sdk()) == len(selected["files"]) == 21
+            assert len(source.sdk_hashes()) == len(selected["files"]) == 21
             assert len([name for name in selected["files"] if name.endswith(".yaml")]) == 3
-            assert "probity_smolagents/sdk-source-selection.json" in source.expected_sources()
-
-    class TestFailingCases:
-        @pytest.mark.parametrize("mode", ("bytecode", "extra", "unlisted-extra", "extension", "bytes", "symlink"))
-        def test_refuses_unselected_installed_source(self, tmp_path, monkeypatch, caplog, mode):
-            selection = source.sdk_selection()["files"]
-            members = list(selection)
-            package = tmp_path / "smolagents"
-            for name in members:
-                path = tmp_path / name
-                path.parent.mkdir(parents=True, exist_ok=True)
-                # Use real SDK bytes solely as the test baseline.
-                path.write_bytes(source.qualify_sdk()[name].read_bytes())
-            if mode == "bytecode":
-                (package / "__pycache__").mkdir()
-                (package / "__pycache__" / "agents.fake.pyc").write_bytes(b"unselected")
-            if mode == "extra":
-                members.append("smolagents/unselected.py")
-                (tmp_path / members[-1]).write_text("changed = True\n")
-            if mode == "unlisted-extra":
-                (package / "prompts" / "__init__.py").write_text("changed = True\n")
-            if mode == "extension":
-                (package / "agents.pyd").write_bytes(b"unselected compiled module")
-            if mode == "bytes":
-                (package / "prompts" / "toolcalling_agent.yaml").write_text("changed: true\n")
-            if mode == "symlink":
-                path = package / "agents.py"
-                target = tmp_path / "agents-source.py"
-                path.rename(target)
-                path.symlink_to(target)
-
-            class Distribution:
-                files = members
-
-                def locate_file(self, member):
-                    return tmp_path / str(member)
-
-            monkeypatch.setattr(importlib.metadata, "distribution", lambda name: Distribution())
-            # importlib.metadata.version uses distribution().version.
-            monkeypatch.setattr(importlib.metadata, "version", lambda name: source.SDK_VERSION)
-            reason = {
-                "bytecode": "unselected installed bytecode",
-                "extra": "installed SDK source population differs",
-                "unlisted-extra": "unlisted installed source",
-                "extension": "unselected installed bytecode",
-                "bytes": "installed SDK source bytes differ",
-                "symlink": "installed source is not regular",
-            }[mode]
-            with caplog.at_level(logging.WARNING, logger="probity_smolagents"):
-                with pytest.raises(ValueError, match="^" + reason + "$"):
-                    source.qualify_sdk()
-            assert reason in caplog.text
 
 
 class TestStrictInput:

@@ -35,7 +35,7 @@ from .contract import (
     sha,
     state_label,
 )
-from .source import expected_sources
+from .source import sdk_hashes
 
 
 def checked_file(root: Path, name: str, digest: str) -> Path:
@@ -59,18 +59,39 @@ def core_check(function: Callable[[], Any], reason: str) -> Any:
         require(False, reason)
 
 
-def verify_sources(root: Path, policy: dict[str, Any]) -> None:
-    """Check complete retained native/profile/core bytes against trust anchors."""
+PROFILE_PREFIXES = ("probity_adk_failure/", "probity_observer/")
+REQUIRED_SOURCES = ("probity_adk_failure/reader.py", "probity_adk_failure/contract.py",
+                    "probity_observer/verify.py", "probity_observer/grant_records.py")
+
+
+def verify_sources(root: Path, policy: dict[str, Any], withheld: dict[str, str] | None = None) -> None:
+    """Check complete retained native/profile/core bytes against the host-pinned manifest.
+
+    SDK bytes must equal the packaged primary-source hashes. Profile and core
+    bytes are authenticated by the manifest digest in the host policy. A path
+    missing from disk is accepted only when ``withheld`` lists the digest that
+    the manifest records for it; every present file must match byte for byte.
+    """
     manifest = load(checked_file(root, "source-before-run.json", policy["sourceManifestSha256"]))
-    exact(manifest, expected_sources(policy["variant"]), "selected source population or bytes differ")
+    sdk = sdk_hashes(policy["variant"])
+    exact({name: manifest.get(name) for name in sdk}, sdk, "selected source population or bytes differ")
+    owned = sorted(name for name in manifest if name not in sdk)
+    require(all(name.startswith(PROFILE_PREFIXES) and name.endswith((".py", ".json"))
+                and all(part not in {"", ".", ".."} for part in name.split("/")) for name in owned),
+            "selected source population or bytes differ")
+    require(all(name in manifest for name in REQUIRED_SOURCES), "selected source population or bytes differ")
+    held = withheld or {}
+    require(all(manifest.get(name) == digest for name, digest in held.items()),
+            "withheld source digest differs from manifest")
     source = root / "source"
     physical = list(source.rglob("*"))
     require(not source.is_symlink() and all(not path.is_symlink() for path in physical),
             "retained source is not regular")
-    exact(sorted(path.relative_to(source).as_posix() for path in physical if path.is_file()),
-          sorted(manifest), "retained source population differs")
-    for name, digest in manifest.items():
-        checked_file(root / "source", name, digest)
+    present = sorted(path.relative_to(source).as_posix() for path in physical if path.is_file())
+    exact(present, sorted(name for name in manifest if name not in held or (source / name).is_file()),
+          "retained source population differs")
+    for name in present:
+        checked_file(source, name, manifest[name])
 
 
 def text_of(event: dict[str, Any]) -> str:
@@ -262,7 +283,8 @@ def verify_case(root: Path, case: str, streaming: bool,
             "witnessScope": claim["witnessScope"]}
 
 
-def verify_saved(root: Path, policy: dict[str, Any]) -> dict[str, Any]:
+def verify_saved(root: Path, policy: dict[str, Any],
+                 withheld: dict[str, str] | None = None) -> dict[str, Any]:
     """Read a complete population against an independently selected host policy."""
     exact(sorted(policy), ["cases", "profile", "schema", "sdk", "sourceManifestSha256", "variant"],
           "host policy shape differs")
@@ -273,7 +295,7 @@ def verify_saved(root: Path, policy: dict[str, Any]) -> dict[str, Any]:
     exact(policy["sdk"], {"version": SDK_VERSION, "commit": REVISIONS[variant],
           "a2aVersion": A2A_VERSION}, "host SDK differs")
     exact(sorted(policy["cases"]), sorted(identity(*pair) for pair in population()), "planned population differs")
-    verify_sources(root, policy)
+    verify_sources(root, policy, withheld)
     records = [verify_case(root / identity(case, streaming), case, streaming, variant,
                policy["cases"][identity(case, streaming)]) for case, streaming in population()]
     return {"profile": PROFILE, "variant": variant, "sdk": policy["sdk"], "records": records,
@@ -281,11 +303,12 @@ def verify_saved(root: Path, policy: dict[str, Any]) -> dict[str, Any]:
             "modelInferenceCalls": 0, "independentCustody": False}
 
 
-def publish_saved(root: Path, policy: dict[str, Any], destination: Path) -> dict[str, Any]:
+def publish_saved(root: Path, policy: dict[str, Any], destination: Path,
+                  withheld: dict[str, str] | None = None) -> dict[str, Any]:
     """Publish only verified COMPLETED permit cases; preserve failed effects in reports."""
     require(not destination.resolve().is_relative_to(root.resolve()), "publication destination must be outside packet")
     require(not destination.exists(), "publication destination already exists")
-    report = verify_saved(root, policy)
+    report = verify_saved(root, policy, withheld)
     result = {"profile": PROFILE, "variant": policy["variant"],
               "records": [row for row in report["records"] if row["publicationDecision"] == "RELEASE"],
               "selectionSha256": sha(encode(policy))}
@@ -301,11 +324,15 @@ def main() -> None:
     parser.add_argument("--host-policy", type=Path, required=True)
     parser.add_argument("--policy-sha256", required=True)
     parser.add_argument("--publish", type=Path)
+    parser.add_argument("--withheld", type=Path,
+                        help="JSON map of retained source paths absent from the packet to their SHA-256")
     args = parser.parse_args()
     require(not args.host_policy.resolve().is_relative_to(args.packet.resolve()), "host policy must be outside packet")
     exact(sha(args.host_policy.read_bytes()), args.policy_sha256, "host policy pin differs")
     policy = load(args.host_policy)
-    result = publish_saved(args.packet, policy, args.publish) if args.publish else verify_saved(args.packet, policy)
+    withheld = load(args.withheld) if args.withheld else None
+    result = (publish_saved(args.packet, policy, args.publish, withheld) if args.publish
+              else verify_saved(args.packet, policy, withheld))
     print(encode(result).decode())
 
 

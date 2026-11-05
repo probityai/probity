@@ -1,0 +1,1 @@
+{"dispatch":[{"accepted":true,"policy":"allow","sequence":0,"url":"https://callback.example.test/receipt"}],"dispatchMode":"allow","registration":[{"accepted":true,"policy":"allow","sequence":0,"url":"https://callback.example.test/receipt"}],"registrationMode":"allow"}

@@ -1,0 +1,25 @@
+test_callback_failure (__main__.SemanticControls.test_callback_failure) ... ok
+test_callback_sequence (__main__.SemanticControls.test_callback_sequence) ... ok
+test_candidate_claims_publication (__main__.SemanticControls.test_candidate_claims_publication) ... ok
+test_direct_summarizer_callback_laundering (__main__.SemanticControls.test_direct_summarizer_callback_laundering) ... ok
+test_effect_operator_laundering (__main__.SemanticControls.test_effect_operator_laundering) ... ok
+test_foreign_effect_call (__main__.SemanticControls.test_foreign_effect_call) ... ok
+test_missing_nested_token_config (__main__.SemanticControls.test_missing_nested_token_config) ... ok
+test_native_duplicate_json_admission (__main__.SemanticControls.test_native_duplicate_json_admission) ... ok
+test_native_model_callback_join (__main__.SemanticControls.test_native_model_callback_join) ... ok
+test_nested_window_trigger (__main__.SemanticControls.test_nested_window_trigger) ... ok
+test_no_plugin_coverage_laundering (__main__.SemanticControls.test_no_plugin_coverage_laundering) ... ok
+test_observer_signature (__main__.SemanticControls.test_observer_signature) ... ok
+test_parent_closes_plugin_twice (__main__.SemanticControls.test_parent_closes_plugin_twice) ... ok
+test_parent_config_mutation (__main__.SemanticControls.test_parent_config_mutation) ... ok
+test_positive_population_and_hold (__main__.SemanticControls.test_positive_population_and_hold) ... ok
+test_premature_shared_plugin_close (__main__.SemanticControls.test_premature_shared_plugin_close) ... ok
+test_repeated_leaf_history_leak (__main__.SemanticControls.test_repeated_leaf_history_leak) ... ok
+test_repeated_nested_session_identity (__main__.SemanticControls.test_repeated_nested_session_identity) ... ok
+test_unmediated_extra_workspace_effect (__main__.SemanticControls.test_unmediated_extra_workspace_effect) ... ok
+test_unselected_host_policy (__main__.SemanticControls.test_unselected_host_policy) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.790s
+
+OK

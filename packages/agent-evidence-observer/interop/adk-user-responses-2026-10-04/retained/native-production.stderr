@@ -1,0 +1,19 @@
+/home/runner/work/_temp/adk-responses-producer/lib/python3.13/site-packages/probity_adk_responses/producer.py:94: UserWarning: [EXPERIMENTAL] ResumabilityConfig: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  resumability_config=ResumabilityConfig(is_resumable=False))
+App "probity_routing" can transfer between agents but has no context_cache_config. Every transfer swaps the system instruction and the tool set, so the request prefix changes and the whole prompt is re-sent uncached after each transfer. Set context_cache_config on the app to give each agent its own cache.
+/home/runner/work/_temp/adk-responses-producer/lib/python3.13/site-packages/google/adk/tools/transfer_to_agent_tool.py:106: UserWarning: [EXPERIMENTAL] feature FeatureName.JSON_SCHEMA_FOR_FUNC_DECL is enabled.
+  function_decl = super()._get_declaration()
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+/home/runner/work/_temp/adk-responses-producer/lib/python3.13/site-packages/google/adk/features/_feature_decorator.py:71: UserWarning: [EXPERIMENTAL] feature FeatureName.TOOL_CONFIRMATION is enabled.
+  check_feature_enabled()
+Skipping missing token usage metadata for agent issuer and model probity-fixed-script
+Skipping missing token usage metadata for agent issuer and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent issuer and model probity-fixed-script
+Skipping missing token usage metadata for agent issuer and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script
+Skipping missing token usage metadata for agent issuer and model probity-fixed-script
+Skipping missing token usage metadata for agent issuer and model probity-fixed-script
+Skipping missing token usage metadata for agent root and model probity-fixed-script

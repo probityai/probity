@@ -1,4 +1,4 @@
-"""Actual SDK runs, semantic mutations and authenticated effect refusals."""
+"""Semantic mutations and authenticated effect refusals over the retained Haystack packet."""
 from __future__ import annotations
 
 import copy
@@ -6,19 +6,42 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
+from probity_haystack import reader
 from probity_haystack.contract import CASES, encode, load, sha
-from probity_haystack.producer import produce
-from probity_haystack.reader import publish_saved, verify_saved
+
+RETAINED = Path(__file__).resolve().parent / "retained"
+
+
+def withheld_sources():
+    """Return the retained digests of source files withheld from the packet, keyed by manifest path."""
+    held = load(RETAINED / "WITHHELD-SOURCES.json")
+    return {name.removeprefix("packet/source/"): digest for name, digest in held.items()
+            if name.startswith("packet/source/")}
+
+
+def verify_saved(root, policy):
+    """Read a packet with the retained withheld-source digests."""
+    return reader.verify_saved(root, policy, withheld_sources())
+
+
+def publish_saved(root, policy, destination):
+    """Publish from a packet with the retained withheld-source digests."""
+    return reader.publish_saved(root, policy, destination, withheld_sources())
 
 
 @pytest.fixture(scope="module")
 def original(tmp_path_factory):
+    """Copy the retained packet and restore its empty target directories."""
     root = tmp_path_factory.mktemp("native") / "packet"
-    return root, produce(root)
+    shutil.copytree(RETAINED / "packet", root)
+    for history in root.rglob("history.jsonl"):
+        (history.parent / "work").mkdir(exist_ok=True)
+    return root, load(root / "host-policy.json")
 
 
 def test_native_originals_and_repeat(original):
@@ -117,23 +140,21 @@ def test_duplicate_json_refused(tmp_path):
         load(file)
 
 
-def test_refuse_existing_output(original):
-    with pytest.raises(FileExistsError):
-        produce(original[0])
-
-
 def test_installed_reader_has_no_framework(original, tmp_path):
-    reader = os.environ["HAYSTACK_READER_PYTHON"]
+    python = os.environ.get("HAYSTACK_READER_PYTHON", sys.executable)
     root, policy = original
     policy_path = root / "host-policy.json"
-    result = subprocess.run([reader, "-I", "-B", "-m", "probity_haystack.reader", str(root), "--host-policy", str(policy_path), "--policy-sha256", sha(policy_path.read_bytes())], cwd=tmp_path, capture_output=True, check=True, text=True)
+    held = tmp_path / "withheld.json"
+    held.write_bytes(encode(withheld_sources()))
+    result = subprocess.run([python, "-I", "-B", "-m", "probity_haystack.reader", str(root), "--host-policy", str(policy_path), "--policy-sha256", sha(policy_path.read_bytes()), "--withheld", str(held)], cwd=tmp_path, capture_output=True, check=True, text=True)
     assert json.loads(result.stdout) == verify_saved(root, policy)
-    subprocess.run([reader, "-I", "-c", "import importlib.util; assert importlib.util.find_spec('haystack') is None"], cwd=tmp_path, check=True)
+    assert result.stdout.encode() == (RETAINED / "reader-report.json").read_bytes()
+    subprocess.run([python, "-I", "-c", "import importlib.util; assert importlib.util.find_spec('haystack') is None"], cwd=tmp_path, check=True)
 
 
 def test_unselected_policy_refused(original, tmp_path):
     root, _ = original
-    result = subprocess.run([os.environ["HAYSTACK_READER_PYTHON"], "-I", "-m", "probity_haystack.reader", str(root), "--host-policy", str(root / "host-policy.json"), "--policy-sha256", "0" * 64], cwd=tmp_path, capture_output=True)
+    result = subprocess.run([os.environ.get("HAYSTACK_READER_PYTHON", sys.executable), "-I", "-m", "probity_haystack.reader", str(root), "--host-policy", str(root / "host-policy.json"), "--policy-sha256", "0" * 64], cwd=tmp_path, capture_output=True)
     assert result.returncode != 0 and b"host policy pin differs" in result.stderr
 
 
@@ -141,9 +162,37 @@ def test_selected_source_byte_change_refused(original, tmp_path):
     root, policy = original
     changed = tmp_path / "changed"
     shutil.copytree(root, changed)
-    (changed / "source/probity_haystack/producer.py").write_bytes(b"changed")
+    (changed / "source/probity_haystack/reader.py").write_bytes(b"changed")
     with pytest.raises(ValueError, match="digest"):
         verify_saved(changed, policy)
+
+
+def test_present_withheld_source_must_match_its_digest(original, tmp_path):
+    root, policy = original
+    changed = tmp_path / "changed"
+    shutil.copytree(root, changed)
+    target = changed / "source" / "probity_observer" / "authorization.py"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="digest"):
+        verify_saved(changed, policy)
+
+
+def test_unlisted_missing_source_refused(original, tmp_path):
+    root, policy = original
+    changed = tmp_path / "changed"
+    shutil.copytree(root, changed)
+    (changed / "source/probity_haystack/reader.py").unlink()
+    with pytest.raises(ValueError, match="regular"):
+        verify_saved(changed, policy)
+
+
+def test_withheld_digest_must_match_the_manifest(original):
+    root, policy = original
+    held = withheld_sources()
+    assert "probity_observer/authorization.py" in held
+    with pytest.raises(ValueError, match="withheld source digest differs from manifest"):
+        reader.verify_saved(root, policy, {**held, "probity_observer/authorization.py": "0" * 64})
 
 
 def test_parent_symlink_refused(original, tmp_path):

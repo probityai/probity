@@ -29,29 +29,16 @@ consumer adoption.
 
 ## Run installed copies
 
-The [workflow](../../../../.github/workflows/package-observer-adk-user-responses.yml) shows the ordinary
-wheel builds, hash-locked dependencies and separate producer and reader installs.
-It replaces the release SDK with a normal install from the exact source checkout,
-then checks all 778 installed SDK Python Git blobs before importing it. The
-reader environment has no ADK distribution. Python, dependency installation,
-site initialization and the host remain trusted.
+The producing operation is run by the operator's runtime: it replaces the release SDK with a normal install from the exact source checkout, checks all 778 installed SDK Python Git blobs before importing it, and saves the packet this directory retains. The [workflow](../../../../.github/workflows/package-observer-adk-user-responses.yml) installs the reader from its hash lock in an environment with no ADK distribution and checks the retained record. Python, dependency installation, site initialization and the host remain trusted. Source bytes of the producing run are held as digests in `retained/WITHHELD-SOURCES.json`.
 
 ```sh
-python -I -B bootstrap.py \
-  --producer /absolute/producer/bin/python \
-  --reader /absolute/reader/bin/python \
-  --wheels /absolute/selected-wheels \
-  --sdk /absolute/adk-at-86a47f6 \
-  --output /absolute/new-run
+python -I -B verify_retained.py
 ```
 
-The launcher saves the plan before native imports, retains every subprocess
-stdout, stderr and exit status, saves the complete selected SDK Python source
-and wheels, then invokes the installed offline reader twice. Byte-identical
-decisions are required before a publication receipt is written. The host policy
-selects raw outputs after execution; it does not claim pre-run external custody.
+The reader requires byte-identical decisions on repeated reads before a publication receipt is written. The host policy selects raw outputs after execution; it does not claim pre-run external custody.
 
 ```sh
+python -I -B verify_retained.py --materialize /absolute/new-run
 ADK_RESPONSES_PACKET=/absolute/new-run/packet \
   /absolute/reader/bin/python -I -B test_controls.py -v
 ```

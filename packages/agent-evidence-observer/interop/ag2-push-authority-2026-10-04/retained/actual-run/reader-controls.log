@@ -1,0 +1,21 @@
+test_callback_sequence (__main__.Controls.test_callback_sequence) ... ok
+test_candidate_publication_decision (__main__.Controls.test_candidate_publication_decision) ... ok
+test_capture_failure (__main__.Controls.test_capture_failure) ... ok
+test_changed_broker_authority (__main__.Controls.test_changed_broker_authority) ... ok
+test_changed_registration_url (__main__.Controls.test_changed_registration_url) ... ok
+test_dispatch_policy_laundering (__main__.Controls.test_dispatch_policy_laundering) ... ok
+test_dropped_stored_config (__main__.Controls.test_dropped_stored_config) ... ok
+test_duplicate_raw_json (__main__.Controls.test_duplicate_raw_json) ... ok
+test_foreign_registration_task (__main__.Controls.test_foreign_registration_task) ... ok
+test_native_reference (__main__.Controls.test_native_reference) ... ok
+test_signed_history_change (__main__.Controls.test_signed_history_change) ... ok
+test_target_denial_laundering (__main__.Controls.test_target_denial_laundering) ... ok
+test_target_task_changed (__main__.Controls.test_target_task_changed) ... ok
+test_target_token_changed (__main__.Controls.test_target_token_changed) ... ok
+test_unmediated_effect (__main__.Controls.test_unmediated_effect) ... ok
+test_unselected_host_policy (__main__.Controls.test_unselected_host_policy) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 1.416s
+
+OK

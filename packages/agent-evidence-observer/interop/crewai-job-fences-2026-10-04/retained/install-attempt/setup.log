@@ -1,0 +1,410 @@
+Collecting uv==0.13.5
+  Downloading uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (11 kB)
+Downloading uv-0.13.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17.2/17.2 MB 162.9 MB/s  0:00:00
+Installing collected packages: uv
+Successfully installed uv-0.13.5
+uv 0.13.5 (x86_64-unknown-linux-gnu)
+Using Python 3.13.15 environment at: /home/runner/work/_temp/crewai-jobs-producer
+Resolved 135 packages in 686ms
+Downloading aiohttp (1.7MiB)
+Downloading pyarrow (46.6MiB)
+Downloading numpy (15.9MiB)
+Downloading pdfminer-six (6.3MiB)
+Downloading tokenizers (3.1MiB)
+Downloading pydantic-core (2.0MiB)
+Downloading chromadb (22.2MiB)
+Downloading sympy (6.0MiB)
+Downloading pygments (1.2MiB)
+Downloading cryptography (4.5MiB)
+Downloading hf-xet (4.3MiB)
+Downloading pypdfium2 (3.6MiB)
+Downloading uvloop (4.2MiB)
+Downloading pillow (6.6MiB)
+Downloading grpcio (6.4MiB)
+Downloading kubernetes (4.4MiB)
+Downloading onnxruntime (16.6MiB)
+Downloading uv (23.7MiB)
+Downloading openai (1.3MiB)
+Downloading lancedb (44.8MiB)
+ Downloaded pygments
+ Downloaded openai
+ Downloaded aiohttp
+ Downloaded pydantic-core
+ Downloaded tokenizers
+ Downloaded pypdfium2
+ Downloaded kubernetes
+ Downloaded uvloop
+ Downloaded hf-xet
+ Downloaded cryptography
+ Downloaded sympy
+ Downloaded pdfminer-six
+ Downloaded grpcio
+ Downloaded pillow
+ Downloaded numpy
+ Downloaded onnxruntime
+ Downloaded chromadb
+ Downloaded uv
+ Downloaded pyarrow
+ Downloaded lancedb
+Prepared 135 packages in 1.36s
+Installed 135 packages in 455ms
+ + aiofiles==24.1.0
+ + aiohappyeyeballs==2.6.2
+ + aiohttp==3.14.3
+ + aiosignal==1.4.0
+ + aiosqlite==0.21.0
+ + annotated-doc==0.0.4
+ + annotated-types==0.7.0
+ + anyio==4.14.2
+ + appdirs==1.4.4
+ + attrs==26.1.0
+ + bcrypt==5.0.0
+ + build==1.5.0
+ + cel-python==0.5.0
+ + certifi==2026.5.20
+ + cffi==2.0.0
+ + charset-normalizer==3.4.7
+ + chromadb==1.5.9
+ + click==8.4.2
+ + coloredlogs==15.0.1
+ + cryptography==50.0.0
+ + deprecation==2.1.0
+ + distro==1.9.0
+ + docstring-parser==0.18.0
+ + durationpy==0.10
+ + et-xmlfile==2.0.0
+ + filelock==3.29.1
+ + flatbuffers==25.12.19
+ + frozenlist==1.8.0
+ + fsspec==2026.4.0
+ + google-re2==1.1.20251105
+ + googleapis-common-protos==1.75.0
+ + grpcio==1.78.0
+ + h11==0.16.0
+ + hf-xet==1.5.1
+ + httpcore==1.0.9
+ + httptools==0.8.0
+ + httpx==0.28.1
+ + httpx-sse==0.4.0
+ + huggingface-hub==1.16.1
+ + humanfriendly==10.0
+ + idna==3.18
+ + importlib-resources==7.1.0
+ + instructor==1.15.1
+ + jinja2==3.1.6
+ + jiter==0.13.0
+ + jmespath==1.0.1
+ + json-repair==0.60.1
+ + json5==0.10.0
+ + jsonref==1.1.0
+ + jsonschema==4.23.0
+ + jsonschema-specifications==2025.9.1
+ + kubernetes==36.0.2
+ + lance-namespace==0.8.2
+ + lance-namespace-urllib3-client==0.8.2
+ + lancedb==0.30.0
+ + lark==1.3.1
+ + linkify-it-py==2.1.0
+ + markdown-it-py==4.2.0
+ + markupsafe==3.0.3
+ + mcp==1.28.1
+ + mdit-py-plugins==0.6.1
+ + mdurl==0.1.2
+ + mmh3==5.2.1
+ + mpmath==1.3.0
+ + multidict==6.7.1
+ + numpy==2.4.6
+ + oauthlib==3.3.1
+ + onnxruntime==1.23.2
+ + openai==2.41.0
+ + openpyxl==3.1.5
+ + opentelemetry-api==1.42.1
+ + opentelemetry-exporter-otlp-proto-common==1.42.1
+ + opentelemetry-exporter-otlp-proto-grpc==1.42.1
+ + opentelemetry-exporter-otlp-proto-http==1.42.1
+ + opentelemetry-proto==1.42.1
+ + opentelemetry-sdk==1.42.1
+ + opentelemetry-semantic-conventions==0.63b1
+ + orjson==3.11.9
+ + overrides==7.7.0
+ + packaging==26.2
+ + pdfminer-six==20251230
+ + pdfplumber==0.11.9
+ + pendulum==3.2.0
+ + pillow==12.3.0
+ + platformdirs==4.10.0
+ + portalocker==2.7.0
+ + propcache==0.5.2
+ + protobuf==5.29.6
+ + pyarrow==24.0.0
+ + pybase64==1.4.3
+ + pycparser==3.0
+ + pydantic==2.12.5
+ + pydantic-core==2.41.5
+ + pydantic-settings==2.14.2
+ + pygments==2.20.0
+ + pyjwt==2.15.0
+ + pypdfium2==5.9.0
+ + pypika==0.51.1
+ + pyproject-hooks==1.2.0
+ + python-dateutil==2.9.0.post0
+ + python-dotenv==1.2.2
+ + python-multipart==0.0.32
+ + pyyaml==6.0.3
+ + referencing==0.37.0
+ + regex==2026.1.15
+ + requests==2.34.2
+ + requests-oauthlib==2.0.0
+ + rfc8785==0.1.4
+ + rich==14.3.4
+ + rpds-py==2026.5.1
+ + shellingham==1.5.4
+ + six==1.17.0
+ + sniffio==1.3.1
+ + sse-starlette==3.4.4
+ + starlette==1.3.1
+ + sympy==1.14.0
+ + tenacity==9.1.4
+ + textual==8.2.7
+ + tokenizers==0.22.2
+ + tomli==2.0.2
+ + tomli-w==1.1.0
+ + tqdm==4.68.2
+ + typer==0.21.2
+ + typing-extensions==4.15.0
+ + typing-inspection==0.4.2
+ + tzdata==2026.2
+ + uc-micro-py==2.0.0
+ + urllib3==2.8.0
+ + uv==0.11.19
+ + uvicorn==0.49.0
+ + uvloop==0.22.1
+ + watchfiles==1.2.0
+ + websocket-client==1.9.0
+ + websockets==15.0.1
+ + yarl==1.24.2
+Building wheel...
+Successfully built /home/runner/work/_temp/crewai-jobs-wheels/crewai_core-1.15.23-py3-none-any.whl
+Building wheel...
+Successfully built /home/runner/work/_temp/crewai-jobs-wheels/crewai_cli-1.15.23-py3-none-any.whl
+Building wheel...
+Successfully built /home/runner/work/_temp/crewai-jobs-wheels/crewai-1.15.23-py3-none-any.whl
+Building wheel...
+running egg_info
+creating src/agent_evidence_observer.egg-info
+writing src/agent_evidence_observer.egg-info/PKG-INFO
+writing dependency_links to src/agent_evidence_observer.egg-info/dependency_links.txt
+writing entry points to src/agent_evidence_observer.egg-info/entry_points.txt
+writing requirements to src/agent_evidence_observer.egg-info/requires.txt
+writing top-level names to src/agent_evidence_observer.egg-info/top_level.txt
+writing manifest file 'src/agent_evidence_observer.egg-info/SOURCES.txt'
+reading manifest file 'src/agent_evidence_observer.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file 'src/agent_evidence_observer.egg-info/SOURCES.txt'
+running bdist_wheel
+running build
+running build_py
+creating build/lib/probity_observer
+copying src/probity_observer/run_selection.py -> build/lib/probity_observer
+copying src/probity_observer/evaluation_history.py -> build/lib/probity_observer
+copying src/probity_observer/isolation.py -> build/lib/probity_observer
+copying src/probity_observer/tool_manifest.py -> build/lib/probity_observer
+copying src/probity_observer/native_reader.py -> build/lib/probity_observer
+copying src/probity_observer/ticket_service.py -> build/lib/probity_observer
+copying src/probity_observer/inspect_history.py -> build/lib/probity_observer
+copying src/probity_observer/declaration.py -> build/lib/probity_observer
+copying src/probity_observer/cli.py -> build/lib/probity_observer
+copying src/probity_observer/aae_ticket.py -> build/lib/probity_observer
+copying src/probity_observer/protected_dispatch.py -> build/lib/probity_observer
+copying src/probity_observer/aae_dispatch.py -> build/lib/probity_observer
+copying src/probity_observer/__init__.py -> build/lib/probity_observer
+copying src/probity_observer/protected_probe.py -> build/lib/probity_observer
+copying src/probity_observer/attribution.py -> build/lib/probity_observer
+copying src/probity_observer/atomic_reader.py -> build/lib/probity_observer
+copying src/probity_observer/witness_port.py -> build/lib/probity_observer
+copying src/probity_observer/ledger.py -> build/lib/probity_observer
+copying src/probity_observer/verify.py -> build/lib/probity_observer
+copying src/probity_observer/probe_agent.py -> build/lib/probity_observer
+copying src/probity_observer/crypto.py -> build/lib/probity_observer
+copying src/probity_observer/authorization.py -> build/lib/probity_observer
+copying src/probity_observer/aae_enforce.py -> build/lib/probity_observer
+copying src/probity_observer/aae_binding.py -> build/lib/probity_observer
+copying src/probity_observer/broker.py -> build/lib/probity_observer
+copying src/probity_observer/protected_isolation.py -> build/lib/probity_observer
+copying src/probity_observer/admission.py -> build/lib/probity_observer
+copying src/probity_observer/history.py -> build/lib/probity_observer
+copying src/probity_observer/replay.py -> build/lib/probity_observer
+copying src/probity_observer/selection_profile.py -> build/lib/probity_observer
+running egg_info
+writing src/agent_evidence_observer.egg-info/PKG-INFO
+writing dependency_links to src/agent_evidence_observer.egg-info/dependency_links.txt
+writing entry points to src/agent_evidence_observer.egg-info/entry_points.txt
+writing requirements to src/agent_evidence_observer.egg-info/requires.txt
+writing top-level names to src/agent_evidence_observer.egg-info/top_level.txt
+reading manifest file 'src/agent_evidence_observer.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file 'src/agent_evidence_observer.egg-info/SOURCES.txt'
+warning: build_py: byte-compiling is disabled, skipping.
+
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/probity_observer
+copying build/lib/probity_observer/run_selection.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/evaluation_history.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/isolation.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/tool_manifest.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/native_reader.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/ticket_service.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/inspect_history.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/declaration.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/cli.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/aae_ticket.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/protected_dispatch.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/aae_dispatch.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/__init__.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/protected_probe.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/attribution.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/atomic_reader.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/witness_port.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/ledger.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/verify.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/probe_agent.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/crypto.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/authorization.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/aae_enforce.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/aae_binding.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/broker.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/protected_isolation.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/admission.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/history.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/replay.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+copying build/lib/probity_observer/selection_profile.py -> build/bdist.linux-x86_64/wheel/./probity_observer
+warning: install_lib: byte-compiling is disabled, skipping.
+
+running install_egg_info
+Copying src/agent_evidence_observer.egg-info to build/bdist.linux-x86_64/wheel/./agent_evidence_observer-0.0.1-py3.13.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/agent_evidence_observer-0.0.1.dist-info/WHEEL
+creating '/home/runner/work/_temp/crewai-jobs-wheels/.tmp-fbua039g/agent_evidence_observer-0.0.1-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'agent_evidence_observer-0.0.1.dist-info/licenses/LICENSE'
+adding 'probity_observer/__init__.py'
+adding 'probity_observer/aae_binding.py'
+adding 'probity_observer/aae_dispatch.py'
+adding 'probity_observer/aae_enforce.py'
+adding 'probity_observer/aae_ticket.py'
+adding 'probity_observer/admission.py'
+adding 'probity_observer/atomic_reader.py'
+adding 'probity_observer/attribution.py'
+adding 'probity_observer/authorization.py'
+adding 'probity_observer/broker.py'
+adding 'probity_observer/cli.py'
+adding 'probity_observer/crypto.py'
+adding 'probity_observer/declaration.py'
+adding 'probity_observer/evaluation_history.py'
+adding 'probity_observer/history.py'
+adding 'probity_observer/inspect_history.py'
+adding 'probity_observer/isolation.py'
+adding 'probity_observer/ledger.py'
+adding 'probity_observer/native_reader.py'
+adding 'probity_observer/probe_agent.py'
+adding 'probity_observer/protected_dispatch.py'
+adding 'probity_observer/protected_isolation.py'
+adding 'probity_observer/protected_probe.py'
+adding 'probity_observer/replay.py'
+adding 'probity_observer/run_selection.py'
+adding 'probity_observer/selection_profile.py'
+adding 'probity_observer/ticket_service.py'
+adding 'probity_observer/tool_manifest.py'
+adding 'probity_observer/verify.py'
+adding 'probity_observer/witness_port.py'
+adding 'agent_evidence_observer-0.0.1.dist-info/METADATA'
+adding 'agent_evidence_observer-0.0.1.dist-info/WHEEL'
+adding 'agent_evidence_observer-0.0.1.dist-info/entry_points.txt'
+adding 'agent_evidence_observer-0.0.1.dist-info/top_level.txt'
+adding 'agent_evidence_observer-0.0.1.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel
+Successfully built /home/runner/work/_temp/crewai-jobs-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl
+Building wheel...
+running egg_info
+creating probity_crewai_job_fences.egg-info
+writing probity_crewai_job_fences.egg-info/PKG-INFO
+writing dependency_links to probity_crewai_job_fences.egg-info/dependency_links.txt
+writing top-level names to probity_crewai_job_fences.egg-info/top_level.txt
+writing manifest file 'probity_crewai_job_fences.egg-info/SOURCES.txt'
+reading manifest file 'probity_crewai_job_fences.egg-info/SOURCES.txt'
+writing manifest file 'probity_crewai_job_fences.egg-info/SOURCES.txt'
+running bdist_wheel
+running build
+running build_py
+creating build/lib/probity_crewai_jobs
+copying probity_crewai_jobs/contract.py -> build/lib/probity_crewai_jobs
+copying probity_crewai_jobs/__init__.py -> build/lib/probity_crewai_jobs
+copying probity_crewai_jobs/producer.py -> build/lib/probity_crewai_jobs
+copying probity_crewai_jobs/native_types.py -> build/lib/probity_crewai_jobs
+copying probity_crewai_jobs/reader.py -> build/lib/probity_crewai_jobs
+running egg_info
+writing probity_crewai_job_fences.egg-info/PKG-INFO
+writing dependency_links to probity_crewai_job_fences.egg-info/dependency_links.txt
+writing top-level names to probity_crewai_job_fences.egg-info/top_level.txt
+reading manifest file 'probity_crewai_job_fences.egg-info/SOURCES.txt'
+writing manifest file 'probity_crewai_job_fences.egg-info/SOURCES.txt'
+warning: build_py: byte-compiling is disabled, skipping.
+
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/probity_crewai_jobs
+copying build/lib/probity_crewai_jobs/contract.py -> build/bdist.linux-x86_64/wheel/./probity_crewai_jobs
+copying build/lib/probity_crewai_jobs/__init__.py -> build/bdist.linux-x86_64/wheel/./probity_crewai_jobs
+copying build/lib/probity_crewai_jobs/producer.py -> build/bdist.linux-x86_64/wheel/./probity_crewai_jobs
+copying build/lib/probity_crewai_jobs/native_types.py -> build/bdist.linux-x86_64/wheel/./probity_crewai_jobs
+copying build/lib/probity_crewai_jobs/reader.py -> build/bdist.linux-x86_64/wheel/./probity_crewai_jobs
+warning: install_lib: byte-compiling is disabled, skipping.
+
+running install_egg_info
+Copying probity_crewai_job_fences.egg-info to build/bdist.linux-x86_64/wheel/./probity_crewai_job_fences-0.0.1-py3.13.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/probity_crewai_job_fences-0.0.1.dist-info/WHEEL
+creating '/home/runner/work/_temp/crewai-jobs-wheels/.tmp-vi_jx25i/probity_crewai_job_fences-0.0.1-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'probity_crewai_jobs/__init__.py'
+adding 'probity_crewai_jobs/contract.py'
+adding 'probity_crewai_jobs/native_types.py'
+adding 'probity_crewai_jobs/producer.py'
+adding 'probity_crewai_jobs/reader.py'
+adding 'probity_crewai_job_fences-0.0.1.dist-info/METADATA'
+adding 'probity_crewai_job_fences-0.0.1.dist-info/WHEEL'
+adding 'probity_crewai_job_fences-0.0.1.dist-info/top_level.txt'
+adding 'probity_crewai_job_fences-0.0.1.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel
+Successfully built /home/runner/work/_temp/crewai-jobs-wheels/probity_crewai_job_fences-0.0.1-py3-none-any.whl
+Using Python 3.13.15 environment at: /home/runner/work/_temp/crewai-jobs-producer
+Resolved 5 packages in 2ms
+Prepared 5 packages in 56ms
+Installed 5 packages in 11ms
+ + agent-evidence-observer==0.0.1 (from file:///home/runner/work/_temp/crewai-jobs-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl)
+ + crewai==1.15.23 (from file:///home/runner/work/_temp/crewai-jobs-wheels/crewai-1.15.23-py3-none-any.whl)
+ + crewai-cli==1.15.23 (from file:///home/runner/work/_temp/crewai-jobs-wheels/crewai_cli-1.15.23-py3-none-any.whl)
+ + crewai-core==1.15.23 (from file:///home/runner/work/_temp/crewai-jobs-wheels/crewai_core-1.15.23-py3-none-any.whl)
+ + probity-crewai-job-fences==0.0.1 (from file:///home/runner/work/_temp/crewai-jobs-wheels/probity_crewai_job_fences-0.0.1-py3-none-any.whl)
+Using Python 3.13.15 environment at: /home/runner/work/_temp/crewai-jobs-producer
+Checked 141 packages in 1ms
+All installed packages are compatible
+Using Python 3.13.15 environment at: /home/runner/work/_temp/crewai-jobs-reader
+Resolved 4 packages in 72ms
+Installed 4 packages in 3ms
+ + cffi==2.0.0
+ + cryptography==50.0.0
+ + pycparser==3.0
+ + rfc8785==0.1.4
+Using Python 3.13.15 environment at: /home/runner/work/_temp/crewai-jobs-reader
+Resolved 2 packages in 1ms
+Installed 2 packages in 2ms
+ + agent-evidence-observer==0.0.1 (from file:///home/runner/work/_temp/crewai-jobs-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl)
+ + probity-crewai-job-fences==0.0.1 (from file:///home/runner/work/_temp/crewai-jobs-wheels/probity_crewai_job_fences-0.0.1-py3-none-any.whl)
+Using Python 3.13.15 environment at: /home/runner/work/_temp/crewai-jobs-reader
+Checked 7 packages in 0.32ms
+All installed packages are compatible

@@ -1,0 +1,24 @@
+test_child_failure_is_retained_before_raising (__main__.InstallationControls.test_child_failure_is_retained_before_raising) ... ok
+test_native_population_is_exact (__main__.InstallationControls.test_native_population_is_exact) ... ok
+test_selected_framework_free_installation (__main__.InstallationControls.test_selected_framework_free_installation) ... ok
+test_source_cache_framework_version_controls (__main__.InstallationControls.test_source_cache_framework_version_controls) ... ok
+test_changed_target_bytes_are_refused (__main__.NativeSemanticControls.test_changed_target_bytes_are_refused) ... ok
+test_denial_does_not_become_an_executed_tool_body (__main__.NativeSemanticControls.test_denial_does_not_become_an_executed_tool_body) ... ok
+test_early_callback_label_is_refused (__main__.NativeSemanticControls.test_early_callback_label_is_refused) ... ok
+test_fabricated_quality_or_publication_is_refused (__main__.NativeSemanticControls.test_fabricated_quality_or_publication_is_refused) ... ok
+test_foreign_model_agent_label_is_refused (__main__.NativeSemanticControls.test_foreign_model_agent_label_is_refused) ... ok
+test_genuine_actual_native_packet_and_literal_repeat (__main__.NativeSemanticControls.test_genuine_actual_native_packet_and_literal_repeat) ... ok
+test_host_completion_does_not_become_native_tool_effect (__main__.NativeSemanticControls.test_host_completion_does_not_become_native_tool_effect) ... ok
+test_native_original_ast_mismatch_is_refused (__main__.NativeSemanticControls.test_native_original_ast_mismatch_is_refused) ... ok
+test_omitted_callback_is_refused_after_reselection (__main__.NativeSemanticControls.test_omitted_callback_is_refused_after_reselection) ... ok
+test_open_or_failed_capture_is_refused (__main__.NativeSemanticControls.test_open_or_failed_capture_is_refused) ... ok
+test_plain_text_trapped_at_issuer_is_refused (__main__.NativeSemanticControls.test_plain_text_trapped_at_issuer_is_refused) ... ok
+test_post_callback_request_change_is_refused (__main__.NativeSemanticControls.test_post_callback_request_change_is_refused) ... ok
+test_response_sent_to_root_is_refused (__main__.NativeSemanticControls.test_response_sent_to_root_is_refused) ... ok
+test_stale_passing_decision_removed_on_refusal (__main__.NativeSemanticControls.test_stale_passing_decision_removed_on_refusal) ... ok
+test_wrong_confirmation_call_id_even_with_reselected_original_bytes (__main__.NativeSemanticControls.test_wrong_confirmation_call_id_even_with_reselected_original_bytes) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.617s
+
+OK

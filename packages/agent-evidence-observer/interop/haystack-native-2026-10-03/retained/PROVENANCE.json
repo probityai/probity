@@ -1,0 +1,7 @@
+{
+ "workflow": "package-observer-haystack-native.yml",
+ "runId": 41665290492,
+ "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+ "artifact": "haystack-native-installed-consumer",
+ "downloadedAt": "2026-11-03T15:51:33Z"
+}

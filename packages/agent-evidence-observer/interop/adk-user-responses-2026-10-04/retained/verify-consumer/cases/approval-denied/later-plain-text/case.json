@@ -1,0 +1,1 @@
+{"artifacts":{"capability":{"length":272,"path":"capability.json","sha256":"b1bd62295af5857d8c92dcd47e96240202c433f4de8189129168a6f36c0609df"},"observation":{"length":497,"path":"observation.json","sha256":"d87f7431f8caa56e89ca3a881a4a27cc8315e5aaa62e2429183fafbbf21bfcf0"}},"case_id":"approval-denied/later-plain-text","schema_version":"probity-case/v1"}

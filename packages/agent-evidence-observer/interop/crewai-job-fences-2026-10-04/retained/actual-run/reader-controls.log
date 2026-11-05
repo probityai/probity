@@ -1,0 +1,35 @@
+test_automatic_publication_relabelled (__main__.Controls.test_automatic_publication_relabelled) ... ok
+test_before_run_population_widened (__main__.Controls.test_before_run_population_widened) ... ok
+test_body_operator_relabelled (__main__.Controls.test_body_operator_relabelled) ... ok
+test_boolean_candidate_relabelled (__main__.Controls.test_boolean_candidate_relabelled) ... ok
+test_callback_sequence_hole (__main__.Controls.test_callback_sequence_hole) ... ok
+test_changed_foreground_input (__main__.Controls.test_changed_foreground_input) ... ok
+test_changed_foreground_return (__main__.Controls.test_changed_foreground_return) ... ok
+test_changed_native_return (__main__.Controls.test_changed_native_return) ... ok
+test_current_file_corrupted (__main__.Controls.test_current_file_corrupted) ... ok
+test_duplicate_native_member (__main__.Controls.test_duplicate_native_member) ... ok
+test_enriched_publication_metadata (__main__.Controls.test_enriched_publication_metadata) ... ok
+test_extra_publication_member (__main__.Controls.test_extra_publication_member) ... ok
+test_gap_relabelled_contiguous (__main__.Controls.test_gap_relabelled_contiguous) ... ok
+test_job_changed_during_publication (__main__.Controls.test_job_changed_during_publication) ... ok
+test_missing_earlier_commitment (__main__.Controls.test_missing_earlier_commitment) ... ok
+test_missing_native_nullable_default (__main__.Controls.test_missing_native_nullable_default) ... ok
+test_missing_publication_default (__main__.Controls.test_missing_publication_default) ... ok
+test_native_answer_corrupted (__main__.Controls.test_native_answer_corrupted) ... ok
+test_native_body_request_relabelled (__main__.Controls.test_native_body_request_relabelled) ... ok
+test_native_receipt_removed (__main__.Controls.test_native_receipt_removed) ... ok
+test_native_worker_does_not_settle (__main__.Controls.test_native_worker_does_not_settle) ... ok
+test_nonfinite_native_number (__main__.Controls.test_nonfinite_native_number) ... ok
+test_nonnull_native_error_enrichment (__main__.Controls.test_nonnull_native_error_enrichment) ... ok
+test_nonnull_publication_default (__main__.Controls.test_nonnull_publication_default) ... ok
+test_owner_fault_removed (__main__.Controls.test_owner_fault_removed) ... ok
+test_prepublication_message_inserted (__main__.Controls.test_prepublication_message_inserted) ... ok
+test_refusal_return_changed (__main__.Controls.test_refusal_return_changed) ... ok
+test_reordered_foreground_messages (__main__.Controls.test_reordered_foreground_messages) ... ok
+test_revision_fault_removed (__main__.Controls.test_revision_fault_removed) ... ok
+test_terminal_before_state_relabelled (__main__.Controls.test_terminal_before_state_relabelled) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 0.855s
+
+OK
