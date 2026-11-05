@@ -12,10 +12,3 @@ dependencies = ["agent-evidence-observer==0.2.0"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["probity_aps_refund*"]
-
-[tool.coverage.run]
-branch = true
-parallel = true
-source_pkgs = ["probity_aps_refund"]
-patch = ["subprocess"]
-data_file = "${APS_REFUND_COVERAGE_FILE?}"
