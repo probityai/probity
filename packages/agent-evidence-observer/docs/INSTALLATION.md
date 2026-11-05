@@ -1,7 +1,7 @@
 # Install Observer and choose a native reader
 
-The root distribution, `agent-evidence-observer` 0.2.0, is available on
-[PyPI](https://pypi.org/project/agent-evidence-observer/0.2.0/). It requires
+The root distribution is `agent-evidence-observer` 0.2.0, released through
+[PyPI](https://pypi.org/project/agent-evidence-observer/). It requires
 Python 3.12 or later and uses Apache-2.0 terms. With Python 3.12 and
 [uv](https://docs.astral.sh/uv/), install it in its own environment:
 
@@ -53,8 +53,7 @@ Select packet hashes, reader hashes and keys through the consumer's accepted pro
 
 | Task | Installed entry point | Other selected inputs |
 | --- | --- | --- |
-| Record and verify brokered writes | `agent-evidence-observer` | A new local run, or a retained packet and consumer-pinned keys |
-| Apply consumer policy to a broker packet | `agent-evidence-admit` | [Admission policy and retained state](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/CONSUMER-ADMISSION.md) |
+| Verify a retained broker packet, boundary run or workload run offline | `agent-evidence-observer` | A retained run directory and consumer-pinned keys |
 | Read bounded Inspect execution or A2A SDK packets | `agent-evidence-read-native` | A matching immutable checkout and a separately selected manifest; [consumer CI guide](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/NATIVE-CONSUMER-CI.md) |
 | Read Atomic native delegation tests | `agent-evidence-read-atomic` | Selected native test packet and manifest; [Atomic guide](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/ATOMIC-NATIVE-READER.md). No separate source checkout |
 | Verify a refund admission-to-effect handoff | `agent-evidence-read-refund-handoff` | Consumer-selected trust snapshot and a [`refund-handoff/0.1` evidence bundle](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/reference/REFUND-HANDOFF-CONFORMANCE.md) |
