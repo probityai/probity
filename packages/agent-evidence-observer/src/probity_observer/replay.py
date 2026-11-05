@@ -57,11 +57,9 @@ BASE_ROLES = frozenset(
     }
 )
 CHECKER_MODULES = (
-    "authorization.py",
     "crypto.py",
     "history.py",
     "ledger.py",
-    "broker.py",
     "verify.py",
     "replay.py",
     "attribution.py",

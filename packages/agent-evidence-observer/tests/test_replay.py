@@ -564,11 +564,9 @@ class TestReplayBounds:
             value = json.loads(checker_implementation_bytes())
             assert value["profile"] == PROFILE
             assert set(value["fileSha256"]) == {
-                "authorization.py",
                 "crypto.py",
                 "history.py",
                 "ledger.py",
-                "broker.py",
                 "verify.py",
                 "replay.py",
                 "attribution.py",

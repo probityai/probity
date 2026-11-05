@@ -97,7 +97,7 @@ class ActionRequest:
     target_path : str
         Normalized literal absolute path beneath ``/work``. No URL decoding,
         filesystem resolution, or alias conversion occurs in this profile.
-        The native :meth:`~.broker.Broker.write` applies its own path checks.
+        The operator runtime's native write applies its own path checks.
     content_sha256 : str
         SHA-256 of the exact bytes to replace at ``target_path``.
 
@@ -448,7 +448,7 @@ def verify_authorized_packet(
     Notes
     -----
     This reader does not persist consumer replay state. Call it before
-    :meth:`~.admission.AdmissionStore.admit`; native admission alone does not
+    the operator runtime's admission store; native admission alone does not
     authenticate the additional authorization binding. Passing record checks
     do not establish complete capture or independent operator custody.
     """
