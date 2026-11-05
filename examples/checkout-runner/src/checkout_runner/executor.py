@@ -29,12 +29,10 @@ import os
 import sqlite3
 import subprocess
 import sys
-from datetime import datetime, timezone
 from typing import Any
 
-from agent_evidence_vectors.run_vectors import jcs_dumps
 
-from .handoff import GateTrust, check_handoff, request_digest, sha256_hex
+from .handoff import GateTrust, check_handoff, idempotency_key, iso_ms, request_digest
 
 FINAL = ("response_ok", "declined")
 
@@ -60,20 +58,6 @@ CREATE TABLE IF NOT EXISTS attempts (
   reached_provider INTEGER NOT NULL
 );
 """
-
-
-def idempotency_key(gate_id: str, receipt_id: str) -> str:
-    """Scoped to the trusted gate, the permit and the simulator namespace."""
-    return sha256_hex(jcs_dumps({
-        "profile": "agent-checkout-runner/idempotency-v1",
-        "gate": gate_id,
-        "receipt_id": receipt_id,
-        "provider_namespace": "local-simulator",
-    }))
-
-
-def iso_ms(value: str) -> int:
-    return int(datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 
 def open_state(path: str) -> sqlite3.Connection:

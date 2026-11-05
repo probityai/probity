@@ -16,8 +16,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from .executor import iso_ms
-from .handoff import GateTrust, check_handoff
+from .handoff import GateTrust, check_handoff, iso_ms
 
 E, C, N = "ESTABLISHED", "CONTRADICTED", "NOT_ESTABLISHED"
 

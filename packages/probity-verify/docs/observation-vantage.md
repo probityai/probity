@@ -21,19 +21,16 @@ The observation record must match the consumer's producer, vantage, invocation a
 
 `independent` here is a selected vantage label. Verify compares supplied bytes and labels. The consumer establishes the operator's identity, capture coverage and custody through its own authentication and review process.
 
-## Run the installed witness
+## Check the retained witness run
 
-The [Observer operator profile at 0770e031](https://github.com/probityai/agent-evidence-observer/tree/0770e0311903d2f658dba04644805e3449a4f622/interop/witness-operator-2026-10-03) provides a separate installed operator, producer and reader. Its [configuration guide](https://github.com/probityai/agent-evidence-observer/blob/0770e0311903d2f658dba04644805e3449a4f622/interop/witness-operator-2026-10-03/PROFILE.md) covers key generation, the selected client UID, a private store and a retained head outside that store.
+The installed witness run, with its separate operator, producer and reader, is run by the operator's runtime. Its retained capture lives in [witness-operator-2026-10-03/retained](https://github.com/probityai/probity/tree/main/packages/agent-evidence-observer/interop/witness-operator-2026-10-03/retained), with a [configuration guide](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/witness-operator-2026-10-03/PROFILE.md) covering key generation, the selected client UID, a private store and a retained head outside that store.
 
-On a Linux host with Python 3.12, uv and permission to run the finite UID controls:
+On a Linux host with Python 3.12, uv and the public Observer reader installed, replay the retained capture:
 
 ```sh
 git clone https://github.com/probityai/probity
-cd probity
-git checkout b617361c221db5ca96989a94c60e8480e14aecd5
-cd packages/agent-evidence-observer
-bash interop/witness-operator-2026-10-03/verify_install.sh \
-  "$PWD/witness-evidence"
+cd probity/packages/agent-evidence-observer
+python interop/witness-operator-2026-10-03/verify_retained.py
 ```
 
 The host selects the public keys, source hashes, case population and prior heads in `native/host-policy.json`, outside `native/packet`. The installed reader authenticates signed histories, receipts and terminal effect packets before reporting process state, committed effects and publication decisions separately.
@@ -49,4 +46,4 @@ The host selects the public keys, source hashes, case population and prior heads
 
 Retain the original ledger, signed heads, selected host policy, wheel bytes and source pins. Recheck a restored store against the retained head before resuming it. An unsigned summary stays separate from the signed evidence it summarizes.
 
-The [current native run](https://github.com/probityai/agent-evidence-observer/actions/runs/37213667494) is author-operated PEER work with a separate producer UID. An outside operator's acceptance, keys and custody remain pending. Keep this population separate from the synthetic Verify examples and select `self_reported` for author-operated custody.
+The retained native run is author-operated PEER work with a separate producer UID. An outside operator's acceptance, keys and custody remain pending. Keep this population separate from the synthetic Verify examples and select `self_reported` for author-operated custody.
