@@ -14,7 +14,7 @@ tag = "agent-evidence-plugins-v{version}"
 
 # Packages other repositories release that this package pins.
 [family]
-"pypi:probity-verify" = "0.3.0"
+"pypi:probity-verify" = "0.4.1"
 
 [scan]
 include = ["harnesses/agent-evidence-plugins/**/*.md", "harnesses/agent-evidence-plugins/**/llms.txt", "harnesses/agent-evidence-plugins/pyproject.toml", "harnesses/agent-evidence-plugins/plugins/**/*.py"]
