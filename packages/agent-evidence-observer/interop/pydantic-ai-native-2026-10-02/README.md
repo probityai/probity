@@ -1,9 +1,11 @@
 # Pydantic AI native tool → authorized HTTP effect → installed consumer
 
-This is an additive Probity-operated execution reference. It runs actual `pydantic-ai-slim==1.107.7` agents,
+This reference keeps the retained packet of an execution of actual `pydantic-ai-slim==1.107.7` agents,
 typed tools, native retries and native message serialization against Observer's
-existing protected HTTP ticket service. `FunctionModel` supplies scripted local
-responses: there is no provider call, model inference, task-quality score,
+existing protected HTTP ticket service, and the framework-free reader that verifies it.
+The operator's runtime runs that execution; the packet is under [retained](retained)
+(runtime sources withheld by digest, listed in `retained/WITHHELD-SOURCES.json`).
+`FunctionModel` supplied scripted local responses: there is no provider call, model inference, task-quality score,
 independent custody, framework adoption or production deployment claim.
 
 ## Seven fixed v1 cases
@@ -18,7 +20,7 @@ independent custody, framework adoption or production deployment claim.
 | retry-exhausted | Both typed calls raise `ModelRetry`; native retry budget is one | One native retry prompt, two retained wrapper attempts, terminal `UnexpectedModelBehavior`; GET revision 0 | Retry exhaustion, no recorded local row |
 | committed-effect-error | POST commits, then tool raises selected `RuntimeError` before returning | POST 200; separate GET revision 1; native history ends at tool call | Execution error and verified retained effect together |
 
-The producer freezes the public case population, exact ActionRequest, grant,
+The packet freezes the public case population, exact ActionRequest, grant,
 issuer policy, service key, initial signed native snapshot and source manifest
 before the first agent execution. Each case has its own ephemeral issuer and
 service keys, request/attempt/target identity and fresh SQLite store. Private
@@ -37,51 +39,49 @@ grant, exact request and content digest through the existing ticket verifier.
 The reader neither imports Pydantic AI nor calls HTTP. It requires three hashes
 and a historical evaluation time selected **outside** the packet. Native times are
 checked at their original precision; the existing signed-grant and ticket
-verifier receive the reference time projected to their UTC-second contract. The producer
-writes `consumer-pins.json` for inspection; selecting or copying that file in
+verifier receive the reference time projected to their UTC-second contract. The packet
+carries `consumer-pins.json` for inspection; selecting or copying that file in
 this same-operator demonstration does not establish independent prior selection.
 A deployed consumer must select its own policy pins and reference clock.
 
-## Installed execution and separate offline consumer
+## Installed reader and retained replay
 
-Run from this profile directory using Python 3.13. Create a fresh virtual
-environment first. The locked requirements include runtime, tests and build
-packages; `--require-hashes` refuses unselected dependency bytes. Wheel builds
-and installations propagate failures. Framework/runtime dependencies are
-isolated from Observer's root project and other profiles.
+Run from this profile directory using Python 3.13 in a fresh virtual environment.
+The locked requirements include runtime, tests and build packages;
+`--require-hashes` refuses unselected dependency bytes.
 
 ```bash
 python -m pip install --require-hashes -r requirements.lock
-python -m pip wheel --no-deps --no-build-isolation ../.. . --wheel-dir /tmp/probity-pydantic-wheels
-python -m pip install --no-deps /tmp/probity-pydantic-wheels/agent_evidence_observer-0.2.0-py3-none-any.whl /tmp/probity-pydantic-wheels/probity_pydantic_reference-0.0.1-py3-none-any.whl
+python -m pip install --no-deps ../..
+python -m pip wheel --no-deps --no-build-isolation . --wheel-dir /tmp/probity-pydantic-wheels
+python -m pip install --no-deps /tmp/probity-pydantic-wheels/probity_pydantic_reference-0.0.1-py3-none-any.whl
 python -m pip check
 python -m pytest tests -q
-probity-pydantic-run /tmp/probity-pydantic-fresh-packet --source-revision YOUR_SELECTED_COMMIT
+python verify_retained.py
 ```
 
-The output directory must not exist. The seven-case v1 packet is newly generated;
-there is no fallback to a committed report or earlier artifact. The workflow
-runs the installed wheel outside the source directory, then installs another
-wheel into a separate environment with the core cryptography and canonicalization dependencies.
+The workflow then installs the wheel into a separate environment with the core
+cryptography and canonicalization dependencies and replays the retained packet.
 
 ```bash
 python -m venv /tmp/probity-pydantic-reader
 /tmp/probity-pydantic-reader/bin/python -m pip install --require-hashes -r requirements-reader.lock
-/tmp/probity-pydantic-reader/bin/python -m pip install --no-deps /tmp/probity-pydantic-wheels/agent_evidence_observer-0.2.0-py3-none-any.whl /tmp/probity-pydantic-wheels/probity_pydantic_reference-0.0.1-py3-none-any.whl
+/tmp/probity-pydantic-reader/bin/python -m pip install --no-deps ../..
+/tmp/probity-pydantic-reader/bin/python -m pip install --no-deps /tmp/probity-pydantic-wheels/probity_pydantic_reference-0.0.1-py3-none-any.whl
 /tmp/probity-pydantic-reader/bin/python -m pip check
 # Inspect and select hashes/reference time as your policy before this step.
-/tmp/probity-pydantic-reader/bin/probity-pydantic-read /tmp/probity-pydantic-fresh-packet --pins-file /tmp/consumer-selected-pins.json
+/tmp/probity-pydantic-reader/bin/probity-pydantic-read retained/fresh-run/packet --pins-file /tmp/consumer-selected-pins.json --withheld-sources retained/WITHHELD-SOURCES.json
 ```
 
-Missing pins, installation errors, native producer errors outside the declared
-control, verifier refusals and mismatched fresh reports fail the workflow.
-The declared producer-error control passes the reference's capture requirement
-while remaining an execution error in every report. This is admission of a
-bounded historical record, not authorization for another dispatch.
+Missing pins, installation errors, verifier refusals and mismatched reports fail
+the workflow. The declared producer-error control passes the reference's capture
+requirement while remaining an execution error in every report. This is
+admission of a bounded historical record, not authorization for another
+dispatch.
 
 ## Provenance and limits
 
-Framework agent/model/message sources, MIT license and package metadata are
+Framework agent/model/message sources, MIT license and package metadata were
 captured from the installed distribution before the agent run. Observer and
 adapter Python sources are also retained. Requirements locks account for the
 selected dependency artifacts. Source hashes and public role keys authenticate
@@ -111,7 +111,7 @@ Official API references:
 
 ## Upgrade and recovery decisions
 
-The current producer emits `probity-pydantic-ai-ticket-v1` with seven fixed
+The retained packet uses `probity-pydantic-ai-ticket-v1` with seven fixed
 cases. The reader also reconstructs the original five-case v0 packets and
 returns their original reports exactly; the archived ZIP and original policy
 pins remain unchanged. Select both the source bytes and the intended profile

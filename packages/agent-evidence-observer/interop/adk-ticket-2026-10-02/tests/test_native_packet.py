@@ -28,8 +28,10 @@ def reselect(root: Path) -> dict[str, Any]:
     return policy
 
 
-def test_actual_runner_ordered_retry_errors_and_effects(packet: Path) -> None:
-    report = verify_saved(packet, pins(packet))
+def test_actual_runner_ordered_retry_errors_and_effects(
+    packet: Path, withheld: dict[str, str]
+) -> None:
+    report = verify_saved(packet, pins(packet), withheld)
     assert report == decode((packet / "report.json").read_bytes())
     assert [row["case"] for row in report["records"]] == list(CASES)
     assert report["resources"]["modelCalls"] == 25
@@ -138,7 +140,7 @@ def edit_readback(execution: dict[str, Any]) -> None:
     ],
 )
 def test_reselected_semantic_substitution_refused(
-    packet: Path, tmp_path: Path, name: str
+    packet: Path, withheld: dict[str, str], tmp_path: Path, name: str
 ) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
@@ -152,7 +154,7 @@ def test_reselected_semantic_substitution_refused(
     mutate(value, name)
     path.write_bytes(encode(value))
     with pytest.raises((VerificationError, ValueError, KeyError)):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), withheld)
 
 
 @pytest.mark.parametrize(
@@ -160,7 +162,7 @@ def test_reselected_semantic_substitution_refused(
     [("maxModelCalls", True), ("plannedAttempts", 11), ("maxElapsedSeconds", 12000)],
 )
 def test_reselected_plan_budget_refused(
-    packet: Path, tmp_path: Path, field: str, value: Any
+    packet: Path, withheld: dict[str, str], tmp_path: Path, field: str, value: Any
 ) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
@@ -169,10 +171,12 @@ def test_reselected_plan_budget_refused(
     plan["budget"][field] = value
     path.write_bytes(encode(plan))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), withheld)
 
 
-def test_changed_plugin_order_refused(packet: Path, tmp_path: Path) -> None:
+def test_changed_plugin_order_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
     path = root / "plan-before-run.json"
@@ -180,11 +184,11 @@ def test_changed_plugin_order_refused(packet: Path, tmp_path: Path) -> None:
     plan["cases"][5]["pluginOrder"].reverse()
     path.write_bytes(encode(plan))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), withheld)
 
 
 def test_tied_timestamps_keep_native_sequence_and_identity(
-    packet: Path, tmp_path: Path
+    packet: Path, withheld: dict[str, str], tmp_path: Path
 ) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
@@ -197,17 +201,53 @@ def test_tied_timestamps_keep_native_sequence_and_identity(
     event_rows = [r for r in value["capture"]["records"] if r["callback"] == "event"]
     event_rows[1]["native"] = second
     path.write_bytes(encode(value))
-    assert verify_saved(root, reselect(root))["plannedAttempts"] == 12
+    assert verify_saved(root, reselect(root), withheld)["plannedAttempts"] == 12
 
 
-def test_source_bytes_and_symlink_refused(packet: Path, tmp_path: Path) -> None:
+def test_source_bytes_and_symlink_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
-    source = root / "sources/adapter/producer.py"
+    source = root / "sources/adapter/plugin.py"
     source.unlink()
-    source.symlink_to(packet / "sources/adapter/producer.py")
+    source.symlink_to(packet / "sources/adapter/plugin.py")
     with pytest.raises(VerificationError):
-        verify_saved(root, pins(root))
+        verify_saved(root, pins(root), withheld)
+
+
+def test_withheld_sources_are_exactly_the_absent_files(
+    packet: Path, withheld: dict[str, str]
+) -> None:
+    assert len(withheld) == 14
+    assert all(not (packet / name).exists() for name in withheld)
+
+
+@pytest.mark.parametrize(
+    "change", ["wrong-digest", "unlisted-absence", "listed-present", "extra-file"]
+)
+def test_withheld_list_must_match_absences_and_manifest(
+    packet: Path, withheld: dict[str, str], tmp_path: Path, change: str
+) -> None:
+    root = tmp_path / "candidate"
+    shutil.copytree(packet, root)
+    listed = dict(withheld)
+    name = "sources/observer/broker.py"
+    if change == "wrong-digest":
+        listed[name] = "0" * 64
+    elif change == "unlisted-absence":
+        del listed[name]
+    elif change == "listed-present":
+        (root / name).write_bytes(b"x = 1\n")
+    else:
+        (root / "sources/observer/unlisted.py").write_bytes(b"x = 1\n")
+    with pytest.raises(VerificationError):
+        verify_saved(root, pins(root), listed)
+
+
+def test_missing_withheld_list_refuses(packet: Path) -> None:
+    with pytest.raises(VerificationError, match="source-files|source-withheld"):
+        verify_saved(packet, pins(packet))
 
 
 def test_cli_pins_required() -> None:

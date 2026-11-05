@@ -1,0 +1,7 @@
+{
+  "artifact": "adk-native-ticket",
+  "downloadedAt": "2026-11-03T15:51:35Z",
+  "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "runId": 41665290509,
+  "workflow": "package-observer-adk-ticket.yml"
+}

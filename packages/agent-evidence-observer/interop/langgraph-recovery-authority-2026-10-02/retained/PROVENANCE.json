@@ -1,0 +1,7 @@
+{
+  "artifact": "langgraph-recovery-authority-df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "downloadedAt": "2026-11-03T16:08:45Z",
+  "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "runId": 41665290432,
+  "workflow": "package-observer-langgraph-recovery-authority.yml"
+}

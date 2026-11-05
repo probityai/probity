@@ -2,21 +2,28 @@
 import copy
 import shutil
 import sqlite3
-from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
 from authority_common import CASES, decode, encode, sha
-from authority_reader import verify_saved
-from authority_run import run
-from authority_worker import gate
-from lg_common import PacketError
+from authority_reader import verify_saved as read_packet
+from lg_common import PacketError, withheld_for, withheld_in
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD = withheld_for(RETAINED / "WITHHELD-SOURCES.json", RETAINED / "fresh-run")
+
+
+def verify_saved(root, pins):
+    """Read a retained-form packet; omitted sources are those the record lists."""
+    return read_packet(root, pins, WITHHELD)
 
 
 @pytest.fixture(scope="module")
-def packet(tmp_path_factory):
-    root = tmp_path_factory.mktemp("authority") / "run"
-    report = run(root, "pytest-exact-source")
+def packet():
+    """Return the eight-case packet retained from the latest successful main run."""
+    root = RETAINED / "fresh-run"
+    report = decode((RETAINED / "fresh-report.json").read_bytes())
     return root, decode((root / "consumer-pins.json").read_bytes()), report
 
 
@@ -107,99 +114,17 @@ def test_reader_framework_sqlite_network_forbidden(packet, monkeypatch):
     assert verify_saved(packet[0], packet[1]) == packet[2]
 
 
-def selected(packet):
-    case = decode((packet[0] / "cases" / "valid-before.json").read_bytes())
-    current = decode((packet[0] / "workers" / "valid-before" / "first-authority.json").read_bytes())
-    return case, current
-
-
-def test_deleted_clock_row_refuses_recovery(packet, tmp_path):
-    case, current = selected(packet)
-    with sqlite3.connect(tmp_path / "anchor.sqlite") as conn:
-        assert gate(conn, case, current, "first")["status"] == "authorized"
-        conn.execute("DELETE FROM recovery_clock")
-        conn.commit()
-        assert gate(conn, case, current, "second")["status"] == "refused-missing-clock-anchor"
-        assert conn.execute("SELECT COUNT(*) FROM recovery_clock").fetchone()[0] == 0
-
-
-def test_concurrent_clock_update_serializes(packet, tmp_path):
-    case, current = selected(packet)
-    path = tmp_path / "concurrent.sqlite"
-    with sqlite3.connect(path) as conn:
-        gate(conn, case, current, "first")
-    def update(clock):
-        with sqlite3.connect(path) as conn:
-            return gate(conn, case, {**current, "clock": clock}, "second")
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(update, [150, 140]))
-    assert any(r["status"] == "authorized" for r in results)
-    with sqlite3.connect(path) as conn:
-        assert conn.execute("SELECT clock FROM recovery_clock").fetchone()[0] == 150
-        assert gate(conn, case, {**current, "clock": 149}, "second")["status"] == "refused-clock-rollback"
-
-
-@pytest.mark.parametrize("field,value,reason", [("clock", True, "authority-types"), ("expires", False, "authority-types"), ("revoked", 0, "authority-types"), ("actionSha256", "wrong", "authority-action")])
-def test_malformed_host_authority_refuses_before_clock_update(packet, tmp_path, field, value, reason):
-    case, current = selected(packet)
-    current[field] = value
-    with sqlite3.connect(tmp_path / "malformed.sqlite") as conn:
-        with pytest.raises(PacketError, match="^" + reason + "$"):
-            gate(conn, case, current, "first")
-        assert conn.execute("SELECT name FROM sqlite_master WHERE name='recovery_clock'").fetchone() is None
-
-
 def test_retained_original_native_fixture_replays(tmp_path):
     import zipfile
     from pathlib import Path
     profile = Path(__file__).resolve().parents[1]
     provenance = decode((profile / "provenance.json").read_bytes())
-    archive = profile / "native-fixture.zip"
+    archive = RETAINED / "native-fixture.zip"
     assert sha(archive.read_bytes()) == provenance["archiveSha256"]
     with zipfile.ZipFile(archive) as retained:
         assert len(retained.namelist()) == provenance["memberCount"]
         assert all((tmp_path / name).resolve().is_relative_to(tmp_path.resolve()) for name in retained.namelist())
         retained.extractall(tmp_path)
-    report = verify_saved(tmp_path, provenance["consumerPins"])
+    withheld = withheld_in(RETAINED / "WITHHELD-SOURCES.json", "native-fixture.zip/")
+    report = read_packet(tmp_path, provenance["consumerPins"], withheld)
     assert report == decode((profile / "recorded-report.json").read_bytes())
-
-
-@pytest.mark.parametrize("denied,status,stale", [({"clock": 150, "revoked": True}, "refused-revoked", 100), ({"clock": 200}, "refused-expired", 199)])
-def test_denied_observation_prevents_stale_permit(packet, tmp_path, denied, status, stale):
-    case, current = selected(packet)
-    with sqlite3.connect(tmp_path / "denied-clock.sqlite") as conn:
-        gate(conn, case, current, "first")
-        assert gate(conn, case, {**current, **denied}, "second")["status"] == status
-        assert gate(conn, case, {**current, "clock": stale}, "second")["status"] == "refused-clock-rollback"
-        assert conn.execute("SELECT clock FROM recovery_clock").fetchone()[0] == denied["clock"]
-
-
-def test_host_explicit_later_permit_after_revocation(packet, tmp_path):
-    case, current = selected(packet)
-    with sqlite3.connect(tmp_path / "later-permit.sqlite") as conn:
-        gate(conn, case, current, "first")
-        assert gate(conn, case, {**current, "clock": 150, "revoked": True}, "second")["status"] == "refused-revoked"
-        assert gate(conn, case, {**current, "clock": 151}, "second")["status"] == "authorized"
-
-
-def test_same_clock_revocation_prevents_stale_permit(packet, tmp_path):
-    case, current = selected(packet)
-    with sqlite3.connect(tmp_path / "same-clock.sqlite") as conn:
-        gate(conn, case, current, "first")
-        assert gate(conn, case, current, "second")["status"] == "authorized"
-        assert gate(conn, case, {**current, "revoked": True}, "second")["status"] == "refused-revoked"
-        assert gate(conn, case, current, "second")["status"] == "refused-stale-authority"
-        assert gate(conn, case, {**current, "clock": 99}, "second")["status"] == "refused-clock-rollback"
-        assert gate(conn, case, current, "second")["status"] == "refused-stale-authority"
-        assert gate(conn, case, {**current, "clock": 101}, "second")["status"] == "authorized"
-
-
-@pytest.mark.parametrize("clock,denied", [("bad", 0), (-1, 0), (100, 7)])
-def test_corrupt_clock_anchor_refuses(packet, tmp_path, clock, denied):
-    case, current = selected(packet)
-    with sqlite3.connect(tmp_path / "corrupt.sqlite") as conn:
-        gate(conn, case, current, "first")
-        conn.execute("UPDATE recovery_clock SET clock=?, denied=?", (clock, denied))
-        conn.commit()
-        with pytest.raises(PacketError, match="^recovery-clock-schema$"):
-            gate(conn, case, current, "second")

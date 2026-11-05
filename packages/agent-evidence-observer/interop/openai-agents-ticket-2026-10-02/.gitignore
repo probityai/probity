@@ -1,9 +1,12 @@
 build/
 *.egg-info/
 fresh-run/
-.producer-env/
+.plugin-env/
 .reader-env/
 selected-observer/
 selected-wheels/
 installed-source-proof.json
 test-results.xml
+!retained/fresh-run/
+!retained/installed-source-proof.json
+!retained/test-results.xml

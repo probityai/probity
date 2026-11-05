@@ -6,19 +6,22 @@ import hashlib
 import zipfile
 from pathlib import Path
 
-from probity_adk.contract import decode, encode
+from probity_adk.contract import decode, encode, withheld_in
 from probity_adk.reader import verify_saved
 
-PROFILE_ROOT = Path(__file__).resolve().parents[1]
-ORIGINAL_SHA256 = "4602b83d1b3e52d6aea8def21eff28f5b18b78c04da9213e4187ee2c1abf31e6"
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+ARCHIVE = "native-fixture-37058694970.zip"
+# Hash-only form of the archive uploaded by CI run 37058694970: embedded runtime
+# sources are removed and listed with their digests in WITHHELD-SOURCES.json.
+RETAINED_SHA256 = "c408fc0615bcdf74acf228bee649fb00b9b1c7881a24ad3eddf10b8efd6bf5b6"
 
 
 def test_retained_original_native_ci_bytes(tmp_path: Path) -> None:
-    archive = PROFILE_ROOT / "native-fixture-37058694970.zip"
-    assert hashlib.sha256(archive.read_bytes()).hexdigest() == ORIGINAL_SHA256
+    archive = RETAINED / ARCHIVE
+    assert hashlib.sha256(archive.read_bytes()).hexdigest() == RETAINED_SHA256
     with zipfile.ZipFile(archive) as retained:
         names = retained.namelist()
-        assert len(names) == len(set(names)) == 838
+        assert len(names) == len(set(names)) == 827
         assert all(
             not Path(name).is_absolute() and ".." not in Path(name).parts
             for name in names
@@ -26,7 +29,13 @@ def test_retained_original_native_ci_bytes(tmp_path: Path) -> None:
         retained.extractall(tmp_path)
     original = tmp_path / "fresh-run"
     packet = original / "packet"
-    report = verify_saved(packet, decode((packet / "consumer-pins.json").read_bytes()))
+    withheld = withheld_in(
+        RETAINED / "WITHHELD-SOURCES.json", ARCHIVE + "/fresh-run/packet/"
+    )
+    assert len(withheld) == 11
+    report = verify_saved(
+        packet, decode((packet / "consumer-pins.json").read_bytes()), withheld
+    )
     expected = (packet / "report.json").read_bytes()
     assert encode(report) == expected
     assert (original / "producer-stdout.json").read_bytes().rstrip(b"\n") == expected

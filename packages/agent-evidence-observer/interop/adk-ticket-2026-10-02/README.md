@@ -3,8 +3,11 @@
 This additive reference executes installed **Google ADK 2.11.0** `App`, `Runner`,
 `BaseLlm`, `FunctionTool`, `BasePlugin` and `ReflectAndRetryToolPlugin`. A scripted
 native model supplies fixed public synthetic calls; it performs no inference or
-remote provider request. The protected HTTP/SQLite target is separately selected
-Observer source `bf8c515d393951c6da73790e5e05effdb0c945a6`.
+remote provider request. The protected HTTP/SQLite target is run by the operator's
+runtime; this directory keeps the packet it produced under [retained](retained)
+(runtime sources withheld by digest, listed in `retained/WITHHELD-SOURCES.json`)
+and the readers that verify it with public code only:
+`python verify_retained.py`.
 
 The before-run plan declares twelve attempts, at most 25 model calls and 18 tool
 invocations, and a 120-second serial execution budget. It covers permit,
@@ -34,30 +37,29 @@ handled errors and consumer publication admission have distinct meanings.
 Native event timestamps may tie; retained sequence and event/invocation identities
 supply ordering. Token usage remains absent, as reported by the scripted model.
 
-## Install selected wheels and execute
+## Install the reference wheel and replay the retained packet
 
-Select an immutable adapter checkout. These are ordinary wheels built from
-published Git source, not a registry release. Python 3.13 is tested; dependency
-hashes are selected in `requirements.lock`.
+Python 3.13 is tested; dependency hashes are selected in `requirements.lock`.
+The wheel is built from this directory and checked against the selected source
+bytes.
 
 ```sh
-# Run from this profile within the selected adapter checkout.
-python -m venv .producer-env
-.producer-env/bin/python -m pip install --require-hashes -r requirements.lock
-git worktree add --detach selected-observer bf8c515d393951c6da73790e5e05effdb0c945a6
-.producer-env/bin/python -m pip wheel --no-deps --no-build-isolation selected-observer . --wheel-dir selected-wheels
-.producer-env/bin/python verify_wheels.py selected-wheels --selection source-selection.json
-.producer-env/bin/python -m pip install --no-deps selected-wheels/*.whl
-.producer-env/bin/python -m pip check
-.producer-env/bin/probity-adk-run /tmp/new-adk-packet --source-revision "$(git rev-parse HEAD)"
+python -m venv .plugin-env
+.plugin-env/bin/python -m pip install --require-hashes -r requirements.lock
+.plugin-env/bin/python -m pip install --no-deps ../..
+.plugin-env/bin/python -m pip wheel --no-deps --no-build-isolation . --wheel-dir selected-wheels
+.plugin-env/bin/python verify_wheels.py selected-wheels --selection source-selection.json
+.plugin-env/bin/python -m pip install --no-deps selected-wheels/*.whl
+.plugin-env/bin/python -m pip check
+.plugin-env/bin/python verify_retained.py
 ```
 
-The command refuses an existing packet. Private keys and SQLite databases stay in
-a temporary directory. Public grants, signed receipts, original HTTP bytes,
-installed source/license, the complete plan, original native JSON bytes and fields,
-raw tool records, ordered callbacks, model requests/responses, full yielded/session
-events, task errors and wall/process CPU counters are retained. Source hashes
-select provenance; they do not prove independently witnessed execution.
+The packet is produced by the operator's runtime and is not generated here. Public
+grants, signed receipts, original HTTP bytes, installed source/license, the
+complete plan, original native JSON bytes and fields, raw tool records, ordered
+callbacks, model requests/responses, full yielded/session events, task errors and
+wall/process CPU counters are retained. Source hashes select provenance; they do
+not prove independently witnessed execution.
 
 ## External plugin registration
 
@@ -95,8 +97,8 @@ python -m venv .reader-env
 .reader-env/bin/python -m pip install --no-deps selected-wheels/*.whl
 .reader-env/bin/python -m pip check
 .reader-env/bin/python -c "import importlib.util; assert importlib.util.find_spec('google') is None and importlib.util.find_spec('mcp') is None"
-.reader-env/bin/probity-adk-read /tmp/new-adk-packet --pins-file /path/to/host-policy.json
-.reader-env/bin/probity-adk-gate /tmp/new-adk-packet --reader "$PWD/.reader-env/bin/probity-adk-read" --policy /path/to/host-policy.json --policy-sha256 HOST_SELECTED_SHA256 --output /tmp/new-host-receipt
+.reader-env/bin/probity-adk-read retained/fresh-run/packet --pins-file /path/to/host-policy.json --withheld-sources retained/WITHHELD-SOURCES.json
+.reader-env/bin/probity-adk-gate retained/fresh-run/packet --reader "$PWD/.reader-env/bin/probity-adk-read" --policy /path/to/host-policy.json --policy-sha256 HOST_SELECTED_SHA256 --withheld-sources retained/WITHHELD-SOURCES.json --output /tmp/new-host-receipt
 ```
 
 A host selects its reader source/wheel hashes and exact plan, source-manifest,
@@ -107,7 +109,7 @@ reader without a shell, retains original child stdout/stderr and admits only a
 successful complete twelve-attempt reference population. A candidate cannot choose
 its own policy through this interface. It cannot change an existing receipt.
 
-Producer-emitted demonstration pins copied by author CI remain author-operated
+Demonstration pins copied by author CI remain author-operated
 replay. They are not independent host policy selection or recurring adoption. An
 upgrade selects new source bytes and wheel hashes, rebuilds into a new directory
 and replays retained packets before updating the host's selection. The protected
@@ -123,8 +125,8 @@ universal production containment.
 ## Verify and maintain
 
 ```sh
-.producer-env/bin/python -m pytest tests -q
-.producer-env/bin/ruff check --select E,F,I,C901 --config 'lint.mccabe.max-complexity=5' src tests verify_wheels.py
+.plugin-env/bin/python -m pytest tests -q
+.plugin-env/bin/ruff check --select E,F,I,C901 --config 'lint.mccabe.max-complexity=5' src tests verify_wheels.py verify_retained.py
 ```
 
 Controls execute the real SDK, retain first/last retry differences, admit valid
@@ -132,8 +134,8 @@ tied native timestamps, and refuse omitted/reordered/rebound model/tool/event/
 session/callback records, coerced errors/incomplete outcomes, changed typed MCP
 errors, altered effect receipts, boolean counters, wrong budgets/source/policy
 and unclosed/failed capture after digest reselection. CI proves wheel source bytes,
-executes a fresh native packet outside checkout, reconstructs it with a separate
-SDK-free reader and runs the installed host gate.
+reconstructs the retained native packet with a separate SDK-free reader and runs
+the installed host gate.
 
 Probity maintains this external plugin through
 [Observer issues](https://github.com/probityai/agent-evidence-observer/issues).
@@ -144,13 +146,13 @@ review. Existing analytics issue 7112 has assigned owners, and notification issu
 5044 is closed with callbacks present. This reference takes over neither issue.
 No upstream pitch or new public comment is required for this owned plugin.
 
-Outside producer acceptance, continued host use, registry release and independent
+Outside acceptance of the producing operation, continued host use, registry release and independent
 effect custody remain separate goals. The synthetic service and captured history
 are same-operator; signed evidence retains PEER scope. No model-quality, real MCP
 transport, blind comparison, process-restart or power-loss claim is made.
 
-The retained original [native CI artifact](native-fixture-37058694970.zip) and
+The retained [native CI artifact](retained/native-fixture-37058694970.zip), with runtime sources omitted and listed in `retained/WITHHELD-SOURCES.json`, and
 [recorded run](recorded-run.json) authenticate the successful 12-case Ubuntu run
-37058694970. The installed reader reproduces the producer, reader and report bytes
+37058694970. The installed reader reproduces the retained reader and report bytes
 without ADK or MCP. Source provenance distinguishes the reviewed implementation,
 GitHub synthetic execution revision and independently pinned target source.

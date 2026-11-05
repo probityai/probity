@@ -46,12 +46,14 @@ jobs:
         run: python inspect_demo.py native-contract-run
       - name: Retain native tool, agent and local workload execution
         run: python inspect_execution.py native-execution-run
-      - name: Join native Inspect calls to selected AAE authority and ticket effects
-        run: python inspect_ticket.py native-ticket-run --source-revision "$GITHUB_SHA"
-      - name: Reconstruct the joined packet without framework or HTTP calls
+      - name: Verify the retained joined packet offline with public code only
+        run: python verify_retained.py
+      - name: Reconstruct the retained joined packet with the reader command line
         run: |
-          cp native-ticket-run/consumer-pins.json "$RUNNER_TEMP/inspect-ticket-selected-pins.json"
-          python inspect_ticket.py native-ticket-run --verify --pins-file "$RUNNER_TEMP/inspect-ticket-selected-pins.json"
+          set -euo pipefail
+          cp retained/native-ticket-run/consumer-pins.json "$RUNNER_TEMP/inspect-ticket-selected-pins.json"
+          python inspect_ticket_reader.py retained/native-ticket-run --pins-file "$RUNNER_TEMP/inspect-ticket-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/inspect-ticket-reader.json"
+          python -c "import json,sys; json.load(open(sys.argv[1]))" "$RUNNER_TEMP/inspect-ticket-reader.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -60,6 +62,5 @@ jobs:
             packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/contract-run/
             packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-contract-run/
             packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-execution-run/
-            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-ticket-run/
             packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/test-results.xml
           if-no-files-found: error

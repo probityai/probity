@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -114,3 +115,24 @@ def cases_for(profile: str) -> tuple[str, ...]:
     """Select a versioned population while retaining historical v0 packets."""
     require(profile in {LEGACY_PROFILE, PROFILE}, "unknown packet profile")
     return LEGACY_CASES if profile == LEGACY_PROFILE else CASES
+
+
+def withheld_in(file: Path, prefix: str) -> dict[str, str]:
+    """Digests of embedded sources a retained record omits, keyed inside ``prefix``."""
+    pairs = json.loads(read(file.parent, file.name), object_pairs_hook=list)
+    value = dict(pairs)
+    require(len(value) == len(pairs), "withheld duplicates")
+    require(list(value) == sorted(value), "withheld form")
+    require(
+        all(isinstance(d, str) and len(d) == 64 for d in value.values())
+        and all(c in "0123456789abcdef" for d in value.values() for c in d),
+        "withheld digest",
+    )
+    return {k[len(prefix) :]: d for k, d in value.items() if k.startswith(prefix)}
+
+
+def withheld_for(file: Path, packet: Path) -> dict[str, str]:
+    """Omitted-source digests for a packet stored under the list's own directory."""
+    base = file.resolve().parent
+    require(packet.resolve().is_relative_to(base), "withheld location")
+    return withheld_in(file, packet.resolve().relative_to(base).as_posix() + "/")

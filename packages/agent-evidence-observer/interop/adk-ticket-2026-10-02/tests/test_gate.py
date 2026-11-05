@@ -17,7 +17,12 @@ def test_gate_actual_selected_native_population(packet: Path, tmp_path: Path) ->
     policy.write_bytes((packet / "consumer-pins.json").read_bytes())
     reader = Path(sys.executable).parent / "probity-adk-read"
     result = gate(
-        reader, packet, policy, sha(policy.read_bytes()), tmp_path / "receipt"
+        reader,
+        packet,
+        policy,
+        sha(policy.read_bytes()),
+        tmp_path / "receipt",
+        packet.parent.parent / "WITHHELD-SOURCES.json",
     )
     assert result["publicationDecision"] == "admitted"
     assert (
