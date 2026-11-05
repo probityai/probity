@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "probity-haystack-reference"
 version = "0.0.1"
 requires-python = ">=3.12"
-dependencies = ["agent-evidence-observer==0.1.4"]
+dependencies = ["agent-evidence-observer==0.2.0"]
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]

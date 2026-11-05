@@ -7,7 +7,7 @@ name = "probity-adk-reference"
 version = "0.0.1"
 description = "Native Google ADK plugin and bounded protected HTTP ticket reference"
 requires-python = ">=3.13"
-dependencies = ["agent-evidence-observer==0.1.4"]
+dependencies = ["agent-evidence-observer==0.2.0"]
 
 [project.optional-dependencies]
 plugin = ["google-adk==2.11.0", "mcp==2.2.0"]

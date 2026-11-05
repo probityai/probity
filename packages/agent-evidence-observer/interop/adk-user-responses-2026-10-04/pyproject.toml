@@ -7,7 +7,7 @@ name = "probity-adk-user-responses"
 version = "0.0.1"
 description = "Finite installed ADK user-response routing and effect reference"
 requires-python = ">=3.12"
-dependencies = ["agent-evidence-observer==0.1.4"]
+dependencies = ["agent-evidence-observer==0.2.0"]
 
 [project.scripts]
 probity-adk-responses-read = "probity_adk_responses.reader:main"
