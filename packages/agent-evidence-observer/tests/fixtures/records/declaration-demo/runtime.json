@@ -1,0 +1,23 @@
+{
+  "agent_id": "spiffe://lab.example/agent",
+  "agent_instance_id": "fixture-instance-1",
+  "artifact_hashes": [
+    [
+      "system_prompt",
+      "sha256:7db448d694af855ff00a83ee40bf4bab74ea63734287bdf7bd86e63832bd6247"
+    ],
+    [
+      "policy_bundle",
+      "sha256:206631dc1f77e2155fb27422b00e087ee7d57c4297aea78c2b12b8ebbb2a7144"
+    ],
+    [
+      "tool_manifest",
+      "sha256:7ff19ed04cf206aa87d69faafd48163c4ace2855fa09ddb8d3c3f35e1ca4c8a3"
+    ]
+  ],
+  "manifest_sha256": "sha256:a3f0a8a19cc5a1775799e164b91a9292f1a2bb8224d02ad3f2c47517cff74269",
+  "model_hash": "sha256:10badeb6ee14a7cbfea49f2fedbd09e0090c20abe845b64bc5a38cc408a56d9b",
+  "model_version": "fixture-v1",
+  "run_id": "declaration-run-1",
+  "source": "same-operator-file-readback-fixture"
+}

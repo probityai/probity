@@ -1,4 +1,4 @@
-"""Ledger terminals distinguish boundary aborts from unresolved write outcomes."""
+"""Ledger terminals distinguish boundary aborts from unresolved write outcomes, over committed records."""
 
 from __future__ import annotations
 
@@ -9,36 +9,30 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 import pytest
+from fixture_records import load, materialize, pinned_keys, signing_keys
 from hypothesis import HealthCheck, given, settings, strategies as st
 
-from probity_observer import Broker, LedgerWitness, SigningKey, VerificationError, Witness, verify_incomplete, verify_ledger_head, verify_ledger_receipts
-from probity_observer.broker import recover_interrupted
+from probity_observer import LedgerWitness, SigningKey, VerificationError, Witness, verify_incomplete, verify_ledger_head, verify_ledger_receipts
 from probity_observer.history import append_history, read_history
 from probity_observer.ledger import read_ledger
 
 
 @dataclass(frozen=True)
 class AbortRun:
-    """Hold a same-operator fixture and its witnessed begin checkpoint."""
+    """Hold a begun interval's record, its signers and its witnessed begin checkpoint."""
 
     observer: SigningKey
     witness: LedgerWitness
-    broker: Broker
     history: Path
     start: dict[str, Any]
 
 
 def make_run(root: Path) -> AbortRun:
-    """Begin an empty local interval with a ledger witness."""
-    workspace = root / "workspace"
-    workspace.mkdir(parents=True)
-    observer = SigningKey.generate()
-    witness = LedgerWitness(root / "ledger.jsonl", SigningKey.generate(), observer.public_hex)
-    history = root / "history.jsonl"
-    authority = {"intervalId": "abort-test", "scope": "/work", "operation": "write-file"}
-    broker = Broker(workspace, history, authority, observer, witness)
-    start = broker.begin()["checkpoint"]
-    return AbortRun(observer, witness, broker, history, start)
+    """Copy the committed begun interval with a ledger witness."""
+    record = materialize("ledger-begin", root)
+    observer, witness_key = signing_keys(record)
+    witness = LedgerWitness(record / "ledger.jsonl", witness_key, observer.public_hex)
+    return AbortRun(observer, witness, record / "history.jsonl", load(record / "start-checkpoint.json"))
 
 
 @pytest.fixture
@@ -93,55 +87,43 @@ def assert_terminal_refused(
 
 class TestLedgerAbort:
     class TestPassingCases:
-        @pytest.mark.parametrize("reason", ["isolation setup failed", "boundary probes failed"])
-        def test_no_write_abort_after_begin_is_witnessed(self, abort_run: AbortRun, reason: str) -> None:
-            result = abort_run.broker.abort(reason)
-            terminal = verify_incomplete(
-                abort_run.history, result["startCheckpoint"], result["checkpoint"],
-                abort_run.observer.public_hex, abort_run.witness.signing_key.public_hex,
-            )
+        @pytest.mark.parametrize("name,reason", [("abort-isolation", "isolation setup failed"), ("abort-probes", "boundary probes failed")])
+        def test_no_write_abort_after_begin_is_witnessed(self, tmp_path: Path, name: str, reason: str) -> None:
+            record = materialize(name, tmp_path)
+            observer, witness = pinned_keys(record)
+            result = load(record / "incomplete.json")
+            terminal = verify_incomplete(record / "history.jsonl", result["startCheckpoint"], result["checkpoint"], observer, witness)
             assert result["status"] == "incomplete"
             assert terminal == {"kind": "incomplete", "reason": reason, "requestIds": []}
-            assert [entry["event"]["kind"] for entry in read_history(abort_run.history)] == ["begin", "incomplete"]
-            assert verify_ledger_receipts(
-                abort_run.witness.state_path, result["startCheckpoint"], result["checkpoint"],
-                abort_run.witness.signing_key.public_hex,
-            )["count"] == 2
+            assert [entry["event"]["kind"] for entry in read_history(record / "history.jsonl")] == ["begin", "incomplete"]
+            assert verify_ledger_receipts(record / "ledger.jsonl", result["startCheckpoint"], result["checkpoint"], witness)["count"] == 2
 
-        def test_abort_after_completed_write_keeps_the_effect_and_incomplete_outcome(self, abort_run: AbortRun) -> None:
-            abort_run.broker.write("done", "/work/x", b"retained effect")
-            result = abort_run.broker.abort("boundary probes failed")
-            terminal = verify_incomplete(
-                abort_run.history, result["startCheckpoint"], result["checkpoint"],
-                abort_run.observer.public_hex, abort_run.witness.signing_key.public_hex,
-            )
+        def test_abort_after_completed_write_keeps_the_effect_and_incomplete_outcome(self, tmp_path: Path) -> None:
+            record = materialize("abort-after-write", tmp_path)
+            observer, witness = pinned_keys(record)
+            result = load(record / "incomplete.json")
+            terminal = verify_incomplete(record / "history.jsonl", result["startCheckpoint"], result["checkpoint"], observer, witness)
             assert result["status"] == "incomplete"
             assert terminal["requestIds"] == []
-            assert (abort_run.broker.workspace / "x").read_bytes() == b"retained effect"
-            assert [entry["event"]["kind"] for entry in read_history(abort_run.history)] == [
+            assert (record / "workspace/x").read_bytes() == b"retained effect"
+            assert [entry["event"]["kind"] for entry in read_history(record / "history.jsonl")] == [
                 "begin", "write-intent", "write", "incomplete",
             ]
-            retained = abort_run.witness.signed_head()
-            summary = verify_ledger_head(abort_run.witness.state_path, retained, abort_run.witness.signing_key.public_hex)
+            summary = verify_ledger_head(record / "ledger.jsonl", load(record / "retained-head.json"), witness)
             assert summary["missingTerminals"] == []
             assert summary["registeredIntervals"] == 1
             # Receipt inclusion does not promote an incomplete outcome to success.
             assert terminal["reason"] == "boundary probes failed"
 
-        def test_recovered_write_names_the_exact_pending_request(self, abort_run: AbortRun) -> None:
-            add_pending_write(abort_run)
-            result = recover_interrupted(abort_run.history, abort_run.broker.workspace, abort_run.witness)
-            terminal = verify_incomplete(
-                abort_run.history, result["startCheckpoint"], result["checkpoint"],
-                abort_run.observer.public_hex, abort_run.witness.signing_key.public_hex,
-            )
+        def test_recovered_write_names_the_exact_pending_request(self, tmp_path: Path) -> None:
+            record = materialize("ledger-recovered", tmp_path)
+            observer, witness = pinned_keys(record)
+            result = load(record / "incomplete.json")
+            terminal = verify_incomplete(record / "history.jsonl", result["startCheckpoint"], result["checkpoint"], observer, witness)
             assert result["status"] == "incomplete"
             assert terminal["requestIds"] == ["pending"]
             assert terminal["reason"] == "write outcome unresolved after interruption"
-            assert verify_ledger_receipts(
-                abort_run.witness.state_path, result["startCheckpoint"], result["checkpoint"],
-                abort_run.witness.signing_key.public_hex,
-            )["count"] == 2
+            assert verify_ledger_receipts(record / "ledger.jsonl", result["startCheckpoint"], result["checkpoint"], witness)["count"] == 2
 
     class TestFailingCases:
         @settings(max_examples=25, suppress_health_check=[HealthCheck.function_scoped_fixture])

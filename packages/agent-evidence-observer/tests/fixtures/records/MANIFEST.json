@@ -1,0 +1,147 @@
+{
+ "generatedAt": "2026-11-03T15:59:55Z",
+ "generatedFrom": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+ "records": {
+  "aae-effect-link": {
+   "layout": "packet",
+   "note": "one AAE-permitted local write and its signed effect link"
+  },
+  "abort-after-write": {
+   "layout": "begun",
+   "note": "abort after one completed write"
+  },
+  "abort-isolation": {
+   "layout": "begun",
+   "note": "abort after begin: isolation setup failed"
+  },
+  "abort-probes": {
+   "layout": "begun",
+   "note": "abort after begin: boundary probes failed"
+  },
+  "abort-unknown-event": {
+   "layout": "incomplete",
+   "note": "an unknown event between begin and an abort terminal"
+  },
+  "boundary-missing-event": {
+   "layout": "boundary",
+   "note": "the second broker request never arrived",
+   "status": "incomplete"
+  },
+  "boundary-network-open": {
+   "layout": "boundary",
+   "note": "the probe reported network access",
+   "status": "incomplete"
+  },
+  "boundary-passed": {
+   "layout": "boundary",
+   "note": "every probe refused and the broker events matched",
+   "status": "probe-passed"
+  },
+  "boundary-socket-failed": {
+   "layout": "boundary",
+   "note": "the broker socket could not be created",
+   "status": "incomplete"
+  },
+  "bypass-gap": {
+   "layout": "packet-after-bypass",
+   "note": "an unbrokered workspace change at seal"
+  },
+  "declaration-demo": {
+   "layout": "declaration-demo",
+   "note": "the declaration demo's retained output"
+  },
+  "declaration-reference": {
+   "layout": "declaration",
+   "note": "reference manifest and one exact signed grant"
+  },
+  "interrupted-changed": {
+   "layout": "incomplete",
+   "note": "process death after the file replacement, then witnessed recovery"
+  },
+  "interrupted-identical": {
+   "layout": "incomplete",
+   "note": "process death after the file replacement, then witnessed recovery"
+  },
+  "ledger-begin": {
+   "layout": "begun",
+   "note": "a begun interval with a ledger witness and no terminal"
+  },
+  "ledger-head-fork": {
+   "layout": "ledger",
+   "note": "a retained head, then a restored prefix re-extended and re-signed"
+  },
+  "ledger-head-population": {
+   "layout": "ledger",
+   "note": "eight intervals, terminals TFTTFFTF"
+  },
+  "ledger-head-sealed-missing": {
+   "layout": "ledger",
+   "note": "a sealed interval, a retained head, then a begin with no terminal"
+  },
+  "ledger-head-two-sealed": {
+   "layout": "ledger",
+   "note": "two sealed intervals and the head retained after both"
+  },
+  "ledger-one-interval": {
+   "layout": "packet",
+   "note": "one empty interval sealed with a ledger witness"
+  },
+  "ledger-one-write": {
+   "layout": "packet",
+   "note": "one write sealed with a ledger witness"
+  },
+  "ledger-recovered": {
+   "layout": "begun",
+   "note": "a pending intent recovered as incomplete"
+  },
+  "ledger-two-intervals": {
+   "layout": "ledger",
+   "note": "two intervals a and b sharing one witness ledger"
+  },
+  "protected-action": {
+   "layout": "native-action",
+   "note": "one authorized write with its grant, request, packet, policies and demo report"
+  },
+  "repaired-bypass": {
+   "layout": "packet",
+   "note": "an unbrokered change detected and later removed"
+  },
+  "retry-gap": {
+   "layout": "packet-after-bypass",
+   "note": "a retry refused after a direct workspace change"
+  },
+  "sealed-write": {
+   "layout": "packet",
+   "note": "one write and its replay, sealed with a state-file witness"
+  },
+  "symlink-gap": {
+   "layout": "packet-without-workspace",
+   "note": "a symbolic link in scope at seal; the workspace is not retained"
+  },
+  "workload-completed": {
+   "layout": "workload",
+   "note": "accepted, replayed and denied requests; stdout claims nothing",
+   "status": "completed"
+  },
+  "workload-direct-change": {
+   "layout": "workload",
+   "note": "an effect, then a direct workspace change",
+   "status": "incomplete"
+  },
+  "workload-failed-child": {
+   "layout": "workload",
+   "note": "an effect, then exit code 7",
+   "status": "incomplete"
+  },
+  "workload-gap": {
+   "layout": "workload",
+   "note": "an effect, then a malformed request gap",
+   "status": "incomplete"
+  },
+  "workload-no-effect": {
+   "layout": "workload",
+   "note": "a child that exits 0 without an effect",
+   "status": "incomplete"
+  }
+ }
+}

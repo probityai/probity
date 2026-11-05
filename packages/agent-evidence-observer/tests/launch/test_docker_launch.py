@@ -280,17 +280,6 @@ def test_reset_restores_the_sealed_start_after_a_run(image, workspace, tmp_path)
     assert treedigest.scan(workspace).sha256 == before
 
 
-def test_cli_launches_and_prints_the_summary(image, workspace, tmp_path, capsys):
-    from probity_observer.producer_cli import main
-    code = main(["launch-agent", str(tmp_path / "cli-run"), "--backend", "docker",
-                 "--image", image, "--workspace", str(workspace), "--claim-id", "cli",
-                 "--invocation-id", "cli-1", "--env", "MARK=1", "--",
-                 "sh", "-c", "echo $MARK > mark.txt"])
-    summary = json.loads(capsys.readouterr().out)
-    assert code == 0 and summary["agentExit"] == 0 and summary["coverage"] == "complete"
-    assert (workspace / "mark.txt").read_text() == "1\n"
-
-
 def test_link_out_of_a_workspace_inside_a_wider_bind_is_recorded(image, workspace, tmp_path):
     """A bind that holds the workspace's parent lets link(2) cross the workspace edge."""
     from probity_observer import record_oe

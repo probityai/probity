@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
-
+from fixture_records import materialize
 from probity_observer.crypto import canonical
 
 ROOT = Path(__file__).parents[1]
@@ -28,6 +28,13 @@ class TestReplayDemo:
                     str(output),
                     "--source-revision",
                     "1" * 40,
+                    "--native",
+                    str(
+                        materialize(
+                            "protected-action",
+                            tmp_path.parent / f"retained-{tmp_path.name}",
+                        )
+                    ),
                 ],
                 check=True,
                 capture_output=True,
@@ -91,6 +98,13 @@ class TestReplayDemo:
                     str(output),
                     "--source-revision",
                     "1" * 40,
+                    "--native",
+                    str(
+                        materialize(
+                            "protected-action",
+                            tmp_path.parent / f"retained-{tmp_path.name}",
+                        )
+                    ),
                 ],
                 check=True,
                 capture_output=True,
@@ -137,6 +151,13 @@ class TestReplayDemo:
                     str(output),
                     "--source-revision",
                     "1" * 40,
+                    "--native",
+                    str(
+                        materialize(
+                            "protected-action",
+                            tmp_path.parent / f"retained-{tmp_path.name}",
+                        )
+                    ),
                 ],
                 check=True,
                 capture_output=True,
@@ -168,6 +189,13 @@ class TestReplayDemo:
                     str(output),
                     "--source-revision",
                     "1" * 40,
+                    "--native",
+                    str(
+                        materialize(
+                            "protected-action",
+                            tmp_path.parent / f"retained-{tmp_path.name}",
+                        )
+                    ),
                 ],
                 check=True,
                 capture_output=True,
@@ -212,6 +240,13 @@ class TestReplayDemo:
                     str(tmp_path),
                     "--source-revision",
                     "1" * 40,
+                    "--native",
+                    str(
+                        materialize(
+                            "protected-action",
+                            tmp_path.parent / f"retained-{tmp_path.name}",
+                        )
+                    ),
                 ],
                 capture_output=True,
                 text=True,

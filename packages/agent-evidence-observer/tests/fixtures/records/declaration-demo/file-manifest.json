@@ -1,0 +1,17 @@
+{
+  "fileSha256": {
+    "action-inputs.json": "591af0e53ee133c5c2328ddc7fb1b595124bb5b1d40cab991bbe314321a4b6b9",
+    "artifacts/model": "10badeb6ee14a7cbfea49f2fedbd09e0090c20abe845b64bc5a38cc408a56d9b",
+    "artifacts/policy_bundle": "206631dc1f77e2155fb27422b00e087ee7d57c4297aea78c2b12b8ebbb2a7144",
+    "artifacts/system_prompt": "7db448d694af855ff00a83ee40bf4bab74ea63734287bdf7bd86e63832bd6247",
+    "artifacts/tool_manifest": "f2618c0ad42ff30fd6fe16f96365423f129549d7990b3e500cf1d886d53bc1a1",
+    "effect.json": "3a0855e767ea5698c8f15158401b93e1d1153c283b4886d7464b8713813b0c73",
+    "history.jsonl": "ab70e2ede2e221d0c79f925d630eb1e4d938d4e3ece60d361ce1f8e3c267a1d7",
+    "ledger.jsonl": "845b6ece38009cc9f0bce1578d473b9d424ac439e7e35fa3fce0e7a6f4296dc0",
+    "ledger.jsonl.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "manifest-payload.json": "a3f0a8a19cc5a1775799e164b91a9292f1a2bb8224d02ad3f2c47517cff74269",
+    "results.json": "70fe73923df045088957c4e0570c188ddffb442c7660b3edfe1172a75a4dfe24",
+    "runtime.json": "254febb195123da8a9c592130025b9acadf3f6e3cad4547b5d6b4d10847033ee",
+    "workspace/report.txt": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f"
+  }
+}

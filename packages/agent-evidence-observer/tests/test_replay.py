@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from fixture_records import load, materialize
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
@@ -102,9 +103,9 @@ class ReplayCase:
 
 @pytest.fixture
 def case(tmp_path: Path) -> ReplayCase:
-    """Generate a real native action; the Git identity is explicitly synthetic."""
-    output = tmp_path / "native"
-    report = DEMO.run_action(output)
+    """Read the retained native action; the Git identity is explicitly synthetic."""
+    output = materialize("protected-action", tmp_path)
+    report = load(output / "demo-report.json")
     inputs = DEMO._inputs(output, report)
     signer = SigningKey.generate()
     policy = DEMO._policy(inputs, REVISION, signer)
