@@ -363,7 +363,7 @@ def http_effect(
     -------
     tuple[str, dict[str, Any]]
         Exact native tool return string and readback. Successful completion
-        uses :func:`probity_observer.ticket_service.verify_ticket_result`.
+        uses :func:`probity_observer.ticket_state.verify_ticket_result`.
     """
     packet = decode(packet_raw)
     require(
