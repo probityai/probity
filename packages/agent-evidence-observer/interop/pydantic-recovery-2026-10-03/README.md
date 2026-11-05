@@ -13,3 +13,7 @@ the native boundaries, durable bytes and framework-free installed reader.
 
 The earlier Pydantic v0/v1 exhaustion and exception populations remain unchanged.
 Complete refusal evidence can be published without admitting a denied recovery.
+
+The producing operation is run by the operator's runtime; the packet it wrote is
+retained under [retained](retained), with its producer sources withheld by digest.
+Run the profile's tests and `python verify_retained.py` to replay it.

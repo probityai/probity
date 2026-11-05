@@ -1,44 +1,45 @@
-"""Real finite process population and refusals after full byte reselection."""
+"""Refusals over the retained original packet after full byte reselection."""
 from __future__ import annotations
 
 import json
 import os
 import shutil
-import time
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
 from probity_observer.crypto import VerificationError, canonical
-from probity_observer.ticket_service import TicketStore
-from probity_observer.ticket_state import DOMAIN
 
-from probity_pydantic_recovery.common import CASES, load, sha
+from probity_pydantic_recovery.common import CASES, load, sha, withheld_sources
 from probity_pydantic_recovery.reader import verify_saved
-from recovery_run import run, selection
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD = withheld_sources(RETAINED / "WITHHELD-SOURCES.json")
 
 
 @pytest.fixture(scope="session")
-def native(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Execute all nine native cases once, including actual OS worker death."""
-    root = tmp_path_factory.mktemp("native") / "packet"
-    run(root, "test-native-source")
-    return root
+def native() -> Path:
+    """Return the retained original packet, which every control copies before changing."""
+    return RETAINED / "fresh-run"
 
 
 def reselect(root: Path) -> dict:
-    """Select altered bytes so controls must reach their semantic relation."""
+    """Select altered bytes so controls must reach their semantic relation.
+
+    Members the packet omits by digest keep their pinned digest.
+    """
     manifest = load(root / "artifact-manifest.json")
     for name in manifest:
-        manifest[name] = sha((root / name).read_bytes())
+        if (root / name).exists():
+            manifest[name] = sha((root / name).read_bytes())
     (root / "artifact-manifest.json").write_bytes(canonical(manifest))
     pins = load(root / "consumer-pins.json")
     pins["artifactManifestSha256"] = sha(canonical(manifest))
     return pins
 
 
-def test_native_population(native: Path) -> None:
-    report = verify_saved(native, load(native / "consumer-pins.json"))
+def test_retained_population(native: Path) -> None:
+    report = verify_saved(native, load(native / "consumer-pins.json"), WITHHELD)
     assert report["freshWorkers"] == report["freshTargets"] == 18
     assert report["providerCalls"] == 0
     assert [record["id"] for record in report["records"]] == list(CASES)
@@ -72,7 +73,7 @@ def test_reselected_semantic_refusal(native: Path, tmp_path: Path, mutation: str
         alter(data, mutation)
     target.write_bytes(json.dumps(data, separators=(",", ":")).encode() if "history" in path else canonical(data))
     with pytest.raises((VerificationError, KeyError, TypeError)):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 def alter(data: dict | list, mutation: str) -> None:
@@ -108,7 +109,7 @@ def test_ambiguous_http_bytes(native: Path, tmp_path: Path, which: str, suffix: 
     data[which] = (raw[:-1] + suffix.encode()).hex()
     target.write_bytes(canonical(data))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 def test_linked_artifact_refuses(native: Path, tmp_path: Path) -> None:
@@ -119,7 +120,7 @@ def test_linked_artifact_refuses(native: Path, tmp_path: Path) -> None:
     path.rename(moved)
     path.symlink_to(moved)
     with pytest.raises(VerificationError, match="packet-symlink"):
-        verify_saved(root, load(root / "consumer-pins.json"))
+        verify_saved(root, load(root / "consumer-pins.json"), WITHHELD)
 
 
 @pytest.mark.parametrize("mutation", ["missing", "signature", "ticket", "effect", "content", "receipt-body", "revoked-effect"])
@@ -138,7 +139,7 @@ def test_final_state_is_required_and_authenticated(native: Path, tmp_path: Path,
         mutate_final(data, mutation)
         target.write_bytes(canonical(data))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 def mutate_final(data: dict, mutation: str) -> None:
@@ -160,21 +161,6 @@ def test_native_json_boundary(raw: bytes) -> None:
         messages(raw)
 
 
-def test_preparation_failure_removes_private_keys(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A source-capture failure cannot leave selected private keys behind."""
-    import recovery_run
-
-    def fail_capture(root: Path) -> dict[str, str]:
-        raise RuntimeError("controlled-source-capture-failure")
-
-    monkeypatch.setattr(recovery_run, "capture_sources", fail_capture)
-    root = tmp_path / "failed-packet"
-    with pytest.raises(RuntimeError, match="controlled-source-capture-failure"):
-        run(root, "test-source")
-    assert not (tmp_path / "failed-packet-private").exists()
-    assert not recovery_run.ACTIVE
-
-
 def test_replaced_candidate_cannot_change_consumed_bytes(native: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Replacing a checked path cannot change the authenticated private copy."""
     from probity_pydantic_recovery import reader
@@ -194,7 +180,7 @@ def test_replaced_candidate_cannot_change_consumed_bytes(native: Path, tmp_path:
         return raw
 
     monkeypatch.setattr(reader, "read", replace_after_read)
-    report = verify_saved(root, selected)
+    report = verify_saved(root, selected, WITHHELD)
     assert report["records"][0]["recovery"] == "completed"
     assert load(target)["status"] == "refused"
 
@@ -227,7 +213,7 @@ def test_reselected_native_message_kind_refuses(native: Path, tmp_path: Path, in
     history[index]["kind"] = "wrong-native-message-kind"
     path.write_bytes(json.dumps(history, separators=(",", ":")).encode())
     with pytest.raises(VerificationError, match="native-continuation-message-kinds"):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 @pytest.mark.parametrize("case,field,value", [("permit", "returncode", False), ("permit", "nativeModelRequests", True), ("permit", "providerCalls", False), ("revoked", "nativeModelRequests", False), ("permit", "recoveryPosts", False), ("revoked", "recoveryPosts", False)])
@@ -241,7 +227,7 @@ def test_reselected_boolean_count_refuses(native: Path, tmp_path: Path, case: st
     selected[field] = value
     path.write_bytes(canonical(data))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 @pytest.mark.parametrize("mutation", ["target-startup", "recovery-worker", "target-event"])
@@ -267,41 +253,7 @@ def test_reselected_boolean_process_identity_refuses(native: Path, tmp_path: Pat
         target.write_bytes(canonical(events))
     path.write_bytes(canonical(data))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
-
-
-@pytest.mark.parametrize("mutation", ["recreated-store", "event-head", "event-count"])
-def test_signed_live_state_must_equal_the_historical_receipt(native: Path, tmp_path: Path, mutation: str) -> None:
-    """Even the correct service signer cannot substitute another effect history."""
-    from probity_pydantic_recovery.gate import reconstruct_admission
-
-    now = datetime.now(UTC).replace(microsecond=0)
-    case, store = selection(tmp_path, "join-control", "permit", now)
-    candidate = {key: case[key] for key in ("request", "grant", "contentHex")}
-    receipt = store.dispatch(candidate)
-    old = store.readback()
-    prior = {"postStatus": 200, "postRequestHex": canonical(candidate).hex(), "postResponseHex": canonical(receipt).hex(), "getStatus": 200, "getResponseHex": canonical(old).hex()}
-    clock = now + timedelta(seconds=2)
-    live = substituted_live_state(store, tmp_path, candidate, old, clock, mutation)
-    assert live["effectId"] == old["effectId"]
-    history = (native / "permit/history.json").read_bytes()
-    current = {"historySha256": sha(history), "grant": case["grant"], "serviceKey": case["serviceKey"], "policy": case["policy"], "liveSha256": sha(canonical(live)), "clockTime": clock.isoformat(), "clockSource": "host-system-utc", "targetReady": True}
-    assert reconstruct_admission(case, history, prior, old, {**current, "liveSha256": sha(canonical(old))}, evaluated_at=clock)["dispatchPermitted"] is False
-    with pytest.raises(VerificationError, match="ticket current state differs from retained completion"):
-        reconstruct_admission(case, history, prior, live, current, evaluated_at=clock)
-
-
-def substituted_live_state(store: TicketStore, root: Path, candidate: dict, old: dict, clock: datetime, mutation: str) -> dict:
-    """Keep service identity while changing a signed historical state relation."""
-    replacement = TicketStore(root / "replacement.sqlite", store.request, store.policy, store.key, clock=lambda: clock)
-    replacement.initialize()
-    replacement.dispatch(candidate)
-    live = replacement.readback() if mutation == "recreated-store" else json.loads(canonical(old))
-    if mutation != "recreated-store":
-        payload = live["receipt"]["payload"]
-        payload["eventHead" if mutation == "event-head" else "eventCount"] = "a" * 64 if mutation == "event-head" else payload["eventCount"] + 1
-        live["receipt"]["signature"] = store.key.sign(DOMAIN, payload)
-    return live
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 @pytest.mark.parametrize("case", ["target-key", "missing-store", "rollback-store"])
@@ -313,7 +265,7 @@ def test_unrelated_target_startup_failure_cannot_establish_declared_refusal(nati
     data["targets"][1]["startup"]["reason"] = "unrelated configuration failure"
     path.write_bytes(canonical(data))
     with pytest.raises(VerificationError, match="target-startup-refusal-reason"):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 def test_same_worker_and_reader_error_cannot_replace_a_declared_case_reason(native: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -334,58 +286,7 @@ def test_same_worker_and_reader_error_cannot_replace_a_declared_case_reason(nati
 
     monkeypatch.setattr(reader, "reconstruct_admission", unrelated)
     with pytest.raises(VerificationError, match="declared-refusal-reason"):
-        verify_saved(root, reselect(root))
-
-
-def test_latest_revoked_head_refuses_a_restored_pre_revocation_store(tmp_path: Path) -> None:
-    """An actual replacement target cannot reopen an older unrevoked snapshot."""
-    from recovery_run import cleanup, stop_target, target
-
-    case, store = selection(tmp_path, "revocation-rollback", "revoked", datetime.now(UTC).replace(microsecond=0))
-    store.dispatch({key: case[key] for key in ("request", "grant", "contentHex")})
-    retained = tmp_path / "pre-revocation.sqlite"
-    shutil.copyfile(store.path, retained)
-    store.revoke()
-    head = store.readback()["receipt"]
-    shutil.copyfile(retained, store.path)
-    try:
-        process, command, startup = target(tmp_path, store, head, "second", None)
-        assert startup["reason"] == "ticket history predates retained head"
-        assert stop_target(process, command, startup)["returncode"] == 78
-    finally:
-        cleanup()
-        (tmp_path / "second-config.json").unlink(missing_ok=True)
-
-
-def test_real_runtime_expiry_refuses_a_stale_positive_selection(native: Path, tmp_path: Path) -> None:
-    """After the real UTC expiry, a past selected clock cannot release a result."""
-    from probity_observer.authorization import issue_grant
-    from probity_observer.crypto import SigningKey
-    from probity_observer.grant_records import GrantPolicy
-
-    from probity_pydantic_recovery.gate import admit
-
-    now = datetime.now(UTC).replace(microsecond=0)
-    case, selected_store = selection(tmp_path, "real-expiry", "permit", now)
-    issuer = SigningKey.generate()
-    policy = GrantPolicy(issuer.public_hex)
-    grant = issue_grant(selected_store.request, issuer, issued_at=now, expires_at=now + timedelta(seconds=2))
-    case.update(policy={"issuer_key": policy.issuer_key, "max_validity_seconds": policy.max_validity_seconds}, grant=grant)
-    store = TicketStore(tmp_path / "expiring.sqlite", selected_store.request, policy, selected_store.key, clock=lambda: now)
-    store.initialize()
-    candidate = {key: case[key] for key in ("request", "grant", "contentHex")}
-    receipt = store.dispatch(candidate)
-    live = store.readback()
-    prior = {"postStatus": 200, "postRequestHex": canonical(candidate).hex(), "postResponseHex": canonical(receipt).hex(), "getStatus": 200, "getResponseHex": canonical(live).hex()}
-    history = (native / "permit/history.json").read_bytes()
-    current = {"historySha256": sha(history), "grant": grant, "serviceKey": case["serviceKey"], "policy": case["policy"], "liveSha256": sha(canonical(live)), "clockTime": now.isoformat(), "clockSource": "host-system-utc", "targetReady": True}
-    assert admit(case, history, prior, live, current)["dispatchPermitted"] is False
-    deadline = now + timedelta(seconds=2)
-    time.sleep(max(0, (deadline - datetime.now(UTC)).total_seconds()) + 0.03)
-    with pytest.raises(VerificationError, match="grant is not valid at the reference time"):
-        admit(case, history, prior, live, current)
-    with pytest.raises(TypeError, match="evaluated_at"):
-        admit(case, history, prior, live, current, evaluated_at=now)
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 @pytest.mark.parametrize("mutation", ["source", "before-history", "injection-expiry", "offset", "subsecond"])
@@ -407,38 +308,7 @@ def test_reselected_recovery_clock_relations_refuse(native: Path, tmp_path: Path
         data["nativeResultInjectedAt"] = case["grant"]["expiresAt"].replace("Z", "+00:00")
     path.write_bytes(canonical(data))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
-
-
-def test_expiry_between_admission_and_native_injection_writes_a_refusal(native: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Advance the trusted runtime clock across the real native injection guard."""
-    import recovery_worker
-
-    case = load(native / "permit/case.json")
-    current = load(native / "permit/current-host-selection.json")
-    live = load(native / "permit/recovery.json")["live"]
-    root = tmp_path / "interval"
-    root.mkdir()
-    for name in ("prior-http.json", "recovery-history.json"):
-        shutil.copyfile(native / "permit" / name, root / name)
-    selected = datetime.fromisoformat(current["clockTime"])
-    expiry = datetime.fromisoformat(case["grant"]["expiresAt"])
-    calls = 0
-
-    class AdvancingClock:
-        @classmethod
-        def now(cls, zone: object) -> datetime:
-            nonlocal calls
-            calls += 1
-            return selected if calls < 2 else expiry
-
-    monkeypatch.setattr(recovery_worker, "datetime", AdvancingClock)
-    monkeypatch.setattr(recovery_worker, "exchange", lambda *args: (200, canonical(live)))
-    recovery_worker.recover(case, "retained-native-get-control", root, current)
-    report = load(root / "recovery.json")
-    assert report["status"] == "refused" and report["reason"] == "grant is not valid at the reference time"
-    assert report["releasedResult"] is False and report["nativeModelRequests"] == report["recoveryPosts"] == 0
-    assert not (root / "accepted-host-receipt.json").exists() and not (root / "resumed-history.json").exists()
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 @pytest.mark.parametrize("mutation", ["parent-state", "malformed-hex"])
@@ -455,47 +325,7 @@ def test_reselected_parent_evidence_and_malformed_http_refuse(native: Path, tmp_
     path.write_bytes(canonical(data))
     reason = "parent-current-selection-binding" if mutation == "parent-state" else "malformed-selected-packet"
     with pytest.raises(VerificationError, match=reason):
-        verify_saved(root, reselect(root))
-
-
-def test_expiry_during_native_setup_refuses_before_any_model_request(native: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A setup delay cannot carry an old admission across the final run guard."""
-    import recovery_worker
-
-    case = load(native / "permit/case.json")
-    current = load(native / "permit/current-host-selection.json")
-    live = load(native / "permit/recovery.json")["live"]
-    root = tmp_path / "setup-interval"
-    root.mkdir()
-    for name in ("prior-http.json", "recovery-history.json"):
-        shutil.copyfile(native / "permit" / name, root / name)
-    expired = False
-    selected = datetime.fromisoformat(current["clockTime"])
-    expiry = datetime.fromisoformat(case["grant"]["expiresAt"])
-
-    class SetupClock:
-        @classmethod
-        def now(cls, zone: object) -> datetime:
-            return expiry if expired else selected
-
-    class NoRequests:
-        def run_sync(self, **kwargs: object) -> None:
-            raise AssertionError("expired setup entered native model requests")
-
-    def slow_setup(*args: object, **kwargs: object) -> NoRequests:
-        nonlocal expired
-        expired = True
-        return NoRequests()
-
-    monkeypatch.setattr(recovery_worker, "datetime", SetupClock)
-    monkeypatch.setattr(recovery_worker, "agent_for", slow_setup)
-    monkeypatch.setattr(recovery_worker, "exchange", lambda *args: (200, canonical(live)))
-    recovery_worker.recover(case, "retained-native-get-control", root, current)
-    report = load(root / "recovery.json")
-    assert report["reason"] == "grant is not valid at the reference time"
-    assert report["status"] == "refused" and report["releasedResult"] is False
-    assert report["nativeModelRequests"] == report["recoveryPosts"] == 0
-    assert not (root / "accepted-host-receipt.json").exists() and not (root / "resumed-history.json").exists()
+        verify_saved(root, reselect(root), WITHHELD)
 
 
 def test_exact_expiry_fixture_cannot_be_used_as_a_past_runtime_clock(native: Path) -> None:
@@ -515,36 +345,6 @@ def test_exact_expiry_fixture_cannot_be_used_as_a_past_runtime_clock(native: Pat
         admit(case, history, prior, live, current)
 
 
-def test_actually_expired_grant_refuses_retagged_past_clock_in_both_boundaries(native: Path, tmp_path: Path) -> None:
-    """Both runtime and retained replay refuse the expired-label clock bypass."""
-    from probity_observer.authorization import issue_grant
-    from probity_observer.crypto import SigningKey
-    from probity_observer.grant_records import GrantPolicy
-
-    from probity_pydantic_recovery.gate import admit, reconstruct_admission
-
-    now = datetime.now(UTC).replace(microsecond=0)
-    case, selected_store = selection(tmp_path, "expired-fixture-attack", "expired", now)
-    issuer = SigningKey.generate()
-    policy = GrantPolicy(issuer.public_hex)
-    case.update(policy={"issuer_key": policy.issuer_key, "max_validity_seconds": policy.max_validity_seconds}, grant=issue_grant(selected_store.request, issuer, issued_at=now, expires_at=now + timedelta(seconds=2)))
-    store = TicketStore(tmp_path / "expiring.sqlite", selected_store.request, policy, selected_store.key, clock=lambda: now)
-    store.initialize()
-    candidate = {key: case[key] for key in ("request", "grant", "contentHex")}
-    receipt = store.dispatch(candidate)
-    live = store.readback()
-    prior = {"postStatus": 200, "postRequestHex": canonical(candidate).hex(), "postResponseHex": canonical(receipt).hex(), "getStatus": 200, "getResponseHex": canonical(live).hex()}
-    history = (native / "expired/history.json").read_bytes()
-    current = {"historySha256": sha(history), "grant": case["grant"], "serviceKey": case["serviceKey"], "policy": case["policy"], "liveSha256": sha(canonical(live)), "clockTime": now.isoformat(), "clockSource": "fixture-exact-expiry", "targetReady": True}
-    deadline = now + timedelta(seconds=2)
-    time.sleep(max(0, (deadline - datetime.now(UTC)).total_seconds()) + 0.03)
-    assert datetime.now(UTC) >= deadline
-    with pytest.raises(VerificationError, match="current-exact-expiry-binding"):
-        admit(case, history, prior, live, current)
-    with pytest.raises(VerificationError, match="current-exact-expiry-binding"):
-        reconstruct_admission(case, history, prior, live, current, evaluated_at=now)
-
-
 def test_reselected_expiry_fixture_clock_refuses_offline_packet(native: Path, tmp_path: Path) -> None:
     root = tmp_path / "packet"
     shutil.copytree(native, root)
@@ -554,4 +354,4 @@ def test_reselected_expiry_fixture_clock_refuses_offline_packet(native: Path, tm
     current["clockTime"] = case["historicalTime"]
     path.write_bytes(canonical(current))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), WITHHELD)

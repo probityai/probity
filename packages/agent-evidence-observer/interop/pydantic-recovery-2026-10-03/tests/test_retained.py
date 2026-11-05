@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 from probity_observer.crypto import VerificationError, canonical, strict_loads
 
-from probity_pydantic_recovery.common import absent_members, load, sha, withheld_sources, write
+from probity_pydantic_recovery.common import (
+    absent_members,
+    load,
+    sha,
+    withheld_sources,
+    write,
+)
 from probity_pydantic_recovery.reader import verify_saved
 
 RETAINED = Path(__file__).resolve().parents[1] / "retained"
@@ -56,7 +62,7 @@ def test_absence_without_a_withheld_record_refuses(copied: tuple[Path, dict]) ->
 
 def test_withheld_digest_must_equal_the_manifest_pin(copied: tuple[Path, dict]) -> None:
     root, pins = copied
-    name = sorted(WITHHELD)[0]
+    name = min(WITHHELD)
     with pytest.raises(VerificationError, match="^artifact-population$"):
         verify_saved(root, pins, {**WITHHELD, name: "0" * 64})
 

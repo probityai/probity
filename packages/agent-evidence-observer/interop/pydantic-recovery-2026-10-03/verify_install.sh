@@ -1,5 +1,6 @@
 #!/bin/bash
-# Run from this profile after creating fresh-run in the selected native environment.
+# Run from this profile with a Python that has the locked test requirements and the observer installed.
+# Replays the retained packet through a separate, normally installed reader and the host gate.
 set -euo pipefail
 native_python=$1
 if test -e wheels; then
@@ -20,7 +21,7 @@ sha256sum wheels/*.whl > wheels-sha256.txt
 "$reader_root/venv/bin/python" -m pip install --no-deps wheels/*.whl
 "$reader_root/venv/bin/python" -m pip check
 "$reader_root/venv/bin/python" -c 'import importlib.util; assert importlib.util.find_spec("pydantic_ai") is None'
-cp fresh-run/consumer-pins.json "$reader_root/selected-pins.json"
+cp retained/fresh-run/consumer-pins.json "$reader_root/selected-pins.json"
 "$native_python" - "$reader_root" <<'PY'
 import sys
 import os
@@ -33,7 +34,8 @@ root = Path(sys.argv[1])
 pins, policy = root / "selected-pins.json", root / "selected-policy.json"
 reader = root / "venv/bin/probity-read-pydantic-recovery"
 write(policy, select_policy(pins, reader))
-first = gate(Path("fresh-run"), pins, policy, sha(policy.read_bytes()), reader, Path("host-receipts"))
+packet, withheld = Path("retained/fresh-run"), Path("retained/WITHHELD-SOURCES.json")
+first = gate(packet, pins, policy, sha(policy.read_bytes()), reader, Path("installed-receipts"), withheld)
 poison = root / "poison"
 poison.mkdir()
 marker = root / "injection-executed"
@@ -42,32 +44,33 @@ marker = root / "injection-executed"
 old_pythonpath = os.environ.get("PYTHONPATH")
 os.environ["PYTHONPATH"] = str(poison)
 try:
-    second = gate(Path("fresh-run"), pins, policy, sha(policy.read_bytes()), reader, Path("host-repeat"))
+    second = gate(packet, pins, policy, sha(policy.read_bytes()), reader, Path("installed-repeat"), withheld)
 finally:
     if old_pythonpath is None:
         os.environ.pop("PYTHONPATH", None)
     else:
         os.environ["PYTHONPATH"] = old_pythonpath
 assert not marker.exists()
-first_stdout = Path("host-receipts/reader.stdout").read_bytes()
-second_stdout = Path("host-repeat/reader.stdout").read_bytes()
-first_environment = strict_loads(Path("host-receipts/reader-process.json").read_bytes())["environment"]
-second_environment = strict_loads(Path("host-repeat/reader-process.json").read_bytes())["environment"]
+first_stdout = Path("installed-receipts/reader.stdout").read_bytes()
+second_stdout = Path("installed-repeat/reader.stdout").read_bytes()
+first_environment = strict_loads(Path("installed-receipts/reader-process.json").read_bytes())["environment"]
+second_environment = strict_loads(Path("installed-repeat/reader-process.json").read_bytes())["environment"]
 assert all("PYTHONPATH" not in environment and "PYTHONHOME" not in environment for environment in (first_environment, second_environment))
 assert first_stdout == second_stdout
-write(Path("host-receipts/hostile-pythonpath-control.json"), {"unselectedModuleExecuted": marker.exists(), "readerEnvironmentClearsPythonPath": "PYTHONPATH" not in second_environment, "reportEqual": first_stdout == second_stdout, "originalStdoutSha256": sha(first_stdout), "repeatStdoutSha256": sha(second_stdout)})
+write(Path("installed-receipts/hostile-pythonpath-control.json"), {"unselectedModuleExecuted": marker.exists(), "readerEnvironmentClearsPythonPath": "PYTHONPATH" not in second_environment, "reportEqual": first_stdout == second_stdout, "originalStdoutSha256": sha(first_stdout), "repeatStdoutSha256": sha(second_stdout)})
 assert first == second
-assert strict_loads(Path("fresh-report.json").read_bytes().rstrip(b"\n")) == strict_loads(Path("host-receipts/reader.stdout").read_bytes().rstrip(b"\n"))
-assert strict_loads(Path("host-repeat/reader.stdout").read_bytes().rstrip(b"\n")) == strict_loads(Path("host-receipts/reader.stdout").read_bytes().rstrip(b"\n"))
+assert Path("installed-receipts/reader.stdout").read_bytes() == Path("retained/host-receipts/reader.stdout").read_bytes()
+assert strict_loads(Path("retained/fresh-report.json").read_bytes().rstrip(b"\n")) == strict_loads(Path("installed-receipts/reader.stdout").read_bytes().rstrip(b"\n"))
+assert strict_loads(Path("installed-repeat/reader.stdout").read_bytes().rstrip(b"\n")) == strict_loads(Path("installed-receipts/reader.stdout").read_bytes().rstrip(b"\n"))
 helper = next((root / "venv/lib").glob("python*/site-packages/probity_pydantic_recovery/gate.py"))
 original = helper.read_bytes()
 try:
     helper.write_bytes(original + b"\n# changed installed helper\n")
     try:
-        gate(Path("fresh-run"), pins, policy, sha(policy.read_bytes()), reader, Path("changed-reader-receipts"))
+        gate(packet, pins, policy, sha(policy.read_bytes()), reader, Path("changed-reader-receipts"), withheld)
     except VerificationError as error:
         assert str(error) == "host-reader-selection"
-        write(Path("host-receipts/changed-helper-refusal.json"), {"status": "refused", "reason": str(error), "launcherUnchanged": True})
+        write(Path("installed-receipts/changed-helper-refusal.json"), {"status": "refused", "reason": str(error), "launcherUnchanged": True})
     else:
         raise AssertionError("changed helper gained admission")
 finally:

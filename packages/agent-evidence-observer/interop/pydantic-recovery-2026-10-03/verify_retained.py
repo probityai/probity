@@ -12,9 +12,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from probity_observer.crypto import canonical  # noqa: E402
-from probity_pydantic_recovery.common import load, withheld_sources  # noqa: E402
-from probity_pydantic_recovery.reader import verify_saved  # noqa: E402
+from probity_observer.crypto import canonical
+
+from probity_pydantic_recovery.common import load, withheld_sources
+from probity_pydantic_recovery.reader import verify_saved
 
 RETAINED = HERE / "retained"
 

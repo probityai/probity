@@ -76,25 +76,38 @@ or install.
 
 ## Reproduce
 
-From an isolated Python 3.13 environment, install the selected native dependencies
-and exact Observer source. From this profile directory:
+The producing operation (the native Agent, the protected HTTP target, the signed
+SQLite store and the hard-exiting workers) is run by the operator's runtime. The
+packet it wrote is retained under `retained/fresh-run`, with the digests of the
+producer sources it withheld in `retained/WITHHELD-SOURCES.json`, the original
+reader output in `retained/host-receipts/reader.stdout` and the original
+installed-reader host receipts in `retained/host-receipts` and
+`retained/host-repeat`. This directory carries no producer. Everything below
+runs over the retained bytes.
+
+From an isolated Python 3.13 environment, install the locked tools and the exact
+Observer source. From this profile directory:
 
 ```bash
-python -m pip install --require-hashes --only-binary=:all: -r requirements.lock
+python -m pip install --require-hashes --only-binary=:all: -r requirements-test.lock
 python -m pip install --no-deps -e ../..
 python -m pip check
-python -m ruff check recovery_*.py probity_pydantic_recovery tests
-python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' recovery_*.py probity_pydantic_recovery tests
+python -m ruff check recovery_host.py verify_retained.py probity_pydantic_recovery tests
+python -m ruff check --select C901 --config 'lint.mccabe.max-complexity=5' recovery_host.py verify_retained.py probity_pydantic_recovery tests
 timeout --signal=TERM --kill-after=5s 180s python -m pytest -q tests
-timeout --signal=TERM --kill-after=5s 240s python recovery_run.py fresh-run --source-revision "$(git rev-parse HEAD)" > fresh-report.json
+python verify_retained.py
 bash verify_install.sh "$(command -v python)"
 ```
 
+`verify_retained.py` runs the framework-free reader over the retained packet and
+requires its output to equal the retained reader output byte for byte. The tests
+reselect altered copies of the retained packet and require each semantic refusal.
 The install script builds normal wheels and creates a separate environment with
-no Pydantic AI. It copies selected pins outside the packet, selects the actual
-reader closure, runs the host gate twice, compares complete reports and refuses
-a changed helper. Workflow output retains these receipts. A new packet path is
-mandatory. Existing results never get overwritten.
+no Pydantic AI. It copies the retained pins outside the packet, selects the
+actual reader closure, runs the host gate twice over the retained packet,
+compares the complete report to the retained reader output and refuses a changed
+helper. Workflow output retains these receipts. Existing results never get
+overwritten.
 
 Host installation selection checks every file, including selected regular-file
 symlink targets. CPython creates `lib64 -> lib` on 64-bit Linux. The closure
@@ -136,7 +149,7 @@ Host OS and Python standard library remain local custody assumptions.
 Power loss, general exactly-once effects, production containment, producer
 acceptance and recurring outside adoption remain separate outcomes.
 
-Native test packets are transient controls. A later retained original must state
-its exact source commit and measured run independently from those controls.
-GitHub artifacts have 90-day retention. Durable archive custody needs its own
+The retained packet is the measured run. A later retained original must state its
+exact source commit and measured run independently. GitHub artifacts have 90-day
+retention. Durable archive custody needs its own
 byte/member readback receipt.

@@ -27,7 +27,7 @@ defaults:
     working-directory: packages/agent-evidence-observer
 
 jobs:
-  native-installed-recovery:
+  retained-and-installed-reader:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -40,32 +40,28 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.13'
-      - name: Install the selected native profile and exact Observer checkout
+      - name: Install the locked test tools and exact Observer checkout
         run: |
-          python -m pip install --require-hashes --only-binary=:all: -r requirements.lock --report install-report.json
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-test.lock --report install-report.json
           python -m pip install --no-deps -e ../..
           python -m pip check
-      - name: Check native process and semantic refusal controls
+      - name: Check semantic refusal controls over the retained packet
         run: |
-          python -m ruff check --isolated recovery_*.py probity_pydantic_recovery tests
-          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' recovery_*.py probity_pydantic_recovery tests
+          python -m ruff check --isolated recovery_host.py verify_retained.py probity_pydantic_recovery tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' recovery_host.py verify_retained.py probity_pydantic_recovery tests
           timeout --signal=TERM --kill-after=5s 180s python -m pytest -q tests --junitxml=test-results.xml
       - name: Verify the retained original packet with public observer code
         run: python verify_retained.py
-      - name: Execute and retain a fresh native original
-        run: timeout --signal=TERM --kill-after=5s 240s python recovery_run.py fresh-run --source-revision "$GITHUB_SHA" > fresh-report.json
-      - name: Install a framework-free reader and check host selection
+      - name: Install a framework-free reader and replay the retained packet through the host gate
         run: bash verify_install.sh "$(command -v python)"
-      - name: Retain native history, SQLite, process originals and host receipts
+      - name: Retain installed-reader receipts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: pydantic-deferred-recovery-${{ github.sha }}
           path: |
-            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/fresh-run/
-            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/fresh-report.json
-            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/host-receipts/
-            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/host-repeat/
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/installed-receipts/
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/installed-repeat/
             packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/install-report.json
             packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/reader-install-report.json
             packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/test-results.xml
