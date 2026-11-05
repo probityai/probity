@@ -29,18 +29,15 @@ reporter unless they ask not to be named.
 An observer has to look at the host, so a static scanner will see code that
 reads files, starts processes and opens local sockets. This is all of it:
 
-- **Files.** The broker hashes the file tree of the run directory you pass it,
-  before and after each brokered write, and writes its signed packet, history and
-  public keys into that directory. The readers read the reports and packets you
-  name. The boundary probe also hashes the `bwrap` binary and the interpreter it
-  launches, so the record names exactly what ran.
-- **Processes.** `run-workload` and the boundary probe start `bwrap`
-  (bubblewrap) with `--unshare-all --clearenv --cap-drop ALL`, exposing only the
-  broker's socket. The native readers start the framework command you name, with
-  a timeout. Nothing is started at import or install time.
-- **Network.** The HTTP ticket service listens on `127.0.0.1` only, and its client
-  calls that local address. The sandboxed probes talk to the broker over a Unix
-  socket. The package makes no other network calls.
+- **Files.** The readers read the reports, packets and retained captures you
+  name, and write only the output paths you pass them.
+- **Processes.** The native readers start the framework command you name, with
+  a timeout. Nothing is started at import or install time. The producing
+  operations (the broker, the sandboxed workload and the protected dispatch) are
+  run by the operator's runtime and are not part of this package.
+- **Network.** Only the optional witness client and server and the `done`
+  replay connect, and only to the addresses you configure. Nothing else in the
+  package opens a connection.
 - **Keys.** Signing keys are generated per run in the same process. They are
   never read from or sent to anywhere else.
 

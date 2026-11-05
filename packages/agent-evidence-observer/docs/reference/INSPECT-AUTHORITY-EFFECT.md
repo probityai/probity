@@ -5,14 +5,7 @@ This reference retains the exact source, recorded checks, and evidence boundary.
 
 This bounded profile connects actual Inspect ReAct tool events to one selected AAE decision and a native HTTP ticket update. It exercises Inspect 0.3.281 with controlled mock outputs, the existing unsigned native AAE kernel and the existing signed HTTP ticket profile. It is an executable same-operator reference, with no claim of model quality, authenticated AAE issuer identity, independent custody or production adoption.
 
-Run from the Observer checkout. Create its `.venv`, install the optional native
-dependencies, and select a new output directory:
-
-```sh
-uv venv .venv --python python3.12
-uv pip install --python .venv/bin/python -e '.[test,inspect-historical]'
-.venv/bin/python interop/evaluation-contract-2026-10-01/inspect_ticket.py ./inspect-ticket-run --source-revision "$(git rev-parse HEAD)"
-```
+The operator's runtime ran the packet; its retained output is read from the profile's `retained/` directory.
 
 Before any framework call, `plan-before-run.json` selects every attempt, the exact action request, content, unsigned mandate and native decision, local grant, issuer and service public keys, signed initial ticket snapshot and decision-bound service configuration. It also selects the source manifest, which retains the actual implementation and relevant framework bytes, Inspect metadata, license and installed Python source digests. The local plan records prior selection; it is not an authenticated external witness. Role keys belong to this demo operator, and private keys are never placed in the retained packet.
 
@@ -31,9 +24,7 @@ The pending-effect case really interrupts the service after its durable intent a
 
 An outside reader must select the hashes in `consumer-pins.json` separately from candidate output, including the original native/HTTP artifact manifest and the historical evaluation time. A copy adjacent to the packet is a convenience for the demo operator, not independent pin selection. Keep the pre-run plan and source manifest before execution, then select the native output manifest from your retained originals. The one-hour local grants are checked at that selected historical time and at the signed dispatch/effect times; the report does not establish current authorization or current revocation.
 
-```sh
-.venv/bin/python interop/evaluation-contract-2026-10-01/inspect_ticket.py ./inspect-ticket-run --verify --pins-file /path/to/externally-selected-pins.json
-```
+The reader is `inspect_ticket_reader.py` in the profile directory, run with a pins file selected outside the packet.
 
 This reader invokes neither Inspect nor HTTP. It rejects changed native arguments or scores, mismatched raw HTTP joins, rehashed request substitution, receipts from a different attempt, altered signed state or readback content, source substitution, artifact additions, altered or additional original native logs, and symlinks anywhere in the retained packet. All six planned attempts remain in the result. A selected population missing a scheduled native record becomes start-unknown and effect-unknown rather than disappearing from the denominator. There is no aggregate score and no task-to-effect inference.
 

@@ -11,16 +11,9 @@ Three actual JobRunner/JobWorkFlow executions separate the valid path, a stale-r
 
 ## Select a consistent runtime
 
-The original [source selection](../../interop/crewai-job-fences-2026-10-04/native-source-selection.json) and reader lock remain unchanged. The separate [runtime selection](../../interop/crewai-job-fences-2026-10-04/runtime-source-selection.json) binds the successor Observer source and both hash-required runtime locks.
+The original source selection and reader lock remain unchanged. The separate runtime reader lock binds the successor Observer source and both hash-required runtime locks.
 
-Package checks found three conflicts in the original installation: a missing ONNX Runtime dependency, rich15 where Instructor requires rich<15, and the old Observer cryptography<47 limit against the publisher's cryptography50 pin. The [lock generator](../../interop/crewai-job-fences-2026-10-04/compile-runtime-locks.sh) resolves the five selected wheels' actual dependency metadata. It keeps the publisher constraints except rich15 and restores the publisher's ONNX Runtime1.23.2 selection on Python3.13. Cryptography50 stays selected; [the publisher's cited advisory](https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5) concerns PKCS#7 decryption and is patched in that version. This does not claim the advisory affected the local Ed25519 record path.
-
-Starting from the Observer repository root, after building the five source-selected wheels shown in the workflow, regenerate into a new directory:
-
-```sh
-set -eu
-bash interop/crewai-job-fences-2026-10-04/compile-runtime-locks.sh SELECTED_CREWAI_CHECKOUT SELECTED_WHEEL_DIRECTORY NEW_LOCK_DIRECTORY
-```
+Package checks found three conflicts in the original installation: a missing ONNX Runtime dependency, rich15 where Instructor requires rich<15, and the old Observer cryptography<47 limit against the publisher's cryptography50 pin. The lock generator, run by the operator's runtime, resolves the five selected wheels' actual dependency metadata. It keeps the publisher constraints except rich15 and restores the publisher's ONNX Runtime1.23.2 selection on Python3.13. Cryptography50 stays selected; [the publisher's cited advisory](https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5) concerns PKCS#7 decryption and is patched in that version. This does not claim the advisory affected the local Ed25519 record path.
 
 Review the resolved versions and hashes before replacing the active locks and their runtime-selection digests. Both owning installed environments run a package check after normal no-deps wheel installation; the reader repeats it after installing Verify. A successful dependency check does not replace the native, retained-evidence or semantic-refusal controls below.
 

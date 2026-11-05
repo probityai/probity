@@ -10,15 +10,9 @@ declaration-to-action cases as proposed work; it is still an open proposal.
 The mapper uses fields present in the pinned Agent Manifest source. It does not
 claim Manifest, TRACE, Agent Credentials or ODIS conformance.
 
-## Run the cases
+## Retained cases
 
-From the observer repository:
-
-```bash
-PYTHONPATH=src python examples/declaration_demo.py --output declaration-run
-```
-
-The output directory must be new or empty. The run retains declaration and
+The operator's runtime runs the cases and writes the output directory; this package reads and checks it. The run retains declaration and
 artifact bytes, runtime values, signed grant, issuer policy, exact request,
 broker history, witness ledger, sealed packet, actual target file, read-back
 effect and per-axis results. The baseline applies one write through the
@@ -74,15 +68,10 @@ history checks remain separate work.
 The optional native path uses the upstream SDK rather than another token
 implementation. Obtain the exact source and its declared dependencies:
 
-```bash
-git clone https://github.com/agentrust-io/agent-manifest native-manifest
-git -C native-manifest checkout fed9aeb091e4c77e0b40e12e959bee30b52e3c75
-python -m pip install --target native-deps cbor2==6.1.4 pydantic==2.13.5
-PYTHONPATH=src:native-deps python examples/declaration_demo.py \
-  --output declaration-native-run --native-sdk-root native-manifest
-```
+The native run is produced the same way against a pinned checkout of
+`agentrust-io/agent-manifest` at `fed9aeb091e4c77e0b40e12e959bee30b52e3c75`.
 
-The demo checks every one of the 28 upstream Python module Git blob pins before
+The native run checks every one of the 28 upstream Python module Git blob pins before
 importing the SDK. It also checks the exact retained owner vector bytes. The
 native output retains those checked SDK sources with their license and notice,
 as well as original/tampered envelope bytes and each input context. Parser

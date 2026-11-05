@@ -4,9 +4,9 @@ A refund request succeeds, but the connection drops before the caller gets the
 reply. The caller tries again. Should the application record another refund or
 return the result it already has?
 
-This example shows how Observer answers that question. It records a synthetic
-refund in a local SQLite database, then interrupts and retries the process. You
-can inspect what happened and check the records from another installation.
+This example shows how Observer answers that question. The operator's runtime recorded a synthetic
+refund in a local SQLite database, then interrupted and retried the process. You
+can inspect what happened and check the retained records from another installation.
 
 ## What happens on a retry?
 
@@ -23,11 +23,10 @@ approval check and the host's own permission check.
 The host must keep the same protected database. Starting with a new store loses
 the history on which these decisions depend.
 
-## Run the controlled example
+## Check the retained example
 
-Follow the [installation and run instructions](reference/APS-REFUND-RETRIES.md#run-the-controlled-example).
-They select the exact source and dependencies, run the crash cases, and save the
-records. The example uses APS approval receipts and a fixed test clock.
+Follow the [installation and check instructions](reference/APS-REFUND-RETRIES.md#check-the-retained-example).
+They select the exact source and dependencies and replay the retained crash cases. The example uses APS approval receipts and a fixed test clock.
 
 ## Read the retained result from another installation
 

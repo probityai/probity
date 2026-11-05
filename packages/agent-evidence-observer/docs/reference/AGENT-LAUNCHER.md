@@ -197,8 +197,8 @@ listed in `signals`.
   forged trace line that parses is not detected.
 - bubblewrap is not used: it fails to set up a user namespace on hosts with
   `kernel.apparmor_restrict_unprivileged_userns=1`, including the default
-  Ubuntu 24.04 desktop. The older `boundary-probe` command still uses it and
-  runs on CI runners.
+  Ubuntu 24.04 desktop. The older boundary probe, run by the operator's runtime,
+  still uses it.
 - Paths from calls other than `open` are normalised but their symbolic links
   are not resolved. inotify reports the real path, so a write through a link
   shows up as an unattributed change.

@@ -17,7 +17,7 @@ records the paths, commit, contributor and exact fixture/license hashes.
 The Apache-2.0 [license](../../tests/fixtures/agentavow-tool-manifest-v1/LICENSE)
 is retained with the fixture. No signature, key or grade is regenerated.
 
-## Run and read the retained effect
+## Read the retained effect
 
 Start in an Observer source checkout. All Python commands use its own environment.
 The fixture is local. These commands make no MCP or scan-service request.
@@ -26,12 +26,10 @@ The fixture is local. These commands make no MCP or scan-service request.
 set -eu
 uv venv .venv --python python3.12
 uv pip install --python .venv/bin/python -e '.[test]'
-.venv/bin/python examples/tool_manifest_effect.py ./manifest-effect-run > manifest-effect-run.stdout.json
-.venv/bin/python examples/tool_manifest_effect.py ./manifest-effect-run --verify --consumer-pins ./manifest-effect-run/tool-match/consumer-pins.json > manifest-effect-run.verification.json
 .venv/bin/pytest -q tests/test_tool_manifest_effect.py
 ```
 
-Use a new output directory. A changed source, failed reader or unexpected refusal
+The operator's runtime writes the effect run; the tests read the retained fixtures. A changed source, failed reader or unexpected refusal
 must stop the recipe. Preserve stderr and the exit status.
 
 The two output files carry the run's own clock in `runEvaluationTime`, so a rerun

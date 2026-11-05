@@ -30,8 +30,7 @@ not establish a remote provider's effect.
 ## Start with the core tools
 
 Use [Running the demo](RUNNING.md) for a first recorded write and retry.
-The [component tour](OVERVIEW.md) explains how the broker, ticket service,
-history, and readers fit together. [Installation and profile selection](INSTALLATION.md)
+The [component tour](OVERVIEW.md) explains how the history and readers fit together. [Installation and profile selection](INSTALLATION.md)
 helps you choose the package or source profile for your task.
 
 ## For developers and agents
@@ -44,7 +43,6 @@ Keep those references with the example when you review or automate it.
 The [ADK full-suite source reference](reference/ADK-FULL-TOX-SOURCE.md) separates
 the recorded upstream correction from the native consumer's original SDK pin.
 
-For implementation contracts, see the [design and trust boundary](DESIGN.md),
-[protected dispatch](PROTECTED-DISPATCH.md), and [consumer admission](CONSUMER-ADMISSION.md).
+For implementation contracts, see the [design and trust boundary](DESIGN.md).
 [Sealed pytest ids counted by the verifier](SEALED-PYTEST-REPLAY.md) gives the threat model of
 the `probity done` grader's pytest replay and what it does not cover.
