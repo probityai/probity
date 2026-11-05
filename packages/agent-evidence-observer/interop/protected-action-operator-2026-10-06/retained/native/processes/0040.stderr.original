@@ -1,0 +1,2 @@
+consumer admission refused: interval was already admitted by this consumer
+operator role refused: interval was already admitted by this consumer

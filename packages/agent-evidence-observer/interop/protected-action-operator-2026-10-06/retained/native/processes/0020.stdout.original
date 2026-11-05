@@ -1,0 +1,1 @@
+{"acknowledged":true,"pid":6815,"protocolError":null,"replyHex":"7b226572726f72223a22636f6e74656e742064696765737420646966666572732066726f6d2074686520617574686f72697a656420616374696f6e222c226f6b223a66616c73657d0a","response":{"error":"content digest differs from the authorized action","ok":false},"role":"workload","transportError":null,"uid":65534}

@@ -1,0 +1,1 @@
+{"acknowledged":true,"pid":7029,"protocolError":null,"replyHex":"7b226572726f72223a227772697465206f7574636f6d6520756e7265736f6c7665643b206f70657261746f72207265636f76657279207265717569726564222c226f6b223a66616c73657d0a","response":{"error":"write outcome unresolved; operator recovery required","ok":false},"role":"workload","transportError":null,"uid":65534}

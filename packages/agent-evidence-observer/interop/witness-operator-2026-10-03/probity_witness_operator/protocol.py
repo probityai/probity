@@ -21,6 +21,7 @@ MAX_FRAME = 2097152
 MAX_ENTRIES = 512
 INTERVAL_ID = re.compile(r"[\x21-\x7e]{1,128}\Z")
 HEX_DIGEST = re.compile(r"[0-9a-f]{64}\Z")
+CONTENT = b"effect committed through public witness port\n"
 
 
 def require(condition: bool, reason: str) -> None:

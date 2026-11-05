@@ -17,12 +17,13 @@ fixtures = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixtures)
 
 
-def selected(tmp: Path, change: str | None) -> tuple[Path, Path, Path, str]:
+def selected(tmp: Path, change: str | None) -> tuple[Path, Path, Path, str, Path]:
     """Freeze external host policy and original packet pins before child launch."""
     packet, pins = fixtures.selected_durable_packet(tmp / "original")
+    listed = fixtures.withheld_list(packet)
     policy = tmp / "host-policy.json"
-    value = {"schema": "probity-framework-host-gate-v2", "reader": "langgraph-durable", "profile": "probity-langgraph-durable-restart-v0", "plannedAttempts": 6, "pinsSha256": hashlib.sha256(pins.read_bytes()).hexdigest()}
-    changes = {"v1-new-reader": {"schema": "probity-framework-host-gate-v1"}, "v2-historical-reader": {"reader": "langgraph"}, "wrong-profile": {"profile": "probity-langgraph-aae-ticket-v0"}, "wrong-count": {"plannedAttempts": 5}, "boolean-count": {"plannedAttempts": True}}
+    value = {"schema": "probity-framework-host-gate-v2", "reader": "langgraph-durable", "profile": "probity-langgraph-durable-restart-v0", "plannedAttempts": 6, "pinsSha256": hashlib.sha256(pins.read_bytes()).hexdigest(), "withheldSha256": hashlib.sha256(listed.read_bytes()).hexdigest()}
+    changes = {"v1-new-reader": {"schema": "probity-framework-host-gate-v1"}, "v2-historical-reader": {"reader": "langgraph"}, "wrong-profile": {"profile": "probity-langgraph-aae-ticket-v0"}, "wrong-count": {"plannedAttempts": 5}, "boolean-count": {"plannedAttempts": True}, "withheld-digest": {"withheldSha256": "0" * 64}}
     value.update(changes.get(change, {}))
     policy.write_text(json.dumps(value))
     digest = hashlib.sha256(policy.read_bytes()).hexdigest()
@@ -30,13 +31,13 @@ def selected(tmp: Path, change: str | None) -> tuple[Path, Path, Path, str]:
         pins.write_text("{}")
     if change == "reader-refusal":
         (packet / "artifact-manifest.json").write_text("{}")
-    return packet, pins, policy, "0" * 64 if change == "policy-digest" else digest
+    return packet, pins, policy, "0" * 64 if change == "policy-digest" else digest, listed
 
 
 def invoke(tmp: Path, change: str | None = None) -> subprocess.CompletedProcess[str]:
     """Run the actual installed durable reader through the public host wrapper."""
-    packet, pins, policy, digest = selected(tmp, change)
-    return subprocess.run([sys.executable, str(HERE / "framework_gate.py"), "--packet", str(packet), "--pins", str(pins), "--policy", str(policy), "--policy-sha256", digest, "--reader-bin", str(Path(sys.executable).parent), "--output", str(tmp / "receipt")], capture_output=True, text=True, timeout=60, check=False)
+    packet, pins, policy, digest, listed = selected(tmp, change)
+    return subprocess.run([sys.executable, str(HERE / "framework_gate.py"), "--packet", str(packet), "--pins", str(pins), "--policy", str(policy), "--policy-sha256", digest, "--withheld-sources", str(listed), "--reader-bin", str(Path(sys.executable).parent), "--output", str(tmp / "receipt")], capture_output=True, text=True, timeout=60, check=False)
 
 
 class TestDurableFrameworkGate:
@@ -57,7 +58,7 @@ class TestDurableFrameworkGate:
             assert json.loads((receipt / "child-status.json").read_bytes())["returncode"] == 0
 
     class TestFailingCases:
-        @pytest.mark.parametrize("change", ["v1-new-reader", "v2-historical-reader", "wrong-profile", "wrong-count", "boolean-count", "policy-digest", "pins-digest", "reader-refusal"])
+        @pytest.mark.parametrize("change", ["v1-new-reader", "v2-historical-reader", "wrong-profile", "wrong-count", "boolean-count", "policy-digest", "pins-digest", "withheld-digest", "reader-refusal"])
         def test_refusal_before_publication(self, tmp_path: Path, change: str) -> None:
             result = invoke(tmp_path, change)
             assert result.returncode == 1

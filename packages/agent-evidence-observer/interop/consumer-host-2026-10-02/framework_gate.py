@@ -65,6 +65,26 @@ def selected_command(selection: dict[str, Any]) -> str:
     return COMMANDS[selection['reader']]
 
 
+def check_withheld(args: argparse.Namespace, selection: dict[str, Any], packet: Path) -> None:
+    """Pin the list of producer sources a retained packet keeps as digests only.
+
+    The policy names the list's SHA-256 as ``withheldSha256``; a list supplied
+    without that pin, or a pin without a list, is refused. The reader reads the
+    list in place, because it must sit above the packet.
+    """
+    if args.withheld_sources is None:
+        if 'withheldSha256' in selection:
+            raise ValueError('host policy selects a withheld-source list that was not supplied')
+        return
+    listed = args.withheld_sources.resolve(strict=True)
+    if listed.is_relative_to(packet):
+        raise ValueError('withheld-source list must be outside the producer packet')
+    raw = listed.read_bytes()
+    if selection.get('withheldSha256') != hashlib.sha256(raw).hexdigest():
+        raise ValueError('withheld-source list digest differs')
+    (args.output / 'withheld-sources.json').write_bytes(raw)
+
+
 def select(args: argparse.Namespace) -> dict[str, Any]:
     """Check the outside selection and freeze its exact pins for the child."""
     packet = args.packet.resolve(strict=True)
@@ -83,9 +103,19 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
     if hashlib.sha256(pin_raw).hexdigest() != selection['pinsSha256']:
         raise ValueError('selected pins digest differs')
     read_json(pin_raw)
+    check_withheld(args, selection, packet)
     (args.output / 'host-policy.json').write_bytes(raw)
     (args.output / 'selected-pins.json').write_bytes(pin_raw)
     return selection
+
+
+def reader_command(args: argparse.Namespace, selection: dict[str, Any]) -> list[str]:
+    """Build the child command from the reviewed selection and frozen pins."""
+    executable = args.reader_bin / selected_command(selection)
+    command = [str(executable.resolve(strict=True)), str(args.packet.resolve())]
+    if args.withheld_sources is not None:
+        command += ['--withheld-sources', str(args.withheld_sources.resolve())]
+    return command + ['--pins-file', str((args.output / 'selected-pins.json').resolve())]
 
 
 def capture(command: list[str], timeout: int, output: Path) -> int:
@@ -122,9 +152,7 @@ def run(args: argparse.Namespace) -> int:
     args.output.mkdir()  # Existing output, including symlinks, must refuse.
     try:
         selection = select(args)
-        executable = args.reader_bin / selected_command(selection)
-        command = [str(executable.resolve(strict=True)), str(args.packet.resolve()),
-                   '--pins-file', str((args.output / 'selected-pins.json').resolve())]
+        command = reader_command(args, selection)
         write_json(args.output / 'launch.json', {'command': command})
         code = capture(command, args.timeout, args.output)
         require_report(args.output, selection, code)
@@ -145,6 +173,7 @@ def main() -> int:
     parser.add_argument('--pins', type=Path, required=True)
     parser.add_argument('--policy', type=Path, required=True)
     parser.add_argument('--policy-sha256', required=True)
+    parser.add_argument('--withheld-sources', type=Path)
     parser.add_argument('--reader-bin', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--timeout', type=int, default=60, choices=range(1, 301), metavar='1..300')

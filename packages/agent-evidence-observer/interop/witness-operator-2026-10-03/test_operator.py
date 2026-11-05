@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -11,16 +12,18 @@ from typing import Any
 import pytest
 from hypothesis import given, settings, strategies as st
 
-from probity_observer import Broker, SigningKey, VerificationError, Witness, verify_packet
-from probity_observer.crypto import canonical, strict_loads
-from probity_observer.history import append_history, read_history
+from probity_observer.crypto import SigningKey, VerificationError, canonical, strict_loads
+from probity_observer.history import Witness, append_history, read_history
 from probity_observer.ledger import read_ledger, verify_ledger_head
 
+from begin_support import RETAINED, retained_histories, write_begin
+from probity_witness_operator import reader
 from probity_witness_operator.client import WitnessClient
 from probity_witness_operator.protocol import FORMAT, REPLY_DOMAIN, history_entries, request_bytes, sha, verify_reply
 from probity_witness_operator.store import Configuration, OperatorStore, generate_key, initialize
-from probity_witness_operator.reader import _terminal
-from probity_witness_operator.worker import _write_action
+
+POLICY = strict_loads((RETAINED / "host-policy.json").read_bytes())["cases"]["permit"]
+BEGIN, FULL = retained_histories()
 
 
 @dataclass
@@ -40,14 +43,11 @@ class Case:
         monkeypatch.setattr(client, "_exchange", self.store.handle)
         return client
 
-    def broker(self, monkeypatch: pytest.MonkeyPatch, interval: str = "run") -> Broker:
-        """Create a broker using only the public witness port."""
-        directory = self.root / interval
-        directory.mkdir()
-        workspace = directory / "work"
-        workspace.mkdir()
-        return Broker(workspace, directory / "history.jsonl", {"intervalId": interval, "scope": "/work", "operation": "write-file"},
-                      self.observer, self.client(monkeypatch))
+    def history(self, name: str, raw: bytes) -> Path:
+        """Write submitted history bytes to a file the client can read."""
+        path = self.root / name
+        path.write_bytes(raw)
+        return path
 
     def reopen(self, head: dict[str, Any]) -> OperatorStore:
         """Retain a head outside the operator store before reopening."""
@@ -55,14 +55,12 @@ class Case:
         return OperatorStore(self.config, self.retained, sha(self.retained.read_bytes()))
 
 
-@pytest.fixture
-def case(tmp_path: Path) -> Case:
-    """Initialize one fresh explicit host configuration for each control."""
-    observer = SigningKey.generate()
+def make_case(tmp_path: Path, observer_key: str, observer: SigningKey) -> Case:
+    """Initialize one fresh explicit host configuration pinned to one observer key."""
     key_path = tmp_path / "operator.key"
     witness_key = generate_key(key_path)
     value = {"format": FORMAT, "keyPath": str(key_path), "storePath": str(tmp_path / "state"),
-             "socketPath": str(tmp_path / "operator.sock"), "observerKey": observer.public_hex,
+             "socketPath": str(tmp_path / "operator.sock"), "observerKey": observer_key,
              "witnessKey": witness_key, "clientUid": os.getuid()}
     config_path = tmp_path / "operator.json"
     config_path.write_bytes(canonical(value))
@@ -73,26 +71,31 @@ def case(tmp_path: Path) -> Case:
     return Case(tmp_path, config, retained, OperatorStore(config, retained, sha(retained.read_bytes())), observer)
 
 
+@pytest.fixture
+def case(tmp_path: Path) -> Case:
+    """Pin a generated observer key whose private half signs synthetic begins."""
+    observer = SigningKey.generate()
+    return make_case(tmp_path, observer.public_hex, observer)
+
+
+@pytest.fixture
+def retained_case(tmp_path: Path) -> Case:
+    """Pin the observer key of the retained native packet; its private half is not held."""
+    return make_case(tmp_path, POLICY["observerKey"], SigningKey.generate())
+
+
 class TestOperator:
     class TestPassingCases:
         @pytest.mark.parametrize("alter_target", [False, True])
-        def test_authorized_reader_replays_actual_worker_record(self, case: Case, monkeypatch: pytest.MonkeyPatch, alter_target: bool) -> None:
-            broker = case.broker(monkeypatch)
-            issuer_path = case.root / "issuer.key"
-            issuer_key = generate_key(issuer_path)
-            broker.begin()
-            directory = broker.history_path.parent
-            authorized = _write_action(broker, directory, {"issuerKeyPath": str(issuer_path), "issuerKey": issuer_key})
-            directory.joinpath("packet.json").write_bytes(canonical(authorized.seal()))
-            record = strict_loads(directory.joinpath("authorization.json").read_bytes())
-            selected = {"request": record["request"], "issuerKey": issuer_key,
-                        "observerKey": case.observer.public_hex, "witnessKey": case.config.witness_key}
+        def test_authorized_reader_replays_retained_worker_record(self, tmp_path: Path, alter_target: bool) -> None:
+            directory = tmp_path / "permit"
+            shutil.copytree(RETAINED / "packet" / "permit", directory)
             if alter_target:
-                broker.workspace.joinpath("result.txt").write_bytes(b"different committed bytes")
+                directory.joinpath("work/result.txt").write_bytes(b"different committed bytes")
                 with pytest.raises(VerificationError):
-                    _terminal(directory, selected)
+                    reader._terminal(directory, POLICY)
             else:
-                _terminal(directory, selected)
+                reader._terminal(directory, POLICY)
 
         def test_initialized_directory_link_is_flushed_before_ack(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
             import stat
@@ -110,52 +113,39 @@ class TestOperator:
             assert (selected.store_path.stat().st_ino, True) in observed
             assert sum(not directory for _, directory in observed) == 2
 
-        def test_public_port_broker_retains_signed_effect(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            broker = case.broker(monkeypatch)
-            assert not hasattr(broker.witness, "signing_key")
-            assert not hasattr(broker.witness, "state_path")
-            broker.begin()
-            broker.write("write-1", "/work/result.txt", b"committed")
-            packet = broker.seal()
-            claim = verify_packet(packet, broker.history_path, case.observer.public_hex, case.config.witness_key, broker.workspace)
-            assert claim["witnessScope"] == "PEER"
-            assert len(claim["writes"]) == 1
-            assert case.store.export()["witnessScope"] == "PEER"
-            assert len(read_ledger(case.store.ledger, case.config.witness_key)) == 2
+        def test_retained_effect_history_is_witnessed_in_two_receipts(self, retained_case: Case) -> None:
+            retained_case.store.handle(request_bytes("checkpoint", BEGIN))
+            retained_case.store.handle(request_bytes("checkpoint", FULL))
+            assert retained_case.store.export()["witnessScope"] == "PEER"
+            assert len(read_ledger(retained_case.store.ledger, retained_case.config.witness_key)) == 2
 
-        def test_lost_ack_retries_same_receipt_once(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
-            request = request_bytes("checkpoint", broker.history_path.read_bytes())
+        def test_lost_ack_retries_same_receipt_once(self, retained_case: Case) -> None:
+            case = retained_case
+            request = request_bytes("checkpoint", BEGIN)
             first = case.store.handle(request)
             assert first == case.store.handle(request)
             assert len(read_ledger(case.store.ledger, case.config.witness_key)) == 1
-            broker.write("write", "/work/x", b"yes")
-            broker.seal()
-            terminal = request_bytes("checkpoint", broker.history_path.read_bytes())
+            terminal = request_bytes("checkpoint", FULL)
             assert case.store.handle(terminal) == case.store.handle(terminal)
             assert len(read_ledger(case.store.ledger, case.config.witness_key)) == 2
 
-        def test_restart_extends_external_head(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
+        def test_restart_extends_external_head(self, retained_case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
+            case = retained_case
+            begin, full = case.history("begin.jsonl", BEGIN), case.history("full.jsonl", FULL)
+            start = case.client(monkeypatch).checkpoint(begin)
             head = case.store.head
             case.store = case.reopen(head)
             client = case.client(monkeypatch)
-            assert client.latest_checkpoint(broker.history_path) == broker._start_checkpoint
-            broker.witness = client
-            broker.seal()
-            result = verify_ledger_head(case.store.ledger, head, case.config.witness_key)
+            assert client.latest_checkpoint(begin) == start
+            client.checkpoint(full)
+            result = verify_ledger_head(case.store.ledger, case.store.head, case.config.witness_key)
             assert result["count"] == 2
             assert result["missingTerminals"] == []
 
-        def test_registered_missing_terminal_stays_visible(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
-            broker.write("write", "/work/x", b"done before loss")
-            summary = verify_ledger_head(case.store.ledger, case.store.head, case.config.witness_key)
-            assert [x["intervalId"] for x in summary["missingTerminals"]] == ["run"]
-            assert (broker.workspace / "x").read_bytes() == b"done before loss"
+        def test_registered_missing_terminal_stays_visible(self, retained_case: Case) -> None:
+            retained_case.store.handle(request_bytes("checkpoint", BEGIN))
+            summary = verify_ledger_head(retained_case.store.ledger, retained_case.store.head, retained_case.config.witness_key)
+            assert [x["intervalId"] for x in summary["missingTerminals"]] == ["permit"]
 
         def test_local_witness_port_keeps_boundary_refusals(self, case: Case) -> None:
             witness = Witness(case.root / "local.json", SigningKey.generate())
@@ -214,46 +204,43 @@ class TestOperator:
             with pytest.raises(VerificationError, match="operator retained head pin differs"):
                 OperatorStore(case.config, case.retained, "0" * 64)
 
-        def test_rollback_refuses_old_valid_prefix(self, case: Case, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
+        def test_rollback_refuses_old_valid_prefix(self, retained_case: Case, caplog: pytest.LogCaptureFixture) -> None:
+            case = retained_case
+            case.store.handle(request_bytes("checkpoint", BEGIN))
             prefix = case.store.ledger.read_bytes()
-            broker.seal()
+            case.store.handle(request_bytes("checkpoint", FULL))
             head = case.store.head
             case.store.ledger.write_bytes(prefix)
             with pytest.raises(VerificationError, match="ledger is shorter than the retained witness head"):
                 case.reopen(head)
             assert caplog.messages[-1] == "witness ledger verification failed: ledger is shorter than the retained witness head"
 
-        def test_running_store_rejects_rollback(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
+        def test_running_store_rejects_rollback(self, retained_case: Case) -> None:
+            case = retained_case
+            case.store.handle(request_bytes("checkpoint", BEGIN))
             case.store.ledger.write_bytes(b"")
             with pytest.raises(VerificationError, match="ledger is shorter than the retained witness head"):
                 case.store.export()
 
-        def test_resigned_fork_refuses_retained_prefix(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            first = case.broker(monkeypatch)
-            first.begin()
-            first.seal()
+        def test_resigned_fork_refuses_retained_prefix(self, case: Case) -> None:
+            def register(tag: str) -> None:
+                for interval in ("first", "second"):
+                    raw = write_begin(case.root / (tag + interval + ".jsonl"), case.observer, interval)
+                    case.store.handle(request_bytes("checkpoint", raw))
+
+            register("authentic-")
             retained = case.store.head
             case.store.ledger.write_bytes(b"")
-            fresh = OperatorStore(case.config, case.retained, sha(case.retained.read_bytes()))
-            case.store = fresh
-            second = case.broker(monkeypatch, "fork")
-            second.begin()
-            second.seal()
-            assert case.store.head["count"] == retained["count"]
+            case.store = OperatorStore(case.config, case.retained, sha(case.retained.read_bytes()))
+            register("alternate-")
+            assert case.store.head["count"] == retained["count"] == 2
+            assert case.store.head["head"] != retained["head"]
             with pytest.raises(VerificationError, match="ledger does not extend the retained witness head"):
                 case.reopen(retained)
 
-        def test_wrong_observer_signed_begin_refuses(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            broker = case.broker(monkeypatch)
-            broker.observer_key = SigningKey.generate()
+        def test_wrong_observer_signed_begin_refuses(self, case: Case) -> None:
             with pytest.raises(VerificationError, match="witness history has an unpinned observer key"):
-                broker.begin()
-            assert not broker._started
-            assert list(broker.workspace.iterdir()) == []
+                case.store.handle(request_bytes("checkpoint", BEGIN))
             assert case.store.ledger.read_bytes() == b""
 
         @pytest.mark.parametrize("field,value", [("intervalId", []), ("intervalId", True), ("intervalId", ""),
@@ -274,14 +261,14 @@ class TestOperator:
                 case.store.handle(request_bytes("checkpoint", path.read_bytes()))
             assert case.store.export() == before
 
-        def test_signed_witness_cannot_replace_observer_signature(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
+        def test_signed_witness_cannot_replace_observer_signature(self, retained_case: Case) -> None:
+            case = retained_case
             from probity_observer.crypto import digest
             from probity_observer.ledger import RECEIPT_DOMAIN, HEAD_DOMAIN
-            broker = case.broker(monkeypatch)
-            broker.begin()
-            history = broker.history_path.read_bytes()
+            history_path = case.history("begin.jsonl", BEGIN)
+            history = BEGIN
             reply = strict_loads(case.store.handle(request_bytes("checkpoint", history)))
-            event = read_history(broker.history_path)[0]["event"]
+            event = read_history(history_path)[0]["event"]
             event["commitment"]["signature"] = "AA=="
             forged = case.root / "forged.jsonl"
             append_history(forged, event)
@@ -301,25 +288,22 @@ class TestOperator:
             reply["payload"]["historySha256"] = sha(changed)
             reply["signature"] = case.store.key.sign(REPLY_DOMAIN, reply["payload"])
             with pytest.raises(VerificationError, match="signature does not verify under the pinned key"):
-                verify_reply(canonical(reply), "checkpoint", changed, case.config.witness_key, case.observer.public_hex,
+                verify_reply(canonical(reply), "checkpoint", changed, case.config.witness_key, case.config.observer_key,
                              strict_loads(case.retained.read_bytes()))
 
         @pytest.mark.parametrize("field,value", [("keyPath", "attacker"), ("storePath", "attacker"), ("reset", True)])
-        def test_request_cannot_select_operator_controls(self, case: Case, monkeypatch: pytest.MonkeyPatch, field: str, value: Any) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
+        def test_request_cannot_select_operator_controls(self, retained_case: Case, field: str, value: Any) -> None:
+            case = retained_case
             original = case.store.ledger.read_bytes()
-            request = strict_loads(request_bytes("checkpoint", broker.history_path.read_bytes()))
+            request = strict_loads(request_bytes("checkpoint", BEGIN))
             request[field] = value
             with pytest.raises(VerificationError, match="request fields differ"):
                 case.store.handle(canonical(request))
             assert case.store.ledger.read_bytes() == original
 
         @pytest.mark.parametrize("mutation", ["drop-newline", "extra-entry-field", "noncanonical", "changed-chain", "boolean-sequence"])
-        def test_exact_history_controls(self, case: Case, monkeypatch: pytest.MonkeyPatch, mutation: str) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
-            raw = broker.history_path.read_bytes()
+        def test_exact_history_controls(self, mutation: str) -> None:
+            raw = BEGIN
             entry = strict_loads(raw[:-1])
             if mutation == "drop-newline":
                 raw = raw[:-1]
@@ -334,15 +318,14 @@ class TestOperator:
             with pytest.raises(VerificationError):
                 history_entries(raw)
 
-        def test_conflicting_terminal_retry_refuses(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
-            broker.seal()
-            entries = read_history(broker.history_path)
-            broker.history_path.write_bytes(canonical(entries[0]) + b"\n")
-            append_history(broker.history_path, {"kind": "seal", "claimDigest": "0" * 64})
+        def test_conflicting_terminal_retry_refuses(self, retained_case: Case) -> None:
+            case = retained_case
+            case.store.handle(request_bytes("checkpoint", BEGIN))
+            case.store.handle(request_bytes("checkpoint", FULL))
+            conflicting = case.history("conflicting.jsonl", BEGIN)
+            append_history(conflicting, {"kind": "seal", "claimDigest": "0" * 64})
             with pytest.raises(VerificationError, match="witness interval already has a terminal head"):
-                case.store.handle(request_bytes("checkpoint", broker.history_path.read_bytes()))
+                case.store.handle(request_bytes("checkpoint", conflicting.read_bytes()))
 
         def test_exact_capacity_refusal_leaves_store_exportable(self, case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
             from probity_observer.crypto import digest
@@ -368,10 +351,9 @@ class TestOperator:
             assert case.store.export()["head"] == head
 
         @pytest.mark.parametrize("mutation", ["history", "operation", "wrong-key", "receipt", "head-prefix"])
-        def test_rebound_signed_reply_refuses(self, case: Case, monkeypatch: pytest.MonkeyPatch, mutation: str) -> None:
-            broker = case.broker(monkeypatch)
-            broker.begin()
-            history = broker.history_path.read_bytes()
+        def test_rebound_signed_reply_refuses(self, retained_case: Case, mutation: str) -> None:
+            case = retained_case
+            history = BEGIN
             reply = strict_loads(case.store.handle(request_bytes("checkpoint", history)))
             payload = reply["payload"]
             if mutation == "history":
@@ -387,7 +369,7 @@ class TestOperator:
             reply["signature"] = case.store.key.sign(REPLY_DOMAIN, payload)
             with pytest.raises(VerificationError):
                 verify_reply(canonical(reply), "checkpoint", history, case.config.witness_key,
-                             case.observer.public_hex, strict_loads(case.retained.read_bytes()))
+                             case.config.observer_key, strict_loads(case.retained.read_bytes()))
 
         @settings(max_examples=20)
         @given(length=st.integers(min_value=262145, max_value=300000), prefix=st.binary(max_size=64))

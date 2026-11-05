@@ -131,8 +131,14 @@ def publish(
     interpreter: Path,
     reader: Path,
     output: Path,
+    withheld: Path | None = None,
 ) -> dict[str, Any]:
-  """Retain both gate receipts and refuse changes or failed admission."""
+  """Retain both gate receipts and refuse changes or failed admission.
+
+  A retained packet that omits source files passes the operator-selected
+  withheld-source list; the gate accepts an omitted file only with its exact
+  manifest digest.
+  """
   packet, frozen = _freeze_policy(
       packet, policy, policy_sha, interpreter, reader, output
   )
@@ -154,6 +160,8 @@ def publish(
         "--output",
         str(output.resolve() / f"gate-{index}"),
     ]
+    if withheld is not None:
+      argv += ["--withheld-sources", str(withheld.resolve())]
     reports.append(_invoke(argv, output, index))
   if reports[0] != reports[1]:
     raise ValueError("repeated_decision_changed")
@@ -179,6 +187,7 @@ def main() -> None:
   parser.add_argument("--python", type=Path, required=True)
   parser.add_argument("--reader", type=Path, required=True)
   parser.add_argument("--output", type=Path, required=True)
+  parser.add_argument("--withheld-sources", type=Path)
   args = parser.parse_args()
   receipt = publish(
       packet=args.packet,
@@ -187,6 +196,7 @@ def main() -> None:
       interpreter=args.python,
       reader=args.reader,
       output=args.output,
+      withheld=args.withheld_sources,
   )
   print(_encode(receipt).decode())
 
