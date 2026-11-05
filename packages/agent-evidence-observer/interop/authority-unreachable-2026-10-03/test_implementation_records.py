@@ -8,11 +8,18 @@ from pathlib import Path
 
 import pytest
 
-from implementation_records import check_upstream, read_alakris, read_all, read_mintid, read_proofable, verify_sources
-from producer import produce
+from implementation_records import (
+    check_upstream,
+    read_alakris,
+    read_all,
+    read_mintid,
+    read_proofable,
+    verify_sources,
+)
 from reader import read_run
 
 RECORDS = Path(__file__).resolve().parent / "implementation-records"
+RETAINED_RUN = Path(__file__).resolve().parent / "retained" / "native"
 MINTID_JSONL = "revocation-trace-testnet-20261006T073712Z.jsonl"
 MINTID_MANIFEST = "revocation-trace-testnet-20261006T073712Z.manifest.json"
 # REVIEWER PATCH (2026-10-08). The previous four "known failures" were properties of the pinned
@@ -55,11 +62,9 @@ def edit_jsonl(path: Path, change) -> None:
 
 @pytest.fixture(scope="module")
 def reference_report(tmp_path_factory):
-    """Produce and read this profile's twenty-two cases once for the rerun comparison."""
-    run = tmp_path_factory.mktemp("reference") / "run"
-    produce(run, "local-uncommitted")
-    report = read_run(run, json.loads((run / "consumer-pins.json").read_text()))
-    path = run / "reader-report.json"
+    """Read this profile's twenty-two retained cases once for the rerun comparison."""
+    report = read_run(RETAINED_RUN, json.loads((RETAINED_RUN / "consumer-pins.json").read_text()))
+    path = tmp_path_factory.mktemp("reference") / "reader-report.json"
     path.write_text(json.dumps(report), encoding="utf-8")
     return path
 

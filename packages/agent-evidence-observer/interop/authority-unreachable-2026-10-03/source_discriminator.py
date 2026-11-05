@@ -51,7 +51,8 @@ def inspect_fingerprint(path: Path) -> dict[str, Any]:
         raise ValueError("Alakris fingerprint functions are missing")
     namespace: dict[str, Any] = {"hashlib": hashlib, "json": json,
                                "__builtins__": {"isinstance": isinstance, "str": str, "dict": dict}}
-    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), namespace)
+    # Only the two pinned functions run, after the SHA-256 check, with a three-name builtins table.
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), namespace)  # noqa: S102
     fingerprint = namespace["compute_fingerprint"]
     item = {"title": "reviewed", "detail": {"body": "approved body"}, "media_id": "asset-1"}
     target = {"platform": "telegram", "lang": "en", "packaging": {"text": "reviewed packaging"}, "external_account_id": "destination-1"}

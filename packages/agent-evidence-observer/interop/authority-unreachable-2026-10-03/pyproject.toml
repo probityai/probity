@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = ["agent-evidence-observer==0.2.0", "cryptography==50.0.0", "eth-account==0.14.0"]
 
 [tool.setuptools]
-py-modules = ["authority_checks", "authority_profile", "implementation_records", "portable_envelope", "producer", "reader", "source_discriminator"]
+py-modules = ["authority_checks", "implementation_records", "portable_envelope", "reader", "source_discriminator"]
 
 [tool.pytest.ini_options]
 testpaths = ["."]

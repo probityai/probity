@@ -19,7 +19,7 @@ defaults:
     working-directory: packages/agent-evidence-observer
 
 jobs:
-  authority-effect-comparison:
+  retained-and-installed-reader:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -29,28 +29,33 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
-      - name: Install exact profile dependencies
-        run: python -m pip install -r interop/authority-unreachable-2026-10-03/requirements.txt
+      - name: Install exact reader dependencies and the Observer checkout
+        run: |
+          python -m pip install -r interop/authority-unreachable-2026-10-03/requirements.txt
+          python -m pip install --no-deps .
+          python -m pip check
       - name: Fetch immutable review source for bounded function checks
         run: curl --fail --location --proto '=https' --output "$RUNNER_TEMP/alakris-publication_jobs.py" 'https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/6e0beb6d39bb1faa279087fd06cf2fe6c98e639c/core/agent-core/src/core/content/publication_jobs.py'
       - name: Confirm vendored implementation records still match their sources
         run: python interop/authority-unreachable-2026-10-03/implementation_records.py interop/authority-unreachable-2026-10-03/implementation-records "$RUNNER_TEMP/implementation-records-upstream.json" --check-upstream
-      - name: Verify the retained run with public observer code
+      - name: Lint and test the reader over the retained run
+        working-directory: packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03
         run: |
-          python -m pip install --no-deps .
-          python -I interop/authority-unreachable-2026-10-03/verify_retained.py
-      - name: Build isolated installed producer and reader
-        run: bash interop/authority-unreachable-2026-10-03/verify_install.sh "$RUNNER_TEMP/authority-reference" "$GITHUB_SHA" "$RUNNER_TEMP/alakris-publication_jobs.py"
+          python -m ruff check --isolated ./*.py
+          ALAKRIS_SOURCE="$RUNNER_TEMP/alakris-publication_jobs.py" python -m pytest -q -p no:cacheprovider
+      - name: Verify the retained run with public observer code
+        run: python -I interop/authority-unreachable-2026-10-03/verify_retained.py
+      - name: Replay the retained run through a separately installed reader
+        run: bash interop/authority-unreachable-2026-10-03/verify_install.sh "$RUNNER_TEMP/authority-reader" "$RUNNER_TEMP/alakris-publication_jobs.py"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
-          name: authority-unreachable-reference
+          name: authority-unreachable-reader-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/authority-reference/native/
-            ${{ runner.temp }}/authority-reference/wheels/
-            ${{ runner.temp }}/authority-reference/*.json
-            ${{ runner.temp }}/authority-reference/*.xml
-            ${{ runner.temp }}/authority-reference/*.txt
+            ${{ runner.temp }}/authority-reader/wheels/
+            ${{ runner.temp }}/authority-reader/*.json
+            ${{ runner.temp }}/authority-reader/*.xml
+            ${{ runner.temp }}/authority-reader/*.txt
             ${{ runner.temp }}/implementation-records-upstream.json
           if-no-files-found: error
           retention-days: 90

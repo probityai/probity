@@ -2,7 +2,9 @@
 
 Runs the offline reader over ``retained/native`` with the retained consumer
 pins, then requires its report to equal the retained reader report byte for
-byte.
+byte. Then reads the vendored implementation records against that reader
+report and the retained source-discriminator report, and requires the result
+to equal the retained implementation-records report byte for byte.
 """
 from __future__ import annotations
 
@@ -13,7 +15,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from reader import read_run  # noqa: E402
+from implementation_records import read_all
+from reader import read_run
 
 RETAINED = HERE / "retained"
 
@@ -24,10 +27,20 @@ def verify() -> bytes:
     return (json.dumps(read_run(RETAINED / "native", pins), indent=2) + "\n").encode("ascii")
 
 
+def verify_records() -> bytes:
+    """Return the implementation-records report bytes over the retained reports."""
+    report = read_all(HERE / "implementation-records", RETAINED / "reader-report.json",
+                      RETAINED / "source-discriminator-report.json")
+    return (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
 def main() -> int:
-    """Exit zero only when the report equals the retained reader report."""
+    """Exit zero only when both reports equal their retained copies."""
     if verify() != (RETAINED / "reader-report.json").read_bytes():
         print("retained authority report differs from the retained reader report", file=sys.stderr)
+        return 1
+    if verify_records() != (RETAINED / "implementation-records-report.json").read_bytes():
+        print("implementation-records report differs from the retained report", file=sys.stderr)
         return 1
     print("retained authority reference run verified")
     return 0
