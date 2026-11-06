@@ -42,6 +42,9 @@ from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_e
 #: conformance run that records the field carries this identifier in the bytes its
 #: own pipeline emits. The URI is the same in every release.
 REFERENCE_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/agent-evidence-verify"
+# The identifier releases 0.1.0 to 0.4.1 carried, when the distribution was named probity-verify.
+# Bundles and decisions those releases wrote keep it; this release reads them and never writes it.
+PREDECESSOR_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/probity-verify"
 
 ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "brokered_file_write/v1": brokered_file_write.adjudicate,

@@ -162,6 +162,10 @@ def bind_retained(retained):
     return len(listed), len(withheld)
 
 
+CURRENT_ID = b"https://probityai.github.io/probity/verifiers/agent-evidence-verify"
+PREDECESSOR_ID = b"https://probityai.github.io/probity/verifiers/probity-verify"
+
+
 def replay_mode(retained, output, verifier, mode):
     """Run the installed CLI on each retained assertion and compare with the retained answer."""
     native = retained / "native"
@@ -184,7 +188,10 @@ def replay_mode(retained, output, verifier, mode):
         replayed = (output / mode / (label + ".stdout")).read_bytes()
         expected = ("supported" if completion else "contradicted") if sealed else "not_established"
         answer = json.loads(replayed) if code == 0 else None
-        same = code == recorded["exit"] and replayed == (root / (label + ".stdout")).read_bytes()
+        # The retained answers were written by probity-verify 0.4.x, which named the verifier by the
+        # predecessor identifier; the only byte that differs in this release's answer is that identifier.
+        same = (code == recorded["exit"] and
+                replayed.replace(CURRENT_ID, PREDECESSOR_ID) == (root / (label + ".stdout")).read_bytes())
         rows.append({"assertion": completion, "expected": expected, "exit": code,
                      "actual": answer["decision"] if answer else None,
                      "valid": same and code == 0 and answer["decision"] == expected

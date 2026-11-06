@@ -62,7 +62,7 @@
         }
       }
     },
-    "sha256": "76fd2f1639e9148bdd583c972e30f88670296650be9871d4e01f35ffbccd980c"
+    "sha256": "426c4f6e625e39929efcfdf8b5b9da0921c6d795cbef74f316c631d8f1c86c1f"
   },
   "implementation": [
     {
@@ -77,8 +77,8 @@
     },
     {
       "path": "src/agent_evidence_verify/a2a_server.py",
-      "bytes": 14744,
-      "sha256": "ce664695a4a20cffb4b8d7288c5c788752276c44c8cb33aac28d7dfe1f15c0f7"
+      "bytes": 14758,
+      "sha256": "46c7eba22232d50b7060aec6d92145b9cd105bf4333f69ae6a8a0caffe9d6b85"
     },
     {
       "path": "src/agent_evidence_verify/adapters/__init__.py",
@@ -152,8 +152,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/operand_lineage.py",
-      "bytes": 12072,
-      "sha256": "a24ae4f5e3b0517a1a9030c8a698128061be65bd0aa8d0880d9b4c99a74fa83b"
+      "bytes": 12079,
+      "sha256": "d17a48cae2a9b4834b2a4d7c86733728052045c2d646b9cad02ce6d140fa3834"
     },
     {
       "path": "src/agent_evidence_verify/adapters/probe_observed.py",
@@ -202,13 +202,13 @@
     },
     {
       "path": "src/agent_evidence_verify/bundle.py",
-      "bytes": 15670,
-      "sha256": "7b79354d560f63ce37b6b5b69d53fec8bc317d355508e451a24a4d61253eeddb"
+      "bytes": 16062,
+      "sha256": "2097408ea7bb029b5655bd3b1542a91a5f6bad639f97a6a6ece187755c7b977d"
     },
     {
       "path": "src/agent_evidence_verify/cli.py",
-      "bytes": 4657,
-      "sha256": "199868a4c04e0924b967a39190e00803e50eb16e82df18bb0a6524c7cc684621"
+      "bytes": 4678,
+      "sha256": "3d46ef00124ace56311de78ea085633efbddc664142dd7b5f1d0434a8f97ce4f"
     },
     {
       "path": "src/agent_evidence_verify/common.py",
@@ -217,8 +217,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 10492,
-      "sha256": "1406cc47792345ecf04755b602875cf2e13b7c26b957b7555c28d3d34fd63c2e"
+      "bytes": 10785,
+      "sha256": "0961b182fb5a6cd6b7d8fe604ca7477f2ad7707c16648d912c50bf0cbdfa6837"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",

@@ -31,7 +31,7 @@ from typing import Any
 
 from .cli import _load
 from .common import MAX_ARTIFACT_BYTES, CaseError, _artifact
-from .core import REFERENCE_VERIFIER_ID, adjudicate, canonical_json, render_packet
+from .core import PREDECESSOR_VERIFIER_ID, REFERENCE_VERIFIER_ID, adjudicate, canonical_json, render_packet
 from .json_input import parse_json
 
 _CONTROL_LIMIT = 1024 * 1024
@@ -268,7 +268,7 @@ def _producer_release(entries: dict[str, bytes]) -> str | None:
             record["schema_version"] != _PRODUCER_SCHEMA or
             not isinstance(verifier, dict) or set(verifier) != {"id", "version"}):
         raise CaseError(f"{_PRODUCER}: expected {_PRODUCER_SCHEMA} with verifier id and version")
-    if verifier["id"] != REFERENCE_VERIFIER_ID:
+    if verifier["id"] not in {REFERENCE_VERIFIER_ID, PREDECESSOR_VERIFIER_ID}:
         raise CaseError(f"{_PRODUCER}: written by another verifier, {verifier['id']!r}")
     release = verifier["version"]
     if not isinstance(release, str) or not _RELEASE.fullmatch(release):
@@ -288,8 +288,13 @@ def _check_decision(stored: bytes, result: dict, producer: str | None) -> None:
     if stored == canonical_json(result):
         return
     current = _release()
+    # A decision written before the rename names the predecessor identifier and nothing else differs.
+    predecessor = {**result, "reference": {"verifier": {"id": PREDECESSOR_VERIFIER_ID}}}
+    if stored == canonical_json(predecessor):
+        return
     if producer is None:
-        if any(stored == canonical_json(shape(result)) for _, shape in _LEGACY_SHAPES):
+        if any(stored == canonical_json(shape(result)) or stored == canonical_json(shape(predecessor))
+               for _, shape in _LEGACY_SHAPES):
             return
         shapes = ", ".join(["0.2.3 or 0.2.4", *(name for name, _ in _LEGACY_SHAPES)])
         raise CaseError(
