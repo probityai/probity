@@ -44,7 +44,8 @@ jobs:
           python -m ruff check --isolated ./*.py
           ALAKRIS_SOURCE="$RUNNER_TEMP/alakris-publication_jobs.py" python -m pytest -q -p no:cacheprovider
       - name: Verify the retained run with public observer code
-        run: python -I interop/authority-unreachable-2026-10-03/verify_retained.py
+        working-directory: packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03
+        run: python -I verify_retained.py
       - name: Replay the retained run through a separately installed reader
         run: bash interop/authority-unreachable-2026-10-03/verify_install.sh "$RUNNER_TEMP/authority-reader" "$RUNNER_TEMP/alakris-publication_jobs.py"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

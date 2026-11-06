@@ -169,6 +169,7 @@ def test_retained_incomplete_and_ledger_records_verify(tmp_path: Path) -> None:
 # profile's own reader package) runs in its profile workflow instead of here.
 PROFILE_RUNTIME_DRIVERS = {
     "aps-durable-refund-2026-10-05": "package-observer-aps-durable-refund.yml",
+    "authority-unreachable-2026-10-03": "package-observer-authority-unreachable.yml",
 }
 
 
