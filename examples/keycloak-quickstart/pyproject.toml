@@ -1,0 +1,27 @@
+[project]
+name = "keycloak-quickstart"
+version = "0.1.0"
+description = "Mint a Keycloak client-credentials token and carry its principal into a signed agent audit record"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+readme = "README.md"
+dependencies = [
+    "agent-evidence-vectors==0.35.0",
+    "cryptography>=50.0.2,<51",
+]
+
+[project.scripts]
+keycloak-quickstart = "keycloak_quickstart.cli:main"
+
+[dependency-groups]
+dev = ["pytest==9.2.0"]
+
+[build-system]
+requires = ["hatchling==1.33.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/keycloak_quickstart"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
