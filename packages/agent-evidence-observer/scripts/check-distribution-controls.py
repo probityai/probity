@@ -92,7 +92,7 @@ def run(wheel: Path, optimized: bool) -> None:
             expect(name, wheel, False)
             guide.write_text(original)
         for name, changed in (("missing-profile-route", original.replace(row + "\n", "")),
-                              ("repeated-profile-route", original + row + "\n")):
+                              ("repeated-profile-route", original.rstrip("\n") + "\n" + row + "\n")):
             guide.write_text(changed)
             expect(name, wheel, False)
             guide.write_text(original)

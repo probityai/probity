@@ -167,5 +167,6 @@ The command prints:
 {"noDetectedGap": "true", "status": "verified", "witnessScope": "PEER"}
 ```
 
-`scripts/fixtures/broker-packet/` holds a signed packet, the history, the public keys and the file tree, written by the operator's runtime. `noDetectedGap` means the broker's
-file-tree snapshots found no change it did not make. It does not mean every agent effect was seen.
+`scripts/fixtures/broker-packet/` holds a signed packet, the history, the public keys and the file
+tree of one retained run. `noDetectedGap` means the broker's file-tree snapshots found no change it
+did not make. It does not mean every agent effect was seen.
