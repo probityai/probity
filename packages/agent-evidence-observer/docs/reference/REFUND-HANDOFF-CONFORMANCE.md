@@ -51,9 +51,9 @@ checkpoints; they do not prove complete global history.
 
 Each signed payload contains the same `key_id` as its envelope. A handoff also
 contains its signed `issuer`. The verifier uses a record-specific signature
-domain over restricted canonical JSON. It refuses duplicate members,
-noncanonical bytes, floats, unsafe integers, non-ASCII strings, and unknown
-fields.
+domain over RFC 8785 canonical JSON. It refuses duplicate members,
+noncanonical bytes, floats, unsafe integers, lone surrogates, non-ASCII member
+names, and unknown fields. Identifier fields carry their own ASCII rules.
 
 ## Native data model
 

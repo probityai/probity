@@ -173,10 +173,10 @@ def test_retained_unreadable_completion_refuses_without_mutation(case: dict[str,
 
 
 def test_non_ascii_request_refuses_before_intent(case: dict[str, Any]) -> None:
-    """Native UTF-8 content remains separate from restricted signed JSON identity."""
+    """A request naming another principal refuses before any intent is written."""
     candidate = copy.deepcopy(case["candidate"])
     candidate["request"]["principal_id"] = "\u00e9"
-    with pytest.raises(VerificationError, match="non-ASCII"):
+    with pytest.raises(VerificationError, match="ticket request differs"):
         case["store"].dispatch(candidate)
     with running_server(case["store"]) as server:
         raw = b'{"principal_id":"\xc3\xa9"}'
