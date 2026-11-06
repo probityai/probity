@@ -14,7 +14,7 @@ from probity_observer.history import verify_checkpoint
 from probity_observer.ledger import verify_ledger_head
 from probity_witness_operator.protocol import history_entries, require
 
-from .protocol import BUNDLE_FILES, checkpoint_prefix, journal_entries
+from .journal import BUNDLE_FILES, checkpoint_prefix, journal_entries
 
 RUN_FORMAT = "probity-protected-operator-run-v0"
 BUNDLES = ("bundle", "after-restart-bundle")

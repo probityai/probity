@@ -41,13 +41,12 @@ that are no longer part of this tree are listed with their digests in
 
 ## Commands and limits
 
-`agent-evidence-authorization-witness init|serve` takes an absolute configuration file
-and its SHA-256 selected outside the request channel; see
-[`AuthorizationConfiguration.read`](probity_protected_operator/store.py) for the fields.
-The service admits only the three journal phases: creation, signed prior relation,
-and recorded completion. Requests carry bounded history bytes and a digest. They cannot
-select a server pathname, replace a key or reset a store. Restart requires existing
-keys, stores, exact configuration and retained signed prefixes.
+The authorization witness service, its store and its client run in the operator's
+runtime and are not part of this tree. The reader checks what that service retained:
+[`journal_entries`](probity_protected_operator/journal.py) admits only the three
+journal phases (creation, signed prior relation and recorded completion), and
+`checkpoint_prefix` requires the history to extend a checkpoint the consumer held
+outside the bundle.
 
 Use the retained consumer prefix when checking a new candidate. A checkpoint bundled
 only with the current candidate cannot detect an earlier rollback.
