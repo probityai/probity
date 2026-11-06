@@ -98,8 +98,8 @@
       "sha256": "d2d218b0823bc6cdfe4e171cccd5ba0aca7b1d8ab17b32b9de57e5d2aaa029de"
     },
     "src/probity_observer/crypto.py": {
-      "git_blob_sha1": "41f59a7dbefc8fc9a4573dc4d1bcd7abd5908d04",
-      "sha256": "a334d7d2776d362788ce5e8687a916a62ba1614e97c0ccb8994d2acb22bc315f"
+      "git_blob_sha1": "d4273281e0d9f9b9b60ee298065ea94490f0d9b9",
+      "sha256": "9c319320ce0b862a7ca18437a8b0828e5a93948502ae74c3b23b061583e2383c"
     },
     "src/probity_observer/declaration.py": {
       "git_blob_sha1": "5c3e528cd32d615dbaaf3781336f788b4eda29fc",
