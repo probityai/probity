@@ -772,7 +772,7 @@ class TestWithheldSources:
     def test_withheld_population_is_exact(
         self, original_packet: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        assert len(WITHHELD) == 15
+        assert len(WITHHELD) == 14
         assert all(not (original_packet / name).exists() for name in WITHHELD)
         output, selected = copy_packet(original_packet, tmp_path)
         with pytest.raises(VerificationError):

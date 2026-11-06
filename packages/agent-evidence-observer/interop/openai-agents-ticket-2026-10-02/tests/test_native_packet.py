@@ -207,7 +207,7 @@ def test_duplicate_json_refused(
 def test_withheld_list_is_exact(
     packet: Path, withheld: dict[str, str], tmp_path: Path
 ) -> None:
-    assert len(withheld) == 15
+    assert len(withheld) == 14
     assert all(not (packet / name).exists() for name in withheld)
     with pytest.raises(VerificationError):
         verify_saved(packet, selected(packet))

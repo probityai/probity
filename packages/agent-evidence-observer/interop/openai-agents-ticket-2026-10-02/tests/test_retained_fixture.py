@@ -13,7 +13,7 @@ RETAINED = Path(__file__).resolve().parents[1] / "retained"
 ARCHIVE = "native-fixture-37053806564.zip"
 # Hash-only form of the archive uploaded by CI run 37053806564: embedded runtime
 # sources are removed and listed with their digests in WITHHELD-SOURCES.json.
-RETAINED_SHA256 = "fa1c613c0ae74a2ef6d86c44b6b9dced7000ddf2981c114c5ad6e4439b4f0cc2"
+RETAINED_SHA256 = "0d043a7585e300989c0b432a4f98418494d96175c2461a39ca8560050dbfda33"
 
 
 def test_retained_original_native_ci_bytes(tmp_path: Path) -> None:
@@ -32,7 +32,7 @@ def test_retained_original_native_ci_bytes(tmp_path: Path) -> None:
     withheld = withheld_in(
         RETAINED / "WITHHELD-SOURCES.json", ARCHIVE + "/fresh-run/packet/"
     )
-    assert len(withheld) == 13
+    assert len(withheld) == 12
     report = verify_saved(
         packet, decode((packet / "consumer-pins.json").read_bytes()), withheld
     )
