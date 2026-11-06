@@ -91,6 +91,11 @@
       "sha256": "e35e29b6c8bc8ff8a6713132d4cf428e8c644eebc307d91edc7d202d9fcbd849"
     },
     {
+      "path": "src/probity_verify/adapters/audit_principal.py",
+      "bytes": 14077,
+      "sha256": "63819b5d728da2c804e2551a0ace784192c1ebfb5939b23ee4dcef1863798085"
+    },
+    {
       "path": "src/probity_verify/adapters/authority_anchor.py",
       "bytes": 7524,
       "sha256": "70fc8d4df585411e65117b2c62828a619158d26ef03475304ae56617a435ea52"
@@ -212,8 +217,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 10417,
-      "sha256": "f514c676c1a86a1832dcfe3cb6966993b466d6d6d6e1370ec48cff8b61f46ea3"
+      "bytes": 10492,
+      "sha256": "1406cc47792345ecf04755b602875cf2e13b7c26b957b7555c28d3d34fd63c2e"
     },
     {
       "path": "src/probity_verify/dsse.py",
@@ -1736,6 +1741,42 @@
           "path": "examples/corpus-routes/observed-effect/envelope.json",
           "bytes": 2847,
           "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
+        }
+      ]
+    },
+    {
+      "task": "Check the principal an agent audit record names",
+      "claim_type": "audit_principal/v1",
+      "case": "examples/corpus-routes/audit-principal/case.json",
+      "policy": "examples/corpus-routes/audit-principal/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus.",
+      "case_id": "principal-user-access-token",
+      "expected_reason": "principal_conforms",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/corpus-routes/audit-principal/case.json",
+        "--policy",
+        "examples/corpus-routes/audit-principal/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/audit-principal/case.json",
+          "bytes": 273,
+          "sha256": "b1384fa203dbfbe5e5bd78e76e78afbb396506715620eb8a74963614e8e050a3"
+        },
+        {
+          "path": "examples/corpus-routes/audit-principal/policy.json",
+          "bytes": 284,
+          "sha256": "1c0016caa2f446c3448b110cbb43021de0d04267459222a1745924a2d779e143"
+        },
+        {
+          "path": "examples/corpus-routes/audit-principal/envelope.json",
+          "bytes": 5895,
+          "sha256": "25048425b3cf423555642e030cd5f617931c2094353a65d2edaad18cb6436174"
         }
       ]
     }

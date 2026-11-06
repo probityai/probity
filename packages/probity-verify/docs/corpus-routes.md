@@ -94,6 +94,21 @@ Four rules are not forced by any member, because none carries `codeDigest` or `i
 `code-digest-shape`, `code-digest-policy`, `invocation-binding-shape` and `invocation-binding-policy`.
 `tests/test_corpus_routes.py` forces them with a member re-signed under a test key.
 
+### `audit_principal/v1` (`vectors-agent-audit-record`, rows PR1 to PR11)
+
+The assessment names an `envelope` artifact (a DSSE envelope holding an agent audit record) and the
+`observer_public_key`, both from the consumer's policy. The claim: the record's `principal` member
+(the identity provider's authenticated principal) is well formed and bound to the record. `tokenDigest`
+equals `agent.credentialDigest`, the subject matches the delegation, the token's lifetime covers the
+decision, and the issuer key's RFC 7638 thumbprint is the recorded one. The rules run in the corpus's
+order, the first refusal is the code, and the signature is checked last.
+
+A conforming principal under a valid signature is `supported` / `principal_conforms`. A record with no
+`principal` member is `not_established` / `principal_absent`. Any refusal is `contradicted` with its code
+as the reason, and the check keeps the corpus's verdict (`valid`, `invalid` or `malformed`). The check
+does not establish that the identity provider issued the token: the token and the issuer's key set are
+not carried.
+
 ## Why the rules are ported, not imported
 
 The rule code of each claim type is a port of the corpus's own reader, at the commit named in each

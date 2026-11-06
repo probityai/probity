@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "envelope.json": {
+      "length": 5895,
+      "path": "envelope.json",
+      "sha256": "25048425b3cf423555642e030cd5f617931c2094353a65d2edaad18cb6436174"
+    }
+  },
+  "case_id": "principal-user-access-token",
+  "schema_version": "probity-case/v1"
+}

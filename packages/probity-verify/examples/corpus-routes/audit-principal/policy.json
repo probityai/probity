@@ -1,0 +1,10 @@
+{
+  "assessments": {
+    "principal-user-access-token": {
+      "claim_type": "audit_principal/v1",
+      "envelope": "envelope.json",
+      "observer_public_key": "60b9ca613738a46a9350086999c93389e65c342482bbf65c6589d43116de5e7a"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

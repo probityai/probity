@@ -37,6 +37,7 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check a restoration-evidence bundle](corpus-routes.md) | `restoration_bundle/v1` | `supported` | Authored synthetic corpus member; unsigned, and a pass is no finding that the decision was right. |
 | [Check canonical bytes for an A2A Agent Card signature](corpus-routes.md) | `jcs_canonical/v1` | `supported` | Vector A2-001 of a2aproject/a2a-tck; it recomputes bytes and checks no signature. |
 | [Check a signed Observed Effect record](corpus-routes.md) | `observed_effect/v1` | `supported` | Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus. |
+| [Check the principal an agent audit record names](corpus-routes.md) | `audit_principal/v1` | `supported` | Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus. |
 
 ## Retrieve a command
 
