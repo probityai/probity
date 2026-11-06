@@ -53,4 +53,5 @@ packages = ["probity_verify", "probity_verify.adapters", "probity_verify.samples
 package-dir = {"" = "src", "probity_verify.samples" = "examples/source-coverage"}
 
 [tool.setuptools.package-data]
+"probity_verify" = ["receipt-verdict-codes.json"]
 "probity_verify.samples" = ["*.json", "*.html", "*.txt"]
