@@ -1,0 +1,1 @@
+{"allowCachedEffectWithInvalidAuthority":false,"authorityBoundary":"reopen-before-native-resume","clockScope":"host-selected-deterministic-integer-clock","maximumWorkerSeconds":30,"plannedAttempts":8,"profile":"probity-langgraph-recovery-authority-v0","refusalOrder":["clock-rollback","revoked","expired"]}

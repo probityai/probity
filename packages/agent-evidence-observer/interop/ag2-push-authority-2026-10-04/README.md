@@ -5,8 +5,11 @@ This runs AG2's new URL validator at
 through JSON-RPC, REST and gRPC. The A2A Python SDK is pinned separately at
 [`e649325`](https://github.com/a2aproject/a2a-python/commit/e649325e041e44c0b0fe57e3eef0699cad164a1e).
 All 453 installed AG2 and 127 installed SDK Python files must match their Git
-blobs before the producer imports either framework. Their source and licenses
-stay with the original run packet.
+blobs before the producing operation imports either framework. The producing
+operation is run by the operator's runtime; this directory holds the installed
+reader, the retained CI packet from the last producing run and the reader's
+fault controls. Source bytes of the producing run are held as digests in
+`retained/WITHHELD-SOURCES.json`.
 
 Each case first completes a real native AG2 task using its fixed-text TestConfig.
 It then registers a callback URL. The host explicitly calls the unchanged SDK
@@ -25,24 +28,20 @@ reconstructs the finite run twice.
 | no registration policy, config only | 1 | 0 | 0 |
 | SDK policy refuses three internal/file URLs | 0 | 0 | 0 |
 
-The [workflow](../../../../.github/workflows/package-observer-ag2-push-authority.yml) installs normal
-wheels and the pinned native sources under Python 3.12.14. `requirements.lock`
-pins dependency bytes. The source install replaces the SDK registry wheel;
-version strings alone do not establish source equality. Sixteen reader controls
+The [workflow](../../../../.github/workflows/package-observer-ag2-push-authority.yml) installs the reader
+from `requirements-reader.lock` under Python 3.12.14 and checks the retained
+record with public code. The producing source install replaces the SDK registry
+wheel; version strings alone do not establish source equality. Sixteen reader controls
 include changed task IDs, policy decisions, raw duplicate keys, credentials,
 signed history and target effects, with input hashes reselected.
 
-For an original Actions ZIP, verify its recorded digest before extraction.
-ZIPs omit empty directories; restore each absent `packet/cases/*/*/workspace`
-directory before replay. This adds no file bytes. Install `requirements-reader.lock`
-and both retained wheels in a new environment. Run the installed reader twice,
-using the retained host-policy SHA-256:
+The retained CI packet is checked by the installed reader with the withheld-source
+record. `verify_retained.py --materialize DIR` also restores the empty directories
+that Git cannot store (GitHub Actions ZIPs omit empty directories), adding no file bytes:
 
 ```sh
-replay/bin/python -I -B -c \
-  'from probity_ag2_push.reader import main; raise SystemExit(main())' \
-  retained/packet --policy retained/host-policy.json \
-  --policy-sha256 RECORDED_SHA256 --output replay-decision.json
+replay/bin/python -I -B verify_retained.py
+replay/bin/python -I -B verify_retained.py --materialize /absolute/new-run
 ```
 
 The raw protobuf bytes are retained; the offline reader checks original JSON

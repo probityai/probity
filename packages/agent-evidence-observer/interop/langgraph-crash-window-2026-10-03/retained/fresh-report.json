@@ -1,0 +1,81 @@
+{
+  "profile": "probity-langgraph-target-crash-window-v1",
+  "status": "verified",
+  "plannedAttempts": 4,
+  "workerProcesses": 8,
+  "targetProcesses": 8,
+  "priorAuthenticEffects": 4,
+  "releasedResults": 1,
+  "recoveryRefusals": 3,
+  "physicalPostCalls": 5,
+  "newRecoveryEffects": 0,
+  "records": [
+    {
+      "id": "valid-after",
+      "firstWorkerExitCode": 74,
+      "targetProcesses": 2,
+      "workerProcesses": 2,
+      "priorAuthenticEffect": true,
+      "nativeTaskUnfinishedAtCrash": true,
+      "currentAuthority": "authorized",
+      "releasedResult": true,
+      "recoveryDispatches": 1,
+      "physicalPostCalls": 2,
+      "newRecoveryEffects": 0,
+      "nativeRevision": 1
+    },
+    {
+      "id": "revoked-after",
+      "firstWorkerExitCode": 74,
+      "targetProcesses": 2,
+      "workerProcesses": 2,
+      "priorAuthenticEffect": true,
+      "nativeTaskUnfinishedAtCrash": true,
+      "currentAuthority": "refused-revoked",
+      "releasedResult": false,
+      "recoveryDispatches": 0,
+      "physicalPostCalls": 1,
+      "newRecoveryEffects": 0,
+      "nativeRevision": 1
+    },
+    {
+      "id": "expired-after",
+      "firstWorkerExitCode": 74,
+      "targetProcesses": 2,
+      "workerProcesses": 2,
+      "priorAuthenticEffect": true,
+      "nativeTaskUnfinishedAtCrash": true,
+      "currentAuthority": "refused-expired",
+      "releasedResult": false,
+      "recoveryDispatches": 0,
+      "physicalPostCalls": 1,
+      "newRecoveryEffects": 0,
+      "nativeRevision": 1
+    },
+    {
+      "id": "rollback-after",
+      "firstWorkerExitCode": 74,
+      "targetProcesses": 2,
+      "workerProcesses": 2,
+      "priorAuthenticEffect": true,
+      "nativeTaskUnfinishedAtCrash": true,
+      "currentAuthority": "refused-clock-rollback",
+      "releasedResult": false,
+      "recoveryDispatches": 0,
+      "physicalPostCalls": 1,
+      "newRecoveryEffects": 0,
+      "nativeRevision": 1
+    }
+  ],
+  "witnessScope": "PEER",
+  "doesNotAssert": [
+    "power-loss",
+    "general-exactly-once",
+    "remote-identity",
+    "independent-custody",
+    "production-containment"
+  ],
+  "crashScope": "after-committed-http-before-node-return",
+  "independentCustody": "not-established",
+  "providerCalls": 0
+}

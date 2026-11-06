@@ -6,7 +6,7 @@ import hashlib
 import pytest
 from synth import REQUEST, TRUST, permit
 
-from checkout_runner.handoff import GateTrust, check_handoff
+from checkout_runner.handoff import GateTrust, check_handoff, idempotency_key, iso_ms
 
 
 def test_a_signed_permit_admits():
@@ -50,3 +50,14 @@ def test_trust_comes_from_configuration_not_the_record():
 
 def test_request_digest_is_the_gate_action_ref():
     assert permit()["receipt"]["action_ref"] == permit(dict(REQUEST))["receipt"]["action_ref"]
+
+
+def test_iso_ms_reads_the_receipt_timestamp_form():
+    assert iso_ms("2026-10-13T14:00:00.250Z") == 1_791_900_000_250
+
+
+def test_idempotency_key_is_scoped_to_gate_and_permit():
+    base = idempotency_key("gate-a", "r1")
+    assert len(base) == 64
+    assert base != idempotency_key("gate-b", "r1")
+    assert base != idempotency_key("gate-a", "r2")

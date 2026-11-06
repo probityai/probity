@@ -1,0 +1,2 @@
+3.12.14
+['agent-evidence-observer', 'cffi', 'cryptography', 'probity-adk-failure-reference', 'pycparser', 'rfc8785']

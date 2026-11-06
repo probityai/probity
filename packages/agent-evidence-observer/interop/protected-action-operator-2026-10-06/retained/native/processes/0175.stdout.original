@@ -1,0 +1,1 @@
+{"acknowledged":true,"pid":7039,"protocolError":null,"replyHex":"7b226572726f72223a227769746e6573732049504320756e617661696c61626c65222c226f6b223a66616c73657d0a","response":{"error":"witness IPC unavailable","ok":false},"role":"workload","transportError":null,"uid":65534}

@@ -1,0 +1,8 @@
+{
+  "artifact": "protected-action-operator",
+  "artifactId": 13244118598,
+  "downloadedAt": "2026-11-03T16:10:55Z",
+  "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "runId": 41665291351,
+  "workflow": ".github/workflows/package-observer-protected-action-operator.yml"
+}

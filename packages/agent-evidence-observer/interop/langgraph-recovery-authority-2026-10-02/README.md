@@ -1,6 +1,6 @@
 # Recovery authority across native worker exits
 
-This additive profile runs eight real LangGraph 1.0.10 / SqliteSaver 3.1.1 cases.
+This additive profile retains the packet of eight real LangGraph 1.0.10 / SqliteSaver 3.1.1 cases.
 Each first worker exits with code73 after a synchronous native checkpoint. A
 second OS process reopens that SQLite checkpoint and reads the host's current
 recovery authority before invoking the interrupted graph. The selected transitions
@@ -24,16 +24,17 @@ result. An earlier signed revision-one commit remains present and is reported
 separately from the recovery refusal. A valid after-effect recovery sends the
 same request; the selected service returns the unchanged completion receipt.
 
-Run with explicit source and selections:
+The operator's runtime ran the workers and wrote the packet under [retained](retained)
+(runtime sources withheld by digest, listed in `retained/WITHHELD-SOURCES.json`).
+Replay it with explicit source and selections:
 
 ```sh
 python -m pip install --require-hashes --only-binary=:all: -r ../langgraph-ticket-2026-10-02/requirements-restart.lock
 python -m pip install --no-deps -e ../..
 python -m pip check
 python -m pytest -q tests
-python authority_run.py fresh-run --source-revision "$(git rev-parse HEAD)" > fresh-report.json
-cp fresh-run/consumer-pins.json /tmp/authority-selected-pins.json
-python authority_reader.py fresh-run --pins-file /tmp/authority-selected-pins.json > reader-report.json
+cp retained/fresh-run/consumer-pins.json /tmp/authority-selected-pins.json
+python authority_reader.py retained/fresh-run --pins-file /tmp/authority-selected-pins.json --withheld-sources retained/WITHHELD-SOURCES.json > reader-report.json
 ```
 
 The reader uses Observer cryptographic verification and standard-library files;
@@ -49,10 +50,9 @@ maintain that source and its selected pins before actual deployment.
 
 Every worker command, exit, stdout/stderr, authority read, native public snapshot,
 HTTP literal byte sequence, signed readback, checkpoint database and source /
-installed dependency manifest is retained. Output directories are exclusive;
-previous runs are not overwritten. The workflow uploads the complete packet and
-separate reader result, including failure receipts. Its gate fails on a reader
-refusal; downstream publication can depend on that job with ordinary `needs`.
+installed dependency manifest is retained. The workflow replays the retained
+packet and fails on a reader refusal; downstream publication can depend on that
+job with ordinary `needs`.
 Original v0 and durable profiles, installed-reader CLI/pins and archived packets
 are unchanged. This separate source profile is not silently installed into the
 existing reader package.

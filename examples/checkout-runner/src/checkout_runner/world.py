@@ -21,9 +21,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .executor import idempotency_key
 from .gate_client import GateProcess
-from .handoff import GateTrust
+from .handoff import GateTrust, idempotency_key
 
 T0 = 1_791_900_000_000  # 2026-10-13T14:00:00.000Z, the fixed start of every case clock
 MINUTE = 60_000

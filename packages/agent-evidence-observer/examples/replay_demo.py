@@ -1,8 +1,8 @@
 """Retain actual offline replay, including a signed but fabricated success.
 
 All keys and fixture sources in this demonstration belong to one operator.
-The protected action is generated before replay; no pre-effect replay gate,
-external custody, native protocol conformance, or durable admission is added.
+The protected action is a retained run of the operator's runtime; no pre-effect
+replay gate, external custody, native protocol conformance, or durable admission is added.
 """
 
 from __future__ import annotations
@@ -12,12 +12,11 @@ import copy
 import hashlib
 import json
 import re
+import shutil
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
-
-from protected_action_demo import run_demo as run_action
 
 from probity_observer.attribution import (
     ArtifactPin,
@@ -204,7 +203,13 @@ def _controls(
     return matrix
 
 
-def run_demo(output: Path, source_revision: str) -> dict[str, Any]:
+def _load_native(source: Path, destination: Path) -> dict[str, Any]:
+    """Copy one retained protected-action output and return its report."""
+    shutil.copytree(source, destination)
+    return json.loads((destination / "demo-report.json").read_bytes())
+
+
+def run_demo(output: Path, source_revision: str, native: Path) -> dict[str, Any]:
     """Generate and retain a finite same-operator action and replay matrix.
 
     Parameters
@@ -215,6 +220,10 @@ def run_demo(output: Path, source_revision: str) -> dict[str, Any]:
         Full Git object id selected by the caller for the source checkout.
         The caller must verify that this revision contains the executed files;
         this offline example validates syntax, not repository membership.
+    native : Path
+        Retained output of the operator's protected-action run: its ``producer``
+        and ``consumer`` directories and ``demo-report.json``. It is copied, not
+        modified.
 
     Returns
     -------
@@ -224,7 +233,7 @@ def run_demo(output: Path, source_revision: str) -> dict[str, Any]:
     if output.exists() and any(output.iterdir()):
         raise ValueError("replay output directory must be new or empty")
     output.mkdir(parents=True, exist_ok=True)
-    action = run_action(output / "native")
+    action = _load_native(native, output / "native")
     inputs = _inputs(output / "native", action)
     signer = SigningKey.generate()
     policy = _policy(inputs, source_revision, signer)
@@ -299,6 +308,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--source-revision")
+    parser.add_argument("--native", type=Path)
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--trusted-policy", type=Path)
     arguments = parser.parse_args()
@@ -315,7 +325,9 @@ def _command_report(
         return replay_retained(arguments.output, _selected_policy(arguments, parser))
     if arguments.source_revision is None:
         parser.error("the demonstration requires --source-revision")
-    return run_demo(arguments.output, arguments.source_revision)
+    if arguments.native is None:
+        parser.error("the demonstration requires --native")
+    return run_demo(arguments.output, arguments.source_revision, arguments.native)
 
 
 def _selected_policy(

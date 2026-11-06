@@ -15,10 +15,15 @@ import pytest
 import rfc8785
 
 ROOT = Path(__file__).resolve().parent
+# The retained archives are the original successful Ubuntu CI artifacts (LangGraph run
+# 37003859466, Pydantic run 37003617436) rewritten so the producer sources are kept as
+# digests only: retained/WITHHELD-SOURCES.json lists each omitted file with its original
+# SHA-256 and the readers require exactly those digests. These pins select the rewritten bytes.
 ARCHIVES = {
-    "langgraph": "e2e28cfcd4af7fc4dbff2fa91640fd2fc23b95e2d32369d75551a264b118b8fd",
-    "pydantic": "e79cf593e91902f1ce4b483850a6f3dba186637e5f223e0931cf8333384782d2",
+    "langgraph": "2ef47107844b32854ad6c340854285a84f4a4f3e5cdb93e6081796970f072ba4",
+    "pydantic": "a0c4b964d52751ff5f44389fea5ad76ecccdd1ea5615c9ec3bbdf5cd0d0e651f",
 }
+WITHHELD_LIST = ROOT / "retained" / "WITHHELD-SOURCES.json"
 
 
 def selected_packet(profile: str, destination: Path) -> tuple[Path, Path]:
@@ -34,14 +39,17 @@ def selected_packet(profile: str, destination: Path) -> tuple[Path, Path]:
     Returns
     -------
     tuple of Path
-        Extracted packet and separately copied local consumer policy.
-        Copying author pins for a test does not establish outside selection.
+        Extracted packet and separately copied local consumer policy. The list of
+        withheld producer sources sits beside the extracted archive as
+        ``WITHHELD-SOURCES.json``. Copying author pins for a test does not
+        establish outside selection.
     """
-    archive = ROOT / "fixtures" / (profile + ".zip")
+    archive = ROOT / "retained" / (profile + ".zip")
     assert hashlib.sha256(archive.read_bytes()).hexdigest() == ARCHIVES[profile]
     with zipfile.ZipFile(archive) as bundle:
-        bundle.extractall(destination)
-    packet = destination / "fresh-run"
+        bundle.extractall(destination / archive.name)
+    (destination / WITHHELD_LIST.name).write_bytes(WITHHELD_LIST.read_bytes())
+    packet = destination / archive.name / "fresh-run"
     if profile == "pydantic":
         packet /= "packet"
     policy = destination / "selected-pins.json"
@@ -49,9 +57,15 @@ def selected_packet(profile: str, destination: Path) -> tuple[Path, Path]:
     return packet, policy
 
 
+def withheld_list(packet: Path) -> Path:
+    """Find the withheld-source list ``selected_packet`` placed above an extracted archive."""
+    return next(p / WITHHELD_LIST.name for p in packet.parents if (p / WITHHELD_LIST.name).is_file())
+
+
 def invoke(profile: str, packet: Path, policy: Path | None) -> subprocess.CompletedProcess[str]:
     """Execute the installed command with bounded runtime and retained errors."""
-    command = [str(Path(sys.executable).parent / ("probity-" + profile + "-read")), str(packet)]
+    command = [str(Path(sys.executable).parent / ("probity-" + profile + "-read")), str(packet),
+               "--withheld-sources", str(withheld_list(packet))]
     if policy is not None:
         command.extend(["--pins-file", str(policy)])
     return subprocess.run(command, capture_output=True, text=True, timeout=30, check=False)

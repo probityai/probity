@@ -3,7 +3,7 @@
   "effect": "one local SQLite refund-record row per retained logical operation",
   "independentCustody": false,
   "jointSandboxAgreement": "pending; this artifact is separate",
-  "maintenance": "same profile and selected npm package; owning installed-environment package checks added to the verification recipe",
+  "maintenance": "same profile and selected npm package; producer files removed, public reader, retained captures and their verification kept",
   "npm": {
     "integrity": "sha512-x5cPp3ddycpxrS3j2BVpnfKk6zEwa3feY1NgJc/HuRql3KGvV0glgqytu/xf+urO8jZMihXDzBrjd86q6TybwQ==",
     "name": "agent-passport-system",
@@ -21,24 +21,20 @@
   },
   "profile": "probity-aps-refund-record-v0",
   "sourceFiles": {
-    "PROTOCOL.md": "82f2f06dbd987e3a35eacd40cc43cc976755e6fd33503a654afa051aac40fb8f",
-    "README.md": "71fffa59677418b1b7ad7c2136248c19357b3ea1fdabe570769b53ee5c1ff302",
-    "fixture.mjs": "953e362510bd7873c9826431d49bbe38f1ff5232d318a9e667ac77f26df8b872",
+    "PROTOCOL.md": "e389e26e821209a274b89623e0c39297d1ed42084366951a8911802bcba3c1e5",
+    "README.md": "8963542d0c3a6bb2e2441e72adb6a1facff079fd890c24bdc9117a81ae611c31",
+    "conftest.py": "83554d14656508c55f9af3d2639b14b4bcc4a8049e189f983cdb706ff743492a",
     "package-lock.json": "e20abb2507e42bd8dbfb8ec11af588057bdcd663af0481f491715419c3a8c87e",
     "package.json": "60346c4ea19bb54f995ae28de7412df6a3de47ab13d0acb6ee8481646d168744",
     "probity_aps_refund/__init__.py": "c7932b51c7259bcfd4f65e6a22a60859980bb59544692fdc7c6c2d20c53e7ccb",
-    "probity_aps_refund/fixture.py": "b16fda16906b75305a17228cff6f84f0f5f9c0a7c7841e9ab10d82b867edb009",
-    "probity_aps_refund/native.py": "a29cc466d10b096225f3312be79c78756e7802df6efb2f7b9f1eac77a4e258bd",
-    "probity_aps_refund/reader.py": "d1baa535f2b4263282a9a6f3044d30f79a65eaf1202972b9dc10b73100bd448b",
-    "probity_aps_refund/service.py": "650dd63d5d8cac15a9e24ea9ed0ef35c09cdaf148ef35d6ba392d32c68792205",
-    "probity_aps_refund/worker.py": "17a012a758f25daeee8e1780782a50f40c5d57d023db9055a024d7f8db1a2a46",
-    "pyproject.toml": "0e6a3e0fac95608ebf54f0bce2a9b70364d428035d88338d3ebae59e7c25c11e",
-    "requirements.in": "982c51223ec9764d6a080da2a6e77d8733ba8b9243f22f78399c1578762bdb80",
-    "requirements.lock": "6893658bd1c30cd46619c1fd929e6f46afbded997310d68d42468c84dde99f24",
-    "test_controls.py": "eb37f696bf8718e1f2ade098bdd998bd53512b70e889a3f4e0b3f79575ca2338",
-    "test_reader.py": "bab60413f88901ed7859af2cf2feab64bb344f8557d5afe4fc893710c9837137",
+    "probity_aps_refund/reader.py": "4629e1481a79acf998f248d6b52f664cc1c1edef8eb25ddd9e23b2cf26c63730",
+    "probity_aps_refund/verification.py": "94acc63c5d1fb227628000d42f4ab839bef2bac516fcd32f13073fdc636379ce",
+    "pyproject.toml": "8bbf7500d274d2c06a7fefae492f45c22ca21b836cef8dc659041a5c96157d49",
+    "requirements.in": "af7482f3f527deeaa1b501e03a3ce68cc499d5ddcd66042c689f1c225024ef48",
+    "requirements.lock": "9a9531fca074a47507a3e0ce866035b6c5b5e9cd6a1bb2079421001fe5e76eae",
+    "test_reader.py": "c2bb8ccedb24e5d12b507137e82b8edb5f57f935c55ac78f24464d066f1b9879",
     "verify-aps.mjs": "b0a6742b4c540e5fe4bea6d096b0c94a7e5c235c5c7ad288ba47c73f6e6d20a6",
-    "verify_install.sh": "7d32f11a779d9d008c6bd40cd8de1e8fe5a3f5e69a13933ac9256c1b4330fb56"
+    "verify_retained.py": "c5fa50e43a22ad4e600880e2401e3ee8eb24f407d44952622a41b1897eacf899"
   },
   "witnessScope": "PEER"
 }

@@ -8,8 +8,10 @@ from typing import Any
 
 import pytest
 
-from probity_observer import Broker, LedgerWitness, SigningKey, VerificationError
-from probity_observer.crypto import canonical, strict_loads
+from probity_observer.crypto import SigningKey, VerificationError, canonical, strict_loads
+from probity_observer.ledger import LedgerWitness
+
+from begin_support import register_begin
 
 from probity_witness_operator import reader
 
@@ -21,12 +23,9 @@ def public_fork(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
     directory = tmp_path / "public"
     directory.mkdir()
     for name, interval in [("ledger", "authentic"), ("fork-ledger", "alternate")]:
-        workspace = tmp_path / interval
-        workspace.mkdir()
         witness = LedgerWitness(directory / (name + ".jsonl"), witness_key, observer.public_hex)
         (tmp_path / "genesis.json").write_bytes(canonical(witness.signed_head()))
-        broker = Broker(workspace, tmp_path / (interval + ".jsonl"), {"intervalId": interval, "scope": "/work", "operation": "write-file"}, observer, witness)
-        broker.begin()
+        register_begin(witness, observer, tmp_path / (interval + ".jsonl"), interval)
         head = "head.json" if name == "ledger" else "fork-head.json"
         (directory / head).write_bytes(canonical(witness.signed_head()))
     return directory, {"witnessKey": witness_key.public_hex, "files": {path.name: reader.sha(path.read_bytes()) for path in directory.iterdir()}}

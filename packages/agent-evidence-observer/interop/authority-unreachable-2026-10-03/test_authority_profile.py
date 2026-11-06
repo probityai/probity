@@ -10,13 +10,20 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from authority_profile import (
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from probity_observer.crypto import (
+    SigningKey,
+    VerificationError,
+)
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+
+from authority_checks import (
     AUTHORITY_DOMAIN,
     CONTRACT_ID,
     MAX_AGE_SECONDS,
-    PROFILE,
-    RECORD_DOMAIN,
     RESIDUAL_RISKS,
+    START,
     VETO_DOMAIN,
     check_authority,
     check_delegation,
@@ -26,71 +33,8 @@ from authority_profile import (
     reference_time,
     sign_record,
 )
-from hypothesis import given, settings
-from hypothesis import strategies as st
-from probity_observer.crypto import (
-    SigningKey,
-    VerificationError,
-    canonical,
-    digest,
-    strict_loads,
-)
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
-from probity_observer.ticket_state import DOMAIN
-from producer import START, _case, produce
 from reader import read_case, read_run
 from source_discriminator import inspect_fingerprint
-
-
-@pytest.fixture(scope="session")
-def produced(tmp_path_factory):
-    """Create native durable cases once; every reader reopens the databases."""
-    path = tmp_path_factory.mktemp("authority") / "run"
-    produce(path, "local-uncommitted")
-    pins = json.loads((path / "consumer-pins.json").read_text())
-    return path, pins
-
-
-@pytest.fixture
-def signable_case(tmp_path):
-    """Retain author keys only inside a test that constructs signed contradictions."""
-    keys = {name: SigningKey.generate() for name in ("issuer", "authority", "service", "record")}
-    pins = {"profile": PROFILE, "maxValiditySeconds": 300,
-            **{name + "Key": key.public_hex for name, key in keys.items()}}
-    return tmp_path, keys, pins
-
-
-def rewrite_native(path, key, mutation):
-    """Re-sign an internally contradictory native record, preserving its chain."""
-    with sqlite3.connect(path / "native.sqlite") as db:
-        state = strict_loads(db.execute("SELECT record FROM state WHERE singleton=1").fetchone()[0])["payload"]
-        if mutation == "effect-identity":
-            state["effectId"] = "1" * 64
-            db.execute("UPDATE tickets SET effect=?", (state["effectId"],))
-        if mutation == "effect-time":
-            state["effectTime"] = "2026-10-03T12:00:11Z"
-        head = "0" * 64
-        for sequence, raw in db.execute("SELECT sequence,record FROM events ORDER BY sequence").fetchall():
-            event = strict_loads(raw)["payload"]
-            carried = event["event"]
-            if mutation == "effect-identity" and "effectId" in carried:
-                carried["effectId"] = state["effectId"]
-            if mutation == "effect-time" and carried["kind"] == "effect":
-                carried["effectTime"] = state["effectTime"]
-            if mutation == "wrong-initial-configuration" and sequence == 1:
-                carried["configuration"] = "0" * 64
-            if mutation == "repeated-initialize" and sequence == 2:
-                event["event"] = {"kind": "initialize", "configuration": state["configuration"]}
-            if mutation == "boolean-effect-revision" and carried["kind"] == "effect":
-                carried["revision"] = True
-            if mutation == "wrong-intent-principal" and carried["kind"] == "intent":
-                carried["request"]["principal_id"] = "other-principal"
-            event["previous"] = head
-            event["hash"] = digest(DOMAIN + "-event", {field: event[field] for field in ("sequence", "previous", "event")})
-            head = event["hash"]
-            db.execute("UPDATE events SET record=? WHERE sequence=?", (canonical(sign_record(event, key, DOMAIN)), sequence))
-        state["eventHead"] = head
-        db.execute("UPDATE state SET record=? WHERE singleton=1", (canonical(sign_record(state, key, DOMAIN)),))
 
 
 class TestAuthorityProfile:
@@ -111,8 +55,8 @@ class TestAuthorityProfile:
             changed = {**original, field: replacements[field]}
             assert content_bytes(**original) != content_bytes(**changed)
 
-        def test_each_case_carries_the_residual_risks_the_profile_leaves(self, produced):
-            root, pins = produced
+        def test_each_case_carries_the_residual_risks_the_profile_leaves(self, retained):
+            root, pins = retained
             for case_id, risks in RESIDUAL_RISKS.items():
                 assert read_case(root / case_id, pins)["residualRisks"] == list(risks)
             assert RESIDUAL_RISKS["authority-evidence-stale"] == ("status-source-trusted-within-freshness-limit",)
@@ -264,8 +208,8 @@ class TestReader:
             ("revoked-authority-superseded-evidence", 0, "failed", False),
             ("authority-source-unreachable", 0, "failed", False),
         ])
-        def test_effect_task_and_publication_are_separate(self, produced, case_id, revision, terminal, publish):
-            root, pins = produced
+        def test_effect_task_and_publication_are_separate(self, retained, case_id, revision, terminal, publish):
+            root, pins = retained
             result = read_case(root / case_id, pins)
             assert result["nativeRevision"] == revision
             assert result["effectObserved"] == bool(revision)
@@ -273,8 +217,8 @@ class TestReader:
             assert result["publicationReady"] is publish
             assert result["witnessScope"] == "PEER"
 
-        def test_late_fresh_grant_does_not_reopen_old_request(self, produced):
-            root, pins = produced
+        def test_late_fresh_grant_does_not_reopen_old_request(self, retained):
+            root, pins = retained
             payload = json.loads((root / "late-approval-for-expired-request" / "record.json").read_text())["payload"]
             # The new approval is cryptographically valid at arrival; the original
             # decision deadline is the distinct reason dispatch remains blocked.
@@ -289,8 +233,8 @@ class TestReader:
             ("authority-source-unreachable", "authority source unreachable"),
             ("unreachable-no-fallback", "no pre-authorized fallback"),
         ])
-        def test_matched_case_refusal_reason_is_shared_by_gate_and_reader(self, produced, case_id, reason):
-            root, pins = produced
+        def test_matched_case_refusal_reason_is_shared_by_gate_and_reader(self, retained, case_id, reason):
+            root, pins = retained
             payload = json.loads((root / case_id / "record.json").read_text())["payload"]
             result = read_case(root / case_id, pins)
             assert payload["attempts"][0]["reason"] == reason
@@ -300,43 +244,43 @@ class TestReader:
 
         @pytest.mark.parametrize("case_id", ["binding-veto-override-attempt", "authority-source-unreachable",
                                              "revoked-authority-superseded-evidence"])
-        def test_executor_held_a_valid_prior_grant(self, produced, case_id):
-            root, _ = produced
+        def test_executor_held_a_valid_prior_grant(self, retained, case_id):
+            root, _ = retained
             payload = json.loads((root / case_id / "record.json").read_text())["payload"]
             # The refusal is not a grant failure: the executor's grant verifies at decision time.
             verify_grant(payload["grant"], ActionRequest(**payload["request"]), GrantPolicy(**payload["grantPolicy"]),
                          now=reference_time(payload["decisionAt"]))
             assert payload["priorFallback"] is True
 
-        def test_superseded_snapshot_was_inside_the_freshness_window(self, produced):
-            root, pins = produced
+        def test_superseded_snapshot_was_inside_the_freshness_window(self, retained):
+            root, pins = retained
             payload = json.loads((root / "revoked-authority-superseded-evidence" / "record.json").read_text())["payload"]
             presented = check_authority(payload["authorityEvidence"], pins["authorityKey"], "approver-1", payload["decisionAt"])
             assert presented["status"] == "active" and presented["ageSeconds"] == 60 < MAX_AGE_SECONDS
             assert payload["authorityLatest"]["payload"]["status"] == "revoked"
 
-        def test_unreachable_source_reports_no_evidence_age(self, produced):
-            root, pins = produced
+        def test_unreachable_source_reports_no_evidence_age(self, retained):
+            root, pins = retained
             assert read_case(root / "approved-human-reachable", pins)["evidenceAgeSeconds"] == 0
             assert read_case(root / "revoked-authority-superseded-evidence", pins)["evidenceAgeSeconds"] == 60
             assert read_case(root / "authority-source-unreachable", pins)["evidenceAgeSeconds"] is None
 
-        def test_retry_reuses_one_effect_identity(self, produced):
-            root, pins = produced
+        def test_retry_reuses_one_effect_identity(self, retained):
+            root, pins = retained
             payload = json.loads((root / "same-request-retry" / "record.json").read_text())["payload"]
             assert payload["attempts"][0]["receipt"] == payload["attempts"][1]["receipt"]
             result = read_case(root / "same-request-retry", pins)
             assert result["attemptCount"] == 2 and result["nativeRevision"] == 1
 
-        def test_missing_retained_proof_preserves_native_effect(self, produced):
-            root, pins = produced
+        def test_missing_retained_proof_preserves_native_effect(self, retained):
+            root, pins = retained
             result = read_case(root / "incomplete-proof-after-effect", pins)
             assert result["nativeCompletionProof"] == "incomplete-or-no-longer-admissible"
             assert result["proofReason"] == "ticket envelope fields differ"
             assert result["effectObserved"] is True and result["publicationReady"] is False
 
-        def test_run_reports_the_full_selected_case_set(self, produced):
-            root, pins = produced
+        def test_run_reports_the_full_selected_case_set(self, retained):
+            root, pins = retained
             result = read_run(root, pins)
             assert result["caseCount"] == 22
             assert sum(row["effectObserved"] for row in result["results"]) == 6
@@ -344,8 +288,8 @@ class TestReader:
             assert result["independentCustody"] is False
             assert result["contractId"] == CONTRACT_ID
 
-        def test_every_trace_writes_the_contract_id_and_evidence_age(self, produced):
-            root, _ = produced
+        def test_every_trace_writes_the_contract_id_and_evidence_age(self, retained):
+            root, _ = retained
             for case in sorted(p for p in root.iterdir() if p.is_dir()):
                 payload = json.loads((case / "record.json").read_text())["payload"]
                 assert payload["contractId"] == CONTRACT_ID
@@ -357,8 +301,8 @@ class TestReader:
                     (root / "consumer-pins.json").read_text())["authorityKey"], AUTHORITY_DOMAIN)["observedAt"]
                 assert payload["evidenceAgeSeconds"] == payload["decisionAt"] - observed
 
-        def test_amplified_hop_is_denied_before_native_mutation(self, produced):
-            root, pins = produced
+        def test_amplified_hop_is_denied_before_native_mutation(self, retained):
+            root, pins = retained
             payload = json.loads((root / "delegation-hop-amplified" / "record.json").read_text())["payload"]
             assert payload["attempts"][0]["reason"] == "delegation hop widens scope"
             result = read_case(root / "delegation-hop-amplified", pins)
@@ -367,163 +311,13 @@ class TestReader:
 
     class TestFailingCases:
         @pytest.mark.parametrize("mutation,reason", [
-            ("missing", "trace contract id is missing"),
-            ("other-version", "trace contract id differs"),
-            ("age", "evidence age differs from decision time"),
-            ("age-bool", "evidence age differs from decision time"),
-            ("limit", "freshness limit differs from consumer selection"),
-        ])
-        def test_trace_without_contract_or_with_wrong_age_is_rejected(self, signable_case, mutation, reason, caplog):
-            root, keys, pins = signable_case
-            _case(root, "approved-human-reachable", keys)
-            case = root / "approved-human-reachable"
-            assert read_case(case, pins)["publicationReady"] is True
-            payload = json.loads((case / "record.json").read_text())["payload"]
-            if mutation == "missing":
-                payload.pop("contractId")
-            if mutation == "other-version":
-                payload["contractId"] = CONTRACT_ID.replace("/v1", "/v0")
-            if mutation == "age":
-                payload["evidenceAgeSeconds"] += 1
-            if mutation == "age-bool":
-                payload["evidenceAgeSeconds"] = False
-            if mutation == "limit":
-                payload["freshnessLimitSeconds"] = MAX_AGE_SECONDS + 1
-            (case / "record.json").write_bytes(canonical(sign_record(payload, keys["record"], RECORD_DOMAIN)))
-            with caplog.at_level(logging.WARNING), pytest.raises(VerificationError) as error:
-                read_case(case, pins)
-            assert str(error.value) == reason
-            assert "authority profile refused: " + reason in caplog.messages
-
-        def test_unreachable_trace_that_claims_an_evidence_age_is_rejected(self, signable_case, caplog):
-            root, keys, pins = signable_case
-            _case(root, "authority-source-unreachable", keys)
-            case = root / "authority-source-unreachable"
-            assert read_case(case, pins)["authorityReason"] == "authority source unreachable"
-            payload = json.loads((case / "record.json").read_text())["payload"]
-            payload["evidenceAgeSeconds"] = 0
-            (case / "record.json").write_bytes(canonical(sign_record(payload, keys["record"], RECORD_DOMAIN)))
-            with caplog.at_level(logging.WARNING), pytest.raises(VerificationError) as error:
-                read_case(case, pins)
-            assert str(error.value) == "evidence age differs from decision time"
-            assert "authority profile refused: evidence age differs from decision time" in caplog.messages
-
-        @pytest.mark.parametrize("mutation,reason", [
-            ("dropped", "record closes a residual risk this profile leaves open"),
-            ("added", "residual risks differ from selected profile"),
-            ("not-a-list", "residual risks differ from selected profile"),
-        ])
-        def test_record_that_closes_a_residual_risk_is_rejected(self, signable_case, mutation, reason, caplog):
-            root, keys, pins = signable_case
-            _case(root, "authority-evidence-stale", keys)
-            case = root / "authority-evidence-stale"
-            assert read_case(case, pins)["residualRisks"] == ["status-source-trusted-within-freshness-limit"]
-            payload = json.loads((case / "record.json").read_text())["payload"]
-            if mutation == "dropped":
-                payload["residualRisks"] = []
-            if mutation == "added":
-                payload["residualRisks"].append("revocation-propagation-unmeasured")
-            if mutation == "not-a-list":
-                payload["residualRisks"] = "status-source-trusted-within-freshness-limit"
-            (case / "record.json").write_bytes(canonical(sign_record(payload, keys["record"], RECORD_DOMAIN)))
-            with caplog.at_level(logging.WARNING), pytest.raises(VerificationError) as error:
-                read_case(case, pins)
-            assert str(error.value) == reason
-            assert "authority profile refused: " + reason in caplog.messages
-
-        @pytest.mark.parametrize("mutation", ["content", "head", "time", "revoked-prefix"])
-        def test_signed_completed_return_must_match_native_prefix(self, signable_case, mutation, caplog):
-            root, keys, pins = signable_case
-            case_id = "effect-then-authority-revoked" if mutation == "revoked-prefix" else "approved-human-reachable"
-            _case(root, case_id, keys)
-            case = root / case_id
-            original = read_case(case, pins)
-            assert original["effectObserved"] is True
-            assert original["publicationReady"] is (mutation != "revoked-prefix")
-            payload = json.loads((case / "record.json").read_text())["payload"]
-            receipt = payload["attempts"][0]["receipt"]["payload"]
-            if mutation == "content":
-                receipt["contentDigest"] = "0" * 64
-            if mutation == "head":
-                receipt["eventHead"] = "0" * 64
-            if mutation == "time":
-                receipt["effectTime"] = "2026-10-03T12:01:00Z"
-            if mutation == "revoked-prefix":
-                current = payload["readback"]["receipt"]["payload"]
-                receipt.update(eventCount=current["eventCount"], eventHead=current["eventHead"])
-            payload["attempts"][0]["receipt"] = sign_record(receipt, keys["service"], DOMAIN)
-            (case / "record.json").write_bytes(canonical(sign_record(payload, keys["record"], RECORD_DOMAIN)))
-            reason = "retained completed dispatch differs from observed native history"
-            with caplog.at_level(logging.WARNING), pytest.raises(VerificationError) as error:
-                read_case(case, pins)
-            assert str(error.value) == reason
-            assert "authority profile refused: " + reason in caplog.messages
-
-        @pytest.mark.parametrize("mutation,reason", [
-            ("effect-identity", "retained completion differs from observed native state"),
-            ("effect-time", "retained completion differs from observed native state"),
-            ("wrong-initial-configuration", "native event body differs"),
-            ("repeated-initialize", "native initialization history differs"),
-            ("boolean-effect-revision", "native event body differs"),
-            ("wrong-intent-principal", "native event body differs"),
-        ])
-        def test_signed_native_contradictions_are_refused(self, signable_case, mutation, reason, caplog):
-            root, keys, pins = signable_case
-            _case(root, "approved-human-reachable", keys)
-            case = root / "approved-human-reachable"
-            assert read_case(case, pins)["publicationReady"] is True
-            rewrite_native(case, keys["service"], mutation)
-            with caplog.at_level(logging.WARNING), pytest.raises(VerificationError) as error:
-                read_case(case, pins)
-            assert str(error.value) == reason
-            assert "authority profile refused: " + reason in caplog.messages
-
-        @pytest.mark.parametrize("mutation,reason", [
-            ("terminal", "task terminal contradicts retained dispatch return"),
-            ("deny-completed", "retained dispatch outcome differs"),
-            ("empty-completion", "retained completed dispatch proof differs"),
-            ("wrong-completion-binding", "retained completed dispatch proof differs"),
-            ("coverage", "profile coverage exceeds selected boundary"),
-            ("missing-field", "profile record fields differ"),
-        ])
-        def test_signed_profile_contradictions_are_refused(self, signable_case, mutation, reason, caplog):
-            root, keys, pins = signable_case
-            case_id = "approved-human-reachable" if mutation == "wrong-completion-binding" else "effect-committed-response-lost"
-            _case(root, case_id, keys)
-            case = root / case_id
-            original = read_case(case, pins)
-            assert original["effectObserved"] is True
-            assert original["taskTerminal"] == ("completed" if mutation == "wrong-completion-binding" else "failed")
-            record = json.loads((case / "record.json").read_text())
-            payload = record["payload"]
-            if mutation == "terminal":
-                payload["taskTerminal"] = "completed"
-            if mutation in {"deny-completed", "empty-completion"}:
-                payload["taskTerminal"] = "completed"
-                payload["attempts"][-1] = {"decision": "deny" if mutation == "deny-completed" else "allow",
-                                          "returnStatus": "completed", "reason": None, "receipt": {}}
-            if mutation == "coverage":
-                payload["coverage"] = "all-effects"
-            if mutation == "wrong-completion-binding":
-                receipt = payload["attempts"][-1]["receipt"]["payload"]
-                receipt["grantDigest"] = "0" * 64
-                payload["attempts"][-1]["receipt"] = sign_record(receipt, keys["service"], DOMAIN)
-            if mutation == "missing-field":
-                payload.pop("faultInjection")
-            (case / "record.json").write_bytes(canonical(sign_record(payload, keys["record"], RECORD_DOMAIN)))
-            with caplog.at_level(logging.WARNING), pytest.raises(VerificationError) as error:
-                read_case(case, pins)
-            assert str(error.value) == reason
-            assert "authority profile refused: " + reason in caplog.messages
-
-        @pytest.mark.parametrize("mutation,reason", [
             ("wrong-record-key", "evidence signer differs from consumer pin"),
             ("unsigned-task-edit", "evidence signature does not verify"),
             ("changed-native-bytes", "native effect bytes differ"),
             ("missing-native-event", "native history is incomplete"),
         ])
-        def test_reader_tamper_controls(self, produced, tmp_path, mutation, reason, caplog):
-            root, pins = produced
+        def test_reader_tamper_controls(self, retained, tmp_path, mutation, reason, caplog):
+            root, pins = retained
             case = tmp_path / "approved-human-reachable"
             shutil.copytree(root / case.name, case)
             selected = dict(pins)
@@ -544,8 +338,8 @@ class TestReader:
             assert str(error.value) == reason
             assert "authority profile refused: " + reason in caplog.messages
 
-        def test_deleted_case_is_not_complete_coverage(self, produced, tmp_path, caplog):
-            root, pins = produced
+        def test_deleted_case_is_not_complete_coverage(self, retained, tmp_path, caplog):
+            root, pins = retained
             report = json.loads((root / "producer-report.json").read_text())
             report["cases"].pop()
             (tmp_path / "producer-report.json").write_text(json.dumps(report))

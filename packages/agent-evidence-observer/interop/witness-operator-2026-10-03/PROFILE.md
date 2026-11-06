@@ -101,10 +101,9 @@ This finite service stops at capacity; it does not rotate or reset the log.
 
 ## Native acceptance run
 
-`verify_install.sh` builds immutable installed core/operator wheels, creates
-separate operator, producer and reader environments, and checks all core and
-operator tests. The Linux CI run executes real Unix IPC and a producer under UID
-65534 with cleared groups. Actual attempted key/log reads must fail.
+The operator's runtime executes real Unix IPC and a producer under UID 65534 with
+cleared groups. Actual attempted key/log reads must fail. The retained packet of
+that run is under `retained/`; `verify_retained.py` replays it with public code.
 
 The five new cases are `permit`, `failed-after`, `unavailable-before`,
 `unavailable-after` and `lost-ack`. They are direct native broker/process controls,

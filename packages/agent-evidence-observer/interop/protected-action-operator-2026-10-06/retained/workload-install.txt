@@ -1,0 +1,7 @@
+agent-evidence-observer @ file:///home/runner/work/_temp/protected-operator/wheels/agent_evidence_observer-0.2.0-py3-none-any.whl
+cffi==2.1.1
+cryptography==50.0.2
+probity-protected-operator-reference @ file:///home/runner/work/_temp/protected-operator/wheels/probity_protected_operator_reference-0.0.1-py3-none-any.whl
+probity-witness-operator-reference @ file:///home/runner/work/_temp/protected-operator/wheels/probity_witness_operator_reference-0.0.1-py3-none-any.whl
+pycparser==3.0
+rfc8785==0.1.4

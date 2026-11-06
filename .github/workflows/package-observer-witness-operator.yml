@@ -22,7 +22,7 @@ defaults:
     working-directory: packages/agent-evidence-observer
 
 jobs:
-  native-witness-operator:
+  retained-witness-operator:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -32,24 +32,24 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12.14'
-      - name: Install selected verification runner
-        run: python -m pip install 'uv==0.8.22'
-      - name: Build separate installed operator, producer and reader
-        run: bash interop/witness-operator-2026-10-03/verify_install.sh "$RUNNER_TEMP/witness-operator"
-      - name: Retain public native histories, heads and offline reader results
+      - name: Install the public observer and the reader-side packages
+        run: |
+          python -m pip install --require-hashes -r interop/witness-operator-2026-10-03/requirements.lock
+          python -m pip install --no-deps --no-build-isolation . interop/witness-operator-2026-10-03
+      - name: Run the operator, retention and fork controls
+        run: python -m pytest -c /dev/null -q -p no:cacheprovider interop/witness-operator-2026-10-03/test_operator.py interop/witness-operator-2026-10-03/test_retention.py interop/witness-operator-2026-10-03/test_reader_fork.py interop/witness-operator-2026-10-03/test_withheld_sources.py --junitxml="$RUNNER_TEMP/operator-tests.xml"
+      - name: Check complexity
+        run: python -I -B interop/witness-operator-2026-10-03/check_complexity.py > "$RUNNER_TEMP/complexity.json"
+      - name: Replay the retained native packet with public code
+        run: python -I -B interop/witness-operator-2026-10-03/verify_retained.py | tee "$RUNNER_TEMP/retained-replay.txt"
+      - name: Retain the control results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: witness-operator-installed-consumer
+          name: witness-operator-retained-replay
           path: |
-            ${{ runner.temp }}/witness-operator/native/
-            ${{ runner.temp }}/witness-operator/wheels/
-            ${{ runner.temp }}/witness-operator/*-tests.xml
-            ${{ runner.temp }}/witness-operator/*-report.json
-            ${{ runner.temp }}/witness-operator/*-install.txt
-            ${{ runner.temp }}/witness-operator/*.lock
-            ${{ runner.temp }}/witness-operator/*-sha.txt
-            ${{ runner.temp }}/witness-operator/*-runtime.txt
-            ${{ runner.temp }}/witness-operator/complexity.json
+            ${{ runner.temp }}/operator-tests.xml
+            ${{ runner.temp }}/complexity.json
+            ${{ runner.temp }}/retained-replay.txt
           if-no-files-found: error
           retention-days: 90

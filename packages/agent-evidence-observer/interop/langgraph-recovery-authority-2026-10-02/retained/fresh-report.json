@@ -1,0 +1,107 @@
+{
+  "profile": "probity-langgraph-recovery-authority-v0",
+  "status": "verified",
+  "plannedAttempts": 8,
+  "records": [
+    {
+      "attemptId": "valid-before",
+      "recoveryAuthority": "authorized",
+      "freshRecoveryDispatches": 1,
+      "retainedNativeRevision": 1,
+      "existingCommit": "absent-before-recovery",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    },
+    {
+      "attemptId": "valid-after",
+      "recoveryAuthority": "authorized",
+      "freshRecoveryDispatches": 1,
+      "retainedNativeRevision": 1,
+      "existingCommit": "preserved",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    },
+    {
+      "attemptId": "revoked-before",
+      "recoveryAuthority": "refused-revoked",
+      "freshRecoveryDispatches": 0,
+      "retainedNativeRevision": 0,
+      "existingCommit": "absent-before-recovery",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    },
+    {
+      "attemptId": "revoked-after",
+      "recoveryAuthority": "refused-revoked",
+      "freshRecoveryDispatches": 0,
+      "retainedNativeRevision": 1,
+      "existingCommit": "preserved",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    },
+    {
+      "attemptId": "expired-before",
+      "recoveryAuthority": "refused-expired",
+      "freshRecoveryDispatches": 0,
+      "retainedNativeRevision": 0,
+      "existingCommit": "absent-before-recovery",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    },
+    {
+      "attemptId": "expired-after",
+      "recoveryAuthority": "refused-expired",
+      "freshRecoveryDispatches": 0,
+      "retainedNativeRevision": 1,
+      "existingCommit": "preserved",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    },
+    {
+      "attemptId": "rollback-before",
+      "recoveryAuthority": "refused-clock-rollback",
+      "freshRecoveryDispatches": 0,
+      "retainedNativeRevision": 0,
+      "existingCommit": "absent-before-recovery",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    },
+    {
+      "attemptId": "rollback-after",
+      "recoveryAuthority": "refused-clock-rollback",
+      "freshRecoveryDispatches": 0,
+      "retainedNativeRevision": 1,
+      "existingCommit": "preserved",
+      "workerExitCodes": [
+        73,
+        0
+      ]
+    }
+  ],
+  "clockScope": "host-selected-deterministic-integer-clock",
+  "authorityScope": "host-selected-action-bound-recovery-policy-before-resume",
+  "checkpointScope": "native-SqliteSaver-distinct-hard-exiting-workers",
+  "effectScope": "selected-loopback-service-local-SQLite-row",
+  "targetProcessRestart": "not-exercised",
+  "powerLoss": "not-exercised",
+  "independentCustody": "not-established",
+  "issuerAuthentication": "not-established",
+  "exactlyOnce": "not-established",
+  "providerCalls": 0,
+  "inputTokens": 0,
+  "outputTokens": 0
+}

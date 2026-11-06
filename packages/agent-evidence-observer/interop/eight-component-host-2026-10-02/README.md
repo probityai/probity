@@ -1,42 +1,34 @@
 # Eight-component installed host chain
 
-This finite host integration consumes all eight original source selections.
-Raw AEE passes installed Rust JCS/DSSE, then only DSSE's returned verified payload
-reaches installed Vectors crypto, pinned OPA admission, the actual vocabulary,
-stable Atlas register/original/provenance/report and installed Verify coverage.
-After every selected gate passes, a separate host issuer grants one exact
-installed Observer HTTP ticket effect. Fresh actual target processes reopen and
-recover its SQLite state; refused authority cannot replay an effect.
+One finite host run consumed eight frozen source selections. Raw AEE passed
+installed Rust JCS/DSSE, then only DSSE's returned verified payload reached
+installed Vectors crypto, pinned OPA admission, the actual vocabulary, stable
+Atlas register/original/provenance/report and installed Verify coverage. After
+every selected gate passed, a separate host issuer granted one exact Observer
+HTTP ticket effect, and fresh target processes reopened and recovered its SQLite
+state.
 
-The [host contract](HOST-CONTRACT.md) defines source, installation, policy, key,
-clock and retention boundaries. The [native workflow](../../../../.github/workflows/package-observer-eight-component-host.yml)
-clones the eight frozen source snapshots, builds and normally installs three
-wheels, installs locked real Rust registry crates, verifies OPA's official binary
-hash, and runs the complete native chain and refusal/recovery tests.
-
-The trusted host selects its manifest hash outside candidate bytes. Every pinned
-source file, installed site-packages file/closure, selected tool, launcher
-configuration, policy and key file is checked before the first child. Run the
-stdlib parent with `python -S -B`; component children use the selected normal
-installation with `-I -B`. Candidate input contains evidence and literal coverage
-records, without trusted code, signer keys, policies or authority selection.
-
-Reference preparation and invocation:
+The producing host chain is run by the operator's runtime; the run it wrote is
+retained under [retained](retained), with the original source selection, public
+installation record and every child stream. Replay it with public code:
 
 ```sh
-python -B prepare_host.py --sources /host/sources --byte-gate /host/tools/bin/probity-host-byte-gate --opa /host/tools/opa --wheels /host/wheels --output /host/trusted
-python -S -B prepare_candidate.py --sources /host/sources --output /host/candidate
-python -S -B run_host.py --installation /host/trusted/installation.json --installation-sha256 "$(sha256sum /host/trusted/installation.json | cut -d' ' -f1)" --candidate /host/candidate --output /host/run
+python -m pip install --require-hashes --only-binary=:all: -r requirements.lock
+python -m pip install --no-deps ../..
+python -I verify_retained.py
+python -m pytest -q tests
 ```
 
-The operator selects that expected digest in the protected host job; the
-candidate cannot provide it. Paths above are host setup paths and must exist as
-ordinary installations. Full installation commands are in the workflow.
+`verify_retained.py` checks every retained gate stream against the digest its
+process record carries, and re-verifies the native ticket effect from the
+retained signed receipt, HTTP readback and host grant with the public
+`probity_observer.ticket_state` reader; its output must equal the retained gate
+output byte for byte. The [host contract](HOST-CONTRACT.md) records what the
+producing host selected and checked, and what the replay does and does not
+establish. The [workflow](../../../../.github/workflows/package-observer-eight-component-host.yml)
+runs the replay.
 
-Measurements use a published deterministic signed conformance fixture and
-Probity-operated local keys, store and clock. They establish a finite installed
+The run used a published deterministic signed conformance fixture and
+author-operated local keys, store and clock. It establishes a finite installed
 integration and bounded native effects. Acceptance, outside recurring adoption,
 production issuer identity and independent effect custody remain unestablished.
-No component release or vocabulary promotion is performed. Registry/data
-consumption remains separate from package adoption. Existing component and
-release owners remain unchanged.

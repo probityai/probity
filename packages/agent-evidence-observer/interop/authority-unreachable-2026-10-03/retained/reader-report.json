@@ -1,0 +1,714 @@
+{
+  "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+  "profile": "authority-unreachable-reference-v0",
+  "caseCount": 22,
+  "results": [
+    {
+      "caseId": "approved-human-reachable",
+      "effectObserved": true,
+      "effectStatus": "observed-bounded-native-row",
+      "nativeRevision": 1,
+      "effectId": "0c79dbead2b2960352bf4fca928a21278a7fccc14881402f05a809718b3e5d60",
+      "contentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "nativePhase": "completed",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "completed",
+      "nativeCompletionProof": "verified-bounded-native-completion",
+      "proofReason": null,
+      "publicationReady": true,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "allow"
+      ],
+      "dispatchReasons": [
+        null
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "unreachable-with-prior-fallback",
+      "effectObserved": true,
+      "effectStatus": "observed-bounded-native-row",
+      "nativeRevision": 1,
+      "effectId": "8930c472103c19692fc2b8b8ffb33ede3da0c5ae2b7ac6eaddf9c20d6d7133f1",
+      "contentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "nativePhase": "completed",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "completed",
+      "nativeCompletionProof": "verified-bounded-native-completion",
+      "proofReason": null,
+      "publicationReady": true,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "allow"
+      ],
+      "dispatchReasons": [
+        null
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "unreachable-no-fallback",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "no pre-authorized fallback",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "no pre-authorized fallback"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "fallback-expired",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "grant is not valid at the reference time",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "grant is not valid at the reference time"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "reference-clock-trusted"
+      ]
+    },
+    {
+      "caseId": "late-approval-for-expired-request",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "original decision window has closed",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "original decision window has closed"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "reference-clock-trusted"
+      ]
+    },
+    {
+      "caseId": "approver-revoked-at-dispatch",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "approver authority is not active",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "approver authority is not active"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "revocation-propagation-unmeasured"
+      ]
+    },
+    {
+      "caseId": "authority-evidence-stale",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "authority evidence is stale",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 181,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "authority evidence is stale"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "status-source-trusted-within-freshness-limit"
+      ]
+    },
+    {
+      "caseId": "media-bytes-mutated",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "approved action bytes changed"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "post-effect-platform-rewrite-unobserved"
+      ]
+    },
+    {
+      "caseId": "platform-content-mutated",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "approved action bytes changed"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "post-effect-platform-rewrite-unobserved"
+      ]
+    },
+    {
+      "caseId": "catalogue-mutated",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "approved action bytes changed"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "post-effect-platform-rewrite-unobserved"
+      ]
+    },
+    {
+      "caseId": "destination-mutated",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "approved action bytes changed"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "post-effect-platform-rewrite-unobserved"
+      ]
+    },
+    {
+      "caseId": "revoked-between-intent-and-effect",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "incomplete",
+      "nativeRevoked": true,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 2,
+      "dispatchDecisions": [
+        "deny",
+        "deny"
+      ],
+      "dispatchReasons": [
+        "ticket pending authority or phase differs",
+        "ticket authority is revoked"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "revocation-propagation-unmeasured"
+      ]
+    },
+    {
+      "caseId": "crash-after-intent",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "incomplete",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 2,
+      "dispatchDecisions": [
+        "allow",
+        "deny"
+      ],
+      "dispatchReasons": [
+        "controlled native interruption: after-intent",
+        "ticket effect remains incomplete; automatic replay refused"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "crash-inside-effect-transaction",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "incomplete",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 2,
+      "dispatchDecisions": [
+        "allow",
+        "deny"
+      ],
+      "dispatchReasons": [
+        "controlled native interruption: inside-effect-transaction",
+        "ticket effect remains incomplete; automatic replay refused"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "effect-committed-response-lost",
+      "effectObserved": true,
+      "effectStatus": "observed-bounded-native-row",
+      "nativeRevision": 1,
+      "effectId": "ea547cc1dd33a283808fa4e4ab88e5d57610eb38aedd9a4bda7352bdee25ef3b",
+      "contentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "nativePhase": "completed",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "verified-bounded-native-completion",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "allow"
+      ],
+      "dispatchReasons": [
+        "controlled native interruption: after-effect"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "same-request-retry",
+      "effectObserved": true,
+      "effectStatus": "observed-bounded-native-row",
+      "nativeRevision": 1,
+      "effectId": "74c7b477fe2c35118a2b53fe7e56c5acb18e0d4b9d08ec8c5eeb4135f98b362c",
+      "contentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "nativePhase": "completed",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "completed",
+      "nativeCompletionProof": "verified-bounded-native-completion",
+      "proofReason": null,
+      "publicationReady": true,
+      "attemptCount": 2,
+      "dispatchDecisions": [
+        "allow",
+        "allow"
+      ],
+      "dispatchReasons": [
+        null,
+        null
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "effect-then-authority-revoked",
+      "effectObserved": true,
+      "effectStatus": "observed-bounded-native-row",
+      "nativeRevision": 1,
+      "effectId": "35d2bd41a538b8d07731aa2cd6cbd9e1ce958ad4c56f8fdeed64a1adfe5dd512",
+      "contentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "nativePhase": "completed",
+      "nativeRevoked": true,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "incomplete-or-no-longer-admissible",
+      "proofReason": "ticket consumer requires unrevoked bounded completion",
+      "publicationReady": false,
+      "attemptCount": 2,
+      "dispatchDecisions": [
+        "allow",
+        "deny"
+      ],
+      "dispatchReasons": [
+        null,
+        "ticket authority is revoked"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "revocation-propagation-unmeasured"
+      ]
+    },
+    {
+      "caseId": "incomplete-proof-after-effect",
+      "effectObserved": true,
+      "effectStatus": "observed-bounded-native-row",
+      "nativeRevision": 1,
+      "effectId": "8cd479dd10ba38763ec3580b8aaa44a5d88ef8ee3ab16ecb394c06e3d512d1b6",
+      "contentSha256": "38b72c96015df366fbc43502993aa8301275acd77e1d24f4bdccc6c0f25caf43",
+      "nativePhase": "completed",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "completed",
+      "nativeCompletionProof": "incomplete-or-no-longer-admissible",
+      "proofReason": "ticket envelope fields differ",
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "allow"
+      ],
+      "dispatchReasons": [
+        null
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "delegation-hop-amplified",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "valid-for-approved-request-at-reference-time",
+      "authorityReason": null,
+      "delegationStatus": "not-admitted",
+      "delegationReason": "delegation hop widens scope",
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "delegation hop widens scope"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": [
+        "two-hop-chain-only",
+        "descendant-token-revocation-absent"
+      ]
+    },
+    {
+      "caseId": "binding-veto-override-attempt",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "binding veto recorded for request",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 0,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "binding veto recorded for request"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "revoked-authority-superseded-evidence",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "authority evidence superseded by newer status",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": 60,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "authority evidence superseded by newer status"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    },
+    {
+      "caseId": "authority-source-unreachable",
+      "effectObserved": false,
+      "effectStatus": "none-in-bounded-native-table",
+      "nativeRevision": 0,
+      "nativePhase": "ready",
+      "nativeRevoked": false,
+      "authorityStatus": "not-admitted",
+      "authorityReason": "authority source unreachable",
+      "delegationStatus": "narrowing-chain-covers-action",
+      "delegationReason": null,
+      "evidenceAgeSeconds": null,
+      "freshnessLimitSeconds": 180,
+      "contractId": "https://probityai.github.io/agent-evidence-observer/contract/authority-at-dispatch/v1",
+      "taskTerminal": "failed",
+      "nativeCompletionProof": "no-completed-effect-proof",
+      "proofReason": null,
+      "publicationReady": false,
+      "attemptCount": 1,
+      "dispatchDecisions": [
+        "deny"
+      ],
+      "dispatchReasons": [
+        "authority source unreachable"
+      ],
+      "witnessScope": "PEER",
+      "custody": "author-operated-local",
+      "coverage": "one-local-native-ticket-and-service-events",
+      "residualRisks": []
+    }
+  ],
+  "independentCustody": false,
+  "outsideImplementationRerun": false
+}

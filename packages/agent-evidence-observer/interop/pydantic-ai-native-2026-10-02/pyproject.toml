@@ -10,11 +10,9 @@ requires-python = ">=3.12"
 dependencies = ["agent-evidence-observer==0.2.0"]
 
 [project.optional-dependencies]
-producer = ["pydantic-ai-slim==1.107.7"]
 test = ["pytest==9.1.1", "hypothesis==6.168.3"]
 
 [project.scripts]
-probity-pydantic-run = "probity_pydantic.producer:main"
 probity-pydantic-read = "probity_pydantic.reader:main"
 
 [tool.setuptools.packages.find]

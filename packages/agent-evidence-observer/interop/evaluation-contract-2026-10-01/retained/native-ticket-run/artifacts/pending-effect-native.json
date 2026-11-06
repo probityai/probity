@@ -1,0 +1,906 @@
+{
+  "version": 2,
+  "status": "success",
+  "eval": {
+    "eval_id": "meDiq5pCDce8g5Fs96z5sc",
+    "run_id": "6MygJaCehW9WJaTAviWp6h",
+    "created": "2026-11-03T15:35:16+00:00",
+    "task": "pending-effect",
+    "task_id": "KaxGYdxwaDR9HSKJSY7a3n",
+    "task_version": 1,
+    "task_display_name": "pending-effect",
+    "task_attribs": {},
+    "task_args": {},
+    "task_args_passed": {},
+    "dataset": {
+      "samples": 1,
+      "sample_ids": [
+        "pending-effect"
+      ],
+      "shuffled": false
+    },
+    "model": "mockllm/model",
+    "model_generate_config": {},
+    "model_args": {
+      "custom_outputs": [
+        {
+          "model": "",
+          "choices": [
+            {
+              "message": {
+                "id": "LU8WWW5Bs9FCK6pvmowTf8",
+                "content": "",
+                "role": "assistant",
+                "tool_calls": [
+                  {
+                    "id": "call-pending-effect",
+                    "function": "dispatch_ticket",
+                    "arguments": {
+                      "content": "DONE"
+                    },
+                    "type": "function"
+                  }
+                ]
+              },
+              "stop_reason": "tool_calls"
+            }
+          ],
+          "completion": "",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0
+          },
+          "time": 0.00007214900000462876
+        },
+        {
+          "model": "mockllm",
+          "choices": [
+            {
+              "message": {
+                "id": "HDRHaj45jrFgMSea2U4LEf",
+                "content": "INCOMPLETE",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm"
+              },
+              "stop_reason": "stop"
+            }
+          ],
+          "completion": "INCOMPLETE",
+          "usage": {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0
+          },
+          "time": 0.00008724200000642668
+        }
+      ]
+    },
+    "config": {
+      "epochs": 1,
+      "fail_on_error": true,
+      "continue_on_fail": false,
+      "retry_on_error": 0,
+      "score_on_error": false,
+      "message_limit": 12,
+      "max_samples": 1,
+      "sandbox_cleanup": true,
+      "sandbox_prebuilt": false,
+      "log_samples": true,
+      "log_realtime": true,
+      "log_images": true,
+      "score_display": true
+    },
+    "revision": {
+      "type": "git",
+      "origin": "https://github.com/probityai/probity",
+      "commit": "df162fb",
+      "dirty": true
+    },
+    "packages": {
+      "inspect_ai": "0.3.281"
+    },
+    "metadata": {
+      "probity_ticket_profile": "probity-inspect-aae-ticket-v0",
+      "probity_plan_sha256": "7f26b60f4ef4ddb2d9cea424166d0282ce1c66fb8a5ee75b52560640d44206eb"
+    },
+    "scorers": [
+      {
+        "name": "match",
+        "options": {},
+        "metrics": [
+          {
+            "name": "inspect_ai/accuracy",
+            "options": {}
+          },
+          {
+            "name": "inspect_ai/stderr",
+            "options": {}
+          }
+        ],
+        "metadata": {}
+      }
+    ]
+  },
+  "plan": {
+    "name": "plan",
+    "steps": [
+      {
+        "solver": "react",
+        "params": {
+          "name": null,
+          "description": null,
+          "prompt": [
+            null,
+            "\nYou are part of a multi-agent system designed to make agent coordination and execution easy. Agents uses two primary abstraction: **Agents** and **Handoffs**. An agent encompasses instructions and tools and can hand off a conversation to another agent when appropriate. Handoffs are achieved by calling a handoff function,generally named `transfer_to_<agent_name>`. Transfers between agents are handled seamlessly in the background; do not mention or draw attention to these transfers in your conversation with the user.\n",
+            "\nYou are a helpful assistant attempting to submit the best possible answer. You have several tools available to help with finding the answer. You will see the result of tool calls right after sending the message. Prioritize parallel tool calls: when operations are independent, run them in one response — e.g. reading several files or running several searches at once — rather than one at a time. Only sequence calls when one depends on another's result. Do some reasoning before your actions, describing what tool calls you are going to use and how they fit into your plan.\n",
+            "\nWhen you have completed the task and have an answer, call the {submit}() tool to report it.\n"
+          ],
+          "tools": [
+            {
+              "type": "tool",
+              "name": "dispatch_ticket",
+              "params": {}
+            }
+          ],
+          "model": null,
+          "attempts": 1,
+          "submit": false,
+          "on_continue": null,
+          "retry_refusals": null,
+          "compaction": null,
+          "truncation": "disabled",
+          "approval": null,
+          "review": null
+        },
+        "params_passed": {
+          "tools": [
+            {
+              "type": "tool",
+              "name": "dispatch_ticket",
+              "params": {}
+            }
+          ],
+          "submit": false
+        }
+      }
+    ],
+    "config": {}
+  },
+  "results": {
+    "total_samples": 1,
+    "completed_samples": 1,
+    "scores": [
+      {
+        "name": "match",
+        "scorer": "match",
+        "scored_samples": 1,
+        "unscored_samples": 0,
+        "params": {},
+        "metrics": {
+          "accuracy": {
+            "name": "accuracy",
+            "value": 1.0,
+            "params": {}
+          },
+          "stderr": {
+            "name": "stderr",
+            "value": 0.0,
+            "params": {}
+          }
+        }
+      }
+    ],
+    "headline": {
+      "scorer": "match",
+      "score": "match",
+      "metric": "accuracy"
+    }
+  },
+  "stats": {
+    "started_at": "2026-11-03T15:35:16+00:00",
+    "completed_at": "2026-11-03T15:35:16+00:00",
+    "model_usage": {
+      "mockllm/model": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    "role_usage": {},
+    "connection_limit_history": []
+  },
+  "invalidated": false,
+  "tags": [],
+  "metadata": {
+    "probity_ticket_profile": "probity-inspect-aae-ticket-v0",
+    "probity_plan_sha256": "7f26b60f4ef4ddb2d9cea424166d0282ce1c66fb8a5ee75b52560640d44206eb"
+  },
+  "samples": [
+    {
+      "id": "pending-effect",
+      "epoch": 1,
+      "input": "Run the one selected ticket dispatch.",
+      "target": "INCOMPLETE",
+      "messages": [
+        {
+          "id": "NonBKRJGbBtEh8tyrYArkU",
+          "content": "\nYou are a helpful assistant attempting to submit the best possible answer. You have several tools available to help with finding the answer. You will see the result of tool calls right after sending the message. Prioritize parallel tool calls: when operations are independent, run them in one response — e.g. reading several files or running several searches at once — rather than one at a time. Only sequence calls when one depends on another's result. Do some reasoning before your actions, describing what tool calls you are going to use and how they fit into your plan.\n",
+          "role": "system"
+        },
+        {
+          "id": "frcch9dDyLTFPpEKNjFvQJ",
+          "content": "Run the one selected ticket dispatch.",
+          "source": "input",
+          "role": "user"
+        },
+        {
+          "id": "LU8WWW5Bs9FCK6pvmowTf8",
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "id": "call-pending-effect",
+              "function": "dispatch_ticket",
+              "arguments": {
+                "content": "DONE"
+              },
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "id": "ePqhw8t9cTqGEYZvJcdd3u",
+          "content": "{\"httpSha256\":\"cb655bff9dd14c10b4b50816cfd2ec296b7f13e455269d5c36797777b60a03e8\",\"nativeRevision\":0,\"postStatus\":409}",
+          "role": "tool",
+          "tool_call_id": "call-pending-effect",
+          "function": "dispatch_ticket"
+        },
+        {
+          "id": "HDRHaj45jrFgMSea2U4LEf",
+          "content": "INCOMPLETE",
+          "source": "generate",
+          "role": "assistant",
+          "model": "mockllm"
+        }
+      ],
+      "output": {
+        "model": "mockllm",
+        "choices": [
+          {
+            "message": {
+              "id": "HDRHaj45jrFgMSea2U4LEf",
+              "content": "INCOMPLETE",
+              "source": "generate",
+              "role": "assistant",
+              "model": "mockllm"
+            },
+            "stop_reason": "stop"
+          }
+        ],
+        "completion": "INCOMPLETE",
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0
+        },
+        "time": 0.00008724200000642668
+      },
+      "scores": {
+        "match": {
+          "value": "C",
+          "answer": "INCOMPLETE",
+          "explanation": "INCOMPLETE",
+          "history": []
+        }
+      },
+      "metadata": {},
+      "store": {},
+      "events": [
+        {
+          "uuid": "7ST9ZjPaemC6YuP43qKmXv",
+          "span_id": "XVPe4ox2bnedfihw8ML6E5",
+          "timestamp": "2026-11-03T15:35:16.921862+00:00",
+          "working_start": 301.824024307,
+          "event": "span_begin",
+          "id": "XVPe4ox2bnedfihw8ML6E5",
+          "type": "init",
+          "name": "init"
+        },
+        {
+          "uuid": "KFuzXMdVJCfsGbzKdqn7gb",
+          "span_id": "XVPe4ox2bnedfihw8ML6E5",
+          "timestamp": "2026-11-03T15:35:16.922308+00:00",
+          "working_start": 301.824469471,
+          "event": "sample_init",
+          "sample": {
+            "input": "Run the one selected ticket dispatch.",
+            "target": "INCOMPLETE",
+            "id": "pending-effect"
+          },
+          "state": {
+            "messages": [
+              {
+                "id": "frcch9dDyLTFPpEKNjFvQJ",
+                "content": "Run the one selected ticket dispatch.",
+                "source": "input",
+                "role": "user"
+              }
+            ],
+            "tools": [],
+            "tool_choice": null,
+            "store": {},
+            "output": {
+              "model": "mockllm/model",
+              "choices": [],
+              "completion": ""
+            },
+            "completed": false,
+            "metadata": {}
+          }
+        },
+        {
+          "uuid": "mzqwqG58dVtj4GJuK7BvuC",
+          "span_id": "XVPe4ox2bnedfihw8ML6E5",
+          "timestamp": "2026-11-03T15:35:16.922513+00:00",
+          "working_start": 301.824675143,
+          "event": "span_end",
+          "id": "XVPe4ox2bnedfihw8ML6E5"
+        },
+        {
+          "uuid": "NeT3wJTQ5ZiaLVMxk3WFjL",
+          "span_id": "eiDHP8TLK9jPhqTzvK7BmU",
+          "timestamp": "2026-11-03T15:35:16.922947+00:00",
+          "working_start": 0.0003058929999610882,
+          "event": "span_begin",
+          "id": "eiDHP8TLK9jPhqTzvK7BmU",
+          "type": "solvers",
+          "name": "solvers"
+        },
+        {
+          "uuid": "FtSTbDeNWVM77RNyZmeCkm",
+          "span_id": "c65sSE4wMTCE27YBF4vNpP",
+          "timestamp": "2026-11-03T15:35:16.923145+00:00",
+          "working_start": 0.0005034920000070997,
+          "event": "span_begin",
+          "id": "c65sSE4wMTCE27YBF4vNpP",
+          "parent_id": "eiDHP8TLK9jPhqTzvK7BmU",
+          "type": "solver",
+          "name": "react"
+        },
+        {
+          "uuid": "bkP8uW2j6yCCpeSJJgW3Hr",
+          "span_id": "mC9ZjRd8fvHMKBBkaGj9Ws",
+          "timestamp": "2026-11-03T15:35:16.923331+00:00",
+          "working_start": 0.0006897339999909491,
+          "event": "span_begin",
+          "id": "mC9ZjRd8fvHMKBBkaGj9Ws",
+          "parent_id": "c65sSE4wMTCE27YBF4vNpP",
+          "type": "agent",
+          "name": "react"
+        },
+        {
+          "uuid": "jYzqkX7KPcwG73He3GPv58",
+          "span_id": "mC9ZjRd8fvHMKBBkaGj9Ws",
+          "timestamp": "2026-11-03T15:35:16.924113+00:00",
+          "working_start": 0.0014713969999888832,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              2
+            ]
+          ],
+          "tools": [
+            {
+              "name": "dispatch_ticket",
+              "description": "Dispatch the exact selected ticket update.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Literal selected status, DONE."
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ],
+          "tool_choice": "auto",
+          "config": {},
+          "output": {
+            "model": "",
+            "choices": [
+              {
+                "message": {
+                  "id": "LU8WWW5Bs9FCK6pvmowTf8",
+                  "content": "",
+                  "role": "assistant",
+                  "tool_calls": [
+                    {
+                      "id": "call-pending-effect",
+                      "function": "dispatch_ticket",
+                      "arguments": {
+                        "content": "DONE"
+                      },
+                      "type": "function"
+                    }
+                  ]
+                },
+                "stop_reason": "tool_calls"
+              }
+            ],
+            "completion": "",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            },
+            "time": 0.00007214900000462876
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": ""
+            },
+            "call_refs": [
+              [
+                0,
+                2
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-11-03T15:35:16.925873+00:00",
+          "working_time": 0.00007214900000462876
+        },
+        {
+          "uuid": "3x92BgVpTL2sPQ5WgCKbi3",
+          "span_id": "5NdFudWmZEWpMKaF6jCFDF",
+          "timestamp": "2026-11-03T15:35:16.926714+00:00",
+          "working_start": 0.0040236010000285205,
+          "event": "span_begin",
+          "id": "5NdFudWmZEWpMKaF6jCFDF",
+          "parent_id": "mC9ZjRd8fvHMKBBkaGj9Ws",
+          "type": "tool",
+          "name": "dispatch_ticket"
+        },
+        {
+          "uuid": "cVniXZeqpctuSrrqqMbt75",
+          "span_id": "mC9ZjRd8fvHMKBBkaGj9Ws",
+          "timestamp": "2026-11-03T15:35:16.926268+00:00",
+          "working_start": 0.003578717000038978,
+          "event": "tool",
+          "type": "function",
+          "id": "call-pending-effect",
+          "function": "dispatch_ticket",
+          "arguments": {
+            "content": "DONE"
+          },
+          "result": "{\"httpSha256\":\"cb655bff9dd14c10b4b50816cfd2ec296b7f13e455269d5c36797777b60a03e8\",\"nativeRevision\":0,\"postStatus\":409}",
+          "events": [],
+          "completed": "2026-11-03T15:35:16.933438+00:00",
+          "working_time": 0.0071677700000236655,
+          "message_id": "ePqhw8t9cTqGEYZvJcdd3u"
+        },
+        {
+          "uuid": "gc2pmecRTY77HNAVCBbDro",
+          "span_id": "5NdFudWmZEWpMKaF6jCFDF",
+          "timestamp": "2026-11-03T15:35:16.932948+00:00",
+          "working_start": 0.010258458000009796,
+          "event": "span_end",
+          "id": "5NdFudWmZEWpMKaF6jCFDF"
+        },
+        {
+          "uuid": "FhvhuVXSyfaNcWcsZxD4DW",
+          "span_id": "mC9ZjRd8fvHMKBBkaGj9Ws",
+          "timestamp": "2026-11-03T15:35:16.934081+00:00",
+          "working_start": 0.01139140300000463,
+          "event": "model",
+          "model": "mockllm/model",
+          "input": [],
+          "input_refs": [
+            [
+              0,
+              4
+            ]
+          ],
+          "tools": [
+            {
+              "name": "dispatch_ticket",
+              "description": "Dispatch the exact selected ticket update.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Literal selected status, DONE."
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ],
+          "tool_choice": "auto",
+          "config": {},
+          "output": {
+            "model": "mockllm",
+            "choices": [
+              {
+                "message": {
+                  "id": "HDRHaj45jrFgMSea2U4LEf",
+                  "content": "INCOMPLETE",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm"
+                },
+                "stop_reason": "stop"
+              }
+            ],
+            "completion": "INCOMPLETE",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            },
+            "time": 0.00008724200000642668
+          },
+          "call": {
+            "request": {
+              "model": "model"
+            },
+            "response": {
+              "content": "INCOMPLETE"
+            },
+            "call_refs": [
+              [
+                0,
+                4
+              ]
+            ],
+            "call_key": "messages"
+          },
+          "completed": "2026-11-03T15:35:16.935619+00:00",
+          "working_time": 0.00008724200000642668
+        },
+        {
+          "uuid": "6CPH3MNk7uCFVcRVXnUecs",
+          "span_id": "mC9ZjRd8fvHMKBBkaGj9Ws",
+          "timestamp": "2026-11-03T15:35:16.936035+00:00",
+          "working_start": 0.01330819499997915,
+          "event": "span_end",
+          "id": "mC9ZjRd8fvHMKBBkaGj9Ws"
+        },
+        {
+          "uuid": "5S5EHgMyafYJ3fooTbuwc8",
+          "span_id": "c65sSE4wMTCE27YBF4vNpP",
+          "timestamp": "2026-11-03T15:35:16.936332+00:00",
+          "working_start": 0.013605475000019851,
+          "event": "state",
+          "changes": [
+            {
+              "op": "remove",
+              "path": "/messages/0/source"
+            },
+            {
+              "op": "replace",
+              "path": "/messages/0/id",
+              "value": "NonBKRJGbBtEh8tyrYArkU",
+              "replaced": "frcch9dDyLTFPpEKNjFvQJ"
+            },
+            {
+              "op": "replace",
+              "path": "/messages/0/content",
+              "value": "attachment://7d1b0608cbd20b36a398bdfd61a94ff6",
+              "replaced": "Run the one selected ticket dispatch."
+            },
+            {
+              "op": "replace",
+              "path": "/messages/0/role",
+              "value": "system",
+              "replaced": "user"
+            },
+            {
+              "op": "add",
+              "path": "/messages/1",
+              "value": {
+                "id": "frcch9dDyLTFPpEKNjFvQJ",
+                "content": "Run the one selected ticket dispatch.",
+                "source": "input",
+                "role": "user"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/messages/2",
+              "value": {
+                "id": "LU8WWW5Bs9FCK6pvmowTf8",
+                "content": "",
+                "role": "assistant",
+                "tool_calls": [
+                  {
+                    "id": "call-pending-effect",
+                    "function": "dispatch_ticket",
+                    "arguments": {
+                      "content": "DONE"
+                    },
+                    "type": "function"
+                  }
+                ]
+              }
+            },
+            {
+              "op": "add",
+              "path": "/messages/3",
+              "value": {
+                "id": "ePqhw8t9cTqGEYZvJcdd3u",
+                "content": "attachment://141a9ed9d263b748ac8151ebbacb0531",
+                "role": "tool",
+                "tool_call_id": "call-pending-effect",
+                "function": "dispatch_ticket"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/messages/4",
+              "value": {
+                "id": "HDRHaj45jrFgMSea2U4LEf",
+                "content": "INCOMPLETE",
+                "source": "generate",
+                "role": "assistant",
+                "model": "mockllm"
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/usage",
+              "value": {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0
+              }
+            },
+            {
+              "op": "add",
+              "path": "/output/time",
+              "value": 0.00008724200000642668
+            },
+            {
+              "op": "replace",
+              "path": "/output/model",
+              "value": "mockllm",
+              "replaced": "mockllm/model"
+            },
+            {
+              "op": "add",
+              "path": "/output/choices/0",
+              "value": {
+                "message": {
+                  "id": "HDRHaj45jrFgMSea2U4LEf",
+                  "content": "INCOMPLETE",
+                  "source": "generate",
+                  "role": "assistant",
+                  "model": "mockllm"
+                },
+                "stop_reason": "stop"
+              }
+            },
+            {
+              "op": "replace",
+              "path": "/output/completion",
+              "value": "INCOMPLETE",
+              "replaced": ""
+            }
+          ]
+        },
+        {
+          "uuid": "dzhXAiN2PLx7rttC35H3ma",
+          "span_id": "c65sSE4wMTCE27YBF4vNpP",
+          "timestamp": "2026-11-03T15:35:16.936590+00:00",
+          "working_start": 0.01386317499998313,
+          "event": "span_end",
+          "id": "c65sSE4wMTCE27YBF4vNpP"
+        },
+        {
+          "uuid": "PCGvLGVGuvpyZANkpXxP5t",
+          "span_id": "eiDHP8TLK9jPhqTzvK7BmU",
+          "timestamp": "2026-11-03T15:35:16.936742+00:00",
+          "working_start": 0.014015234999988024,
+          "event": "span_end",
+          "id": "eiDHP8TLK9jPhqTzvK7BmU"
+        },
+        {
+          "uuid": "Rso5g5bRxLmaVKV32gUvNg",
+          "span_id": "h8BBeQwpttmsexyHPyTt2W",
+          "timestamp": "2026-11-03T15:35:16.937118+00:00",
+          "working_start": 0.014391343999989203,
+          "event": "span_begin",
+          "id": "h8BBeQwpttmsexyHPyTt2W",
+          "type": "scorers",
+          "name": "scorers"
+        },
+        {
+          "uuid": "Gu4Qg3SPsGrF4fzfzv2qKQ",
+          "span_id": "bv6EX5m55tiDAg2ycTKeah",
+          "timestamp": "2026-11-03T15:35:16.937289+00:00",
+          "working_start": 0.01456225300000824,
+          "event": "span_begin",
+          "id": "bv6EX5m55tiDAg2ycTKeah",
+          "parent_id": "h8BBeQwpttmsexyHPyTt2W",
+          "type": "scorer",
+          "name": "match"
+        },
+        {
+          "uuid": "FPT34NY8oyJCc2nyw9bqRY",
+          "span_id": "bv6EX5m55tiDAg2ycTKeah",
+          "timestamp": "2026-11-03T15:35:16.937451+00:00",
+          "working_start": 0.014724429000011696,
+          "event": "score",
+          "score": {
+            "value": "C",
+            "answer": "INCOMPLETE",
+            "explanation": "INCOMPLETE",
+            "history": []
+          },
+          "target": "INCOMPLETE",
+          "intermediate": false,
+          "scorer": "match",
+          "scorer_args": {},
+          "model_usage": {
+            "mockllm/model": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          }
+        },
+        {
+          "uuid": "YR7Eyz7rKM3pwzPSitvEZR",
+          "span_id": "bv6EX5m55tiDAg2ycTKeah",
+          "timestamp": "2026-11-03T15:35:16.937617+00:00",
+          "working_start": 0.014890349999973296,
+          "event": "span_end",
+          "id": "bv6EX5m55tiDAg2ycTKeah"
+        },
+        {
+          "uuid": "JB9qWEwAaDbeKQbZrmirCq",
+          "span_id": "h8BBeQwpttmsexyHPyTt2W",
+          "timestamp": "2026-11-03T15:35:16.937765+00:00",
+          "working_start": 0.015038253999989593,
+          "event": "span_end",
+          "id": "h8BBeQwpttmsexyHPyTt2W"
+        }
+      ],
+      "model_usage": {
+        "mockllm/model": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "role_usage": {},
+      "started_at": "2026-11-03T15:35:16.922644+00:00",
+      "completed_at": "2026-11-03T15:35:16.938040+00:00",
+      "total_time": 0.015,
+      "working_time": 0.015,
+      "uuid": "RmefTrYTxL4t7UcEEHsNro",
+      "error_retries": [],
+      "attachments": {
+        "7d1b0608cbd20b36a398bdfd61a94ff6": "\nYou are a helpful assistant attempting to submit the best possible answer. You have several tools available to help with finding the answer. You will see the result of tool calls right after sending the message. Prioritize parallel tool calls: when operations are independent, run them in one response — e.g. reading several files or running several searches at once — rather than one at a time. Only sequence calls when one depends on another's result. Do some reasoning before your actions, describing what tool calls you are going to use and how they fit into your plan.\n",
+        "141a9ed9d263b748ac8151ebbacb0531": "{\"httpSha256\":\"cb655bff9dd14c10b4b50816cfd2ec296b7f13e455269d5c36797777b60a03e8\",\"nativeRevision\":0,\"postStatus\":409}"
+      },
+      "events_data": {
+        "messages": [
+          {
+            "id": "NonBKRJGbBtEh8tyrYArkU",
+            "content": "attachment://7d1b0608cbd20b36a398bdfd61a94ff6",
+            "role": "system"
+          },
+          {
+            "id": "frcch9dDyLTFPpEKNjFvQJ",
+            "content": "Run the one selected ticket dispatch.",
+            "source": "input",
+            "role": "user"
+          },
+          {
+            "id": "LU8WWW5Bs9FCK6pvmowTf8",
+            "content": "",
+            "role": "assistant",
+            "tool_calls": [
+              {
+                "id": "call-pending-effect",
+                "function": "dispatch_ticket",
+                "arguments": {
+                  "content": "DONE"
+                },
+                "type": "function"
+              }
+            ]
+          },
+          {
+            "id": "ePqhw8t9cTqGEYZvJcdd3u",
+            "content": "attachment://141a9ed9d263b748ac8151ebbacb0531",
+            "role": "tool",
+            "tool_call_id": "call-pending-effect",
+            "function": "dispatch_ticket"
+          }
+        ],
+        "calls": [
+          {
+            "id": "NonBKRJGbBtEh8tyrYArkU",
+            "content": "attachment://7d1b0608cbd20b36a398bdfd61a94ff6",
+            "source": null,
+            "metadata": null,
+            "role": "system"
+          },
+          {
+            "id": "frcch9dDyLTFPpEKNjFvQJ",
+            "content": "Run the one selected ticket dispatch.",
+            "source": "input",
+            "metadata": null,
+            "role": "user",
+            "tool_call_id": null
+          },
+          {
+            "id": "LU8WWW5Bs9FCK6pvmowTf8",
+            "content": "",
+            "source": null,
+            "metadata": null,
+            "role": "assistant",
+            "tool_calls": [
+              {
+                "id": "call-pending-effect",
+                "function": "dispatch_ticket",
+                "arguments": {
+                  "content": "DONE"
+                },
+                "parse_error": null,
+                "view": null,
+                "type": "function"
+              }
+            ],
+            "model": null
+          },
+          {
+            "id": "ePqhw8t9cTqGEYZvJcdd3u",
+            "content": "attachment://141a9ed9d263b748ac8151ebbacb0531",
+            "source": null,
+            "metadata": null,
+            "role": "tool",
+            "tool_call_id": "call-pending-effect",
+            "function": "dispatch_ticket",
+            "error": null
+          }
+        ]
+      },
+      "turn_count": 2,
+      "message_limit": 12
+    }
+  ],
+  "reductions": [
+    {
+      "scorer": "match",
+      "samples": [
+        {
+          "value": 1.0,
+          "answer": "INCOMPLETE",
+          "explanation": "INCOMPLETE",
+          "history": [],
+          "sample_id": "pending-effect"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "profile": "probity-target-process-recovery-v1",
+  "status": "verified",
+  "plannedAttempts": 7,
+  "completedEffects": 3,
+  "incompleteRefusals": 2,
+  "startupRefusals": 2,
+  "targetProcesses": 14,
+  "records": [
+    {
+      "id": "restart-ready",
+      "outcome": "completed",
+      "nativeRevision": 1,
+      "effectId": "bb8e3c3b5bb6ae5a5dc785daabfd9f329d74f2907bb40f642707be89d1918dc3",
+      "targetProcesses": 2,
+      "dispatchResponses": [
+        200
+      ]
+    },
+    {
+      "id": "crash-after-intent",
+      "outcome": "incomplete-refused",
+      "nativeRevision": 0,
+      "effectId": "8d0f24ceb5694d6b9a27baae1e90cd2575caecbb9f11a10b4e91ed4b042344c7",
+      "targetProcesses": 2,
+      "dispatchResponses": [
+        409
+      ]
+    },
+    {
+      "id": "crash-inside-effect",
+      "outcome": "incomplete-refused",
+      "nativeRevision": 0,
+      "effectId": "4a4e714daa74c5b1659a197aa092a16234cc411187dc6fdb3f6a861f50659189",
+      "targetProcesses": 2,
+      "dispatchResponses": [
+        409
+      ]
+    },
+    {
+      "id": "crash-after-effect",
+      "outcome": "completed",
+      "nativeRevision": 1,
+      "effectId": "9e54b30418fe6aa8dee832ba0fc1b8e5bb846877b2ca9b6a9e028a012c3b8f5d",
+      "targetProcesses": 2,
+      "dispatchResponses": [
+        200
+      ]
+    },
+    {
+      "id": "concurrent-intent",
+      "outcome": "completed",
+      "nativeRevision": 1,
+      "effectId": "e89a61e26c02a26ade53a12fe46bed9f4d9ba393c688e0f2c9ca2a494d2bf87a",
+      "targetProcesses": 2,
+      "dispatchResponses": [
+        409,
+        409,
+        200,
+        409,
+        409,
+        409,
+        409,
+        409
+      ]
+    },
+    {
+      "id": "missing-store",
+      "outcome": "startup-refused",
+      "nativeRevision": 0,
+      "effectId": null,
+      "targetProcesses": 2,
+      "dispatchResponses": []
+    },
+    {
+      "id": "changed-configuration",
+      "outcome": "startup-refused",
+      "nativeRevision": 0,
+      "effectId": null,
+      "targetProcesses": 2,
+      "dispatchResponses": []
+    }
+  ],
+  "witnessScope": "PEER",
+  "doesNotAssert": [
+    "power-loss",
+    "general-exactly-once",
+    "remote-identity",
+    "independent-custody",
+    "production-containment"
+  ],
+  "interpretation": "same-operator local SQLite/HTTP target process hard-exit and recovery; process evidence is unsigned runner testimony, not independent custody"
+}

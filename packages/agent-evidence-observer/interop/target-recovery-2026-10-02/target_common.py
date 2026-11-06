@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -45,3 +46,26 @@ def write(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('xb') as stream:
         stream.write(canonical(value))
+
+
+def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Refuse a repeated member name in the withheld-source record."""
+    names = [name for name, _ in pairs]
+    require(len(names) == len(set(names)), 'withheld-fields')
+    return dict(pairs)
+
+
+def withheld_sources(path: Path | None) -> dict[str, str]:
+    """Load the caller-selected record of source files kept out of a retained packet.
+
+    The mapping names each packet-relative member and the SHA-256 the packet's
+    manifest pins. ``None`` selects no withheld member.
+    """
+    if path is None:
+        return {}
+    try:
+        value = json.loads(read(path.parent, path.name), object_pairs_hook=_unique)
+    except ValueError as error:
+        raise VerificationError('withheld-fields') from error
+    require(isinstance(value, dict) and all(isinstance(name, str) and isinstance(digest, str) and len(digest) == 64 for name, digest in value.items()), 'withheld-fields')
+    return value

@@ -1,0 +1,207 @@
+Collecting aiosqlite==0.22.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 3))
+  Downloading aiosqlite-0.22.1-py3-none-any.whl (17 kB)
+Collecting annotated-doc==0.0.5 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 7))
+  Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+Collecting annotated-types==0.8.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 11))
+  Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting anyio==4.15.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 15))
+  Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+Collecting attrs==26.1.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 25))
+  Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+Collecting authlib==1.8.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 31))
+  Downloading authlib-1.8.0-py2.py3-none-any.whl (260 kB)
+Collecting certifi==2026.7.22 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 35))
+  Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+Collecting cffi==2.1.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 42))
+  Downloading cffi-2.1.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+Collecting charset-normalizer==3.5.2 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 144))
+  Downloading charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (254 kB)
+Collecting click==8.5.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 318))
+  Downloading click-8.5.0-py3-none-any.whl (125 kB)
+Collecting cryptography==46.0.7 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 324))
+  Downloading cryptography-46.0.7-cp311-abi3-manylinux_2_34_x86_64.whl (4.5 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 73.0 MB/s  0:00:00
+Collecting distro==1.9.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 380))
+  Downloading distro-1.9.0-py3-none-any.whl (20 kB)
+Collecting fastapi==0.141.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 384))
+  Downloading fastapi-0.141.1-py3-none-any.whl (131 kB)
+Collecting google-adk==2.11.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 388))
+  Downloading google_adk-2.11.0-py3-none-any.whl (4.9 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.9/4.9 MB 17.6 MB/s  0:00:00
+Collecting google-auth==2.59.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 392))
+  Downloading google_auth-2.59.1-py3-none-any.whl (263 kB)
+Collecting google-genai==2.28.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 398))
+  Downloading google_genai-2.28.0-py3-none-any.whl (1.2 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 105.8 MB/s  0:00:00
+Collecting graphviz==0.21 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 402))
+  Downloading graphviz-0.21-py3-none-any.whl (47 kB)
+Collecting h11==0.16.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 406))
+  Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting httpcore==1.0.9 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 413))
+  Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+Collecting httpcore2==2.13.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 417))
+  Downloading httpcore2-2.13.1-py3-none-any.whl (83 kB)
+Collecting httpx==0.28.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 421))
+  Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+Collecting httpx2==2.13.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 427))
+  Downloading httpx2-2.13.1-py3-none-any.whl (95 kB)
+Collecting idna==3.20 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 431))
+  Downloading idna-3.20-py3-none-any.whl (69 kB)
+Collecting iniconfig==2.3.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 439))
+  Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+Collecting joserfc==1.7.5 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 443))
+  Downloading joserfc-1.7.5-py3-none-any.whl (71 kB)
+Collecting jsonschema==4.26.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 447))
+  Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+Collecting jsonschema-specifications==2025.9.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 453))
+  Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+Collecting mcp==2.2.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 457))
+  Downloading mcp-2.2.0-py3-none-any.whl (365 kB)
+Collecting mcp-types==2.2.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 461))
+  Downloading mcp_types-2.2.0-py3-none-any.whl (69 kB)
+Collecting opentelemetry-api==1.42.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 465))
+  Downloading opentelemetry_api-1.42.1-py3-none-any.whl (61 kB)
+Collecting opentelemetry-sdk==1.42.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 473))
+  Downloading opentelemetry_sdk-1.42.1-py3-none-any.whl (170 kB)
+Collecting opentelemetry-semantic-conventions==0.63b1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 477))
+  Downloading opentelemetry_semantic_conventions-0.63b1-py3-none-any.whl (203 kB)
+Collecting packaging==26.3 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 481))
+  Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Collecting pluggy==1.6.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 488))
+  Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+Collecting pyasn1==0.6.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 492))
+  Downloading pyasn1-0.6.4-py3-none-any.whl (84 kB)
+Collecting pyasn1-modules==0.4.2 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 496))
+  Downloading pyasn1_modules-0.4.2-py3-none-any.whl (181 kB)
+Collecting pycparser==3.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 500))
+  Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+Collecting pydantic==2.13.5 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 504))
+  Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+Collecting pydantic-core==2.46.5 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 513))
+  Downloading pydantic_core-2.46.5-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 101.8 MB/s  0:00:00
+Collecting pygments==2.21.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 635))
+  Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 96.1 MB/s  0:00:00
+Collecting pyjwt==2.15.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 639))
+  Downloading pyjwt-2.15.1-py3-none-any.whl (33 kB)
+Collecting pytest==9.1.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 643))
+  Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+Collecting python-dotenv==1.2.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 647))
+  Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+Collecting python-multipart==0.0.32 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 651))
+  Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+Collecting pyyaml==6.0.3 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 657))
+  Downloading pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (801 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 801.6/801.6 kB 87.8 MB/s  0:00:00
+Collecting referencing==0.37.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 732))
+  Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+Collecting requests==2.34.2 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 738))
+  Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Collecting rpds-py==2026.6.3 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 745))
+  Downloading rpds_py-2026.6.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (365 kB)
+Collecting ruff==0.16.10 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 865))
+  Downloading ruff-0.16.10-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (10.4 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 90.7 MB/s  0:00:00
+Collecting setuptools==84.1.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 885))
+  Downloading setuptools-84.1.0-py3-none-any.whl (819 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 819.4/819.4 kB 73.9 MB/s  0:00:00
+Collecting sniffio==1.3.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 889))
+  Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+Collecting sse-starlette==3.5.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 893))
+  Downloading sse_starlette-3.5.0-py3-none-any.whl (17 kB)
+Collecting starlette==1.7.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 897))
+  Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+Collecting tenacity==9.1.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 905))
+  Downloading tenacity-9.1.4-py3-none-any.whl (28 kB)
+Collecting truststore==0.10.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 911))
+  Downloading truststore-0.10.4-py3-none-any.whl (18 kB)
+Collecting typing-extensions==4.16.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 917))
+  Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting typing-inspection==0.4.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 933))
+  Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Collecting urllib3==2.8.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 940))
+  Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+Collecting uvicorn==0.54.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 944))
+  Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+Collecting watchdog==6.0.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 950))
+  Downloading watchdog-6.0.0-py3-none-manylinux2014_x86_64.whl (79 kB)
+Collecting websockets==15.0.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 982))
+  Downloading websockets-15.0.1-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (182 kB)
+Collecting wheel==0.48.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements.lock (line 1055))
+  Downloading wheel-0.48.0-py3-none-any.whl (33 kB)
+Collecting flit-core==3.12.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/build.lock (line 3))
+  Downloading flit_core-3.12.0-py3-none-any.whl (45 kB)
+Installing collected packages: websockets, watchdog, urllib3, typing-extensions, truststore, tenacity, sniffio, setuptools, ruff, rpds-py, pyyaml, python-multipart, python-dotenv, pyjwt, pygments, pycparser, pyasn1, pluggy, packaging, iniconfig, idna, h11, graphviz, flit-core, distro, click, charset-normalizer, certifi, attrs, annotated-types, annotated-doc, aiosqlite, wheel, uvicorn, typing-inspection, requests, referencing, pytest, pydantic-core, pyasn1-modules, opentelemetry-api, httpcore2, httpcore, cffi, anyio, starlette, pydantic, opentelemetry-semantic-conventions, jsonschema-specifications, httpx2, httpx, cryptography, sse-starlette, opentelemetry-sdk, mcp-types, jsonschema, joserfc, google-auth, fastapi, mcp, authlib, google-genai, google-adk
+
+Successfully installed aiosqlite-0.22.1 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 authlib-1.8.0 certifi-2026.7.22 cffi-2.1.1 charset-normalizer-3.5.2 click-8.5.0 cryptography-46.0.7 distro-1.9.0 fastapi-0.141.1 flit-core-3.12.0 google-adk-2.11.0 google-auth-2.59.1 google-genai-2.28.0 graphviz-0.21 h11-0.16.0 httpcore-1.0.9 httpcore2-2.13.1 httpx-0.28.1 httpx2-2.13.1 idna-3.20 iniconfig-2.3.0 joserfc-1.7.5 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 mcp-2.2.0 mcp-types-2.2.0 opentelemetry-api-1.42.1 opentelemetry-sdk-1.42.1 opentelemetry-semantic-conventions-0.63b1 packaging-26.3 pluggy-1.6.0 pyasn1-0.6.4 pyasn1-modules-0.4.2 pycparser-3.0 pydantic-2.13.5 pydantic-core-2.46.5 pygments-2.21.0 pyjwt-2.15.1 pytest-9.1.1 python-dotenv-1.2.4 python-multipart-0.0.32 pyyaml-6.0.3 referencing-0.37.0 requests-2.34.2 rpds-py-2026.6.3 ruff-0.16.10 setuptools-84.1.0 sniffio-1.3.1 sse-starlette-3.5.0 starlette-1.7.0 tenacity-9.1.4 truststore-0.10.4 typing-extensions-4.16.0 typing-inspection-0.4.4 urllib3-2.8.0 uvicorn-0.54.0 watchdog-6.0.0 websockets-15.0.1 wheel-0.48.0
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: /home/runner/work/_temp/adk-nested-producer/bin/python -m pip install --upgrade pip
+Processing ./selected-observer
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Processing ./interop/adk-nested-compaction-2026-10-04
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: agent-evidence-observer, probity-adk-nested-compaction
+  Building wheel for agent-evidence-observer (pyproject.toml): started
+  Building wheel for agent-evidence-observer (pyproject.toml): finished with status 'done'
+  Created wheel for agent-evidence-observer: filename=agent_evidence_observer-0.0.1-py3-none-any.whl size=126593 sha256=202f0aaa0609704cf4f23081b003c8ab746e1bfb3269e02308cf6a3df75501ca
+  Stored in directory: /tmp/pip-ephem-wheel-cache-53umc91h/wheels/0d/77/50/50406a7cfa38f1a573f1a096da0a1020ce141e9c3636c0f6bb
+  Building wheel for probity-adk-nested-compaction (pyproject.toml): started
+  Building wheel for probity-adk-nested-compaction (pyproject.toml): finished with status 'done'
+  Created wheel for probity-adk-nested-compaction: filename=probity_adk_nested_compaction-0.0.1-py3-none-any.whl size=12028 sha256=a9a3cacccd62eca22be9dff023c4b4c90abb5b68c2116544eea56ae8659190a7
+  Stored in directory: /tmp/pip-ephem-wheel-cache-53umc91h/wheels/4b/ee/18/1ac889f7d96c174e852cf18ce355a7632420997239761fd393
+Successfully built agent-evidence-observer probity-adk-nested-compaction
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: /home/runner/work/_temp/adk-nested-producer/bin/python -m pip install --upgrade pip
+Processing /home/runner/work/_temp/adk-nested-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl
+Processing /home/runner/work/_temp/adk-nested-wheels/probity_adk_nested_compaction-0.0.1-py3-none-any.whl
+Installing collected packages: probity-adk-nested-compaction, agent-evidence-observer
+
+Successfully installed agent-evidence-observer-0.0.1 probity-adk-nested-compaction-0.0.1
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: /home/runner/work/_temp/adk-nested-producer/bin/python -m pip install --upgrade pip
+Processing ./selected-adk
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: google-adk
+  Building wheel for google-adk (pyproject.toml): started
+  Building wheel for google-adk (pyproject.toml): finished with status 'done'
+  Created wheel for google-adk: filename=google_adk-2.11.0-py3-none-any.whl size=4912047 sha256=d19a5c8e3043b54ea03a2b048f801f5c45c4abf281a6b06a9ad3c55003d40351
+  Stored in directory: /tmp/pip-ephem-wheel-cache-dinh9ke9/wheels/1c/24/75/505769b24d33c73622fe09a72e957fd42b83657f94bc0bcfe6
+Successfully built google-adk
+Installing collected packages: google-adk
+  Attempting uninstall: google-adk
+    Found existing installation: google-adk 2.11.0
+    Uninstalling google-adk-2.11.0:
+      Successfully uninstalled google-adk-2.11.0
+Successfully installed google-adk-2.11.0
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: /home/runner/work/_temp/adk-nested-producer/bin/python -m pip install --upgrade pip
+No broken requirements found.
+Collecting cffi==2.1.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements-reader.lock (line 3))
+  Using cached cffi-2.1.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+Collecting cryptography==46.0.7 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements-reader.lock (line 105))
+  Using cached cryptography-46.0.7-cp311-abi3-manylinux_2_34_x86_64.whl (4.5 MB)
+Collecting pycparser==3.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/requirements-reader.lock (line 156))
+  Using cached pycparser-3.0-py3-none-any.whl (48 kB)
+Installing collected packages: pycparser, cffi, cryptography
+
+Successfully installed cffi-2.1.1 cryptography-46.0.7 pycparser-3.0
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: /home/runner/work/_temp/adk-nested-reader/bin/python -m pip install --upgrade pip
+Processing /home/runner/work/_temp/adk-nested-wheels/agent_evidence_observer-0.0.1-py3-none-any.whl
+Processing /home/runner/work/_temp/adk-nested-wheels/probity_adk_nested_compaction-0.0.1-py3-none-any.whl
+Installing collected packages: probity-adk-nested-compaction, agent-evidence-observer
+
+Successfully installed agent-evidence-observer-0.0.1 probity-adk-nested-compaction-0.0.1
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: /home/runner/work/_temp/adk-nested-reader/bin/python -m pip install --upgrade pip
+No broken requirements found.

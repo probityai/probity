@@ -11,6 +11,7 @@ import pytest
 from probity_observer.crypto import VerificationError, canonical
 
 from joint_host_gate import admit, gate, reader_closure, select
+from conftest import Retained
 from joint_common import CASES, PROFILE, sha, write
 
 
@@ -55,13 +56,13 @@ class TestHostGate:
     """Publication is a host-selected report decision, separate from action rights."""
 
     class TestPassingCases:
-        def test_native_report_contains_refusals_and_is_publishable(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]]) -> None:
-            report = fresh[2]
+        def test_native_report_contains_refusals_and_is_publishable(self, retained: Retained) -> None:
+            report = retained.report
             assert sum(not row["releasedResult"] for row in report["records"]) == 16
             admit(canonical(report))
 
-        def test_separate_literal_selection_is_frozen(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path) -> None:
-            packet, pins, policy, digest, reader = selected_files(tmp_path, fresh[2])
+        def test_separate_literal_selection_is_frozen(self, retained: Retained, tmp_path: Path) -> None:
+            packet, pins, policy, digest, reader = selected_files(tmp_path, retained.report)
             output = tmp_path / "host-receipts"
             output.mkdir()
             select(packet, pins, policy, digest, reader, output)
@@ -70,16 +71,16 @@ class TestHostGate:
             assert (output / "selected-pins.json").stat().st_mode & 0o777 == 0o400
 
     class TestFailingCases:
-        def test_revoked_row_cannot_release_with_unchanged_totals(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], caplog: pytest.LogCaptureFixture) -> None:
-            report = copy.deepcopy(fresh[2])
+        def test_revoked_row_cannot_release_with_unchanged_totals(self, retained: Retained, caplog: pytest.LogCaptureFixture) -> None:
+            report = copy.deepcopy(retained.report)
             next(row for row in report["records"] if row["id"] == "revoked-after")["releasedResult"] = True
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^reader-case-disposition$"):
                 admit(canonical(report))
             assert "Joint recovery refused: reader-case-disposition" in caplog.messages
 
         @pytest.mark.parametrize("name", ["joint_reader.py", "joint_common.py", "probity_observer/crypto.py", "sitecustomize.py", "__pycache__/joint_reader.cpython.pyc"])
-        def test_module_swap_or_injection_refused_before_launch(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path, caplog: pytest.LogCaptureFixture, name: str) -> None:
-            packet, pins, policy, digest, reader = selected_files(tmp_path, fresh[2])
+        def test_module_swap_or_injection_refused_before_launch(self, retained: Retained, tmp_path: Path, caplog: pytest.LogCaptureFixture, name: str) -> None:
+            packet, pins, policy, digest, reader = selected_files(tmp_path, retained.report)
             prefix = reader.parent.parent
             module = next(prefix.glob("lib/python*/site-packages")) / name
             module.parent.mkdir(parents=True, exist_ok=True)
@@ -93,14 +94,14 @@ class TestHostGate:
             assert "Joint recovery refused: reader-installed-closure" in caplog.messages
 
         @pytest.mark.parametrize("field,value,reason", [("plannedAttempts", True, "reader-population"), ("workerProcesses", 39, "reader-population"), ("targetProcesses", 37, "reader-population"), ("releasedResults", 19, "reader-population"), ("priorAuthenticEffects", 12, "reader-population"), ("pendingRefusals", 0, "reader-population"), ("startupRefusals", 0, "reader-population"), ("concurrentCallers", False, "reader-population"), ("witnessScope", "HOST", "reader-scope"), ("doesNotAssert", [], "reader-scope")])
-        def test_reselected_reader_output_refused(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], caplog: pytest.LogCaptureFixture, field: str, value: Any, reason: str) -> None:
-            report = {**fresh[2], field: value}
+        def test_reselected_reader_output_refused(self, retained: Retained, caplog: pytest.LogCaptureFixture, field: str, value: Any, reason: str) -> None:
+            report = {**retained.report, field: value}
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^" + reason + "$"):
                 admit(canonical(report))
             assert "Joint recovery refused: " + reason in caplog.messages
 
-        def test_swapped_reader_refused(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-            packet, pins, policy, digest, _ = selected_files(tmp_path, fresh[2])
+        def test_swapped_reader_refused(self, retained: Retained, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+            packet, pins, policy, digest, _ = selected_files(tmp_path, retained.report)
             reader = tmp_path / "different-reader"
             reader.write_bytes(b"different executable")
             output = tmp_path / "host-receipts"
@@ -109,8 +110,8 @@ class TestHostGate:
                 select(packet, pins, policy, digest, reader, output)
             assert "Joint recovery refused: host-selection" in caplog.messages
 
-        def test_candidate_self_selection_refused(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-            packet, pins, policy, digest, reader = selected_files(tmp_path, fresh[2])
+        def test_candidate_self_selection_refused(self, retained: Retained, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+            packet, pins, policy, digest, reader = selected_files(tmp_path, retained.report)
             internal = packet / pins.name
             internal.write_bytes(pins.read_bytes())
             output = tmp_path / "host-receipts"
@@ -119,8 +120,8 @@ class TestHostGate:
                 select(packet, internal, policy, digest, reader, output)
             assert "Joint recovery refused: selection-must-be-outside-packet" in caplog.messages
 
-        def test_actual_nonreader_process_cannot_publish(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-            packet, pins, policy, digest, reader = selected_files(tmp_path, fresh[2])
+        def test_actual_nonreader_process_cannot_publish(self, retained: Retained, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+            packet, pins, policy, digest, reader = selected_files(tmp_path, retained.report)
             output = tmp_path / "host-receipts"
             with caplog.at_level(logging.WARNING):
                 report = gate(packet, pins, policy, digest, reader, output)
@@ -130,8 +131,8 @@ class TestHostGate:
             assert (output / "reader.stderr").read_bytes()
             assert "Joint recovery refused: reader-refused" in caplog.messages
 
-        def test_case_omission_refused(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], caplog: pytest.LogCaptureFixture) -> None:
-            report = copy.deepcopy(fresh[2])
+        def test_case_omission_refused(self, retained: Retained, caplog: pytest.LogCaptureFixture) -> None:
+            report = copy.deepcopy(retained.report)
             report["records"].pop()
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^reader-case-population$"):
                 admit(canonical(report))

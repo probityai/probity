@@ -1,0 +1,7 @@
+{
+ "workflow": "package-observer-ag2-push-authority.yml",
+ "runId": 41347335997,
+ "headSha": "d1e92ccb7f5b679040fd18976fbc871fef5b0fb9",
+ "artifact": "ag2-push-authority-native-evidence",
+ "downloadedAt": "2026-11-03T15:51:38Z"
+}

@@ -38,7 +38,9 @@ addopts = ["--strict-markers"]
 target-version = "py312"
 # packages/agent-evidence-observer brings its own checks; its interop experiments are frozen
 # with recorded file digests. Row CONS-ORG-OBSERVER-RUFF holds the rest.
-extend-exclude = ["packages/*/vectors-*/cases", "packages/agent-evidence-observer"]
+# A retained capture is evidence frozen by recorded digests; its sources are kept byte for byte.
+extend-exclude = ["packages/*/vectors-*/cases", "packages/agent-evidence-observer",
+                  "packages/*/examples/*/retained"]
 
 [tool.ruff.lint.per-file-ignores]
 # A resource directory read with importlib.resources, not an importable module;

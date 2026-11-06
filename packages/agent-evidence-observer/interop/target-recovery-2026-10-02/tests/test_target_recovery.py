@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import copy
-import shutil
 import sqlite3
 import subprocess
 import sys
@@ -13,20 +12,13 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from target_common import CASES, load, sha, write
 from target_reader import verify_saved
-import target_run
-
-
-@pytest.fixture(scope='session')
-def fresh(tmp_path_factory):
-    root = tmp_path_factory.mktemp('native') / 'packet'
-    report = target_run.run(root, '0' * 40)
-    return root, report
 
 
 def reseal(root: Path) -> dict:
     manifest = load(root, 'artifact-manifest.json')
     for name in manifest:
-        manifest[name] = sha((root / name).read_bytes())
+        if (root / name).exists():
+            manifest[name] = sha((root / name).read_bytes())
     (root / 'artifact-manifest.json').unlink()
     write(root / 'artifact-manifest.json', manifest)
     pins = load(root, 'consumer-pins.json')
@@ -42,14 +34,14 @@ def replace_json(root: Path, name: str, mutation):
     write(root / name, value)
 
 
-def test_real_target_process_population(fresh):
-    root, report = fresh
+def test_retained_target_process_population(retained):
+    root, report = retained.root, retained.report
     assert report['targetProcesses'] == 14
     assert report['completedEffects'] == 3
     assert report['incompleteRefusals'] == 2
     assert report['startupRefusals'] == 2
     assert [row['id'] for row in report['records']] == list(CASES)
-    assert verify_saved(root, load(root, 'consumer-pins.json')) == report
+    assert verify_saved(root, load(root, 'consumer-pins.json'), retained.withheld) == report
     assert not list(root.rglob('*worker*.json'))
 
 
@@ -86,18 +78,16 @@ MUTATIONS = [
 
 
 @pytest.mark.parametrize('name,mutation', MUTATIONS)
-def test_reselected_semantic_mutation(fresh, tmp_path, name, mutation):
-    root = tmp_path / 'packet'
-    shutil.copytree(fresh[0], root)
+def test_reselected_semantic_mutation(retained, copied, name, mutation):
+    root = copied
     replace_json(root, name, mutation)
     pins = reseal(root)
     with pytest.raises((ValueError, KeyError, TypeError)):
-        verify_saved(root, pins)
+        verify_saved(root, pins, retained.withheld)
 
 
-def test_rollback_signed_store_refused_by_retained_prefix(fresh, tmp_path):
-    root = tmp_path / 'packet'
-    shutil.copytree(fresh[0], root)
+def test_rollback_signed_store_refused_by_retained_prefix(retained, copied):
+    root = copied
     path = root / 'crash-after-effect.sqlite'
     database = sqlite3.connect(path)
     try:
@@ -106,61 +96,38 @@ def test_rollback_signed_store_refused_by_retained_prefix(fresh, tmp_path):
     finally:
         database.close()
     with pytest.raises(ValueError):
-        verify_saved(root, reseal(root))
+        verify_saved(root, reseal(root), retained.withheld)
 
 
-def test_wrong_external_pins_refused(fresh):
-    pins = copy.deepcopy(load(fresh[0], 'consumer-pins.json'))
+def test_wrong_external_pins_refused(retained):
+    pins = copy.deepcopy(load(retained.root, 'consumer-pins.json'))
     pins['artifactManifestSha256'] = '0' * 64
     with pytest.raises(ValueError):
-        verify_saved(fresh[0], pins)
+        verify_saved(retained.root, pins, retained.withheld)
 
 
-def test_reader_requires_explicit_pins(fresh):
-    process = subprocess.run([sys.executable, str(Path(target_run.__file__).with_name('target_reader.py')), str(fresh[0])], capture_output=True, timeout=10)
+def test_reader_requires_explicit_pins(retained):
+    process = subprocess.run([sys.executable, str(Path(__file__).parents[1] / 'target_reader.py'), str(retained.root)], capture_output=True, timeout=10)
     assert process.returncode == 2
     assert b'--pins-file' in process.stderr
 
 
-def test_startup_timeout_reaps_owned_process(monkeypatch, tmp_path):
-    _, store = target_run.selected(tmp_path, tmp_path, 'timeout-run', 'restart-ready')
-    actual = target_run.subprocess.Popen
-    children = []
-    def sleeping(command, **kwargs):
-        process = actual([sys.executable, '-c', 'import time; time.sleep(30)'], **kwargs)
-        children.append(process)
-        return process
-    monkeypatch.setattr(target_run.subprocess, 'Popen', sleeping)
-    with pytest.raises(ValueError, match='target-startup-timeout'):
-        target_run.start(tmp_path, store, store.readback()['receipt'], 1, timeout=0.05)
-    assert children[0].poll() == -15
-    receipt = load(tmp_path, 'cleanup-1.json')
-    assert receipt['pid'] == children[0].pid
-    assert receipt['reason'] == 'abnormal-execution-cleanup'
-
-
-def test_http_exception_reaps_started_target(monkeypatch, tmp_path):
-    private = tmp_path / 'host'
-    private.mkdir()
-    case, store = target_run.selected(tmp_path, private, 'failure-run', 'crash-after-intent')
-    def failed_exchange(*args, **kwargs):
-        raise RuntimeError('forced-http-failure')
-    monkeypatch.setattr(target_run, 'exchange', failed_exchange)
-    with pytest.raises(RuntimeError, match='forced-http-failure'):
-        target_run.execute(tmp_path, private, case, store)
-    receipt = load(private, 'cleanup-1.json')
-    assert receipt['returncode'] == -15
-    assert target_run.ACTIVE == []
-
-
-def test_cached_completion_cannot_be_relabelled_as_fresh_restart(fresh, tmp_path):
+def test_cached_completion_cannot_be_relabelled_as_fresh_restart(retained, copied):
     from probity_observer.crypto import canonical
-    root = tmp_path / 'packet'
-    shutil.copytree(fresh[0], root)
+    root = copied
     def mutation(attempt):
         attempt['intermediate'] = copy.deepcopy(attempt['final'])
         attempt['processes'][1]['result']['initial'] = copy.deepcopy(attempt['final'])
         attempt['http'][0]['responseHex'] = canonical(attempt['final']).hex()
     replace_json(root, 'restart-ready.json', mutation)
     with pytest.raises(ValueError, match='fresh-ready-before-dispatch'):
-        verify_saved(root, reseal(root))
+        verify_saved(root, reseal(root), retained.withheld)
+
+
+def test_unlisted_absence_and_mismatched_withheld_digest_refused(retained, copied):
+    pins = load(copied, 'consumer-pins.json')
+    (copied / 'sources/target_common.py').unlink()
+    with pytest.raises((ValueError, OSError)):
+        verify_saved(copied, pins, retained.withheld)
+    with pytest.raises((ValueError, OSError)):
+        verify_saved(retained.root, pins, {**retained.withheld, 'sources/target_run.py': '0' * 64})

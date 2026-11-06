@@ -11,99 +11,56 @@ as a new operation, a retry can record the action twice.
 This worked example uses the unchanged APS SDK 7.2.1 to check a synthetic refund
 approval. Observer binds the operation to the host tenant and the signed action
 reference, then retains its intent and completion in one protected SQLite store.
-You will interrupt a process, inspect its retained records and check them with a
+You will inspect the retained records of an interrupted process and check them with a
 separately installed reader. The effect here is a local refund-record row. No
 payment provider is called.
 
 ![Approval, retained refund state, and a separate reader.](../images/aps-refund-retries.svg)
 
-## Run the controlled example
+## Check the retained example
 
-Use Linux, Python 3.12, [uv](https://docs.astral.sh/uv/), and Node 20.20.2 or 22.23.3.
-Those are the qualified Node patch versions. The initial install needs network
-access for the pinned Python and npm dependencies. This remains a source-only
-profile, not a published package release.
+The operator's runtime ran the crash cases; the packets it wrote are retained under
+[`retained/`](../../interop/aps-durable-refund-2026-10-05/retained) in the profile directory. This
+page is about reading them. Use Linux, Python 3.12, [uv](https://docs.astral.sh/uv/), and Node
+20.20.2 or 22.23.3. The install needs network access for the pinned Python and npm dependencies.
+This remains a source-only profile, not a published package release.
 
-Start outside any existing checkout. Use a new directory; the recipe refuses an
-existing output directory. Each block starts from the directory containing
-`aps-refund-demo`. Run the installation block once. The blocks use Bash and stop
-on a failed command without closing your interactive shell.
+From `packages/agent-evidence-observer`:
 
 ```sh
-bash <<'SH'
-set -euo pipefail
-mkdir aps-refund-demo
-cd aps-refund-demo
-git clone https://github.com/probityai/probity.git source
-git -C source checkout b617361c221db5ca96989a94c60e8480e14aecd5
-cd source/packages/observer
-bash interop/aps-durable-refund-2026-10-05/verify_install.sh ../capture
-SH
+cd interop/aps-durable-refund-2026-10-05
+npm ci --ignore-scripts
+uv venv .venv --python 3.12
+uv pip install --python .venv/bin/python --require-hashes -r requirements.lock
+uv pip install --python .venv/bin/python --no-deps ../.. .
+.venv/bin/python -I -B verify_retained.py
 ```
 
-The source pin selects the shipped profile from
-[Observer PR #77](https://github.com/probityai/agent-evidence-observer/pull/77).
-The recipe builds both wheels, installs separate operator and reader environments,
-checks installed source bytes, runs the full core and profile tests, and retains
-the native captures and public-reader controls. It also reads every native capture
-twice and compares the output bytes. Allow the complete qualification to finish.
-
-The important files are:
+`verify_retained.py` runs the installed public reader on every retained capture, with its own
+`host-policy.json` hash as the consumer selection, and requires the exit status, stdout and stderr
+to equal the bytes retained with the capture. The important files are:
 
 | File | What you can inspect |
 | --- | --- |
-| `capture/native/native-report.json` | Process attempts, local admissions and effects for each capture |
-| `capture/native/approval-reissue/attempts.json` | Completion, refused changed approval and retry of the original approval |
-| `capture/native/lost-ack/attempts.json` | An interrupted acknowledgement followed by a retry |
-| `capture/native/after-intent/attempts.json` | An interrupted intent followed by refused automatic replay |
+| `retained/native/native-report.json` | Process attempts, local admissions and effects for each capture |
+| `retained/native/approval-reissue/attempts.json` | Completion, refused changed approval and retry of the original approval |
+| `retained/native/lost-ack/attempts.json` | An interrupted acknowledgement followed by a retry |
+| `retained/native/after-intent/attempts.json` | An interrupted intent followed by refused automatic replay |
 | Each case's `service.sqlite` | The captured signed state, event history and actual local row |
 | Each case's `host-policy.json` | Public keys, selected source/member hashes and the expected local counts |
-| `capture/wheel-sha256.txt` and `*-installed-source.json` | The wheel bytes and installed Python source bindings |
+| `retained/*-reader.json` | The reader output retained for each case |
 
 The fixed fixture clock tests the declared authorization boundaries. It does not
-establish freshness against an outside clock. The producer uses private runtime
-files outside the public captures and removes them when the recipe ends.
+establish freshness against an outside clock.
 
-## Read the retained result from another installation
+## Read the retained result
 
-These commands enter `aps-refund-demo/`, outside the source checkout. The reader
-has its own installed wheels and receives public records, not the producer's
-signing keys.
+The reader has its own installed environment and receives public records, not the producer's
+signing keys. For this author-controlled example, the policy hash is computed locally from the
+retained `host-policy.json`. A deployment consumer must select its policy, keys and hashes through
+its own accepted process; hashing an unfamiliar packet does not make it trusted.
 
-For this author-controlled example, compute the fixture policy hash locally. A
-deployment consumer must select its policy, keys and hashes through its own
-accepted process; hashing an unfamiliar packet does not make it trusted.
-
-```sh
-bash <<'SH'
-set -euo pipefail
-cd aps-refund-demo
-profile="$PWD/source/interop/aps-durable-refund-2026-10-05"
-capture="$PWD/capture"
-node=$(command -v node)
-for name in approval-reissue lost-ack after-intent; do
-  case_path="$capture/native/$name"
-  policy_sha=$(sha256sum "$case_path/host-policy.json" | cut -d' ' -f1)
-  "$capture/reader/bin/python" -I -B -m probity_aps_refund.reader \
-    "$case_path" --policy-sha256 "$policy_sha" \
-    --node "$node" --verifier "$profile/verify-aps.mjs" \
-    > "$name-reader.json" 2> "$name-reader.stderr" || {
-      status=$?
-      cat "$name-reader.stderr" >&2
-      exit "$status"
-    }
-done
-"$capture/reader/bin/python" -I -B - <<'PY'
-import json
-from pathlib import Path
-for name in ("approval-reissue", "lost-ack", "after-intent"):
-    result = json.loads(Path(name + "-reader.json").read_text())
-    print(name, result["logicalAdmissions"], result["localEffects"], result["outcome"])
-PY
-SH
-```
-
-The final three lines are:
+The retained reader output for the three cases reports:
 
 ```text
 approval-reissue 1 1 recorded-local-sqlite-refund-row
@@ -111,12 +68,11 @@ lost-ack 1 1 recorded-local-sqlite-refund-row
 after-intent 1 0 not-established-after-interruption
 ```
 
-The complete reader JSON remains in each `*-reader.json` file. A failed read stops
-the block before the summary and preserves its `*-reader.stderr` file. The approval-reissue
-result also says `same-operation-changed-authorization-refused`: a genuine reissued
-approval is not accepted as the original store's frozen authorization. Retrying the
-original approval returns its retained completion. A separately approved different
-action has a different operation identity and its own capture.
+The columns are the case, its logical admissions, its local effects and its outcome. The
+approval-reissue result also says `same-operation-changed-authorization-refused`: a genuine
+reissued approval is not accepted as the original store's frozen authorization. Retrying the
+original approval returns its retained completion. A separately approved different action has a
+different operation identity and its own capture.
 
 For lost acknowledgement, the local row already committed before the process
 stopped. The retry returns that result. For the interrupted intent, the record
@@ -129,38 +85,20 @@ share one operation; do not add their counts as separate workloads.
 
 ## Check a real refusal
 
-Give the reader a policy hash that does not match the retained policy. Save both
-output streams, require exit two with the policy-selection refusal, and confirm
-that the SQLite bytes stay unchanged.
+Give the reader a policy hash that does not match the retained policy. It must exit two with the
+policy-selection refusal and leave the SQLite bytes unchanged.
 
 ```sh
-bash <<'SH'
-set -euo pipefail
-cd aps-refund-demo
-profile="$PWD/source/interop/aps-durable-refund-2026-10-05"
-capture="$PWD/capture"
-node=$(command -v node)
-case_path="$capture/native/approval-reissue"
+case_path=retained/native/approval-reissue
 before=$(sha256sum "$case_path/service.sqlite" | cut -d' ' -f1)
-if "$capture/reader/bin/python" -I -B -m probity_aps_refund.reader \
-  "$case_path" \
+.venv/bin/python -I -B -m probity_aps_refund.reader "$case_path" \
   --policy-sha256 0000000000000000000000000000000000000000000000000000000000000000 \
-  --node "$node" --verifier "$profile/verify-aps.mjs" \
-  > wrong-policy.stdout 2> wrong-policy.stderr; then
-  echo "unexpected policy acceptance" >&2
-  exit 1
-else
-  status=$?
-fi
-test "$status" -eq 2
-test ! -s wrong-policy.stdout
-grep -Fq 'public host policy differs from consumer selection' wrong-policy.stderr
-test "$(sha256sum "$case_path/service.sqlite" | cut -d' ' -f1)" = "$before"
-cat wrong-policy.stderr
-SH
+  --node "$(command -v node)" --verifier verify-aps.mjs; echo "exit=$?"
+test "$(sha256sum "$case_path/service.sqlite" | cut -d' ' -f1)" = "$before" && echo unchanged
 ```
 
-The refusal produces no accepted result and does not alter the captured database.
+The reader prints `public host policy differs from consumer selection` and exits two. The
+refusal produces no accepted result and does not alter the captured database.
 Keep the original policy and all refusal evidence. Do not replace a selected hash
 merely to make a consumer accept a changed packet.
 

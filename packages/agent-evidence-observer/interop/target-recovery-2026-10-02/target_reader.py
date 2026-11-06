@@ -6,18 +6,17 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 from probity_observer.crypto import VerificationError, canonical, strict_loads
 from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
-from probity_observer.ticket_service import TicketStore
 from probity_observer.ticket_state import (
     checked_record,
+    load_ticket_capture,
     state_schema,
     verify_ticket_result,
 )
-from target_common import CASES, NONCLAIMS, PROFILE, load, read, require, sha
+from target_common import CASES, NONCLAIMS, PROFILE, load, read, require, sha, withheld_sources
 
 
 def exact(value: Any, expected: Any) -> bool:
@@ -85,13 +84,12 @@ def check_snapshot(root: Path, attempt: dict, case: dict) -> dict:
     raw = read(root, attempt['snapshot'])
     require(raw.startswith(b'SQLite format 3\x00'), 'snapshot-format')
     request, policy = ActionRequest(**case['request']), GrantPolicy(**case['policy'])
-    public_key = SimpleNamespace(public_hex=case['serviceKey'])
-    store = TicketStore(root / attempt['snapshot'], request, policy, public_key, retained_head=attempt['intermediate']['receipt'])
     database = sqlite3.connect((root / attempt['snapshot']).resolve().as_uri() + '?mode=ro', uri=True)
     try:
-        state, content = store._load(database)
+        capture = load_ticket_capture(database, request, policy, case['serviceKey'], retained_head=attempt['intermediate']['receipt'])
     finally:
         database.close()
+    state, content = capture.state, capture.content
     current = authenticated_readback(attempt['final'], case)
     require(exact(state, {k: current[k] for k in state}), 'snapshot-final-state')
     require(content == (None if attempt['final']['contentHex'] is None else bytes.fromhex(attempt['final']['contentHex'])), 'snapshot-native-content')
@@ -159,13 +157,20 @@ def verify_case(root: Path, case: dict, now: datetime) -> dict:
     return check_completed(root, attempt, case, http, now)
 
 
-def verify_saved(root: Path, pins: dict) -> dict:
-    """Require selected complete manifest and separately supplied consumer pins."""
+def verify_saved(root: Path, pins: dict, withheld: dict[str, str] | None = None) -> dict:
+    """Require selected complete manifest and separately supplied consumer pins.
+
+    A member may be absent from the packet only when ``withheld`` names it with
+    exactly the digest the manifest pins; every present member still matches
+    byte for byte and any other absence refuses.
+    """
+    withheld = withheld or {}
     require(set(pins) == {'profile', 'planSha256', 'artifactManifestSha256', 'evaluationTime'} and pins['profile'] == PROFILE, 'pins-fields')
     require(sha(read(root, 'plan-before-run.json')) == pins['planSha256'] and sha(read(root, 'artifact-manifest.json')) == pins['artifactManifestSha256'], 'pins-digest')
     manifest = load(root, 'artifact-manifest.json')
+    absent = {name for name, selected_digest in manifest.items() if not (root / name).exists() and withheld.get(name) == selected_digest}
     for name, selected_digest in manifest.items():
-        require(sha(read(root, name)) == selected_digest, 'artifact-digest')
+        require(name in absent or sha(read(root, name)) == selected_digest, 'artifact-digest')
     plan = load(root, 'plan-before-run.json')
     require(set(plan) == {'profile', 'runId', 'sourceRevision', 'observerVersion', 'python', 'selectedTime', 'cases', 'sources', 'witnessScope', 'doesNotAssert', 'parallelDispatches'}, 'plan-fields')
     require(set(plan['sources']) == {'ticket_service.py', 'crypto.py', 'authorization.py', 'target_common.py', 'target_worker.py', 'target_run.py', 'target_reader.py'}, 'source-population')
@@ -175,7 +180,7 @@ def verify_saved(root: Path, pins: dict) -> dict:
     expected = {'plan-before-run.json'} | {name + '.json' for name in CASES} | {name + '.sqlite' for name in CASES if name not in {'missing-store', 'changed-configuration'}} | {'sources/' + name for name in plan['sources']}
     require(set(manifest) == expected, 'manifest-population')
     for name, selected_digest in plan['sources'].items():
-        require(sha(read(root, 'sources/' + name)) == selected_digest, 'source-digest')
+        require(withheld['sources/' + name] == selected_digest if 'sources/' + name in absent else sha(read(root, 'sources/' + name)) == selected_digest, 'source-digest')
     now = datetime.fromisoformat(pins['evaluationTime'])
     rows = [verify_case(root, case, now) for case in plan['cases']]
     return {'profile': PROFILE, 'status': 'verified', 'plannedAttempts': 7, 'completedEffects': 3, 'incompleteRefusals': 2, 'startupRefusals': 2, 'targetProcesses': 14, 'records': rows, 'witnessScope': 'PEER', 'doesNotAssert': NONCLAIMS, 'interpretation': 'same-operator local SQLite/HTTP target process hard-exit and recovery; process evidence is unsigned runner testimony, not independent custody'}
@@ -186,9 +191,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('packet', type=Path)
     parser.add_argument('--pins-file', type=Path, required=True)
+    parser.add_argument('--withheld-sources', type=Path, default=None)
     args = parser.parse_args()
     try:
-        report = verify_saved(args.packet, load(args.pins_file.parent, args.pins_file.name))
+        report = verify_saved(args.packet, load(args.pins_file.parent, args.pins_file.name), withheld_sources(args.withheld_sources))
     except (VerificationError, OSError, KeyError, TypeError, sqlite3.Error) as error:
         raise SystemExit('target recovery packet refused: ' + str(error)) from error
     print(json.dumps(report, indent=2))

@@ -2,7 +2,9 @@
 
 This additive profile connects **real LangGraph 1.0.10** public checkpoint and
 interrupt/resume APIs to Observer's existing AAE-protected HTTP ticket service.
-It is a finite, deterministic Probity-operated integration candidate. There is
+It is a finite, deterministic integration reference whose packets were produced by
+the operator's runtime and are retained here under [retained](retained) (runtime
+sources withheld by digest, listed in `retained/WITHHELD-SOURCES.json`). There is
 no model inference, provider call, LangGraph adoption, external operator result,
 quality benchmark, independent custody, caller authentication or general
 exactly-once guarantee. The native AAE mandate is still unsigned.
@@ -26,7 +28,7 @@ LangGraph recovery. The additive [durable restart profile](DURABLE-RESTART.md)
 executes those controls with distinct hard-exiting workers and `SqliteSaver`. The pending-intent case does not automatically
 replay. It preserves the original service behavior rather than infer a success.
 
-## Run and consume
+## Replay and consume
 
 Use Python 3.13 in a fresh environment from the repository root:
 
@@ -37,17 +39,16 @@ python -m venv .venv-lg
 .venv-lg/bin/python -m pip check
 cd interop/langgraph-ticket-2026-10-02
 ../../.venv-lg/bin/python -m pytest -q tests
-../../.venv-lg/bin/python lg_run.py fresh-run --source-revision "$(git rev-parse HEAD)"
-cp fresh-run/consumer-pins.json /tmp/langgraph-selected-pins.json
-../../.venv-lg/bin/python lg_reader.py fresh-run --pins-file /tmp/langgraph-selected-pins.json
+cp retained/fresh-run/consumer-pins.json /tmp/langgraph-selected-pins.json
+../../.venv-lg/bin/python lg_reader.py retained/fresh-run --pins-file /tmp/langgraph-selected-pins.json --withheld-sources retained/WITHHELD-SOURCES.json
 ```
 
-`fresh-run` must not exist. Install, execution and reader errors fail CI; no
-import skip, success fallback or reused recorded result is used. Every action is
-loopback-only with one SQLite file per selected attempt. Dependency versions and
-per-platform wheel hashes are locked; CI retains pip's fresh installation report.
-The lock intentionally includes test/lint dependencies used by this profile.
-The base Observer source installation is the selected checkout, with `--no-deps`.
+Install and reader errors fail CI; no import skip, success fallback or reused
+recorded result is used. Every action in the retained packet was loopback-only with
+one SQLite file per selected attempt. Dependency versions and per-platform wheel
+hashes are locked. The lock intentionally includes test/lint dependencies used by
+this profile. The base Observer source installation is the selected checkout, with
+`--no-deps`.
 
 The reader runs without LangGraph execution, network requests or native-store
 access. It consumes original public `StateSnapshot`/`PregelTask`/`Interrupt`
@@ -87,8 +88,8 @@ operator fabricating a complete history.
 - Elapsed nanoseconds per attempt; zero input/output tokens because no provider
   runs. Peak memory is `null`/unmeasured, not a zero measurement.
 - One node, recursion limit four, six attempts, HTTP 5-second timeout and 64 KiB
-  response cap, reader 8 MiB/file cap, CI 15 minutes and runner 180 seconds.
-- Original controls and a fresh CI output artifact, retained 90 days.
+  response cap, reader 8 MiB/file cap and CI 15 minutes.
+- Original controls and the CI output artifact of the producing run.
 
 `recorded-report.json` is a local factual result, not CI execution. Fresh remote
 CI must pass before any claim of remote reproduction. The tests include real

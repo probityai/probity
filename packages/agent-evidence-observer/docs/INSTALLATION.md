@@ -1,7 +1,7 @@
 # Install Observer and choose a native reader
 
-The root distribution, `agent-evidence-observer` 0.2.0, is available on
-[PyPI](https://pypi.org/project/agent-evidence-observer/0.2.0/). It requires
+The root distribution is `agent-evidence-observer` 0.2.0, released through
+[PyPI](https://pypi.org/project/agent-evidence-observer/). It requires
 Python 3.12 or later and uses Apache-2.0 terms. With Python 3.12 and
 [uv](https://docs.astral.sh/uv/), install it in its own environment:
 
@@ -17,9 +17,9 @@ or an immutable source revision when your installation policy requires byte pins
 For a source-pinned joint installation of Observer and Verify, use the
 [joint-install controls](JOINT-INSTALL.md).
 
-## Try the source-pinned broker
+## Try the source-pinned reader
 
-The broker and native-reader recipe below retains one historical source
+The reader recipe below retains one historical source
 snapshot. Use its separate environment and keep the root install and reader
 checkout pins together.
 
@@ -28,14 +28,11 @@ With Python 3.12 and [uv](https://docs.astral.sh/uv/):
 ```sh
 uv venv observer-env --python python3.12
 uv pip install --python observer-env/bin/python 'agent-evidence-observer @ git+https://github.com/probityai/probity.git@b617361c221db5ca96989a94c60e8480e14aecd5#subdirectory=packages/observer'
-observer-env/bin/agent-evidence-observer demo sample-run
-observer-env/bin/agent-evidence-observer verify sample-run
+observer-env/bin/agent-evidence-observer --help
 ```
 
-The demo prints `{"noDetectedGap": "true", "retryReplayed": "true", "status": "verified", "witnessScope": "PEER"}`.
-Verification prints `{"noDetectedGap": "true", "status": "verified", "witnessScope": "PEER"}`.
-Use a new, empty output directory. The demo's keys and witness share one local operator.
-Its coverage applies to brokered file writes and checked snapshots.
+The installed command verifies a retained run directory offline. Its coverage applies to
+brokered file writes and checked snapshots; the operator's runtime produces the runs.
 
 Keep a separate source checkout if the selected profile needs scripts:
 
@@ -53,8 +50,7 @@ Select packet hashes, reader hashes and keys through the consumer's accepted pro
 
 | Task | Installed entry point | Other selected inputs |
 | --- | --- | --- |
-| Record and verify brokered writes | `agent-evidence-observer` | A new local run, or a retained packet and consumer-pinned keys |
-| Apply consumer policy to a broker packet | `agent-evidence-admit` | [Admission policy and retained state](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/CONSUMER-ADMISSION.md) |
+| Verify a retained broker packet, boundary run or workload run offline | `agent-evidence-observer` | A retained run directory and consumer-pinned keys |
 | Read bounded Inspect execution or A2A SDK packets | `agent-evidence-read-native` | A matching immutable checkout and a separately selected manifest; [consumer CI guide](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/NATIVE-CONSUMER-CI.md) |
 | Read Atomic native delegation tests | `agent-evidence-read-atomic` | Selected native test packet and manifest; [Atomic guide](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/ATOMIC-NATIVE-READER.md). No separate source checkout |
 | Verify a refund admission-to-effect handoff | `agent-evidence-read-refund-handoff` | Consumer-selected trust snapshot and a [`refund-handoff/0.1` evidence bundle](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/reference/REFUND-HANDOFF-CONFORMANCE.md) |
@@ -96,10 +92,10 @@ field uses its directory's `README.md`, the convention for the existing profiles
 | --- | --- | --- | --- |
 | [a2a-history-boundary-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/README.md) | `probity-a2a-history-reader` | `>=3.12` | `probity-read-a2a-history` |
 | [a2a-native-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/a2a-native-2026-10-02/README.md) | `probity-a2a-native-reference` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [adk-a2a-failed-task-2026-10-03](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/adk-a2a-failed-task-2026-10-03/README.md) | `probity-adk-failure-reference` | `>=3.12` | `probity-adk-failure-produce`, `probity-adk-failure-read` |
+| [adk-a2a-failed-task-2026-10-03](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/adk-a2a-failed-task-2026-10-03/README.md) | `probity-adk-failure-reference` | `>=3.12` | `probity-adk-failure-read` |
 | [adk-nested-compaction-2026-10-04](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/README.md) | `probity-adk-nested-compaction` | `>=3.12` | Module/script entry points; follow the profile guide |
-| [adk-ticket-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/adk-ticket-2026-10-02/README.md) | `probity-adk-reference` | `>=3.13` | `probity-adk-run`, `probity-adk-read`, `probity-adk-gate` |
-| [adk-user-responses-2026-10-04](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04/README.md) | `probity-adk-user-responses` | `>=3.12` | `probity-adk-responses-produce`, `probity-adk-responses-read` |
+| [adk-ticket-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/adk-ticket-2026-10-02/README.md) | `probity-adk-reference` | `>=3.13` | `probity-adk-read`, `probity-adk-gate` |
+| [adk-user-responses-2026-10-04](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04/README.md) | `probity-adk-user-responses` | `>=3.12` | `probity-adk-responses-read` |
 | [ag2-push-authority-2026-10-04](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/README.md) | `probity-ag2-push-authority` | `>=3.12` | Module/script entry points; follow the profile guide |
 | [aps-durable-refund-2026-10-05](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05/README.md) | `probity-aps-refund-controls` | `>=3.12` | Module/script entry points; follow the profile guide |
 | [authority-unreachable-2026-10-03](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03/README.md) | `agent-evidence-authority-reference` | `>=3.12` | Module/script entry points; follow the profile guide |
@@ -116,12 +112,12 @@ field uses its directory's `README.md`, the convention for the existing profiles
 | [local-model-format-control-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/local-model-format-control-2026-10-02/README.md) | `probity-local-cpu-format-control` | `>=3.11` | Module/script entry points; follow the profile guide |
 | [local-model-tasks-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/local-model-tasks-2026-10-02/README.md) | `probity-local-cpu-task-matrix` | `>=3.11` | Module/script entry points; follow the profile guide |
 | [local-model-vocabulary-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/local-model-vocabulary-2026-10-02/README.md) | `probity-local-cpu-vocabulary` | `>=3.11` | Module/script entry points; follow the profile guide |
-| [openai-agents-ticket-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/README.md) | `probity-openai-agents-reference` | `>=3.13` | `probity-openai-run`, `probity-openai-read` |
+| [openai-agents-ticket-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/README.md) | `probity-openai-agents-reference` | `>=3.13` | `probity-openai-read` |
 | [pic-aps-refund-reader-2026-10-09](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/pic-aps-refund-reader-2026-10-09/README.md) | `probity-pic-aps-refund-reader` | `>=3.12` | `probity-read-pic-aps-refund` |
-| [protected-action-operator-2026-10-06](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/protected-action-operator-2026-10-06/PROFILE.md) | `probity-protected-operator-reference` | `>=3.12` | `agent-evidence-authorization-witness` |
-| [pydantic-ai-native-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/README.md) | `probity-pydantic-reference` | `>=3.12` | `probity-pydantic-run`, `probity-pydantic-read` |
+| [protected-action-operator-2026-10-06](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/protected-action-operator-2026-10-06/PROFILE.md) | `probity-protected-operator-reference` | `>=3.12` | Run `verify_retained.py`; follow the profile guide |
+| [pydantic-ai-native-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/README.md) | `probity-pydantic-reference` | `>=3.12` | `probity-pydantic-read` |
 | [pydantic-recovery-2026-10-03](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/README.md) | `probity-pydantic-recovery-reader` | `>=3.12` | `probity-read-pydantic-recovery` |
-| [smolagents-native-2026-10-03](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/smolagents-native-2026-10-03/README.md) | `probity-smolagents-reference` | `>=3.12` | `probity-smolagents-produce`, `probity-smolagents-read` |
+| [smolagents-native-2026-10-03](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/smolagents-native-2026-10-03/README.md) | `probity-smolagents-reference` | `>=3.12` | `probity-smolagents-read` |
 | [target-recovery-2026-10-02](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/target-recovery-2026-10-02/README.md) | `probity-target-recovery-reader` | `>=3.12` | `probity-read-target-recovery` |
 | [witness-operator-2026-10-03](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/witness-operator-2026-10-03/README.md) | `probity-witness-operator-reference` | `>=3.12` | `agent-evidence-witness` |
 
@@ -156,25 +152,24 @@ and a maintained outside gate are separate results.
 
 ## Run the source quick start
 
-These commands install a pinned source snapshot. Python 3.12 or later and
-[`uv`](https://docs.astral.sh/uv/) are needed:
+These commands install the current source and check a retained packet.
+Python 3.12 or later and [`uv`](https://docs.astral.sh/uv/) are needed:
 
 ```sh
-git clone https://github.com/probityai/probity && cd probity
-git checkout b617361c221db5ca96989a94c60e8480e14aecd5
-cd packages/agent-evidence-observer
+git clone https://github.com/probityai/probity && cd probity/packages/agent-evidence-observer
 uv venv .venv --python python3.12 && uv pip install --python .venv/bin/python .
-.venv/bin/agent-evidence-observer demo ./sample-run
-.venv/bin/agent-evidence-observer verify ./sample-run
+.venv/bin/agent-evidence-observer verify scripts/fixtures/broker-packet \
+  --observer-key a592976c199b8a4f3a80ca4412df916de591aa4a10f95e0b8030e1321bd2d9de \
+  --witness-key 143f322c613549cf4da40ae09b0634f82b68d2d5a1017639bdde2e1eb15353f6
 ```
 
-The two commands print:
+The command prints:
 
 ```text
-{"noDetectedGap": "true", "retryReplayed": "true", "status": "verified", "witnessScope": "PEER"}
 {"noDetectedGap": "true", "status": "verified", "witnessScope": "PEER"}
 ```
 
-`sample-run/` now holds the signed packet, the history, the public keys and the file tree. The demo
-writes a file, retries it, and the retry returns the first effect. `noDetectedGap` means the broker's
-file-tree snapshots found no change it did not make. It does not mean every agent effect was seen.
+`scripts/fixtures/broker-packet/` holds a signed packet, the history and the file tree of one
+retained run. The observer and witness keys come from this page, not from the packet, and `verify`
+refuses to run without both. `noDetectedGap` means the broker's file-tree snapshots found no change it
+did not make. It does not mean every agent effect was seen.

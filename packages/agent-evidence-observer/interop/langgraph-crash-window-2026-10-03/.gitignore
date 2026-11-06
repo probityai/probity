@@ -1,11 +1,13 @@
-fresh-run/
-fresh-run-host-private/
-reader-wheels/
+/fresh-run/
+/fresh-run-host-private/
+/reader-wheels/
 *.egg-info/
 build/
 *.xml
-*-report.json
+/*-report.json
 selected-pins.json
 installed-reader.stdout
 installed-reader.stderr
 installed-closure.json
+/consumer-receipts/
+!/retained/fresh-run/sources/target/

@@ -1,14 +1,13 @@
 """Coverage controls over retained actual-failure and prospective-clean audit reports.
 
 The clean fixture is a transformed inventory, not proof of a repaired installed environment.
-The native gate separately audits the actual installed producer and reader.
+The installed-reader check separately audits the actual installed reader environment.
 """
 
 import copy
 import importlib.util
 import json
 from pathlib import Path
-
 
 PROFILE = Path(__file__).parent
 SPEC = importlib.util.spec_from_file_location("authority_audit_environment", PROFILE / "audit_environment.py")

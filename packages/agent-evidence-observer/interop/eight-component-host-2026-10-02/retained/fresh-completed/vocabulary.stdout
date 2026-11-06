@@ -1,0 +1,1 @@
+{"admitted": true, "checks": {"basis": true, "method": true, "result": true, "witnessScope": true}, "gate": "vocabulary", "referenceConsumption": "closed-term-check", "termPromotion": "not-established", "version": "0.3.0", "witnessScope": "PEER"}

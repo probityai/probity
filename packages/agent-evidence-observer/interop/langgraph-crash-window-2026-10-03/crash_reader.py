@@ -14,8 +14,12 @@ from probity_observer.crypto import VerificationError, canonical
 from crash_common import CASES, NONCLAIMS, POLICY, PROFILE, child_environment, load, packet_files, read, require, same, sha
 
 
-def selections(root, pins, names):
-    """Bind the complete literal plan, source and artifact population externally."""
+def selections(root, pins, names, withheld):
+    """Bind the complete literal plan, source and artifact population externally.
+
+    A member may be absent from disk only when the caller's withheld record names it
+    with exactly the digest the manifest pins; any other absence refuses.
+    """
     same(sorted(pins), ["artifactManifestSha256", "planSha256", "profile"], "crash-window-pins-fields")
     same(pins["profile"], PROFILE, "crash-window-profile")
     for field, name in (("planSha256", "plan-before-run.json"), ("artifactManifestSha256", "artifact-manifest.json")):
@@ -30,9 +34,11 @@ def selections(root, pins, names):
     same([plan["environment"]["packages"][name] for name in ("langgraph", "langgraph-checkpoint-sqlite", "agent-evidence-observer")], ["1.0.10", "3.1.1", "0.2.0"], "framework-version")
     manifest = load(root, "artifact-manifest.json")
     actual = names - {"artifact-manifest.json", "consumer-pins.json", "report.json"}
-    same(sorted(manifest), sorted(actual), "artifact-population")
+    absent = {name for name, digest in manifest.items() if name not in actual and withheld.get(name) == digest}
+    same(sorted(manifest), sorted(actual | absent), "artifact-population")
     for name, digest in manifest.items():
-        same(sha(read(root, name)), digest, "artifact-digest")
+        if name not in absent:
+            same(sha(read(root, name)), digest, "artifact-digest")
     source_contract(plan, manifest)
     return plan
 
@@ -210,11 +216,11 @@ def verify_attempt(root, plan, case):
             "newRecoveryEffects": 0, "nativeRevision": 1}, pids
 
 
-def verify_saved(root, pins):
+def verify_saved(root, pins, withheld=None):
     """Authenticate a complete selected run; refusal cases remain refused."""
     names = packet_files(root.absolute())
     root = root.resolve()
-    plan = selections(root, pins, names)
+    plan = selections(root, pins, names, withheld or {})
     rows, pids = [], []
     for case in plan["cases"]:
         row, identities = verify_attempt(root, plan, case)
@@ -233,10 +239,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("packet", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path, default=None)
     args = parser.parse_args()
     pins = args.pins_file.resolve(strict=True)
     require(not pins.is_relative_to(args.packet.resolve()), "selection-must-be-outside-packet")
-    print(canonical(verify_saved(args.packet, load(pins.parent, pins.name))).decode(), end="")
+    withheld = joint_common.withheld_sources(args.withheld_sources)
+    print(canonical(verify_saved(args.packet, load(pins.parent, pins.name), withheld)).decode(), end="")
 
 
 if __name__ == "__main__":

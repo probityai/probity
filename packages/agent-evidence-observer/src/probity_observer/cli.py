@@ -23,8 +23,10 @@ def add_verify_commands(subcommands: Any) -> None:
     checked.add_argument("directory", type=Path)
     checked.add_argument("--observer-key", required=True)
     checked.add_argument("--witness-key", required=True)
-    verify = subcommands.add_parser("verify", help="check a retained sample offline")
+    verify = subcommands.add_parser("verify", help="check a retained broker packet with pinned keys")
     verify.add_argument("directory", type=Path)
+    verify.add_argument("--observer-key", required=True)
+    verify.add_argument("--witness-key", required=True)
 
 
 def run_verify_command(arguments: argparse.Namespace) -> dict[str, str]:
@@ -37,8 +39,9 @@ def run_verify_command(arguments: argparse.Namespace) -> dict[str, str]:
         return {"status": "verified", "boundaryStatus": report["status"], "witnessScope": report["witnessScope"]}
     directory = arguments.directory
     packet = strict_loads((directory / "packet.json").read_bytes())
-    keys = strict_loads((directory / "trusted-keys.json").read_bytes())
-    claim = verify_packet(packet, directory / "history.jsonl", keys["observer"], keys["witness"], directory / "workspace")
+    claim = verify_packet(
+        packet, directory / "history.jsonl", arguments.observer_key, arguments.witness_key, directory / "workspace"
+    )
     return {"status": "verified", "witnessScope": claim["witnessScope"], "noDetectedGap": str(claim["coverage"]["noDetectedGap"]).lower()}
 
 

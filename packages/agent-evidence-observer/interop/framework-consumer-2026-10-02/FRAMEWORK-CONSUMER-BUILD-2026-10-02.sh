@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Build source-selected reader candidates from exact public source bytes, without network.
+# Build the framework reader wheels from this package's source bytes, without network.
+# PACKAGE_DIR is the packages/agent-evidence-observer directory of a checkout.
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
-  printf '%s\n' 'usage: FRAMEWORK-CONSUMER-BUILD-2026-10-02.sh OBSERVER_CHECKOUT NEW_OUTPUT_DIR' >&2
+  printf '%s\n' 'usage: FRAMEWORK-CONSUMER-BUILD-2026-10-02.sh PACKAGE_DIR NEW_OUTPUT_DIR' >&2
   exit 2
 fi
 
@@ -18,7 +19,8 @@ fi
 stage=$(mktemp -d "${TMPDIR:-$PWD}/framework-reader-build.XXXXXXXX")
 trap 'rm -rf -- "$stage"' EXIT
 
-# The committed host policy selects all included source bytes before packaging.
+# The committed contract selects every packaged source byte, and the observer source
+# tree must hold exactly the selected files, before anything is packaged.
 python3 - "$checkout" "$script_dir/FRAMEWORK-CONSUMER-CONTRACT-2026-10-02.json" "$stage/selected" <<'PY'
 import hashlib
 import json
@@ -28,6 +30,10 @@ from pathlib import Path
 root = Path(sys.argv[1])
 contract = json.loads(Path(sys.argv[2]).read_bytes())
 selected = Path(sys.argv[3])
+tree = {p.relative_to(root).as_posix() for p in (root / 'src/probity_observer').rglob('*') if p.is_file() and '__pycache__' not in p.parts}
+chosen = {name for name in contract['source_files'] if name.startswith('src/probity_observer/')}
+if tree != chosen:
+    raise SystemExit('source selection refused: observer files differ: ' + ', '.join(sorted(tree ^ chosen)))
 for name, pin in contract['source_files'].items():
     path = root / name
     if not path.resolve().is_relative_to(root):
@@ -47,16 +53,18 @@ print('selected source bytes verified', file=sys.stderr)
 PY
 
 checkout=$stage/selected
+profile=$checkout/interop/framework-consumer-2026-10-02
 mkdir -p -- "$output" "$stage/observer/src" "$stage/langgraph" "$stage/pydantic/src/probity_pydantic"
-cp -- "$checkout/pyproject.toml" "$checkout/LICENSE" "$stage/observer/"
+cp -- "$checkout/pyproject.toml" "$checkout/LICENSE" "$checkout/README.md" "$stage/observer/"
 cp -R -- "$checkout/src/probity_observer" "$stage/observer/src/"
 for project in langgraph pydantic; do
   cp -- "$checkout/LICENSE" "$stage/$project/"
 done
-cp -- "$script_dir/FRAMEWORK-LANGGRAPH-READER-2026-10-02.toml" "$stage/langgraph/pyproject.toml"
-cp -- "$script_dir/FRAMEWORK-PYDANTIC-READER-2026-10-02.toml" "$stage/pydantic/pyproject.toml"
-cp -- "$script_dir/probity_langgraph_reader_cli.py" "$stage/langgraph/"
+cp -- "$profile/FRAMEWORK-LANGGRAPH-READER-2026-10-02.toml" "$stage/langgraph/pyproject.toml"
+cp -- "$profile/FRAMEWORK-PYDANTIC-READER-2026-10-02.toml" "$stage/pydantic/pyproject.toml"
+cp -- "$profile/probity_langgraph_reader_cli.py" "$stage/langgraph/"
 cp -- "$checkout/interop/langgraph-ticket-2026-10-02/lg_common.py" "$checkout/interop/langgraph-ticket-2026-10-02/lg_reader.py" "$stage/langgraph/"
+cp -- "$profile/probity_pydantic_historical_cli.py" "$stage/pydantic/src/"
 for module in __init__ contract reader; do
   cp -- "$checkout/interop/pydantic-ai-native-2026-10-02/src/probity_pydantic/$module.py" "$stage/pydantic/src/probity_pydantic/"
 done

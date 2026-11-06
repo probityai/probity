@@ -1,0 +1,1 @@
+{"acknowledged":true,"pid":6814,"protocolError":null,"replyHex":"7b226572726f72223a226772616e742069737375657220646966666572732066726f6d207468652070696e6e656420697373756572206b6579222c226f6b223a66616c73657d0a","response":{"error":"grant issuer differs from the pinned issuer key","ok":false},"role":"workload","transportError":null,"uid":65534}

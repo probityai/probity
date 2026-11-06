@@ -36,13 +36,20 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-      - run: bash interop/aps-durable-refund-2026-10-05/verify_install.sh ./aps-refund-run
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: aps-refund-node-${{ matrix.node }}
-          retention-days: 90
-          path: |
-            packages/agent-evidence-observer/aps-refund-run/
-            !packages/agent-evidence-observer/aps-refund-run/operator/
-            !packages/agent-evidence-observer/aps-refund-run/reader/
+      - name: Install locked reader dependencies and the exact Observer checkout
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: |
+          npm ci --ignore-scripts
+          uv venv "$RUNNER_TEMP/retained-venv" --python 3.12
+          uv pip install --python "$RUNNER_TEMP/retained-venv/bin/python" --require-hashes -r requirements.lock
+          uv pip install --python "$RUNNER_TEMP/retained-venv/bin/python" --no-deps ../.. .
+          uv pip check --python "$RUNNER_TEMP/retained-venv/bin/python"
+      - name: Lint the kept files
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: uvx ruff@0.15.6 check --isolated probity_aps_refund conftest.py test_reader.py verify_retained.py
+      - name: Run the public reader tests over the retained captures
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: '"$RUNNER_TEMP/retained-venv/bin/python" -m pytest -q test_reader.py'
+      - name: Verify the retained captures with public observer code
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: '"$RUNNER_TEMP/retained-venv/bin/python" -I -B verify_retained.py'

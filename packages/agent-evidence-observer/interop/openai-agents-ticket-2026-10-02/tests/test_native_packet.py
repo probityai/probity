@@ -10,15 +10,7 @@ import pytest
 from probity_observer.crypto import VerificationError
 
 from probity_openai.contract import CASES, decode, encode, sha
-from probity_openai.producer import run
 from probity_openai.reader import verify_saved
-
-
-@pytest.fixture(scope="session")
-def packet(tmp_path_factory: Any) -> Path:
-    root = tmp_path_factory.mktemp("native") / "packet"
-    run(root)
-    return root
 
 
 def selected(root: Path) -> dict[str, Any]:
@@ -36,8 +28,8 @@ def reselect(root: Path) -> dict[str, Any]:
     return pins
 
 
-def test_actual_sdk_population(packet: Path) -> None:
-    report = verify_saved(packet, selected(packet))
+def test_actual_sdk_population(packet: Path, withheld: dict[str, str]) -> None:
+    report = verify_saved(packet, selected(packet), withheld)
     assert [r["case"] for r in report["records"]] == list(CASES)
     assert report["resources"]["modelCalls"] == 9
     assert report["resources"]["toolCalls"] == 6
@@ -122,7 +114,7 @@ def edit_readback(execution: dict[str, Any]) -> None:
     ],
 )
 def test_semantic_refusal_after_hash_reselection(
-    packet: Path, tmp_path: Path, name: str
+    packet: Path, withheld: dict[str, str], tmp_path: Path, name: str
 ) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
@@ -132,7 +124,7 @@ def test_semantic_refusal_after_hash_reselection(
     mutate(value, name)
     path.write_bytes(encode(value))
     with pytest.raises((VerificationError, ValueError, KeyError)):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), withheld)
 
 
 @pytest.mark.parametrize(
@@ -144,7 +136,7 @@ def test_semantic_refusal_after_hash_reselection(
     ],
 )
 def test_plan_budget_reselection_refused(
-    packet: Path, tmp_path: Path, field: str, value: Any
+    packet: Path, withheld: dict[str, str], tmp_path: Path, field: str, value: Any
 ) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
@@ -153,33 +145,39 @@ def test_plan_budget_reselection_refused(
     plan["budget"][field] = value
     path.write_bytes(encode(plan))
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), withheld)
 
 
-def test_source_substitution_refused(packet: Path, tmp_path: Path) -> None:
+def test_source_substitution_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
-    (root / "sources/adapter/producer.py").write_bytes(b"# replacement")
+    (root / "sources/adapter/reader.py").write_bytes(b"# replacement")
     with pytest.raises(VerificationError):
-        verify_saved(root, selected(root))
+        verify_saved(root, selected(root), withheld)
 
 
-def test_missing_population_refused(packet: Path, tmp_path: Path) -> None:
+def test_missing_population_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
     (root / "artifacts/deny.json").unlink()
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), withheld)
 
 
-def test_source_symlink_refused(packet: Path, tmp_path: Path) -> None:
+def test_source_symlink_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
-    path = root / "sources/adapter/producer.py"
+    path = root / "sources/adapter/reader.py"
     path.unlink()
-    path.symlink_to(packet / "sources/adapter/producer.py")
+    path.symlink_to(packet / "sources/adapter/reader.py")
     with pytest.raises(VerificationError):
-        verify_saved(root, selected(root))
+        verify_saved(root, selected(root), withheld)
 
 
 def test_pins_required_by_cli() -> None:
@@ -195,10 +193,33 @@ def test_pins_required_by_cli() -> None:
     assert "--pins-file" in result.stderr
 
 
-def test_duplicate_json_refused(packet: Path, tmp_path: Path) -> None:
+def test_duplicate_json_refused(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
     root = tmp_path / "candidate"
     shutil.copytree(packet, root)
     path = root / "artifacts/permit.json"
     path.write_bytes(b'{"toolCalls":[],"toolCalls":[]}')
     with pytest.raises(VerificationError):
-        verify_saved(root, reselect(root))
+        verify_saved(root, reselect(root), withheld)
+
+
+def test_withheld_list_is_exact(
+    packet: Path, withheld: dict[str, str], tmp_path: Path
+) -> None:
+    assert len(withheld) == 14
+    assert all(not (packet / name).exists() for name in withheld)
+    with pytest.raises(VerificationError):
+        verify_saved(packet, selected(packet))
+    wrong = {**withheld, "sources/observer/broker.py": "0" * 64}
+    with pytest.raises(VerificationError):
+        verify_saved(packet, selected(packet), wrong)
+    unlisted = dict(withheld)
+    del unlisted["sources/observer/broker.py"]
+    with pytest.raises(VerificationError):
+        verify_saved(packet, selected(packet), unlisted)
+    root = tmp_path / "candidate"
+    shutil.copytree(packet, root)
+    (root / "sources/observer/broker.py").write_bytes(b"x = 1\n")
+    with pytest.raises(VerificationError):
+        verify_saved(root, selected(root), withheld)

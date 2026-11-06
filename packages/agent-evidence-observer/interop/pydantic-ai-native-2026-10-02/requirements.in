@@ -1,4 +1,4 @@
-# Pinned producer, observer runtime, test and local wheel-build environment.
+# Pinned observer runtime, test and local wheel-build environment.
 pydantic-ai-slim==1.107.7
 cryptography==50.0.2
 pytest==9.1.1

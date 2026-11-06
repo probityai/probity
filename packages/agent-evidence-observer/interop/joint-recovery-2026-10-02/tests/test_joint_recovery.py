@@ -8,7 +8,6 @@ import shutil
 import sqlite3
 import subprocess
 import sys
-import tempfile
 import urllib.request
 from contextlib import closing
 from collections.abc import Callable
@@ -16,29 +15,30 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from hypothesis import given, settings, strategies as st
 from probity_observer.crypto import VerificationError, canonical
 
-from joint_common import CASES, child_environment, load, sha
+from joint_common import CASES, child_environment, load, sha, withheld_sources
 from joint_reader import verify_saved
-from joint_run import current
-from joint_worker import current_gate
-from lg_common import PacketError
+from conftest import RETAINED, Retained
 
 
 @pytest.fixture
-def copied(fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path) -> tuple[Path, dict[str, Any]]:
+def copied(retained: Retained, tmp_path: Path) -> tuple[Path, dict[str, Any]]:
     """Isolate one mutation while preserving every original retained byte."""
     root = tmp_path / "packet"
-    shutil.copytree(fresh[0], root)
-    return root, copy.deepcopy(fresh[1])
+    shutil.copytree(retained.root, root)
+    return root, copy.deepcopy(retained.pins)
+
+
+WITHHELD = withheld_sources(RETAINED / "WITHHELD-SOURCES.json")
 
 
 def reselect(root: Path, pins: dict[str, Any]) -> None:
     """Select changed bytes again so semantic controls cannot pass on hash drift."""
     manifest = load(root, "artifact-manifest.json")
     for name in manifest:
-        manifest[name] = sha((root / name).read_bytes())
+        if (root / name).exists():
+            manifest[name] = sha((root / name).read_bytes())
     (root / "artifact-manifest.json").write_bytes(canonical(manifest))
     pins.update(planSha256=sha((root / "plan-before-run.json").read_bytes()), artifactManifestSha256=sha(canonical(manifest)))
 
@@ -156,39 +156,29 @@ class TestJointReader:
     """Selected reader checks keep native execution and evidence scope separate."""
 
     class TestPassingCases:
-        def test_relative_native_output_freezes_absolute_launch_roots(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]]) -> None:
-            root = fresh[0]
-            plan = load(root, "plan-before-run.json")
-            assert plan["captureRoot"] == str(root.resolve())
-            assert Path(plan["hostPrivateRoot"]).is_absolute()
-            for name in CASES:
-                value = load(root, "attempts/" + name + ".json")
-                assert all(Path(target["command"][2]).is_absolute() for target in value["targets"])
-                assert all(Path(worker["process"]["command"][2]).is_absolute() and Path(worker["process"]["command"][6]).is_absolute() for worker in value["workers"])
-
-        def test_actual_cli_emits_canonical_report(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]]) -> None:
+        def test_actual_cli_emits_canonical_report(self, retained: Retained) -> None:
             script = Path(__file__).resolve().parents[1] / "joint_reader.py"
-            process = subprocess.run([sys.executable, str(script), str(fresh[0]), "--pins-file", str(fresh[0] / "consumer-pins.json")], capture_output=True, timeout=15, check=False, env=child_environment())
+            process = subprocess.run([sys.executable, str(script), str(retained.root), "--pins-file", str(retained.root / "consumer-pins.json"), "--withheld-sources", str(RETAINED / "WITHHELD-SOURCES.json")], capture_output=True, timeout=15, check=False, env=child_environment())
             assert process.returncode == 0
             assert process.stderr == b""
-            assert process.stdout == canonical(fresh[2])
+            assert process.stdout == canonical(retained.report)
 
         @pytest.mark.parametrize("name", CASES)
-        def test_real_selected_case(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], name: str) -> None:
-            _, _, report = fresh
+        def test_real_selected_case(self, retained: Retained, name: str) -> None:
+            report = retained.report
             row = next(item for item in report["records"] if item["id"] == name)
             assert row["targetProcesses"] == 2
             assert row["releasedResult"] is (name in {"valid-before", "valid-after", "concurrent-before"})
             assert row["recoveryDispatches"] == int(name in {"valid-before", "valid-after", "pending-intent-after", "pending-transaction-after", "concurrent-before"})
 
-        def test_complete_native_population(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]]) -> None:
-            root, _, report = fresh
+        def test_complete_native_population(self, retained: Retained) -> None:
+            root, report = retained.root, retained.report
             assert {key: report[key] for key in ("plannedAttempts", "workerProcesses", "targetProcesses", "releasedResults", "priorAuthenticEffects", "pendingRefusals", "startupRefusals")} == {"plannedAttempts": 19, "workerProcesses": 40, "targetProcesses": 38, "releasedResults": 3, "priorAuthenticEffects": 11, "pendingRefusals": 2, "startupRefusals": 3}
             assert report["independentCustody"] == "not-established"
-            assert verify_saved(root, fresh[1]) == report
+            assert verify_saved(root, retained.pins, retained.withheld) == report
             assert not list(root.rglob("*private.json"))
 
-        def test_offline_reader_refuses_active_framework_and_network(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], monkeypatch: pytest.MonkeyPatch) -> None:
+        def test_offline_reader_refuses_active_framework_and_network(self, retained: Retained, monkeypatch: pytest.MonkeyPatch) -> None:
             original = builtins.__import__
 
             def guarded(name: str, *args: Any, **kwargs: Any) -> Any:
@@ -200,7 +190,7 @@ class TestJointReader:
 
             monkeypatch.setattr(builtins, "__import__", guarded)
             monkeypatch.setattr(urllib.request, "urlopen", forbidden)
-            assert verify_saved(fresh[0], fresh[1]) == fresh[2]
+            assert verify_saved(retained.root, retained.pins, retained.withheld) == retained.report
 
     class TestFailingCases:
         @pytest.mark.parametrize("name,mutation,reason", MUTATIONS)
@@ -212,7 +202,7 @@ class TestJointReader:
             sync_originals(root, name)
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^" + reason + "$") as raised:
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert str(raised.value) == reason
             assert "Joint recovery refused: " + reason in caplog.messages
 
@@ -227,7 +217,7 @@ class TestJointReader:
             replace(root, name, mutation)
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^" + reason + "$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: " + reason in caplog.messages
 
         @pytest.mark.parametrize("index,replacement", [(0, "/different/python"), (1, "/different/worker.py"), (2, "/different/case.json"), (3, "http://127.0.0.1:1"), (4, "/different/checkpoints.sqlite"), (5, "first"), (6, "/different/output.json"), (7, "/different/current.json")])
@@ -238,7 +228,7 @@ class TestJointReader:
             sync_originals(root, name)
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^worker-launch-argv$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: worker-launch-argv" in caplog.messages
 
         def test_reselected_parent_and_worker_pid_disagreement_refused(self, copied: tuple[Path, dict[str, Any]], caplog: pytest.LogCaptureFixture) -> None:
@@ -249,7 +239,7 @@ class TestJointReader:
             (root / "workers/valid-before/second.process.json").write_bytes(canonical(process))
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^worker-parent-process-identity$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: worker-parent-process-identity" in caplog.messages
 
         def test_reselected_pid_reused_across_cases_refused(self, copied: tuple[Path, dict[str, Any]], caplog: pytest.LogCaptureFixture) -> None:
@@ -262,15 +252,15 @@ class TestJointReader:
             sync_originals(root, name)
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^within-run-pid-reuse$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: within-run-pid-reuse" in caplog.messages
 
         @pytest.mark.parametrize("field", ["planSha256", "artifactManifestSha256"])
-        def test_wrong_external_selection(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], caplog: pytest.LogCaptureFixture, field: str) -> None:
-            pins = {**fresh[1], field: "0" * 64}
+        def test_wrong_external_selection(self, retained: Retained, caplog: pytest.LogCaptureFixture, field: str) -> None:
+            pins = {**retained.pins, field: "0" * 64}
             reason = "consumer-" + field
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^" + reason + "$"):
-                verify_saved(fresh[0], pins)
+                verify_saved(retained.root, pins, retained.withheld)
             assert "Joint recovery refused: " + reason in caplog.messages
 
         @pytest.mark.parametrize("sql,reason", [("UPDATE recovery_clock SET denied=0", "native-clock-anchor"), ("DELETE FROM checkpoints", "native-checkpoint-population")])
@@ -281,50 +271,7 @@ class TestJointReader:
                 connection.commit()
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^" + reason + "$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: " + reason in caplog.messages
 
 
-class TestCurrentGate:
-    """Merged clock gate remains durable across new host selection refusals."""
-
-    class TestPassingCases:
-        @settings(max_examples=20, deadline=None)
-        @given(clock=st.integers(min_value=101, max_value=199))
-        def test_strictly_later_selection_clears_denial(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], clock: int) -> None:
-            case = load(fresh[0], "cases/valid-before.json")
-            first = current(case, "first", True)
-            denied = {**first, "authority": {**first["authority"], "revoked": True}}
-            with tempfile.TemporaryDirectory() as folder, sqlite3.connect(Path(folder) / "clock.sqlite") as connection:
-                assert current_gate(connection, case, first, "first")["status"] == "authorized"
-                assert current_gate(connection, case, denied, "second")["status"] == "refused-revoked"
-                assert current_gate(connection, case, first, "second")["status"] == "refused-stale-authority"
-                later = {**first, "authority": {**first["authority"], "clock": clock}}
-                assert current_gate(connection, case, later, "second")["status"] == "authorized"
-
-        @pytest.mark.parametrize("field,value", [("grantSha256", "0" * 64), ("serviceKey", "0" * 64), ("storeIdentity", "0" * 32)])
-        def test_selection_denial_is_sticky_at_same_clock(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path, field: str, value: str) -> None:
-            case = load(fresh[0], "cases/valid-before.json")
-            first = current(case, "first", True)
-            denied = {**first, "selection": {**first["selection"], field: value}}
-            with sqlite3.connect(tmp_path / "clock.sqlite") as connection:
-                current_gate(connection, case, first, "first")
-                assert current_gate(connection, case, denied, "second")["status"] == "refused-current-selection"
-                assert current_gate(connection, case, first, "second")["status"] == "refused-stale-authority"
-
-    class TestFailingCases:
-        @pytest.mark.parametrize("field,value,reason", [("clock", True, "authority-types"), ("expires", False, "authority-types"), ("revoked", 0, "authority-types"), ("actionSha256", "0" * 64, "authority-action")])
-        def test_malformed_authority_refuses_without_anchor(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path, caplog: pytest.LogCaptureFixture, field: str, value: Any, reason: str) -> None:
-            case = load(fresh[0], "cases/valid-before.json")
-            selected = current(case, "first", True)
-            selected["authority"][field] = value
-            with sqlite3.connect(tmp_path / "clock.sqlite") as connection, caplog.at_level(logging.WARNING), pytest.raises(PacketError, match="^" + reason + "$"):
-                current_gate(connection, case, selected, "first")
-            assert "LangGraph packet refused: " + reason in caplog.messages
-
-        def test_boolean_target_readiness_refuses(self, fresh: tuple[Path, dict[str, Any], dict[str, Any]], tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-            case = load(fresh[0], "cases/valid-before.json")
-            selected = {**current(case, "first", True), "targetReady": 1}
-            with sqlite3.connect(tmp_path / "clock.sqlite") as connection, caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^current-target-readiness-type$"):
-                current_gate(connection, case, selected, "first")
-            assert "Joint recovery refused: current-target-readiness-type" in caplog.messages

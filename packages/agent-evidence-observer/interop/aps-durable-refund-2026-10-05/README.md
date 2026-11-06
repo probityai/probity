@@ -10,25 +10,32 @@ install, readable results, a separately installed consumer and an actual policy
 refusal. Its diagram follows the local storage and public-reader boundaries.
 
 The [published APS candidate](https://github.com/agent-passport-system/agent-passport-system/tree/c31d94aad86713ae9b2e4cbc811deeab4b5d91ed/examples/interop/refund-exact-approval)
-supplies the motivating exact-refund profile. Its ten original cases pass.
-Additional controls reproduce admission after restart and across instances,
-and loss of duplicate-member evidence through ordinary JSON parsing.
+supplies the motivating exact-refund profile. The retained captures cover admission
+after restart and across instances, and loss of duplicate-member evidence through
+ordinary JSON parsing.
 This is a separately scoped Probity development artifact.
 
-Run from the repository root on Linux, Python 3.12 and Node 20 or 22:
+The producing operation is run by the operator's runtime; the packet it wrote is
+retained under `retained/` as eight native development captures, 32 hostile public
+consumer captures and 26 transaction/time captures. This directory carries the
+public reader, the profile verifier and the tests that read those captures, and no
+producer. From `packages/agent-evidence-observer`, with Python 3.12 and Node 20 or 22:
 
 ```sh
-bash interop/aps-durable-refund-2026-10-05/verify_install.sh ./aps-refund-run
+cd interop/aps-durable-refund-2026-10-05
+npm ci --ignore-scripts
+uv venv .venv --python 3.12
+uv pip install --python .venv/bin/python --require-hashes -r requirements.lock
+uv pip install --python .venv/bin/python --no-deps ../.. .
+.venv/bin/python -I -B verify_retained.py
+.venv/bin/python -m pytest -q test_reader.py
 ```
 
-The script builds and installs both wheels, installs locked npm bytes, runs
-all core and profile tests, retains eight native development captures,
-32 hostile public consumer captures and 26 transaction/time captures. It
-runs a separate installed public reader twice on each native capture. Private runtime files stay outside
-the capture and are removed after the run. [Source selection](source-selection.json)
-and [the protocol](PROTOCOL.md) define the inputs, trust and claim limits.
-The first completion and approval-reissue captures share one operation.
-Counts are per capture and must not be pooled.
+`verify_retained.py` runs the installed public reader on every retained capture and
+requires its exit status, stdout and stderr to equal the bytes retained with the
+capture. [Source selection](source-selection.json) and [the protocol](PROTOCOL.md)
+define the inputs, trust and claim limits. The first completion and approval-reissue
+captures share one operation. Counts are per capture and must not be pooled.
 
 The measured effect is a local refund-record row. Merchant legitimacy,
 delegation authority, PIC integration, provider execution, outside adoption,

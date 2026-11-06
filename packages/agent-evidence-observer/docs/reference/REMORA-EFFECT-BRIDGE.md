@@ -18,14 +18,7 @@ The exercise uses Probity's `ProtectedDispatcher` and real broker file replaceme
 
 The source suite tests a funds-transfer tool. This probe never transfers funds or runs REMORA's dispatcher. It does not report a conformance score. The `nativeWriteEvents` count comes from Probity's retained native history, and a refusal with a write event fails the run. AR-05 deliberately changes the file outside the dispatcher after its one native write; that second, unmediated change is detected but does not count as a tool body. It is not a test of an authoritative financial ledger.
 
-Run from the Observer checkout with its `.venv` installed as described in the
-[installation guide](../INSTALLATION.md). Select the REMORA source in a separate
-checkout, then run:
-
-```sh
-.venv/bin/python examples/remora_effect_bridge.py ./remora-bridge-run --remora-vectors ./remora-source/conformance/autoreview-to-effect-v1/vectors.json
-.venv/bin/python examples/remora_effect_bridge.py ./remora-bridge-run --remora-vectors ./remora-source/conformance/autoreview-to-effect-v1/vectors.json --verify
-```
+The operator's runtime runs the bridge against a REMORA source selected in a separate checkout, and writes the output directory that this package's read-only verification checks.
 
 The source pin, checker hash and protected-effect module hashes are retained in `source-pins.json`. The read-only verification recomputes the hash list, checks the submitted candidates against the pinned vector fields, checks the two completed signed bundles and four untouched stores, and confirms the current-state mismatch. The hash list is stored with the output, so it is not an independent integrity anchor by itself. All role keys and file evidence are under one operator, with `PEER` witness scope. Direct host calls do not establish isolated child execution or complete control of alternate effect routes.
 

@@ -1,0 +1,134 @@
+{
+  "caseCount": 22,
+  "cases": [
+    {
+      "caseId": "approved-human-reachable",
+      "nativeRevision": 1,
+      "taskTerminal": "completed"
+    },
+    {
+      "caseId": "unreachable-with-prior-fallback",
+      "nativeRevision": 1,
+      "taskTerminal": "completed"
+    },
+    {
+      "caseId": "unreachable-no-fallback",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "fallback-expired",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "late-approval-for-expired-request",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "approver-revoked-at-dispatch",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "authority-evidence-stale",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "media-bytes-mutated",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "platform-content-mutated",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "catalogue-mutated",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "destination-mutated",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "revoked-between-intent-and-effect",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "crash-after-intent",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "crash-inside-effect-transaction",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "effect-committed-response-lost",
+      "nativeRevision": 1,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "same-request-retry",
+      "nativeRevision": 1,
+      "taskTerminal": "completed"
+    },
+    {
+      "caseId": "effect-then-authority-revoked",
+      "nativeRevision": 1,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "incomplete-proof-after-effect",
+      "nativeRevision": 1,
+      "taskTerminal": "completed"
+    },
+    {
+      "caseId": "delegation-hop-amplified",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "binding-veto-override-attempt",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "revoked-authority-superseded-evidence",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    },
+    {
+      "caseId": "authority-source-unreachable",
+      "nativeRevision": 0,
+      "taskTerminal": "failed"
+    }
+  ],
+  "independentCustody": false,
+  "nativeObserverBaseline": "9db0558cf8cc8112ea31b601fa7c7d3c2f38c907",
+  "outsideImplementationRerun": false,
+  "profile": "authority-unreachable-reference-v0",
+  "python": "3.12.15",
+  "runnerSha256": {
+    "_hypothesis_ftz_detector.py": "8b9b267b69f68ae0dd59f81d7ebd7d56ce66ec6beba2e927cd45bdf84e2c18d5",
+    "_hypothesis_globals.py": "1b1a3c4d0bbde63022fb9dac5f6990887c4b0d97233f2f557b11e600ef91f987",
+    "_hypothesis_pytestplugin.py": "6ea9e68f9c68e418ac7b5d7b116292eb9ee82dbedf475a9188e4eda96dc74340",
+    "authority_profile.py": "72c99e6debabefab1807325313c0ee30c28453cbed5282ba7f42a68e96b31e64",
+    "implementation_records.py": "b8a75ed1295748c5f7e671d50829d7bd75b425093e6c55d7550c1222654f6363",
+    "portable_envelope.py": "6c4047e53e085f8bc1f3b2dc9a210fe2372f8d69b33f9d62da33b376caaace07",
+    "producer.py": "62b523f8a8fe821f5d13b951262ff8f1377560fad6d22b1cfe7403d6766dea2d",
+    "py.py": "b71675b5d9845ba0814e9e88767f88dac3b3cc0d3128da028bd45edbb523e871",
+    "reader.py": "40021affa323ab692c9524158d467cfa3efa7ac7f308c79da58492ad23bff942",
+    "source_discriminator.py": "285d17dc0d7d68c5c2101886801ad78d44192d30e91f0a0eb696e4db7cdba9f9",
+    "typing_extensions.py": "4040ca1a1ecbee00d1385c12a93084d1c5bd46f0b774f07e5ae7e91c4f55e696"
+  },
+  "sourceRevision": "df162fb8c9304f2846feb9f5145b0dd697c11010"
+}

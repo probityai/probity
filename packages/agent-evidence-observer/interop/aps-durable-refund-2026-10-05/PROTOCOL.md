@@ -1,5 +1,9 @@
 # Local consumer protocol
 
+The producing runtime that wrote the retained captures is run by the operator and is
+not part of this directory. This protocol states the contract that runtime followed
+and that the public reader checks.
+
 The installed Python boundary preserves raw action and receipt JSON for the
 SDK's serialized entry points. It rejects duplicate decoded payload member
 names before parsing can discard them. The closed payload has a literal
@@ -61,7 +65,7 @@ effect and installed completion verification; optional reissued-approval
 refusal. Each stage returns an explicit typed result to the next stage.
 The selected expectation has exactly two JSON integer fields. Booleans,
 floating counts and extra effect categories refuse before native verification.
-The store and public reader use the same validator for selected ticket
+The runtime and the public reader use the same validator for selected ticket
 configuration, separate issuer/service keys, signed state types, ordered
 phase and revocation transitions, retained profile/head, SQL row types and
 actual content. A valid signature does not excuse a malformed phase or a

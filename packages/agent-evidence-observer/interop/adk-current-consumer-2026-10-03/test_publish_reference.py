@@ -78,6 +78,23 @@ def test_two_actual_child_receipts(
     assert (selected["output"] / "publication-receipt.json").is_file()
 
 
+def test_withheld_list_reaches_both_gates(
+    selected: dict[str, Any], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    commands = []
+
+    def run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+        commands.append(argv)
+        return run_result(good())
+
+    listing = tmp_path / "WITHHELD-SOURCES.json"
+    listing.write_bytes(b"{}")
+    monkeypatch.setattr(sample.subprocess, "run", run)
+    sample.publish(**selected, withheld=listing)
+    for argv in commands:
+        assert argv[argv.index("--withheld-sources") + 1] == str(listing.resolve())
+
+
 @pytest.mark.parametrize(
     "changes",
     [

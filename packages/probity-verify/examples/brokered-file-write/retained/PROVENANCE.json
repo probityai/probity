@@ -1,0 +1,8 @@
+{
+  "workflow": "ci.yml",
+  "job": "brokered-file-write",
+  "runId": 41665292051,
+  "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+  "artifact": "brokered-file-write-installed-native",
+  "downloadedAt": "2026-11-03T15:51:12Z"
+}

@@ -1,0 +1,70 @@
+# Copyright (c) 2026, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import mimetypes
+from io import BytesIO
+from typing import TYPE_CHECKING
+
+from anthropic import AsyncAnthropic
+
+from ag2.files.types import FileContent, FileProvider, UploadedFile, _created_at_to_float
+
+if TYPE_CHECKING:
+    from ag2.config.anthropic.config import AnthropicConfig
+
+
+class AnthropicFilesClient:
+    """Files API client for Anthropic."""
+
+    __slots__ = ("_client",)
+
+    def __init__(self, config: "AnthropicConfig") -> None:
+        self._client = AsyncAnthropic(
+            api_key=config.api_key,
+            base_url=config.base_url,
+            timeout=config.timeout if config.timeout is not None else 600.0,
+            max_retries=config.max_retries,
+            default_headers=config.default_headers,
+            http_client=config.http_client,
+        )
+
+    async def upload(self, data: bytes, filename: str, purpose: str | None = None) -> UploadedFile:
+        mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        result = await self._client.beta.files.upload(
+            file=(filename, BytesIO(data), mime_type),
+        )
+        return UploadedFile(
+            file_id=result.id,
+            filename=result.filename,
+            provider=FileProvider.ANTHROPIC,
+            bytes_count=result.size_bytes,
+            purpose=purpose,
+            created_at=_created_at_to_float(result.created_at),
+        )
+
+    async def read(self, file_id: str) -> FileContent:
+        response = await self._client.beta.files.download(file_id)
+        metadata = await self._client.beta.files.retrieve_metadata(file_id)
+        return FileContent(
+            name=metadata.filename,
+            data=await response.read(),
+            media_type=metadata.mime_type,
+        )
+
+    async def list(self) -> list[UploadedFile]:
+        result = await self._client.beta.files.list()
+        return [
+            UploadedFile(
+                file_id=f.id,
+                filename=f.filename,
+                provider=FileProvider.ANTHROPIC,
+                bytes_count=f.size_bytes,
+                purpose=None,
+                created_at=_created_at_to_float(f.created_at),
+            )
+            for f in result.data
+        ]
+
+    async def delete(self, file_id: str) -> None:
+        await self._client.beta.files.delete(file_id)

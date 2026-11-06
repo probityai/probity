@@ -7,12 +7,15 @@ name = "probity-pydantic-ticket-reader"
 version = "0.0.1"
 description = "Offline reader for the finite Pydantic AI protected-ticket profile"
 requires-python = ">=3.12"
-dependencies = ["agent-evidence-observer==0.0.1"]
+dependencies = ["agent-evidence-observer==0.2.0"]
 license = "MIT"
 license-files = ["LICENSE"]
 
 [project.scripts]
-probity-pydantic-read = "probity_pydantic.reader:main"
+probity-pydantic-read = "probity_pydantic_historical_cli:main"
+
+[tool.setuptools]
+py-modules = ["probity_pydantic_historical_cli"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

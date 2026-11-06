@@ -1,0 +1,43 @@
+Some push notifications failed to send for task_id=b997b6ff-943f-4d46-b849-d3f45e9792e4
+Error sending push-notification for task_id=2bd3ef40-cca7-4c8c-a77a-a893eb9b61d1 to URL: https://callback.example.test/receipt.
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/ag2-push-producer/lib/python3.12/site-packages/a2a/server/tasks/base_push_notification_sender.py", line 123, in _dispatch_notification
+    response.raise_for_status()
+  File "/home/runner/work/_temp/ag2-push-producer/lib/python3.12/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '403 Forbidden' for url 'https://callback.example.test/receipt'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+Some push notifications failed to send for task_id=2bd3ef40-cca7-4c8c-a77a-a893eb9b61d1
+Push-notification host '127.0.0.1' resolves to a non-public address: http://127.0.0.1/private
+Push-notification host '169.254.169.254' resolves to a non-public address: http://169.254.169.254/latest
+Push-notification URL scheme 'file' is not http/https: file:///etc/passwd
+Request error: Code=N/A, Message='Invalid push notification URL'
+Some push notifications failed to send for task_id=9240f288-9d1a-4d1d-9172-bdcf018a798e
+Error sending push-notification for task_id=a856ea8b-12f2-4072-bc93-f9b23158abd2 to URL: https://callback.example.test/receipt.
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/ag2-push-producer/lib/python3.12/site-packages/a2a/server/tasks/base_push_notification_sender.py", line 123, in _dispatch_notification
+    response.raise_for_status()
+  File "/home/runner/work/_temp/ag2-push-producer/lib/python3.12/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '403 Forbidden' for url 'https://callback.example.test/receipt'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+Some push notifications failed to send for task_id=a856ea8b-12f2-4072-bc93-f9b23158abd2
+Push-notification host '127.0.0.1' resolves to a non-public address: http://127.0.0.1/private
+Request error: Code=N/A, Message='Invalid push notification URL'
+Push-notification host '169.254.169.254' resolves to a non-public address: http://169.254.169.254/latest
+Request error: Code=N/A, Message='Invalid push notification URL'
+Push-notification URL scheme 'file' is not http/https: file:///etc/passwd
+Request error: Code=N/A, Message='Invalid push notification URL'
+Some push notifications failed to send for task_id=730244a3-4bf4-4c9e-a0d9-89d65673bc82
+Error sending push-notification for task_id=ae2857d8-be65-439a-8f82-7e4d60799084 to URL: https://callback.example.test/receipt.
+Traceback (most recent call last):
+  File "/home/runner/work/_temp/ag2-push-producer/lib/python3.12/site-packages/a2a/server/tasks/base_push_notification_sender.py", line 123, in _dispatch_notification
+    response.raise_for_status()
+  File "/home/runner/work/_temp/ag2-push-producer/lib/python3.12/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '403 Forbidden' for url 'https://callback.example.test/receipt'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+Some push notifications failed to send for task_id=ae2857d8-be65-439a-8f82-7e4d60799084
+Push-notification host '127.0.0.1' resolves to a non-public address: http://127.0.0.1/private
+Push-notification host '169.254.169.254' resolves to a non-public address: http://169.254.169.254/latest
+Push-notification URL scheme 'file' is not http/https: file:///etc/passwd

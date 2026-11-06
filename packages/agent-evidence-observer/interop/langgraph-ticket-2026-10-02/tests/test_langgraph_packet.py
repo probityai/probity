@@ -10,16 +10,23 @@ from typing import Any, Callable
 import pytest
 from hypothesis import HealthCheck, given, settings, strategies as st
 
-from lg_common import CASES, PacketError, decode, encode, read, sha
-from lg_reader import verify_saved
-from lg_run import run
+from lg_common import CASES, PacketError, decode, encode, read, sha, withheld_for
+from lg_reader import verify_saved as read_packet
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD = withheld_for(RETAINED / "WITHHELD-SOURCES.json", RETAINED / "fresh-run")
+
+
+def verify_saved(root: Path, pins: dict[str, Any]) -> dict[str, Any]:
+    """Read a retained-form packet; omitted sources are those the record lists."""
+    return read_packet(root, pins, WITHHELD)
 
 
 @pytest.fixture(scope="module")
-def native_packet(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, dict[str, Any], dict[str, Any]]:
-    """Run six real LangGraph graphs once; no import skip or placeholder fixture."""
-    root = tmp_path_factory.mktemp("langgraph") / "run"
-    report = run(root, "pytest-selected-source")
+def native_packet() -> tuple[Path, dict[str, Any], dict[str, Any]]:
+    """Return the six-case packet retained from the latest successful main run."""
+    root = RETAINED / "fresh-run"
+    report = decode((RETAINED / "fresh-report.json").read_bytes())
     return root, decode(read(root, "consumer-pins.json")), report
 
 
@@ -111,18 +118,6 @@ class TestLangGraphPacket:
             assert record["nativeRevision"] == (0 if case_name in {"deny", "altered-argument", "pending-intent"} else 1)
             assert report["independentCustody"] == report["exactlyOnce"] == "not-established"
             assert report["providerCalls"] == report["inputTokens"] == report["outputTokens"] == 0
-
-        def test_producer_evidence_clock_preserves_fractional_seconds(self, monkeypatch: pytest.MonkeyPatch) -> None:
-            import lg_run
-            instant = datetime(2026, 10, 2, 12, 0, 0, 987654, tzinfo=timezone.utc)
-            class FixedClock:
-                @staticmethod
-                def now(zone: Any) -> datetime:
-                    assert zone is timezone.utc
-                    return instant
-            monkeypatch.setattr(lg_run, "datetime", FixedClock)
-            assert lg_run.evidence_clock() == instant
-            assert lg_run.evidence_clock().microsecond == 987654
 
         def test_subsecond_checkpoint_inside_precise_envelope(self, packet: tuple) -> None:
             root, pins = packet

@@ -12,11 +12,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 SCHEMA = "authority-unreachable-implementation-records/1"
 SOURCES_SCHEMA = "authority-unreachable-implementation-sources/1"

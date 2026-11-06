@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -98,15 +99,24 @@ def verify_case(root: Path, case: str, pins: dict[str, Any]) -> dict[str, Any]:
             "witnessScope": claim["witnessScope"]}
 
 
-def verify_saved(root: Path, policy: dict[str, Any]) -> dict[str, Any]:
-    """Read a complete population against a caller-selected trusted host policy."""
+def verify_saved(root: Path, policy: dict[str, Any],
+                 withheld: dict[str, str] | None = None) -> dict[str, Any]:
+    """Read a complete population against a caller-selected trusted host policy.
+
+    A selected source path missing from disk is accepted only when ``withheld``
+    lists the digest that the manifest records for it.
+    """
     require(policy["profile"] == PROFILE and policy["sdkVersion"] == SDK_VERSION and policy["sdkSource"] == SDK_SOURCE, "host source selection differs")
     require(set(policy["cases"]) == set(CASES), "planned population differs")
     manifest_path = checked_file(root, "source-before-run.json", policy["sourceManifestSha256"])
     manifest = load(manifest_path)
     require({"probity_haystack/producer.py", "probity_haystack/reader.py", "probity_haystack/contract.py", "probity_observer/authorization.py", "haystack/components/agents/agent.py"} <= set(manifest), "selected source population is incomplete")
+    held = withheld or {}
+    require(all(manifest.get(name) == digest for name, digest in held.items()), "withheld source digest differs from manifest")
     for name, expected in manifest.items():
         require(name.endswith(".py") and name.startswith(("probity_haystack/", "probity_observer/", "haystack/")) and all(part not in {"", ".", ".."} for part in name.split("/")), "selected source path differs")
+        if name in held and not os.path.lexists(root / "source" / name):
+            continue
         checked_file(root / "source", name, expected)
     records = [verify_case(root / case, case, policy["cases"][case]) for case in CASES]
     return {"profile": PROFILE, "records": records, "modelCalls": sum(row["modelCalls"] for row in records),
@@ -114,9 +124,10 @@ def verify_saved(root: Path, policy: dict[str, Any]) -> dict[str, Any]:
             "modelInferenceCalls": 0, "independentCustody": False}
 
 
-def publish_saved(root: Path, policy: dict[str, Any], destination: Path) -> dict[str, Any]:
+def publish_saved(root: Path, policy: dict[str, Any], destination: Path,
+                  withheld: dict[str, str] | None = None) -> dict[str, Any]:
     """Write only released records after the complete population passes verification."""
-    report = verify_saved(root, policy)
+    report = verify_saved(root, policy, withheld)
     published = {"profile": PROFILE, "records": [row for row in report["records"] if row["publicationDecision"] == "RELEASE"],
                  "selectionSha256": sha(encode(policy))}
     destination.mkdir()
@@ -130,10 +141,14 @@ def main() -> None:
     parser.add_argument("--host-policy", type=Path, required=True)
     parser.add_argument("--policy-sha256", required=True)
     parser.add_argument("--publish", type=Path)
+    parser.add_argument("--withheld", type=Path,
+                        help="JSON map of retained source paths absent from the packet to their SHA-256")
     args = parser.parse_args()
     require(sha(args.host_policy.read_bytes()) == args.policy_sha256, "host policy pin differs")
     policy = load(args.host_policy)
-    result = publish_saved(args.packet, policy, args.publish) if args.publish else verify_saved(args.packet, policy)
+    withheld = load(args.withheld) if args.withheld else None
+    result = (publish_saved(args.packet, policy, args.publish, withheld) if args.publish
+              else verify_saved(args.packet, policy, withheld))
     print(encode(result).decode())
 
 

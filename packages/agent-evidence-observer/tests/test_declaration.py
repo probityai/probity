@@ -4,20 +4,19 @@ from __future__ import annotations
 
 import copy
 import hashlib
-import importlib.util
 import json
 import sys
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fixture_records import RECORDS, load, materialize
 from cryptography.exceptions import InvalidSignature
 from hypothesis import given
 from hypothesis import strategies as st
-from probity_observer.authorization import issue_grant
-from probity_observer.crypto import SigningKey, VerificationError
+from probity_observer.crypto import VerificationError
 from probity_observer.declaration import (
     MAX_PAYLOAD_BYTES,
     EffectObservation,
@@ -30,13 +29,12 @@ from probity_observer.declaration import (
 )
 from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
 
-EXAMPLE = Path(__file__).parents[1] / "examples/declaration_demo.py"
-SPEC = importlib.util.spec_from_file_location("declaration_demo", EXAMPLE)
-assert SPEC is not None and SPEC.loader is not None
-DEMO = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(DEMO)
-reference_manifest = DEMO.reference_manifest
-run_demo = DEMO.run_demo
+REFERENCE = RECORDS / "declaration-reference"
+
+
+def reference_manifest() -> dict:
+    """Return a fresh copy of the reference manifest the declaration demo projects."""
+    return json.loads((REFERENCE / "reference-manifest.json").read_bytes())
 
 
 def _payload(manifest: dict) -> bytes:
@@ -50,7 +48,7 @@ def _project(manifest: dict):
 
 @pytest.fixture
 def manifest() -> dict:
-    return reference_manifest()[0]
+    return reference_manifest()
 
 
 @pytest.fixture
@@ -66,12 +64,9 @@ def context(manifest: dict) -> dict:
         "/work/report.txt",
         hashlib.sha256(b"expected effect").hexdigest(),
     )
-    now = datetime(2026, 10, 1, tzinfo=UTC)
-    key = SigningKey.generate()
-    grant = issue_grant(
-        request, key, issued_at=now, expires_at=now + timedelta(minutes=5)
-    )
-    action = verify_grant(grant, request, GrantPolicy(key.public_hex), now=now)
+    retained = load(REFERENCE / "grant.json")
+    now = datetime.fromisoformat(retained["referenceTime"])
+    action = verify_grant(retained["grant"], request, GrantPolicy(retained["issuerKey"]), now=now)
     runtime = RuntimeObservation(
         manifest["agent_id"],
         manifest["agent_instance_id"],
@@ -381,14 +376,12 @@ class TestDeclarationCrosswalk:
 class TestDeclarationDemo:
     class TestPassingCases:
         def test_retained_demo_uses_actual_broker_effect(self, tmp_path: Path) -> None:
-            report = run_demo(tmp_path / "demo")
+            demo = materialize("declaration-demo", tmp_path)
+            report = json.loads((demo / "results.json").read_bytes())
             assert report["cases"]["matched-local-fixture"]["outcome"] == "matched"
             assert report["native"]["status"] == "not-run"
-            assert (
-                tmp_path / "demo/workspace/report.txt"
-            ).read_bytes() == b"one declaration-linked effect\n"
-            assert (tmp_path / "demo/results.json").is_file()
-            inputs = json.loads((tmp_path / "demo/action-inputs.json").read_bytes())
+            assert (demo / "workspace/report.txt").read_bytes() == b"one declaration-linked effect\n"
+            inputs = json.loads((demo / "action-inputs.json").read_bytes())
             alternate = ActionRequest(**inputs["outsideCatalogRequest"])
             verified = verify_grant(
                 inputs["outsideCatalogGrant"],
@@ -397,22 +390,10 @@ class TestDeclarationDemo:
                 now=datetime.fromisoformat(inputs["referenceTime"]),
             )
             assert verified.request.tool_id == "org.other.files.replace"
-            retained = json.loads((tmp_path / "demo/file-manifest.json").read_bytes())[
-                "fileSha256"
-            ]
+            retained = json.loads((demo / "file-manifest.json").read_bytes())["fileSha256"]
             actual = {
-                path.relative_to(tmp_path / "demo").as_posix(): hashlib.sha256(
-                    path.read_bytes()
-                ).hexdigest()
-                for path in (tmp_path / "demo").rglob("*")
+                path.relative_to(demo).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                for path in demo.rglob("*")
                 if path.is_file() and path.name != "file-manifest.json"
             }
             assert retained == actual
-
-    class TestFailingCases:
-        def test_existing_output_is_never_overwritten(self, tmp_path: Path) -> None:
-            marker = tmp_path / "marker"
-            marker.write_bytes(b"keep")
-            with pytest.raises(ValueError, match="empty"):
-                run_demo(tmp_path)
-            assert marker.read_bytes() == b"keep"

@@ -1,0 +1,8 @@
+{
+  "attempt_id": "attempt-1",
+  "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
+  "request_id": "request-1",
+  "run_id": "declaration-run-1",
+  "source": "same-operator-broker-target-readback",
+  "target_path": "/work/report.txt"
+}

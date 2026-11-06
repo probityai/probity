@@ -17,8 +17,19 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from probity_observer.crypto import VerificationError
 
-from probity_pydantic.contract import CONTENT, ERROR, decode, encode, sha
-from probity_pydantic.reader import native_parts, verify_saved
+from probity_pydantic.contract import CONTENT, ERROR, decode, encode, sha, withheld_for
+from probity_pydantic.reader import native_parts
+from probity_pydantic.reader import verify_saved as read_packet
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD = withheld_for(
+    RETAINED / "WITHHELD-SOURCES.json", RETAINED / "fresh-run" / "packet"
+)
+
+
+def verify_saved(output: Path, selected: dict[str, Any]) -> dict[str, Any]:
+    """Read a retained-form packet; omitted sources are those the record lists."""
+    return read_packet(output, selected, WITHHELD)
 
 
 def copy_packet(original: Path, destination: Path) -> tuple[Path, dict[str, Any]]:
@@ -111,9 +122,11 @@ class TestSavedReader:
             code = (
                 "import sys; from pathlib import Path; "
                 "from probity_pydantic.reader import native_parts, verify_saved; "
-                "from probity_pydantic.contract import decode; "
-                "r=verify_saved(Path(sys.argv[1]),"
-                "decode(Path(sys.argv[2]).read_bytes())); "
+                "from probity_pydantic.contract import decode, withheld_for; "
+                "p=Path(sys.argv[1]); "
+                "r=verify_saved(p,"
+                "decode(Path(sys.argv[2]).read_bytes()), "
+                "withheld_for(p.parent.parent / 'WITHHELD-SOURCES.json', p)); "
                 "assert r['status']=='verified'; "
                 "assert 'pydantic_ai' not in sys.modules"
             )
@@ -751,3 +764,26 @@ class TestFailureControls:
                 output, selected, case + "-messages.json", [{"kind": "request"}]
             )
             refuse(output, selected, "malformed bounded packet", caplog)
+
+
+class TestWithheldSources:
+    """A retained record may omit only the sources it lists with exact digests."""
+
+    def test_withheld_population_is_exact(
+        self, original_packet: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        assert len(WITHHELD) == 14
+        assert all(not (original_packet / name).exists() for name in WITHHELD)
+        output, selected = copy_packet(original_packet, tmp_path)
+        with pytest.raises(VerificationError):
+            read_packet(output, selected)
+        wrong = {**WITHHELD, "sources/observer/broker.py": "0" * 64}
+        with pytest.raises(VerificationError, match="^source bytes differ$"):
+            read_packet(output, selected, wrong)
+        unlisted = dict(WITHHELD)
+        del unlisted["sources/observer/broker.py"]
+        with pytest.raises(VerificationError, match="^source file population differs$"):
+            read_packet(output, selected, unlisted)
+        (output / "sources/observer/broker.py").write_bytes(b"x = 1\n")
+        with pytest.raises(VerificationError):
+            read_packet(output, selected, WITHHELD)

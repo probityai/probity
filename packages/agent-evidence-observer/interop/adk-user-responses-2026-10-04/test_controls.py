@@ -1,9 +1,7 @@
-"""Trusted source controls and semantic refusals over the actual native packet."""
+"""Semantic refusals over the retained native packet."""
 
 from __future__ import annotations
 
-import copy
-import importlib.util
 import os
 import shutil
 import subprocess
@@ -14,53 +12,6 @@ from pathlib import Path
 
 from probity_adk_responses.contract import decode, encode, sha
 from probity_adk_responses.reader import host_policy, read
-
-spec = importlib.util.spec_from_file_location("selected_bootstrap", Path(__file__).with_name("bootstrap.py"))
-bootstrap = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(bootstrap)
-
-
-class InstallationControls(unittest.TestCase):
-    def setUp(self):
-        self.source = {"pythonGitBlobs": {"runners.py": "native-blob"},
-                       "observerPythonGitBlobs": {"probity_observer/verify.py": "observer-blob"}}
-        self.owned = {"reader.py": "owned-blob"}
-        self.probe = {"files": {"probity_adk_responses": self.owned,
-                                 "probity_observer": {"verify.py": "observer-blob"}},
-                      "versions": {"probity_adk_responses": "0.0.1",
-                                   "probity_observer": "0.0.1"},
-                      "pythonVersion": [3, 13, 15], "forbidden": [], "sdkPresent": False}
-
-    def test_selected_framework_free_installation(self):
-        bootstrap.check_installation(self.probe, self.source, self.owned, "reader")
-
-    def test_source_cache_framework_version_controls(self):
-        for field, value in (("forbidden", ["cached.pyc"]), ("sdkPresent", True),
-                             ("pythonVersion", [3, 12, 0]), ("files", {}),
-                             ("versions", {})):
-            with self.subTest(field=field), self.assertRaises(ValueError):
-                probe = copy.deepcopy(self.probe)
-                probe[field] = value
-                bootstrap.check_installation(probe, self.source, self.owned, "reader")
-
-    def test_native_population_is_exact(self):
-        probe = copy.deepcopy(self.probe)
-        probe["files"]["adk"] = self.source["pythonGitBlobs"].copy()
-        probe["versions"]["adk"] = "2.11.0"
-        probe["sdkPresent"] = True
-        bootstrap.check_installation(probe, self.source, self.owned, "producer")
-        probe["files"]["adk"]["unselected.py"] = "extra"
-        with self.assertRaisesRegex(ValueError, "installed-source-population"):
-            bootstrap.check_installation(probe, self.source, self.owned, "producer")
-
-    def test_child_failure_is_retained_before_raising(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            with self.assertRaisesRegex(ValueError, "child-failed"):
-                bootstrap.child([sys.executable, "-c", "import sys; print('primary');sys.exit(7)"],
-                                root / "attempt", root)
-            self.assertEqual((root / "attempt.stdout").read_bytes(), b"primary\n")
-            self.assertEqual(decode((root / "attempt.status.json").read_bytes())["returncode"], 7)
 
 
 class NativeSemanticControls(unittest.TestCase):

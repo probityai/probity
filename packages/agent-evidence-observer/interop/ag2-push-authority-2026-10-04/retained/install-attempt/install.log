@@ -1,0 +1,213 @@
+Collecting a2a-sdk==1.1.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 3))
+  Downloading a2a_sdk-1.1.4-py3-none-any.whl (254 kB)
+Collecting aiologic==0.17.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 7))
+  Downloading aiologic-0.17.1-py3-none-any.whl (161 kB)
+Collecting annotated-types==0.8.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 13))
+  Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting anyio==4.15.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 19))
+  Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+Collecting certifi==2026.10.18 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 28))
+  Downloading certifi-2026.10.18-py3-none-any.whl (134 kB)
+Collecting cffi==2.1.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 36))
+  Downloading cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+Collecting charset-normalizer==3.5.2 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 140))
+  Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (257 kB)
+Collecting cryptography==50.0.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 316))
+  Downloading cryptography-50.0.0-cp311-abi3-manylinux_2_34_x86_64.whl (4.7 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.7/4.7 MB 40.1 MB/s eta 0:00:00
+Collecting culsans==0.11.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 366))
+  Downloading culsans-0.11.0-py3-none-any.whl (21 kB)
+Collecting dunamai==1.26.2 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 370))
+  Downloading dunamai-1.26.2-py3-none-any.whl (27 kB)
+Collecting fast-depends==3.0.9 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 376))
+  Downloading fast_depends-3.0.9-py3-none-any.whl (25 kB)
+Collecting google-api-core==2.40.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 380))
+  Downloading google_api_core-2.40.0-py3-none-any.whl (214 kB)
+Collecting google-auth==2.59.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 386))
+  Downloading google_auth-2.59.1-py3-none-any.whl (263 kB)
+Collecting googleapis-common-protos==1.75.5 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 392))
+  Downloading googleapis_common_protos-1.75.5-py3-none-any.whl (307 kB)
+Collecting grpcio==1.84.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 399))
+  Downloading grpcio-1.84.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (7.2 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.2/7.2 MB 203.3 MB/s eta 0:00:00
+Collecting grpcio-reflection==1.81.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 465))
+  Downloading grpcio_reflection-1.81.1-py3-none-any.whl (22 kB)
+Collecting grpcio-tools==1.81.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 469))
+  Downloading grpcio_tools-1.81.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (2.7 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.7/2.7 MB 175.1 MB/s eta 0:00:00
+Collecting h11==0.16.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 522))
+  Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting hatchling==1.32.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 528))
+  Downloading hatchling-1.32.4-py3-none-any.whl (78 kB)
+Collecting httpcore==1.0.9 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 534))
+  Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+Collecting httpx==0.28.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 540))
+  Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+Collecting idna==3.20 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 546))
+  Downloading idna-3.20-py3-none-any.whl (69 kB)
+Collecting iniconfig==2.3.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 554))
+  Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+Collecting jinja2==3.1.6 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 560))
+  Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+Collecting json-rpc==1.15.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 566))
+  Downloading json_rpc-1.15.0-py2.py3-none-any.whl (39 kB)
+Collecting markupsafe==3.0.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 572))
+  Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+Collecting opentelemetry-api==1.45.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 727))
+  Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+Collecting packaging==26.3 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 733))
+  Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Collecting pathspec==1.1.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 743))
+  Downloading pathspec-1.1.1-py3-none-any.whl (57 kB)
+Collecting pip==26.2.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 749))
+  Downloading pip-26.2.1-py3-none-any.whl (1.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 224.7 MB/s eta 0:00:00
+Collecting pluggy==1.6.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 753))
+  Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+Collecting proto-plus==1.29.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 760))
+  Downloading proto_plus-1.29.0-py3-none-any.whl (50 kB)
+Collecting protobuf==6.33.6 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 766))
+  Downloading protobuf-6.33.6-cp39-abi3-manylinux2014_x86_64.whl (323 kB)
+Collecting pyasn1==0.6.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 785))
+  Downloading pyasn1-0.6.4-py3-none-any.whl (84 kB)
+Collecting pyasn1-modules==0.4.2 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 791))
+  Downloading pyasn1_modules-0.4.2-py3-none-any.whl (181 kB)
+Collecting pycparser==3.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 797))
+  Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+Collecting pydantic==2.13.5 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 803))
+  Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+Collecting pydantic-core==2.46.5 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 809))
+  Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 219.7 MB/s eta 0:00:00
+Collecting pygments==2.21.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 933))
+  Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 199.6 MB/s eta 0:00:00
+Collecting pytest==9.1.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 939))
+  Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+Collecting pytest-asyncio==1.4.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 945))
+  Downloading pytest_asyncio-1.4.0-py3-none-any.whl (16 kB)
+Collecting pyyaml==6.0.3 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 949))
+  Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 158.6 MB/s eta 0:00:00
+Collecting requests==2.34.2 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1024))
+  Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Collecting rfc8785==0.1.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1030))
+  Downloading rfc8785-0.1.4-py3-none-any.whl (9.2 kB)
+Collecting setuptools==84.1.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1034))
+  Downloading setuptools-84.1.0-py3-none-any.whl (819 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 819.4/819.4 kB 159.6 MB/s eta 0:00:00
+Collecting sniffio==1.3.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1040))
+  Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+Collecting sse-starlette==3.5.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1046))
+  Downloading sse_starlette-3.5.0-py3-none-any.whl (17 kB)
+Collecting starlette==1.7.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1050))
+  Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+Collecting tomlkit==0.15.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1056))
+  Downloading tomlkit-0.15.1-py3-none-any.whl (49 kB)
+Collecting trove-classifiers==2026.9.21.13 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1063))
+  Downloading trove_classifiers-2026.9.21.13-py3-none-any.whl (14 kB)
+Collecting typing-extensions==4.16.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1069))
+  Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting typing-inspection==0.4.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1081))
+  Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Collecting urllib3==2.8.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1087))
+  Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+Collecting uv-build==0.12.23 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1093))
+  Downloading uv_build-0.12.23-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.6 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.6/1.6 MB 191.0 MB/s eta 0:00:00
+Collecting uv-dynamic-versioning==0.14.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1114))
+  Downloading uv_dynamic_versioning-0.14.1-py3-none-any.whl (11 kB)
+Collecting wheel==0.48.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1118))
+  Downloading wheel-0.48.0-py3-none-any.whl (33 kB)
+Collecting wrapt==2.5.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements.lock (line 1122))
+  Downloading wrapt-2.5.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (250 kB)
+Installing collected packages: trove-classifiers, json-rpc, wrapt, uv-build, urllib3, typing-extensions, tomlkit, sniffio, setuptools, rfc8785, pyyaml, pygments, pycparser, pyasn1, protobuf, pluggy, pip, pathspec, packaging, markupsafe, iniconfig, idna, h11, charset-normalizer, certifi, annotated-types, wheel, typing-inspection, requests, pytest, pydantic-core, pyasn1-modules, proto-plus, opentelemetry-api, jinja2, httpcore, hatchling, grpcio, googleapis-common-protos, dunamai, cffi, anyio, aiologic, uv-dynamic-versioning, starlette, pytest-asyncio, pydantic, httpx, grpcio-tools, grpcio-reflection, fast-depends, culsans, cryptography, sse-starlette, google-auth, google-api-core, a2a-sdk
+  Attempting uninstall: pip
+    Found existing installation: pip 25.0.1
+    Uninstalling pip-25.0.1:
+      Successfully uninstalled pip-25.0.1
+Successfully installed a2a-sdk-1.1.4 aiologic-0.17.1 annotated-types-0.8.0 anyio-4.15.1 certifi-2026.10.18 cffi-2.1.1 charset-normalizer-3.5.2 cryptography-50.0.0 culsans-0.11.0 dunamai-1.26.2 fast-depends-3.0.9 google-api-core-2.40.0 google-auth-2.59.1 googleapis-common-protos-1.75.5 grpcio-1.84.0 grpcio-reflection-1.81.1 grpcio-tools-1.81.1 h11-0.16.0 hatchling-1.32.4 httpcore-1.0.9 httpx-0.28.1 idna-3.20 iniconfig-2.3.0 jinja2-3.1.6 json-rpc-1.15.0 markupsafe-3.0.4 opentelemetry-api-1.45.1 packaging-26.3 pathspec-1.1.1 pip-26.2.1 pluggy-1.6.0 proto-plus-1.29.0 protobuf-6.33.6 pyasn1-0.6.4 pyasn1-modules-0.4.2 pycparser-3.0 pydantic-2.13.5 pydantic-core-2.46.5 pygments-2.21.0 pytest-9.1.1 pytest-asyncio-1.4.0 pyyaml-6.0.3 requests-2.34.2 rfc8785-0.1.4 setuptools-84.1.0 sniffio-1.3.1 sse-starlette-3.5.0 starlette-1.7.0 tomlkit-0.15.1 trove-classifiers-2026.9.21.13 typing-extensions-4.16.0 typing-inspection-0.4.4 urllib3-2.8.0 uv-build-0.12.23 uv-dynamic-versioning-0.14.1 wheel-0.48.0 wrapt-2.5.0
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: pip install --upgrade pip
+Processing ./selected-observer
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Processing ./interop/ag2-push-authority-2026-10-04
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: agent-evidence-observer, probity-ag2-push-authority
+  Building wheel for agent-evidence-observer (pyproject.toml): started
+  Building wheel for agent-evidence-observer (pyproject.toml): finished with status 'done'
+  Created wheel for agent-evidence-observer: filename=agent_evidence_observer-0.0.2-py3-none-any.whl size=333018 sha256=bb70ab78ce7c1269e003b018a29be4f188c6bf24bbf4b21842e9c206918c8c92
+  Stored in directory: /tmp/pip-ephem-wheel-cache-rd_77o07/wheels/6e/af/d4/e2239cb2d15f90deb0e097515c7d9953a8376014848faafb66
+  Building wheel for probity-ag2-push-authority (pyproject.toml): started
+  Building wheel for probity-ag2-push-authority (pyproject.toml): finished with status 'done'
+  Created wheel for probity-ag2-push-authority: filename=probity_ag2_push_authority-0.0.1-py3-none-any.whl size=11489 sha256=c12a2dbbca24b21b71fd761899a1d522f8b67d8ac879b4b8b68956853075f6b5
+  Stored in directory: /tmp/pip-ephem-wheel-cache-rd_77o07/wheels/5c/8c/a0/0cfc68ae59b7b3a3de14a9ecf44d2b275aa763da9264d6afe9
+Successfully built agent-evidence-observer probity-ag2-push-authority
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: pip install --upgrade pip
+Processing /home/runner/work/_temp/ag2-push-wheels/agent_evidence_observer-0.0.2-py3-none-any.whl
+Processing /home/runner/work/_temp/ag2-push-wheels/probity_ag2_push_authority-0.0.1-py3-none-any.whl
+Installing collected packages: probity-ag2-push-authority, agent-evidence-observer
+
+Successfully installed agent-evidence-observer-0.0.2 probity-ag2-push-authority-0.0.1
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: pip install --upgrade pip
+Processing ./selected-ag2
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: ag2
+  Building wheel for ag2 (pyproject.toml): started
+  Building wheel for ag2 (pyproject.toml): finished with status 'done'
+  Created wheel for ag2: filename=ag2-1.1.2-py3-none-any.whl size=1155953 sha256=923b66ac1256666544c92636e21061d8a7ed8fed7827ac24316e2122be7ba84b
+  Stored in directory: /tmp/pip-ephem-wheel-cache-125h0aae/wheels/ae/29/a1/ef1cce6c2832ef6dcd3d04465a1fc51b6846b65b47e02e787f
+Successfully built ag2
+Installing collected packages: ag2
+Successfully installed ag2-1.1.2
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: pip install --upgrade pip
+Processing ./selected-a2a
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: a2a-sdk
+  Building wheel for a2a-sdk (pyproject.toml): started
+  Building wheel for a2a-sdk (pyproject.toml): finished with status 'done'
+  Created wheel for a2a-sdk: filename=a2a_sdk-1.1.4-py3-none-any.whl size=275974 sha256=273e29b89cec700ae099d95334205af2e87463592d5b495f1e7acc9b03595712
+  Stored in directory: /tmp/pip-ephem-wheel-cache-rcimovoi/wheels/03/02/75/d4b31cb798fb0c669189829a63229ca41286958bacdde00fa4
+Successfully built a2a-sdk
+Installing collected packages: a2a-sdk
+  Attempting uninstall: a2a-sdk
+    Found existing installation: a2a-sdk 1.1.4
+    Uninstalling a2a-sdk-1.1.4:
+      Successfully uninstalled a2a-sdk-1.1.4
+Successfully installed a2a-sdk-1.1.4
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: pip install --upgrade pip
+No broken requirements found.
+Collecting cffi==2.1.1 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements-reader.lock (line 3))
+  Using cached cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+Collecting cryptography==50.0.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements-reader.lock (line 107))
+  Using cached cryptography-50.0.0-cp311-abi3-manylinux_2_34_x86_64.whl (4.7 MB)
+Collecting pycparser==3.0 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements-reader.lock (line 155))
+  Using cached pycparser-3.0-py3-none-any.whl (48 kB)
+Collecting rfc8785==0.1.4 (from -r /home/runner/work/probity/probity/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/requirements-reader.lock (line 161))
+  Using cached rfc8785-0.1.4-py3-none-any.whl (9.2 kB)
+Installing collected packages: rfc8785, pycparser, cffi, cryptography
+Successfully installed cffi-2.1.1 cryptography-50.0.0 pycparser-3.0 rfc8785-0.1.4
+
+[notice] A new release of pip is available: 25.0.1 -> 26.2.2
+[notice] To update, run: python -m pip install --upgrade pip
+Processing /home/runner/work/_temp/ag2-push-wheels/agent_evidence_observer-0.0.2-py3-none-any.whl
+Processing /home/runner/work/_temp/ag2-push-wheels/probity_ag2_push_authority-0.0.1-py3-none-any.whl
+Installing collected packages: probity-ag2-push-authority, agent-evidence-observer
+Successfully installed agent-evidence-observer-0.0.2 probity-ag2-push-authority-0.0.1
+
+[notice] A new release of pip is available: 25.0.1 -> 26.2.2
+[notice] To update, run: python -m pip install --upgrade pip
+No broken requirements found.

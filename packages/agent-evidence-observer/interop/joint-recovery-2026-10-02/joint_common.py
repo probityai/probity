@@ -7,6 +7,7 @@ neither LangGraph nor the native process launcher.
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 from pathlib import Path
@@ -97,28 +98,43 @@ def load(root: Path, name: str) -> Any:
         raise
 
 
+def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Refuse a repeated member name in the withheld-source record."""
+    names = [name for name, _ in pairs]
+    require(len(names) == len(set(names)), "withheld-fields")
+    return dict(pairs)
+
+
+def withheld_sources(path: Path | None) -> dict[str, str]:
+    """Load the caller-selected record of source files kept out of a retained packet.
+
+    Parameters
+    ----------
+    path : pathlib.Path or None
+        Host-selected JSON object mapping a packet-relative member name to the
+        SHA-256 its manifest pins. ``None`` selects no withheld member.
+
+    Returns
+    -------
+    dict
+        Exact name-to-digest mapping. A name is accepted as absent from disk
+        only when the packet's own manifest pins the same digest.
+    """
+    if path is None:
+        return {}
+    try:
+        value = json.loads(read(path.parent, path.name), object_pairs_hook=_unique)
+    except ValueError as error:
+        raise VerificationError("withheld-fields") from error
+    require(isinstance(value, dict) and all(isinstance(name, str) and isinstance(digest, str) and len(digest) == 64 for name, digest in value.items()), "withheld-fields")
+    return value
+
+
 def write(path: Path, value: Any) -> None:
     """Exclusively create a canonical member; existing originals remain intact."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("xb") as stream:
         stream.write(canonical(value))
-
-
-def write_atomic(path: Path, value: Any) -> None:
-    """Publish a canonical member so a polling reader never sees a partial file.
-
-    The bytes go to a hidden sibling first and move into place with one
-    ``os.replace``. An existing member is refused, as in :func:`write`.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        raise FileExistsError(path)
-    temporary = path.with_name(f".{path.name}.tmp")
-    with temporary.open("wb") as stream:
-        stream.write(canonical(value))
-        stream.flush()
-        os.fsync(stream.fileno())
-    os.replace(temporary, path)
 
 
 def authority(case: dict[str, Any], mode: str = "valid") -> dict[str, Any]:

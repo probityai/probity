@@ -1,15 +1,19 @@
-"""One fresh installed ADK population shared by semantic controls."""
+"""The retained native packet, shared only as immutable test input."""
 
 from pathlib import Path
-from typing import Any
 
 import pytest
 
-from probity_adk.producer import run
+from probity_adk.contract import withheld_for
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
 
 
 @pytest.fixture(scope="session")
-def packet(tmp_path_factory: Any) -> Path:
-    path = tmp_path_factory.mktemp("native-adk") / "packet"
-    run(path)
-    return path
+def packet() -> Path:
+    return RETAINED / "fresh-run" / "packet"
+
+
+@pytest.fixture(scope="session")
+def withheld(packet: Path) -> dict[str, str]:
+    return withheld_for(RETAINED / "WITHHELD-SOURCES.json", packet)

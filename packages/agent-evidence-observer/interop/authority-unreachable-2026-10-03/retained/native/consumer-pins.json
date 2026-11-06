@@ -1,0 +1,8 @@
+{
+  "authorityKey": "4e58395ffcc81ae486d1aa663efdd31d1c850e0be5c519be872e0a10fa3bf938",
+  "issuerKey": "40a124965ff36f6ab8b666550dd4e610725386783058d83b0567fbe2e01683c9",
+  "maxValiditySeconds": 300,
+  "profile": "authority-unreachable-reference-v0",
+  "recordKey": "320b4aa91775377a35e2a26007ea7ce1c0333c32530789392776e301c942f005",
+  "serviceKey": "c501a62db9100dbed8b6997378c0231ba46e51c57727655d784b7bc62e784c5e"
+}

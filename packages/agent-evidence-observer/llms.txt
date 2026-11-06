@@ -1,16 +1,16 @@
 # Probity Observer
 
-> Record brokered agent writes and check selected native reports offline.
+> Check retained agent-write records and selected native reports offline.
 
 Source-only root package `agent-evidence-observer` 0.2.0, Python 3.12 or later,
 Apache-2.0. Pin a reviewed commit or retained wheel. The root install supplies
-the broker, admission command and bounded Inspect/A2A and Atomic reader entry points.
+the offline packet verifier and bounded Inspect/A2A and Atomic reader entry points.
 Other native profiles have separate install units or source workflows.
 
 ## Start with your task
 
 - [Install and choose a profile](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md): exact source install, expected output, root commands and all separate package manifests.
-- [Record brokered writes](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/RUNNING.md): run the demo and verify its PEER packet.
+- [Check a retained packet](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/RUNNING.md): verify a retained PEER packet offline.
 - [Read retained Inspect or A2A execution](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/NATIVE-CONSUMER-CI.md): normally installed wrapper, matching source checkout, separately selected inputs and fail-closed consumer action.
 - [Seal an Inspect log](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSPECT-SEALED-MANIFEST.md): `pip install 'agent-evidence-observer[inspect]'` writes a detached manifest of execution and results digests beside each finished log, so a restamp is not a regrade.
 - [Read Atomic delegation tests](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/ATOMIC-NATIVE-READER.md): installed offline reader, native executable custody and selected-input controls.
@@ -22,17 +22,16 @@ Other native profiles have separate install units or source workflows.
 - [Read CrewAI job fences](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04/README.md): pinned native jobs, Observer body effects, foreground publication and offline controls.
 - [Check approved refund retries](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/APS-REFUND-RETRIES.md): pinned APS SDK, local SQLite effects, retained interruption cases and a separately installed public reader. No provider refund or independent custody claim.
 - [Bind a selected run to retained witness anchors](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/WITNESSED-RUN-SELECTION.md): installed finite protocol, opening checkpoint, execution closure and hostile controls.
-- [Apply a consumer decision](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/CONSUMER-ADMISSION.md): consumer-selected keys, policy and replay state.
 
 ## Reference
 
-- [Component tour](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/OVERVIEW.md): broker, protected dispatch, ticket, evaluation and history contracts.
+- [Component tour](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/OVERVIEW.md): replay, evaluation and history contracts.
 - [Native source profiles](https://github.com/probityai/probity/tree/main/packages/agent-evidence-observer/interop): all remaining profiles, including Haystack, smolagents, OpenAI Agents, recovery and bounded local-model workflows. Follow each profile's own installation and source pins.
 - [Witness ledger](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/WITNESS-LEDGER.md): signed interval receipts.
-- [Design and trust boundary](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/DESIGN.md): observation coverage, Linux boundary and roadmap.
+- [Design and trust boundary](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/DESIGN.md): observation coverage, recovery and roadmap.
 - [License](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/LICENSE): Apache-2.0.
 
-The broker's witness runs under the same operator and retains PEER scope.
+The retained packets' witness runs under the same operator and retains PEER scope.
 A selected-history result checks one supplied anchored history; global selection,
 real-time precedence, execution truth and independent custody remain unestablished.
 An installed reader's byte-consistency result is separate from native execution or outside adoption.

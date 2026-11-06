@@ -137,8 +137,11 @@ def decide(report: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
     return {"decision": "publish-scoped-recovery-report", "dispatchDecision": "no-additional-dispatch-authorized", "releasedResults": 1, "withheldResults": len(CASES) - 1, "recoveryPosts": 0, "reportSha256": sha(canonical(report)), "policySha256": sha(canonical(policy)), "pinsSha256": policy["pinsSha256"]}
 
 
-def gate(packet: Path, pins: Path, policy_file: Path, policy_sha256: str, executable: Path, output: Path) -> dict[str, Any]:
-    """Require selected reader closure before launching an installed consumer."""
+def gate(packet: Path, pins: Path, policy_file: Path, policy_sha256: str, executable: Path, output: Path, withheld: Path | None = None) -> dict[str, Any]:
+    """Require selected reader closure before launching an installed consumer.
+
+    ``withheld`` names the record of members a retained packet omits by digest.
+    """
     policy_raw = read(policy_file)
     require(sha(policy_raw) == policy_sha256, "host-policy-digest")
     policy = strict_loads(policy_raw)
@@ -147,6 +150,8 @@ def gate(packet: Path, pins: Path, policy_file: Path, policy_sha256: str, execut
     write(output / "selected-host-policy.json", policy)
     write(output / "selected-pins.json", read(pins), raw=True)
     command = [str(executable.absolute()), str(packet.absolute()), "--pins-file", str(pins.absolute())]
+    if withheld is not None:
+        command += ["--withheld-sources", str(withheld.absolute())]
     environment = reader_environment()
     result = subprocess.run(command, capture_output=True, timeout=30, env=environment, cwd=output, check=False)
     write(output / "reader.stdout", result.stdout, raw=True)
@@ -173,5 +178,6 @@ if __name__ == "__main__":
     parser.add_argument("--policy-sha256", required=True)
     parser.add_argument("--reader", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path, default=None)
     args = parser.parse_args()
-    print(canonical(gate(args.packet, args.pins_file, args.policy_file, args.policy_sha256, args.reader, args.output)).decode())
+    print(canonical(gate(args.packet, args.pins_file, args.policy_file, args.policy_sha256, args.reader, args.output, args.withheld_sources)).decode())

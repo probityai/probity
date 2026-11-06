@@ -1,0 +1,375 @@
+# Copyright (c) 2026, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import json
+from base64 import b64decode
+from typing import Any, TypeAlias
+
+from openai.types.responses import (
+    Response,
+    ResponseCodeInterpreterToolCall,
+    ResponseFileSearchToolCall,
+    ResponseFunctionShellToolCall,
+    ResponseFunctionShellToolCallOutput,
+    ResponseFunctionWebSearch,
+    ResponseReasoningItem,
+)
+from openai.types.responses.response import PromptCacheDiagnosticsCacheMiss as CacheMiss
+from openai.types.responses.response_code_interpreter_tool_call import OutputImage, OutputLogs
+from openai.types.responses.response_function_web_search import ActionFind, ActionOpenPage, ActionSearch
+from openai.types.responses.response_output_item import ImageGenerationCall, McpCall, McpListTools
+
+from ag2.events import (
+    BaseEvent,
+    BinaryInput,
+    BinaryType,
+    BuiltinToolCallEvent,
+    BuiltinToolResultEvent,
+    Field,
+    Input,
+    ModelReasoning,
+    ProviderReplay,
+    TextInput,
+    ToolResult,
+    UrlInput,
+)
+from ag2.tools.builtin.code_execution import CODE_EXECUTION_TOOL_NAME
+from ag2.tools.builtin.file_search import FILE_SEARCH_TOOL_NAME
+from ag2.tools.builtin.image_generation import IMAGE_GENERATION_TOOL_NAME
+from ag2.tools.builtin.mcp_server import MCP_SERVER_TOOL_NAME
+from ag2.tools.builtin.shell import SHELL_TOOL_NAME
+from ag2.tools.builtin.web_search import WEB_SEARCH_TOOL_NAME
+
+OpenAIServerToolItem: TypeAlias = (
+    ResponseFunctionWebSearch
+    | ResponseCodeInterpreterToolCall
+    | ImageGenerationCall
+    | ResponseFileSearchToolCall
+    | McpCall
+    | McpListTools
+    | ResponseFunctionShellToolCall
+)
+
+
+class OpenAIServerToolCallEvent(BuiltinToolCallEvent):
+    item: OpenAIServerToolItem = Field(repr=False)
+
+    @classmethod
+    def from_item(cls, item: object) -> "OpenAIServerToolCallEvent | None":
+        if isinstance(item, ResponseFunctionWebSearch):
+            return cls(
+                id=item.id,
+                name=WEB_SEARCH_TOOL_NAME,
+                # warnings=False: pydantic 2.x warns on Action discriminated-union
+                # serialization and on action.sources[].type values that the SDK
+                # has not caught up to (e.g. "api"). The warning is informational —
+                # the dump still produces correct JSON for round-trip.
+                arguments=item.action.model_dump_json(warnings=False),
+                item=item,
+            )
+        if isinstance(item, ResponseCodeInterpreterToolCall):
+            return cls(
+                id=item.id,
+                name=CODE_EXECUTION_TOOL_NAME,
+                arguments=json.dumps({"code": item.code}) if item.code is not None else "{}",
+                item=item,
+            )
+        if isinstance(item, ImageGenerationCall) and item.result:
+            return cls(
+                id=item.id,
+                name=IMAGE_GENERATION_TOOL_NAME,
+                arguments="",
+                item=item,
+            )
+        if isinstance(item, ResponseFileSearchToolCall):
+            return cls(
+                id=item.id,
+                name=FILE_SEARCH_TOOL_NAME,
+                arguments=json.dumps({"queries": item.queries}),
+                item=item,
+            )
+        if isinstance(item, McpCall):
+            return cls(
+                id=item.id,
+                name=MCP_SERVER_TOOL_NAME,
+                arguments=item.arguments,
+                item=item,
+            )
+        if isinstance(item, McpListTools):
+            # A listing is not a tool invocation, but it is the only place a
+            # server that could not be reached shows up at all. Reporting it as a
+            # call keeps the failure observable instead of silently absent.
+            return cls(
+                id=item.id,
+                name=MCP_SERVER_TOOL_NAME,
+                arguments=json.dumps({"server_label": item.server_label}),
+                item=item,
+            )
+        if isinstance(item, ResponseFunctionShellToolCall):
+            return cls(
+                id=item.id,
+                name=SHELL_TOOL_NAME,
+                arguments=json.dumps({"commands": list(item.action.commands)}),
+                item=item,
+            )
+        return None
+
+
+class OpenAIServerToolResultEvent(BuiltinToolResultEvent):
+    item: ResponseFunctionShellToolCallOutput | None = Field(default=None, repr=False)
+    """Set for a hosted shell call, whose outcome is a separate ``shell_call_output`` item to replay."""
+
+    @classmethod
+    def from_item(cls, item: object, *, parent_id: str) -> "OpenAIServerToolResultEvent | None":
+        name: str
+        parts: list[Input] = []
+        metadata: dict[str, Any] = {}
+
+        if isinstance(item, ResponseFunctionWebSearch):
+            name = WEB_SEARCH_TOOL_NAME
+            action = item.action
+            metadata = {"action_type": action.type, "status": item.status}
+            if isinstance(action, ActionSearch):
+                # `sources` is populated only when the request asks for it via
+                # include=["web_search_call.action.sources"]. The SDK declares
+                # source.url as `str`, but the API has been observed to return
+                # entries with empty url for synthesised/internal sources —
+                # skip them rather than emit UrlInput(None).
+                for source in action.sources or []:
+                    if source.url:
+                        parts.append(UrlInput(source.url, kind=BinaryType.BINARY))
+                if action.queries:
+                    metadata["queries"] = list(action.queries)
+            elif isinstance(action, ActionOpenPage):
+                if action.url:
+                    parts.append(UrlInput(action.url, kind=BinaryType.BINARY))
+            elif isinstance(action, ActionFind):
+                parts.append(UrlInput(action.url, kind=BinaryType.BINARY))
+                metadata["pattern"] = action.pattern
+
+        elif isinstance(item, ResponseCodeInterpreterToolCall):
+            name = CODE_EXECUTION_TOOL_NAME
+            for output in item.outputs or []:
+                if isinstance(output, OutputLogs):
+                    parts.append(TextInput(output.logs))
+                elif isinstance(output, OutputImage):
+                    parts.append(UrlInput(output.url, kind=BinaryType.IMAGE))
+            metadata = {"container_id": item.container_id, "status": item.status}
+
+        elif isinstance(item, ImageGenerationCall) and item.result:
+            name = IMAGE_GENERATION_TOOL_NAME
+            parts = [BinaryInput(b64decode(item.result), media_type="image/png", kind=BinaryType.IMAGE)]
+            metadata = item.model_dump(exclude={"result", "status", "type"})
+
+        elif isinstance(item, ResponseFileSearchToolCall):
+            name = FILE_SEARCH_TOOL_NAME
+            metadata = {"status": item.status}
+            results_meta: list[dict[str, Any]] = []
+            for r in item.results or []:
+                # `text` is populated only when the request asked for it via
+                # include=["file_search_call.results"].
+                if r.text:
+                    parts.append(TextInput(r.text))
+                results_meta.append({"file_id": r.file_id, "filename": r.filename, "score": r.score})
+            if results_meta:
+                metadata["results"] = results_meta
+
+        elif isinstance(item, McpCall):
+            name = MCP_SERVER_TOOL_NAME
+            metadata = {"server_label": item.server_label, "tool": item.name, "status": item.status}
+            if item.output:
+                parts.append(TextInput(item.output))
+            if item.error is not None:
+                # A discriminated union: a protocol error and an HTTP error each
+                # carry a code and a message, a tool execution error carries the
+                # tool's own content. Dumping it whole keeps `type` — the
+                # discriminator — next to that arm's own fields, so a caller can
+                # branch instead of matching on prose.
+                metadata["error"] = item.error.model_dump(mode="json")
+
+        elif isinstance(item, McpListTools):
+            name = MCP_SERVER_TOOL_NAME
+            metadata = {"server_label": item.server_label, "tools": [t.name for t in item.tools]}
+            if item.error is not None:
+                # Shaped like `mcp_call`'s error rather than left as the bare
+                # string the SDK types here, so one `metadata["error"]["type"]`
+                # tells a caller what failed whichever item carried it. The
+                # listing has no discriminated union of its own, so the arm is
+                # ag2's — and named for the item, not for a guess at the cause.
+                metadata["error"] = {"type": "mcp_list_tools_error", "message": item.error}
+
+        elif isinstance(item, ResponseFunctionShellToolCallOutput):
+            # Paired with its `shell_call` by `ShellCallTracker`, which supplies
+            # both the parent id and the commands through `from_shell_output`.
+            return None
+
+        else:
+            return None
+
+        return cls(parent_id=parent_id, name=name, result=ToolResult(parts=parts, metadata=metadata))
+
+    @classmethod
+    def from_shell_output(
+        cls,
+        item: ResponseFunctionShellToolCallOutput,
+        *,
+        call: ResponseFunctionShellToolCall,
+        parent_id: str,
+    ) -> "OpenAIServerToolResultEvent":
+        """Build the result of a hosted shell call from the output item answering it."""
+        parts: list[Input] = []
+        outputs: list[dict[str, Any]] = []
+
+        for output in item.output:
+            if output.stdout:
+                parts.append(TextInput(output.stdout))
+            if output.stderr:
+                parts.append(TextInput(output.stderr))
+            outputs.append({
+                "stdout": output.stdout,
+                "stderr": output.stderr,
+                "outcome": output.outcome.model_dump(),
+            })
+
+        return cls(
+            parent_id=parent_id,
+            name=SHELL_TOOL_NAME,
+            item=item,
+            result=ToolResult(
+                parts=parts,
+                metadata={
+                    "commands": list(call.action.commands),
+                    "status": item.status,
+                    "outputs": outputs,
+                },
+            ),
+        )
+
+
+class ShellCallTracker:
+    """Pairs a hosted ``shell_call`` with the ``shell_call_output`` answering it.
+
+    The two arrive as separate output items linked by ``call_id``, and the result event
+    needs the commands, which only the call item carries.
+    """
+
+    __slots__ = ("_open",)
+
+    def __init__(self) -> None:
+        self._open: dict[str, tuple[str, ResponseFunctionShellToolCall]] = {}
+
+    def opened(self, call: ResponseFunctionShellToolCall, *, event_id: str) -> None:
+        self._open[call.call_id] = (event_id, call)
+
+    def close(self, item: ResponseFunctionShellToolCallOutput) -> OpenAIServerToolResultEvent | None:
+        """Return the result event for ``item``, or ``None`` if its call was never seen."""
+        opened = self._open.pop(item.call_id, None)
+        if opened is None:
+            return None
+
+        parent_id, call = opened
+        return OpenAIServerToolResultEvent.from_shell_output(item, call=call, parent_id=parent_id)
+
+
+class OpenAIShellCommandChunk(BaseEvent):
+    """A slice of the shell command the model is composing.
+
+    Transient: superseded by the finished ``shell_call``. Kept out of
+    :class:`~ag2.events.ModelMessageChunk` so a command never lands in the assistant's reply.
+    """
+
+    __transient__ = True
+
+    content: str = Field(kw_only=False)
+    command_index: int
+    output_index: int
+
+
+class OpenAIShellOutputChunk(BaseEvent):
+    """A slice of the output a container produced running a shell command.
+
+    Transient. Separate from :class:`OpenAIShellCommandChunk` so neither type has to make
+    the other half's fields optional.
+    """
+
+    __transient__ = True
+
+    command_index: int
+    output_index: int
+    item_id: str
+    stdout: str | None = None
+    stderr: str | None = None
+
+
+class OpenAIPromptCacheDiagnostics(BaseEvent):
+    """Why the API did or did not reuse a cached prefix for one response.
+
+    Transient: a fact about a single request, and never part of the reply. The token
+    counts are estimates about a counterfactual, which is why they are here rather than
+    in :class:`~ag2.events.Usage`.
+    """
+
+    __transient__ = True
+
+    outcome: str = Field(kw_only=False)
+    """``cache_hit``, ``cache_miss``, ``comparison_response_not_found`` or ``unavailable``,
+    typed as ``str`` so a later addition is reported rather than read as one of these four."""
+
+    reason: str | None = None
+    """Why reuse did not occur, on a miss. Passed through unrecognised, as ``outcome`` is."""
+
+    cache_missed_tokens: int | None = None
+    """Estimated input tokens affected after the first divergence."""
+
+    comparison_reusable_tokens: int | None = None
+    """Estimated tokens of this request's prefix that the compared response could have supplied."""
+
+    comparison_response_id: str | None = None
+    """The response this one was compared against."""
+
+    @classmethod
+    def from_response(
+        cls,
+        response: Response,
+        *,
+        requested_comparison_id: str | None = None,
+    ) -> "OpenAIPromptCacheDiagnostics | None":
+        """Read the diagnostics off `response`, or ``None`` if it carried none."""
+        diagnostics = response.prompt_cache_diagnostics
+        if diagnostics is None:
+            return None
+
+        outcome = diagnostics.type
+        if not isinstance(outcome, str):
+            # The union is discriminated by ``type``; without one there is no outcome to
+            # report, and inventing a name for it would be the coercion this type avoids.
+            return None
+
+        # Branch on the value, not the class: the SDK resolves an unrecognised ``type`` to
+        # the union's first variant, so a future outcome would arrive typed as a miss.
+        miss = diagnostics if outcome == "cache_miss" and isinstance(diagnostics, CacheMiss) else None
+        echoed = response.prompt_cache_options
+
+        return cls(
+            outcome,
+            reason=miss.reason if miss else None,
+            cache_missed_tokens=miss.cache_missed_tokens if miss else None,
+            comparison_reusable_tokens=miss.comparison_reusable_tokens if miss else None,
+            # The reply echoes the id back; fall back to what was sent, so the report still
+            # names its comparison if the echo ever stops.
+            comparison_response_id=(echoed.comparison_response_id if echoed else None) or requested_comparison_id,
+        )
+
+
+class OpenAIReasoningEvent(ModelReasoning, ProviderReplay):
+    """Reasoning item the Responses API pairs with a server-side tool call.
+
+    ProviderReplay anchor: the API rejects a replayed ``web_search_call`` whose
+    ``reasoning`` item is missing. Persisted, unlike ``ModelReasoning``.
+    """
+
+    __transient__ = False
+    __replay_role__ = "anchor"
+
+    item: ResponseReasoningItem = Field(repr=False)

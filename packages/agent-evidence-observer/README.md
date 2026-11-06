@@ -3,41 +3,41 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-evidence-observer.svg)](https://pypi.org/project/agent-evidence-observer/)
 [![Downloads (PePy)](https://static.pepy.tech/badge/agent-evidence-observer)](https://pepy.tech/projects/agent-evidence-observer)
 
-Record brokered agent writes and check selected native framework reports offline.
+Check retained agent-write records and selected native framework reports offline.
 
-Use it in agent harnesses and evaluation pipelines that need replayable action records or a consumer gate for retained reports.
+Use it in agent harnesses and evaluation pipelines that need to check replayable action records or put a consumer gate on retained reports.
 
 Install the root package: `pip install agent-evidence-observer==0.2.0`.
 
 ## Quick start
 
-Run the demo from the released package. You need Python 3.12 or later and [`uv`](https://docs.astral.sh/uv/); there is nothing to clone.
+Check a retained signed packet with the released package. You need Python 3.12 or later and [`uv`](https://docs.astral.sh/uv/).
 
 ```sh
-uvx agent-evidence-observer==0.2.0 demo ./sample-run
-uvx agent-evidence-observer==0.2.0 verify ./sample-run
+git clone https://github.com/probityai/probity && cd probity/packages/agent-evidence-observer
+uvx --from agent-evidence-observer==0.2.0 agent-evidence-observer verify scripts/fixtures/broker-packet \
+  --observer-key a592976c199b8a4f3a80ca4412df916de591aa4a10f95e0b8030e1321bd2d9de \
+  --witness-key 143f322c613549cf4da40ae09b0634f82b68d2d5a1017639bdde2e1eb15353f6
 ```
 
-The two commands print:
+The command prints:
 
 ```text
-{"noDetectedGap": "true", "retryReplayed": "true", "status": "verified", "witnessScope": "PEER"}
 {"noDetectedGap": "true", "status": "verified", "witnessScope": "PEER"}
 ```
 
-`sample-run/` now holds the signed packet, the history, the public keys and the file tree. The demo
-writes a file, retries it, and the retry returns the first effect. `noDetectedGap` means the broker's
+`scripts/fixtures/broker-packet/` holds a signed packet, its history and the file tree. The
+operator's runtime wrote the packet, and this package checks it offline against the two keys pinned on the
+command line. The packet carries no keys of its own, and `verify` refuses to run without both. `noDetectedGap` means the broker's
 file-tree snapshots found no change it did not make. It does not mean every agent effect was seen.
-To run from a pinned source checkout instead, see [Run the source quick start](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md#run-the-source-quick-start).
+See [Installation and profile selection](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md) for the source-pinned recipes.
 
 ## Status
 
-The root distribution is version 0.1.1. Every record says `witnessScope: PEER`: the witness key runs on the same
+The root distribution is version 0.2.0. Every record says `witnessScope: PEER`: the witness key runs on the same
 host under the same operator, so the records show what this broker saw, not what an independent
-observer saw. Linux runs can launch a fixed probe, or a Python script given to `run-workload`, under
-bubblewrap with only the broker's socket exposed. `launch-agent` runs an unmodified agent in docker or
-apptainer and records, from outside it, every program it ran and every file it changed. It does not use
-bubblewrap, which cannot start on hosts with `apparmor_restrict_unprivileged_userns=1` such as Ubuntu 24.04.
+observer saw. The operator's runtime produces the signed records; this package verifies them offline.
+`launch-agent` runs an unmodified agent in docker or apptainer and records, from outside it, every program it ran and every file it changed.
 `agent-evidence-witness` runs a separately operated witness: a record it co-signs verifies as `EXTERNAL`
 when the reader pins a different operator for the witness key. It needs the `witness` extra, which is not yet
 in a released wheel.
@@ -50,12 +50,9 @@ then open its technical reference for commands and exact evidence.
 | page | read it for |
 | --- | --- |
 | [Start a project](https://github.com/new?template_name=evidence-starter&template_owner=probityai) | a template that records a write with this package and checks it with probity-verify, pinned and in CI |
-| [Component tour](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/OVERVIEW.md) | every part of the prototype in one paragraph each, with links: ticket service, replay, evaluation history, A2A, AAE, protected dispatch |
+| [Component tour](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/OVERVIEW.md) | every part of the prototype in one paragraph each, with links: replay, evaluation history, A2A, AAE |
 | <a name="run-the-demo"></a>[Running the demo](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/RUNNING.md) | the full install with tests, and what each output field means |
-| <a name="claim-and-trust-boundary"></a><a name="tests-and-remaining-gaps"></a><a name="linux-boundary-gate"></a><a name="consumer-admission"></a><a name="roadmap"></a>[Design, trust boundary and roadmap](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/DESIGN.md) | what each mechanism checks and does not establish, the Linux boundary gate, recovery, consumer admission, and the roadmap |
-| [Agent launcher](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/AGENT-LAUNCHER.md) | run an unmodified agent with three outside sensors and check its claims with probity-verify |
-| [Isolated producer](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/ISOLATED-PRODUCER.md) | the acceptance criteria for running an unmodified agent behind the broker |
-| [Brokered workload](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/WORKLOAD.md) | run a Python script behind the write broker with `run-workload`, then check it offline with `verify-workload` |
+| <a name="claim-and-trust-boundary"></a><a name="tests-and-remaining-gaps"></a><a name="linux-boundary-gate"></a><a name="consumer-admission"></a><a name="roadmap"></a>[Design, trust boundary and roadmap](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/DESIGN.md) | what each mechanism checks and does not establish, recovery, and the roadmap |
 | [Witness ledger](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/WITNESS-LEDGER.md) | signed begin and terminal receipts, and how a reader checks them |
 | [Separately operated witness](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/WITNESS-SERVER.md) | run a witness on another host, co-sign records 2-of-2, and catch a witness that forks its log |
 | [Installation and profile selection](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md) | choose the root wheel, a separate profile wheel or a selected source reader; runtime requirements and installed examples |

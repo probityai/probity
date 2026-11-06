@@ -1,0 +1,6 @@
+agent-evidence-observer @ file:///home/runner/work/_temp/adk-a2a-failed-task/wheels/agent_evidence_observer-0.2.0-py3-none-any.whl
+cffi==2.1.1
+cryptography==50.0.2
+probity-adk-failure-reference @ file:///home/runner/work/_temp/adk-a2a-failed-task/wheels/probity_adk_failure_reference-0.0.1-py3-none-any.whl
+pycparser==3.0
+rfc8785==0.1.4

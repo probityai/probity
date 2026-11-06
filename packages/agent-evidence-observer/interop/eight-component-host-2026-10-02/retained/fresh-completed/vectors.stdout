@@ -1,0 +1,1 @@
+{"admitted": true, "codes": [], "cryptoSelection": "externally-pinned-published-test-key", "gate": "vectors", "payloadSha256": "f249eee4f2d93a43304cbf235ebf3de1b254198a68577ea3a24194a99267cf96", "result": "pass", "tiersWithSelectedKeys": ["attested"], "tiersWithoutKeys": ["unattested"], "validity": "valid"}

@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/opt/hostedtoolcache/Python/3.13.17/x64/bin/python",
+    "-I",
+    "-B",
+    "/home/runner/work/probity/probity/packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/native_gate.py",
+    "vectors",
+    "/home/runner/work/_temp/kit-raw/fresh-completed/vectors.config.json"
+  ],
+  "returnCode": 0,
+  "stderrBytes": 0,
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdoutBytes": 309,
+  "stdoutSha256": "00d231a65ee297d860b8c2ccb327e68bca7b62052cc2fa2f39437407d8cdf6e9",
+  "timedOut": false,
+  "wallSeconds": 0.094782
+}

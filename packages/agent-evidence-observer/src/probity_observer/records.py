@@ -69,7 +69,11 @@ def tree_manifest(workspace: Path) -> dict[str, str]:
     intermediate writes, reads, file modes, network traffic, or open handles.
     """
     manifest: dict[str, str] = {}
-    for parent, directories, files in os.walk(workspace, followlinks=False):
+
+    def refuse(error: OSError) -> None:
+        raise CoverageError(f"workspace walk is incomplete: {error.filename}: {error.strerror}")
+
+    for parent, directories, files in os.walk(workspace, onerror=refuse, followlinks=False):
         parent_path = Path(parent)
         for name in directories + files:
             candidate = parent_path / name

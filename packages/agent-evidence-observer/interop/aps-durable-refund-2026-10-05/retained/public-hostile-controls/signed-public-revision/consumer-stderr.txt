@@ -1,0 +1,1 @@
+public refund capture refused: ticket signed state counters or revocation differ

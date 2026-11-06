@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import builtins
 import copy
+import json
 import logging
 import os
 import shutil
@@ -18,16 +19,19 @@ from hypothesis import given, strategies as st
 
 from crash_common import CASES, child_environment, load, sha
 from crash_reader import metadata_object, native_metadata, verify_saved
-from crash_run import run
+from joint_common import withheld_sources
 from probity_observer.crypto import VerificationError, canonical
+
+RETAINED = Path(__file__).resolve().parents[1] / "retained"
+WITHHELD_FILE = RETAINED / "WITHHELD-SOURCES.json"
+WITHHELD = withheld_sources(WITHHELD_FILE)
 
 
 @pytest.fixture(scope="session")
-def fresh(tmp_path_factory):
-    """Execute all four real cases once, with a relative caller output root."""
-    root = tmp_path_factory.mktemp("crash-native") / "packet"
-    report = run(Path(os.path.relpath(root)), "0" * 40)
-    return root, load(root, "consumer-pins.json"), report
+def fresh():
+    """Select the retained packet of all four real cases, its pins and its run report."""
+    root = RETAINED / "fresh-run"
+    return root, load(root, "consumer-pins.json"), json.loads((RETAINED / "fresh-report.json").read_bytes())
 
 
 @pytest.fixture
@@ -41,6 +45,7 @@ def reselect(root, pins):
     """Reselect all changed artifact bytes to reach semantics beyond digests."""
     manifest = {str(path.relative_to(root)): sha(path.read_bytes()) for path in root.rglob("*")
                 if path.is_file() and path.name not in {"artifact-manifest.json", "consumer-pins.json", "report.json"}}
+    manifest.update(WITHHELD)
     (root / "artifact-manifest.json").write_bytes(canonical(manifest))
     pins.update(planSha256=sha((root / "plan-before-run.json").read_bytes()), artifactManifestSha256=sha(canonical(manifest)))
 
@@ -85,7 +90,7 @@ class TestCrashWindow:
             pins.write_bytes(canonical(fresh[1]))
             script = Path(__file__).resolve().parents[1] / "crash_reader.py"
             env = {**child_environment(), "PYTHONPATH": str(script.parent.parent / "joint-recovery-2026-10-02")}
-            result = subprocess.run([sys.executable, str(script), str(fresh[0]), "--pins-file", str(pins)], capture_output=True, timeout=15, check=False, env=env)
+            result = subprocess.run([sys.executable, str(script), str(fresh[0]), "--pins-file", str(pins), "--withheld-sources", str(WITHHELD_FILE)], capture_output=True, timeout=15, check=False, env=env)
             assert result.returncode == 0
             assert result.stderr == b""
             assert result.stdout == canonical(report)
@@ -99,7 +104,7 @@ class TestCrashWindow:
                 raise AssertionError("offline reader attempted network")
             monkeypatch.setattr(builtins, "__import__", guarded)
             monkeypatch.setattr(urllib.request, "urlopen", forbidden)
-            assert verify_saved(fresh[0], fresh[1]) == fresh[2]
+            assert verify_saved(fresh[0], fresh[1], WITHHELD) == fresh[2]
 
         @given(st.dictionaries(st.text(min_size=1, max_size=20), st.integers(), max_size=10))
         def test_native_metadata_unique_pairs_are_preserved(self, value):
@@ -128,7 +133,7 @@ class TestCrashWindow:
             synchronize(root, name, value)
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^" + reason + "$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: " + reason in caplog.messages
 
         @pytest.mark.parametrize("name", ["plan-before-run.json", "workers/valid-after/first.json", "native/valid-after-before-recovery.sqlite"])
@@ -142,7 +147,7 @@ class TestCrashWindow:
             script = Path(__file__).resolve().parents[1] / "crash_reader.py"
             env = {**child_environment(), "PYTHONPATH": str(script.parent.parent / "joint-recovery-2026-10-02")}
             try:
-                result = subprocess.run([sys.executable, str(script), str(root), "--pins-file", str(selected)], capture_output=True, timeout=2, check=False, env=env)
+                result = subprocess.run([sys.executable, str(script), str(root), "--pins-file", str(selected), "--withheld-sources", str(WITHHELD_FILE)], capture_output=True, timeout=2, check=False, env=env)
                 assert result.returncode == 1
                 assert b"Joint recovery refused: packet-regular-file" in result.stderr
                 assert result.stdout == b""
@@ -160,7 +165,7 @@ class TestCrashWindow:
             path.symlink_to(target)
             try:
                 with pytest.raises(VerificationError, match="^packet-regular-file$"):
-                    verify_saved(root, pins)
+                    verify_saved(root, pins, WITHHELD)
             finally:
                 path.unlink()
 
@@ -183,7 +188,7 @@ class TestCrashWindow:
                 connection.commit()
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^" + reason + "$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: " + reason in caplog.messages
 
         @pytest.mark.parametrize("raw", [b"not JSON", b'{"step":0,"unused":' + b"[" * 2000 + b"]" * 2000 + b"}"], ids=["invalid-json", "deep-nesting"])
@@ -194,14 +199,14 @@ class TestCrashWindow:
                 connection.commit()
             reselect(root, pins)
             with caplog.at_level(logging.WARNING), pytest.raises(VerificationError, match="^native-sqlite-metadata$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
             assert "Joint recovery refused: native-sqlite-metadata" in caplog.messages
 
         def test_depth_bound_precedes_reader_access(self, copied):
             root, pins = copied
             root.joinpath(*(["deep"] * 13)).mkdir(parents=True)
             with pytest.raises(VerificationError, match="^packet-depth-bound$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
 
         @pytest.mark.parametrize("kind", ["files", "entries"])
         def test_entry_population_bounds_precede_reader_access(self, copied, kind):
@@ -211,7 +216,7 @@ class TestCrashWindow:
                 path = root / ("population-" + str(number))
                 path.write_bytes(b"") if kind == "files" else path.mkdir()
             with pytest.raises(VerificationError, match="^" + reason + "$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
 
         @pytest.mark.parametrize("kind", ["member-bytes", "total-bytes"])
         def test_byte_bounds_precede_reader_access(self, copied, kind):
@@ -221,7 +226,7 @@ class TestCrashWindow:
                 with (root / ("sparse-" + str(number))).open("wb") as stream:
                     stream.truncate((17 if kind == "member-bytes" else 16) * 1024 * 1024)
             with pytest.raises(VerificationError, match="^" + reason + "$"):
-                verify_saved(root, pins)
+                verify_saved(root, pins, WITHHELD)
 
         def test_deep_externally_selected_plan_has_stable_cli_refusal(self, copied, tmp_path):
             root, pins = copied
@@ -231,7 +236,7 @@ class TestCrashWindow:
             selected.write_bytes(canonical(pins))
             script = Path(__file__).resolve().parents[1] / "crash_reader.py"
             env = {**child_environment(), "PYTHONPATH": str(script.parent.parent / "joint-recovery-2026-10-02")}
-            result = subprocess.run([sys.executable, str(script), str(root), "--pins-file", str(selected)], capture_output=True, timeout=2, check=False, env=env)
+            result = subprocess.run([sys.executable, str(script), str(root), "--pins-file", str(selected), "--withheld-sources", str(WITHHELD_FILE)], capture_output=True, timeout=2, check=False, env=env)
             assert result.returncode == 1
             assert b"Joint recovery refused: packet-json-bound" in result.stderr
 
@@ -245,7 +250,7 @@ class TestCrashWindow:
         @pytest.mark.parametrize("field", ["planSha256", "artifactManifestSha256"])
         def test_outside_wrong_pin_refuses(self, fresh, field):
             with pytest.raises(VerificationError, match="^consumer-" + field + "$"):
-                verify_saved(fresh[0], {**fresh[1], field: "0" * 64})
+                verify_saved(fresh[0], {**fresh[1], field: "0" * 64}, WITHHELD)
 
         @given(st.text(min_size=1, max_size=30))
         def test_native_duplicate_metadata_refuses(self, name):

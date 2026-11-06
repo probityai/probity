@@ -1,7 +1,9 @@
-"""Check real hard-exit captures with an independently installed Verify CLI.
+"""Check a retained hard-exit capture with an independently installed Verify CLI.
 
-This controller imports neither Observer nor Verify. It retains actual process
-streams, original evidence and consumer-authored assertions separately.
+This controller imports neither Observer nor Verify. It binds the retained
+capture to its manifest, then replays every retained consumer assertion through
+the installed CLI and compares the answers byte for byte with the retained ones.
+No producer runs here: the capture was made by the operator's runtime.
 """
 
 import argparse
@@ -15,6 +17,9 @@ from pathlib import Path, PurePosixPath
 
 ORIGINAL_SHA = "2b4f04dcc0c0d5e7c1a4a68288fd92457676db50da3da631a348ba0d4940605e"
 ROOT = Path(__file__).resolve().parents[1]
+RETAINED = ROOT / "examples/brokered-file-write/retained"
+SIDECARS = {"PROVENANCE.json", "WITHHELD-SOURCES.json"}
+MODES = {"completed": 0, "after-seal": 74, "before-terminal": 74}
 
 
 def encode(value):
@@ -134,35 +139,84 @@ def original_capture(path, output, verifier):
         return rows
 
 
+def bind_retained(retained):
+    """Every manifest file is present with its digest, or withheld with exactly that digest."""
+    manifest = json.loads((retained / "manifest.json").read_bytes())
+    withheld = json.loads((retained / "WITHHELD-SOURCES.json").read_bytes())
+    listed = {row["path"]: row for row in manifest["files"]}
+    if len(listed) != len(manifest["files"]):
+        raise ValueError("duplicate manifest paths")
+    for path, row in listed.items():
+        target = retained / path
+        if path in withheld:
+            if target.exists() or withheld[path] != row["sha256"]:
+                raise ValueError(f"withheld source {path} is present or differs from the manifest digest")
+        elif not target.is_file() or file_binding(target) != {"bytes": row["bytes"], "sha256": row["sha256"]}:
+            raise ValueError(f"retained file {path} is missing or differs from the manifest")
+    if set(withheld) - set(listed):
+        raise ValueError("withheld path is not in the manifest")
+    present = {path.relative_to(retained).as_posix() for path in retained.rglob("*") if path.is_file()}
+    stray = present - set(listed) - SIDECARS - {"manifest.json"}
+    if stray:
+        raise ValueError(f"files outside the manifest: {sorted(stray)}")
+    return len(listed), len(withheld)
+
+
+def replay_mode(retained, output, verifier, mode):
+    """Run the installed CLI on each retained assertion and compare with the retained answer."""
+    native = retained / "native"
+    process = json.loads((native / (mode + ".process.json")).read_bytes())
+    if process["exit"] != MODES[mode]:
+        raise ValueError(f"retained {mode} producer exit {process['exit']}, expected {MODES[mode]}")
+    for stream in ("stdout", "stderr"):
+        if file_binding(native / process[stream]["path"]) != {k: process[stream][k] for k in ("bytes", "sha256")}:
+            raise ValueError(f"retained {mode} {stream} differs from its process record")
+    root = native / mode
+    public = json.loads((root / "public-selection.json").read_bytes())
+    sealed = mode != "before-terminal"
+    (output / mode).mkdir()
+    rows = []
+    for completion in (True, False):
+        label = "assert-true" if completion else "assert-false"
+        recorded = json.loads((root / (label + ".process.json")).read_bytes())
+        argv = [verifier, str(root / (label + ".case.json")), "--policy", str(root / (label + ".policy.json")), "--json"]
+        code = command(output / mode, label, argv)
+        replayed = (output / mode / (label + ".stdout")).read_bytes()
+        expected = ("supported" if completion else "contradicted") if sealed else "not_established"
+        answer = json.loads(replayed) if code == 0 else None
+        same = code == recorded["exit"] and replayed == (root / (label + ".stdout")).read_bytes()
+        rows.append({"assertion": completion, "expected": expected, "exit": code,
+                     "actual": answer["decision"] if answer else None,
+                     "valid": same and code == 0 and answer["decision"] == expected
+                     and answer["scope"]["witness_scope"] == public["witness_scope"]})
+    target = file_binding(root / "work/result.txt")
+    if target["sha256"] != public["content_sha256"]:
+        raise ValueError(f"retained {mode} target differs from the declared content")
+    return {"mode": mode, "actual_process_exit": process["exit"], "target": target, "results": rows}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--producer-python", required=True)
     parser.add_argument("--verifier", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--retained", type=Path, default=RETAINED)
     parser.add_argument("--original-capture", type=Path)
     args = parser.parse_args()
     output = args.output.absolute()
     output.mkdir(parents=True, exist_ok=False)
-    rows = []
-    for mode in ("completed", "after-seal", "before-terminal"):
-        root = output / mode
-        argv = [args.producer_python, str(ROOT / "scripts/brokered-file-write-producer.py"), "--output", str(root), "--mode", mode]
-        code = command(output, mode, argv)
-        expected_exit = 0 if mode == "completed" else 74
-        if code != expected_exit:
-            raise ValueError(f"producer {mode} actual exit {code}, expected {expected_exit}")
-        public = json.loads((root / "public-selection.json").read_bytes())
-        target = (root / "work/result.txt").read_bytes()
-        if hashlib.sha256(target).hexdigest() != public["content_sha256"]:
-            raise ValueError("actual target differs from declared native content")
-        results = consume(root, args.verifier, public, sealed=mode != "before-terminal")
-        rows.append({"mode": mode, "actual_process_exit": code, "target": file_binding(root / "work/result.txt"), "results": results})
+    retained = args.retained.absolute()
+    bound, withheld = bind_retained(retained)
+    rows = [replay_mode(retained, output, args.verifier, mode) for mode in MODES]
     originals = original_capture(args.original_capture, output, args.verifier) if args.original_capture else []
     valid = all(result["valid"] for row in rows + originals for result in row["results"])
+    recorded = json.loads((retained / "native/RESULTS.json").read_bytes())
     result = {"schema": "probity-brokered-file-write-native-controls/v1", "operator": "author-operated",
               "witness_scope": "PEER", "native": rows, "original_replays": originals,
               "original_capture": file_binding(args.original_capture) if args.original_capture else None,
-              "valid": valid, "does_not_establish": ["independent custody", "maintainer acceptance", "outside adoption", "registered study result"]}
+              "retained_manifest_files": bound, "retained_withheld_sources": withheld,
+              "valid": valid, "does_not_establish": recorded["does_not_establish"]}
+    if recorded["native"] != rows:
+        raise ValueError("replayed rows differ from the retained RESULTS.json")
     (output / "RESULTS.json").write_bytes(encode(result))
     print(json.dumps(result, indent=2))
     return 0 if valid else 1

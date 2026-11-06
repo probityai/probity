@@ -1,0 +1,7 @@
+{
+ "artifact": "authority-unreachable-reference",
+ "downloadedAt": "2026-11-04T01:14:29Z",
+ "headSha": "df162fb8c9304f2846feb9f5145b0dd697c11010",
+ "runId": 41665290471,
+ "workflow": "package-observer-authority-unreachable.yml"
+}

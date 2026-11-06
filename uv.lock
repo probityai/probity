@@ -121,10 +121,6 @@ dependencies = [
 cover = [
     { name = "coverage" },
 ]
-done = [
-    { name = "jcs-admit" },
-    { name = "probity-verify" },
-]
 inspect = [
     { name = "inspect-ai", version = "0.3.287", source = { registry = "https://pypi.org/simple" } },
 ]
@@ -147,14 +143,12 @@ requires-dist = [
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6,<7" },
     { name = "inspect-ai", marker = "extra == 'inspect'", specifier = "==0.3.287" },
     { name = "inspect-ai", marker = "extra == 'inspect-historical'", specifier = "==0.3.281" },
-    { name = "jcs-admit", marker = "extra == 'done'", specifier = "~=0.1.0" },
     { name = "jcs-admit", marker = "extra == 'witness'", specifier = "~=0.1.0" },
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4,<5" },
-    { name = "probity-verify", marker = "extra == 'done'", editable = "packages/probity-verify" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<10" },
     { name = "rfc8785", specifier = "==0.1.4" },
 ]
-provides-extras = ["test", "inspect", "inspect-historical", "witness", "cover", "done"]
+provides-extras = ["test", "inspect", "inspect-historical", "witness", "cover"]
 
 [[package]]
 name = "agent-evidence-vectors"
@@ -382,9 +376,9 @@ name = "aiologic"
 version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "sniffio", marker = "python_full_version < '3.14' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
+    { name = "sniffio", marker = "python_full_version < '3.13' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
     { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
-    { name = "wrapt", marker = "python_full_version < '3.14' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
+    { name = "wrapt", marker = "python_full_version < '3.13' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f1/7a/d51f2fde1e8ae8a83431f8e97b7a71e9358cdb1d4d2ce6be387fa44d68de/aiologic-0.17.1.tar.gz", hash = "sha256:2e1b93b9e88ced318c2a63ad7b382688f40cbfe40e3d42258d49dc9c5aea179d", size = 252354, upload-time = "2026-06-27T20:41:33.25Z" }
 wheels = [
@@ -1183,7 +1177,7 @@ name = "culsans"
 version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aiologic", marker = "python_full_version < '3.14' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
+    { name = "aiologic", marker = "python_full_version < '3.13' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
     { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-23-agent-evidence-observer-inspect' and extra == 'extra-23-agent-evidence-observer-inspect-historical')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d9/e3/49afa1bc180e0d28008ec6bcdf82a4072d1c7a41032b5b759b60814ca4b0/culsans-0.11.0.tar.gz", hash = "sha256:0b43d0d05dce6106293d114c86e3fb4bfc63088cfe8ff08ed3fe36891447fe33", size = 107546, upload-time = "2025-12-31T23:15:38.196Z" }

@@ -16,9 +16,10 @@ from typing import Any
 import pytest
 from hypothesis import HealthCheck, given, settings, strategies as st
 
-from probity_observer import Broker, LedgerWitness, SigningKey, VerificationError
-from probity_observer.crypto import canonical, strict_loads
-from probity_observer.ledger import verify_ledger_head
+from probity_observer.crypto import SigningKey, VerificationError, canonical, strict_loads
+from probity_observer.ledger import LedgerWitness, verify_ledger_head
+
+from begin_support import register_begin
 from probity_witness_operator import retention
 from probity_witness_operator.protocol import sha
 
@@ -35,12 +36,7 @@ class Case:
 
     def advance(self, interval: str) -> dict[str, Any]:
         """Register a real signed begin under a fresh observed workspace."""
-        work = self.root / interval
-        work.mkdir()
-        broker = Broker(work, self.root / (interval + ".jsonl"),
-                        {"intervalId": interval, "scope": "/work", "operation": "write-file"},
-                        self.observer, self.witness)
-        broker.begin()
+        register_begin(self.witness, self.observer, self.root / (interval + ".jsonl"), interval)
         head = self.witness.signed_head()
         self.candidate.write_bytes(canonical(head))
         return head

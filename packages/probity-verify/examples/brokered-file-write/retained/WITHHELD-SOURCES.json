@@ -1,0 +1,13 @@
+{
+  "producer-source/src/probity_observer/aae_dispatch.py": "70e6e669d24fbfd5275b25217523ea55d3da1495bb16e0834ff7a8de2a1cf6bb",
+  "producer-source/src/probity_observer/aae_ticket.py": "ac12299c5d3bd5de030937d55358031a6ba72f152571ef20c521437fabe54743",
+  "producer-source/src/probity_observer/admission.py": "5b9f68dbfc59b1c088b7de9c41e81fabdf2e3a72426e8766845d0cea28b2af0f",
+  "producer-source/src/probity_observer/authorization.py": "27ae7b7cf8e4c807ae69702e0c406040f1a663f70ee1750ffcfc7fa05773b202",
+  "producer-source/src/probity_observer/broker.py": "e0209a9369b6376a107fb1febab1bf3ea60324e6d3fd47def3a078281baf1daa",
+  "producer-source/src/probity_observer/cli.py": "615b58fd5ea3401ca3e1ff9ebab63508a22dee6578a28890793054da72fb78d8",
+  "producer-source/src/probity_observer/isolation.py": "737256706038ef6c05db2860dba22af0f023e44ba1cd213ee44516c0f9fcb3c0",
+  "producer-source/src/probity_observer/protected_dispatch.py": "91c748e4e21bcbc347fdaab129785671765214758f043482f8f31af043e12b34",
+  "producer-source/src/probity_observer/protected_isolation.py": "6d99ddca3f03ada6c05ff21f4796ec3b8eea7097c1119b38e53239b16e44809d",
+  "producer-source/src/probity_observer/protected_probe.py": "9e89109a168837662c434f0988e6ab8d90d6dd6e472b516c27ad8b8b16f8138f",
+  "producer-source/src/probity_observer/ticket_service.py": "0e18c12e67c7c4f8e4674a2a7cf738468edf73ffa57255c26cc008733f6b4287"
+}

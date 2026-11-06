@@ -18,32 +18,11 @@ Tests cover generated file contents, path traversal and prefix confusion, idempo
 
 The next isolation milestone extends the fixed Linux probe to an unmodified agent. The agent must have no direct writable path to the watched tree and no access to the observer process, key, journal, or witness state. Tests need to cover direct writes, platform-specific namespace escapes, broker interruption, key access, and a defined set of attempted effects for each channel. An outside-operated run is also needed before consumers can treat the records as `EXTERNAL` or `below-observed` rather than `PEER`.
 
-The detailed acceptance criteria are in [`docs/ISOLATED-PRODUCER.md`](ISOLATED-PRODUCER.md). A retry checks the current tree before returning the prior effect, but it cannot see a transient bypass that was later undone.
+A retry checks the current tree before returning the prior effect, but it cannot see a transient bypass that was later undone.
 
-## Linux boundary gate
+## Boundary and recovery
 
-The `boundary-probe` command commits the probe bytes, observer source digest,
-interpreter, bubblewrap binary, launch arguments, before-root, and expiry before
-starting a fixed adversarial workload. It exposes one Unix socket to the host
-broker and no host workspace, key, journal, or witness path to the workload.
-
-```sh
-.venv/bin/agent-evidence-observer boundary-probe ./boundary-run
-```
-
-The command returns zero only if direct file write, observer key read, host
-process signal, and outbound TCP attempts fail, while a brokered write, exact
-retry, changed retry denial, and traversal denial produce the expected durable
-history. It writes raw child output and `boundary-report.json` even on failure.
-On failed sandbox setup or a failed probe, it writes a witnessed
-`incomplete.json` and no complete packet. The report maps to AVE's
-`evidence_vantage: artifact`; the signed packet still says `witnessScope: PEER`.
-An offline reader can run `verify-boundary ./boundary-run --observer-key KEY
---witness-key KEY` with keys pinned outside the bundle; the command checks the
-signed report, authority, raw output, history, and terminal checkpoint.
-The fixed probe is a test of one launch policy, not a general proof that an
-arbitrary agent has no other effect channel. See
-[`docs/BOUNDARY-GATE.md`](BOUNDARY-GATE.md) for its limits and CI command.
+The Linux boundary probe and the workload run that produce boundary records run in the operator's runtime. An offline reader can run `verify-boundary ./boundary-run --observer-key KEY --witness-key KEY` with keys pinned outside the bundle; the command checks the signed report, authority, raw output, history, and terminal checkpoint. The fixed probe tests one launch policy, not a general proof that an arbitrary agent has no other effect channel.
 
 A write now has a durable intent before file replacement. If the process dies before the matching effect event, `recover_interrupted(history, workspace, witness)` appends an `incomplete` event with the request ID and a fresh tree root. It checkpoints that history. A consumer can check the signed prior commitment and both witnessed heads with `verify_incomplete(history, start_checkpoint, checkpoint, pinned_observer_key, pinned_witness_key)`.
 
@@ -60,27 +39,14 @@ The snapshot describes the state at recovery, not the state at failure. An unres
 
 Recovery currently covers an orphaned write intent. A crash after the effect event and before `seal()` still leaves an unsealed interval.
 
-## Consumer admission
-
-`AdmissionPolicy` and `AdmissionStore` add consumer-selected authority,
-interval, key, and retained witness-head checks to packet verification. A
-protected local store refuses repeated admissions and receipt-log rollback,
-and retains decisions linked to the verified claim and history. Initialization
-is explicit; a missing store does not reset replay protection. Run
-`python examples/admission_demo.py ./admission-run` for a retained declaration,
-brokered write, bounded verification, admission, and replay refusal. See
-[`docs/CONSUMER-ADMISSION.md`](CONSUMER-ADMISSION.md) for CLI commands,
-ordering, storage ownership, and evidence limits. This same-operator fixture
-and the admitted records remain PEER.
-
 ## Roadmap
 
-1. **Agent isolation.** `launch-agent` now runs an unmodified agent in docker or apptainer and records its effects from outside the container: an in-container tracer as the agent's parent, host inotify, and the final tree, with the launch digest, trace expression and watch list in the receipt. Lost events make coverage incomplete or unknown. See [`AGENT-LAUNCHER.md`](AGENT-LAUNCHER.md). Routing every write through the host broker, so that a bypass is refused rather than recorded, remains open.
+1. **Agent isolation.** This package checks retained records only; the launcher that runs an agent and records its effects is not part of it. Lost events in a retained record make coverage incomplete or unknown.
 2. **Standard records.** An adapter will emit the [Observed Effect draft](https://github.com/probityai/agent-evidence-vectors/blob/main/spec/predicates/observed-effect.md) and run its [corpus](https://github.com/probityai/agent-evidence-vectors/tree/main/vectors-observed-effect) through a named external verifier. The in-toto subject will bind the final tree root, and the prior commitment will bind authority, starting root, interval, and nonce. The integration will use `jcs-admit` and `dsse` for byte and signature handling.
 3. **Independent history.** `agent-evidence-witness` is a complete single-operator witness: it retains every accepted record in a Merkle log, refuses a second statement under one claim id, and publishes checkpoint, inclusion and consistency records that readers verify offline. A record co-signed by a witness whose operator the reader pins as different from the host's verifies as `EXTERNAL`. See [`WITNESS-SERVER.md`](WITNESS-SERVER.md). Publishing checkpoints where independent readers retain them remains an operator's job.
 4. **Independent use.** Replay packages for other implementers will include the verifier, attack corpus, key pins, run bundle, and a one-command replay. Reports will include attempted and observed effects, coverage, missing or unresolved observations, refusals, and overhead, including null and incomplete results.
 
-The vocabulary and corpus define the records and their checks; this repository implements the broker and producer boundary. The current release remains a PEER prototype. Isolation and independent witnessing are tracked in [`docs/ISOLATED-PRODUCER.md`](ISOLATED-PRODUCER.md).
+The vocabulary and corpus define the records and their checks; this repository implements the offline readers for the broker and boundary records. The current release remains a PEER prototype. Isolation and independent witnessing are not established by these records.
 
 ## License
 

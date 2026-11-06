@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import re
 import subprocess
-
+from pathlib import Path
 
 LOCAL_SOURCE = frozenset({"agent-evidence-observer", "agent-evidence-authority-reference"})
 SNAPSHOT = """import importlib.metadata as m,json,sysconfig
@@ -72,7 +71,7 @@ def main() -> int:
     summary = {"schema": "authority-dependency-audit/v1", "audit_exit": None, "errors": []}
     try:
         with inventory_path.open("wb") as stdout, Path(str(prefix) + "-inventory-stderr.txt").open("wb") as stderr:
-            snapshot = subprocess.run([args.role_python, "-I", "-c", SNAPSHOT], stdout=stdout, stderr=stderr)
+            snapshot = subprocess.run([args.role_python, "-I", "-c", SNAPSHOT], stdout=stdout, stderr=stderr, check=False)
         summary["inventory_exit"] = snapshot.returncode
         if snapshot.returncode:
             raise ValueError("installed inventory command failed")
@@ -81,7 +80,7 @@ def main() -> int:
                    "--format", "json", "--output", str(raw_path)]
         summary["audit_command"] = command
         with Path(str(prefix) + "-stdout.txt").open("wb") as stdout, Path(str(prefix) + "-stderr.txt").open("wb") as stderr:
-            audit = subprocess.run(command, stdout=stdout, stderr=stderr)
+            audit = subprocess.run(command, stdout=stdout, stderr=stderr, check=False)
         summary["audit_exit"] = audit.returncode
         report = json.loads(raw_path.read_bytes())
         summary["errors"] = check_coverage(inventory["packages"], report)

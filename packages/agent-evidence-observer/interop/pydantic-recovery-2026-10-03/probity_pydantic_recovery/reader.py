@@ -22,18 +22,19 @@ from probity_pydantic_recovery.common import (
     PROFILE,
     RECOVERY_REFUSALS,
     TARGET_REFUSALS,
+    absent_members,
     deferred,
     load,
     messages,
     read,
     require,
     sha,
+    withheld_sources,
     write,
 )
-from probity_pydantic_recovery.gate import reconstruct_admission
 
 
-def freeze(root: Path, selected: dict[str, Any], destination: Path) -> None:
+def freeze(root: Path, selected: dict[str, Any], destination: Path, withheld: dict[str, str]) -> None:
     """Authenticate and copy each consumed buffer before semantic reconstruction."""
     require(root.is_dir() and not root.is_symlink(), "packet-directory")
     require(not any(path.is_symlink() for path in root.rglob("*")), "packet-symlink")
@@ -42,15 +43,18 @@ def freeze(root: Path, selected: dict[str, Any], destination: Path) -> None:
     manifest = strict_loads(raw)
     require(type(manifest) is dict and len(manifest) < 3000, "file-population-bound")
     actual = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
-    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} == set(manifest), "artifact-population")
+    absent = absent_members(manifest, actual, withheld)
+    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} | absent == set(manifest), "artifact-population")
     write(destination / "artifact-manifest.json", raw, raw=True)
-    copy_selected(root, destination, manifest)
+    copy_selected(root, destination, manifest, absent)
 
 
-def copy_selected(root: Path, destination: Path, manifest: dict[str, str]) -> None:
+def copy_selected(root: Path, destination: Path, manifest: dict[str, str], absent: set[str]) -> None:
     """Hash and copy the same bounded bytes, never reopen a checked candidate."""
     total = 0
     for name, digest in manifest.items():
+        if name in absent:
+            continue
         path = Path(name)
         require(not path.is_absolute() and ".." not in path.parts, "artifact-path")
         raw = read(root / path)
@@ -60,7 +64,7 @@ def copy_selected(root: Path, destination: Path, manifest: dict[str, str]) -> No
         write(destination / path, raw, raw=True)
 
 
-def population(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
+def population(root: Path, selected: dict[str, Any], withheld: dict[str, str]) -> dict[str, Any]:
     """Admit the exact externally selected finite file/source population."""
     require(root.is_dir() and not root.is_symlink(), "packet-directory")
     require(not any(path.is_symlink() for path in root.rglob("*")), "packet-symlink")
@@ -69,12 +73,15 @@ def population(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
     require(selected["artifactManifestSha256"] == sha(read(root / "artifact-manifest.json")), "selected-manifest")
     manifest = load(root / "artifact-manifest.json")
     actual = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
-    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} == set(manifest), "artifact-population")
+    absent = absent_members(manifest, actual, withheld)
+    require(actual - {"artifact-manifest.json", "consumer-pins.json", "report.json"} | absent == set(manifest), "artifact-population")
     require(len(manifest) < 3000, "file-population-bound")
     total = 0
     for name, digest in manifest.items():
         path = Path(name)
         require(not path.is_absolute() and ".." not in path.parts, "artifact-path")
+        if name in absent:
+            continue
         raw = read(root / path)
         total += len(raw)
         require(sha(raw) == digest, "artifact-hash")
@@ -230,6 +237,48 @@ def final_payload(prior: dict[str, Any], final: dict[str, Any], case_id: str) ->
     require(type(final["eventHead"]) is str and len(final["eventHead"]) == 64 and all(c in "0123456789abcdef" for c in final["eventHead"]) and final["eventHead"] != prior["eventHead"], "final-revocation-history")
 
 
+def historical_effect(case: dict[str, Any], packet: dict[str, Any]) -> dict[str, Any]:
+    """Authenticate the historical effect at its declared historical time."""
+    from datetime import datetime
+    require(packet["postStatus"] == packet["getStatus"] == 200, "historical-http-status")
+    candidate = {key: case[key] for key in ("request", "grant", "contentHex")}
+    require(packet["postRequestHex"] == canonical(candidate).hex(), "historical-post-binding")
+    receipt, readback = (strict_loads(bytes.fromhex(packet[key])) for key in ("postResponseHex", "getResponseHex"))
+    return verify_ticket_result(receipt, readback, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["historicalTime"]))
+
+
+def reconstruct_admission(case: dict[str, Any], history: bytes, prior: dict[str, Any], live: dict[str, Any], current: dict[str, Any], *, evaluated_at: Any) -> dict[str, Any]:
+    """Reconstruct a retained result-only admission at its recorded evaluation time.
+
+    The order of checks is the order the host applied. A spent dispatch grant
+    never creates permission for another POST, so the reconstructed decision
+    releases only the authenticated already-committed native result.
+    """
+    from datetime import datetime
+    call = deferred(history, case)
+    checked = historical_effect(case, prior)
+    require(set(current) == {"historySha256", "grant", "serviceKey", "policy", "liveSha256", "clockTime", "clockSource", "targetReady"}, "current-selection-schema")
+    require(current["targetReady"] is True, "current-target-not-ready")
+    require(current["historySha256"] == sha(history), "current-history-binding")
+    require(current["serviceKey"] == case["serviceKey"] and current["policy"] == case["policy"], "current-key-policy-binding")
+    require(current["liveSha256"] == sha(canonical(live)), "current-live-binding")
+    selected_at = datetime.fromisoformat(current["clockTime"])
+    require(selected_at.tzinfo is not None and selected_at.utcoffset().total_seconds() == 0 and selected_at.microsecond == 0, "current-selection-clock-utc-seconds")
+    require(evaluated_at.tzinfo is not None and evaluated_at.utcoffset().total_seconds() == 0, "current-runtime-clock-utc")
+    expected_clock = "fixture-exact-expiry" if case["id"] == "expired" else "host-system-utc"
+    require(current["clockSource"] == expected_clock, "current-clock-source")
+    require(case["id"] != "expired" or selected_at == datetime.fromisoformat(case["grant"]["expiresAt"]), "current-exact-expiry-binding")
+    require(selected_at >= datetime.fromisoformat(case["historicalTime"]), "current-clock-predates-history")
+    now = selected_at if case["id"] == "expired" else evaluated_at
+    require(case["id"] == "expired" or evaluated_at >= selected_at, "current-selection-from-future")
+    verify_grant(current["grant"], ActionRequest(**case["request"]), GrantPolicy(**current["policy"]), now=now)
+    require(canonical(current["grant"]) == canonical(case["grant"]), "current-grant-binding")
+    retained = strict_loads(bytes.fromhex(prior["postResponseHex"]))
+    verified = verify_ticket_result(retained, live, ActionRequest(**case["request"]), GrantPolicy(**current["policy"]), current["serviceKey"], current["grant"], now=now)
+    require(verified == checked, "historical-live-effect-join")
+    return {"status": "admitted-result-only", "toolCallId": call["tool_call_id"], "historySha256": sha(history), "priorHttpSha256": sha(canonical(prior)), "liveSha256": sha(canonical(live)), "evaluatedAt": evaluated_at.isoformat(), "result": checked, "dispatchPermitted": False}
+
+
 def decision(root: Path, case: dict[str, Any], current: dict[str, Any], recovery: dict[str, Any]) -> dict[str, Any] | None:
     """Reproduce the exact gate order and retain its truthful refusal reason."""
     try:
@@ -243,9 +292,9 @@ def decision(root: Path, case: dict[str, Any], current: dict[str, Any], recovery
         return None
 
 
-def reconstruct(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
+def reconstruct(root: Path, selected: dict[str, Any], withheld: dict[str, str]) -> dict[str, Any]:
     """Reconstruct the bounded author-operated profile from external byte pins."""
-    plan = population(root, selected)
+    plan = population(root, selected, withheld)
     records, identities = [], []
     workers, targets = 0, 0
     for case in plan["cases"]:
@@ -260,13 +309,19 @@ def reconstruct(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
     return {"profile": PROFILE, "status": "verified", "plannedAttempts": len(CASES), "freshWorkers": workers, "freshTargets": targets, "providerCalls": 0, "model": "scripted-FunctionModel", "records": records, "witnessScope": "PEER", "doesNotAssert": NONCLAIMS}
 
 
-def verify_saved(root: Path, selected: dict[str, Any]) -> dict[str, Any]:
-    """Reconstruct only the private copy of externally authenticated buffers."""
+def verify_saved(root: Path, selected: dict[str, Any], withheld: dict[str, str] | None = None) -> dict[str, Any]:
+    """Reconstruct only the private copy of externally authenticated buffers.
+
+    A manifest member may be absent from the packet only when ``withheld``
+    names it with exactly the pinned digest; every present member must still
+    match byte for byte and any other absence refuses.
+    """
+    withheld = withheld or {}
     try:
         with tempfile.TemporaryDirectory(prefix="probity-recovery-reader-") as directory:
             frozen = Path(directory)
-            freeze(root, selected, frozen)
-            return reconstruct(frozen, selected)
+            freeze(root, selected, frozen, withheld)
+            return reconstruct(frozen, selected, withheld)
     except VerificationError:
         raise
     except (KeyError, TypeError, ValueError, OSError, IndexError, AttributeError, sqlite3.Error, RecursionError) as error:
@@ -278,8 +333,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("packet", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
+    parser.add_argument("--withheld-sources", type=Path, default=None)
     args = parser.parse_args()
-    print(canonical(verify_saved(args.packet, load(args.pins_file))).decode())
+    print(canonical(verify_saved(args.packet, load(args.pins_file), withheld_sources(args.withheld_sources))).decode())
 
 
 if __name__ == "__main__":

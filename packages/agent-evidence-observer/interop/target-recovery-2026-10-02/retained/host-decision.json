@@ -1,0 +1,8 @@
+{
+  "decision": "publish",
+  "profile": "probity-target-process-recovery-v1",
+  "plannedAttempts": 7,
+  "reason": "selected-complete-bounded-report",
+  "readerReturncode": 0,
+  "policySha256": "792ce565d9ed3174557a6a464d8835fc2f3bfa3443fae32a7a21340fecae503d"
+}

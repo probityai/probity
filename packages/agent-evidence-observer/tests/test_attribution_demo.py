@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from fixture_records import materialize
+
 
 class TestAttributionDemo:
     class TestPassingCases:
@@ -17,6 +19,8 @@ class TestAttributionDemo:
                     sys.executable,
                     str(root / "examples/attribution_demo.py"),
                     str(output),
+                    "--native",
+                    str(materialize("protected-action", tmp_path / "retained")),
                 ],
                 check=True,
                 capture_output=True,
@@ -53,6 +57,13 @@ class TestAttributionDemo:
                     sys.executable,
                     str(root / "examples/attribution_demo.py"),
                     str(tmp_path),
+                    "--native",
+                    str(
+                        materialize(
+                            "protected-action",
+                            tmp_path.parent / f"retained-{tmp_path.name}",
+                        )
+                    ),
                 ],
                 capture_output=True,
                 text=True,

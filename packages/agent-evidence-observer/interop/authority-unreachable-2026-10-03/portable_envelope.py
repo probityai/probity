@@ -143,7 +143,7 @@ def verify(envelope: dict[str, Any]) -> dict[str, Any]:
         from eth_account.messages import encode_defunct
         signer = Account.recover_message(encode_defunct(text=message(envelope)),
                                          signature=envelope["signature"])
-    except Exception as error:  # recovery failure is a failing check, never a pass
+    except Exception as error:  # noqa: BLE001 - any recovery failure is a failing check, never a pass
         errors.append("signature recovery failed: " + str(error))
     if signer is not None:
         if wallet.lower() != signer.lower():

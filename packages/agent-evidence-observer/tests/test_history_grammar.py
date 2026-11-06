@@ -2,11 +2,10 @@
 from pathlib import Path
 
 import pytest
+from fixture_records import load, materialize, pinned_keys
 
-from probity_observer.broker import Broker
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest
 from probity_observer.history import GENESIS, read_history, verify_checkpoint
-from probity_observer.ledger import LedgerWitness
 
 
 @pytest.mark.parametrize("entries,count", [([], False), ([{"hash": "1" * 64}], True)])
@@ -39,15 +38,11 @@ def test_integer_checkpoint_remains_valid(entries) -> None:
 
 
 def test_real_native_receipt_extension_remains_valid(tmp_path: Path) -> None:
-    workspace = tmp_path / "work"
-    workspace.mkdir()
-    observer, key = SigningKey.generate(), SigningKey.generate()
-    witness = LedgerWitness(tmp_path / "ledger.jsonl", key, observer.public_hex)
-    history = tmp_path / "history.jsonl"
-    broker = Broker(workspace, history, {"intervalId": "type-control", "scope": "/work", "operation": "write-file"}, observer, witness)
-    checkpoint = broker.begin()["checkpoint"]
+    record = materialize("ledger-begin", tmp_path)
+    _, witness = pinned_keys(record)
+    checkpoint = load(record / "start-checkpoint.json")
     assert checkpoint["ledgerReceipt"]["checkpoint"]["count"] == 1
-    verify_checkpoint(read_history(history), checkpoint, key.public_hex)
+    verify_checkpoint(read_history(record / "history.jsonl"), checkpoint, witness)
 
 
 def test_hash_valid_boolean_history_position_refused(tmp_path: Path) -> None:

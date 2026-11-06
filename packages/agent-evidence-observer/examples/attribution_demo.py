@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,15 +27,22 @@ from probity_observer.grant_records import (
     verify_authorized_packet,
     verify_grant,
 )
-from protected_action_demo import run_demo as run_action
 
 SOURCE = "https://github.com/probityai/agent-evidence-observer"
 REVISION = "0c3ec928bd8d3c0caf5b292b828143bfa7099d34"
 
 
-def run_demo(output: Path) -> dict:
-    """Make an effect bundle, check its retained inputs, then bind their use."""
-    report = run_action(output)
+def run_demo(output: Path, native: Path) -> dict:
+    """Check the retained inputs of one protected-action run, then bind their use.
+
+    ``native`` is the retained output of the operator's protected-action run: its
+    ``producer`` and ``consumer`` directories and ``demo-report.json``. It is copied
+    into ``output``, not modified.
+    """
+    if output.exists() and any(output.iterdir()):
+        raise ValueError("protected action output directory must be empty")
+    shutil.copytree(native, output, dirs_exist_ok=True)
+    report = json.loads((output / "demo-report.json").read_bytes())
     producer = output / "producer"
     consumer = output / "consumer"
     request = ActionRequest(**json.loads((producer / "request.json").read_bytes()))
@@ -161,4 +169,6 @@ def _retain(output: Path, consumer: Path, retained: dict) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
-    print(json.dumps(run_demo(parser.parse_args().output), sort_keys=True))
+    parser.add_argument("--native", type=Path, required=True)
+    arguments = parser.parse_args()
+    print(json.dumps(run_demo(arguments.output, arguments.native), sort_keys=True))

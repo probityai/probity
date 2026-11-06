@@ -1,0 +1,1 @@
+{"denials":[{"denied":true,"errno":13,"resource":"consumerState"},{"denied":true,"errno":13,"resource":"gatewayState"},{"denied":true,"errno":13,"resource":"issuerKey"},{"denied":true,"errno":13,"resource":"observerKey"}],"gid":65531,"groups":[],"pid":6805,"role":"probe","uid":65531}

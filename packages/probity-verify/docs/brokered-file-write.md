@@ -108,26 +108,30 @@ inputs. A passing authored check does not establish outside adoption, an
 independent operator, a paying customer or a registered research result.
 
 
-## Run actual local crash controls
+## Check the retained local crash controls
 
-Install Observer in a separate producer environment from an immutable public
-source revision. Install the Verify wheel in a consumer environment with its
-own direct dependencies. Run the controller from this checkout:
+The real hard-exit capture is retained in
+`examples/brokered-file-write/retained`. The producing run is operated by the
+operator's runtime. Its `manifest.json` declares every retained path, length and
+SHA-256, `PROVENANCE.json` names the CI run that made it, and
+`WITHHELD-SOURCES.json` lists the producer source files kept as digests only.
+Install the Verify wheel in its own environment, then replay the capture:
 
 ```sh
 python3 scripts/check-brokered-file-write.py \
-  --producer-python /path/to/producer/bin/python \
   --verifier /path/to/consumer/bin/probity-verify \
-  --output /path/to/new-capture-directory
+  --output /path/to/new-replay-directory
 ```
 
-The controller retains three real producer exits. Normal completion exits zero.
-A hard exit after the sealed packet exits 74 and retains a recorded completion.
-A hard exit after the write but before the terminal checkpoint exits 74 and
-keeps `not_established`. Both true and false typed reports run through the
-installed CLI. The producer generates local ephemeral keys and retains public
-selections before the broker call. It alone imports Observer. The controller
-and Verify consumer do not import Observer.
+The controller binds every retained file to the manifest and refuses a missing,
+changed or unlisted file. A withheld source is accepted only when it is absent
+and its listed digest equals the manifest digest. It then checks the retained
+process records: normal completion exits zero, a hard exit after the sealed
+packet exits 74 and keeps a recorded completion, and a hard exit after the write
+but before the terminal checkpoint exits 74 and keeps `not_established`. Both
+true and false typed reports run through the installed CLI, and each answer must
+equal the retained answer byte for byte. The controller and the Verify consumer
+do not import Observer.
 
 The optional `--original-capture` selects the exact retained public witness ZIP
 with SHA-256 `2b4f04dcc0c0d5e7c1a4a68288fd92457676db50da3da631a348ba0d4940605e`.
@@ -136,12 +140,9 @@ records remain separate from new assertions and decisions. The original
 `failed-after` exit 7 and HTTP crash captures remain distinct historical cases.
 These controls prove the stated local behavior, not independent operation.
 
-
-The maintained [native CI job](../../../.github/workflows/probity-verify.yml)
-uses the same controller and an immutable public Observer source revision. Its
-artifact keeps original evidence, actual worker/reader streams, source, wheels
-and dependency records. `manifest.json` declares paths, lengths and SHA-256
-relative to its own parent. Resolve every process stream from its process
+The maintained [replay CI job](../../../.github/workflows/probity-verify.yml)
+uses the same controller. Its artifact keeps the replayed streams and the
+consumer dependency record. Resolve every process stream from its process
 record's parent. CI status and the actual artifact contents must both be checked
-before accepting a retained run. A source file read at invocation binds that
-file, not authenticated executing-byte provenance.
+before accepting a replay. A source file read at invocation binds that file, not
+authenticated executing-byte provenance.

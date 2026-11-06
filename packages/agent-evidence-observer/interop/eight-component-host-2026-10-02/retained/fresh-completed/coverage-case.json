@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "record": {
+      "length": 231,
+      "path": "record.txt",
+      "sha256": "a820e2ef176b65f4173317f9c533a6b2fd2c189e3fd25b0e600bf2ab1bf928ef"
+    },
+    "source": {
+      "length": 29820,
+      "path": "source.txt",
+      "sha256": "e00e9f5031fb4e64a5363a05dcba333e569d5c228f96b2e9f42e2ebb381f9f2b"
+    }
+  },
+  "case_id": "atlas-provenance-nonclaims",
+  "schema_version": "probity-case/v1"
+}

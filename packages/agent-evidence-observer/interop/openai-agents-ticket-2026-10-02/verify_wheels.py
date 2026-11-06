@@ -18,7 +18,7 @@ def verify(wheels: Path, selection: Path) -> dict:
     actual = {}
     records = []
     paths = sorted(wheels.glob("*.whl"))
-    assert len(paths) == 2, "wheel population differs"
+    assert len(paths) == 1, "wheel population differs"
     for path in paths:
         with zipfile.ZipFile(path) as archive:
             names = archive.namelist()
@@ -37,9 +37,9 @@ def verify(wheels: Path, selection: Path) -> dict:
                 if line.startswith(b"Requires-Dist: openai")
             ]
             assert all(
-                line == b'Requires-Dist: openai-agents==0.23.1; extra == "producer"'
+                line == b'Requires-Dist: openai-agents==0.23.1; extra == "plugin"'
                 for line in sdk_lines
-            ), "reader default dependency includes producer SDK"
+            ), "reader default dependency includes plugin SDK"
             records.append(
                 {
                     "name": path.name,

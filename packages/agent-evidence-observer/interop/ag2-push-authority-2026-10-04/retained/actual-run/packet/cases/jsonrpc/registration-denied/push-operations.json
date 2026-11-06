@@ -1,0 +1,1 @@
+[{"nativeExceptionType":"InvalidParamsError","outcome":"InvalidParamsError","submitted":{"authentication":{"credentials":"public-fixture-bearer","scheme":"Bearer"},"id":null,"token":"public-fixture-token","url":"http://127.0.0.1/private"}}]

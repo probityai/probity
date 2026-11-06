@@ -1,0 +1,363 @@
+# agent-evidence-vocabulary: a closed term registry
+#
+# `canonical` is reserved here for one thing: a term's lifecycle status, reached
+# only by the promotion rule in meta. It is deliberately NOT used to mean
+# authoritative or single-source, which is what a registry title usually means by
+# it. This file said both until 2026-08-30, so a reader met "canonical term
+# registry" in the title and "no term in this file is canonical" forty lines
+# down. A registry whose stated purpose is one word for one meaning cannot spend
+# its own headline word three ways.
+#
+# This file is CC0-1.0 (public domain). Reuse, fork, or cite it freely; no
+# attribution required. The full grant is in `LICENSE-CC0`, which is the
+# unmodified Creative Commons legal text. The surrounding repository (docs,
+# scripts, CI) is Apache-2.0, in `LICENSE`.
+#
+# Both files are present on purpose. Until 2026-08-30 this header claimed CC0 and
+# pointed at a LICENSE carrying only Apache-2.0, so the permissive grant a reader
+# was invited to rely on was asserted here and granted nowhere.
+#
+# Precedent for this shape: IANA JWT claim registry, JSON-LD @context registries.
+#
+# version: "0.3.0"
+# status: "draft - open for review"
+
+meta:
+  version: "0.3.0"
+  status: "draft - open for review"
+  spec_anchor: "spec/predicates/adversarial-execution-evidence.md"
+  spec_anchor_repo: "https://github.com/probityai/agent-evidence-vectors"
+  purpose: >
+    A closed, versioned vocabulary for terms that describe adversarial-execution
+    evidence: what an executed artifact attempted, what a substrate beneath it
+    observed or refused, how directly and from what vantage a claim was obtained,
+    and how much of a declared population a claim actually covers. This registry
+    is the vocabulary for that axis: who observed an execution, and how directly.
+    It does not define identity, reputation, wallet, or reasoning-integrity
+    terms; those are out of scope by design (see out_of_scope below).
+  promotion_lifecycle: >
+    Every live term starts proposed. A term is promoted to canonical only once an
+    independently-maintained system that is not us emits it in a real, running
+    artifact and files a crosswalk declaring evidence: emitted with a resolvable
+    source_path. Our own issuer does not count toward promotion, so one
+    qualifying issuer is enough. A term with zero qualifying issuers after its
+    review_by date is demoted to reserved and removed at the following review,
+    unless a production issuer surfaces in the interim. A review-and-strip cycle
+    is the mechanism that keeps a registry from filling with terms nobody emits,
+    and it only works if the strip half actually happens, so the dates are in
+    the file where anyone can hold us to them. What this adds to the usual shape
+    is the evidence requirement: a listed issuer name is a claim, and a name in
+    a list does not demonstrate that a field reaches the wire. Promotion needs
+    an evidence: emitted declaration with a source_path a reviewer fetches. The
+    bar for running is deliberately narrow. A plan sits outside it, and so does
+    a mock.
+  status_at_this_version: >
+    No term in this file is canonical and no term lists an issuer. Both follow
+    from the rule directly above, and both were wrong at 0.1.0.
+    Six of the eight terms carried status canonical, and seven of the eight
+    listed one issuer, this project's own agent-evidence-vectors reference verifier.
+    field_evidence_partition listed none from the start, which is why the two
+    counts differ and why neither is simply eight. A listing means, in this
+    registry's own words, that a system emits the value in a real running
+    artifact AND that a crosswalk saying so has been filed. At 0.2.0 nobody had
+    filed one, us included. The first filing, aee-e2 on 2026-09-17, comes from an
+    independent verifier, which declares no term emitted and so lists no issuer;
+    its result row is what the recomputed state added in 0.3.0 is for.
+    The named system is also a verifier and a vector suite, so it reads these
+    fields and does not emit them from a live execution, and the paragraph above
+    puts a mock outside the bar. One condition of two, on the generous reading.
+    That is the defect this registry says it exists to fix, arrived at from our
+    own side, and it stood in three layers: the status, the issuer listing, and
+    the promotion each of those implied.
+    All three were corrected on 2026-08-30 and nothing else about any term
+    changed. Version moved to 0.1.1 in the same pass, because the 0.1.0 tag is
+    still reachable and still carries the old content; a citer pinning a version
+    has to get the corrected one.
+    The bar binds the maintainer's own systems identically. A registry that
+    grades other people's evidence is the first thing it has to grade.
+    Verify by reading every status and issuers_in_production key in this file,
+    and by listing crosswalk/.
+
+# evidence_dimensions: properties of HOW a claim was obtained. They describe the
+# obtaining. What is claimed lives in posture_and_coverage and outcome_lattice
+# below. A claim carrying either should declare these dimensions alongside it,
+# because a result with no vantage attached says nothing about who saw it.
+evidence_dimensions:
+
+  observation_vantage:
+    status: proposed
+    review_by: "2027-02-11"
+    values: [substrate, artifact]
+    definition: >
+      Whether every input a claim depends on was obtained at a vantage the
+      executed artifact could neither forge nor suppress (substrate, meaning a
+      network boundary, syscall supervision, a hypervisor's read of guest
+      state), or
+      whether the claim rests on artifacts the executed party could have
+      influenced (artifact). Composes by weakest input: a claim derived from a
+      mix of substrate and artifact observations inherits artifact.
+      A consumer with no policy-pinned substrate root MUST treat every
+      substrate-vantage row as unattested and MUST NOT infer the root from the
+      claim itself (no trust-on-first-use).
+    source_path: "predicate.attackResults[].basis"
+    issuers_in_production: []
+    why_this_registry: >
+      This is the field for a question people already ask and have nowhere to
+      answer. Read the free-text notes attached to crosswalks in registries of
+      this kind and the relation between observer and observed keeps surfacing
+      in prose, phrased differently every time, because there is no key for it.
+      Prose does not compose, and two systems describing the same relation in
+      their own words produce claims a consumer cannot compare.
+
+  observation_directness:
+    status: proposed
+    review_by: "2027-02-11"
+    values: [intercepted, reconstructed]
+    definition: >
+      Whether a claim rests on events captured as they occurred (intercepted),
+      or on state examined after the fact, a snapshot-to-snapshot diff
+      (reconstructed), which can miss a transient condition raised and undone
+      between the states compared. Orthogonal to observation_vantage; composes
+      by weakest input.
+    source_path: "predicate.attackResults[].method"
+    issuers_in_production: []
+    why_this_registry: >
+      A live capture and a weekly re-scan can produce claims that read
+      identically. One watched the execution happen; the other inferred it
+      afterwards from what was left behind. Without this field a consumer has no
+      way to tell which they are holding, and the two carry very different
+      weight when the executed party had an interest in the answer.
+
+  witness_scope:
+    status: proposed
+    review_by: "2027-02-11"
+    values: [SELF, PEER, EXTERNAL]
+    definition: >
+      Who the witness is relative to the party whose execution is described:
+      the observed party itself (SELF), another participant in the same
+      interaction (PEER), or a party outside it that the observed party cannot
+      reach (EXTERNAL). Orthogonal to observation_vantage, which says what was
+      observed, and to observation_directness, which says how; this says whose
+      account a consumer is reading. Values are recorded in the casing the wire
+      carries, upper case. A consumer matches the emitted string, not a
+      normalised form.
+    source_path: "vectors[].witnessScope"
+    issuers_in_production: []
+    why_this_registry: >
+      This term was missing while a corpus of ours already emitted it, which is
+      the one failure a registry exists to prevent. Measured 2026-09-22 across
+      vectors-acs-core: 32 vectors carry witnessScope, nineteen SELF, twelve
+      PEER and one EXTERNAL, and nothing in this file defined any of the three,
+      so a consumer holding one of those vectors could not resolve its value
+      against anything. A counterparty found it by checking our own citation of
+      this registry against the registry, on
+      GenAI-Security-Project/agent-control-standard#18, and he was right. The
+      axis it names is the one the whole thesis turns on: a record written by
+      the party being described carries different weight from one written by a
+      party that party cannot reach, and a consumer cannot apply that judgement
+      unless the distinction is on the wire and defined somewhere.
+      issuers_in_production stays empty deliberately. Our own corpus emits this
+      field, and by the promotion rule in meta our own issuer does not count, so
+      the term is proposed until an independently-maintained system files a
+      crosswalk declaring it emitted with a resolvable source path.
+
+  field_evidence_partition:
+    status: proposed
+    review_by: "2027-02-11"
+    values: [substrate_covered, producer_asserted]
+    definition: >
+      A per-artifact declaration of which identity's signature backs which
+      field within a mixed claim: which values are covered by an observation
+      the observed party could not have produced, and which are backed only by
+      the enclosing envelope and are therefore the producer's own assertion.
+      Most execution-evidence artifacts mix observed and self-declared fields
+      under one signature with no way to tell which is which from the wire
+      alone; this term names the split explicitly.
+    issuers_in_production: []
+    promotion_trigger: >
+      An independent implementation that is not us, declaring this field
+      per-artifact (not merely in prose) and filing a crosswalk with
+      evidence: emitted.
+
+  issuance_time_basis:
+    status: proposed
+    review_by: "2027-02-11"
+    values: [beacon_anchored, asserted]
+    definition: >
+      Whether a record's earliest-possible signing time is PROVEN, meaning the
+      signed pre-image folds in a publicly datable value that was unpredictable
+      before its round (e.g. a drand round output, or an RFC 9334 Section 10.3
+      epoch identifier), so the signature cannot predate its round, or merely
+      ASSERTED by the issuer with no such binding. Deliberately one-sided: a
+      proven floor and an asserted ceiling, never claimed as a two-sided proof
+      of freshness.
+    source_path: "predicate.observationRecords[].payload (arming pre-image)"
+    issuers_in_production: []
+    promotion_trigger: "An independent implementation that is not us, with a real beacon binding."
+
+# posture_and_coverage: what an execution environment was actually in, and
+# how much of a declared population a claim actually assessed.
+posture_and_coverage:
+
+  containment_posture:
+    status: proposed
+    review_by: "2027-02-11"
+    values:
+      - no_network
+      - allowlist
+      - sinkhole
+      - unsafe_bypass_egress
+    definition: >
+      The network-egress posture of the execution environment a governed
+      artifact actually ran inside. Digest-committed and substrate-authoritative,
+      never runner-asserted. Closed and fail-closed: an absent,
+      non-string, or unregistered value makes the enclosing statement
+      malformed, never defaulting to a permissive reading.
+    source_path: "predicate.observationEnvironment.networkPosture.posture"
+    issuers_in_production: []
+    why_this_registry: >
+      Most evidence about software describes an artifact. This term describes
+      the environment the artifact was actually running in, which is a different
+      claim and a harder one, because it needs a value the running code could
+      not have chosen for itself. So the posture is committed by digest, and it
+      is read from the substrate, never from the process being observed. A
+      posture the subject could set for itself is decoration.
+
+  coverage_denominator:
+    status: proposed
+    review_by: "2027-02-11"
+    values: null
+    definition: >
+      A digest-committed partition of the population a claim is drawn from
+      into three pairwise-disjoint sets (assessed, out-of-scope-with-a-reason,
+      and routed-elsewhere) whose union MUST equal the keys of a
+      digest-committed manifest the producer does not control. Without this, a
+      claim of "found nothing" and a claim of "looked at nothing" are
+      indistinguishable on the wire.
+    source_path: "predicate.coverage.{assessedClasses,outOfScope,routedElsewhere}"
+    issuers_in_production: []
+    why_this_registry: >
+      A producer that commits to its denominator can be caught understating it
+      later. That is the point, and it is why the field is here and not in a
+      methodology note. The usual substitute is a rule about withholding a
+      result when the sample is too small, which decides whether to publish and
+      says nothing about what the population was.
+
+  does_not_assert:
+    status: proposed
+    review_by: "2027-02-11"
+    values: null
+    definition: >
+      A machine-readable list of short strings, carried inside the signed
+      statement itself, stating what this evidence explicitly cannot claim.
+      One agreed spelling per claim, no accepted alias, never buried in
+      free-text documentation where a consumer has to go looking for it.
+    source_path: "predicate.doesNotAssert"
+    issuers_in_production: []
+    why_this_registry: >
+      Comparable registries carry this concept, when they carry it at all, as
+      file-level prose (a repository-wide "out of scope" list), not as a
+      per-artifact field. A file-level list cannot say what one claim withholds,
+      which is the whole question anyone relying on that claim is asking.
+
+# outcome_lattice: the recomputable verdict a consumer derives, never a
+# policy threshold and not producer-asserted.
+outcome_lattice:
+
+  result:
+    status: proposed
+    review_by: "2027-02-11"
+    values: [fail, degraded, pass_indirect, pass]
+    definition: >
+      A total, deterministic, severity-independent minimum over the declared
+      conditions, in the fixed order fail < degraded < pass_indirect < pass,
+      recomputable by any consumer from carried bytes alone, against a
+      normative recompute table published with the spec. Not a policy verdict:
+      it carries no threshold and no severity input, and a consumer applying
+      its own policy threshold does so on top of this value, never inside it.
+    source_path: "predicate.result"
+    issuers_in_production: []
+
+# system_attributes: four things a FILER declares about their own system, all
+# four together. This block carries no status and no review-by date, and it is
+# not a term: nothing here is ever promoted or demoted, so the lifecycle above
+# does not reach it.
+#
+# What it gates is somebody else's promotion. A crosswalk supporting a term's
+# move to canonical must declare all four of these, alongside at least one
+# evidence-dimension term at evidence: emitted. Any one of them alone leaves the
+# signed pre-image shape undifferentiated, which is why they travel as a set.
+system_attributes:
+  values:
+    signature_capability:
+      - classical
+      - post_quantum_hybrid
+      - other
+    canonicalization_profile: [jcs_rfc_8785, other]
+    hash_family: [sha_256, other]
+    domain_separation_profile: [declared, undeclared]
+  definition: >
+    Four attributes every crosswalk-in system should declare together.
+    domain_separation_profile is the one most easily forgotten, and the one
+    whose absence is silent:
+    whether signed pre-images across an implementation's different artifact
+    types are tagged with distinct, per-format identifiers (so one signing key
+    cannot be confused across formats), or whether all formats share one
+    undifferentiated pre-image shape. Declaring canonicalization_profile alone
+    is necessary but not sufficient for byte-equal signatures across two
+    implementations. Two systems can both declare the same canonicalization
+    profile and still fail to produce byte-identical output, because the profile
+    fixes the algorithm and not the set of inputs it is applied to, so the
+    interoperable input set has to be named separately.
+
+# `crosswalk_match_types` and `crosswalk_evidence_states`: the vocabulary a
+# THIRD PARTY uses when filing a crosswalk against this registry.
+crosswalk_match_types:
+  exact: "Same definition, same subject, same values."
+  structural: "Same mechanism and same question answered, different concrete shape (e.g. a set of digests vs. one version hash)."
+  partial: "Real overlap, with at least one named, material divergence recorded in the crosswalk."
+  non_equivalent_similar_label: "Same or similar term name, materially different definition, a false friend. Declared explicitly so neither side is misread as claiming the other's ground."
+  no_mapping: "Honest gap. The filing system does not do this; the crosswalk says so and stops."
+
+# crosswalk_evidence_states carries exactly four members, and every key below is
+# one of them. The axis exists so a filer's declaration is not read on trust: the
+# promotion trigger is keyed to evidence: emitted with a resolvable source_path,
+# checked by running validate_crosswalks.py against the cited URL.
+#
+# recomputed was added in 0.3.0 for the filer that only a verifier can be. A
+# second implementation that reads other people's signed statements emits no
+# field of its own, so emitted is closed to it, and before 0.3.0 its strongest
+# honest filing was inferred -- the same state a filer computing a value once, on
+# nothing anybody can re-run, would declare. Agreement with the reference on
+# every accepted member of a pinned corpus is a stronger fact than that and it
+# is checkable, so it gets its own state. It still promotes nothing: two
+# verifiers agreeing shows the recompute rule reproduces, and says nothing about
+# whether any issuer puts the value on the wire.
+#
+# This prose sits in a comment on purpose. It was a `definition:` key here until
+# 2026-08-30, which made a fourth sibling that any consumer enumerating this
+# mapping would read as a registered state. out_of_scope below says a verifier
+# MUST reject an unregistered enum value, so the registry was publishing one.
+crosswalk_evidence_states:
+  emitted: "The declared value is a field in a real, signed statement a third party can fetch and read without computing or inferring anything. The ONLY state that counts toward promotion."
+  inferred: "The declared value is computed by the filer from other fields, and is distinct from a value the artifact carries directly."
+  asserted: "The declared value is claimed in prose (a README, a spec) with no machine-checkable artifact behind it."
+  recomputed: "The filer's own independent verifier recomputes the value from statements somebody else signed, and its value equals the reference verdict on EVERY accepted member of one pinned corpus revision. The claim names that revision in corpus_digest and states the count as accepted_agreed of accepted_total, and the two numbers must be equal; agreement on fewer than all is inferred. It records that the term's recompute rule reproduces across independent implementations. It counts toward no promotion, because two verifiers agreeing is not an issuer emitting the value."
+
+# out_of_scope: explicit non-goals, stated so a filer knows this registry
+# does not contest ground it does not claim.
+out_of_scope:
+  - "Agent identity, reputation, or wallet-bound scoring of any kind. This registry describes claims about an execution, never a scored assessment of an actor over time."
+  - "Renaming or reinterpreting a live signed envelope's own type/format field. A verifier MUST reject an unregistered enum value for a known field; the wire bytes of that field are never renamed by this registry."
+  - "Policy thresholds. This registry's outcome_lattice term is a recomputable minimum, never a pass/fail threshold a consumer's own policy applies on top."
+
+# reserved: terms that are not live, kept here so a decision is not silently
+# re-litigated. Two routes in, and they are different states worth telling apart
+# when reading a row: a term considered and explicitly declined, which was never
+# proposed here, and a term that WAS proposed and reached its review-by date with
+# no production issuer. The second was not declined by anyone; it simply found no
+# emitter. Each row says which.
+#
+# Removal is the separate later step named in promotion_lifecycle. A removed term
+# leaves the file entirely, so nothing below ever records one.
+reserved: []

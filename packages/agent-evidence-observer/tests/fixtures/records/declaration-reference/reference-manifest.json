@@ -1,0 +1,53 @@
+{
+ "@context": "https://manifest.agentrust-io.com/v0.2/context.json",
+ "@type": "AgentManifest",
+ "agent_id": "spiffe://lab.example/agent",
+ "agent_instance_id": "fixture-instance-1",
+ "artifacts": {
+  "model_identity": {
+   "bound_at": "2026-10-01T00:00:00Z",
+   "deployment_type": "local",
+   "model_attestation_type": "hash-bound",
+   "model_hash": "sha256:10badeb6ee14a7cbfea49f2fedbd09e0090c20abe845b64bc5a38cc408a56d9b",
+   "model_id": "byte-fixture",
+   "provider": "local-fixture",
+   "version": "fixture-v1"
+  },
+  "policy_bundle": {
+   "bound_at": "2026-10-01T00:00:00Z",
+   "enforcement_mode": "enforce",
+   "hash": "sha256:206631dc1f77e2155fb27422b00e087ee7d57c4297aea78c2b12b8ebbb2a7144",
+   "policy_language": "cedar",
+   "version": "1.0.0"
+  },
+  "system_prompt": {
+   "bound_at": "2026-10-01T00:00:00Z",
+   "classification": "public",
+   "hash": "sha256:7db448d694af855ff00a83ee40bf4bab74ea63734287bdf7bd86e63832bd6247",
+   "hash_algorithm": "SHA-256",
+   "version": "1.0.0"
+  },
+  "tool_manifest": {
+   "allow_dynamic_registration": false,
+   "bound_at": "2026-10-01T00:00:00Z",
+   "catalog_hash": "sha256:7ff19ed04cf206aa87d69faafd48163c4ace2855fa09ddb8d3c3f35e1ca4c8a3",
+   "rug_pull_policy": "deny-and-alert",
+   "tools": [
+    {
+     "description_hash": "sha256:2a953fc4c61b22a86dced2ac33e1082974446bf36191c79fcc38895370690ee0",
+     "endpoint_id": "spiffe://lab.example/broker",
+     "schema_hash": "sha256:7b8783a9d17ea69ca19151353b5a8d476c593b7c117983933c42092c894911c6",
+     "tool_id": "org.probity.files.replace",
+     "tool_name": "replace",
+     "version": "1.0.0"
+    }
+   ]
+  }
+ },
+ "crypto_profile": "standard",
+ "expires_at": "2026-10-02T00:00:00Z",
+ "issued_at": "2026-10-01T00:00:00Z",
+ "issuer": "spiffe://lab.example/fixture-issuer",
+ "manifest_id": "019236ab-cdef-7000-8000-000000000001",
+ "version": "0.2"
+}

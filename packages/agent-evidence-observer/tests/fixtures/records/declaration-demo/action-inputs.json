@@ -1,0 +1,181 @@
+{
+  "grant": {
+    "expiresAt": "2026-11-03T16:04:55Z",
+    "issuedAt": "2026-11-03T15:59:55Z",
+    "issuerKey": "2efea1d8be170a640ec5caca89973d5e2ecccb1c2ffc36bde8f384849bf500f9",
+    "profile": "probity-protected-action-reference-v0",
+    "request": {
+      "attempt_id": "attempt-1",
+      "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
+      "principal_id": "spiffe://lab.example/agent",
+      "request_id": "request-1",
+      "run_id": "declaration-run-1",
+      "target_path": "/work/report.txt",
+      "tenant_id": "tenant-a",
+      "tool_id": "org.probity.files.replace"
+    },
+    "signature": "1nUrwMfSdghrgEYFDJvOmEAkgYuInvckyfjRZC7fYmtziz9jKcASI2ZHP11Zfj0PCFowPowYI7HioFkIWtY6Cg=="
+  },
+  "grantPolicy": {
+    "issuer_key": "2efea1d8be170a640ec5caca89973d5e2ecccb1c2ffc36bde8f384849bf500f9",
+    "max_validity_seconds": 300
+  },
+  "outsideCatalogGrant": {
+    "expiresAt": "2026-11-03T16:04:55Z",
+    "issuedAt": "2026-11-03T15:59:55Z",
+    "issuerKey": "2efea1d8be170a640ec5caca89973d5e2ecccb1c2ffc36bde8f384849bf500f9",
+    "profile": "probity-protected-action-reference-v0",
+    "request": {
+      "attempt_id": "attempt-1",
+      "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
+      "principal_id": "spiffe://lab.example/agent",
+      "request_id": "request-1",
+      "run_id": "declaration-run-1",
+      "target_path": "/work/report.txt",
+      "tenant_id": "tenant-a",
+      "tool_id": "org.other.files.replace"
+    },
+    "signature": "fiV6e0rvCFC3a9qEio6xLSn1KS7UfqeqYAy5xp85d+BxfBavFCz60XYaHs8oB3TaswAIbDy/fQHjUR4gx7LXAQ=="
+  },
+  "outsideCatalogRequest": {
+    "attempt_id": "attempt-1",
+    "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
+    "principal_id": "spiffe://lab.example/agent",
+    "request_id": "request-1",
+    "run_id": "declaration-run-1",
+    "target_path": "/work/report.txt",
+    "tenant_id": "tenant-a",
+    "tool_id": "org.other.files.replace"
+  },
+  "packet": {
+    "authority": {
+      "intervalId": "declaration-run-1",
+      "operation": "write-file",
+      "scope": "/work"
+    },
+    "authorizationBinding": {
+      "keyid": "f6ff269ca4ff9aa869b8224d93d27be930f1656a313f2029f895a78e6660be69",
+      "payload": {
+        "authorizedAt": "2026-11-03T15:59:55Z",
+        "claimDigest": "d5f38049ac8d239d33d4bf4ea331549796e42827a609e736556cc5e437f72c00",
+        "grantDigest": "5d2e7e5fc5491b79940663d89fdab5a61b44d3b7141e35d6d6ea320375b6ee23",
+        "intervalId": "declaration-run-1",
+        "profile": "probity-protected-action-reference-v0",
+        "request": {
+          "attempt_id": "attempt-1",
+          "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
+          "principal_id": "spiffe://lab.example/agent",
+          "request_id": "request-1",
+          "run_id": "declaration-run-1",
+          "target_path": "/work/report.txt",
+          "tenant_id": "tenant-a",
+          "tool_id": "org.probity.files.replace"
+        }
+      },
+      "signature": "PAERQamSL4FdbOHFyjTFvTI+RwpnQGGeNGqkrKQ49gQ7tDn7zhogSICjGqlMN3QO4LSOQTn9Noy/wtCTSQTFBQ=="
+    },
+    "checkpoint": {
+      "count": 4,
+      "head": "50b089bb844912b1869f604fb78b454812ae9bd244b1a10373647ecc23737382",
+      "keyid": "57c9ef98d4c8458656b0adeb55386b4dd1ff075b38c8db3e0b9b57700320a9da",
+      "ledgerReceipt": {
+        "authorityDigest": "d5cc29ead54bb8cc17be4bb3be8d849903c66e70232cce41e6698a1767203ee5",
+        "checkpoint": {
+          "count": 4,
+          "head": "50b089bb844912b1869f604fb78b454812ae9bd244b1a10373647ecc23737382",
+          "keyid": "57c9ef98d4c8458656b0adeb55386b4dd1ff075b38c8db3e0b9b57700320a9da",
+          "signature": "wL4hPDknGsJOjnIldkepiO8kypH8fZnnH++fq5Az7gYxzG6BfqbVTL3LsqIITfJ+eFfQzxp2QzvfrUTy40ogDQ=="
+        },
+        "hash": "f48be20bee67a44bbd3185e8aa6b64e5a2e845d5cd7e53cfbda5c0236ea065ca",
+        "intervalId": "declaration-run-1",
+        "keyid": "57c9ef98d4c8458656b0adeb55386b4dd1ff075b38c8db3e0b9b57700320a9da",
+        "observerKey": "f6ff269ca4ff9aa869b8224d93d27be930f1656a313f2029f895a78e6660be69",
+        "phase": "terminal",
+        "previous": "3b951e20c4228e8f33627de04d35b70f99789b6a61dd2fa2f46776984cdf2782",
+        "sequence": 2,
+        "signature": "dbZ2o0+r/ei0hJrVc/3dekhpTExNOGa+PKmc8P8ApAZ4UrDQKhAaRbsW0+jUaBt24MDqubUo4ivxW19s21VlAg=="
+      },
+      "signature": "wL4hPDknGsJOjnIldkepiO8kypH8fZnnH++fq5Az7gYxzG6BfqbVTL3LsqIITfJ+eFfQzxp2QzvfrUTy40ogDQ=="
+    },
+    "claim": {
+      "afterRoot": "66e5ab1a827235e13db91cac56204b4b8e796ca8f2f6fc8ea132d2f578889442",
+      "authorityDigest": "d5cc29ead54bb8cc17be4bb3be8d849903c66e70232cce41e6698a1767203ee5",
+      "beforeRoot": "d7e8d63802f428fd2b044346719085a760c415fbac40daecafa7c307f9f2564f",
+      "coverage": {
+        "knownGaps": [],
+        "noDetectedGap": true,
+        "observedPopulation": "broker-write-calls-with-valid-request-id",
+        "scope": "/work",
+        "unmediatedEffects": "not-established"
+      },
+      "doesNotAssert": [
+        "reads",
+        "transient-writes",
+        "file-modes",
+        "network-effects",
+        "host-operator-independence"
+      ],
+      "format": "probity-observer-prototype-v0",
+      "intervalId": "declaration-run-1",
+      "sealedAt": "2026-11-03T15:59:55Z",
+      "witnessScope": "PEER",
+      "writes": [
+        {
+          "afterRoot": "66e5ab1a827235e13db91cac56204b4b8e796ca8f2f6fc8ea132d2f578889442",
+          "beforeRoot": "d7e8d63802f428fd2b044346719085a760c415fbac40daecafa7c307f9f2564f",
+          "contentDigest": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
+          "kind": "write",
+          "path": "/work/report.txt",
+          "requestId": "request-1"
+        }
+      ]
+    },
+    "claimKeyid": "f6ff269ca4ff9aa869b8224d93d27be930f1656a313f2029f895a78e6660be69",
+    "claimSignature": "Ccu2gdY8/lErLiECsKLFMxWvf1VyzHWKDFRx0TCqOK3i+tbdG4eZ0X+bgP/7GdEG7+ghSKqVdKWcgKh81QmiBg==",
+    "commitment": {
+      "committedAt": "2026-11-03T15:59:55Z",
+      "keyid": "f6ff269ca4ff9aa869b8224d93d27be930f1656a313f2029f895a78e6660be69",
+      "preimage": {
+        "authorityDigest": "d5cc29ead54bb8cc17be4bb3be8d849903c66e70232cce41e6698a1767203ee5",
+        "beforeRoot": "d7e8d63802f428fd2b044346719085a760c415fbac40daecafa7c307f9f2564f",
+        "intervalId": "declaration-run-1",
+        "witnessNonce": "2c64d4ca6d66643995d3c99215b1f83b818d5d6392d43c947f4d3fe7324240e3"
+      },
+      "signature": "R2q/VZkPUsElRbxEGe0CBBfb7qNhzUCwvgl6L0wYdY603ITpxdaECkJB3xAAi2hR/vBKhcRetMhmkdhzWnAPAg=="
+    },
+    "startCheckpoint": {
+      "count": 1,
+      "head": "995dfe0b403967b76ad3b5ca165a611052732a4d251dd76ba81450634b21b890",
+      "keyid": "57c9ef98d4c8458656b0adeb55386b4dd1ff075b38c8db3e0b9b57700320a9da",
+      "ledgerReceipt": {
+        "authorityDigest": "d5cc29ead54bb8cc17be4bb3be8d849903c66e70232cce41e6698a1767203ee5",
+        "checkpoint": {
+          "count": 1,
+          "head": "995dfe0b403967b76ad3b5ca165a611052732a4d251dd76ba81450634b21b890",
+          "keyid": "57c9ef98d4c8458656b0adeb55386b4dd1ff075b38c8db3e0b9b57700320a9da",
+          "signature": "tIKalc5XTcQ9jw9O/5uYAaRIgYOye2nx3Hk9Mzt1AYfF2OVjTEvRMLoQpK29aUA8S+lQkSBOR8vUDIU8U8pUBw=="
+        },
+        "hash": "3b951e20c4228e8f33627de04d35b70f99789b6a61dd2fa2f46776984cdf2782",
+        "intervalId": "declaration-run-1",
+        "keyid": "57c9ef98d4c8458656b0adeb55386b4dd1ff075b38c8db3e0b9b57700320a9da",
+        "observerKey": "f6ff269ca4ff9aa869b8224d93d27be930f1656a313f2029f895a78e6660be69",
+        "phase": "begin",
+        "previous": "0000000000000000000000000000000000000000000000000000000000000000",
+        "sequence": 1,
+        "signature": "CjuRLJynkRzXPDcWoo39Unm3UqMCAm7/9sX2D0IK8fYcI6zenX1qjA1S7jh3e/WtmT9uTc5js0tshRcHQw+ICA=="
+      },
+      "signature": "tIKalc5XTcQ9jw9O/5uYAaRIgYOye2nx3Hk9Mzt1AYfF2OVjTEvRMLoQpK29aUA8S+lQkSBOR8vUDIU8U8pUBw=="
+    }
+  },
+  "referenceTime": "2026-11-03T15:59:55+00:00",
+  "request": {
+    "attempt_id": "attempt-1",
+    "content_sha256": "4c43604279099307a9e6e4f4e2fa4103c50d03e880af1c5f28f10cc270868d2f",
+    "principal_id": "spiffe://lab.example/agent",
+    "request_id": "request-1",
+    "run_id": "declaration-run-1",
+    "target_path": "/work/report.txt",
+    "tenant_id": "tenant-a",
+    "tool_id": "org.probity.files.replace"
+  }
+}

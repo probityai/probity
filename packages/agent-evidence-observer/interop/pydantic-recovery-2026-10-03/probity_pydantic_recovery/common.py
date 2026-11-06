@@ -126,3 +126,31 @@ def child_environment() -> dict[str, str]:
     """Supply only explicit local process settings, with tracing disabled."""
     selected = {key: os.environ[key] for key in ("PATH", "VIRTUAL_ENV", "PYTHONPATH", "LANG", "LC_ALL", "SYSTEMROOT") if key in os.environ}
     return {**selected, "OTEL_SDK_DISABLED": "true", "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1"}
+
+
+def _unique_names(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Refuse a repeated member name in the withheld-source record."""
+    names = [name for name, _ in pairs]
+    require(len(names) == len(set(names)), "withheld-fields")
+    return dict(pairs)
+
+
+def withheld_sources(path: Path | None) -> dict[str, str]:
+    """Load the caller-selected record of source files kept out of a retained packet.
+
+    The mapping names each packet-relative member and the SHA-256 the packet's
+    manifest pins. ``None`` selects no withheld member.
+    """
+    if path is None:
+        return {}
+    try:
+        value = json.loads(read(path), object_pairs_hook=_unique_names)
+    except ValueError as error:
+        raise VerificationError("withheld-fields") from error
+    require(isinstance(value, dict) and all(isinstance(name, str) and isinstance(digest, str) and len(digest) == 64 for name, digest in value.items()), "withheld-fields")
+    return value
+
+
+def absent_members(manifest: dict[str, str], actual: set[str], withheld: dict[str, str]) -> set[str]:
+    """Return manifest members missing from disk that the caller withheld by exact digest."""
+    return {name for name, digest in manifest.items() if name not in actual and withheld.get(name) == digest}

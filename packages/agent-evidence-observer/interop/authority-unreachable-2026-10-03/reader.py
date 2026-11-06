@@ -9,7 +9,19 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from authority_profile import (
+from probity_observer.crypto import VerificationError, digest, strict_loads
+from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.ticket_state import (
+    DOMAIN,
+    STATE_FIELDS,
+    state_schema,
+    verify_ticket_result,
+)
+from probity_observer.ticket_state import (
+    checked_record as checked_native_receipt,
+)
+
+from authority_checks import (
     AUTHORITY_DOMAIN,
     CASE_IDS,
     CONTRACT_ID,
@@ -23,17 +35,6 @@ from authority_profile import (
     checked_record,
     reference_time,
     refuse,
-)
-from probity_observer.crypto import VerificationError, digest, strict_loads
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
-from probity_observer.ticket_state import (
-    DOMAIN,
-    STATE_FIELDS,
-    state_schema,
-    verify_ticket_result,
-)
-from probity_observer.ticket_state import (
-    checked_record as checked_native_receipt,
 )
 
 

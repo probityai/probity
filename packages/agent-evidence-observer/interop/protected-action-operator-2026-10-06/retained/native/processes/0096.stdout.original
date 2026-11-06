@@ -1,0 +1,1 @@
+{"acknowledged":true,"pid":6927,"protocolError":null,"replyHex":"7b226572726f72223a22495043206672616d6520697320696e636f6d706c657465222c226f6b223a66616c73657d0a","response":{"error":"IPC frame is incomplete","ok":false},"role":"workload","transportError":null,"uid":65534}

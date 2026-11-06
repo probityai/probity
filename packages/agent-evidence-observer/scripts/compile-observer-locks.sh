@@ -11,7 +11,6 @@ compile() {
 compile interop/target-recovery-2026-10-02/requirements.in interop/target-recovery-2026-10-02/requirements.lock
 cp interop/target-recovery-2026-10-02/requirements.lock interop/joint-recovery-2026-10-02/requirements-reader.lock
 compile interop/pydantic-ai-native-2026-10-02/requirements.in interop/pydantic-ai-native-2026-10-02/requirements.lock
-cp interop/pydantic-ai-native-2026-10-02/requirements.lock interop/pydantic-recovery-2026-10-03/requirements.lock
 compile interop/pydantic-ai-native-2026-10-02/requirements-reader.in interop/pydantic-ai-native-2026-10-02/requirements-reader.lock
 cp interop/pydantic-ai-native-2026-10-02/requirements-reader.lock interop/pydantic-recovery-2026-10-03/requirements-reader.lock
 compile interop/haystack-native-2026-10-03/requirements.in interop/haystack-native-2026-10-03/requirements.lock

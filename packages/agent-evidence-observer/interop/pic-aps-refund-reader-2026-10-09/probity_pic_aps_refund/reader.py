@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from probity_aps_refund.reader import read as read_aps_capture
-from probity_aps_refund.service import parse_native_clock, verify_aps
+from probity_aps_refund.verification import parse_native_clock, verify_aps
 from probity_observer.crypto import VerificationError, strict_loads
 
 MAX_PROPOSAL_BYTES = 64_000
