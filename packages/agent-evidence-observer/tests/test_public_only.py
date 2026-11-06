@@ -165,9 +165,25 @@ def test_retained_incomplete_and_ledger_records_verify(tmp_path: Path) -> None:
     assert int(result.stdout.split()[-1]) >= 12, result.stdout
 
 
+# A driver that needs a runtime outside the core package (a Node verifier and the
+# profile's own reader package) runs in its profile workflow instead of here.
+PROFILE_RUNTIME_DRIVERS = {
+    "aps-durable-refund-2026-10-05": "package-observer-aps-durable-refund.yml",
+}
+
+
 def test_each_interop_retained_driver_passes() -> None:
-    drivers = sorted(PACKAGE.glob("interop/*/verify_retained.py"))
+    drivers = sorted(path for path in PACKAGE.glob("interop/*/verify_retained.py")
+                     if path.parent.name not in PROFILE_RUNTIME_DRIVERS)
     for driver in drivers:
         result = child("path", str(driver))
         assert result.returncode == 0, f"{driver}: {result.stdout}{result.stderr}"
     print("interop retained drivers checked:", len(drivers))
+
+
+@pytest.mark.parametrize("profile", sorted(PROFILE_RUNTIME_DRIVERS))
+def test_each_profile_runtime_driver_runs_in_its_workflow(profile: str) -> None:
+    assert (PACKAGE / "interop" / profile / "verify_retained.py").is_file()
+    workflow = (PACKAGE.parents[1] / ".github/workflows" / PROFILE_RUNTIME_DRIVERS[profile]).read_text()
+    step = workflow.split(f"working-directory: packages/agent-evidence-observer/interop/{profile}\n")
+    assert any("verify_retained.py" in part.split("- name:")[0] for part in step[1:]), profile
