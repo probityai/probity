@@ -219,7 +219,7 @@ def test_source_bytes_and_symlink_refused(
 def test_withheld_sources_are_exactly_the_absent_files(
     packet: Path, withheld: dict[str, str]
 ) -> None:
-    assert len(withheld) == 14
+    assert len(withheld) == 15
     assert all(not (packet / name).exists() for name in withheld)
 
 
