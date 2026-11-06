@@ -7,9 +7,14 @@ import shutil
 from pathlib import Path
 
 import pytest
-
 from probity_observer.cli import main
-from probity_observer.crypto import SigningKey, VerificationError, canonical, digest, strict_loads
+from probity_observer.crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    digest,
+    strict_loads,
+)
 from probity_observer.records import tree_root
 
 PACKET = Path(__file__).resolve().parents[1] / "scripts" / "fixtures" / "broker-packet"
