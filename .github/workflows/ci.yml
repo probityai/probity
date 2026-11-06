@@ -24,6 +24,7 @@ jobs:
       members: ${{ steps.map.outputs.members }}
       rust: ${{ steps.map.outputs.rust }}
       runner: ${{ steps.map.outputs.runner }}
+      keycloak: ${{ steps.map.outputs.keycloak }}
       plugins: ${{ steps.map.outputs.plugins }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,6 +43,8 @@ jobs:
             if git diff --name-only "$BASE...HEAD" | grep -qE '^(crates/|Cargo\.(toml|lock)$|\.github/)'; then rust=true; fi
             runner=false
             if git diff --name-only "$BASE...HEAD" | grep -qE '^(examples/checkout-runner/|\.github/workflows/ci\.yml$)'; then runner=true; fi
+            keycloak=false
+            if git diff --name-only "$BASE...HEAD" | grep -qE '^(examples/keycloak-quickstart/|\.github/workflows/ci\.yml$)'; then keycloak=true; fi
             # The plugins are a harness, not a workspace member: their files decide alone.
             plugins=false
             if git diff --name-only "$BASE...HEAD" | grep -qE '^(harnesses/agent-evidence-plugins/|\.claude-plugin/|\.github/workflows/(ci|package-agent-evidence-plugins)\.yml$)'; then plugins=true; fi
@@ -50,12 +53,14 @@ jobs:
             members="$(python3 scripts/workspace.py changes HEAD HEAD | python3 -c 'import json,sys; print(json.dumps({k: True for k in json.load(sys.stdin)}))')"
             rust=true
             runner=true
+            keycloak=true
             plugins=true
           fi
           {
             echo "members=$members"
             echo "rust=$rust"
             echo "runner=$runner"
+            echo "keycloak=$keycloak"
             echo "plugins=$plugins"
           } >> "$GITHUB_OUTPUT"
           echo "members: $members, rust: $rust, runner: $runner"
@@ -131,6 +136,23 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - run: uv sync --frozen
       - run: uv run --frozen python -m pytest -q
+
+  keycloak-quickstart:
+    needs: changes
+    if: needs.changes.outputs.keycloak == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: examples/keycloak-quickstart
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv sync --frozen
+      - run: uv run --frozen python -m pytest -q
+      - name: run the quickstart end to end against a Keycloak container
+        run: bash run.sh
 
   rust:
     needs: changes
@@ -214,7 +236,7 @@ jobs:
 
   ci-ok:
     if: always()
-    needs: [changes, lint, probity-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution, package-agent-evidence-plugins, package-evaluator-replay-kit, evaluator-replay-kit-distribution, package-probity-effects, probity-effects-distribution]
+    needs: [changes, lint, probity-verify, probityai, probityai-distribution, checkout-runner, keycloak-quickstart, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution, package-agent-evidence-plugins, package-evaluator-replay-kit, evaluator-replay-kit-distribution, package-probity-effects, probity-effects-distribution]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed
