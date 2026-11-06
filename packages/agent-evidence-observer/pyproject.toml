@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agent-evidence-observer"
 version = "0.2.0"
-description = "Record brokered agent writes and check selected native reports offline"
+description = "Check retained agent-evidence packets, histories and native reports offline"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -37,10 +37,6 @@ inspect = ["inspect-ai==0.3.287"]
 inspect-historical = ["inspect-ai==0.3.281"]
 witness = ["jcs-admit~=0.1.0"]
 cover = ["coverage>=7.10,<8"]
-done = [
-    "jcs-admit~=0.1.0",
-    "probity-verify>=0.3.0,<0.6",
-]
 
 [project.scripts]
 agent-evidence-observer = "probity_observer.cli:main"
@@ -48,24 +44,12 @@ agent-evidence-read-native = "probity_observer.native_reader:main"
 agent-evidence-read-atomic = "probity_observer.atomic_reader:main"
 agent-evidence-read-refund-handoff = "probity_observer.refund_handoff:main"
 agent-evidence-witness = "probity_observer.witness.cli:main"
-probity-done = "probity_observer.done.cli:main"
-
-[project.entry-points."probityai.cli_subcommands"]
-done = "probity_observer.done.cli:register"
 
 [project.entry-points.inspect_ai]
 agent_evidence_observer = "probity_observer.inspect_hook"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.setuptools.package-data]
-"probity_observer.done.basharena" = ["grader_bootstrap.txt", "basharena_driver.txt", "export_runtime.sh", "observer.Dockerfile", "observer_tools.txt"]
-
-[tool.coverage.paths]
-# The done tests' child processes run copies of the sealed pytest plugins; combine counts
-# those lines against the source files.
-pytest_plugins = ["src/probity_observer/done/pytest_plugins/", "*/probity-plugins/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

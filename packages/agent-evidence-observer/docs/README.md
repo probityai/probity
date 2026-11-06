@@ -19,7 +19,6 @@ These examples use controlled local effects and selected framework runs:
 | A server changed a tool after its grade. Does the saved definition still match? | [Tool grades and retained local effects](TOOL-MANIFEST-EFFECT.md) |
 | An evaluation failed. Did its tool still update the target? | [Inspect scores, authority, and effects](INSPECT-AUTHORITY-EFFECT.md) |
 | An evaluation log was restamped or regraded. Is it the same run? | [Seal an Inspect log](INSPECT-SEALED-MANIFEST.md) |
-| An agent says its tests pass. What did it run and change? | [Agent launcher](AGENT-LAUNCHER.md) |
 | Could the host rewrite its records, or show two readers different versions? | [Separately operated witness](WITNESS-SERVER.md) |
 
 A verified record answers a specific question under selected inputs. Read each
@@ -44,5 +43,3 @@ The [ADK full-suite source reference](reference/ADK-FULL-TOX-SOURCE.md) separate
 the recorded upstream correction from the native consumer's original SDK pin.
 
 For implementation contracts, see the [design and trust boundary](DESIGN.md).
-[Sealed pytest ids counted by the verifier](SEALED-PYTEST-REPLAY.md) gives the threat model of
-the `probity done` grader's pytest replay and what it does not cover.

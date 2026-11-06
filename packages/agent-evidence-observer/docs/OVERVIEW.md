@@ -42,7 +42,7 @@ conformance, hardware measurement or independent custody.
 
 The retained packets and boundary runs come from the operator's runtime and carry `witnessScope: PEER`: neither a second local key nor a launch test establishes an independently operated observer.
 
-Run the bounded native examples across all five tiers with `python examples/five_tier_demo.py ./five-tier-run`. The [native launch guide](FIVE-TIER-NATIVE-RUN.md) gives installation commands, retained launch/attempt scopes and failure controls.
+
 
 The [native Inspect authority/effect join](INSPECT-AUTHORITY-EFFECT.md) connects real ReAct tool calls to selected unsigned AAE decisions, signed local grants and actual HTTP ticket effects. Its offline reader keeps task scores, denial, pending effects and native errors separate across the full declared population.
 

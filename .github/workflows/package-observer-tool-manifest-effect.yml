@@ -48,6 +48,6 @@ jobs:
           uv pip install --python .venv/bin/python -e '.[test,witness]'
           uv pip check --python .venv/bin/python
           .venv/bin/python scripts/check-runtime-locks.py
-          .venv/bin/pytest -q --ignore=tests/done
+          .venv/bin/pytest -q
       - name: Read the retained contributor case
         run: .venv/bin/pytest -q tests/test_tool_manifest_effect.py
