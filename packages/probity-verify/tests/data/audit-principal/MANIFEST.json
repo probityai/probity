@@ -7,7 +7,7 @@
   },
   "payloadType": "application/vnd.in-toto+json",
   "predicateType": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/agent-audit-record",
-  "source": "probityai/agent-evidence-vectors pull request 458, corpora/vectors-agent-audit-record, rows PR1 to PR11 (a copy of the published files)",
+  "source": "probityai/agent-evidence-vectors commit bdf25549864e33bf33071678ce77315e109cad31 (pull request 458), corpora/vectors-agent-audit-record, rows PR1 to PR11 (a copy of the published files)",
   "suite": "agent-audit-record-conformance",
   "vectors": [
     {

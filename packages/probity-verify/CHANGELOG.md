@@ -12,6 +12,7 @@ check, or that reads a code from it it does not know, can turn red.
   does not name, so a code from a newer verifier is refused, never passed. The registry and one corpus vector per code
   are in agent-evidence-vectors, `docs/reference/verifier-contract.md`.
 
+- `audit_principal/v1`: the principal an audit record names (the user or service the agent acted for), checked offline against rows PR1 to PR11 of agent-evidence-vectors.
 - `agent-evidence-vocabulary` is now `>=0.8.0,<0.10`, so the verifier installs beside vocabulary 0.9.0 as well as
   0.8.x. No identifier the verifier reads moved, and the test suite passes against both.
 
