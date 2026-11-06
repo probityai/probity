@@ -2,8 +2,9 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/probityai/probity/ci.yml?style=flat-square&color=blue&label=CI)](https://github.com/probityai/probity/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/probityai/probity?style=flat-square&color=blue&label=license)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat-square&color=blue&label=stars)](https://github.com/probityai/probity/stargazers)
+[![Version](https://img.shields.io/pypi/v/probity-verify?style=flat-square&color=blue&label=probity-verify)](https://pypi.org/project/probity-verify/)
 [![Downloads](https://img.shields.io/pepy/dt/probity-verify?style=flat-square&color=blue&label=downloads)](https://pepy.tech/projects/probity-verify)
+[![Stars](https://img.shields.io/github/stars/probityai/probity?style=flat-square&color=blue&label=stars)](https://github.com/probityai/probity/stargazers)
 
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier, an observer that records agent runs, and the tools around them. The conformance corpus, vocabulary and admission rules live in https://github.com/probityai/agent-evidence-vectors.
 
