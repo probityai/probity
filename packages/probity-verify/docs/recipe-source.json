@@ -287,6 +287,15 @@
       "documentation": "docs/corpus-routes.md",
       "expected_decision": "supported",
       "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
+    },
+    {
+      "task": "Check the principal an agent audit record names",
+      "claim_type": "audit_principal/v1",
+      "case": "examples/corpus-routes/audit-principal/case.json",
+      "policy": "examples/corpus-routes/audit-principal/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
     }
   ]
 }
