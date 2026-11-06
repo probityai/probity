@@ -31,9 +31,9 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y bubblewrap
       - run: python -m pip install -e ../probity-verify -e '.[test,witness,done]'
       - run: pytest -q
-      - run: python examples/attribution_demo.py ./attribution-run
-      - run: python examples/replay_demo.py ./replay-run --source-revision "$GITHUB_SHA"
-      - run: python examples/replay_demo.py ./replay-run --replay --trusted-policy ./replay-run/replay-policy.json
+      - run: python examples/attribution_demo.py ./attribution-run --native tests/fixtures/records/protected-action
+      - run: python examples/replay_demo.py ./replay-run --source-revision "$GITHUB_SHA" --native tests/fixtures/records/protected-action
+      - run: python examples/replay_demo.py ./replay-run --replay --native tests/fixtures/records/protected-action --trusted-policy ./replay-run/replay-policy.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
