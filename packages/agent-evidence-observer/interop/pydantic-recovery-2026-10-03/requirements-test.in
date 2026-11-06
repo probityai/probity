@@ -1,0 +1,5 @@
+# Test and lint tools for the retained-packet checks; the reader runtime comes from pyproject.toml.
+pytest
+ruff
+setuptools
+wheel
