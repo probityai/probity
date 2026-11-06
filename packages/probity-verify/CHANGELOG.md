@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 (2026-11-04)
 
 This is a minor release when cut: a consumer that requires `verdict_code` to be absent from the `execution_evidence`
 check, or that reads a code from it it does not know, can turn red.
