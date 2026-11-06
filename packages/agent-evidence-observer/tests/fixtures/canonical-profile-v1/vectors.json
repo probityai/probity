@@ -1,0 +1,120 @@
+{
+  "profile": "probity-observer canonical JSON, RFC 8785 subset",
+  "accept": [
+    {
+      "name": "cjk",
+      "value": {
+        "text": "\u65e5\u672c\u8a9e\u306e\u51fa\u529b"
+      },
+      "canonical_hex": "7b2274657874223a22e697a5e69cace8aa9ee381aee587bae58a9b227d"
+    },
+    {
+      "name": "emoji-astral",
+      "value": {
+        "text": "ok \ud83d\ude00\ud83d\ude80"
+      },
+      "canonical_hex": "7b2274657874223a226f6b20f09f9880f09f9a80227d"
+    },
+    {
+      "name": "combining-mark-unnormalized",
+      "value": {
+        "text": "e\u0301"
+      },
+      "canonical_hex": "7b2274657874223a2265cc81227d"
+    },
+    {
+      "name": "precomposed-differs-from-combining",
+      "value": {
+        "text": "\u00e9"
+      },
+      "canonical_hex": "7b2274657874223a22c3a9227d"
+    },
+    {
+      "name": "line-separator-raw",
+      "value": {
+        "text": "a\u2028b\u2029c"
+      },
+      "canonical_hex": "7b2274657874223a2261e280a862e280a963227d"
+    },
+    {
+      "name": "rtl-and-zero-width",
+      "value": {
+        "text": "\u05e9\u05dc\u05d5\u05dd\u200d\ufeff"
+      },
+      "canonical_hex": "7b2274657874223a22d7a9d79cd795d79de2808defbbbf227d"
+    },
+    {
+      "name": "control-escapes",
+      "value": {
+        "text": "a\u0000\u001f\n\t\"\\/\u007f"
+      },
+      "canonical_hex": "7b2274657874223a22615c75303030305c75303031665c6e5c745c225c5c2f7f227d"
+    },
+    {
+      "name": "member-order-ascii",
+      "value": {
+        "b": "\u00fc",
+        "a": "\u4e2d",
+        "B": "x"
+      },
+      "canonical_hex": "7b2242223a2278222c2261223a22e4b8ad222c2262223a22c3bc227d"
+    },
+    {
+      "name": "nested-array",
+      "value": {
+        "list": [
+          "\u0394",
+          "plain"
+        ],
+        "n": 7
+      },
+      "canonical_hex": "7b226c697374223a5b22ce94222c22706c61696e225d2c226e223a377d"
+    }
+  ],
+  "reject": [
+    {
+      "name": "non-ascii-member-name",
+      "value": {
+        "\u0430mount": "1"
+      },
+      "error": "JSON object member names must be ASCII"
+    },
+    {
+      "name": "non-ascii-nested-member-name",
+      "value": {
+        "outer": {
+          "caf\u00e9": "1"
+        }
+      },
+      "error": "JSON object member names must be ASCII"
+    },
+    {
+      "name": "lone-high-surrogate",
+      "value": {
+        "text": "\ud800"
+      },
+      "error": "lone surrogate"
+    },
+    {
+      "name": "lone-low-surrogate",
+      "value": {
+        "text": "x\udfff"
+      },
+      "error": "lone surrogate"
+    },
+    {
+      "name": "float",
+      "value": {
+        "n": 1.5
+      },
+      "error": "value is outside the canonical JSON profile"
+    },
+    {
+      "name": "unsafe-integer",
+      "value": {
+        "n": 9007199254740992
+      },
+      "error": "integer exceeds the safe JSON range"
+    }
+  ]
+}
