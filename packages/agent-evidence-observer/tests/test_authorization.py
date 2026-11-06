@@ -774,7 +774,7 @@ class TestVerifyGrant:
                 run=run,
             )
 
-        @pytest.mark.parametrize("value", ["é", 0.5, 2**53])
+        @pytest.mark.parametrize("value", ["\ud800", 0.5, 2**53])
         def test_nonportable_json_values_are_refused_before_signature(
             self, run: AuthorizedRun, caplog: pytest.LogCaptureFixture, value: Any
         ) -> None:
