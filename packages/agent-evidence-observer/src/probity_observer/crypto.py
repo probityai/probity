@@ -72,7 +72,7 @@ def _validate(value: Any) -> None:
                 raise VerificationError("JSON object member names must be ASCII")
             _validate(item)
         return
-    raise VerificationError("value is outside the canonical JSON profile")
+    raise VerificationError("value is outside the prototype JSON profile")
 
 
 def canonical(value: Any) -> bytes:

@@ -107,7 +107,7 @@
       "value": {
         "n": 1.5
       },
-      "error": "value is outside the canonical JSON profile"
+      "error": "value is outside the prototype JSON profile"
     },
     {
       "name": "unsafe-integer",
