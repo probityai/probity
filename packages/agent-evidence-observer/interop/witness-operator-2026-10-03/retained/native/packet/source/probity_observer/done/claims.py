@@ -18,7 +18,7 @@ shell syntax beyond one simple command, is claimed as ``["sh", "-c", <line>]``.
 When the contract seals ``cwd`` and ``exe`` for the acceptance commands the agent runs
 itself, only claims of those commands are kept, under their sealed argv: a command line that
 :func:`sealed_spelling` takes to a sealed command (through wrappers such as ``timeout``, ``uv
-run``, ``sh -c`` and ``cd <the sealed directory> &&``, with agent-evidence-verify's shared invocation
+run``, ``sh -c`` and ``cd <the sealed directory> &&``, with probity-verify's shared invocation
 model deciding which spellings run the same tests). Other commands the agent ran (``ls -R``,
 an editor call) say nothing about done and are left out, with their output. A test summary counts only in a kept
 command's output or in the agent's own text, never under a ``# <tool>`` line, where the agent displays a file or a tool
@@ -62,7 +62,7 @@ import shlex
 import tokenize
 from typing import Any
 
-from agent_evidence_verify.adapters import done_argv
+from probity_verify.adapters import done_argv
 
 SCHEMA = "probity-tool-claims/v2"
 # The line a harness prints before the agent's own text (its messages, not a tool's output).
@@ -175,7 +175,7 @@ def _exes(command: dict[str, Any]) -> list[str]:
 def sealed_spelling(argv: list[str], commands: list[dict[str, Any]]) -> list[str] | None:
     """The sealed argv of the agent-run acceptance command this command line spells, if any.
 
-    The line is taken to the command it runs with agent-evidence-verify's :func:`done_argv.unwrap`
+    The line is taken to the command it runs with probity-verify's :func:`done_argv.unwrap`
     (``NAME=value`` words, ``env``, ``timeout``, ``uv run`` and its peers, ``sh -c``, ``cd
     <dir> &&`` or ``;``, a trailing ``2>&1`` or ``| tee <file>``), starting in the sealed
     working directory, and must end there. It spells the sealed command when
@@ -264,7 +264,7 @@ def from_text(transcript: str, visible_argv: list[str] | None,
 
 def _last_per_command(claims: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """One claim per sealed command: the agent's last that states an outcome (an exit or a
-    summary), kept only when it states success. agent-evidence-verify settles a claim on the
+    summary), kept only when it states success. probity-verify settles a claim on the
     command's last run; a later spelling with no stated outcome adds nothing to an earlier
     one that has one, and a run the agent says failed claims nothing about done."""
     last: dict[tuple[str, ...], dict[str, Any]] = {}

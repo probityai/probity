@@ -15,7 +15,7 @@ One launch, in order:
    receipt.
 
 The records are ``observation.json``, ``capability.json`` and ``tree.json`` in
-the formats ``agent-evidence-verify`` reads, plus ``receipt.json``, which carries the
+the formats ``probity-verify`` reads, plus ``receipt.json``, which carries the
 launch digest, the trace expression, the inotify watch list, the join's
 findings and effects outside the workspace. Every record says
 ``witness_scope``/``witnessScope`` ``PEER``: the host that runs the launcher

@@ -63,7 +63,7 @@ jobs:
           set -euo pipefail
           profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04"
           "$RUNNER_TEMP/reader/bin/python" -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/verify-wheels" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify"
-          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/verify-wheels/agent_evidence_verify-0.1.0-py3-none-any.whl"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl"
           "$RUNNER_TEMP/reader/bin/python" -m pip check
           policy_sha="$(sha256sum "$RUNNER_TEMP/run/host-policy.json" | cut -d ' ' -f 1)"
-          python -I -B "$profile/verify_consumer.py" --reader "$RUNNER_TEMP/reader/bin/python" --source "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify" --wheel "$RUNNER_TEMP/verify-wheels/agent_evidence_verify-0.1.0-py3-none-any.whl" --packet "$RUNNER_TEMP/run/packet" --policy "$RUNNER_TEMP/run/host-policy.json" --policy-sha256 "$policy_sha" --output "$RUNNER_TEMP/verify-consumer"
+          python -I -B "$profile/verify_consumer.py" --reader "$RUNNER_TEMP/reader/bin/python" --source "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify" --wheel "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl" --packet "$RUNNER_TEMP/run/packet" --policy "$RUNNER_TEMP/run/host-policy.json" --policy-sha256 "$policy_sha" --output "$RUNNER_TEMP/verify-consumer"

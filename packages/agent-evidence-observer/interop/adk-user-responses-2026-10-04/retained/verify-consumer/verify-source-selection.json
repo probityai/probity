@@ -1,7 +1,7 @@
 {
   "adapter": "event_absence/v1",
   "operator": "author-operated",
-  "package": "agent-evidence-verify",
+  "package": "probity-verify",
   "pythonGitBlobs": {
     "__init__.py": "f84d0e0a85a2ae2a7089cbb5b702e7236780b764",
     "adapters/__init__.py": "1816102dd8158de12c55e66938e3bd74887d8248",

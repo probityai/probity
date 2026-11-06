@@ -2,8 +2,8 @@
 
 The run directory holds the records under fixed names. Each record arrives as a DSSE
 envelope and is opened under a pinned key before anything reads it (:func:`open_run`). The
-checks then run in ``agent-evidence-verify`` on the pinned bytes (:func:`checks`), and the receipt
-carries two verdicts derived separately, with agent-evidence-verify's own combination
+checks then run in ``probity-verify`` on the pinned bytes (:func:`checks`), and the receipt
+carries two verdicts derived separately, with probity-verify's own combination
 (``done_receipt/v2``):
 
 - ``outcome``, is the work done: ``acceptance_observed/v1`` alone, the sealed visible and
@@ -18,7 +18,7 @@ carries two verdicts derived separately, with agent-evidence-verify's own combin
 ``accepted`` is both axes supported; ``completion_claimed`` is whether the agent asserted done
 (the claims record's ``completion.asserted``). There is no other combined verdict:
 :func:`summary` is only the one-line decision a consumer that reads one field sees, derived
-from the two axes by agent-evidence-verify's rule. agent-evidence-verify's ``done_receipt/v2`` derives every
+from the two axes by probity-verify's rule. probity-verify's ``done_receipt/v2`` derives every
 one of these again from the same records.
 
 The receipt is the ``probity-done-receipt/v2`` predicate, signed by the harness key and
@@ -33,8 +33,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from agent_evidence_verify.adapters import done_receipt as shared
-from agent_evidence_verify.core import adjudicate
+from probity_verify.adapters import done_receipt as shared
+from probity_verify.core import adjudicate
 
 from .formats import RECEIPT_PREDICATE, VERIFIER_ID, DoneError, encode, open_record, sha256, sign_record, statement
 
@@ -42,7 +42,7 @@ RECEIPT_SCHEMA = shared.SCHEMA
 ROLES = {"contract": "probity-done-contract/v1", "tree": "probity-tree/v2",
          "observation": "probity-observation/v3", "capability": "probity-capabilities/v1",
          "grade": "probity-acceptance-grade/v1", "claims": "probity-tool-claims/v2"}
-# (claim type, file stem, records, axis), in agent-evidence-verify's check order on each axis.
+# (claim type, file stem, records, axis), in probity-verify's check order on each axis.
 CHECKS = (
     ("acceptance_observed/v1", "acceptance", ("contract", "tree", "grade"), "outcome"),
     ("protected_paths/v1", "protected-paths", ("contract", "capability", "observation", "tree"),
@@ -162,7 +162,7 @@ def _policy(claim_type: str, claim_id: str, roles: tuple[str, ...], records: dic
 
 def checks(run: Path, records: dict[str, bytes], pins: Pins,
            require_witness_scope: str = "PEER") -> dict[str, list[dict[str, Any]]]:
-    """Run the five agent-evidence-verify checks on the signed record bytes and write their cases;
+    """Run the five probity-verify checks on the signed record bytes and write their cases;
     return each axis's entries, as ``done_receipt/v2`` places them."""
     out = run / "verify"
     out.mkdir(exist_ok=True)
@@ -182,7 +182,7 @@ def checks(run: Path, records: dict[str, bytes], pins: Pins,
 
 
 def axes(found: dict[str, list[dict[str, Any]]]) -> tuple[dict[str, Any], dict[str, Any]]:
-    """The outcome and integrity verdicts, by agent-evidence-verify's own combination."""
+    """The outcome and integrity verdicts, by probity-verify's own combination."""
     return shared.combine_outcome(found["outcome"]), shared.combine_integrity(found["integrity"])
 
 
@@ -207,7 +207,7 @@ def summary(predicate: dict[str, Any]) -> dict[str, Any]:
 
 def done_receipt_case(run: Path, records: dict[str, bytes], statement_bytes: bytes, pins: Pins,
                       verifier_ids: list[str] | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
-    """The case and policy for agent-evidence-verify's ``done_receipt/v2`` over one attempt."""
+    """The case and policy for probity-verify's ``done_receipt/v2`` over one attempt."""
     observation = json.loads(records["observation"])
     claim_id = observation["claim_id"]
     roles = tuple(ROLES)

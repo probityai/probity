@@ -126,7 +126,7 @@ def _witnessed(run: Path, pins: receipt.Pins, args: argparse.Namespace) -> str:
 
 
 def shared_receipt_check(run: Path, pins: receipt.Pins, carried: dict[str, Any]) -> dict[str, Any]:
-    """agent-evidence-verify's ``done_receipt/v1`` over the attempt: it derives the verdict again
+    """probity-verify's ``done_receipt/v1`` over the attempt: it derives the verdict again
     from the signed records and the receipt Statement, which must carry the signed predicate."""
     records = receipt.open_run(run, pins)
     statement_bytes = (run / "done-receipt.statement.json").read_bytes()
@@ -288,7 +288,7 @@ def register(subparsers) -> None:
     """Add ``done`` to the ``probity`` command line (entry point ``probityai.cli_subcommands``).
 
     ``probity done verify`` is the same handler as ``probity-done verify``: it opens the
-    signed records and gets every check's decision from agent-evidence-verify's ``adjudicate``.
+    signed records and gets every check's decision from probity-verify's ``adjudicate``.
     """
     from probityai.cli import register_leaf  # only the probity launcher calls this, so it is installed
 

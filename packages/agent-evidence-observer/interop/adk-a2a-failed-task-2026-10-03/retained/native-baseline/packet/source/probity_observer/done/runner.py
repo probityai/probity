@@ -66,7 +66,7 @@ class Command:
     # executable its exec shows, so a claim of it can be matched to the run.
     agent_command: bool = False
     # An oracle-free probe (``determinism``, ``type_strict``, ``import_side_effects``): it asks
-    # whether passing code passes for the right reason, and agent-evidence-verify reads it on the
+    # whether passing code passes for the right reason, and probity-verify reads it on the
     # integrity axis (``probe_observed/v1``), never as a behavioural test.
     probe: str | None = None
     # The test ids a wrapped command runs (``sh -c "<copy> && exec <sealed pytest> <ids>"``),

@@ -1,6 +1,6 @@
 """Offline verification of a witnessed record, and the witness scope it earns.
 
-``witnessScope`` (``witness_scope`` in agent-evidence-verify's records) is a claim
+``witnessScope`` (``witness_scope`` in probity-verify's records) is a claim
 about who operates the keys, so it is decided here from consumer pins and never
 read from the record. A record reaches ``EXTERNAL`` only when all of these hold:
 
@@ -73,7 +73,7 @@ class WitnessVerdict:
         return {"witnessScope": self.witness_scope}
 
     def as_verify_record(self) -> dict[str, str]:
-        """The scope under agent-evidence-verify's record field name."""
+        """The scope under probity-verify's record field name."""
         return {"witness_scope": self.witness_scope}
 
 

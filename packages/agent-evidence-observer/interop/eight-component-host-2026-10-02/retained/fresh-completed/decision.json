@@ -10,7 +10,7 @@
     "agent-evidence-vocabulary": "8c80579ae613d7ae07982321e13a6091c402b2a8",
     "dsse": "f6f6df4bef5544af76dc3f5b05909a2f24a8e51f",
     "jcs-admit": "40ce923843167629f0ed044590d1319e6a711015",
-    "agent-evidence-verify": "e835ce2bd6a960e7a1cc2fa6522f16d55dce728a"
+    "probity-verify": "e835ce2bd6a960e7a1cc2fa6522f16d55dce728a"
   },
   "custody": "not-established",
   "doesNotAssert": [

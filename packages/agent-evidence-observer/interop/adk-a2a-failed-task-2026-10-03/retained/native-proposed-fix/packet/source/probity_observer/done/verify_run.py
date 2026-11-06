@@ -615,7 +615,7 @@ TREE_FIELDS = ("files", "executable", "symlinks", "special")
 def protected_sources(final: Path, sealed: Path, contract: dict[str, Any]) -> dict[str, bytes]:
     """Sealed and final bytes, by SHA-256, of each ``python_ast`` protected file that changed.
 
-    agent-evidence-verify's ``protected_paths`` reads them as ``source:<sha256>`` case artifacts to
+    probity-verify's ``protected_paths`` reads them as ``source:<sha256>`` case artifacts to
     decide whether the final file keeps the sealed syntax tree; each is bound by its own
     digest. Read from the agent's tree before the reset.
     """
@@ -692,7 +692,7 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
                                        stopped=stopped)
             result = {"id": item["id"], "argv": item["argv"], "exit": exit_code}
             # Stopped at its limit, the run gave no answer; the verifier tells that from a
-            # wrong one (agent-evidence-verify reads it only on a failed held-out probe).
+            # wrong one (probity-verify reads it only on a failed held-out probe).
             if stopped and exit_code != 0:
                 result["timed_out"] = True
             if "ids" in item and is_pytest_replay(item["argv"]):
@@ -742,7 +742,7 @@ def grade(contract_bytes: bytes, bundle: Path, final: Path, tree_record: dict[st
         if replayed is not None and replayed.get("mode", "assert") != "import_side_effects":
             item["replay"] = {"calls_intercepted": replayed["calls_intercepted"],
                               "distinct_calls": replayed["distinct_calls"]}
-        # How a failed replay failed (:func:`.replay.failure_kind`): agent-evidence-verify reads it
+        # How a failed replay failed (:func:`.replay.failure_kind`): probity-verify reads it
         # for the in-process twin rule and for an import probe that changed the interpreter.
         if replayed is not None and item["exit"] != 0 and "failure_kind" in replayed:
             item["failure_kind"] = replayed["failure_kind"]

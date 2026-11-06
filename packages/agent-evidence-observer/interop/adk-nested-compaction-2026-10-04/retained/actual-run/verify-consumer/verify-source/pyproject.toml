@@ -3,7 +3,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-evidence-verify"
+name = "probity-verify"
 version = "0.1.0"
 description = "Relying-party adjudication of claims against pinned evidence"
 readme = "README.md"
@@ -18,9 +18,9 @@ test = ["pytest>=8,<10", "hypothesis>=6,<7"]
 testpaths = ["tests", "vectors-source-coverage/tests", "vectors-operand-lineage/tests"]
 
 [project.scripts]
-agent-evidence-verify = "agent_evidence_verify.cli:main"
-probity-bundle = "agent_evidence_verify.bundle:main"
-probity-index = "agent_evidence_verify.index:main"
+probity-verify = "probity_verify.cli:main"
+probity-bundle = "probity_verify.bundle:main"
+probity-index = "probity_verify.index:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

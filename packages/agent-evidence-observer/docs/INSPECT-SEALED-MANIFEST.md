@@ -46,7 +46,7 @@ reproduces`, and exits 1 for anything but the first. A log with no manifest exit
 
 A second implementation can check the digests without Inspect. Write the cover as
 JSON, claim its canonical bytes, and pin the manifest's digest as the claimed
-bytes' SHA-256 in a `jcs_canonical/v1` case for `agent-evidence-verify` 0.4.0 or later:
+bytes' SHA-256 in a `jcs_canonical/v1` case for `agent-evidence-verify` 0.5.0 or later (`probity-verify` 0.4.0 or later before the rename):
 `supported` means the digest is the SHA-256 of the cover's RFC 8785 form.
 `interop/inspect-sealed-manifest-2026-11-03/test_real_run.py` builds that case.
 

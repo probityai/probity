@@ -14,7 +14,7 @@ Standard library only for `lint`; `resolve` needs `uv` on PATH.
 
 Range policy for a requirement on a member of this workspace. A compatible-release range
 (`~=0.3.0`) stops at the next minor, so the day that member released 0.4 the published
-dependents could no longer install beside it (agent-evidence-verify 0.3.0 on 2026-10-30 broke
+dependents could no longer install beside it (probity-verify 0.3.0 on 2026-10-30 broke
 probityai, probity-ratchet and agent-evidence-observer, and family-resolves went red until
 three patch releases shipped). The range is therefore a window, `>=F,<C`: F is a release
 the dependent was tested against (not above the member's version in this tree), and C is the

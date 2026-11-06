@@ -8,7 +8,7 @@ effect, so it is added to the record without an ``origin``, conservatively
 counting as an edit, and the observation names a coverage gap around it. S3
 (the final tree) becomes the tree record.
 
-The output formats are the ones ``agent-evidence-verify`` defines in
+The output formats are the ones ``probity-verify`` defines in
 ``docs/done-receipt.md``, in the versions this module adds to:
 ``probity-observation/v3`` (an exec event carries the executed path ``exe``,
 its working directory ``cwd`` and the loader environment ``env``, all as
@@ -57,7 +57,7 @@ DEVICE_FILE_TREES = ("/dev/shm/",)
 SECTIONED_CONFIG = frozenset({"pyproject.toml", "tox.ini", "setup.cfg"})
 GRADER_FILES = frozenset({"sitecustomize.py", "usercustomize.py", "reward.json", "reward.txt"})
 GRADER_DIRECTORIES = frozenset({"site-packages", "dist-packages", "verifier"})
-# agent-evidence-verify's ``grader_path`` agrees: under a scratch root the grader never reads, a reward
+# probity-verify's ``grader_path`` agrees: under a scratch root the grader never reads, a reward
 # file or a ``verifier`` directory is the agent's own. The grader runs in a fresh container: a new
 # /tmp tmpfs, its own /dev/shm, and the image's read-only /run, so none of the agent's writes there
 # reach it.

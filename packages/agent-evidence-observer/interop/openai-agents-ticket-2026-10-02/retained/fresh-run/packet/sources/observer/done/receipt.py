@@ -2,10 +2,10 @@
 
 The run directory holds the records under fixed names. Each record arrives as a DSSE
 envelope and is opened under a pinned key before anything reads it (:func:`open_run`). The
-three checks then run in ``agent-evidence-verify`` on the pinned bytes (:func:`checks`):
+three checks then run in ``probity-verify`` on the pinned bytes (:func:`checks`):
 ``protected_paths/v1``, ``acceptance_observed/v1`` and ``tool_claim_match/v1``, the last with
 the contract pinned so a claimed acceptance command is judged by its sealed run writes. The
-done verdict is agent-evidence-verify's own combination of the three (:func:`verdict`):
+done verdict is probity-verify's own combination of the three (:func:`verdict`):
 
 1. The first ``contradicted`` check, in that order, gives ``contradicted`` with its reason.
 2. Three ``supported`` checks give ``supported`` (``done_checks_supported``).
@@ -14,7 +14,7 @@ done verdict is agent-evidence-verify's own combination of the three (:func:`ver
 Grader-path mutations, coverage gaps the agent caused, held-out failures, replays that called
 nothing, unexercised patch hunks and a missing held-out split are decided inside those
 checks, from the observation and the grade, so the receipt's verdict is exactly the one
-agent-evidence-verify's ``done_receipt/v1`` derives again from the same records.
+probity-verify's ``done_receipt/v1`` derives again from the same records.
 
 The receipt is the ``probity-done-receipt/v1`` predicate, signed by the harness key and
 naming its verifier (``verifier.id``); its in-toto Statement is written unsigned (see
@@ -28,8 +28,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from agent_evidence_verify.adapters.done_receipt import combine
-from agent_evidence_verify.core import adjudicate
+from probity_verify.adapters.done_receipt import combine
+from probity_verify.core import adjudicate
 
 from .formats import RECEIPT_PREDICATE, VERIFIER_ID, DoneError, encode, open_record, sha256, sign_record, statement
 
@@ -149,7 +149,7 @@ def _policy(claim_type: str, claim_id: str, roles: tuple[str, ...], records: dic
 
 def checks(run: Path, records: dict[str, bytes], pins: Pins,
            require_witness_scope: str = "PEER") -> list[dict[str, Any]]:
-    """Run the three agent-evidence-verify checks on the signed record bytes; write their cases."""
+    """Run the three probity-verify checks on the signed record bytes; write their cases."""
     out = run / "verify"
     out.mkdir(exist_ok=True)
     found = []
@@ -175,7 +175,7 @@ def checks(run: Path, records: dict[str, bytes], pins: Pins,
 
 
 def verdict(found: list[dict[str, Any]]) -> dict[str, Any]:
-    """agent-evidence-verify's combination of the three checks, with its vantage."""
+    """probity-verify's combination of the three checks, with its vantage."""
     derived = combine(found)
     if derived["decision"] == "not_established":
         return {"decision": "not_established", "reason": derived["reason"],
@@ -186,7 +186,7 @@ def verdict(found: list[dict[str, Any]]) -> dict[str, Any]:
 
 def done_receipt_case(run: Path, records: dict[str, bytes], statement_bytes: bytes, pins: Pins,
                       verifier_ids: list[str] | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
-    """The case and policy for agent-evidence-verify's ``done_receipt/v1`` over one attempt."""
+    """The case and policy for probity-verify's ``done_receipt/v1`` over one attempt."""
     observation = json.loads(records["observation"])
     claim_id = observation["claim_id"]
     roles = tuple(ROLES)

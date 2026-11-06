@@ -7,12 +7,12 @@
     "agent-evidence-vocabulary": "8c80579ae613d7ae07982321e13a6091c402b2a8",
     "dsse": "f6f6df4bef5544af76dc3f5b05909a2f24a8e51f",
     "jcs-admit": "40ce923843167629f0ed044590d1319e6a711015",
-    "agent-evidence-verify": "e835ce2bd6a960e7a1cc2fa6522f16d55dce728a"
+    "probity-verify": "e835ce2bd6a960e7a1cc2fa6522f16d55dce728a"
   },
   "componentVersions": {
     "agent-evidence-observer": "0.0.1",
     "agent-evidence-vectors": "0.15.0",
-    "agent-evidence-verify": "0.1.0"
+    "probity-verify": "0.1.0"
   },
   "omissionMap": [
     {
@@ -68,7 +68,7 @@
     },
     {
       "bytes": 30263,
-      "path": "/home/runner/work/_temp/kit-wheels/agent_evidence_verify-0.1.0-py3-none-any.whl",
+      "path": "/home/runner/work/_temp/kit-wheels/probity_verify-0.1.0-py3-none-any.whl",
       "sha256": "e7ed65fa51c314f3274334ad2dbbaf06103c731cbff20b2065ce460086b77020"
     }
   ]
