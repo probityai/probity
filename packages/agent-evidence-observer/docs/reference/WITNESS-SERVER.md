@@ -99,7 +99,7 @@ signature's DSSE `keyid`. Hashes are lowercase hex SHA-256.
   itself, or `unproven-consistency`), `origin`, `witnessKey`, two `checkpoints`,
   and the failing `consistency` proof if one was given.
 
-`witnessScope` is `witness_scope` in agent-evidence-verify's records;
+`witnessScope` is `witness_scope` in probity-verify's records;
 `WitnessVerdict.as_packet()` and `as_verify_record()` give each spelling.
 
 ## On-disk log
