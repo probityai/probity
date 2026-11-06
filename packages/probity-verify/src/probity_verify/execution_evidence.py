@@ -44,6 +44,8 @@ from typing import Any
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
+from .verdict_codes import verdict_for_report
+
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PREDICATE_TYPE = "https://in-toto.io/attestation/adversarial-execution-evidence/v0.7"
 BINDING_VERSION = "2"
@@ -1840,6 +1842,8 @@ class Report:
     def as_dict(self) -> dict:
         out: dict[str, Any] = {"verdict": self.verdict, "codes": list(self.codes),
                                "primary_code": self.primary_code}
+        code = verdict_for_report(self.verdict, self.codes, self.tiers)
+        out["verdict_code"] = code.value if code else None
         if self.verdict == VALID:
             out["result"] = self.result
             out["tiers"] = list(self.tiers or [])

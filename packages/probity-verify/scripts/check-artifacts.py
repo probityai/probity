@@ -23,7 +23,7 @@ def check(wheel: Path, sdist: Path, source_root: Path | None = None) -> None:
     root = source_root.resolve() if source_root is not None else Path(__file__).resolve().parents[1]
     project = tomllib.loads((root / "pyproject.toml").read_text())["project"]
     source = {p.relative_to(root / "src").as_posix(): p
-              for p in (root / "src/probity_verify").rglob("*.py")}
+              for p in (root / "src/probity_verify").rglob("*") if p.suffix in {".py", ".json"}}
     samples = root / "examples/source-coverage"
     source.update({"probity_verify/samples/" + p.name: p for p in samples.iterdir()
                    if p.name == "__init__.py" or p.suffix in {".json", ".html", ".txt"}})
