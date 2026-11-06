@@ -172,7 +172,7 @@ def _instant(value: Any) -> datetime.datetime:
     if not isinstance(value, str):
         raise Malformed("timestamp-malformed")
     try:
-        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.datetime.fromisoformat(value)
     except ValueError as error:
         raise Malformed("timestamp-malformed") from error
     if parsed.tzinfo is None:
