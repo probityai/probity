@@ -21,7 +21,7 @@ def test_retained_original_native_ci_bytes(tmp_path: Path) -> None:
     assert hashlib.sha256(archive.read_bytes()).hexdigest() == RETAINED_SHA256
     with zipfile.ZipFile(archive) as retained:
         names = retained.namelist()
-        assert len(names) == len(set(names)) == 825
+        assert len(names) == len(set(names)) == 826
         assert all(
             not Path(name).is_absolute() and ".." not in Path(name).parts
             for name in names
