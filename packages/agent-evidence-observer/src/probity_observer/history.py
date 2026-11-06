@@ -46,8 +46,10 @@ def read_history(path: Path) -> list[dict[str, Any]]:
     raw = path.read_bytes()
     if raw and not raw.endswith(b"\n"):
         raise VerificationError("history ends with an incomplete line")
+    if b"\r" in raw:
+        raise VerificationError("history line endings are not LF")
     entries: list[dict[str, Any]] = []
-    for line in raw.splitlines():
+    for line in raw.split(b"\n")[:-1]:
         entry = strict_loads(line)
         if not isinstance(entry, dict) or entry.keys() != _HISTORY_FIELDS:
             raise VerificationError("history entry shape is unsupported")

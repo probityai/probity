@@ -137,6 +137,19 @@ def _verify_roots(claim: dict[str, Any], entries: list[dict[str, Any]]) -> None:
         raise VerificationError("prototype may only claim PEER witness scope")
 
 
+_PACKET_FIELDS = frozenset({"authority", "checkpoint", "claim", "claimKeyid", "claimSignature", "commitment", "startCheckpoint"})
+
+
+def _verify_packet_shape(packet: Any) -> None:
+    """Refuse top-level fields no signature or check covers.
+
+    ``authorizationBinding`` is optional here; the grant consumer that relies on
+    it verifies its observer signature (``grant_records``).
+    """
+    if not isinstance(packet, dict) or packet.keys() - {"authorizationBinding"} != _PACKET_FIELDS:
+        raise VerificationError("packet fields are unsupported")
+
+
 def verify_packet(
     packet: dict[str, Any],
     history_path: Path,
@@ -170,6 +183,7 @@ def verify_packet(
     VerificationError
         If a signature, history, binding, or optional current tree differs.
     """
+    _verify_packet_shape(packet)
     entries = read_history(history_path)
     claim = packet["claim"]
     if pinned_observer_key == pinned_witness_key:
@@ -189,6 +203,9 @@ def verify_packet(
     _verify_roots(claim, entries)
     verify_checkpoint(entries[:1], packet["startCheckpoint"], pinned_witness_key)
     verify_checkpoint(entries, packet["checkpoint"], pinned_witness_key)
-    if workspace is not None and tree_root(workspace) != claim["afterRoot"]:
-        raise VerificationError("current workspace root differs from the claim")
+    if workspace is not None:
+        if workspace.is_symlink():
+            raise VerificationError("workspace is a symbolic link")
+        if tree_root(workspace) != claim["afterRoot"]:
+            raise VerificationError("current workspace root differs from the claim")
     return claim
