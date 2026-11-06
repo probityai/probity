@@ -330,7 +330,9 @@ def test_reselected_parent_evidence_and_malformed_http_refuse(native: Path, tmp_
 
 def test_exact_expiry_fixture_cannot_be_used_as_a_past_runtime_clock(native: Path) -> None:
     """Naming the denial fixture cannot convert its old timestamp to admission."""
-    from probity_pydantic_recovery.gate import admit
+    from datetime import UTC, datetime
+
+    from probity_pydantic_recovery.reader import reconstruct_admission
 
     root = native / "expired"
     case = load(root / "case.json")
@@ -338,11 +340,12 @@ def test_exact_expiry_fixture_cannot_be_used_as_a_past_runtime_clock(native: Pat
     live = load(root / "recovery.json")["live"]
     history = (root / "recovery-history.json").read_bytes()
     prior = load(root / "prior-http.json")
+    now = datetime.now(UTC).replace(microsecond=0)
     with pytest.raises(VerificationError, match="grant is not valid at the reference time"):
-        admit(case, history, prior, live, current)
+        reconstruct_admission(case, history, prior, live, current, evaluated_at=now)
     current["clockTime"] = case["historicalTime"]
     with pytest.raises(VerificationError, match="current-exact-expiry-binding"):
-        admit(case, history, prior, live, current)
+        reconstruct_admission(case, history, prior, live, current, evaluated_at=now)
 
 
 def test_reselected_expiry_fixture_clock_refuses_offline_packet(native: Path, tmp_path: Path) -> None:

@@ -32,7 +32,6 @@ from probity_pydantic_recovery.common import (
     withheld_sources,
     write,
 )
-from probity_pydantic_recovery.gate import reconstruct_admission
 
 
 def freeze(root: Path, selected: dict[str, Any], destination: Path, withheld: dict[str, str]) -> None:
@@ -236,6 +235,48 @@ def final_payload(prior: dict[str, Any], final: dict[str, Any], case_id: str) ->
     require({key: value for key, value in final.items() if key not in permitted} == {key: value for key, value in prior.items() if key not in permitted}, "revoked-final-effect-binding")
     require(final["revoked"] is True and type(final["eventCount"]) is int and final["eventCount"] == prior["eventCount"] + 1, "final-revocation-state")
     require(type(final["eventHead"]) is str and len(final["eventHead"]) == 64 and all(c in "0123456789abcdef" for c in final["eventHead"]) and final["eventHead"] != prior["eventHead"], "final-revocation-history")
+
+
+def historical_effect(case: dict[str, Any], packet: dict[str, Any]) -> dict[str, Any]:
+    """Authenticate the historical effect at its declared historical time."""
+    from datetime import datetime
+    require(packet["postStatus"] == packet["getStatus"] == 200, "historical-http-status")
+    candidate = {key: case[key] for key in ("request", "grant", "contentHex")}
+    require(packet["postRequestHex"] == canonical(candidate).hex(), "historical-post-binding")
+    receipt, readback = (strict_loads(bytes.fromhex(packet[key])) for key in ("postResponseHex", "getResponseHex"))
+    return verify_ticket_result(receipt, readback, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["historicalTime"]))
+
+
+def reconstruct_admission(case: dict[str, Any], history: bytes, prior: dict[str, Any], live: dict[str, Any], current: dict[str, Any], *, evaluated_at: Any) -> dict[str, Any]:
+    """Reconstruct a retained result-only admission at its recorded evaluation time.
+
+    The order of checks is the order the host applied. A spent dispatch grant
+    never creates permission for another POST, so the reconstructed decision
+    releases only the authenticated already-committed native result.
+    """
+    from datetime import datetime
+    call = deferred(history, case)
+    checked = historical_effect(case, prior)
+    require(set(current) == {"historySha256", "grant", "serviceKey", "policy", "liveSha256", "clockTime", "clockSource", "targetReady"}, "current-selection-schema")
+    require(current["targetReady"] is True, "current-target-not-ready")
+    require(current["historySha256"] == sha(history), "current-history-binding")
+    require(current["serviceKey"] == case["serviceKey"] and current["policy"] == case["policy"], "current-key-policy-binding")
+    require(current["liveSha256"] == sha(canonical(live)), "current-live-binding")
+    selected_at = datetime.fromisoformat(current["clockTime"])
+    require(selected_at.tzinfo is not None and selected_at.utcoffset().total_seconds() == 0 and selected_at.microsecond == 0, "current-selection-clock-utc-seconds")
+    require(evaluated_at.tzinfo is not None and evaluated_at.utcoffset().total_seconds() == 0, "current-runtime-clock-utc")
+    expected_clock = "fixture-exact-expiry" if case["id"] == "expired" else "host-system-utc"
+    require(current["clockSource"] == expected_clock, "current-clock-source")
+    require(case["id"] != "expired" or selected_at == datetime.fromisoformat(case["grant"]["expiresAt"]), "current-exact-expiry-binding")
+    require(selected_at >= datetime.fromisoformat(case["historicalTime"]), "current-clock-predates-history")
+    now = selected_at if case["id"] == "expired" else evaluated_at
+    require(case["id"] == "expired" or evaluated_at >= selected_at, "current-selection-from-future")
+    verify_grant(current["grant"], ActionRequest(**case["request"]), GrantPolicy(**current["policy"]), now=now)
+    require(canonical(current["grant"]) == canonical(case["grant"]), "current-grant-binding")
+    retained = strict_loads(bytes.fromhex(prior["postResponseHex"]))
+    verified = verify_ticket_result(retained, live, ActionRequest(**case["request"]), GrantPolicy(**current["policy"]), current["serviceKey"], current["grant"], now=now)
+    require(verified == checked, "historical-live-effect-join")
+    return {"status": "admitted-result-only", "toolCallId": call["tool_call_id"], "historySha256": sha(history), "priorHttpSha256": sha(canonical(prior)), "liveSha256": sha(canonical(live)), "evaluatedAt": evaluated_at.isoformat(), "result": checked, "dispatchPermitted": False}
 
 
 def decision(root: Path, case: dict[str, Any], current: dict[str, Any], recovery: dict[str, Any]) -> dict[str, Any] | None:

@@ -62,7 +62,7 @@ assert first == second
 assert Path("installed-receipts/reader.stdout").read_bytes() == Path("retained/host-receipts/reader.stdout").read_bytes()
 assert strict_loads(Path("retained/fresh-report.json").read_bytes().rstrip(b"\n")) == strict_loads(Path("installed-receipts/reader.stdout").read_bytes().rstrip(b"\n"))
 assert strict_loads(Path("installed-repeat/reader.stdout").read_bytes().rstrip(b"\n")) == strict_loads(Path("installed-receipts/reader.stdout").read_bytes().rstrip(b"\n"))
-helper = next((root / "venv/lib").glob("python*/site-packages/probity_pydantic_recovery/gate.py"))
+helper = next((root / "venv/lib").glob("python*/site-packages/probity_pydantic_recovery/common.py"))
 original = helper.read_bytes()
 try:
     helper.write_bytes(original + b"\n# changed installed helper\n")

@@ -1,11 +1,11 @@
-"""Finite authorization-journal grammar and exact signed responses."""
+"""Finite authorization-journal grammar a reader checks offline."""
 
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
 
-from probity_observer.crypto import canonical, digest, strict_loads, verify_signature
+from probity_observer.crypto import digest, verify_signature
 from probity_observer.dispatch_records import CONFIG_DOMAIN, PRIOR_DOMAIN
 from probity_observer.history import GENESIS
 from probity_observer.ledger import RECEIPT_DOMAIN
@@ -14,11 +14,8 @@ from probity_witness_operator.protocol import (
     exact_fields,
     history_entries,
     require,
-    sha,
 )
 
-FORMAT = "probity-authorization-witness-v0"
-REPLY_DOMAIN = FORMAT + "-reply"
 MAX_JOURNAL = 65536
 BUNDLE_FILES = ("dispatch-state.json", "authorization.jsonl", "history.jsonl", "witness-ledger.jsonl", "packet.json")
 CHECKPOINT_FIELDS = {"count", "head", "keyid", "signature"}
@@ -94,22 +91,3 @@ def _completed(event: Any, request: dict[str, Any], before_root: str) -> None:
     require(result["request_id"] == request["request_id"] and result["path"] == request["target_path"], "authorization result action differs")
     require(result["before_root"] == before_root and result["replayed"] is False, "authorization result prior differs")
     require(isinstance(result["after_root"], str) and HEX_DIGEST.fullmatch(result["after_root"]) is not None, "authorization result root differs")
-
-
-def request_bytes(operation: str, raw: bytes) -> bytes:
-    """Submit bounded exact journal bytes; no server-side pathname is accepted."""
-    require(operation in {"checkpoint", "latest"}, "authorization operation differs")
-    require(0 < len(raw) <= MAX_JOURNAL, "authorization journal exceeds finite limit")
-    history_entries(raw)
-    return canonical({"format": FORMAT, "operation": operation, "historyHex": raw.hex(), "historySha256": sha(raw)})
-
-
-def decode_request(raw: bytes) -> tuple[str, bytes]:
-    """Decode the fixed public request without accepting resets or key changes."""
-    value = strict_loads(raw)
-    exact_fields(value, {"format", "operation", "historyHex", "historySha256"}, "authorization request fields differ")
-    require(canonical(value) == raw and value["format"] == FORMAT, "authorization request format differs")
-    history = bytes.fromhex(value["historyHex"])
-    require(history.hex() == value["historyHex"] and sha(history) == value["historySha256"], "authorization request digest differs")
-    require(request_bytes(value["operation"], history) == raw, "authorization request differs")
-    return value["operation"], history
