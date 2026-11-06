@@ -2,10 +2,10 @@
 
 <p>
 <a href="https://github.com/probityai/probity/actions/workflows/ci.yml"><img height="16" alt="CI" src="https://github.com/probityai/probity/actions/workflows/ci.yml/badge.svg"></a>
-<a href="https://pypi.org/project/probity-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/probity-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white"></a>
-<a href="https://pepy.tech/projects/probity-verify"><img height="16" alt="Downloads" src="https://static.pepy.tech/personalized-badge/probity-verify?period=total&units=international_system&left_color=%23555&right_color=%23007ec6&left_text=downloads"></a>
-<a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="https://img.shields.io/badge/Apache--2.0-blue?style=flat-square"></a>
-<a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="https://img.shields.io/badge/%E2%98%85-star-blue?style=flat-square"></a>
+<a href="https://pypi.org/project/probity-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/probity-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white&cacheSeconds=86400"></a>
+<a href="https://pepy.tech/projects/probity-verify"><img height="16" alt="Downloads" src="https://img.shields.io/pepy/dt/probity-verify?style=flat-square&color=blue&label=downloads&cacheSeconds=86400"></a>
+<a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="assets/badges/license.svg"></a>
+<a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="assets/badges/stars.svg"></a>
 </p>
 
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier, an observer that records agent runs, and the tools around them. The conformance corpus, vocabulary and admission rules live in https://github.com/probityai/agent-evidence-vectors.
