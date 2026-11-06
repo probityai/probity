@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import copy
-import shutil
 import sqlite3
 import subprocess
 import sys
@@ -13,7 +12,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from target_common import CASES, load, sha, write
 from target_reader import verify_saved
-from target_common import withheld_sources
 
 
 def reseal(root: Path) -> dict:

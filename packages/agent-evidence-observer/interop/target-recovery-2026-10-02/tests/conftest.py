@@ -10,7 +10,7 @@ from typing import Any, NamedTuple
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from target_common import load, withheld_sources
+from target_common import withheld_sources
 
 RETAINED = Path(__file__).resolve().parents[1] / "retained"
 
