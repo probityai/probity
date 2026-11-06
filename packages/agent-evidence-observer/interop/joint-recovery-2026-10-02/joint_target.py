@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from joint_common import load, write
+from joint_common import load, write_atomic
 from probity_observer.crypto import SigningKey, VerificationError
 from probity_observer.grant_records import ActionRequest, GrantPolicy
 from probity_observer.ticket_service import TicketHTTPServer, TicketStore
@@ -46,10 +46,10 @@ def serve(config: Path, fault: str) -> None:
     try:
         initial = store.readback()
         with TicketHTTPServer(store) as server:
-            write(Path(selected["readyFile"]), {"pid": os.getpid(), "url": server.url, "initial": initial})
+            write_atomic(Path(selected["readyFile"]), {"pid": os.getpid(), "url": server.url, "initial": initial})
             server.serve_forever(poll_interval=0.05)
     except VerificationError as error:
-        write(Path(selected["refusalFile"]), {"status": "refused", "reason": str(error), "pid": os.getpid()})
+        write_atomic(Path(selected["refusalFile"]), {"status": "refused", "reason": str(error), "pid": os.getpid()})
         raise SystemExit(78) from error
 
 
