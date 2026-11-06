@@ -21,7 +21,8 @@ separate profiles can keep their tested, hash-pinned build environments.
 The workflow installs the wheel in a separate environment and runs
 `scripts/check-installed.py` from an outside directory. The installed
 `agent-evidence-observer verify` command must verify the committed retained
-broker packet under `scripts/fixtures/broker-packet/` and report `verified`
+broker packet under `scripts/fixtures/broker-packet/` with the observer and witness
+keys pinned on the command line and report `verified`
 with `witnessScope: PEER`; verifying must leave the packet's files unchanged.
 A temporary copy with one byte appended to a retained effect must fail with a
 nonzero exit and no verified result. The workflow rebuilds and installs the

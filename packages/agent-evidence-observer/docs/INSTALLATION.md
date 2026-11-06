@@ -158,7 +158,9 @@ Python 3.12 or later and [`uv`](https://docs.astral.sh/uv/) are needed:
 ```sh
 git clone https://github.com/probityai/probity && cd probity/packages/agent-evidence-observer
 uv venv .venv --python python3.12 && uv pip install --python .venv/bin/python .
-.venv/bin/agent-evidence-observer verify scripts/fixtures/broker-packet
+.venv/bin/agent-evidence-observer verify scripts/fixtures/broker-packet \
+  --observer-key a592976c199b8a4f3a80ca4412df916de591aa4a10f95e0b8030e1321bd2d9de \
+  --witness-key 143f322c613549cf4da40ae09b0634f82b68d2d5a1017639bdde2e1eb15353f6
 ```
 
 The command prints:
@@ -167,6 +169,7 @@ The command prints:
 {"noDetectedGap": "true", "status": "verified", "witnessScope": "PEER"}
 ```
 
-`scripts/fixtures/broker-packet/` holds a signed packet, the history, the public keys and the file
-tree of one retained run. `noDetectedGap` means the broker's file-tree snapshots found no change it
+`scripts/fixtures/broker-packet/` holds a signed packet, the history and the file tree of one
+retained run. The observer and witness keys come from this page, not from the packet, and `verify`
+refuses to run without both. `noDetectedGap` means the broker's file-tree snapshots found no change it
 did not make. It does not mean every agent effect was seen.

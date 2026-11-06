@@ -15,7 +15,9 @@ Check a retained signed packet with the released package. You need Python 3.12 o
 
 ```sh
 git clone https://github.com/probityai/probity && cd probity/packages/agent-evidence-observer
-uvx --from agent-evidence-observer==0.2.0 agent-evidence-observer verify scripts/fixtures/broker-packet
+uvx --from agent-evidence-observer==0.2.0 agent-evidence-observer verify scripts/fixtures/broker-packet \
+  --observer-key a592976c199b8a4f3a80ca4412df916de591aa4a10f95e0b8030e1321bd2d9de \
+  --witness-key 143f322c613549cf4da40ae09b0634f82b68d2d5a1017639bdde2e1eb15353f6
 ```
 
 The command prints:
@@ -24,8 +26,9 @@ The command prints:
 {"noDetectedGap": "true", "status": "verified", "witnessScope": "PEER"}
 ```
 
-`scripts/fixtures/broker-packet/` holds a signed packet, its history, the public keys and the file tree. The
-operator's runtime wrote the packet, and this package checks it offline. `noDetectedGap` means the broker's
+`scripts/fixtures/broker-packet/` holds a signed packet, its history and the file tree. The
+operator's runtime wrote the packet, and this package checks it offline against the two keys pinned on the
+command line. The packet carries no keys of its own, and `verify` refuses to run without both. `noDetectedGap` means the broker's
 file-tree snapshots found no change it did not make. It does not mean every agent effect was seen.
 See [Installation and profile selection](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md) for the source-pinned recipes.
 
