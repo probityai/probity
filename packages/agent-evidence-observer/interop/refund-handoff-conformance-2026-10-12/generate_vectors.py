@@ -1600,7 +1600,7 @@ def vectors() -> dict[str, tuple[bytes, dict[str, Any], str]]:
     )
     result["62-non-ascii-input"] = (
         baseline.replace("pay-A", "pay-é", 1).encode("utf-8"),
-        {"exit": 2, "refusal": "non-ASCII string"},
+        {"exit": 2, "refusal": "signature does not verify"},
     )
     result["63-admission-checkpoint-before-record"] = (
         canonical(build()),

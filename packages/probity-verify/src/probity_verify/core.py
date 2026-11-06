@@ -17,6 +17,7 @@ from typing import Any
 
 from .adapters import (
     acceptance_observed,
+    audit_principal,
     authority_anchor,
     brokered_file_write,
     completion_claim,
@@ -62,6 +63,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "restoration_bundle/v1": restoration.adjudicate_bundle,
     "jcs_canonical/v1": jcs_canonical.adjudicate,
     "observed_effect/v1": observed_effect.adjudicate,
+    "audit_principal/v1": audit_principal.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

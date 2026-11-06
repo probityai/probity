@@ -104,6 +104,23 @@ def write(path: Path, value: Any) -> None:
         stream.write(canonical(value))
 
 
+def write_atomic(path: Path, value: Any) -> None:
+    """Publish a canonical member so a polling reader never sees a partial file.
+
+    The bytes go to a hidden sibling first and move into place with one
+    ``os.replace``. An existing member is refused, as in :func:`write`.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        raise FileExistsError(path)
+    temporary = path.with_name(f".{path.name}.tmp")
+    with temporary.open("wb") as stream:
+        stream.write(canonical(value))
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary, path)
+
+
 def authority(case: dict[str, Any], mode: str = "valid") -> dict[str, Any]:
     """Select deterministic recovery authority bound to the original action.
 

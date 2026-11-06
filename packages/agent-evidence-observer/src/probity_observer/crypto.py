@@ -1,9 +1,20 @@
-"""Byte and signature primitives for the prototype's restricted JSON profile.
+"""Byte and signature primitives for the observer's canonical JSON profile.
 
-The profile accepts ASCII strings, finite JSON structures, and safe integers. It
-intentionally rejects floats and non-ASCII text; it is not a general RFC 8785
-implementation. This narrow domain has one portable serialization and is enough
-for the prototype's paths, digests, identifiers, and timestamps.
+Signed and hashed values are serialized with RFC 8785 (JSON Canonicalization
+Scheme): UTF-8 output, JCS string escaping, and object members sorted by UTF-16
+code units. The profile is a subset of what JCS can carry, and every value in it
+has exactly one JCS byte form:
+
+* String values may hold any Unicode scalar value, so model output in any
+  script, emoji, combining marks, and U+2028/U+2029 is recorded as emitted.
+  Text is never normalized: NFC and NFD spellings are different values.
+* Object member names stay ASCII (U+0000 to U+007F). Member
+  names are the selectors a verifier reads fields by; an ASCII-only name space
+  rules out confusable or normalization-variant twins of one field
+  ("amount" beside a Cyrillic "\u0430mount") and keeps member order identical
+  under every sort a reimplementation might use.
+* Lone surrogates, floats, and integers outside the safe JSON range are
+  refused, because they have no single portable representation.
 """
 
 from __future__ import annotations
@@ -14,6 +25,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+import rfc8785
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
@@ -45,8 +57,8 @@ def _validate(value: Any) -> None:
             raise VerificationError("integer exceeds the safe JSON range")
         return
     if isinstance(value, str):
-        if not value.isascii():
-            raise VerificationError("non-ASCII string is outside the prototype profile")
+        if any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+            raise VerificationError("string holds a lone surrogate, which is not Unicode text")
         return
     if isinstance(value, list):
         for item in value:
@@ -56,28 +68,29 @@ def _validate(value: Any) -> None:
         for key, item in value.items():
             if not isinstance(key, str):
                 raise VerificationError("JSON object keys must be strings")
-            _validate(key)
+            if not key.isascii():
+                raise VerificationError("JSON object member names must be ASCII")
             _validate(item)
         return
     raise VerificationError("value is outside the prototype JSON profile")
 
 
 def canonical(value: Any) -> bytes:
-    """Serialize the restricted JSON profile to deterministic UTF-8 bytes.
+    """Serialize the canonical JSON profile to its RFC 8785 UTF-8 bytes.
 
     Parameters
     ----------
     value : Any
-        Nested JSON data. Floats, large integers, and non-ASCII strings are
-        refused instead of silently transformed.
+        Nested JSON data. Floats, unsafe integers, lone surrogates, and
+        non-ASCII member names are refused instead of silently transformed.
 
     Returns
     -------
     bytes
-        Compact, key-sorted JSON bytes used by :func:`digest` and signatures.
+        RFC 8785 bytes used by :func:`digest` and signatures.
     """
     _validate(value)
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("ascii")
+    return rfc8785.dumps(value)
 
 
 def strict_loads(data: bytes) -> Any:

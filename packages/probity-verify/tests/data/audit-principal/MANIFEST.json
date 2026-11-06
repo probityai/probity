@@ -1,0 +1,165 @@
+{
+  "keys": {
+    "observer": {
+      "keyid": "292f087bf72c85a72cdea8483084d18d",
+      "publicKey": "60b9ca613738a46a9350086999c93389e65c342482bbf65c6589d43116de5e7a"
+    }
+  },
+  "payloadType": "application/vnd.in-toto+json",
+  "predicateType": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/agent-audit-record",
+  "source": "probityai/agent-evidence-vectors commit bdf25549864e33bf33071678ce77315e109cad31 (pull request 458), corpora/vectors-agent-audit-record, rows PR1 to PR11 (a copy of the published files)",
+  "suite": "agent-audit-record-conformance",
+  "vectors": [
+    {
+      "draftId": "PR1",
+      "expected": {
+        "codes": [],
+        "derivedTier": "authoritative",
+        "verdict": "valid"
+      },
+      "file": "statements/v25048425b3cf4235.json",
+      "id": "v25048425b3cf4235",
+      "kind": "accept",
+      "row": "A1 with a principal: an RFC 9068 access token from an https issuer for the user the delegation names, the agent's credential digest equal to the token digest, the issuer key a P-256 JWK whose RFC 7638 thumbprint is recorded, and a tenant",
+      "slug": "pr1-principal-user-access-token"
+    },
+    {
+      "draftId": "PR2",
+      "expected": {
+        "codes": [],
+        "derivedTier": "authoritative",
+        "verdict": "valid"
+      },
+      "file": "statements/v717e1bb82abc81e9.json",
+      "id": "v717e1bb82abc81e9",
+      "kind": "accept",
+      "row": "a client-credentials principal: delegation.subjectKind of system, the principal's subject the client itself, two audiences, client_secret_basic, no tenant",
+      "slug": "pr2-principal-system-client-credentials"
+    },
+    {
+      "draftId": "PR3",
+      "expected": {
+        "codes": [],
+        "derivedTier": "authoritative",
+        "verdict": "valid"
+      },
+      "file": "statements/v49c8e37c7b5b0a06.json",
+      "id": "v49c8e37c7b5b0a06",
+      "kind": "accept",
+      "row": "PR1 established from an OpenID Connect ID token signed with the issuer's Ed25519 key, the client authenticated by tls_client_auth",
+      "slug": "pr3-principal-id-token-ed25519"
+    },
+    {
+      "draftId": "PR4",
+      "expected": {
+        "codes": [
+          "principal-thumbprint-mismatch"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/v1a2a14e3c671f2c7.json",
+      "id": "v1a2a14e3c671f2c7",
+      "kind": "reject",
+      "row": "keyThumbprint is the RFC 7638 thumbprint of the issuer's Ed25519 key while key is its P-256 key",
+      "slug": "pr4-principal-thumbprint-mismatch"
+    },
+    {
+      "draftId": "PR5",
+      "expected": {
+        "codes": [
+          "principal-expired"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/va10144e3bbdce77d.json",
+      "id": "va10144e3bbdce77d",
+      "kind": "reject",
+      "row": "the assertion expired at 10:00:00, an hour before decision.reportedAt",
+      "slug": "pr5-principal-expired-assertion"
+    },
+    {
+      "draftId": "PR6",
+      "expected": {
+        "codes": [
+          "principal-credential-unbound"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/v84cecdd82e8e9656.json",
+      "id": "v84cecdd82e8e9656",
+      "kind": "reject",
+      "row": "tokenDigest is the digest of another token than the credential agent.credentialDigest names: the key-hash binding is broken",
+      "slug": "pr6-principal-credential-unbound"
+    },
+    {
+      "draftId": "PR7",
+      "expected": {
+        "codes": [
+          "principal-member-missing"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/v147d091f7b537b8c.json",
+      "id": "v147d091f7b537b8c",
+      "kind": "reject",
+      "row": "principal without issuer",
+      "slug": "pr7-principal-issuer-missing"
+    },
+    {
+      "draftId": "PR8",
+      "expected": {
+        "codes": [
+          "principal-subject-mismatch"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/v2e761c4d4f358c4b.json",
+      "id": "v2e761c4d4f358c4b",
+      "kind": "reject",
+      "row": "the principal's subject is another user than the delegation's user subject",
+      "slug": "pr8-principal-subject-mismatch"
+    },
+    {
+      "draftId": "PR9",
+      "expected": {
+        "codes": [
+          "principal-kid-mismatch"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/v92a15ff9860863bd.json",
+      "id": "v92a15ff9860863bd",
+      "kind": "reject",
+      "row": "kid names a key of the snapshot other than the key carried",
+      "slug": "pr9-principal-kid-mismatch"
+    },
+    {
+      "draftId": "PR10",
+      "expected": {
+        "codes": [
+          "principal-not-yet-valid"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/vd5d17c5df6a3ba94.json",
+      "id": "vd5d17c5df6a3ba94",
+      "kind": "reject",
+      "row": "the assertion was issued at 11:30:00, after decision.reportedAt",
+      "slug": "pr10-principal-issued-after-decision"
+    },
+    {
+      "draftId": "PR11",
+      "expected": {
+        "codes": [
+          "principal-member-unknown"
+        ],
+        "verdict": "malformed"
+      },
+      "file": "statements/v9a3eb534e69f04b4.json",
+      "id": "v9a3eb534e69f04b4",
+      "kind": "reject",
+      "row": "principal carrying the raw token in a member this document does not define",
+      "slug": "pr11-principal-member-unknown"
+    }
+  ]
+}

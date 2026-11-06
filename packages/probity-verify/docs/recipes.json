@@ -51,6 +51,9 @@
           "probity_verify.samples": "examples/source-coverage"
         },
         "package-data": {
+          "probity_verify": [
+            "receipt-verdict-codes.json"
+          ],
           "probity_verify.samples": [
             "*.json",
             "*.html",
@@ -59,7 +62,7 @@
         }
       }
     },
-    "sha256": "7aa58a2e2d48aafffa13b380d44f750e2c3908ac123d780006ff245eb0e7d804"
+    "sha256": "76fd2f1639e9148bdd583c972e30f88670296650be9871d4e01f35ffbccd980c"
   },
   "implementation": [
     {
@@ -86,6 +89,11 @@
       "path": "src/probity_verify/adapters/acceptance_observed.py",
       "bytes": 11849,
       "sha256": "e35e29b6c8bc8ff8a6713132d4cf428e8c644eebc307d91edc7d202d9fcbd849"
+    },
+    {
+      "path": "src/probity_verify/adapters/audit_principal.py",
+      "bytes": 14077,
+      "sha256": "63819b5d728da2c804e2551a0ace784192c1ebfb5939b23ee4dcef1863798085"
     },
     {
       "path": "src/probity_verify/adapters/authority_anchor.py",
@@ -209,8 +217,8 @@
     },
     {
       "path": "src/probity_verify/core.py",
-      "bytes": 10417,
-      "sha256": "f514c676c1a86a1832dcfe3cb6966993b466d6d6d6e1370ec48cff8b61f46ea3"
+      "bytes": 10492,
+      "sha256": "1406cc47792345ecf04755b602875cf2e13b7c26b957b7555c28d3d34fd63c2e"
     },
     {
       "path": "src/probity_verify/dsse.py",
@@ -219,8 +227,8 @@
     },
     {
       "path": "src/probity_verify/execution_evidence.py",
-      "bytes": 70001,
-      "sha256": "dbe822703a903cad09271876793bcbaf9a1f98b27f3af7fecc6ae61c35d24330"
+      "bytes": 70179,
+      "sha256": "00a324bdb9810b071d5838cbae5fa362a4aa843cd7fba10fbbaf39ea26a31315"
     },
     {
       "path": "src/probity_verify/index.py",
@@ -231,6 +239,11 @@
       "path": "src/probity_verify/json_input.py",
       "bytes": 2123,
       "sha256": "aea7deb7a4d508cf40d782f95f07d30b96a92587aae5d12fb8d84c5ee6cd20af"
+    },
+    {
+      "path": "src/probity_verify/verdict_codes.py",
+      "bytes": 3467,
+      "sha256": "4ae62fb2c3027d4946564e3134f37f895d7c3b93d81cf9c1585fe219471209f6"
     },
     {
       "path": "src/probity_verify/vocabulary.py",
@@ -1728,6 +1741,42 @@
           "path": "examples/corpus-routes/observed-effect/envelope.json",
           "bytes": 2847,
           "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
+        }
+      ]
+    },
+    {
+      "task": "Check the principal an agent audit record names",
+      "claim_type": "audit_principal/v1",
+      "case": "examples/corpus-routes/audit-principal/case.json",
+      "policy": "examples/corpus-routes/audit-principal/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus.",
+      "case_id": "principal-user-access-token",
+      "expected_reason": "principal_conforms",
+      "exit_code": 0,
+      "argv": [
+        "probity-verify",
+        "examples/corpus-routes/audit-principal/case.json",
+        "--policy",
+        "examples/corpus-routes/audit-principal/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/audit-principal/case.json",
+          "bytes": 273,
+          "sha256": "b1384fa203dbfbe5e5bd78e76e78afbb396506715620eb8a74963614e8e050a3"
+        },
+        {
+          "path": "examples/corpus-routes/audit-principal/policy.json",
+          "bytes": 284,
+          "sha256": "1c0016caa2f446c3448b110cbb43021de0d04267459222a1745924a2d779e143"
+        },
+        {
+          "path": "examples/corpus-routes/audit-principal/envelope.json",
+          "bytes": 5895,
+          "sha256": "25048425b3cf423555642e030cd5f617931c2094353a65d2edaad18cb6436174"
         }
       ]
     }

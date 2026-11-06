@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+This is a minor release when cut: a consumer that requires `verdict_code` to be absent from the `execution_evidence`
+check, or that reads a code from it it does not know, can turn red.
+
+- An `adversarial_execution_evidence/v1` check now reports `verdict_code` beside `codes`: one of
+  `NOT_PUBLICLY_VERIFIABLE`, `LEAF_HASH_MISMATCH`, `PROOF_BROKEN`, `CLAIM_NOT_BOUND`, `SUMMARY_MISMATCH`, `MALFORMED`
+  or `NOT_RECONSTRUCTIBLE`, or `null` for a clean report. A failure takes the code of its primary code; a valid report
+  takes the code of its worst row tier. `probity_verify.verdict_codes` raises `UnknownCode` for a code the registry
+  does not name, so a code from a newer verifier is refused, never passed. The registry and one corpus vector per code
+  are in agent-evidence-vectors, `docs/reference/verifier-contract.md`.
+
+- `audit_principal/v1`: the principal an audit record names (the user or service the agent acted for), checked offline against rows PR1 to PR11 of agent-evidence-vectors.
 - `agent-evidence-vocabulary` is now `>=0.8.0,<0.10`, so the verifier installs beside vocabulary 0.9.0 as well as
   0.8.x. No identifier the verifier reads moved, and the test suite passes against both.
 
