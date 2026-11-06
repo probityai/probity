@@ -37,11 +37,12 @@ def build(message: str, label: str, color: str, logo: bytes | None, title: str =
     msg_w = text_width(message) + PAD
     total = label_w + msg_w + (0 if label else logo_w)
     parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
-        f'width="{total}" height="20" role="img" aria-label="{escape(label + " " + message).strip()}">',
+        (
+            f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
+            f'width="{total}" height="20" role="img" aria-label="{escape(label + " " + message).strip()}">'
+        ),
         f"<title>{escape((label + ' ' + message).strip())}</title>",
     ]
-    x = 0
     if label:
         parts.append(f'<rect width="{label_w}" height="20" fill="#555"/>')
         parts.append(f'<rect x="{label_w}" width="{msg_w}" height="20" fill="{color}"/>')
