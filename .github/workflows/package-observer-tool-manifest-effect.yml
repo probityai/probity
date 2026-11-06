@@ -49,16 +49,5 @@ jobs:
           uv pip check --python .venv/bin/python
           .venv/bin/python scripts/check-runtime-locks.py
           .venv/bin/pytest -q --ignore=tests/done
-      - name: Retain and read the unchanged contributor case
-        run: |
-          .venv/bin/python examples/tool_manifest_effect.py ./manifest-effect-run > manifest-effect-run.stdout.json
-          .venv/bin/python examples/tool_manifest_effect.py ./manifest-effect-run --verify --consumer-pins ./manifest-effect-run/tool-match/consumer-pins.json > manifest-effect-run.verification.json
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: always()
-        with:
-          name: tool-manifest-effect
-          if-no-files-found: error
-          path: |
-            packages/agent-evidence-observer/manifest-effect-run/
-            packages/agent-evidence-observer/manifest-effect-run.stdout.json
-            packages/agent-evidence-observer/manifest-effect-run.verification.json
+      - name: Read the retained contributor case
+        run: .venv/bin/pytest -q tests/test_tool_manifest_effect.py
