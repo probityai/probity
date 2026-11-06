@@ -105,7 +105,10 @@ jobs:
         run: |
           uv venv --no-project --python "${{ matrix.python }}" "$RUNNER_TEMP/twins"
           wheel="$(ls dist/probity_ratchet_cases-*.whl)"
-          uv pip install --python "$RUNNER_TEMP/twins/bin/python" "${wheel}[agentdojo]" pytest==9.1.1
+          # google-genai 3.0.0 (released 2026-11-06) ships an invalid escape sequence in types.py, which -W error
+          # turns into a SyntaxError at import; agentdojo 0.1.35 imports it unpinned.
+          printf 'google-genai<3\n' > "$RUNNER_TEMP/twins-constraints.txt"
+          uv pip install --python "$RUNNER_TEMP/twins/bin/python" -c "$RUNNER_TEMP/twins-constraints.txt" "${wheel}[agentdojo]" pytest==9.1.1
       - name: pytest the twins against the installed wheel
         working-directory: packages/probity-ratchet-cases
         run: '"$RUNNER_TEMP/twins/bin/python" -m pytest -q -W error -p no:cacheprovider tests_agentdojo'
