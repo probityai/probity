@@ -105,7 +105,10 @@ jobs:
         run: |
           uv venv --no-project --python "${{ matrix.python }}" "$RUNNER_TEMP/twins"
           wheel="$(ls dist/probity_ratchet_cases-*.whl)"
-          uv pip install --python "$RUNNER_TEMP/twins/bin/python" "${wheel}[agentdojo]" pytest==9.1.1
+          # google-genai is agentdojo's unpinned transitive dependency. 3.0.0 (6 Nov 2026) ships an invalid
+          # escape sequence in types.py, which -W error turns into a collection failure, so the job installs the
+          # release uv.lock resolves.
+          uv pip install --python "$RUNNER_TEMP/twins/bin/python" "${wheel}[agentdojo]" google-genai==2.34.0 pytest==9.1.1
       - name: pytest the twins against the installed wheel
         working-directory: packages/probity-ratchet-cases
         run: '"$RUNNER_TEMP/twins/bin/python" -m pytest -q -W error -p no:cacheprovider tests_agentdojo'
