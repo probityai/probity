@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import builtins
 import copy
+import json
 import logging
 import os
 import shutil
@@ -19,7 +20,7 @@ from hypothesis import given, strategies as st
 from crash_common import CASES, child_environment, load, sha
 from crash_reader import metadata_object, native_metadata, verify_saved
 from joint_common import withheld_sources
-from probity_observer.crypto import VerificationError, canonical, strict_loads
+from probity_observer.crypto import VerificationError, canonical
 
 RETAINED = Path(__file__).resolve().parents[1] / "retained"
 WITHHELD_FILE = RETAINED / "WITHHELD-SOURCES.json"
@@ -30,7 +31,7 @@ WITHHELD = withheld_sources(WITHHELD_FILE)
 def fresh():
     """Select the retained packet of all four real cases, its pins and its run report."""
     root = RETAINED / "fresh-run"
-    return root, load(root, "consumer-pins.json"), strict_loads((RETAINED / "fresh-report.json").read_bytes())
+    return root, load(root, "consumer-pins.json"), json.loads((RETAINED / "fresh-report.json").read_bytes())
 
 
 @pytest.fixture
