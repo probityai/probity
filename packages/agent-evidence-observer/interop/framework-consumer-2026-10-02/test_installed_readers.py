@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent
 # SHA-256 and the readers require exactly those digests. These pins select the rewritten bytes.
 ARCHIVES = {
     "langgraph": "2ef47107844b32854ad6c340854285a84f4a4f3e5cdb93e6081796970f072ba4",
-    "pydantic": "f365a72ac3dabf6578fd48f328e3bfc0a29b2148d47d75ef69f835aac0015460",
+    "pydantic": "2053257ea9cc4b2b305dcd32728f7ebf75f09619226321a87abe6c1715d21b48",
 }
 WITHHELD_LIST = ROOT / "retained" / "WITHHELD-SOURCES.json"
 

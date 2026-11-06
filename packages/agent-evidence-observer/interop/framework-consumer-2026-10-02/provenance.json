@@ -14,7 +14,7 @@
       "run": 37003617436,
       "artifact": 11225051391,
       "originalSha256": "e79cf593e91902f1ce4b483850a6f3dba186637e5f223e0931cf8333384782d2",
-      "retainedSha256": "f365a72ac3dabf6578fd48f328e3bfc0a29b2148d47d75ef69f835aac0015460"
+      "retainedSha256": "2053257ea9cc4b2b305dcd32728f7ebf75f09619226321a87abe6c1715d21b48"
     }
   },
   "scope": "Installed reader reconstruction of original native packets; no new native producer execution or outside CI adoption. The retained archives omit the producing operation's source files and keep their digests in retained/WITHHELD-SOURCES.json."

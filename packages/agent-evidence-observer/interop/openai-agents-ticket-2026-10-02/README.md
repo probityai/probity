@@ -137,7 +137,7 @@ from implementation head `faa22f16b459f10f53705a2d377754135db63e2b`.
 Its original 367-entry artifact had SHA-256
 `6f90d31bc08599b97641d6e6215a937b4b3ba5962953ce718e24c9ec904f53d2`; the retained copy
 [native-fixture-37053806564.zip](retained/native-fixture-37053806564.zip) (356 entries,
-SHA-256 `4a7f82f1bc4bada105021ed9728562c5ac949425fdd999dbcae1ee80923bb55c`) omits the
+SHA-256 `fa1c613c0ae74a2ef6d86c44b6b9dced7000ddf2981c114c5ad6e4439b4f0cc2`) omits the
 runtime sources listed in `retained/WITHHELD-SOURCES.json`.
 [recorded-run.json](recorded-run.json) separates the reviewed head, actual PR
 merge execution source, independently selected target baseline, source-byte

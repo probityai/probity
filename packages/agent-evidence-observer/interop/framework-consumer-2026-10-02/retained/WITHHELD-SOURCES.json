@@ -19,6 +19,8 @@
   "pydantic.zip/fresh-run/packet/sources/observer/admission.py": "5b9f68dbfc59b1c088b7de9c41e81fabdf2e3a72426e8766845d0cea28b2af0f",
   "pydantic.zip/fresh-run/packet/sources/observer/authorization.py": "35e28320cc6aa344938d9e678efa6de9b803b7b22e2431e8e918a8b57c08e4a9",
   "pydantic.zip/fresh-run/packet/sources/observer/broker.py": "9e36cc446dd63112bfda8555df9319345f825d74c5794ac0b037c92d235c0bd8",
+  "pydantic.zip/fresh-run/packet/sources/observer/cli.py": "615b58fd5ea3401ca3e1ff9ebab63508a22dee6578a28890793054da72fb78d8",
+  "pydantic.zip/fresh-run/packet/sources/observer/isolation.py": "737256706038ef6c05db2860dba22af0f023e44ba1cd213ee44516c0f9fcb3c0",
   "pydantic.zip/fresh-run/packet/sources/observer/probe_agent.py": "3699eeb662610fea2d8403294fad3239cbecf3dfcaeb542ceb2c40abdb0897f6",
   "pydantic.zip/fresh-run/packet/sources/observer/protected_dispatch.py": "91c748e4e21bcbc347fdaab129785671765214758f043482f8f31af043e12b34",
   "pydantic.zip/fresh-run/packet/sources/observer/protected_isolation.py": "6d99ddca3f03ada6c05ff21f4796ec3b8eea7097c1119b38e53239b16e44809d",
