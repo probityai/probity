@@ -188,7 +188,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     Returns ``not_established`` when a witness cannot be bound or a rounding
     rule is needed. A bound trace with unresolved operands or arithmetic that
     does not reproduce its figure is ``contradicted``. Malformed input raises
-    :class:`~probity_verify.common.CaseError`, outside the verdict axis.
+    :class:`~agent_evidence_verify.common.CaseError`, outside the verdict axis.
 
     This cannot authenticate who observed the execution, prove the selected
     sources were complete, or decide whether the declared operation was the

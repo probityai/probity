@@ -13,11 +13,11 @@
 !packages/probity-ratchet-cases/README.md
 !packages/probity-ratchet-cases/LICENSE
 !packages/probity-ratchet-cases/src/
-!packages/probity-verify/pyproject.toml
-!packages/probity-verify/README.md
-!packages/probity-verify/LICENSE
-!packages/probity-verify/MANIFEST.in
-!packages/probity-verify/src/
-!packages/probity-verify/examples/source-coverage/
+!packages/agent-evidence-verify/pyproject.toml
+!packages/agent-evidence-verify/README.md
+!packages/agent-evidence-verify/LICENSE
+!packages/agent-evidence-verify/MANIFEST.in
+!packages/agent-evidence-verify/src/
+!packages/agent-evidence-verify/examples/source-coverage/
 **/__pycache__
 **/*.pyc

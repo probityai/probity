@@ -18,7 +18,7 @@ VERIFY = "e835ce2bd6a960e7a1cc2fa6522f16d55dce728a"
 PROBE = r'''
 import hashlib, importlib.metadata as md, json, sys
 from pathlib import Path
-d=md.distribution("probity-verify");root=Path(d.locate_file("probity_verify"))
+d=md.distribution("agent-evidence-verify");root=Path(d.locate_file("agent_evidence_verify"))
 files={};forbidden=[]
 for p in sorted(root.rglob("*")):
  if p.is_symlink() or p.suffix in (".pyc",".pyo",".so",".pyd"):
@@ -114,7 +114,7 @@ def bindings(directory: Path, case_id: str, capability: dict,
 
 def invoke(reader: Path, directory: Path, prefix: Path, cwd: Path) -> tuple[int, bytes]:
     return child([str(reader), "-I", "-B", "-c",
-                  "from probity_verify.cli import main; raise SystemExit(main())",
+                  "from agent_evidence_verify.cli import main; raise SystemExit(main())",
                   str(directory / "case.json"), "--policy", str(directory / "policy.json"),
                   "--json"], prefix, cwd)
 
@@ -131,17 +131,17 @@ def launch(reader: Path, source: Path, wheel: Path, packet: Path,
             "unselected-verify-source")
     (output / "verify-source-selection.json").write_bytes(selected_raw)
     for name, expected in selected["pythonGitBlobs"].items():
-        original = source / "src" / "probity_verify" / name
+        original = source / "src" / "agent_evidence_verify" / name
         raw = original.read_bytes()
         require(not original.is_symlink() and hashlib.sha1(
             b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest() == expected,
             "verify-checkout-source")
-        retained = output / "verify-source" / "src" / "probity_verify" / name
+        retained = output / "verify-source" / "src" / "agent_evidence_verify" / name
         retained.parent.mkdir(parents=True, exist_ok=True)
         retained.write_bytes(raw)
     for name in ("LICENSE", "pyproject.toml", "README.md", "AGENTS.md"):
         shutil.copyfile(source / name, output / "verify-source" / name)
-    require(wheel.name == "probity_verify-0.1.0-py3-none-any.whl", "verify-wheel-name")
+    require(wheel.name == "agent_evidence_verify-0.1.0-py3-none-any.whl", "verify-wheel-name")
     shutil.copyfile(wheel, output / wheel.name)
     status, probe_raw = child([str(reader), "-I", "-B", "-c", PROBE],
                               output / "verify-installation", cwd)

@@ -27,7 +27,7 @@ RUN uv python install 3.14.8
 COPY pyproject.toml uv.lock ./
 COPY packages/probity-ratchet/ packages/probity-ratchet/
 COPY packages/probity-ratchet-cases/ packages/probity-ratchet-cases/
-COPY packages/probity-verify/ packages/probity-verify/
+COPY packages/agent-evidence-verify/ packages/agent-evidence-verify/
 RUN uv sync --frozen --package probity-ratchet --no-dev --extra atlas --python 3.14.8 \
     && /opt/ratchet/.venv/bin/ratchet --help > /dev/null
 

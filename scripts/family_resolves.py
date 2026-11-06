@@ -14,7 +14,7 @@ Standard library only for `lint`; `resolve` needs `uv` on PATH.
 
 Range policy for a requirement on a member of this workspace. A compatible-release range
 (`~=0.3.0`) stops at the next minor, so the day that member released 0.4 the published
-dependents could no longer install beside it (probity-verify 0.3.0 on 2026-10-30 broke
+dependents could no longer install beside it (agent-evidence-verify 0.3.0 on 2026-10-30 broke
 probityai, probity-ratchet and agent-evidence-observer, and family-resolves went red until
 three patch releases shipped). The range is therefore a window, `>=F,<C`: F is a release
 the dependent was tested against (not above the member's version in this tree), and C is the
@@ -46,7 +46,7 @@ FAMILY = {
     "agent-evidence-vectors": ("agent-evidence-vectors", "agent_evidence_vectors"),
     "agent-evidence-observer": ("agent-evidence-observer[done,witness]", "probity_observer"),
     "agent-evidence-mcp": ("agent-evidence-mcp", "agent_evidence_mcp"),
-    "probity-verify": ("probity-verify", "probity_verify"),
+    "agent-evidence-verify": ("agent-evidence-verify", "agent_evidence_verify"),
     "probity-ratchet": ("probity-ratchet", "ratchet"),
     "probity-ratchet-cases": ("probity-ratchet-cases", "ratchet_cases"),
     "jcs-admit": ("jcs-admit", "jcs_admit"),

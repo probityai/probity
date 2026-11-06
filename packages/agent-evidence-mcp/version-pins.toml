@@ -18,7 +18,7 @@ publisher = "probityai/probity"
 
 # Packages other repositories release that a page here names.
 [family]
-"pypi:probity-verify" = "0.3.0"
+"pypi:agent-evidence-verify" = "0.3.0"
 "pypi:agent-evidence-vectors" = "0.32.1"
 "pypi:agent-evidence-vocabulary" = "0.8.0"
 "pypi:agent-evidence-admission" = "0.2.0"

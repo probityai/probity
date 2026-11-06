@@ -8,7 +8,7 @@ effect, so it is added to the record without an ``origin``, conservatively
 counting as an edit, and the observation names a coverage gap around it. S3
 (the final tree) becomes the tree record.
 
-The output formats are the ones ``probity-verify`` defines in
+The output formats are the ones ``agent-evidence-verify`` defines in
 ``docs/done-receipt.md``, in the versions this module adds to:
 ``probity-observation/v3`` (an exec event carries the executed path ``exe``,
 its working directory ``cwd`` and the loader environment ``env``, all as

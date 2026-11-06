@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay a verdict bundle with the pinned probity-verify and fail on a bad one.
+"""Replay a verdict bundle with the pinned agent-evidence-verify and fail on a bad one.
 
 Two modes, one decision rule.
 
@@ -43,7 +43,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-PINNED = "probity-verify==0.3.0"
+PINNED = "agent-evidence-verify==0.3.0"
 DECISIONS = ("supported", "contradicted", "not_established")
 DEFAULT_GLOBS = "*.decision.zip,*.verdict.zip,decision.zip,verdict.zip"
 REPLAY_TIMEOUT_SECONDS = 120

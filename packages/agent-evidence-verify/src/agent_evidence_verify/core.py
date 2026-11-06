@@ -1,0 +1,232 @@
+"""Consumer-side adjudication kernel and stable decision envelope.
+
+Consumers can select additional versioned adapters for one call. The kernel
+pins the exact consumer policy in every decision and refuses unknown claim
+types. Adapter selection does not authenticate the adapter or its evidence.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from collections.abc import Callable, Mapping
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+from .adapters import (
+    acceptance_observed,
+    audit_principal,
+    authority_anchor,
+    brokered_file_write,
+    completion_claim,
+    done_receipt,
+    event_absence,
+    execution_evidence,
+    jcs_canonical,
+    observed_effect,
+    operand_lineage,
+    probe_observed,
+    protected_paths,
+    restoration,
+    source_coverage,
+    spend_reservation,
+    tool_claim_match,
+    uncertain_effect,
+)
+from .common import CaseError
+from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
+
+#: Names this verifier in every decision it prints, as ``reference.verifier.id``. A
+#: conformance run that records the field carries this identifier in the bytes its
+#: own pipeline emits. The URI is the same in every release.
+REFERENCE_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/agent-evidence-verify"
+
+ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
+    "brokered_file_write/v1": brokered_file_write.adjudicate,
+    "source_text_coverage/v1": source_coverage.adjudicate,
+    "operand_lineage/v1": operand_lineage.adjudicate,
+    "authority_anchor/v1": authority_anchor.adjudicate,
+    "event_absence/v1": event_absence.adjudicate,
+    "event_absence/v2": event_absence.adjudicate_v2,
+    "spend_reservation/v1": spend_reservation.adjudicate,
+    "protected_paths/v1": protected_paths.adjudicate,
+    "acceptance_observed/v1": acceptance_observed.adjudicate,
+    "probe_observed/v1": probe_observed.adjudicate,
+    "tool_claim_match/v1": tool_claim_match.adjudicate,
+    "completion_claim/v1": completion_claim.adjudicate,
+    "done_receipt/v2": done_receipt.adjudicate,
+    "adversarial_execution_evidence/v1": execution_evidence.adjudicate,
+    "uncertain_effect/v1": uncertain_effect.adjudicate,
+    "restoration_record/v1": restoration.adjudicate_record,
+    "restoration_bundle/v1": restoration.adjudicate_bundle,
+    "jcs_canonical/v1": jcs_canonical.adjudicate,
+    "observed_effect/v1": observed_effect.adjudicate,
+    "audit_principal/v1": audit_principal.adjudicate,
+}
+_BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
+_ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
+DECISIONS = {"supported", "contradicted", "not_established"}
+VANTAGES = {"independent", "unestablished"}
+WITNESS_SCOPES = ACCEPTED_WITNESS_SCOPES
+
+
+def canonical_json(value: Any) -> bytes:
+    return (json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n").encode("utf-8")
+
+
+def _adapter_registry(
+    adapters: Mapping[str, Callable[[Any, Any, Path], dict]] | None,
+) -> dict[str, Callable[[Any, Any, Path], dict]]:
+    """Snapshot the legacy registry and add explicit consumer selections."""
+    registry = dict(ADAPTERS)
+    if adapters is None:
+        return registry
+    if not isinstance(adapters, Mapping):
+        raise CaseError("adapters must be a mapping")
+    additions = dict(adapters)
+    for claim_type, adapter in additions.items():
+        if not isinstance(claim_type, str) or not _ADAPTER_NAME.fullmatch(claim_type):
+            raise CaseError("adapter names must be versioned claim identifiers")
+        if claim_type in registry or claim_type in _BUILTIN_CLAIM_TYPES:
+            raise CaseError("adapter collides with a registered claim_type")
+        if not callable(adapter):
+            raise CaseError("adapter must be callable")
+    registry.update(additions)
+    return registry
+
+
+def _control_bytes(case: dict, policy: dict) -> tuple[bytes, bytes]:
+    """Bind JSON control values without converting a malformed input to a verdict."""
+    try:
+        return canonical_json(case), canonical_json(policy)
+    except (TypeError, ValueError, RecursionError) as error:
+        raise CaseError("case and policy must contain JSON-compatible values") from error
+
+
+def adjudicate(
+    case: Any,
+    policy: Any,
+    artifact_root: Path,
+    *,
+    adapters: Mapping[str, Callable[[Any, Any, Path], dict]] | None = None,
+    require_witness_scope: str = PEER,
+) -> dict:
+    """Check one claim using built-in and explicitly selected adapters.
+
+    ``adapters`` supplies additional exact claim versions for this call only.
+    It cannot replace a registered or built-in claim type. The kernel copies
+    both registries before it reads the claim selection. Each selected adapter
+    must accept ``(case, policy, artifact_root)`` and return the common decision
+    envelope. The callback receives private copies of the case and policy.
+    Changes to those copies refuse the call. The decision binds the policy
+    bytes captured before the callback. Malformed selections or envelopes
+    raise :class:`CaseError`.
+
+    Existing callers can continue to use the three positional arguments and
+    the legacy ``ADAPTERS`` registry. Adapter callbacks are trusted Python code;
+    the registry provides selection and isolation, not a code sandbox.
+
+    An adapter may report the ``vantage`` and ``witness_scope`` its verdict
+    rests on. ``require_witness_scope="EXTERNAL"`` turns a ``supported`` verdict
+    that does not rest on EXTERNAL scope into ``not_established`` with reason
+    ``witness_scope_below_required``, keeping the adapter's verdict in a check.
+    When a record the verdict rests on claims EXTERNAL scope that no verified
+    witness bundle earned (the adapter's ``unwitnessed_scope_claims``), the
+    reason is ``witness_scope_unwitnessed`` and the check names each claim.
+    A ``contradicted`` verdict stands: a witness reporting failure cannot help
+    an agent fake a pass.
+    """
+    if not isinstance(case, dict) or not isinstance(policy, dict):
+        raise CaseError("case and policy must be JSON objects")
+    if require_witness_scope not in WITNESS_SCOPES:
+        raise CaseError("require_witness_scope must be PEER or EXTERNAL: "
+                        + witness_scope_error(require_witness_scope))
+    registry = _adapter_registry(adapters)
+    case, policy = deepcopy(case), deepcopy(policy)
+    control_bytes = _control_bytes(case, policy)
+    policy_sha256 = hashlib.sha256(control_bytes[1]).hexdigest()
+    case_id = case.get("case_id")
+    assessments = policy.get("assessments")
+    if not isinstance(case_id, str) or not isinstance(assessments, dict):
+        raise CaseError("case_id and consumer assessments are required")
+    assessment = assessments.get(case_id)
+    if not isinstance(assessment, dict):
+        raise CaseError("case_id has no consumer assessment")
+    claim_type = assessment.get("claim_type")
+    if not isinstance(claim_type, str) or claim_type not in registry:
+        raise CaseError("unsupported claim_type")
+    try:
+        result = registry[claim_type](case, policy, artifact_root)
+    except RecursionError as error:
+        raise CaseError("an input is nested too deeply to judge") from error
+    try:
+        unchanged = _control_bytes(case, policy) == control_bytes
+    except CaseError:
+        unchanged = False
+    if not unchanged:
+        raise CaseError("adapter changed the case or consumer policy")
+    if (not isinstance(result, dict) or
+            result.get("schema_version") != "probity-decision/v1" or
+            not isinstance(result.get("decision"), str) or
+            result.get("decision") not in DECISIONS or
+            not isinstance(result.get("reason"), str) or
+            result.get("case_id") != case_id or
+            result.get("claim_type") != claim_type or
+            not isinstance(result.get("scope"), dict) or
+            not isinstance(result.get("checks"), list) or
+            result.get("vantage", "independent") not in VANTAGES or
+            result.get("witness_scope", PEER) not in WITNESS_SCOPES or
+            not isinstance(result.get("unwitnessed_scope_claims", []), list)):
+        raise CaseError("adapter returned an invalid decision envelope")
+    result["policy_sha256"] = policy_sha256
+    result["reference"] = {"verifier": {"id": REFERENCE_VERIFIER_ID}}
+    if require_witness_scope == EXTERNAL:
+        _require_external(result)
+    return result
+
+
+def _require_external(result: dict) -> None:
+    """Hold a supported verdict that does not rest on EXTERNAL witness scope as unestablished."""
+    result["required_witness_scope"] = EXTERNAL
+    scope = result.get("witness_scope")
+    if result["decision"] != "supported" or scope == EXTERNAL:
+        return
+    claims = result.get("unwitnessed_scope_claims", [])
+    check = {"id": "witness_scope", "status": "unavailable", "required": EXTERNAL,
+             "observed": scope or "unstated", "adapter_decision": result["decision"],
+             "adapter_reason": result["reason"]}
+    if claims:
+        check["unwitnessed_claims"] = claims
+    result["checks"].append(check)
+    result.update(decision="not_established",
+                  reason="witness_scope_unwitnessed" if claims
+                  else "witness_scope_below_required")
+
+
+def _qualifiers(result: dict) -> str:
+    """The vantage and witness scope a verdict rests on, when the adapter reports them."""
+    parts = [f"{key}: {result[key]}" for key in ("vantage", "witness_scope", "verifier_id")
+             if key in result]
+    if "required_witness_scope" in result:
+        parts.append(f"required: {result['required_witness_scope']}")
+    return f" ({', '.join(parts)})" if parts else ""
+
+
+def render_packet(result: dict) -> str:
+    """Readable packet whose sections work for every registered claim type."""
+    lines = [
+        "Probity decision packet v1",
+        f"Case: {json.dumps(result['case_id'], ensure_ascii=True)}",
+        f"Claim: {result['claim_type']}",
+        f"Decision: {result['decision']}{_qualifiers(result)}",
+        f"Reason: {result['reason']}",
+        f"Policy SHA-256: {result['policy_sha256']}",
+        f"Reference verifier: {result['reference']['verifier']['id']}",
+        "Scope and evidence:",
+        json.dumps(result["scope"], indent=2, sort_keys=True, ensure_ascii=True),
+        "Checks:",
+        json.dumps(result["checks"], indent=2, sort_keys=True, ensure_ascii=True),
+    ]
+    return "\n".join(lines) + "\n"

@@ -8,12 +8,12 @@
 sdist = ["PKG-INFO", "README.md", "pyproject.toml", "LICENSE", "setup.cfg", "src/*", "tests/*"]
 wheel = ["probityai/*", "probityai-*.dist-info/*"]
 
-[distribution.probity-verify]
+[distribution.agent-evidence-verify]
 sdist = [
     "PKG-INFO", "LICENSE", "MANIFEST.in", "README.md", "pyproject.toml", "setup.cfg",
     "docs/*", "examples/*", "scripts/*", "src/*", "tests/*", "vectors-*/*",
 ]
-wheel = ["probity_verify/*", "probity_verify-*.dist-info/*"]
+wheel = ["agent_evidence_verify/*", "agent_evidence_verify-*.dist-info/*"]
 
 [distribution.probity-ratchet]
 sdist = [

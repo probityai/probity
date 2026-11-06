@@ -13,7 +13,7 @@ Install the released package: `pip install probityai==0.1.0`.
 You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Nothing to clone: the sample case and policies ship inside the wheel.
 
 ```sh
-samples="$(uvx --from probityai==0.1.0 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
+samples="$(uvx --from probityai==0.1.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
 uvx --from probityai==0.1.0 probityai verify "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
@@ -33,7 +33,7 @@ Every valid decision exits 0, including `contradicted` and `not_established`; ex
 
 | Command | From | What it does |
 |---|---|---|
-| `probityai verify` | [probity-verify](https://github.com/probityai/probity/tree/main/packages/probity-verify) | decide a claim against pinned evidence, or a DSSE envelope |
+| `probityai verify` | [agent-evidence-verify](https://github.com/probityai/probity/tree/main/packages/agent-evidence-verify) | decide a claim against pinned evidence, or a DSSE envelope |
 | `probityai done` | [agent-evidence-observer](https://github.com/probityai/probity/tree/main/packages/agent-evidence-observer) `[done]` | seal a definition of done and check an agent's claim from outside |
 
 `probityai --help` lists exactly the commands installed. A package adds one with an entry point in the `probityai.cli_subcommands` group; the contract is in [docs/architecture/MONOREPO.md](https://github.com/probityai/probity/blob/main/docs/architecture/MONOREPO.md#the-probityai-command).

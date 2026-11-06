@@ -1,6 +1,6 @@
 """The sealed manifest for Inspect logs: canonical digests, covers and the manifest builder.
 
-Needs only the core dependencies. The runs that need Inspect itself and probity-verify are in
+Needs only the core dependencies. The runs that need Inspect itself and agent-evidence-verify are in
 ``interop/inspect-sealed-manifest-2026-11-03/test_real_run.py``."""
 
 from __future__ import annotations
@@ -119,7 +119,7 @@ def test_sample_order_does_not_change_a_cover() -> None:
 # verification after handling
 
 
-# probity-verify, the published release, judges the digests with its own canonicalizer
+# agent-evidence-verify, the published release, judges the digests with its own canonicalizer
 
 
 # manifest builder

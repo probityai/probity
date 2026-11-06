@@ -1,4 +1,4 @@
-"""Independent verification of Ratchet admission receipts through the pinned `probity-verify` package."""
+"""Independent verification of Ratchet admission receipts through the pinned `agent-evidence-verify` package."""
 
 from ratchet.verify.adapter import DEFAULT_GATES, PREDICATE_URI
 from ratchet.verify.keys import DEFAULT_KEY_PATH, TrustedKeyError, load_trusted_key

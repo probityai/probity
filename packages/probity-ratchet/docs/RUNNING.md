@@ -115,7 +115,7 @@ split runs only when named.
 ## 4. Verify without Ratchet's code path
 
 `--envelope-out` writes the signed receipt. `python -m ratchet.verify` checks it with the pinned
-`probity-verify` package and the pinned key in `keys/ratchet-decisions.pub`. See [VERIFY.md](VERIFY.md).
+`agent-evidence-verify` package and the pinned key in `keys/ratchet-decisions.pub`. See [VERIFY.md](VERIFY.md).
 
 ## 5. The Claude Code hook
 

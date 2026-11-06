@@ -26,7 +26,7 @@ f7545959a44861cce25e5779ea0e9c0fa2925b59daae1526bf4acf52bff3577a  verify-control
 CONTROL_DIGESTS
 .venv/bin/python verify-controls/scripts/check-brokered-file-write.py \
   --producer-python "$PWD/.venv/bin/python" \
-  --verifier "$PWD/.venv/bin/probity-verify" \
+  --verifier "$PWD/.venv/bin/agent-evidence-verify" \
   --output "$PWD/capture"
 ```
 

@@ -2,19 +2,19 @@
 
 <p>
 <a href="https://github.com/probityai/probity/actions/workflows/ci.yml"><img height="16" alt="CI" src="https://github.com/probityai/probity/actions/workflows/ci.yml/badge.svg"></a>
-<a href="https://pypi.org/project/probity-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/probity-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white&cacheSeconds=86400"></a>
-<a href="https://pepy.tech/projects/probity-verify"><img height="16" alt="Downloads" src="assets/badges/dl-pypi-probity-verify.svg"></a>
+<a href="https://pypi.org/project/agent-evidence-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/agent-evidence-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white&cacheSeconds=86400"></a>
+<a href="https://pepy.tech/projects/agent-evidence-verify"><img height="16" alt="Downloads" src="assets/badges/dl-pypi-agent-evidence-verify.svg"></a>
 <a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="assets/badges/license.svg"></a>
 <a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="assets/badges/stars.svg"></a>
 </p>
 
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier, an observer that records agent runs, and the tools around them. The conformance corpus, vocabulary and admission rules live in https://github.com/probityai/agent-evidence-vectors.
 
-<p align="center"><picture><source media="(min-width: 1012px)" srcset="https://raw.githubusercontent.com/probityai/probityai.github.io/main/figures/f3-missing-not-clean/5/wide-auto.svg"><img src="https://raw.githubusercontent.com/probityai/probityai.github.io/main/figures/f3-missing-not-clean/5/narrow-auto.svg" alt="A report.txt of six passages, one fewer than its source. A reader that sees only the report finds nothing to flag and thinks it fine. probity-verify lays the same report over source.html, pairs each source passage with its record passage, finds that the fifth has nothing to pair with, and returns contradicted, reason selected_span_missing_from_record."></picture></p>
+<p align="center"><picture><source media="(min-width: 1012px)" srcset="https://raw.githubusercontent.com/probityai/probityai.github.io/main/figures/f3-missing-not-clean/5/wide-auto.svg"><img src="https://raw.githubusercontent.com/probityai/probityai.github.io/main/figures/f3-missing-not-clean/5/narrow-auto.svg" alt="A report.txt of six passages, one fewer than its source. A reader that sees only the report finds nothing to flag and thinks it fine. agent-evidence-verify lays the same report over source.html, pairs each source passage with its record passage, finds that the fifth has nothing to pair with, and returns contradicted, reason selected_span_missing_from_record."></picture></p>
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `uv add probity-verify==0.4.1`, or `pip install probity-verify==0.4.1`.
+Install the released verifier: `uv add agent-evidence-verify==0.5.0`, or `pip install agent-evidence-verify==0.5.0`.
 
 Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai==0.1.1`, or `pip install probityai==0.1.1`.
 
@@ -23,8 +23,8 @@ Verified by Probity (github.com/probityai/probity). The `probityai` command line
 Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
-samples="$(uvx --from probity-verify==0.4.1 python -c 'import importlib.resources as r; print(r.files("probity_verify") / "samples")')"
-uvx probity-verify==0.4.1 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from agent-evidence-verify==0.5.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
+uvx agent-evidence-verify==0.5.0 "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -55,7 +55,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | package | what it is | version | downloads |
 | --- | --- | :---: | :---: |
 | [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [probity-verify](packages/probity-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | **0.4.1** | [![probity-verify downloads](assets/badges/dl-pypi-probity-verify.svg)](https://pepy.tech/projects/probity-verify) |
+| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | **0.5.0** | [![agent-evidence-verify downloads](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |
 | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
 | [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | agent task cases graded on final state: a simulated company, tool faults, exact graders | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
 | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | **0.2.0** | - |
@@ -76,7 +76,7 @@ uv run python -m pytest
 
 | page | read it for |
 | --- | --- |
-| [probity-verify](packages/probity-verify/README.md) | the verifier, its adapters and its recipes |
+| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | the verifier, its adapters and its recipes |
 | [Repository layout](docs/architecture/MONOREPO.md) | the workspace, the `probityai` command seam, CI and releases |
 | [Agent instructions](AGENTS.md) | commands to run before a change |
 | [Contributing](CONTRIBUTING.md) | reporting a problem and opening a pull request |

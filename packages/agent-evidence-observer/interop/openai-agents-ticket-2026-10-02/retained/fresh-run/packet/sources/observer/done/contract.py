@@ -369,10 +369,10 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
     """The ``probity-done-contract/v1`` record for a compiled task.
 
     With ``executables`` (each agent command's ``argv[0]`` to its path in the agent image), a
-    command the agent runs itself carries ``cwd`` and ``exe``: probity-verify matches a claim of
+    command the agent runs itself carries ``cwd`` and ``exe``: agent-evidence-verify matches a claim of
     it to an exec in that directory, of that executable, with the command's arguments. With
     ``run_writes`` (each command's id to the workspace paths its stable runs wrote), such a
-    command also carries ``run_writes``: probity-verify then counts a mutation as the run's
+    command also carries ``run_writes``: agent-evidence-verify then counts a mutation as the run's
     own only when a matching run made it under those paths or a cache directory. With
     ``interpreter`` (the paths of the Python beside the agent's tools), an agent command whose
     program is a Python entry point (``pytest``) also carries ``interpreter``, so a run of it as
@@ -967,7 +967,7 @@ def start_guard(task: Task, runner: Runner, runs: int, timeout: float, stable: S
     return task, commands, record
 
 
-# probity-verify at the pinned commit (87835a8) grades any failing held-out command as
+# agent-evidence-verify at the pinned commit (87835a8) grades any failing held-out command as
 # contradicted and cannot read a command's tier, so a contract carrying synthesized tests would
 # be graded wrongly: until its adapter reads ``tier``, such a contract is refused at seal time.
 VERIFIER_GRADES_SYNTHESIZED = False
@@ -1159,7 +1159,7 @@ def compile_task(task: Task, out: Path, key, runner: Runner, runs: int = 3,
     if synthesized and not VERIFIER_GRADES_SYNTHESIZED:
         raise Refused(task.task_id, "synthesized_tier_unsupported",
                       f"{', '.join(synthesized)} would be graded as trusted held-out tests: the "
-                      "pinned probity-verify reads no command tier, so a failing synthesized "
+                      "pinned agent-evidence-verify reads no command tier, so a failing synthesized "
                       "test would read contradicted instead of not_established")
     adequacy = measured.final
     report.update({**stability_report(stable, runner, runs, task.reference is not None),

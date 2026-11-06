@@ -1,4 +1,4 @@
-"""Real Inspect runs of the sealed manifest, and probity-verify judging its digests.
+"""Real Inspect runs of the sealed manifest, and agent-evidence-verify judging its digests.
 
 Needs the ``inspect`` and ``done`` extras: ``pip install -e '.[test,inspect,done]'`` from the package
 root, then ``python -m pytest -q interop/inspect-sealed-manifest-2026-11-03/test_real_run.py``.
@@ -179,16 +179,16 @@ def _verify(tmp_path: Path, name: str, claimed: bytes, source: bytes, digest: st
                                "claimed": "claimed"}},
     }), encoding="utf-8")
     done = subprocess.run(
-        [str(Path(sys.executable).parent / "probity-verify"), str(case_dir / "case.json"), "--policy",
+        [str(Path(sys.executable).parent / "agent-evidence-verify"), str(case_dir / "case.json"), "--policy",
          str(case_dir / "policy.json"), "--json"],
         capture_output=True, text=True, check=False, timeout=120)
     return done.returncode, json.loads(done.stdout) if done.stdout.strip() else {}
 
 
 @pytest.mark.parametrize("which", ["execution", "results"])
-def test_probity_verify_confirms_each_manifest_digest(tmp_path: Path, which: str) -> None:
-    version = tuple(int(part) for part in metadata.version("probity-verify").split(".")[:2])
-    assert version >= (0, 4), "jcs_canonical/v1 ships from probity-verify 0.4.0"
+def test_agent_evidence_verify_confirms_each_manifest_digest(tmp_path: Path, which: str) -> None:
+    version = tuple(int(part) for part in metadata.version("agent-evidence-verify").split(".")[:2])
+    assert version >= (0, 4), "jcs_canonical/v1 ships from agent-evidence-verify 0.4.0"
     location = _run(tmp_path)
     manifest = json.loads(binding.manifest_path(location).read_text(encoding="utf-8"))
     log = binding.decode_log(location)
@@ -205,7 +205,7 @@ def test_probity_verify_confirms_each_manifest_digest(tmp_path: Path, which: str
     assert decision["claim_type"] == "jcs_canonical/v1"
 
 
-def test_probity_verify_refuses_a_cover_that_does_not_hash_to_the_manifest(tmp_path: Path) -> None:
+def test_agent_evidence_verify_refuses_a_cover_that_does_not_hash_to_the_manifest(tmp_path: Path) -> None:
     location = _run(tmp_path)
     manifest = json.loads(binding.manifest_path(location).read_text(encoding="utf-8"))
     cover = binding.results_cover(binding.decode_log(location))
@@ -218,7 +218,7 @@ def test_probity_verify_refuses_a_cover_that_does_not_hash_to_the_manifest(tmp_p
     assert code == 2
 
 
-def test_probity_verify_contradicts_bytes_that_are_not_the_canonical_form(tmp_path: Path) -> None:
+def test_agent_evidence_verify_contradicts_bytes_that_are_not_the_canonical_form(tmp_path: Path) -> None:
     location = _run(tmp_path)
     cover = binding.execution_cover(binding.decode_log(location))
     spaced = json.dumps(cover, indent=2).encode("utf-8")

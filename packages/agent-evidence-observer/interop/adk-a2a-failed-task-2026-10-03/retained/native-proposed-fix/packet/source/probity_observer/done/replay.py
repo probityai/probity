@@ -671,7 +671,7 @@ def failure_kind(result: dict[str, Any]) -> str | None:
     raises wherever it runs: not one of :data:`ISOLATION_ERRORS`) or ``candidate`` (anything
     else: an isolation-dependent exception, a timeout, an unplain value, no report).
 
-    probity-verify compares this with the exit of the same test run in one process with the
+    agent-evidence-verify compares this with the exit of the same test run in one process with the
     candidate (``python test.py``): a trusted ``assertion`` or ``candidate_exit`` failure
     whose in-process twin exits 0 means the candidate changed how its process reports
     failure."""
@@ -847,7 +847,7 @@ def import_side_effects(request: dict[str, Any]) -> dict[str, Any]:
     after it; the report after the import comes from a process the module's code has run in.
     A change seen, or a line the child did not send, fails the probe on its comparison. No
     change seen passes here, but the module can forge that report and redirect or close the
-    descriptor, so probity-verify reads that pass as open (``probe_import_unobserved``).
+    descriptor, so agent-evidence-verify reads that pass as open (``probe_import_unobserved``).
     """
     with Child(request["child_argv"], request.get("child_cwd"),
                float(request["call_timeout"])) as child:

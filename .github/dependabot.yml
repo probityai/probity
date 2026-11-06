@@ -15,7 +15,7 @@ updates:
       family:
         patterns:
           - "agent-evidence-*"
-          - "probity-verify"
+          - "agent-evidence-verify"
           - "jcs-admit"
       python:
         patterns: ["*"]

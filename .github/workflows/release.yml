@@ -1,7 +1,7 @@
 name: release
 
 # Publish one workspace member to PyPI from a GitHub release whose tag is
-# <distribution>-v<version>, for example probity-verify-v0.2.0. The tag must name
+# <distribution>-v<version>, for example agent-evidence-verify-v0.2.0. The tag must name
 # a member, match its pyproject version and point at a commit on main (or on the
 # maintenance branch maint/<distribution>-<major>.<minor> of its own series). The files
 # published are the ones python-build.yml built and checked in this run.
@@ -79,13 +79,13 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
-  publish-probity-verify:
+  publish-agent-evidence-verify:
     needs: [resolve, build]
-    if: needs.resolve.outputs.distribution == 'probity-verify' && needs.resolve.outputs.published == 'false'
+    if: needs.resolve.outputs.distribution == 'agent-evidence-verify' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
-      url: https://pypi.org/project/probity-verify/
+      url: https://pypi.org/project/agent-evidence-verify/
     permissions:
       contents: read
       id-token: write
@@ -93,7 +93,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: python-distributions-probity-verify
+          name: python-distributions-agent-evidence-verify
           path: release-artifacts
       - name: the files are the ones built from this commit
         run: |

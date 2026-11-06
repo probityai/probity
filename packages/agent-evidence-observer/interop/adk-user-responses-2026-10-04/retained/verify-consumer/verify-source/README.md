@@ -1,4 +1,4 @@
-# probity-verify
+# agent-evidence-verify
 
 An offline verifier that decides whether a claim holds against evidence bytes the consumer pinned, with adapters for source passages, operand lineage, authority captures and bounded absence claims.
 
@@ -9,9 +9,9 @@ It's for auditors, incident reviewers and relying parties who receive a claim ab
 There is no package release yet, so pin a commit. Python 3.10 or newer and [uv](https://docs.astral.sh/uv/):
 
 ```sh
-git clone https://github.com/probityai/probity-verify && cd probity-verify
+git clone https://github.com/probityai/probity-verify && cd agent-evidence-verify
 git checkout d3c0213ff3697c19535b6bcb63e29e74182807b5
-uv run probity-verify examples/source-coverage/case.json \
+uv run agent-evidence-verify examples/source-coverage/case.json \
   --policy examples/source-coverage/policy-june.json
 ```
 

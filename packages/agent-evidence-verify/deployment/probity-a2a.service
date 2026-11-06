@@ -1,0 +1,21 @@
+[Unit]
+Description=Probity Verify A2A service
+After=network.target
+
+[Service]
+Type=simple
+User=probity
+Group=probity
+WorkingDirectory=/opt/agent-evidence-verify
+ExecStart=/opt/agent-evidence-verify/.venv/bin/probity-a2a --policy /srv/probity/policy.json --artifact-root /srv/probity/evidence
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/srv/probity
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

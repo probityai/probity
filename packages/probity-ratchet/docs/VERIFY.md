@@ -1,6 +1,6 @@
 # Verifying a decision
 
-A Ratchet admission receipt is checked by our pinned public package, `probity-verify`, and by a key that was
+A Ratchet admission receipt is checked by our pinned public package, `agent-evidence-verify`, and by a key that was
 pinned before the receipt existed. Ratchet's own code is not the only thing that can say yes.
 
 ```sh
@@ -21,7 +21,7 @@ verdict was reached.
 
 | Package | Range | Where |
 |---|---|---|
-| `probity-verify` | `~=0.2.1`, locked to 0.2.1 from PyPI | `pyproject.toml`, `uv.lock` |
+| `agent-evidence-verify` | `~=0.2.1`, locked to 0.2.1 from PyPI | `pyproject.toml`, `uv.lock` |
 | `agent-evidence-vectors` | `~=0.26.0`, locked to 0.26.0 from PyPI | `pyproject.toml`, `uv.lock` |
 | `jcs-admit` | `~=0.1.0`, from PyPI | `pyproject.toml`, `uv.lock` |
 | `probity-ratchet-cases` | `~=0.2.0`, from PyPI | `pyproject.toml`, `uv.lock` |
@@ -29,19 +29,19 @@ verdict was reached.
 Each family package is a compatible-release range, so a patch release installs without a change here and the family resolves together at its latest releases. The `uv.lock` names the version this build was tested with, with a hash per file. `tests/verify/test_pinned_dependencies.py` asserts that every range is `~=X.Y.Z`, that the lock sits inside it, that the lock comes from PyPI, and runs the
 vector harness's own self-test, so a range the lock falls outside fails a test.
 
-Clean-environment result for the earlier pins (`probity-verify==0.1.0`, `agent-evidence-vectors==0.17.9`),
+Clean-environment result for the earlier pins (`agent-evidence-verify==0.1.0`, `agent-evidence-vectors==0.17.9`),
 2026-10-11, Python 3.12.14, a fresh venv holding only these two packages:
 
-- both install from the pins above; `probity_verify` exports `adjudicate` and `CaseError`;
+- both install from the pins above; `agent_evidence_verify` exports `adjudicate` and `CaseError`;
 - `agent-evidence-vectors --self-test`: 20 checks, 0 failed;
 - `agent-evidence-vectors --verifier "aee-verify --json"` with `aee-verify@v0.17.7` from `go install`: 285 vectors,
   285 pass, 0 fail, 0 suite refusals;
-- `probity-verify`'s own corpora run against the pinned package: `vectors-source-coverage` executed 6 of 6,
+- `agent-evidence-verify`'s own corpora run against the pinned package: `vectors-source-coverage` executed 6 of 6,
   `vectors-operand-lineage` 10 of 10.
 
 ## Who checks what
 
-| Check | probity-verify | `ratchet.verify` |
+| Check | agent-evidence-verify | `ratchet.verify` |
 |---|---|---|
 | Artifact bytes bound to SHA-256 and length; anchored, non-following file reads; symlinks refused | yes | |
 | Malformed case or policy refused without a verdict; adapter must be selected by the caller | yes | |
@@ -53,7 +53,7 @@ Clean-environment result for the earlier pins (`probity-verify==0.1.0`, `agent-e
 | Admission gates recomputed from stored evidence | | `recompute.py` |
 | Run records, traces and held-out grades recomputed from reports, traces and case documents | | `runs.py` |
 
-`probity-verify` has no DSSE or Ratchet-payload support of its own. The adapter `ratchet_decision/v1`
+`agent-evidence-verify` has no DSSE or Ratchet-payload support of its own. The adapter `ratchet_decision/v1`
 (`src/ratchet/verify/adapter.py`) is the extension point its `adapters=` argument provides. Every PAE, signature
 and signature check, for signing and for verifying, goes through `jcs_admit.dsse`, the binding of the `dsse` crate;
 `dsse.py` adds only the structural read and the rule that a key is tried only when a signature entry names it.

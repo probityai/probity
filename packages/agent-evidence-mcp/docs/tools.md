@@ -5,7 +5,7 @@ Every tool is read-only and offline, sets `readOnlyHint`, `destructiveHint: fals
 | tool | arguments | returns |
 | --- | --- | --- |
 | `verify_claim` | `case` and `policy` (JSON objects), `artifacts` (relative path to UTF-8 text) | `decision` (`supported`, `contradicted` or `not_established`), `reason`, `policy_sha256`, `checks`, `scope`, and the text `packet`. Input that is invalid returns an error and no decision. |
-| `verify_sample` | `scenario`: `contradicted`, `not_established` or `supported` | the same fields, for a sample bundled with probity-verify |
+| `verify_sample` | `scenario`: `contradicted`, `not_established` or `supported` | the same fields, for a sample bundled with agent-evidence-verify |
 | `list_vector_corpora` | none | each shipped corpus with its suite revision and vector count where it declares them |
 | `run_vectors` | `corpus` (default `vectors`), `offset`, `limit` (at most 200) | the harness exit code, the corpus release and digest, `totals`, and one page of per-vector rows. A corpus whose harness prints a text verdict returns that text; one that needs an external verifier returns the harness error. |
 | `explain_vector` | `vector_id`, `corpus` | the manifest entry (expected outcome and the conditions it tests), the spec path, and the vector's input bytes up to 16 KB |
@@ -16,4 +16,4 @@ Every tool is read-only and offline, sets `readOnlyHint`, `destructiveHint: fals
 
 `verify_claim` writes the supplied `artifacts` to a temporary directory, refuses absolute paths and `..`, and removes the directory afterwards. A case binds its artifacts by digest, so changing an artifact's bytes returns a binding error rather than a different verdict.
 
-The server wraps `probity-verify`, `agent-evidence-vectors`, `agent-evidence-vocabulary`, `agent-evidence-admission` and `jcs-admit` (the wheel for the `jcs-admit` and `dsse` Rust crates), each a compatible-release range in `pyproject.toml`.
+The server wraps `agent-evidence-verify`, `agent-evidence-vectors`, `agent-evidence-vocabulary`, `agent-evidence-admission` and `jcs-admit` (the wheel for the `jcs-admit` and `dsse` Rust crates), each a compatible-release range in `pyproject.toml`.

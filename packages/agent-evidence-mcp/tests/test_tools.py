@@ -17,7 +17,7 @@ from conftest import call
 from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 
-SAMPLES = Path(str(resources.files("probity_verify.samples")))
+SAMPLES = Path(str(resources.files("agent_evidence_verify.samples")))
 JUNE_POLICY_SHA = "dfda1551714f92702169d1411af6b0bfeee54732f934ce71265534af775fa388"
 
 
@@ -236,7 +236,7 @@ def test_third_party_packages_are_pinned_exactly_and_family_packages_take_a_floo
     lines = [x for x in metadata.requires("agent-evidence-mcp") or [] if "extra ==" not in x]
     reqs = {r.name: r for r in map(Requirement, lines)}
     family = {
-        "probity-verify", "agent-evidence-vectors", "agent-evidence-vocabulary",
+        "agent-evidence-verify", "agent-evidence-vectors", "agent-evidence-vocabulary",
         "agent-evidence-admission", "jcs-admit",
     }
     assert set(reqs) == {"mcp", "pyyaml"} | family

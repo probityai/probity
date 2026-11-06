@@ -29,7 +29,7 @@ def _load(path: Path) -> object:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="probity-verify")
+    parser = argparse.ArgumentParser(prog="agent-evidence-verify")
     parser.add_argument("case", type=Path)
     parser.add_argument("--policy", type=Path, required=True,
                         help="consumer-held witness pins and claim requirements")
@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.packet:
             args.packet.write_text(render_packet(result), encoding="utf-8")
     except (OSError, json.JSONDecodeError, CaseError) as exc:
-        print(f"probity-verify: {exc}", file=sys.stderr)
+        print(f"agent-evidence-verify: {exc}", file=sys.stderr)
         return 2
     if args.json:
         sys.stdout.buffer.write(canonical_json(result))

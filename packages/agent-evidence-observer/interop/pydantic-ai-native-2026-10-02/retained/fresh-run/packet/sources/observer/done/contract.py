@@ -493,7 +493,7 @@ def surface_from_lines(lines: Sequence[str]) -> tuple[list[str], dict[str, str]]
     another removed (the ancestor covers it). Left out: a shared scratch root or the agent's
     HOME as a whole entry, and the workspace or anything inside it. An alias
     maps a candidate that resolves elsewhere (``/lib`` to ``/usr/lib``) to its resolution, so
-    probity-verify reads a path written through the link as one on the surface."""
+    agent-evidence-verify reads a path written through the link as one on the surface."""
     pairs = []
     for line in lines:
         name, _, real = line.partition("\t")
@@ -548,16 +548,16 @@ def contract_record(task: Task, adequacy: dict[str, int], commands: list[Command
     a reference-free contract never ``supported``.
 
     With ``surface`` (:func:`image_surface` of the agent image), the record seals
-    ``execution_surface`` and ``surface_aliases``: probity-verify then reads any mutation
+    ``execution_surface`` and ``surface_aliases``: agent-evidence-verify then reads any mutation
     outside the workspace under them as tampering, and as a shadow on a later claimed run.
     For a task whose source runs a trusted replay beside the agent's own in-process run
     (:data:`IN_PROCESS_TWINS`), the agent's run carries ``in_process_twin_of``.
 
     With ``executables`` (each agent command's ``argv[0]`` to its path in the agent image), a
-    command the agent runs itself carries ``cwd`` and ``exe``: probity-verify matches a claim of
+    command the agent runs itself carries ``cwd`` and ``exe``: agent-evidence-verify matches a claim of
     it to an exec in that directory, of that executable, with the command's arguments. With
     ``run_writes`` (each command's id to the workspace paths its stable runs wrote), such a
-    command also carries ``run_writes``: probity-verify then counts a mutation as the run's
+    command also carries ``run_writes``: agent-evidence-verify then counts a mutation as the run's
     own only when a matching run made it under those paths or a cache directory. With
     ``interpreter`` (the paths of the Python beside the agent's tools), an agent command whose
     program is a Python entry point (``pytest``) also carries ``interpreter``, so a run of it as
@@ -1187,9 +1187,9 @@ def start_guard(task: Task, runner: Runner, runs: int, timeout: float, stable: S
     return task, commands, record
 
 
-# probity-verify at the pinned commit (87835a8) grades any failing held-out command as
+# agent-evidence-verify at the pinned commit (87835a8) grades any failing held-out command as
 # contradicted unless it reads a command's ``tier``, ``strength`` and the seal ``gates`` from the
-# contract. The pinned probity-verify does, and contract_record seals all three, so a contract
+# contract. The pinned agent-evidence-verify does, and contract_record seals all three, so a contract
 # carrying synthesized tests is graded ``not_established`` when one fails, not ``contradicted``.
 VERIFIER_GRADES_SYNTHESIZED = True
 STRENGTHENABLE = ("change_floor_unmet", "cheat_class_survived")
@@ -1378,7 +1378,7 @@ def compile_task(task: Task, out: Path, key, runner: Runner, runs: int = 3,
     if synthesized and not VERIFIER_GRADES_SYNTHESIZED:
         raise Refused(task.task_id, "synthesized_tier_unsupported",
                       f"{', '.join(synthesized)} would be graded as trusted held-out tests: the "
-                      "pinned probity-verify reads no command tier, so a failing synthesized "
+                      "pinned agent-evidence-verify reads no command tier, so a failing synthesized "
                       "test would read contradicted instead of not_established")
     adequacy = measured.final
     report.update({**stability_report(stable, runner, runs, task.reference is not None),

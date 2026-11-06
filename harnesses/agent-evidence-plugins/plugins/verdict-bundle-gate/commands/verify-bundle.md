@@ -1,5 +1,5 @@
 ---
-description: Replay a verdict bundle with the pinned probity-verify and report the decision
+description: Replay a verdict bundle with the pinned agent-evidence-verify and report the decision
 argument-hint: <bundle.zip> [--allow supported,not_established]
 allowed-tools: Bash(python3:*)
 ---

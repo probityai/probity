@@ -19,7 +19,7 @@ def test_it_reads_every_publish_job_in_release_yml():
 
 
 def test_a_job_with_no_pattern_is_uncovered():
-    assert check.uncovered(["probity-effects", "probity-verify"], ["probity-verify-v*"]) == ["probity-effects"]
+    assert check.uncovered(["probity-effects", "agent-evidence-verify"], ["agent-evidence-verify-v*"]) == ["probity-effects"]
 
 
 def test_the_bare_version_pattern_covers_no_distribution_tag():

@@ -14,7 +14,7 @@ exclude = ["packages/probity-effects"]
 [tool.uv.sources]
 # Members that depend on each other resolve to the tree beside them, so every change is tested against
 # the versions it ships with.
-probity-verify = { workspace = true }
+agent-evidence-verify = { workspace = true }
 probity-ratchet-cases = { workspace = true }
 [tool.uv]
 package = false
@@ -45,4 +45,4 @@ extend-exclude = ["packages/*/vectors-*/cases", "packages/agent-evidence-observe
 [tool.ruff.lint.per-file-ignores]
 # A resource directory read with importlib.resources, not an importable module;
 # its hyphenated name is part of the published layout.
-"packages/probity-verify/examples/source-coverage/__init__.py" = ["N999"]
+"packages/agent-evidence-verify/examples/source-coverage/__init__.py" = ["N999"]
