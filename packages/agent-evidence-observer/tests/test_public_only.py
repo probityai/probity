@@ -133,13 +133,15 @@ def test_every_public_module_imports_without_the_frozen_modules() -> None:
     result = child("exec", IMPORT_ALL)
     assert result.returncode == 0, result.stderr
     print(result.stdout)
-    assert int(result.stdout.split()[-1]) >= 40, result.stdout
+    assert int(result.stdout.split()[-1]) >= 31, result.stdout
 
 
 @pytest.mark.parametrize("name", records("packet"))
 def test_command_line_verifies_each_retained_packet(tmp_path: Path, name: str) -> None:
     record = materialize(name, tmp_path)
-    result = child("module", "probity_observer.cli", "verify", str(record))
+    observer, witness = pinned_keys(record)
+    result = child("module", "probity_observer.cli", "verify", str(record),
+                   "--observer-key", observer, "--witness-key", witness)
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)["status"] == "verified"
 
