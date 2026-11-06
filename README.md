@@ -49,9 +49,6 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | --- | --- | :---: | :---: |
 | [agent-evidence-mcp](packages/agent-evidence-mcp/README.md) | offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors | **0.2.5** | [![agent-evidence-mcp downloads](assets/badges/dl-pypi-agent-evidence-mcp.svg)](https://pepy.tech/projects/agent-evidence-mcp) |
 | [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | **0.2.0** | [![agent-evidence-observer downloads](assets/badges/dl-pypi-agent-evidence-observer.svg)](https://pepy.tech/projects/agent-evidence-observer) |
-| [agent-evidence-admission](https://github.com/probityai/agent-evidence-vectors) | checks an artifact has the digest its SBOM or attestation names (in agent-evidence-vectors) | **0.2.0** | [![agent-evidence-admission downloads](assets/badges/dl-pypi-agent-evidence-admission.svg)](https://pepy.tech/projects/agent-evidence-admission) |
-| [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | versioned terms for claims about agent execution evidence (in agent-evidence-vectors) | **0.9.0** | [![agent-evidence-vocabulary downloads](assets/badges/dl-pypi-agent-evidence-vocabulary.svg)](https://pepy.tech/projects/agent-evidence-vocabulary) |
-| [agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors) | conformance corpora and reference verifiers | **0.35.0** | [![agent-evidence-vectors downloads](assets/badges/dl-pypi-agent-evidence-vectors.svg)](https://pepy.tech/projects/agent-evidence-vectors) |
 
 **Product**
 
