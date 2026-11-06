@@ -10,6 +10,11 @@ updates:
     schedule:
       interval: daily
     open-pull-requests-limit: 5
+    ignore:
+      # The agent-evidence-observer inspect-historical extra holds inspect-ai at an exact
+      # version, moved by hand. Dependabot rewrites toward the newer inspect extra and its
+      # resolve fails, which blocks every grouped python update.
+      - dependency-name: "inspect-ai"
     groups:
       # Our own family first, so a release of one of them reaches every member the same day.
       family:
