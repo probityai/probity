@@ -45,21 +45,21 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 
 **Evidence layer**
 
-| package | what it is | version | downloads |
-| --- | --- | :---: | :---: |
-| [agent-evidence-mcp](packages/agent-evidence-mcp/README.md) | offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors | **0.2.5** | [![agent-evidence-mcp downloads](assets/badges/dl-pypi-agent-evidence-mcp.svg)](https://pepy.tech/projects/agent-evidence-mcp) |
-| [agent-evidence-observer](packages/agent-evidence-observer/README.md) | records what an agent run did as pinned evidence | **0.2.0** | [![agent-evidence-observer downloads](assets/badges/dl-pypi-agent-evidence-observer.svg)](https://pepy.tech/projects/agent-evidence-observer) |
+| package | what it is | version |
+| --- | --- | :---: |
+| [agent-evidence-mcp](packages/agent-evidence-mcp/README.md)<br>[![agent-evidence-mcp downloads](assets/badges/dl-pypi-agent-evidence-mcp.svg)](https://pepy.tech/projects/agent-evidence-mcp) | offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors | **0.2.5** |
+| [agent-evidence-observer](packages/agent-evidence-observer/README.md)<br>[![agent-evidence-observer downloads](assets/badges/dl-pypi-agent-evidence-observer.svg)](https://pepy.tech/projects/agent-evidence-observer) | records what an agent run did as pinned evidence | **0.2.0** |
 
 **Product**
 
-| package | what it is | version | downloads |
-| --- | --- | :---: | :---: |
-| [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | **0.5.1** | |
-| [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
-| [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | agent task cases graded on final state: a simulated company, tool faults, exact graders | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
-| [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | **0.2.0** | - |
-| [evaluator-replay-kit](packages/evaluator-replay-kit/README.md) | replays a lab's agent action record and flags a changed or missing step | **0.1.0** | not on PyPI |
+| package | what it is | version |
+| --- | --- | :---: |
+| [probityai](packages/probityai/README.md)<br>[![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) | the `probityai` command; `probityai verify` today | **0.1.1** |
+| [agent-evidence-verify](packages/agent-evidence-verify/README.md)<br>[![agent-evidence-verify downloads](assets/badges/dl-verifier-total.svg)](https://pypi.org/project/agent-evidence-verify/) | offline verifier: supported, contradicted or not established | **0.5.1** |
+| [probity-ratchet](packages/probity-ratchet/README.md)<br>[![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) | signed, replayable receipts for improving an agent against held-out cases | **0.4.0** |
+| [probity-ratchet-cases](packages/probity-ratchet-cases/README.md)<br>[![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) | agent task cases graded on final state: a simulated company, tool faults, exact graders | **0.2.0** |
+| [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | **0.2.0** |
+| [evaluator-replay-kit](packages/evaluator-replay-kit/README.md)<br>not on PyPI | replays a lab's agent action record and flags a changed or missing step | **0.1.0** |
 
 Install any of them pinned to the version shown: `pip install <package>==<version>`. evaluator-replay-kit installs from its tag: `pip install "git+https://github.com/probityai/probity@evaluator-replay-kit-v0.1.0#subdirectory=packages/evaluator-replay-kit"`.
 
