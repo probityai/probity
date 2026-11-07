@@ -59,9 +59,9 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | [probity-ratchet](packages/probity-ratchet/README.md)<br>[![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) | signed, replayable receipts for improving an agent against held-out cases | **0.4.0** |
 | [probity-ratchet-cases](packages/probity-ratchet-cases/README.md)<br>[![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) | agent task cases graded on final state: a simulated company, tool faults, exact graders | **0.2.0** |
 | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | **0.2.0** |
-| [agent-evidence-replay](packages/agent-evidence-replay/README.md)<br>not on PyPI | replays a lab's agent action record and flags a changed or missing step | **0.1.0** |
+| [agent-evidence-replay](packages/agent-evidence-replay/README.md) | replays a lab's agent action record and flags a changed or missing step | **0.1.0** |
 
-Install any of them pinned to the version shown: `pip install <package>==<version>`. agent-evidence-replay installs from its tag: `pip install "git+https://github.com/probityai/probity@agent-evidence-replay-v0.1.0#subdirectory=packages/agent-evidence-replay"`.
+Install any of them pinned to the version shown: `pip install <package>==<version>`.
 
 The Claude Code and Cursor plugins ship from [harnesses/agent-evidence-plugins](harnesses/agent-evidence-plugins/README.md).
 

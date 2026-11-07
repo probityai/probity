@@ -48,11 +48,11 @@ manifest = "packages/probity-effects/pyproject.toml"
 publisher = "probityai/probity"
 tag = "probity-effects-v{version}"
 
-# Released as a GitHub release of its tag; nothing goes to a registry. Its own pages keep
-# their version in packages/agent-evidence-replay/version-pins.toml.
+# Its own pages keep their version in packages/agent-evidence-replay/version-pins.toml.
 [[own]]
-key = "github:agent-evidence-replay"
+key = "pypi:agent-evidence-replay"
 manifest = "packages/agent-evidence-replay/pyproject.toml"
+publisher = "probityai/probity"
 tag = "agent-evidence-replay-v{version}"
 
 [family]
