@@ -6,10 +6,10 @@ import json
 from pathlib import Path
 
 import pytest
-from agent_evidence_vectors.auditrecord import canonical_bytes
 from agent_evidence_replay import Pin, make_pin, replay_bytes
 from agent_evidence_replay.cli import main
 from agent_evidence_replay.replay import PinError, digest
+from agent_evidence_vectors.auditrecord import canonical_bytes
 
 FIXTURE = Path(__file__).parent / "fixtures" / "accept-3" / "record.jsonl"
 DATA = FIXTURE.read_bytes()
