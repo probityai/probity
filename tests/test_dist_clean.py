@@ -167,7 +167,7 @@ def test_the_freeze_file_names_only_listed_distributions_and_reads_each_one():
     assert set(table) <= listed
     for name in table:
         assert dist_clean.load_freeze(SCRIPTS / "release-freeze.toml", name)
-    assert dist_clean.load_freeze(SCRIPTS / "release-freeze.toml", "probity-verify") == ()
+    assert dist_clean.load_freeze(SCRIPTS / "release-freeze.toml", "agent-evidence-verify") == ()
 
 
 def test_self_test_passes():

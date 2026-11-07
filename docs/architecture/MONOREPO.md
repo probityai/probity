@@ -14,7 +14,7 @@ tests/               tests of the repository tools
 .github/workflows/   ci.yml (entry point), one reusable workflow per member, python-build.yml, release.yml
 ```
 
-Members today: `probity-verify`, `probityai` (the `probityai` command), `probity-ratchet`,
+Members today: `agent-evidence-verify`, `probityai` (the `probityai` command), `probity-ratchet`,
 `probity-ratchet-cases`, `agent-evidence-observer`, `agent-evidence-mcp`,
 `evaluator-replay-kit` and `probity-effects`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
 publishes nothing or carries a name other than its distribution's.
@@ -42,7 +42,7 @@ own with an entry point in the `probityai.cli_subcommands` group.
 
 ```toml
 [project.entry-points."probityai.cli_subcommands"]
-verify = "probity_verify.cli:register"
+verify = "agent_evidence_verify.cli:register"
 ```
 
 The value is a callable `register(subparsers) -> None`. It adds a parser named after the entry point
@@ -55,7 +55,7 @@ The launcher refuses, with exit 2 and the entry point's name, a subcommand that 
 register, two entry points with one name, a registration that replaces another subcommand, and a
 registration that adds no parser of its own name. Nothing is skipped silently: a hidden subcommand looks the same as one never installed.
 
-`probity-verify` keeps its `probity-verify` console script: it is the released command of a released
+`agent-evidence-verify` keeps its `agent-evidence-verify` console script: it is the released command of a released
 distribution, not an alias added here.
 
 ## CI
@@ -64,14 +64,14 @@ distribution, not an alias added here.
 `scripts/workspace.py changes <base> <head>`, which marks a member when a file under its directory
 changed, when a workspace member it depends on changed, or when a shared file changed (anything outside
 `packages/` except documentation). Pushes to main check everything. Each member has its jobs (for
-`probity-verify`, the reusable `probity-verify.yml`), and `python-build.yml` builds and checks the
+`agent-evidence-verify`, the reusable `agent-evidence-verify.yml`), and `python-build.yml` builds and checks the
 distribution the way a release does. The `ci-ok` job needs every job and fails if any needed job failed
 or was cancelled; it is the one required status check.
 
 ## Releases
 
 Each member is released on its own, by a non-prerelease GitHub release whose tag is
-`<distribution>-v<version>`, for example `probity-verify-v0.2.0`. `release.yml` resolves the tag with
+`<distribution>-v<version>`, for example `agent-evidence-verify-v0.2.0`. `release.yml` resolves the tag with
 `scripts/workspace.py release-target`, refuses a tag that names no member, does not match the member's
 version or is not on main, builds and checks with `python-build.yml`, and publishes those files with a
 GitHub build attestation and PyPI attestations, from the publish job of that distribution in the `pypi` environment. Existing tags (`v0.1.0`, `v0.1.1`) stay.
@@ -112,7 +112,7 @@ the tree can change in steps while `main` stays green.
 ### PyPI trusted publishers to enter
 
 Every PyPI project released from this repository has the same publisher: owner `probityai`, repository
-`probity`, workflow `release.yml`, environment `pypi`. That covers `probity-verify`, `probityai`,
+`probity`, workflow `release.yml`, environment `pypi`. That covers `agent-evidence-verify`, `probityai`,
 `agent-evidence-observer`, `probity-ratchet` and `probity-ratchet-cases` now, and
 `agent-evidence-admission`, `agent-evidence-vocabulary` and `agent-evidence-vectors` when they move in.
 
@@ -128,13 +128,13 @@ trusted publishing does not accept a reusable workflow, so each publish job carr
 `pypi` environment takes a deployment rule that admits only release tags (`*-v*`), and a test in `tests/`
 fails when a member has no publish job.
 
-The `probity-verify` publisher used for 0.1.1 names repository `probity-verify`, workflow
+The `agent-evidence-verify` publisher used for 0.1.1 names repository `agent-evidence-verify`, workflow
 `python-distribution.yml` and environment `pypi`; the row above replaces it.
 
 ### Install line and versions
 
-The README's pinned install line is `pip install probity-verify==0.4.1`, the current PyPI release. When
+The README's pinned install line is `pip install agent-evidence-verify==0.5.0`, the current PyPI release. When
 `probityai` is first released, the README's install line becomes `pip install probityai==X.Y.Z`.
-`probityai` depends on `probity-verify>=0.2.0`, the first release that registers `verify`, so
-`probity-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai` <!-- version-pins: keep -->
+`probityai` depends on `agent-evidence-verify>=0.2.0`, the first release that registers `verify`, so
+`agent-evidence-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai` <!-- version-pins: keep -->
 pins the lowest member release that registers each of its subcommands.

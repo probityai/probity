@@ -6,10 +6,10 @@
     {
       "name": "verdict-bundle-gate",
       "source": "./harnesses/agent-evidence-plugins/plugins/verdict-bundle-gate",
-      "description": "Replay a verdict bundle with the pinned probity-verify after any tool names one, and block on tamper or a decision you did not allow.",
+      "description": "Replay a verdict bundle with the pinned agent-evidence-verify after any tool names one, and block on tamper or a decision you did not allow.",
       "version": "0.1.0",
       "category": "security",
-      "keywords": ["agent-evidence", "verification", "hook", "probity-verify"]
+      "keywords": ["agent-evidence", "verification", "hook", "agent-evidence-verify"]
     },
     {
       "name": "agent-evidence",

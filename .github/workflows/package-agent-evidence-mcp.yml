@@ -53,7 +53,7 @@ jobs:
       - name: the declared ranges install beside the latest family releases
         run: |
           uv venv --python 3.12
-          uv pip install -e . agent-evidence-vectors agent-evidence-vocabulary agent-evidence-admission probity-verify jcs-admit
+          uv pip install -e . agent-evidence-vectors agent-evidence-vocabulary agent-evidence-admission agent-evidence-verify jcs-admit
           uv pip check
 
   image:

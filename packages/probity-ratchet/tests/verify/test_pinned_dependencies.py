@@ -26,7 +26,7 @@ from packaging.version import Version
 ROOT = Path(__file__).resolve().parents[2]
 LOCK = ROOT.parents[1] / "uv.lock"  # the workspace root's one lock
 PYPI = {"registry": "https://pypi.org/simple"}
-WINDOWED = {"probity-verify", "agent-evidence-vectors"}  # ranges spanning a release series
+WINDOWED = {"agent-evidence-verify", "agent-evidence-vectors"}  # ranges spanning a release series
 
 
 def declared(name: str) -> str:
@@ -66,11 +66,11 @@ def assert_hash_pinned_from_pypi(entry: dict[str, Any]) -> None:
     assert entry.get("wheels"), "the lock must name a wheel, so the image builds none"
 
 
-def test_probity_verify_is_the_workspace_member_inside_the_window() -> None:
-    """The lock takes the verifier from packages/probity-verify, the version this ratchet ships beside."""
-    entry = locked("probity-verify")
-    assert entry["source"] == {"editable": "packages/probity-verify"}
-    assert metadata.distribution("probity-verify").version == entry["version"]
+def test_agent_evidence_verify_is_the_workspace_member_inside_the_window() -> None:
+    """The lock takes the verifier from packages/agent-evidence-verify, the version shipped beside it."""
+    entry = locked("agent-evidence-verify")
+    assert entry["source"] == {"editable": "packages/agent-evidence-verify"}
+    assert metadata.distribution("agent-evidence-verify").version == entry["version"]
 
 
 def test_the_demo_image_build_installs_no_system_package() -> None:
@@ -97,7 +97,7 @@ def test_jcs_admit_is_the_hash_pinned_release_from_pypi() -> None:
     assert "JCS_ADMIT_COMMIT" not in dockerfile and "rustup" not in dockerfile
 
 
-FAMILY = ["probity-verify", "agent-evidence-vectors", "jcs-admit"]
+FAMILY = ["agent-evidence-verify", "agent-evidence-vectors", "jcs-admit"]
 
 
 @pytest.mark.parametrize("name", FAMILY)

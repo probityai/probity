@@ -3,9 +3,9 @@
 # code, then the end-to-end test with the launcher change reverted (it must fail).
 set -u
 BASE=9798e56
-uv sync -q --package probity-verify --extra test
-echo "##### probity-verify full suite, fixed code"
-.venv/bin/python -m pytest packages/probity-verify/tests -q -p no:cacheprovider > /tmp/a09-pv.log 2>&1
+uv sync -q --package agent-evidence-verify --extra test
+echo "##### agent-evidence-verify full suite, fixed code"
+.venv/bin/python -m pytest packages/agent-evidence-verify/tests -q -p no:cacheprovider > /tmp/a09-pv.log 2>&1
 tail -3 /tmp/a09-pv.log
 (cd packages/agent-evidence-observer && uv sync -q --extra test --extra done > /tmp/a09-sync.log 2>&1; echo "obs sync rc=$?")
 echo "##### observer suite, fixed code"

@@ -22,14 +22,14 @@ CONTRADICTED = FIXTURES / "honest-failure.decision.zip"
 
 @pytest.fixture(autouse=True)
 def replay_tool(monkeypatch):
-    """Run the pinned probity-verify of this environment, not whatever is on PATH."""
-    monkeypatch.setenv("PROBITY_BUNDLE_CMD", f"{sys.executable} -m probity_verify.bundle")
+    """Run the pinned agent-evidence-verify of this environment, not whatever is on PATH."""
+    monkeypatch.setenv("PROBITY_BUNDLE_CMD", f"{sys.executable} -m agent_evidence_verify.bundle")
     monkeypatch.delenv("PROBITY_BUNDLE_ALLOW", raising=False)
     monkeypatch.delenv("PROBITY_BUNDLE_GLOBS", raising=False)
 
 
 def gate_pin() -> str:
-    """The requirement string the gate script pins, for example probity-verify==0.3.0."""
+    """The requirement string the gate script pins, for example agent-evidence-verify==0.3.0."""
     for line in SCRIPT.read_text().splitlines():
         if line.startswith("PINNED = "):
             return line.split('"')[1]
@@ -63,7 +63,7 @@ def test_environment_runs_the_pinned_verifier():
 def test_fixtures_replay_under_the_pinned_verifier(fixture):
     """A bundle replays only under the release that built it, so the fixtures move with the pin."""
     done = subprocess.run(
-        [sys.executable, "-m", "probity_verify.bundle", "replay", "--json", str(fixture)],
+        [sys.executable, "-m", "agent_evidence_verify.bundle", "replay", "--json", str(fixture)],
         capture_output=True, text=True, check=False,
     )
     assert done.returncode == 0, (

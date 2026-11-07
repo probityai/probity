@@ -1,7 +1,7 @@
 {
   "name": "verdict-bundle-gate",
   "version": "0.1.0",
-  "description": "Replays a verdict bundle with the pinned probity-verify and exits nonzero on tamper or a decision you did not allow.",
+  "description": "Replays a verdict bundle with the pinned agent-evidence-verify and exits nonzero on tamper or a decision you did not allow.",
   "author": { "name": "Sankalp Gilda" },
   "homepage": "https://github.com/probityai/probity/tree/main/harnesses/agent-evidence-plugins",
   "repository": "https://github.com/probityai/probity",

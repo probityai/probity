@@ -8,7 +8,7 @@ It's for agent builders, auditors and platform engineers who want their assistan
 
 agent-evidence is the open record format; `probityai` checks and grades records against it, and this server runs those checks for an assistant.
 
-Install the released package: `pip install agent-evidence-mcp==0.2.5`. It takes the packages of its own family (`probity-verify`, `agent-evidence-vectors`, `agent-evidence-vocabulary`, `agent-evidence-admission`, `jcs-admit`) as compatible-release ranges, so it installs beside their latest releases, and pins every third-party dependency exactly. The last one carries the `jcs-admit` and `dsse` Rust crates as wheels.
+Install the released package: `pip install agent-evidence-mcp==0.2.5`. It takes the packages of its own family (`agent-evidence-verify`, `agent-evidence-vectors`, `agent-evidence-vocabulary`, `agent-evidence-admission`, `jcs-admit`) as compatible-release ranges, so it installs beside their latest releases, and pins every third-party dependency exactly. The last one carries the `jcs-admit` and `dsse` Rust crates as wheels.
 
 ## Quick start
 

@@ -80,7 +80,7 @@ The kit reads the whole record before it judges any of it. Checks run in this or
 ## 7. Relation to other tools
 
 - `agent-evidence-vectors` supplies the canonicalization used here and the conformance records the tests replay.
-- `probity-verify` judges claims an agent made against bytes a consumer pinned (for example a done receipt). This kit judges the record of actions itself. An evaluator can run both: this kit first, to know the record is whole, then the claim check on what the record says.
+- `agent-evidence-verify` judges claims an agent made against bytes a consumer pinned (for example a done receipt). This kit judges the record of actions itself. An evaluator can run both: this kit first, to know the record is whole, then the claim check on what the record says.
 
 ## 8. Planned layers
 

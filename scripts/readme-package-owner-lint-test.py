@@ -14,8 +14,8 @@ lint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(lint)
 
 OWN = (
-    "| [probity-verify](packages/probity-verify/README.md) | verifier | **0.4.1** | "
-    "[![d](assets/badges/dl-pypi-probity-verify.svg)](https://pepy.tech/projects/probity-verify) |\n"
+    "| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | verifier | **0.5.0** | "
+    "[![d](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |\n"
 )
 OLD = (
     "| [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | terms | **0.9.0** | "
@@ -27,7 +27,7 @@ class OwnerLintTest(unittest.TestCase):
     def run_lint(self, text: str) -> int:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "packages" / "probity-verify").mkdir(parents=True)
+            (root / "packages" / "agent-evidence-verify").mkdir(parents=True)
             (root / "README.md").write_text(text)
             return int(lint.main([str(root / "README.md"), str(root)]))
 

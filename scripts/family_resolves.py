@@ -46,7 +46,7 @@ FAMILY = {
     "agent-evidence-vectors": ("agent-evidence-vectors", "agent_evidence_vectors"),
     "agent-evidence-observer": ("agent-evidence-observer[done,witness]", "probity_observer"),
     "agent-evidence-mcp": ("agent-evidence-mcp", "agent_evidence_mcp"),
-    "probity-verify": ("probity-verify", "probity_verify"),
+    "agent-evidence-verify": ("agent-evidence-verify", "agent_evidence_verify"),
     "probity-ratchet": ("probity-ratchet", "ratchet"),
     "probity-ratchet-cases": ("probity-ratchet-cases", "ratchet_cases"),
     "jcs-admit": ("jcs-admit", "jcs_admit"),

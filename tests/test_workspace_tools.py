@@ -79,8 +79,8 @@ def test_duplicate_distribution_names_are_refused(root):
 
 def test_the_real_workspace_resolves():
     table = workspace.members()
-    assert {"probity-verify", "probityai"} <= set(table)
-    assert "probity-verify" in table["probityai"].requires
+    assert {"agent-evidence-verify", "probityai"} <= set(table)
+    assert "agent-evidence-verify" in table["probityai"].requires
 
 
 def test_requires_lists_workspace_dependencies_before_the_member(root):

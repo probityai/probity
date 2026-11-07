@@ -12,10 +12,10 @@ publisher = "probityai/probity"
 tag = "probityai-v{version}"
 
 [[own]]
-key = "pypi:probity-verify"
-manifest = "packages/probity-verify/pyproject.toml"
+key = "pypi:agent-evidence-verify"
+manifest = "packages/agent-evidence-verify/pyproject.toml"
 publisher = "probityai/probity"
-tag = "probity-verify-v{version}"
+tag = "agent-evidence-verify-v{version}"
 
 [[own]]
 key = "pypi:probity-ratchet"

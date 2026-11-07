@@ -16,10 +16,10 @@ conflicts = [[
 members = [
     "agent-evidence-mcp",
     "agent-evidence-observer",
+    "agent-evidence-verify",
     "evaluator-replay-kit",
     "probity-ratchet",
     "probity-ratchet-cases",
-    "probity-verify",
     "probityai",
 ]
 
@@ -83,10 +83,10 @@ source = { editable = "packages/agent-evidence-mcp" }
 dependencies = [
     { name = "agent-evidence-admission" },
     { name = "agent-evidence-vectors" },
+    { name = "agent-evidence-verify" },
     { name = "agent-evidence-vocabulary" },
     { name = "jcs-admit" },
     { name = "mcp" },
-    { name = "probity-verify" },
     { name = "pyyaml" },
 ]
 
@@ -99,10 +99,10 @@ test = [
 requires-dist = [
     { name = "agent-evidence-admission", specifier = ">=0.2.0,<1" },
     { name = "agent-evidence-vectors", specifier = ">=0.30.0,<1" },
+    { name = "agent-evidence-verify", editable = "packages/agent-evidence-verify" },
     { name = "agent-evidence-vocabulary", specifier = ">=0.8.0,<1" },
     { name = "jcs-admit", specifier = ">=0.1.0,<1" },
     { name = "mcp", specifier = "==2.3.0" },
-    { name = "probity-verify", editable = "packages/probity-verify" },
     { name = "pytest", marker = "extra == 'test'", specifier = "==9.2.0" },
     { name = "pyyaml", specifier = "==6.0.3" },
 ]
@@ -158,6 +158,38 @@ sdist = { url = "https://files.pythonhosted.org/packages/e2/f7/4b1c0674afdae3a51
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e7/82/894d46b4159581a65e5b6bb31960493afb9446fc10b924bd578b3462ed57/agent_evidence_vectors-0.31.0-py3-none-any.whl", hash = "sha256:6a9e43def25fcd69ca7bc4cee749d42a48752be0672e594dbd85f00c7078450a", size = 11301142, upload-time = "2026-10-31T02:18:14.293Z" },
 ]
+
+[[package]]
+name = "agent-evidence-verify"
+version = "0.5.0"
+source = { editable = "packages/agent-evidence-verify" }
+dependencies = [
+    { name = "agent-evidence-vocabulary" },
+    { name = "cryptography" },
+    { name = "pyyaml" },
+]
+
+[package.optional-dependencies]
+a2a = [
+    { name = "a2a-sdk", extra = ["http-server"] },
+    { name = "uvicorn" },
+]
+test = [
+    { name = "hypothesis" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = "==1.3.0" },
+    { name = "agent-evidence-vocabulary", specifier = ">=0.8.0,<0.10" },
+    { name = "cryptography", specifier = ">=50.0.2,<51" },
+    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.170.8,<7" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0,<10" },
+    { name = "pyyaml", specifier = ">=6.0.2,<7" },
+    { name = "uvicorn", marker = "extra == 'a2a'", specifier = "==0.54.0" },
+]
+provides-extras = ["test", "a2a"]
 
 [[package]]
 name = "agent-evidence-vocabulary"
@@ -3991,11 +4023,11 @@ version = "0.4.0"
 source = { editable = "packages/probity-ratchet" }
 dependencies = [
     { name = "agent-evidence-vectors" },
+    { name = "agent-evidence-verify" },
     { name = "cryptography" },
     { name = "httpx" },
     { name = "jcs-admit" },
     { name = "probity-ratchet-cases" },
-    { name = "probity-verify" },
     { name = "rich" },
 ]
 
@@ -4022,12 +4054,12 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "agent-evidence-vectors", specifier = ">=0.31.0,<1.0" },
+    { name = "agent-evidence-verify", editable = "packages/agent-evidence-verify" },
     { name = "cryptography", specifier = ">=44" },
     { name = "gepa", marker = "extra == 'gepa'", specifier = "==0.1.4" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jcs-admit", specifier = "~=0.1.0" },
     { name = "probity-ratchet-cases", editable = "packages/probity-ratchet-cases" },
-    { name = "probity-verify", editable = "packages/probity-verify" },
     { name = "pymongo", marker = "extra == 'atlas'", specifier = ">=4.10" },
     { name = "raindrop-ai", marker = "extra == 'telemetry'", specifier = "==0.0.75" },
     { name = "rich", specifier = ">=15.0.0" },
@@ -4057,43 +4089,11 @@ requires-dist = [{ name = "agentdojo", marker = "extra == 'agentdojo'", specifie
 provides-extras = ["agentdojo"]
 
 [[package]]
-name = "probity-verify"
-version = "0.4.1"
-source = { editable = "packages/probity-verify" }
-dependencies = [
-    { name = "agent-evidence-vocabulary" },
-    { name = "cryptography" },
-    { name = "pyyaml" },
-]
-
-[package.optional-dependencies]
-a2a = [
-    { name = "a2a-sdk", extra = ["http-server"] },
-    { name = "uvicorn" },
-]
-test = [
-    { name = "hypothesis" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = "==1.3.0" },
-    { name = "agent-evidence-vocabulary", specifier = ">=0.8.0,<0.10" },
-    { name = "cryptography", specifier = ">=50.0.2,<51" },
-    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.170.8,<7" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0,<10" },
-    { name = "pyyaml", specifier = ">=6.0.2,<7" },
-    { name = "uvicorn", marker = "extra == 'a2a'", specifier = "==0.54.0" },
-]
-provides-extras = ["test", "a2a"]
-
-[[package]]
 name = "probityai"
 version = "0.1.1"
 source = { editable = "packages/probityai" }
 dependencies = [
-    { name = "probity-verify" },
+    { name = "agent-evidence-verify" },
 ]
 
 [package.optional-dependencies]
@@ -4103,7 +4103,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "probity-verify", editable = "packages/probity-verify" },
+    { name = "agent-evidence-verify", editable = "packages/agent-evidence-verify" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0,<10" },
 ]
 provides-extras = ["test"]

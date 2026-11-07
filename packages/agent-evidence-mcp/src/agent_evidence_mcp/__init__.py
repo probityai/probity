@@ -1,4 +1,4 @@
-"""Offline, read-only MCP server over probity-verify and the agent-evidence packages."""
+"""Offline, read-only MCP server over agent-evidence-verify and the agent-evidence packages."""
 
 from importlib.metadata import version
 

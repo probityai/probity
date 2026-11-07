@@ -179,7 +179,7 @@ def _verify(tmp_path: Path, name: str, claimed: bytes, source: bytes, digest: st
                                "claimed": "claimed"}},
     }), encoding="utf-8")
     done = subprocess.run(
-        [str(Path(sys.executable).parent / "probity-verify"), str(case_dir / "case.json"), "--policy",
+        [str(Path(sys.executable).parent / "agent-evidence-verify"), str(case_dir / "case.json"), "--policy",
          str(case_dir / "policy.json"), "--json"],
         capture_output=True, text=True, check=False, timeout=120)
     return done.returncode, json.loads(done.stdout) if done.stdout.strip() else {}
@@ -187,8 +187,8 @@ def _verify(tmp_path: Path, name: str, claimed: bytes, source: bytes, digest: st
 
 @pytest.mark.parametrize("which", ["execution", "results"])
 def test_probity_verify_confirms_each_manifest_digest(tmp_path: Path, which: str) -> None:
-    version = tuple(int(part) for part in metadata.version("probity-verify").split(".")[:2])
-    assert version >= (0, 4), "jcs_canonical/v1 ships from probity-verify 0.4.0"
+    version = tuple(int(part) for part in metadata.version("agent-evidence-verify").split(".")[:2])
+    assert version >= (0, 4), "jcs_canonical/v1 ships from agent-evidence-verify 0.5.0 (probity-verify 0.4.0)"
     location = _run(tmp_path)
     manifest = json.loads(binding.manifest_path(location).read_text(encoding="utf-8"))
     log = binding.decode_log(location)

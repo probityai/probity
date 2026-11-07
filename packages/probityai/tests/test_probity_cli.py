@@ -121,18 +121,18 @@ def test_version_reports_the_installed_distribution(capsys):
     assert capsys.readouterr().out.startswith(f"probityai {version('probityai')}")
 
 
-def test_installed_probity_verify_registers_verify():
+def test_installed_agent_evidence_verify_registers_verify():
     names = {point.name for point in entry_points(group=GROUP)}
     assert "verify" in names
 
 
 def _samples(tmp_path):
-    for item in files("probity_verify.samples").iterdir():
+    for item in files("agent_evidence_verify.samples").iterdir():
         if item.name.endswith((".json", ".html", ".txt")):
             (tmp_path / item.name).write_bytes(item.read_bytes())
 
 
-def test_probity_verify_runs_the_installed_verifier(tmp_path, capsys):
+def test_agent_evidence_verify_runs_the_installed_verifier(tmp_path, capsys):
     _samples(tmp_path)
     status = main(["verify", str(tmp_path / "case.json"), "--policy", str(tmp_path / "policy-june.json"), "--json"])
     assert status == 0
@@ -140,13 +140,13 @@ def test_probity_verify_runs_the_installed_verifier(tmp_path, capsys):
     assert (result["decision"], result["reason"]) == ("contradicted", "selected_span_missing_from_record")
 
 
-def test_probity_verify_errors_carry_the_subcommand_program_name(tmp_path, capsys):
+def test_agent_evidence_verify_errors_carry_the_subcommand_program_name(tmp_path, capsys):
     status = main(["verify", str(tmp_path / "missing.json"), "--policy", str(tmp_path / "missing.json")])
     assert status == 2
     assert capsys.readouterr().err.startswith("probityai verify: ")
 
 
-_DONE = Path(__file__).resolve().parents[2] / "probity-verify/examples/done-receipt"
+_DONE = Path(__file__).resolve().parents[2] / "agent-evidence-verify/examples/done-receipt"
 
 
 @pytest.mark.parametrize("example, decision, reason", [
@@ -154,7 +154,7 @@ _DONE = Path(__file__).resolve().parents[2] / "probity-verify/examples/done-rece
     ("tampered-grader", "contradicted", "external_effect_on_grader_path"),
     ("honest-failure", "contradicted", "acceptance_failed_in_verifier"),
 ])
-def test_probity_verify_checks_a_done_receipt(capsys, example, decision, reason):
+def test_agent_evidence_verify_checks_a_done_receipt(capsys, example, decision, reason):
     case = _DONE / example
     status = main(["verify", str(case / "receipt.case.json"), "--policy", str(case / "receipt.policy.json"), "--json"])
     assert status == 0

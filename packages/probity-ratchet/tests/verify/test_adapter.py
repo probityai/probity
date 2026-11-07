@@ -1,4 +1,4 @@
-"""The `ratchet_decision/v1` adapter driven directly through `probity_verify.adjudicate`.
+"""The `ratchet_decision/v1` adapter driven directly through `agent_evidence_verify.adjudicate`.
 
 These tests show what the pinned verifier itself contributes: artifact binding, refusal of malformed controls
 without a verdict, and the consumer-selected adapter rule.
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from probity_verify import CaseError, adjudicate  # type: ignore[import-untyped]
+from agent_evidence_verify import CaseError, adjudicate  # type: ignore[import-untyped]
 from ratchet_cases.types import sha256_hex
 
 from ratchet.improve.receipt import Signer

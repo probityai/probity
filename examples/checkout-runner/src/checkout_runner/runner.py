@@ -15,7 +15,13 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
-from agent_evidence_vectors.run_vectors import ed25519_public_key, ed25519_sign, ed25519_verify, jcs_dumps, pae
+from agent_evidence_vectors.run_vectors import (
+    ed25519_public_key,
+    ed25519_sign,
+    ed25519_verify,
+    jcs_dumps,
+    pae,
+)
 
 from . import cases as cases_mod
 from . import suites as suites_mod

@@ -1,11 +1,11 @@
-"""The `ratchet_decision/v1` claim adapter that `probity-verify` runs for a Ratchet admission receipt.
+"""The `ratchet_decision/v1` claim adapter that `agent-evidence-verify` runs for a Ratchet admission receipt.
 
 Split of work, stated exactly:
 
-probity-verify (pinned) does: reads every artifact through anchored, non-following file descriptors and binds
-its bytes to a SHA-256 and length; refuses a malformed case or policy without a verdict; snapshots and hashes
-the consumer policy and reports `policy_sha256`; rejects an adapter that mutates its inputs; validates the
-`probity-decision/v1` envelope this module returns.
+agent-evidence-verify (pinned): reads every artifact through anchored, non-following file descriptors and
+binds its bytes to a SHA-256 and length; refuses a malformed case or policy without a verdict; snapshots and
+hashes the consumer policy and reports `policy_sha256`; rejects an adapter that mutates its inputs;
+validates the `probity-decision/v1` envelope this module returns.
 
 This adapter does: parses the DSSE envelope, verifies the Ed25519 signature against the key the policy pins,
 checks the payload type and predicate, the payload's required fields and its internal consistency, and runs
@@ -28,16 +28,15 @@ import re
 from pathlib import Path
 from typing import Any
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-
-# probity-verify ships no py.typed marker; the pinned commit is the contract for these private helpers.
-from probity_verify.common import (  # type: ignore[import-untyped]
+# agent-evidence-verify ships no py.typed marker; the pinned commit is the contract for these private helpers.
+from agent_evidence_verify.common import (  # type: ignore[import-untyped]
     CaseError,
     _artifact,
     _digest,
     _object,
     _string,
 )
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ratchet.canonical import CANONICALIZATION
 from ratchet.verify import dsse, evidence

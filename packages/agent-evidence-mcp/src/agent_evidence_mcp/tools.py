@@ -16,8 +16,8 @@ from typing import Any
 import jcs_admit
 import yaml
 from agent_evidence_admission.digest_check import check, parse_document
+from agent_evidence_verify.core import CaseError, adjudicate, render_packet
 from jcs_admit import dsse
-from probity_verify.core import CaseError, adjudicate, render_packet
 
 MAX_ARTIFACT_CHARS = 2_000_000
 MAX_VECTOR_BYTES = 16_384
@@ -36,7 +36,7 @@ SAMPLES = {
 
 
 def _samples_dir() -> Path:
-    return Path(str(resources.files("probity_verify.samples")))
+    return Path(str(resources.files("agent_evidence_verify.samples")))
 
 
 def _corpora_dir() -> Path:
@@ -69,7 +69,7 @@ def _safe_relative(name: str) -> PurePosixPath:
 
 
 def verify_claim(case: dict, policy: dict, artifacts: dict[str, str] | None = None) -> dict[str, Any]:
-    """Decide one claim against evidence bytes the caller supplies, with probity-verify."""
+    """Decide one claim against evidence bytes the caller supplies, with agent-evidence-verify."""
     artifacts = artifacts or {}
     try:
         with tempfile.TemporaryDirectory(prefix="aemcp-") as tmp:
