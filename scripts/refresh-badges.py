@@ -39,6 +39,56 @@ COMBINED: dict[str, tuple[str, tuple[str, ...]]] = {
 }
 
 
+PYPI_PAGE = "https://pypi.org/project/agent-evidence-verify/"
+PEPY_PAGE = "https://pepy.tech/projects/agent-evidence-verify"
+VERIFIER_LINK = re.compile(re.escape(PYPI_PAGE) + "|" + re.escape(PEPY_PAGE))
+ROOT_README = "README.md"
+PACKAGE_README = "packages/agent-evidence-verify/README.md"
+BADGE_BLOCK = re.compile(
+    r"(<!-- downloads-badge:begin -->\n).*?(<!-- downloads-badge:end -->)", re.DOTALL
+)
+PACKAGE_BADGE = (
+    "[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/"
+    f"assets/badges/dl-verifier-total.svg)]({PEPY_PAGE})\n"
+)
+
+
+def page_exists(url: str) -> bool:
+    """True when the page answers 200; any other answer or no answer is False."""
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.status == 200
+    except OSError:
+        return False
+
+
+def relink_verifier(root: Path, live: bool) -> list[str]:
+    """Follow PePy: its page once it answers 200, the PyPI page until then.
+
+    The root badge line links PEPY_PAGE when live, else PYPI_PAGE. The package README
+    (the PyPI page) carries its badge only when live, because PePy answers 404 for a
+    name it has no data for. Returns the files changed."""
+    changed = []
+    root_path = root / ROOT_README
+    if root_path.exists():
+        lines = root_path.read_text(encoding="utf-8").splitlines(keepends=True)
+        want = PEPY_PAGE if live else PYPI_PAGE
+        out = [VERIFIER_LINK.sub(want, ln) if "dl-verifier-total" in ln else ln for ln in lines]
+        if out != lines:
+            root_path.write_text("".join(out), encoding="utf-8")
+            changed.append(ROOT_README)
+    pkg_path = root / PACKAGE_README
+    if pkg_path.exists():
+        text = pkg_path.read_text(encoding="utf-8")
+        body = PACKAGE_BADGE if live else ""
+        new = BADGE_BLOCK.sub(lambda m: m.group(1) + body + m.group(2), text)
+        if new != text:
+            pkg_path.write_text(new, encoding="utf-8")
+            changed.append(PACKAGE_README)
+    return changed
+
+
 def fetch(url: str, headers: dict[str, str] | None = None) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -134,6 +184,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     args.out.mkdir(parents=True, exist_ok=True)
     failed = sum(refresh_one(build, args.out, *job) for job in jobs)
+    if any(job[0] == "dl-verifier-total" for job in jobs):
+        live = page_exists(PEPY_PAGE)
+        for rel in relink_verifier(readme.parent, live):
+            print(f"{rel}: verifier downloads badge follows pepy ({'live' if live else 'not yet'})")
     return 1 if failed else 0
 
 
