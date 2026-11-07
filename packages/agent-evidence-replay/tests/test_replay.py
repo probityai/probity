@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 from agent_evidence_vectors.auditrecord import canonical_bytes
-from evaluator_replay_kit import Pin, make_pin, replay_bytes
-from evaluator_replay_kit.cli import main
-from evaluator_replay_kit.replay import PinError, digest
+from agent_evidence_replay import Pin, make_pin, replay_bytes
+from agent_evidence_replay.cli import main
+from agent_evidence_replay.replay import PinError, digest
 
 FIXTURE = Path(__file__).parent / "fixtures" / "accept-3" / "record.jsonl"
 DATA = FIXTURE.read_bytes()

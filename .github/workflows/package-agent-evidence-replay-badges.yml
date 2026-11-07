@@ -1,7 +1,7 @@
-# Moved from packages/evaluator-replay-kit/.github/workflows/badge-check.yml when the package was
+# Moved from packages/agent-evidence-replay/.github/workflows/badge-check.yml when the package was
 # imported. Fetches every image the package's markdown pages show, badges included, once a week,
 # and fails naming each one that does not load as an image.
-name: package-evaluator-replay-kit-badges
+name: package-agent-evidence-replay-badges
 
 on:
   schedule:
@@ -30,4 +30,4 @@ jobs:
         with:
           python-version: '3.12'
       - name: every image on every page loads
-        run: python3 -B .github-scripts/scripts/version-pins.py badges --root . --config packages/evaluator-replay-kit/version-pins.toml
+        run: python3 -B .github-scripts/scripts/version-pins.py badges --root . --config packages/agent-evidence-replay/version-pins.toml
