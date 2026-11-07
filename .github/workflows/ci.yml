@@ -191,17 +191,17 @@ jobs:
     if: needs.changes.outputs.plugins == 'true'
     uses: ./.github/workflows/package-agent-evidence-plugins.yml
 
-  package-evaluator-replay-kit:
+  package-agent-evidence-replay:
     needs: changes
-    if: fromJSON(needs.changes.outputs.members)['evaluator-replay-kit']
-    uses: ./.github/workflows/package-evaluator-replay-kit.yml
+    if: fromJSON(needs.changes.outputs.members)['agent-evidence-replay']
+    uses: ./.github/workflows/package-agent-evidence-replay.yml
 
-  evaluator-replay-kit-distribution:
+  agent-evidence-replay-distribution:
     needs: changes
-    if: fromJSON(needs.changes.outputs.members)['evaluator-replay-kit']
+    if: fromJSON(needs.changes.outputs.members)['agent-evidence-replay']
     uses: ./.github/workflows/python-build.yml
     with:
-      distribution: evaluator-replay-kit
+      distribution: agent-evidence-replay
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
@@ -221,7 +221,7 @@ jobs:
 
   ci-ok:
     if: always()
-    needs: [changes, lint, agent-evidence-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution, package-agent-evidence-plugins, package-evaluator-replay-kit, evaluator-replay-kit-distribution, package-probity-effects, probity-effects-distribution]
+    needs: [changes, lint, agent-evidence-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution, package-agent-evidence-plugins, package-agent-evidence-replay, agent-evidence-replay-distribution, package-probity-effects, probity-effects-distribution]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed

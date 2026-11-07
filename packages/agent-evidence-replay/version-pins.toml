@@ -1,0 +1,18 @@
+# Where each version this package's pages name is decided; the .github repository's version-pins script
+# holds every page to it. Paths are relative to the repository root: the package workflows run
+# `python3 -B scripts/version-pins.py check --root . --config packages/agent-evidence-replay/version-pins.toml`
+# from a checkout of probityai/.github. A release bumps pyproject.toml and runs the script's `write` mode
+# the same way in the same pull request, before the tag.
+repository = "probityai/probity"
+
+# Released as a GitHub release of tag agent-evidence-replay-v<version> and published to PyPI by the release workflow.
+[[own]]
+key = "pypi:agent-evidence-replay"
+publisher = "probityai/probity"
+manifest = "packages/agent-evidence-replay/pyproject.toml"
+pages = ["packages/agent-evidence-replay/README.md"]
+tag = "agent-evidence-replay-v{version}"
+
+[scan]
+include = ["packages/agent-evidence-replay/**/*.md"]
+skip = ["packages/agent-evidence-replay/tests/fixtures/**"]

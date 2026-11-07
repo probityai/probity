@@ -69,7 +69,7 @@ The kit reads the whole record before it judges any of it. Checks run in this or
 }
 ```
 
-`evaluator-replay pin RECORD` writes a pin from a record. Write it when you first receive a record you trust, from a channel the lab does not control, and keep it elsewhere. A pin taken from the same bundle you are checking proves nothing: whoever altered the record altered the pin.
+`agent-evidence-replay pin RECORD` writes a pin from a record. Write it when you first receive a record you trust, from a channel the lab does not control, and keep it elsewhere. A pin taken from the same bundle you are checking proves nothing: whoever altered the record altered the pin.
 
 ## 6. What this does not establish
 

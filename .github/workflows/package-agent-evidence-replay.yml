@@ -1,6 +1,6 @@
-# Moved from packages/evaluator-replay-kit/.github/workflows/ci.yml when the package was imported;
-# its steps run from packages/evaluator-replay-kit. The README shape check is the root lint job's.
-name: package-evaluator-replay-kit
+# Moved from packages/agent-evidence-replay/.github/workflows/ci.yml when the package was imported;
+# its steps run from packages/agent-evidence-replay. The README shape check is the root lint job's.
+name: package-agent-evidence-replay
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: packages/evaluator-replay-kit
+        working-directory: packages/agent-evidence-replay
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -28,8 +28,8 @@ jobs:
         run: python -m pytest -q
       - name: README example runs as written
         run: |
-          evaluator-replay verify tests/fixtures/accept-3
-          if evaluator-replay verify tests/fixtures/gap-2 --pin tests/fixtures/accept-3/pin.json; then
+          agent-evidence-replay verify tests/fixtures/accept-3
+          if agent-evidence-replay verify tests/fixtures/gap-2 --pin tests/fixtures/accept-3/pin.json; then
             echo "the gap fixture replayed intact"; exit 1
           fi
 
@@ -51,4 +51,4 @@ jobs:
         with:
           python-version: '3.12'
       - name: every version a page names equals its manifest or the family lock
-        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config packages/evaluator-replay-kit/version-pins.toml
+        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config packages/agent-evidence-replay/version-pins.toml

@@ -1,4 +1,4 @@
-"""The evaluator-replay command line."""
+"""The agent-evidence-replay command line."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from evaluator_replay_kit.replay import Pin, PinError, make_pin, replay_bytes
+from agent_evidence_replay.replay import Pin, PinError, make_pin, replay_bytes
 
 EXIT_FOR = {"intact": 0, "tampered": 1, "gap": 1, "broken": 1, "invalid": 2}
 
@@ -44,7 +44,7 @@ def _pin(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     """Run the command; exit 0 intact, 1 tampered, gap or broken, 2 unreadable."""
-    parser = argparse.ArgumentParser(prog="evaluator-replay")
+    parser = argparse.ArgumentParser(prog="agent-evidence-replay")
     commands = parser.add_subparsers(dest="command", required=True)
     verify = commands.add_parser("verify", help="replay a record and flag tamper or a gap")
     verify.add_argument("bundle", type=Path, help="record.jsonl, or a directory holding it")
@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return args.run(args)
     except (OSError, ValueError, PinError) as exc:
-        print(f"evaluator-replay: {exc}", file=sys.stderr)
+        print(f"agent-evidence-replay: {exc}", file=sys.stderr)
         return 2
 
 

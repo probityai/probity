@@ -49,7 +49,7 @@ jobs:
           configs: |
             version-pins.toml
             packages/agent-evidence-mcp/version-pins.toml
-            packages/evaluator-replay-kit/version-pins.toml
+            packages/agent-evidence-replay/version-pins.toml
             harnesses/agent-evidence-plugins/version-pins.toml
           ci: ci.yml
           token: ${{ github.token }}

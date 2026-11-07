@@ -1,14 +1,14 @@
-# evaluator-replay-kit
+# agent-evidence-replay
 
 Replay a lab-produced agent action record: recompute its digest chain and flag a changed step (tamper) or a missing one (gap).
 
 It is for evaluators and auditors who receive an action record from an AI lab and need to know the record is whole before they read it.
 
 ```sh
-pip install "git+https://github.com/probityai/probity@evaluator-replay-kit-v0.1.0#subdirectory=packages/evaluator-replay-kit"
-git clone --branch evaluator-replay-kit-v0.1.0 https://github.com/probityai/probity && cd probity/packages/evaluator-replay-kit
-evaluator-replay verify tests/fixtures/accept-3
-evaluator-replay verify tests/fixtures/gap-2 --pin tests/fixtures/accept-3/pin.json
+pip install "git+https://github.com/probityai/probity@agent-evidence-replay-v0.1.0#subdirectory=packages/agent-evidence-replay"
+git clone --branch agent-evidence-replay-v0.1.0 https://github.com/probityai/probity && cd probity/packages/agent-evidence-replay
+agent-evidence-replay verify tests/fixtures/accept-3
+agent-evidence-replay verify tests/fixtures/gap-2 --pin tests/fixtures/accept-3/pin.json
 ```
 
 The first record is a real three-step chain from the AI Agent Action conformance suite. It replays intact and the pin proves where it ends. The second is that chain with its middle step removed:
@@ -24,8 +24,8 @@ Exit 0 means intact, 1 means tampered, gap or broken, 2 means the record cannot 
 
 ## How to use it
 
-1. When you first receive a record, make a pin and keep it where the lab cannot reach: `evaluator-replay pin record.jsonl > pin.json`.
-2. Replay every later copy against that pin: `evaluator-replay verify record.jsonl --pin pin.json --require-end`.
+1. When you first receive a record, make a pin and keep it where the lab cannot reach: `agent-evidence-replay pin record.jsonl > pin.json`.
+2. Replay every later copy against that pin: `agent-evidence-replay verify record.jsonl --pin pin.json --require-end`.
 3. A pin made from the bundle you are checking proves nothing. Whoever changed the record changed the pin.
 
 A chain with no pin can still say where it breaks, but not whether a step was removed or altered. With a pin it names the cause.
@@ -38,11 +38,11 @@ Version 0.1.0. The digest chain, the pin and the tamper and gap findings work an
 
 | page | read it for |
 | --- | --- |
-| [Specification](https://github.com/probityai/probity/blob/main/packages/evaluator-replay-kit/SPEC.md) | the record format, every check and finding code, the pin, and what a replay does not establish |
-| [Fixtures](https://github.com/probityai/probity/blob/main/packages/evaluator-replay-kit/tests/fixtures/README.md) | where the test records come from |
+| [Specification](https://github.com/probityai/probity/blob/main/packages/agent-evidence-replay/SPEC.md) | the record format, every check and finding code, the pin, and what a replay does not establish |
+| [Fixtures](https://github.com/probityai/probity/blob/main/packages/agent-evidence-replay/tests/fixtures/README.md) | where the test records come from |
 
 ## Next
 
-- ZIP bundles that also pin the artifacts a step names (SPEC section 8, layer 1): `evaluator-replay verify bundle.zip`.
+- ZIP bundles that also pin the artifacts a step names (SPEC section 8, layer 1): `agent-evidence-replay verify bundle.zip`.
 - Signed pins and witness heads (layer 2).
 - Re-execution of recorded tool calls against a recorded environment (layer 3).
