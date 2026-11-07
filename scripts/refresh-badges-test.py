@@ -72,37 +72,44 @@ class CombinedBadgeTest(unittest.TestCase):
 
 
 class PepyLinkTest(unittest.TestCase):
-    ROOT = '<a href="https://pepy.tech/projects/probity-verify"><img src="assets/badges/dl-verifier-total.svg"></a>\n'
-    PKG = "[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/probity-verify)\n"
+    ROOT = '<a href="https://pypi.org/project/agent-evidence-verify/"><img src="assets/badges/dl-verifier-total.svg"></a>\n'
+    PKG = "# t\n\n[![PyPI](x)](y)\n<!-- downloads-badge:begin -->\n<!-- downloads-badge:end -->\n\ntext\n"
 
-    def relink(self, new_exists: bool) -> tuple[str, str, str]:
+    def relink(self, live: bool) -> tuple[str, str]:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "packages" / "agent-evidence-verify").mkdir(parents=True)
             (root / "README.md").write_text(self.ROOT)
-            (root / "packages" / "agent-evidence-verify" / "README.md").write_text(self.PKG)
-            target = rb.verifier_pepy_page(
-                "probity-verify", "agent-evidence-verify", lambda url: new_exists and url.endswith("agent-evidence-verify")
-            )
-            rb.relink_verifier(root, target)
-            return (
-                target,
-                (root / "README.md").read_text(),
-                (root / "packages" / "agent-evidence-verify" / "README.md").read_text(),
-            )
+            pkg = root / "packages" / "agent-evidence-verify" / "README.md"
+            pkg.write_text(self.PKG)
+            rb.relink_verifier(root, live)
+            rb.relink_verifier(root, live)  # idempotent
+            return (root / "README.md").read_text(), pkg.read_text()
 
-    def test_new_name_404_keeps_the_old_page(self) -> None:
-        target, root_text, pkg_text = self.relink(False)
-        self.assertEqual(target, "https://pepy.tech/projects/probity-verify")
+    def test_pepy_404_links_pypi_and_drops_package_badge(self) -> None:
+        root_text, pkg_text = self.relink(False)
         self.assertEqual(root_text, self.ROOT)
         self.assertEqual(pkg_text, self.PKG)
+        self.assertNotIn("probity-verify", root_text + pkg_text)
 
-    def test_new_name_200_switches_both_readmes(self) -> None:
-        target, root_text, pkg_text = self.relink(True)
-        self.assertEqual(target, "https://pepy.tech/projects/agent-evidence-verify")
-        self.assertIn("pepy.tech/projects/agent-evidence-verify", root_text)
-        self.assertNotIn("probity-verify", root_text)
-        self.assertIn("pepy.tech/projects/agent-evidence-verify", pkg_text)
+    def test_pepy_200_links_pepy_and_adds_package_badge(self) -> None:
+        root_text, pkg_text = self.relink(True)
+        self.assertIn('href="https://pepy.tech/projects/agent-evidence-verify"', root_text)
+        self.assertIn("](https://pepy.tech/projects/agent-evidence-verify)", pkg_text)
+        self.assertIn("dl-verifier-total.svg", pkg_text)
+        self.assertNotIn("probity-verify", root_text + pkg_text)
+
+    def test_badge_comes_back_off_again_when_pepy_goes_away(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "packages" / "agent-evidence-verify").mkdir(parents=True)
+            (root / "README.md").write_text(self.ROOT)
+            pkg = root / "packages" / "agent-evidence-verify" / "README.md"
+            pkg.write_text(self.PKG)
+            rb.relink_verifier(root, True)
+            rb.relink_verifier(root, False)
+            self.assertEqual(pkg.read_text(), self.PKG)
+            self.assertEqual((root / "README.md").read_text(), self.ROOT)
 
     def test_page_exists_is_false_on_http_error(self) -> None:
         with mock.patch.object(rb.urllib.request, "urlopen", side_effect=not_found()):

@@ -16,15 +16,12 @@ import re
 import sys
 from pathlib import Path
 
-# A renamed distribution keeps its old PyPI name's pepy page for its download history.
-FORMER_NAMES = {"probity-verify": "agent-evidence-verify"}
 ROW = re.compile(r"^\|\s*\[([A-Za-z0-9._-]+)\]\(.*\*\*\d")
 BADGE = re.compile(r"dl-pypi-([A-Za-z0-9._-]+?)\.svg|pepy\.tech/projects/([A-Za-z0-9._-]+)")
 
 
 def foreign(readme: Path, root: Path) -> list[str]:
     owned = {p.name for p in (root / "packages").iterdir() if p.is_dir()}
-    owned |= {old for old, new in FORMER_NAMES.items() if new in owned}
     found: list[str] = []
     for number, line in enumerate(readme.read_text(encoding="utf-8").splitlines(), start=1):
         names = []
