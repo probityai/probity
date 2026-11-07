@@ -29,7 +29,7 @@ def replay_tool(monkeypatch):
 
 
 def gate_pin() -> str:
-    """The requirement string the gate script pins, for example agent-evidence-verify==0.5.0."""
+    """The requirement string the gate script pins, for example agent-evidence-verify==0.5.1."""
     for line in SCRIPT.read_text().splitlines():
         if line.startswith("PINNED = "):
             return line.split('"')[1]

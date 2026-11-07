@@ -43,7 +43,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-PINNED = "agent-evidence-verify==0.5.0"
+PINNED = "agent-evidence-verify==0.5.1"
 DECISIONS = ("supported", "contradicted", "not_established")
 DEFAULT_GLOBS = "*.decision.zip,*.verdict.zip,decision.zip,verdict.zip"
 REPLAY_TIMEOUT_SECONDS = 120

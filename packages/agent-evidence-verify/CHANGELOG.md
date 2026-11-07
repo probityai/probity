@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.1 (unreleased)
+## 0.5.1 (2026-11-07)
 
 README: the downloads badge links PyPI until PePy has data for the new name; no code change. The decisions the verifier returns are the same as 0.5.0.
 
