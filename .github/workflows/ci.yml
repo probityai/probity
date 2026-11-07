@@ -82,6 +82,7 @@ jobs:
       - name: every package in the README has its source here
         run: |
           python3 scripts/readme-package-owner-lint-test.py
+          python3 scripts/refresh-badges-test.py
           python3 scripts/readme-package-owner-lint.py README.md
 
   agent-evidence-verify:
