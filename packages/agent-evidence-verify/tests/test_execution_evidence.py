@@ -23,11 +23,11 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from agent_evidence_verify import adjudicate
 from agent_evidence_verify import execution_evidence as aee
 from agent_evidence_verify.common import CaseError
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 CORPUS = Path(__file__).resolve().parent / "data" / "execution-evidence"
 MANIFEST = json.loads((CORPUS / "MANIFEST.json").read_text(encoding="utf-8"))

@@ -12,11 +12,11 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
 from agent_evidence_verify.bundle import create_bundle, main, replay_bundle
 from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.core import REFERENCE_VERIFIER_ID, canonical_json
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 

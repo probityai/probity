@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 
 import pytest
-from done_run import decide, honest_records
 from agent_evidence_verify import CaseError, adjudicate
 from agent_evidence_verify.cli import main
+from done_run import decide, honest_records
 
 ROOT = Path(__file__).resolve().parents[1] / "examples"
 HONEST = ROOT / "done-receipt/honest"

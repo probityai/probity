@@ -3,9 +3,9 @@
 import hashlib
 
 import pytest
-from done_run import PYTEST, build, decide, honest_records, sha
 from agent_evidence_verify import CaseError, adjudicate
 from agent_evidence_verify.adapters.done_records import tree_digest
+from done_run import PYTEST, build, decide, honest_records, sha
 
 CLAIM = "acceptance_observed/v1"
 

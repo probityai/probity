@@ -6,8 +6,8 @@ from __future__ import annotations
 import hashlib
 
 import pytest
-from done_run import decide, honest_records
 from agent_evidence_verify import CaseError
+from done_run import decide, honest_records
 from test_out_of_tree_tamper import add_external, outcome, sealed
 
 PROTECTED = "protected_paths/v1"

@@ -4,10 +4,10 @@ import copy
 import hashlib
 
 import pytest
-from done_run import PYTEST, SCOPE, add_probes, encode, exec_event, honest_records
 from agent_evidence_verify import CaseError, adjudicate
 from agent_evidence_verify.adapters import done_receipt
 from agent_evidence_verify.adapters.done_records import DONE_RECEIPT_PREDICATE
+from done_run import PYTEST, SCOPE, add_probes, encode, exec_event, honest_records
 
 CLAIM = "done_receipt/v2"
 ROLES = ("contract", "capability", "observation", "tree", "grade", "claims")

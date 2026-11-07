@@ -9,7 +9,13 @@ from typing import Any
 
 from agent_evidence_vectors.run_vectors import ed25519_public_key, ed25519_sign
 
-from checkout_runner.handoff import GateTrust, decision_ref_of, receipt_id_of, request_digest, signature_payload
+from checkout_runner.handoff import (
+    GateTrust,
+    decision_ref_of,
+    receipt_id_of,
+    request_digest,
+    signature_payload,
+)
 
 GATE = "did:example:gate"
 SEED = hashlib.sha256(b"tests/gate").digest()

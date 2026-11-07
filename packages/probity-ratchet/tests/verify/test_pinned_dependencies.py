@@ -67,7 +67,7 @@ def assert_hash_pinned_from_pypi(entry: dict[str, Any]) -> None:
 
 
 def test_agent_evidence_verify_is_the_workspace_member_inside_the_window() -> None:
-    """The lock takes the verifier from packages/agent-evidence-verify, the version this ratchet ships beside."""
+    """The lock takes the verifier from packages/agent-evidence-verify, the version shipped beside it."""
     entry = locked("agent-evidence-verify")
     assert entry["source"] == {"editable": "packages/agent-evidence-verify"}
     assert metadata.distribution("agent-evidence-verify").version == entry["version"]

@@ -13,9 +13,9 @@ import hashlib
 from typing import ClassVar
 
 import pytest
-from done_run import build, decide, encode, honest_records
 from agent_evidence_verify import CaseError, adjudicate
 from agent_evidence_verify.adapters import done_receipt
+from done_run import build, decide, encode, honest_records
 
 SURFACE = ["/usr/lib/x86_64-linux-gnu", "/usr/local/bin", "/usr/local/lib/python3.12"]
 ALIASES = {"/lib": "/usr/lib"}

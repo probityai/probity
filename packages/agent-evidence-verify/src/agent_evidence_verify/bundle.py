@@ -31,7 +31,13 @@ from typing import Any
 
 from .cli import _load
 from .common import MAX_ARTIFACT_BYTES, CaseError, _artifact
-from .core import PREDECESSOR_VERIFIER_ID, REFERENCE_VERIFIER_ID, adjudicate, canonical_json, render_packet
+from .core import (
+    PREDECESSOR_VERIFIER_ID,
+    REFERENCE_VERIFIER_ID,
+    adjudicate,
+    canonical_json,
+    render_packet,
+)
 from .json_input import parse_json
 
 _CONTROL_LIMIT = 1024 * 1024

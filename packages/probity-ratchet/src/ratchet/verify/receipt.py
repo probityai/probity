@@ -1,7 +1,7 @@
 """Verify a Ratchet admission receipt with the pinned public verifier and an independently pinned key.
 
-`verify_decision` builds a `agent-evidence-verify` case from the envelope bytes (and any stored reports), pins the
-trusted key and the predicate in the consumer policy, and asks `agent_evidence_verify.adjudicate` for the verdict
+`verify_decision` builds a verifier case from the envelope bytes (and any stored reports), pins the
+trusted key and the predicate in the consumer policy, and asks `adjudicate` for the verdict
 using the `ratchet_decision/v1` adapter in `ratchet.verify.adapter`. Every failure is a specific reason code.
 """
 
@@ -17,8 +17,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from agent_evidence_verify import CaseError, adjudicate  # type: ignore[import-untyped]
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from ratchet_cases.types import sha256_hex
 
 from ratchet.canonical import CANONICALIZATION, canonicalizer

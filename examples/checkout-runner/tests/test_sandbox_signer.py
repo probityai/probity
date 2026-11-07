@@ -7,8 +7,8 @@ import hashlib
 from datetime import datetime, timezone
 
 import pytest
-
 from agent_evidence_vectors.run_vectors import ed25519_public_key
+
 from checkout_runner import sandbox_signer as s
 
 SEED = hashlib.sha256(b"refund-sandbox test-only admission signer").digest()

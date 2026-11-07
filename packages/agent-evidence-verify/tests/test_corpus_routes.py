@@ -20,11 +20,15 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from agent_evidence_verify import adjudicate
+from agent_evidence_verify.adapters import (
+    jcs_canonical,
+    observed_effect,
+    uncertain_effect,
+)
+from agent_evidence_verify.common import CaseError
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from agent_evidence_verify import adjudicate
-from agent_evidence_verify.adapters import jcs_canonical, observed_effect, uncertain_effect
-from agent_evidence_verify.common import CaseError
 
 DATA = Path(__file__).resolve().parent / "data"
 # No member of the corpus carries codeDigest or invocationBinding, and none pins either on the

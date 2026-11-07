@@ -11,11 +11,11 @@ import sys
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from agent_evidence_verify import dsse
 from agent_evidence_verify.cli import main
 from agent_evidence_verify.common import CaseError
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 ROOT = Path(__file__).resolve().parents[1]
 VECTORS = ROOT / "examples/dsse-bundle"

@@ -8,8 +8,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
 from agent_evidence_verify.bundle import create_bundle
 from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.core import canonical_json
@@ -20,6 +18,8 @@ from agent_evidence_verify.index import (
     main,
     verify_index,
 )
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 

@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_evidence_vectors.run_vectors import ed25519_public_key, jcs_dumps
+
 from checkout_runner import sandbox_executor as ex
 from checkout_runner import sandbox_signer as sg
 from checkout_runner.sandbox_sim import SandboxSimulator

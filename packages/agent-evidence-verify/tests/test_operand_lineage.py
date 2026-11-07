@@ -8,10 +8,10 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
 from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.core import adjudicate
+from hypothesis import given
+from hypothesis import strategies as st
 
 
 class TestOperandLineage:

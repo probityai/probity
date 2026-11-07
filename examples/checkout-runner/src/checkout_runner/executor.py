@@ -31,7 +31,6 @@ import subprocess
 import sys
 from typing import Any
 
-
 from .handoff import GateTrust, check_handoff, idempotency_key, iso_ms, request_digest
 
 FINAL = ("response_ok", "declined")

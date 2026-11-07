@@ -4,8 +4,8 @@ from importlib.resources import files
 
 import pytest
 import yaml
-from done_run import build, decide, honest_records
 from agent_evidence_verify import CaseError, adjudicate, core, vocabulary
+from done_run import build, decide, honest_records
 
 
 def registry_scopes():

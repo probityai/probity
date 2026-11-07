@@ -1,9 +1,9 @@
 """protected_paths/v1: bounded absence of protected-path mutation, plus the final tree."""
 
 import pytest
-from done_run import PYTEST, build, decide, exec_event, honest_records, retree, sha
 from agent_evidence_verify import CaseError, adjudicate
 from agent_evidence_verify.adapters.done_records import tree_digest
+from done_run import PYTEST, build, decide, exec_event, honest_records, retree, sha
 
 CLAIM = "protected_paths/v1"
 

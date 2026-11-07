@@ -7,10 +7,10 @@ witness_bundles.py, which runs in the witness environment.
 """
 
 import pytest
-from done_run import decide, honest_records
 from agent_evidence_verify import CaseError, adjudicate
 from agent_evidence_verify.adapters import witnessed
 from agent_evidence_verify.cli import main
+from done_run import decide, honest_records
 from test_done_receipt import build as build_receipt
 from witness_run import external, pin, written
 

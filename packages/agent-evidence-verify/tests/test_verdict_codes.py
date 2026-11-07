@@ -15,11 +15,11 @@ import json
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from agent_evidence_verify import execution_evidence as aee
 from agent_evidence_verify import verdict_codes as vc
 from agent_evidence_verify.verdict_codes import UnknownCode, VerdictCode
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 CORPUS = Path(__file__).resolve().parent / "data" / "execution-evidence"
 MEMBERS = {m["id"]: m for m in json.loads((CORPUS / "MANIFEST.json").read_text("utf-8"))["vectors"]}

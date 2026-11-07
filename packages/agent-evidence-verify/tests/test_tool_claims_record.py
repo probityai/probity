@@ -4,9 +4,9 @@ import copy
 import json
 
 import pytest
-from done_run import honest_records
 from agent_evidence_verify import CaseError
 from agent_evidence_verify.adapters import done_records
+from done_run import honest_records
 
 
 def encode(record: dict) -> bytes:

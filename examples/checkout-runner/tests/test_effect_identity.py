@@ -1,5 +1,6 @@
 """An observed effect resolves a committed reservation only when it is that operation's own row."""
 from synth import attempt, case_dir, decision, permit
+
 from checkout_runner.report import C, E, derive
 
 T = 1_791_900_000_000

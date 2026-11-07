@@ -13,12 +13,12 @@ from __future__ import annotations
 import json
 
 import pytest
+from agent_evidence_verify import adjudicate
+from agent_evidence_verify.cli import main
 from done_run import honest_records
 from jcs_admit import dsse
 from probity_observer.witness.checkpoint import signer
 from probity_observer.witness.server import WitnessLog, init_witness
-from agent_evidence_verify import adjudicate
-from agent_evidence_verify.cli import main
 from test_done_receipt import build as build_receipt
 from witness_run import HOST_OPERATOR, external, pin, written
 

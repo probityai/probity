@@ -16,8 +16,8 @@ from typing import Any
 import jcs_admit
 import yaml
 from agent_evidence_admission.digest_check import check, parse_document
-from jcs_admit import dsse
 from agent_evidence_verify.core import CaseError, adjudicate, render_packet
+from jcs_admit import dsse
 
 MAX_ARTIFACT_CHARS = 2_000_000
 MAX_VECTOR_BYTES = 16_384

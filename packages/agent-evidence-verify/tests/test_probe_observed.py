@@ -1,9 +1,9 @@
 """probe_observed/v1: the contract's oracle-free probes, counted only on a passing split."""
 
 import pytest
-from done_run import PYTEST, decide, honest_records
 from agent_evidence_verify import CaseError
 from agent_evidence_verify.adapters import done_receipt
+from done_run import PYTEST, decide, honest_records
 
 CLAIM = "probe_observed/v1"
 DETERMINISM = ["python", "-m", "pytest", "-q", "probes/determinism"]
