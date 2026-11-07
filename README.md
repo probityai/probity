@@ -14,7 +14,7 @@ Open tools that check claims about AI agents against evidence you pinned: an off
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `uv add agent-evidence-verify==0.5.0`, or `pip install agent-evidence-verify==0.5.0`.
+Install the released verifier: `uv add agent-evidence-verify==0.5.1`, or `pip install agent-evidence-verify==0.5.1`.
 
 Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai==0.1.1`, or `pip install probityai==0.1.1`.
 
@@ -23,8 +23,8 @@ Verified by Probity (github.com/probityai/probity). The `probityai` command line
 Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
-samples="$(uvx --from agent-evidence-verify==0.5.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
-uvx agent-evidence-verify==0.5.0 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from agent-evidence-verify==0.5.1 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
+uvx agent-evidence-verify==0.5.1 "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -55,7 +55,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | package | what it is | version | downloads |
 | --- | --- | :---: | :---: |
 | [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | **0.5.0** | |
+| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | **0.5.1** | |
 | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
 | [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | agent task cases graded on final state: a simulated company, tool faults, exact graders | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
 | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | **0.2.0** | - |
