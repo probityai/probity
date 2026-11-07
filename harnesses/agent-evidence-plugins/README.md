@@ -5,7 +5,7 @@ Plugins for Claude Code and Cursor that replay a verdict bundle with agent-evide
 It is for people who let an agent consume a server's or a lab's verdict (a done receipt, a claim check) and want the check to run on every use, not when someone remembers.
 
 ```sh
-pip install agent-evidence-verify==0.3.0
+pip install agent-evidence-verify==0.5.0
 git clone --branch agent-evidence-plugins-v0.1.0 https://github.com/probityai/probity
 cd probity/packages/agent-evidence-plugins  # the v0.1.0 tag predates the move to harnesses/
 python3 plugins/verdict-bundle-gate/scripts/verify_bundle.py tests/fixtures/honest.decision.zip
