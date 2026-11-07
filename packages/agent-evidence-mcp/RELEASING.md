@@ -10,8 +10,9 @@
 3. Merge to `main` once the checks are green.
 4. Create a non-prerelease GitHub release tagged `agent-evidence-mcp-v<version>` on a `main` commit. The root `release`
    workflow checks the tag against `packages/agent-evidence-mcp/pyproject.toml`, builds and checks the distributions,
-   and publishes to PyPI through a trusted publisher with PEP 740 attestations (owner `probityai`, repository
-   `probity`, workflow `release.yml`, environment `pypi`). Once PyPI is published it pushes
+   and publishes to PyPI: the trusted publisher with PEP 740 attestations (owner
+   `probityai`, repository `probity`, workflow `release.yml`, environment `pypi`) when PyPI has one, else the
+   `PYPI_API_TOKEN` secret of the `pypi` environment, then a digest read-back of every file. Once PyPI is published it pushes
    `ghcr.io/probityai/agent-evidence-mcp:<version>`, signs it by digest with cosign and attaches build provenance, and
    publishes `server.json` to the official MCP Registry.
 5. Confirm the PyPI file list shows a provenance file for each distribution, run `uvx agent-evidence-mcp@<version>`,
@@ -20,4 +21,4 @@
 Never upload release files by hand with an account token. A hand upload carries no attestation, and once a filename
 is on PyPI the workflow can never publish it again (PyPI answers "400 File already exists"). Versions 0.2.0 to 0.2.3
 carry no attestation: 0.2.0 predates this workflow, and 0.2.1 to 0.2.3 were uploaded by hand after the release run
-failed with `invalid-publisher`, because the trusted publisher was not configured on PyPI. If the workflow cannot publish, fix the trusted publisher and release the next version.
+failed with `invalid-publisher`, because the trusted publisher was not configured on PyPI. A missing or stale trusted publisher no longer stops a release: the job falls back to the token. If a publish job still fails, upload that run's own checked files with the keyring account token the same turn (`uvx --from twine twine upload`), then compare their SHA-256 with PyPI's.

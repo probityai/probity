@@ -122,6 +122,10 @@ already use). Neither has a PyPI upload workflow today; each gets its publish jo
 the change that imports it. A tag resolves to the member whose whole name precedes `-v<version>`, so
 `probity-ratchet-cases-v0.3.0` never resolves to `probity-ratchet` (a test pins this).
 
+A project without that publisher (a new package or a rename) still publishes: each publish job falls back to the account API token held as the `PYPI_API_TOKEN` secret of the
+`pypi` environment and then reads every file's digest back from PyPI. Entering the publisher is an upgrade (it adds
+PEP 740 attestations), never a blocker.
+
 `release.yml` has one publish job per distribution, and each runs only when the resolved tag names that
 distribution, so the job that receives the publishing token for one project never runs for another. PyPI
 trusted publishing does not accept a reusable workflow, so each publish job carries its steps itself. The

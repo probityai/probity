@@ -7,7 +7,7 @@
    `python-build.yml`, and the `publish-probity-effects` job uploads them to PyPI with
    attestations from the `pypi` environment.
 3. PyPI's trusted publisher for the project is owner `probityai`, repository `probity`, workflow
-   `release.yml`, environment `pypi`. The first release of a new project needs it entered as a
-   pending publisher on PyPI before the tag is pushed.
+   `release.yml`, environment `pypi`. A project with no publisher yet (a first release or a rename) still publishes: the publish job falls back to the
+   `PYPI_API_TOKEN` secret of the `pypi` environment, without attestations, and reads every digest back.
 4. Check the release: `pip install probity-effects==<version>` in a clean environment and run the
    quick start in `README.md`.
