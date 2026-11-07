@@ -6,7 +6,7 @@ Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are required.
 
 Version 0.5.0 is published on [PyPI](https://pypi.org/project/agent-evidence-verify/0.5.0/).
 Its wheel modules are identical to the source at tag `agent-evidence-verify-v0.5.0`, commit
-`52de3e2c0e8952e1a53cb5db8b6e51c2367e1269`, and the wheel carries the source-coverage
+`4edcdc6418c3b1d9c6ce9f2229733f4126cbfad0`, and the wheel carries the source-coverage
 sample inputs as package resources. The [release guide](RELEASING.md) gives the
 installed-resource recipe and the artifact checks.
 
