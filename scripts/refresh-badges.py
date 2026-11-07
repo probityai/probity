@@ -8,7 +8,11 @@ committed, and served from the repository, so no table badge calls a third party
 the README is viewed. A source that cannot be read leaves the committed file unchanged.
 
 The packages are the ones the README names as assets/badges/dl-pypi-NAME.svg or
-assets/badges/dl-crates-NAME.svg.
+assets/badges/dl-crates-NAME.svg. A distribution that was renamed keeps one badge for
+its whole history: COMBINED maps a file the README names to the PyPI names whose totals
+add up to it. A combined badge is written only from the pepy API (the keyless fallback
+covers 180 days, which is not the total), and pepy answers 404 for a name nothing has
+downloaded yet, which counts as 0.
 
 usage: refresh-badges.py [--out DIR]
 """
@@ -21,11 +25,18 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
 REF = re.compile(r"assets/badges/dl-(pypi|crates)-([A-Za-z0-9._-]+)\.svg")
+COMBINED_REF = re.compile(r"assets/badges/(dl-[a-z0-9-]+-total)\.svg")
 UA = "probityai-badge-refresh"
+
+# file stem -> (badge title, PyPI names whose pepy totals are summed)
+COMBINED: dict[str, tuple[str, tuple[str, ...]]] = {
+    "dl-verifier-total": ("verifier downloads", ("probity-verify", "agent-evidence-verify")),
+}
 
 
 def fetch(url: str, headers: dict[str, str] | None = None) -> dict:
@@ -43,6 +54,24 @@ def pypi_total(name: str) -> int:
         return int(data["total_downloads"])
     data = fetch(f"https://pypistats.org/api/packages/{name}/overall")
     return sum(r["downloads"] for r in data["data"] if r["category"] == "with_mirrors")
+
+
+def pepy_total(name: str, key: str) -> int:
+    """The pepy total of one name; 404 means no download was ever recorded."""
+    try:
+        data = fetch(f"https://api.pepy.tech/api/v2/projects/{name}", {"X-API-Key": key})
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return 0
+        raise
+    return int(data["total_downloads"])
+
+
+def combined_total(names: tuple[str, ...]) -> int:
+    key = os.environ.get("PEPY_API_KEY")
+    if not key:
+        raise ValueError("PEPY_API_KEY is not set; a combined total needs the pepy API")
+    return sum(pepy_total(name, key) for name in names)
 
 
 def crate_total(name: str) -> int:
@@ -67,6 +96,23 @@ def load_make_badge():
     return mod
 
 
+def refresh_one(build, out: Path, stem: str, title: str, shown: str, getter) -> int:
+    """Write one badge file from getter(); 1 when the source could not be read."""
+    target = out / f"{stem}.svg"
+    try:
+        total = getter()
+    except (OSError, ValueError, KeyError, TypeError) as exc:  # no answer changes nothing
+        note = "file left unchanged"
+        if not target.exists():  # a README must never point at a missing image
+            target.write_text(build("n/a", shown, "#9f9f9f", None, title), encoding="utf-8")
+            note = "no earlier file, wrote an n/a badge"
+        print(f"FAILED {stem}: {type(exc).__name__}: {exc}; {note}")
+        return 1
+    target.write_text(build(human(total), shown, "#007ec6", None, title), encoding="utf-8")
+    print(f"{stem}: {total}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     default = Path(__file__).resolve().parent.parent / "assets" / "badges"
@@ -74,35 +120,20 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     build = load_make_badge().build
     readme = args.out.parent.parent / "README.md"
+    text = readme.read_text(encoding="utf-8")
     getters = {"pypi": pypi_total, "crates": crate_total}
-    found = sorted(set(REF.findall(readme.read_text(encoding="utf-8"))))
-    jobs = [(kind, name, getters[kind]) for kind, name in found]
+    jobs = [
+        (f"dl-{kind}-{name}", f"{name} downloads", "↓", lambda g=getters[kind], n=name: g(n))
+        for kind, name in sorted(set(REF.findall(text)))
+    ]
+    for stem, (title, names) in COMBINED.items():
+        if f"assets/badges/{stem}.svg" in text:
+            jobs.append((stem, title, "verifier ↓", lambda n=names: combined_total(n)))
     if not jobs:
         print(f"FAILED: {readme} names no assets/badges/dl-*.svg file")
         return 1
-    failed = 0
     args.out.mkdir(parents=True, exist_ok=True)
-    for kind, name, getter in jobs:
-        try:
-            total = getter(name)
-        except (
-            OSError,
-            ValueError,
-            KeyError,
-            TypeError,
-        ) as exc:  # no registry answer changes nothing
-            target = args.out / f"dl-{kind}-{name}.svg"
-            note = "file left unchanged"
-            if not target.exists():  # a README must never point at a missing image
-                grey = build("n/a", "↓", "#9f9f9f", None, f"{name} downloads")
-                target.write_text(grey, encoding="utf-8")
-                note = "no earlier file, wrote an n/a badge"
-            print(f"FAILED {kind}/{name}: {type(exc).__name__}: {exc}; {note}")
-            failed += 1
-            continue
-        svg = build(human(total), "↓", "#007ec6", None, f"{name} downloads")
-        (args.out / f"dl-{kind}-{name}.svg").write_text(svg, encoding="utf-8")
-        print(f"{kind}/{name}: {total}")
+    failed = sum(refresh_one(build, args.out, *job) for job in jobs)
     return 1 if failed else 0
 
 

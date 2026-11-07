@@ -3,7 +3,7 @@
 <p>
 <a href="https://github.com/probityai/probity/actions/workflows/ci.yml"><img height="16" alt="CI" src="https://github.com/probityai/probity/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://pypi.org/project/agent-evidence-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/agent-evidence-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white&cacheSeconds=86400"></a>
-<a href="https://pepy.tech/projects/agent-evidence-verify"><img height="16" alt="Downloads" src="assets/badges/dl-pypi-agent-evidence-verify.svg"></a>
+<a href="https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/CHANGELOG.md#050-2026-11-06"><img height="16" alt="Downloads" src="assets/badges/dl-verifier-total.svg"></a>
 <a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="assets/badges/license.svg"></a>
 <a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="assets/badges/stars.svg"></a>
 </p>
@@ -55,7 +55,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | package | what it is | version | downloads |
 | --- | --- | :---: | :---: |
 | [probityai](packages/probityai/README.md) | the `probityai` command; `probityai verify` today | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | **0.5.0** | [![agent-evidence-verify downloads](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |
+| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | offline verifier: `supported`, `contradicted` or `not_established` | **0.5.0** | |
 | [probity-ratchet](packages/probity-ratchet/README.md) | signed, replayable receipts for improving an agent against held-out cases | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
 | [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | agent task cases graded on final state: a simulated company, tool faults, exact graders | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
 | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | **0.2.0** | - |
