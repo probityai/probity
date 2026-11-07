@@ -140,7 +140,7 @@ witness = [
 requires-dist = [
     { name = "coverage", marker = "extra == 'cover'", specifier = ">=7.10,<8" },
     { name = "cryptography", specifier = ">=46,<51" },
-    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.170.14,<7" },
+    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6,<7" },
     { name = "inspect-ai", marker = "extra == 'inspect'", specifier = "==0.3.287" },
     { name = "inspect-ai", marker = "extra == 'inspect-historical'", specifier = "==0.3.281" },
     { name = "jcs-admit", marker = "extra == 'witness'", specifier = "~=0.1.0" },
