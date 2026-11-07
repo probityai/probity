@@ -11,7 +11,7 @@ Install the released package: `pip install agent-evidence-verify==0.5.0`.
 
 ## Quick start
 
-Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); nothing to clone, and a cold run takes seven seconds. Version 0.5.0 ships the sample case and policies inside the wheel:
+Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); nothing to clone. Version 0.5.0 ships the sample case and policies inside the wheel:
 
 ```sh
 samples="$(uvx --from agent-evidence-verify==0.5.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
