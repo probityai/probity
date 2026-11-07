@@ -32,9 +32,12 @@ class CombinedBadgeTest(unittest.TestCase):
             out = Path(tmp) / "assets" / "badges"
             out.mkdir(parents=True)
             (Path(tmp) / "README.md").write_text(README)
-            with mock.patch.dict(os.environ, env, clear=True), mock.patch.object(rb, "fetch", fetch):
-                with redirect_stdout(io.StringIO()):
-                    rc = rb.main(["--out", str(out)])
+            with (
+                mock.patch.dict(os.environ, env, clear=True),
+                mock.patch.object(rb, "fetch", fetch),
+                redirect_stdout(io.StringIO()),
+            ):
+                rc = rb.main(["--out", str(out)])
             return rc, (out / "dl-verifier-total.svg").read_text(encoding="utf-8")
 
     def test_sums_old_and_new_name(self) -> None:
