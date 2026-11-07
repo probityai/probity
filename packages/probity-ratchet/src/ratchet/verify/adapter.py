@@ -2,10 +2,10 @@
 
 Split of work, stated exactly:
 
-agent-evidence-verify (pinned): reads every artifact through anchored, non-following file descriptors and binds its
-bytes to a SHA-256 and length; refuses a malformed case or policy without a verdict; snapshots and hashes
-the consumer policy and reports `policy_sha256`; rejects an adapter that mutates its inputs; validates the
-`probity-decision/v1` envelope this module returns.
+agent-evidence-verify (pinned): reads every artifact through anchored, non-following file descriptors and
+binds its bytes to a SHA-256 and length; refuses a malformed case or policy without a verdict; snapshots and
+hashes the consumer policy and reports `policy_sha256`; rejects an adapter that mutates its inputs;
+validates the `probity-decision/v1` envelope this module returns.
 
 This adapter does: parses the DSSE envelope, verifies the Ed25519 signature against the key the policy pins,
 checks the payload type and predicate, the payload's required fields and its internal consistency, and runs
