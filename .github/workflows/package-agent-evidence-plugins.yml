@@ -24,7 +24,10 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install the pinned verifier and the test runner
-        run: python -m pip install "agent-evidence-verify==0.3.0" "pytest>=8,<10"
+        run: |
+          # The script's PINNED names the verifier, so a pin bump needs no second edit here.
+          pinned="$(python -c 'import re,pathlib; print(re.search(r"PINNED = \"([^\"]+)\"", pathlib.Path("plugins/verdict-bundle-gate/scripts/verify_bundle.py").read_text()).group(1))')"
+          python -m pip install "$pinned" "pytest>=8,<10"
       - name: Tests
         run: python -m pytest -q
 
