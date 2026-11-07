@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 (unreleased)
+
+README only: the PyPI page no longer loads a download badge PePy cannot serve for the renamed distribution; the code and the decisions it returns are the same as 0.5.0.
+
 ## 0.5.0 (2026-11-06)
 
 The distribution was published as probity-verify through 0.4.1 and is now agent-evidence-verify. This is a major

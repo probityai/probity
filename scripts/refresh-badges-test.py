@@ -71,5 +71,43 @@ class CombinedBadgeTest(unittest.TestCase):
         self.assertIn("n/a", svg)
 
 
+class PepyLinkTest(unittest.TestCase):
+    ROOT = '<a href="https://pepy.tech/projects/probity-verify"><img src="assets/badges/dl-verifier-total.svg"></a>\n'
+    PKG = "[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/probity-verify)\n"
+
+    def relink(self, new_exists: bool) -> tuple[str, str, str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "packages" / "agent-evidence-verify").mkdir(parents=True)
+            (root / "README.md").write_text(self.ROOT)
+            (root / "packages" / "agent-evidence-verify" / "README.md").write_text(self.PKG)
+            target = rb.verifier_pepy_page(
+                "probity-verify", "agent-evidence-verify", lambda url: new_exists and url.endswith("agent-evidence-verify")
+            )
+            rb.relink_verifier(root, target)
+            return (
+                target,
+                (root / "README.md").read_text(),
+                (root / "packages" / "agent-evidence-verify" / "README.md").read_text(),
+            )
+
+    def test_new_name_404_keeps_the_old_page(self) -> None:
+        target, root_text, pkg_text = self.relink(False)
+        self.assertEqual(target, "https://pepy.tech/projects/probity-verify")
+        self.assertEqual(root_text, self.ROOT)
+        self.assertEqual(pkg_text, self.PKG)
+
+    def test_new_name_200_switches_both_readmes(self) -> None:
+        target, root_text, pkg_text = self.relink(True)
+        self.assertEqual(target, "https://pepy.tech/projects/agent-evidence-verify")
+        self.assertIn("pepy.tech/projects/agent-evidence-verify", root_text)
+        self.assertNotIn("probity-verify", root_text)
+        self.assertIn("pepy.tech/projects/agent-evidence-verify", pkg_text)
+
+    def test_page_exists_is_false_on_http_error(self) -> None:
+        with mock.patch.object(rb.urllib.request, "urlopen", side_effect=not_found()):
+            self.assertFalse(rb.page_exists("https://pepy.tech/projects/x"))
+
+
 if __name__ == "__main__":
     unittest.main()

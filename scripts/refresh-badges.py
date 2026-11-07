@@ -39,6 +39,44 @@ COMBINED: dict[str, tuple[str, tuple[str, ...]]] = {
 }
 
 
+PEPY_PAGE = "https://pepy.tech/projects/"
+PEPY_PAGE_REF = re.compile(re.escape(PEPY_PAGE) + r"(?:probity-verify|agent-evidence-verify)")
+# README files whose combined-badge line links the pepy page of the verifier.
+LINKED_READMES = ("README.md", "packages/agent-evidence-verify/README.md")
+
+
+def page_exists(url: str) -> bool:
+    """True when the page answers 200; any other answer or no answer is False."""
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.status == 200
+    except OSError:
+        return False
+
+
+def verifier_pepy_page(old: str, new: str, exists=page_exists) -> str:
+    """The pepy page the verifier badge links: the new name once its page is live."""
+    return PEPY_PAGE + (new if exists(PEPY_PAGE + new) else old)
+
+
+def relink_verifier(root: Path, target: str) -> list[str]:
+    """Point the pepy link on each badge line at target; return the files changed."""
+    changed = []
+    for rel in LINKED_READMES:
+        path = root / rel
+        if not path.exists():
+            continue
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+        out = [
+            PEPY_PAGE_REF.sub(target, ln) if "dl-verifier-total" in ln else ln for ln in lines
+        ]
+        if out != lines:
+            path.write_text("".join(out), encoding="utf-8")
+            changed.append(rel)
+    return changed
+
+
 def fetch(url: str, headers: dict[str, str] | None = None) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -134,6 +172,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     args.out.mkdir(parents=True, exist_ok=True)
     failed = sum(refresh_one(build, args.out, *job) for job in jobs)
+    if any(job[0] == "dl-verifier-total" for job in jobs):
+        old, new = COMBINED["dl-verifier-total"][1]
+        target = verifier_pepy_page(old, new)
+        for rel in relink_verifier(readme.parent, target):
+            print(f"{rel}: verifier downloads link is {target}")
     return 1 if failed else 0
 
 

@@ -1,7 +1,7 @@
 # agent-evidence-verify
 
 [![PyPI](https://img.shields.io/pypi/v/agent-evidence-verify.svg)](https://pypi.org/project/agent-evidence-verify/)
-[![Downloads (PePy)](https://static.pepy.tech/badge/agent-evidence-verify)](https://pepy.tech/projects/agent-evidence-verify)
+[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/probity-verify)
 
 An offline verifier that decides whether a claim holds against evidence bytes the consumer pinned, with adapters for source passages, operand lineage, authority captures, bounded absence and spend journals.
 
