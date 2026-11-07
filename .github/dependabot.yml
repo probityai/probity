@@ -10,6 +10,10 @@ updates:
     schedule:
       interval: daily
     open-pull-requests-limit: 5
+    # Dependabot moves uv.lock only. The pin-refresh workflow owns the family specifiers, and
+    # the observer pyproject is byte-pinned by the framework-consumer contract, so a specifier
+    # edit from Dependabot fails the reproduce job.
+    versioning-strategy: lockfile-only
     ignore:
       # The agent-evidence-observer inspect-historical extra holds inspect-ai at an exact
       # version, moved by hand. Dependabot rewrites toward the newer inspect extra and its
