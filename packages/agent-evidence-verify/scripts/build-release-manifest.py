@@ -51,15 +51,6 @@ def build() -> dict:
         raw = (REPO / ".github/workflows" / name).read_bytes()
         workflows.append({"path": f".github/workflows/{name}", "sha256": _sha256(raw)})
         actions.update(ref for ref in USES.findall(raw.decode("utf-8")) if not ref.startswith("./"))
-        # A local composite action the workflows call is part of the publish path too:
-        # record its file digest and the actions it pins.
-        for local in sorted({ref for ref in USES.findall(raw.decode("utf-8")) if ref.startswith("./.github/actions/")}):
-            action = REPO / local / "action.yml"
-            if any(entry["path"] == f"{local[2:]}/action.yml" for entry in workflows):
-                continue
-            body = action.read_bytes()
-            workflows.append({"path": f"{local[2:]}/action.yml", "sha256": _sha256(body)})
-            actions.update(ref for ref in USES.findall(body.decode("utf-8")) if not ref.startswith("./"))
     return {
         "package": project["name"],
         "version": project["version"],

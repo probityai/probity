@@ -1,7 +1,7 @@
 """Check that every distribution file in a directory is on the package index
 with the same SHA-256.
 
-Usage: verify_upload.py <packages-dir> [<simple-index-url>]
+Usage: verify_pypi_upload.py <packages-dir> [<simple-index-url>]
 
 Reads the PEP 691 JSON simple page of each project named by the files. A file
 the index does not list yet is retried for up to five minutes, because the

@@ -6,7 +6,7 @@ name: release
 # maintenance branch maint/<distribution>-<major>.<minor> of its own series). The files
 # published are the ones python-build.yml built and checked in this run.
 #
-# Upload goes through .github/actions/pypi-upload: trusted publishing first
+# Each publish job uploads with trusted publishing first
 # (owner probityai, repository probity, workflow release.yml, environment
 # pypi), then the account API token held as the PYPI_API_TOKEN secret of the
 # pypi environment when PyPI has no publisher for the project (a new package or
@@ -98,7 +98,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-agent-evidence-verify
@@ -112,11 +112,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probityai:
     needs: [resolve, build]
@@ -133,7 +165,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-probityai
@@ -147,11 +179,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-ratchet:
     needs: [resolve, build]
@@ -168,7 +232,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-probity-ratchet
@@ -182,11 +246,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-ratchet-cases:
     needs: [resolve, build]
@@ -203,7 +299,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-probity-ratchet-cases
@@ -217,11 +313,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-agent-evidence-observer:
     needs: [resolve, build]
@@ -238,7 +366,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-agent-evidence-observer
@@ -252,11 +380,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-effects:
     needs: [resolve, build]
@@ -273,7 +433,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-probity-effects
@@ -287,11 +447,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-evaluator-replay-kit:
     needs: [resolve, build]
@@ -308,7 +500,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-evaluator-replay-kit
@@ -322,11 +514,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-agent-evidence-mcp:
     needs: [resolve, build]
@@ -343,7 +567,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/actions
+          sparse-checkout: .github/scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: python-distributions-agent-evidence-mcp
@@ -357,11 +581,43 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: release-artifacts/dist/*
-      - name: publish to PyPI, trusted publishing first and the API token second
-        uses: ./.github/actions/pypi-upload
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: release-artifacts/dist/
-          api-token: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: release-artifacts/dist/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   image-agent-evidence-mcp:
     needs: [resolve, publish-agent-evidence-mcp]

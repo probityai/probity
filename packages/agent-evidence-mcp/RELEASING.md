@@ -10,7 +10,7 @@
 3. Merge to `main` once the checks are green.
 4. Create a non-prerelease GitHub release tagged `agent-evidence-mcp-v<version>` on a `main` commit. The root `release`
    workflow checks the tag against `packages/agent-evidence-mcp/pyproject.toml`, builds and checks the distributions,
-   and publishes to PyPI through `.github/actions/pypi-upload`: the trusted publisher with PEP 740 attestations (owner
+   and publishes to PyPI: the trusted publisher with PEP 740 attestations (owner
    `probityai`, repository `probity`, workflow `release.yml`, environment `pypi`) when PyPI has one, else the
    `PYPI_API_TOKEN` secret of the `pypi` environment, then a digest read-back of every file. Once PyPI is published it pushes
    `ghcr.io/probityai/agent-evidence-mcp:<version>`, signs it by digest with cosign and attaches build provenance, and
