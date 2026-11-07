@@ -32,11 +32,11 @@ The release files and their SHA-256 digests are recorded in [release.json](relea
 
 | file | SHA-256 |
 | --- | --- |
-| `agent_evidence_verify-0.5.0-py3-none-any.whl` | `7ca6da4a96c20b775e70a7967106c94f5c1cb5179021cfe2e67ad1433b76b749` |
-| `agent_evidence_verify-0.5.0.tar.gz` | `d7a03cb479d909b2bdcf6fb64eca16210ec38fc92a4e9744ce35635065607f45` |
+| `agent_evidence_verify-0.5.0-py3-none-any.whl` | `9132d649a0b5cd570bdf3b0e0373d8b4933eadf0f587ee31c885a26dbad9a2d2` |
+| `agent_evidence_verify-0.5.0.tar.gz` | `80d6c3b717a38711a102a112f6753e4937347c978347149c5c0a5246b4ffc1a9` |
 
 To require these digests at install time, put the line
-`agent-evidence-verify==0.5.0 --hash=sha256:7ca6da4a96c20b775e70a7967106c94f5c1cb5179021cfe2e67ad1433b76b749`
+`agent-evidence-verify==0.5.0 --hash=sha256:9132d649a0b5cd570bdf3b0e0373d8b4933eadf0f587ee31c885a26dbad9a2d2`
 in a requirements file and install it with `uv pip install --require-hashes -r`.
 
 The packet includes:
