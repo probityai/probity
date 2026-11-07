@@ -133,7 +133,7 @@ The `agent-evidence-verify` publisher used for 0.1.1 names repository `agent-evi
 
 ### Install line and versions
 
-The README's pinned install line is `pip install agent-evidence-verify==0.5.0`, the current PyPI release. When
+The README's pinned install line is `pip install agent-evidence-verify==0.5.1`, the current PyPI release. When
 `probityai` is first released, the README's install line becomes `pip install probityai==X.Y.Z`.
 `probityai` depends on `agent-evidence-verify>=0.2.0`, the first release that registers `verify`, so
 `agent-evidence-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai` <!-- version-pins: keep -->
