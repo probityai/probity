@@ -1,0 +1,58 @@
+name: pypi-upload-selftest
+
+# Runs .github/actions/pypi-upload end to end against TestPyPI whenever the
+# action changes. The throwaway project has no trusted publisher, so the
+# trusted-publishing attempt fails the way a new or renamed PyPI project does,
+# and the token fallback and the digest read-back both have to pass.
+
+on:
+  pull_request:
+    paths:
+      - .github/actions/pypi-upload/**
+      - .github/workflows/pypi-upload-selftest.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - name: build a throwaway wheel with a version no earlier run used
+        env:
+          VERSION: 0.0.${{ github.run_id }}.${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          pkg="$RUNNER_TEMP/pkg"
+          mkdir -p "$pkg/probity_upload_selftest"
+          echo '"""Upload self-test of a release workflow; contains nothing."""' > "$pkg/probity_upload_selftest/__init__.py"
+          cat > "$pkg/pyproject.toml" <<EOF
+          [build-system]
+          requires = ["setuptools>=69"]
+          build-backend = "setuptools.build_meta"
+
+          [project]
+          name = "probity-upload-selftest"
+          version = "$VERSION"
+          description = "Upload self-test of a release workflow; contains nothing."
+          requires-python = ">=3.9"
+          EOF
+          python3 -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/dist" "$pkg"
+          ls -l "$RUNNER_TEMP/dist"
+      - name: upload through the action
+        uses: ./.github/actions/pypi-upload
+        with:
+          packages-dir: ${{ runner.temp }}/dist
+          api-token: ${{ secrets.TESTPYPI_API_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+          simple-index: https://test.pypi.org/simple

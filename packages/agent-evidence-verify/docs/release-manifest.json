@@ -40,7 +40,11 @@
   "workflows": [
     {
       "path": ".github/workflows/release.yml",
-      "sha256": "506aaed077d3e205d3a24c8573ea68b389386f80b04e125b0e6b3f9674630984"
+      "sha256": "b6ab4da280c373dc39fa7c6fadb375648a5e562fffc2e7383eaeb976c9945b19"
+    },
+    {
+      "path": ".github/actions/pypi-upload/action.yml",
+      "sha256": "74cab05feb7b2a62b7ed4a82fa3de3e9e8c0556134cfd9eab2a2d539d8a03780"
     },
     {
       "path": ".github/workflows/python-build.yml",

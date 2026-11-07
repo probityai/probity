@@ -55,7 +55,7 @@ attestation is separate from a PyPI Publish attestation and registry publication
 Only a non-prerelease GitHub release can reach the publish job. Its `agent-evidence-observer-v0.2.0`
 tag must match the root metadata and point to a commit on main. The publish job
 downloads the checked files from the build job. It receives `contents: read`
-and `id-token: write`. It has no account-token or password fallback.
+and `id-token: write`. When trusted publishing fails, it uploads the same files with the `PYPI_API_TOKEN` secret of the `pypi` environment and reads every digest back (`.github/actions/pypi-upload`).
 
 Configure an [existing or pending PyPI trusted publisher](https://docs.pypi.org/trusted-publishers/)
 with owner `probityai`, repository `probity`, workflow
