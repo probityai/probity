@@ -1,0 +1,77 @@
+name: pypi-upload
+description: >
+  Upload checked distributions to PyPI. Trusted publishing is tried first, so a
+  project with a registered publisher gets PEP 740 attestations. When that fails
+  (no publisher for the project, or a publisher left behind by a rename, which
+  PyPI answers with HTTP 403 "invalid-publisher" or "OIDC scoped token is not
+  valid for project"), the same files go up with the account API token held as
+  the PYPI_API_TOKEN secret of the job's environment. Either way the step ends
+  by reading every file's SHA-256 back from PyPI and failing on any mismatch,
+  so a publish never depends on a pypi.org setting that only a browser login
+  can make.
+
+inputs:
+  packages-dir:
+    description: Directory holding exactly the files to upload.
+    required: true
+  api-token:
+    description: The PYPI_API_TOKEN secret of the job's environment.
+    required: true
+  attestations:
+    description: Ask for PEP 740 attestations on the trusted-publishing attempt.
+    required: false
+    default: "true"
+  repository-url:
+    description: Upload endpoint; TestPyPI is https://test.pypi.org/legacy/.
+    required: false
+    default: https://upload.pypi.org/legacy/
+  simple-index:
+    description: JSON simple index the digests are read back from.
+    required: false
+    default: https://pypi.org/simple
+
+runs:
+  using: composite
+  steps:
+    # skip-existing on both attempts: if the first attempt uploaded part of the
+    # set before it failed, the second uploads only the rest. The read-back
+    # below is what proves every file on PyPI is the one built here, so a file
+    # skipped because a different one already holds its name still fails.
+    - id: oidc
+      name: upload with trusted publishing
+      continue-on-error: true
+      uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+      with:
+        packages-dir: ${{ inputs.packages-dir }}
+        repository-url: ${{ inputs.repository-url }}
+        attestations: ${{ inputs.attestations }}
+        skip-existing: true
+
+    - name: the API token is present for the fallback
+      if: steps.oidc.outcome == 'failure'
+      shell: bash
+      env:
+        PYPI_API_TOKEN: ${{ inputs.api-token }}
+      run: |
+        if [ -z "$PYPI_API_TOKEN" ]; then
+          echo "::error::trusted publishing failed and the PYPI_API_TOKEN secret of this job's environment is not set"
+          exit 1
+        fi
+        echo "::warning::trusted publishing failed for this project; uploading with the account API token instead"
+
+    - name: upload with the API token
+      if: steps.oidc.outcome == 'failure'
+      uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+      with:
+        packages-dir: ${{ inputs.packages-dir }}
+        repository-url: ${{ inputs.repository-url }}
+        password: ${{ inputs.api-token }}
+        attestations: false
+        skip-existing: true
+
+    - name: every file on PyPI has the digest of the file built here
+      shell: bash
+      env:
+        PACKAGES_DIR: ${{ inputs.packages-dir }}
+        SIMPLE_INDEX: ${{ inputs.simple-index }}
+      run: python3 "$GITHUB_ACTION_PATH/verify_upload.py" "$PACKAGES_DIR" "$SIMPLE_INDEX"
