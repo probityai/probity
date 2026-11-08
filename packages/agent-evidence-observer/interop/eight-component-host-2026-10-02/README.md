@@ -25,7 +25,7 @@ retained signed receipt, HTTP readback and host grant with the public
 `probity_observer.ticket_state` reader; its output must equal the retained gate
 output byte for byte. The [host contract](HOST-CONTRACT.md) records what the
 producing host selected and checked, and what the replay does and does not
-establish. The [workflow](../../../../.github/workflows/package-observer-eight-component-host.yml)
+establish. The [workflow](../../../../.github/workflows/ci.yml)
 runs the replay.
 
 The run used a published deterministic signed conformance fixture and

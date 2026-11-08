@@ -6,6 +6,6 @@ Four cases keep token compaction, no config, window-only config and `include_plu
 
 The three covered cases can publish this finite reference. The no-plugin case keeps a nested callback coverage hold. Direct SDK summarizer requests are retained separately from plugin model callbacks. Verify consumes four lifecycle projections twice: three `supported`, one `not_established`.
 
-The [workflow](../../../../.github/workflows/package-observer-adk-nested-compaction.yml) installs the reader from its hash lock, checks the retained record twice with public code, runs the semantic controls over the retained packet and runs the actual Verify CLI over the retained projections. The retained record includes the setup failure as well as the native attempts.
+The [workflow](../../../../.github/workflows/ci.yml) installs the reader from its hash lock, checks the retained record twice with public code, runs the semantic controls over the retained packet and runs the actual Verify CLI over the retained projections. The retained record includes the setup failure as well as the native attempts.
 
 This is author-operated PEER work with fixed public responses and same-host clocks. The older 16 rows and prospective eight-task study remain separate; that study has not started.

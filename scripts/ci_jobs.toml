@@ -1,0 +1,211 @@
+# Which job runs for which changed paths. scripts/ci_select.py reads this file and
+# .github/workflows/ci.yml reads the answer; tests/test_ci_select.py keeps the two in step.
+#
+# paths: GitHub path-filter globs (* does not cross a slash, ** does). A job runs when a
+#        changed path matches one of them, and on every event that selects everything.
+# tier:  "fast" jobs run on a pull request and again on the merge queue batch; "full"
+#        jobs run only on the merge queue batch, a push to main and a manual run.
+# schedule: true runs the job on the weekly schedule, with every other job skipped.
+#
+# A change to ci.yml, scripts/ci_select.py or this file selects every job.
+
+[jobs.family-resolves]
+paths = ["packages/**/pyproject.toml", "scripts/family_resolves.py", "tests/test_family_resolves.py"]
+tier = "fast"
+
+[jobs.observer-a2a-history-boundary]
+paths = ["packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/**"]
+tier = "fast"
+
+[jobs.observer-a2a-native]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-adk-a2a-failed-task]
+paths = ["packages/agent-evidence-observer/interop/adk-a2a-failed-task-2026-10-03/**", "packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-adk-current-consumer]
+paths = ["packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/**", "packages/agent-evidence-observer/interop/adk-ticket-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-adk-current-consumer-full]
+paths = ["packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/**", "packages/agent-evidence-observer/interop/adk-ticket-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "full"
+
+[jobs.observer-adk-nested-compaction]
+paths = ["packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/**", "packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-adk-ticket]
+paths = ["packages/agent-evidence-observer/interop/adk-ticket-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-adk-user-responses]
+paths = ["packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04/**", "packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-ag2-push-authority]
+paths = ["packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/**", "packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-aps-durable-refund]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-atomic-native-reader]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-authority-unreachable]
+paths = ["packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03/**", "packages/agent-evidence-observer/src/probity_observer/**"]
+tier = "fast"
+
+[jobs.observer-boundary-probe]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-consumer-host-gate]
+paths = ["packages/agent-evidence-observer/interop/consumer-host-2026-10-02/**", "packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/**", "packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**", "packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-control-arena-native-reader]
+paths = ["packages/agent-evidence-observer/interop/control-arena-native-2026-10-02/**"]
+tier = "fast"
+
+[jobs.observer-crewai-job-fences]
+paths = ["packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04/**", "packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-eight-component-host]
+paths = ["packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-evaluation-contract]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-evaluation-history]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-execsurface-native-state]
+paths = ["packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/**"]
+tier = "fast"
+
+[jobs.observer-five-tier-breadth]
+paths = ["packages/agent-evidence-observer/interop/five-tier-v0-2026-10-02/**", "packages/agent-evidence-observer/interop/a2a-native-2026-10-02/**", "packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/**"]
+tier = "fast"
+
+[jobs.observer-haystack-native]
+paths = ["packages/agent-evidence-observer/interop/haystack-native-2026-10-03/**", "packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+schedule = true
+
+[jobs.observer-inspect-current-consumer]
+paths = ["packages/agent-evidence-observer/interop/inspect-current-host-2026-10-03/**"]
+tier = "fast"
+
+[jobs.observer-inspect-sealed-manifest]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-installed-framework-readers]
+paths = ["packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/**", "packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**", "packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-joint-recovery]
+paths = ["packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/**", "packages/agent-evidence-observer/interop/langgraph-recovery-authority-2026-10-02/**", "packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**", "packages/agent-evidence-observer/interop/target-recovery-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-langgraph-crash-window]
+paths = ["packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/**", "packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/**", "packages/agent-evidence-observer/interop/langgraph-recovery-authority-2026-10-02/**", "packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**", "packages/agent-evidence-observer/interop/target-recovery-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-langgraph-native-ticket]
+paths = ["packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-langgraph-recovery-authority]
+paths = ["packages/agent-evidence-observer/interop/langgraph-recovery-authority-2026-10-02/**", "packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-local-model-contract]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-local-model-tool-arguments]
+paths = ["packages/agent-evidence-observer/interop/local-model-tool-arguments-2026-10-03/**"]
+tier = "fast"
+
+[jobs.observer-local-model-vocabulary]
+paths = ["packages/agent-evidence-observer/interop/local-model-vocabulary-2026-10-02/**"]
+tier = "fast"
+
+[jobs.observer-model-consumer-gate]
+paths = ["packages/agent-evidence-observer/interop/model-consumer-2026-10-02/**", "packages/agent-evidence-observer/interop/local-model-tasks-2026-10-02/**", "packages/agent-evidence-observer/interop/local-model-comparison-2026-10-02/**", "packages/agent-evidence-observer/interop/local-model-format-control-2026-10-02/**", "packages/agent-evidence-observer/interop/local-model-boundary-tasks-2026-10-02/**"]
+tier = "fast"
+
+[jobs.observer-native-consumer]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-openai-agents-ticket]
+paths = ["packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-pic-aps-refund-evidence]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-protected-action-operator]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-pydantic-ai-native]
+paths = ["packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-pydantic-recovery]
+paths = ["packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-readme]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-refund-handoff-conformance]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-smolagents-native]
+paths = ["packages/agent-evidence-observer/interop/smolagents-native-2026-10-03/**", "packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-target-recovery]
+paths = ["packages/agent-evidence-observer/interop/target-recovery-2026-10-02/**", "packages/agent-evidence-observer/src/probity_observer/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-tool-manifest-effect]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-witness]
+paths = ["packages/agent-evidence-observer/**"]
+tier = "fast"
+
+[jobs.observer-witness-operator]
+paths = ["packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/tests/**", "packages/agent-evidence-observer/interop/witness-operator-2026-10-03/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.observer-witnessed-run-selection]
+paths = ["packages/agent-evidence-observer/src/**", "packages/agent-evidence-observer/tests/**", "packages/agent-evidence-observer/interop/witnessed-run-selection-2026-10-04/**", "packages/agent-evidence-observer/pyproject.toml"]
+tier = "fast"
+
+[jobs.pypi-upload-selftest]
+paths = [".github/scripts/verify_pypi_upload.py", ".github/workflows/release.yml"]
+tier = "fast"
+
+[jobs.version-pins]
+paths = ["version-pins.toml", "README.md", "docs/architecture/**", "packages/*/pyproject.toml"]
+tier = "fast"

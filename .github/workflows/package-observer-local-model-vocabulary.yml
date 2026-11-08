@@ -2,10 +2,6 @@
 # its steps run from packages/agent-evidence-observer.
 name: Preregistered global action vocabulary intervention
 on:
-  push:
-    paths: ['packages/agent-evidence-observer/interop/local-model-vocabulary-2026-10-02/**', '.github/workflows/package-observer-local-model-vocabulary.yml']
-  pull_request:
-    paths: ['packages/agent-evidence-observer/interop/local-model-vocabulary-2026-10-02/**', '.github/workflows/package-observer-local-model-vocabulary.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -101,42 +97,3 @@ jobs:
           path: packages/agent-evidence-observer/model-vocabulary-artifacts/run
           if-no-files-found: warn
           retention-days: 90
-  retained-native-reader:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: '3.12'
-      - run: python -m pip install 'setuptools>=68' wheel
-      - name: Verify the source-retained original archive and unpack the selected packet
-        run: |
-          python - <<'PYTHON'
-          import hashlib
-          import zipfile
-          from pathlib import Path
-          source = Path("interop/local-model-vocabulary-2026-10-02/retained/native-37094901561.zip")
-          expected = "eef05226335f9e2de6783ee797d891cbd1fe47058264e2d57eb41f1ec39131d8"
-          if hashlib.sha256(source.read_bytes()).hexdigest() != expected:
-              raise ValueError("source-selected native archive changed")
-          with zipfile.ZipFile(source) as archive:
-              archive.extractall("retained-vocabulary-native-packet")
-          PYTHON
-      - name: Build the reviewed frozen installed reader without a model runtime
-        run: python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py ../.. retained-vocabulary-reader-wheel --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json --contract-sha256 bba85e5835652af11f0a722a4bd819722e7adb840bcea1f2cc36cef7f608d77b
-      - name: Recompute the completed study and preserve all eight strict quality holds
-        run: |
-          python -I interop/local-model-vocabulary-2026-10-02/consume_native.py retained-vocabulary-reader-wheel/probity_policy_vocabulary_reader-0.1.0-py3-none-any.whl retained-vocabulary-native-packet interop/local-model-vocabulary-2026-10-02/retained/selected-pins-37094901561.json retained-vocabulary-consumer --expected-report interop/local-model-vocabulary-2026-10-02/retained/report-37094901561.json
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: retained-vocabulary-installed-native-consumer-${{ github.sha }}
-          path: |
-            packages/agent-evidence-observer/retained-vocabulary-consumer
-            packages/agent-evidence-observer/retained-vocabulary-reader-wheel
-          if-no-files-found: error
-          retention-days: 90
-

@@ -28,7 +28,7 @@ reconstructs the finite run twice.
 | no registration policy, config only | 1 | 0 | 0 |
 | SDK policy refuses three internal/file URLs | 0 | 0 | 0 |
 
-The [workflow](../../../../.github/workflows/package-observer-ag2-push-authority.yml) installs the reader
+The [workflow](../../../../.github/workflows/ci.yml) installs the reader
 from `requirements-reader.lock` under Python 3.12.14 and checks the retained
 record with public code. The producing source install replaces the SDK registry
 wheel; version strings alone do not establish source equality. Sixteen reader controls

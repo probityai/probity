@@ -140,7 +140,7 @@ records remain separate from new assertions and decisions. The original
 `failed-after` exit 7 and HTTP crash captures remain distinct historical cases.
 These controls prove the stated local behavior, not independent operation.
 
-The maintained [replay CI job](../../../.github/workflows/agent-evidence-verify.yml)
+The maintained [replay CI job](../../../.github/workflows/ci.yml)
 uses the same controller. Its artifact keeps the replayed streams and the
 consumer dependency record. Resolve every process stream from its process
 record's parent. CI status and the actual artifact contents must both be checked
