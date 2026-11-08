@@ -281,11 +281,9 @@ def _structure(t) -> bool:
     m = att.get("measurement")
     if not isinstance(m, str) or not _DIGEST.match(m):
         return False
-    if "signature" in t and (
-        not isinstance(t["signature"], str) or not _HEX.match(t["signature"])
-    ):
-        return False
-    return True
+    return "signature" not in t or (
+        isinstance(t["signature"], str) and bool(_HEX.match(t["signature"]))
+    )
 
 
 def _scan_canonical(o):

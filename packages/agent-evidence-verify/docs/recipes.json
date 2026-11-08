@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "agent-evidence-verify",
-      "project.version": "0.5.1",
+      "project.version": "0.6.0",
       "project.requires-python": ">=3.12",
       "project.dependencies": [
         "cryptography>=50.0.2,<51",
@@ -34,6 +34,7 @@
       ],
       "project.scripts": {
         "agent-evidence-verify": "agent_evidence_verify.cli:main",
+        "agent-evidence-verify-poc": "agent_evidence_verify.adapters.proof_of_control:main",
         "probity-bundle": "agent_evidence_verify.bundle:main",
         "probity-index": "agent_evidence_verify.index:main",
         "probity-a2a": "agent_evidence_verify.a2a_server:main",
@@ -62,7 +63,7 @@
         }
       }
     },
-    "sha256": "0127789df9d1c91031d65dd134ab02f294d03e84b2d7442835737d61e4368fbd"
+    "sha256": "604d6282016219ac7237d892b990e41ca828e9a45ee99de3666171b0d841d157"
   },
   "implementation": [
     {
@@ -161,6 +162,11 @@
       "sha256": "08902109d24c3ecc357290f74073ca7dc41852d2459ea24dbf7c6d702ef610b5"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/proof_of_control.py",
+      "bytes": 17769,
+      "sha256": "89df1206feb5820d58b102886dac083d7bf257acbb093c57c6d1a9ffa26e96c2"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/protected_paths.py",
       "bytes": 8351,
       "sha256": "f7ba513e68cc72384b48a0b88deed7ec1b950055ed5c5d8229a5764e3ee58d22"
@@ -217,8 +223,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 10785,
-      "sha256": "0961b182fb5a6cd6b7d8fe604ca7477f2ad7707c16648d912c50bf0cbdfa6837"
+      "bytes": 10863,
+      "sha256": "6ba08a1f2681cf55fa8080b648aa4933b00df4536c150f7b5d9836a0b5cc0a7a"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
@@ -1777,6 +1783,42 @@
           "path": "examples/corpus-routes/audit-principal/envelope.json",
           "bytes": 5895,
           "sha256": "25048425b3cf423555642e030cd5f617931c2094353a65d2edaad18cb6436174"
+        }
+      ]
+    },
+    {
+      "task": "Check a Proof-of-Control token chain, inclusion proof or canonical form",
+      "claim_type": "proof_of_control/v1",
+      "case": "examples/corpus-routes/proof-of-control/case.json",
+      "policy": "examples/corpus-routes/proof-of-control/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Member of the poc-evidence-vectors corpus; its keys and roots carry no trust outside the corpus.",
+      "case_id": "poc-CHN-P-prefix-of-anchored",
+      "expected_reason": "artifact_verifies",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/corpus-routes/proof-of-control/case.json",
+        "--policy",
+        "examples/corpus-routes/proof-of-control/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/proof-of-control/case.json",
+          "bytes": 274,
+          "sha256": "ed43fcecf04970b32431151b761b632e42b2587c61d1113e37866940c24e9f8c"
+        },
+        {
+          "path": "examples/corpus-routes/proof-of-control/policy.json",
+          "bytes": 186,
+          "sha256": "43b6cacdb2fd7a4bf806619546b4e4377eb65accf3595495d6a7eac11581ddda"
+        },
+        {
+          "path": "examples/corpus-routes/proof-of-control/artifact.json",
+          "bytes": 5124,
+          "sha256": "64c591b100dd1501f5545cf5067ea6bbb56f1e98e3c2eb2fe52b21932d695f1e"
         }
       ]
     }

@@ -14,11 +14,8 @@ from importlib.resources import files
 from pathlib import Path
 
 import pytest
-
 from agent_evidence_verify import adjudicate
 from agent_evidence_verify.adapters import proof_of_control
-
-
 
 
 def _cases() -> list[dict]:
@@ -53,18 +50,20 @@ def test_claim_type_decisions(tmp_path: Path) -> None:
     for name, case, want in (("good.json", good, "supported"), ("bad.json", bad, "contradicted")):
         data = json.dumps(case).encode()
         (tmp_path / name).write_bytes(data)
-        record = {"case_id": name, "artifacts": {"input": {"path": name, "sha256":
-                  hashlib.sha256(data).hexdigest()}},
-                  "assessment": {"claim_type": "proof_of_control/v1", "input": "input"}}
-        result = adjudicate(record, {"claim_requirements": {}}, tmp_path)
+        record = {"schema_version": "probity-case/v1", "case_id": name,
+                  "artifacts": {"input": {"path": name, "length": len(data),
+                                          "sha256": hashlib.sha256(data).hexdigest()}}}
+        policy = {"schema_version": "probity-policy/v1",
+                  "assessments": {name: {"claim_type": "proof_of_control/v1", "input": "input"}}}
+        result = adjudicate(record, policy, tmp_path)
         assert result["decision"] == want
 
 
 def test_stdin_bridge() -> None:
     case = CASES[0]
-    out = subprocess.run([sys.executable, "-c",
-                          "from agent_evidence_verify.adapters.proof_of_control import main;"
-                          "raise SystemExit(main())"],
+    code = ("from agent_evidence_verify.adapters.proof_of_control import main;"
+            "raise SystemExit(main())")
+    out = subprocess.run([sys.executable, "-c", code],
                          input=json.dumps(case), text=True, capture_output=True, check=True)
     got = json.loads(out.stdout)
     assert got["result"] in {"accept", "reject"}

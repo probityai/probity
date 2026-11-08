@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0 (unreleased)
+
+A minor release: one new claim type and one new console script; the decisions for every existing claim type are
+unchanged.
+
+- `proof_of_control/v1`: checks a Proof-of-Control artifact (signed token, Merkle inclusion or consistency proof,
+  token chain, canonical form) offline and passes all 171 cases of `poc-evidence-vectors` 0.1.0, which the `test`
+  extra pins. Route and example: `docs/corpus-routes.md`, `examples/corpus-routes/proof-of-control/`.
+- `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
+  `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
+  verifier.
+
 ## 0.5.1 (2026-11-07)
 
 README: the downloads badge links PyPI until PePy has data for the new name; no code change. The decisions the verifier returns are the same as 0.5.0.
