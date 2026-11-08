@@ -13,12 +13,14 @@ from .revocation import (REVOCATION_LIST, RevocationCache, RevocationError, Revo
                          StaleRevocations, sign_revocations, verify_approval_live)
 from .governance import (EXCEPTION_ALLOW, GOVERNANCE_EXCEPTION, GOVERNANCE_STEP, STEPS, check_exception_call,
                          exception_body, exception_digest, exception_evidence, route_by_risk, step_predicate)
+from .exports import EXPORT_SEAL, FieldMap, census as export_census, compare_seals, seal_export, verify_export_seal
 from .journal import CHECKPOINT_TYPE, JOURNAL_FILE, Journal, verify_journal
 from .records import (APPROVAL_BINDING_CONTRACT, OUTCOMES, REPLIES, TOOL_CALL_RECORD, UNCERTAIN_EFFECT_CONTRACT,
                       build_approval_binding, build_uncertain_effect, embed_approval_binding,
                       judge_approval_binding, judge_uncertain_effect, tool_call_predicate, verifier_case)
 
 __all__ = [
+    "EXPORT_SEAL", "FieldMap", "compare_seals", "export_census", "seal_export", "verify_export_seal",
     "EXCEPTION_ALLOW", "GOVERNANCE_EXCEPTION", "GOVERNANCE_STEP", "STEPS", "check_exception_call", "exception_body",
     "exception_digest", "exception_evidence", "route_by_risk", "step_predicate",
     "REVOCATION_LIST", "RevocationCache", "RevocationError", "RevocationState", "StaleRevocations",
