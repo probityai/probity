@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .authority import Trust, check_authority
 from .core import Signer, load_public, open_envelope, sign_envelope, statement
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
 
@@ -103,7 +104,9 @@ NO_APPROVAL_REQUIRED = "no_approval_required"
 RECONCILED_RETRY = "reconciled_absent_retry"
 
 
-def _check_approval(pred: dict[str, Any], problems: list[str], where: str) -> None:
+def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> None:
+    if pred.get("decision") == "allow" and check_authority(pred, trust, problems, where):
+        return
     embedded = pred.get("approvalBinding")
     if not embedded:
         # An allow with no approval is accepted only as the authority's signed statement that its
@@ -136,7 +139,8 @@ def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str 
     return verdict.get("reported_outcome")
 
 
-def _check_line(i: int, line: str, keys: list[Any], prev: str) -> tuple[dict[str, Any] | None, list[str]]:
+def _check_line(i: int, line: str, keys: list[Any], prev: str,
+                trust: Trust | None) -> tuple[dict[str, Any] | None, list[str]]:
     problems: list[str] = []
     where = f"line_{i}"
     try:
@@ -151,7 +155,7 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str) -> tuple[dict[str
         problems.append(f"{where}:chain_broken")
     if body.get("predicateType") == TOOL_CALL_RECORD:
         if pred.get("phase") == "authorize":
-            _check_approval(pred, problems, where)
+            _check_approval(pred, problems, where, trust)
         elif pred.get("phase") == "effect":
             _check_effect(pred, problems, where)
     return body, problems
@@ -191,11 +195,13 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
 
 
 def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
-                   checkpoint_env: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                   checkpoint_env: Mapping[str, Any] | None = None,
+                   trust: Trust | None = None) -> dict[str, Any]:
     """Verify a journal offline: every signature, the chain, the checkpoint, and both published
     readers re-run on every embedded record. Reports the denominator (``verified`` of ``records``).
 
-    ``path`` is the journal file or the directory holding ``journal.jsonl``.
+    ``path`` is the journal file or the directory holding ``journal.jsonl``. ``trust`` is what the
+    auditor pins for records that rest on a grant, a quorum, an exception or a revocation list.
     """
     keys = _keys(public_pems)
     p = Path(path)
@@ -205,7 +211,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     outcomes: dict[str, int] = {}
     policy_allows = 0
     for i, line in enumerate(lines, 1):
-        body, problems = _check_line(i, line, keys, prev)
+        body, problems = _check_line(i, line, keys, prev, trust)
         prev = _line_hash(line.encode())
         failures.extend(problems)
         if body is None:
