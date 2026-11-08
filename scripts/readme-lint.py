@@ -26,6 +26,10 @@ to that shape with three rules:
    images) lists its badges in the fixed order CI, version, downloads, license,
    stars, and any other badge after them.
 
+6. No shields.io badge sets cacheSeconds above 3600. The image proxy then keeps a
+   version badge for that long, so a README can show a release older than the one
+   on PyPI or crates.io.
+
 Exit 0 when the README passes, 1 when a rule fails, 2 when it cannot be read.
 Standard library only, so any repository can run it without installing anything.
 """
@@ -48,6 +52,9 @@ GITHUB_API_BADGE = re.compile(r"https?://img\.shields\.io/github/[^\s)\"'>]*", r
 BADGE_ORDER = ("ci", "version", "downloads", "license", "stars")
 BADGE_ALT = re.compile(r"!\[([^\]]*)\]\([^)]*\)|<img\b[^>]*?\balt=[\"']([^\"']*)[\"']", re.IGNORECASE)
 EXTERNAL = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|#|//)", re.IGNORECASE)
+SHIELDS_URL = re.compile(r"https?://img\.shields\.io/[^\s)\"'>]*", re.IGNORECASE)
+CACHE_SECONDS = re.compile(r"[?&;]cacheSeconds=(\d+)", re.IGNORECASE)
+MAX_BADGE_CACHE_SECONDS = 3600
 
 
 def split_code(text: str) -> tuple[list[str], int | None]:
@@ -123,6 +130,15 @@ def badge_rank(alt: str) -> int:
     return len(BADGE_ORDER)
 
 
+def slow_badge_caches(text: str) -> list[str]:
+    """Badge URLs that ask the image proxy to keep them longer than an hour."""
+    return [
+        url
+        for url in SHIELDS_URL.findall(text)
+        if any(int(seconds) > MAX_BADGE_CACHE_SECONDS for seconds in CACHE_SECONDS.findall(url))
+    ]
+
+
 def check(readme: Path, max_words: int, first_screen: int) -> list[str]:
     text = readme.read_text(encoding="utf-8")
     failures: list[str] = []
@@ -154,6 +170,11 @@ def check(readme: Path, max_words: int, first_screen: int) -> list[str]:
         failures.append(
             f"{readme}: the top badge row is out of order; the fixed order is CI, version, "
             "downloads, license, stars, then any other badge."
+        )
+    for url in slow_badge_caches(text):
+        failures.append(
+            f"{readme}: badge {url[:90]} sets cacheSeconds above {MAX_BADGE_CACHE_SECONDS}; "
+            "a version badge then shows a release that many seconds old. Use 3600 or less."
         )
     root = readme.resolve().parent
     for target in relative_targets(text):
