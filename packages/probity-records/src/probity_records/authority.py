@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from . import grants, quorum
+from .revocation import RevocationState
 
 GRANT_ALLOW = "grant"
 QUORUM_ALLOW = "quorum"
@@ -24,10 +25,17 @@ class Trust:
     """What an auditor pins before verifying: nothing here is read from the records themselves."""
 
     grant_root_key_ids: frozenset[str] = frozenset()
-    revoked_grants: frozenset[str] = frozenset()
-    key_revoked: Callable[[str, str], bool] | None = None
     quorum_policies: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
-    extra: Mapping[str, Any] = field(default_factory=dict)
+    revocations: RevocationState | None = None
+
+    def key_revoked(self, kid: str, at: str) -> bool:
+        return self.revocations is not None and self.revocations.key_revoked(kid, at)
+
+    def permit_revoked(self, pid: str, at: str) -> bool:
+        return self.revocations is not None and self.revocations.permit_revoked(pid, at)
+
+    def revoked_grants(self) -> frozenset[str]:
+        return self.revocations.revoked_grants() if self.revocations else frozenset()
 
 
 def _args(evidence: Mapping[str, Any], pred: Mapping[str, Any], problems: list[str], where: str) -> Any:
@@ -43,7 +51,7 @@ def _check_grant(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Tr
                  problems: list[str], where: str) -> None:
     args = _args(evidence, pred, problems, where)
     verdict = grants.authorize(list(evidence.get("chain", [])), str(pred.get("tool")), args, at,
-                               set(trust.grant_root_key_ids), set(trust.revoked_grants), trust.key_revoked)
+                               set(trust.grant_root_key_ids), set(trust.revoked_grants()), trust.key_revoked)
     if verdict["decision"] == "needs_approval" and isinstance(evidence.get("quorum"), Mapping):
         outcome = _quorum_outcome(pred, evidence["quorum"], trust, at)
         if outcome != "ok":

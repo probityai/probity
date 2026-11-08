@@ -139,16 +139,32 @@ def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str 
     return verdict.get("reported_outcome")
 
 
+def _check_revocations(pred: dict[str, Any], signer_id: str, trust: Trust, problems: list[str], where: str) -> None:
+    """A record signed by a key revoked before the record's time, a permit used after its revocation,
+    and an approval whose approver key was revoked before the decision all fail."""
+    at = str(pred.get("at"))
+    if trust.key_revoked(signer_id, at):
+        problems.append(f"{where}:signer_key_revoked")
+    if pred.get("permitId") and trust.permit_revoked(str(pred["permitId"]), at):
+        problems.append(f"{where}:permit_revoked")
+    approval = ((pred.get("approvalBinding") or {}).get("record") or {}).get("approval") or {}
+    approver_key = approval.get("keyId")
+    if approver_key and trust.key_revoked(str(approver_key), at):
+        problems.append(f"{where}:approver_key_revoked")
+
+
 def _check_line(i: int, line: str, keys: list[Any], prev: str,
                 trust: Trust | None) -> tuple[dict[str, Any] | None, list[str]]:
     problems: list[str] = []
     where = f"line_{i}"
     try:
-        payload, _ = open_envelope(json.loads(line), keys)
+        payload, signer_id = open_envelope(json.loads(line), keys)
         body = json.loads(payload)
     except (ValueError, KeyError, TypeError) as exc:
         return None, [f"{where}:{exc}"]
     pred = body.get("predicate", {})
+    if trust is not None:
+        _check_revocations(pred, signer_id, trust, problems, where)
     if pred.get("seq") != i:
         problems.append(f"{where}:seq_{pred.get('seq')}_not_{i}")
     if pred.get("prev") != prev:

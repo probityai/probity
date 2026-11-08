@@ -9,12 +9,16 @@ from .grants import (CAPABILITY_GRANT, authorize as authorize_under_grant, grant
                      issue_grant, raw_public, verify_chain)
 from .quorum import (APPROVAL_QUORUM, QuorumResult, StillPending, await_quorum, count as count_votes,
                      request_hash, sign_vote)
+from .revocation import (REVOCATION_LIST, RevocationCache, RevocationError, RevocationState,
+                         StaleRevocations, sign_revocations, verify_approval_live)
 from .journal import CHECKPOINT_TYPE, JOURNAL_FILE, Journal, verify_journal
 from .records import (APPROVAL_BINDING_CONTRACT, OUTCOMES, REPLIES, TOOL_CALL_RECORD, UNCERTAIN_EFFECT_CONTRACT,
                       build_approval_binding, build_uncertain_effect, embed_approval_binding,
                       judge_approval_binding, judge_uncertain_effect, tool_call_predicate, verifier_case)
 
 __all__ = [
+    "REVOCATION_LIST", "RevocationCache", "RevocationError", "RevocationState", "StaleRevocations",
+    "sign_revocations", "verify_approval_live",
     "APPROVAL_QUORUM", "QUORUM_ALLOW", "QuorumResult", "StillPending", "await_quorum", "count_votes", "request_hash",
     "sign_vote",
     "CAPABILITY_GRANT", "ConstraintError", "GRANT_ALLOW", "Trust", "authorize_under_grant", "check_constraint",
