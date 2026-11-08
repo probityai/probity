@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "probity-guard"
+version = "0.1.0"
+description = "Inline content guard for agent tool calls: redact or block secrets and personal data, fail closed, stop streams deterministically, and sign a record of every decision"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Sankalp Gilda"}]
+dependencies = ["probity-records==0.1.0"]
+keywords = ["ai-agents", "dlp", "secrets", "redaction", "guardrails", "audit"]
+
+[project.urls]
+Source = "https://github.com/probityai/probity/tree/main/packages/probity-guard"
+Issues = "https://github.com/probityai/probity/issues"
+
+[dependency-groups]
+dev = ["pytest>=9.2.0,<10"]
+
+[tool.uv.sources]
+probity-records = { path = "../probity-records", editable = true }
