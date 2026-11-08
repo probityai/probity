@@ -44,7 +44,8 @@ async def _approved(client, root, wf, req, approver=None):
 
 def _verify(root: Path, authority) -> dict:
     with no_network():
-        return verify_journal(root, [authority.public_pem()], authority.checkpoint())
+        return verify_journal(root, [authority.public_pem()], authority.checkpoint(),
+                              trust=authority.trust())
 
 
 async def _stop(task):

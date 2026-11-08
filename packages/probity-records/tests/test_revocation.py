@@ -42,7 +42,7 @@ def test_records_signed_after_revocation_fail_offline(tmp_path) -> None:
     assert sum("signer_key_revoked" in f for f in report["failures"]) == 3
     approver_out = Trust(revocations=RevocationState.from_lists(
         [_list(root, 1, [{"kind": "key", "id": approver.key_id, "revokedAt": PAST, "reason": "left"}])],
-        {root.key_id}))
+        {root.key_id}), quorum_policies=_trust(("human:ops", approver)).quorum_policies)
     failures = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=approver_out)["failures"]
     assert any("approver_key_revoked" in f for f in failures), failures
     pid = journal.statements()[0]["predicate"]["permitId"]

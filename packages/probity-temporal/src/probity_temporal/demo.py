@@ -213,7 +213,7 @@ async def demo(root: Path) -> int:
     from temporalio.client import Client, WorkflowUpdateFailedError  # noqa: PLC0415
     from temporalio.testing import WorkflowEnvironment  # noqa: PLC0415
 
-    from probity_records import verify_journal  # noqa: PLC0415
+    from probity_records import Trust, verify_journal  # noqa: PLC0415
 
     root.mkdir(parents=True, exist_ok=True)
     approver = approver_key(root)
@@ -269,15 +269,19 @@ async def demo(root: Path) -> int:
         print("   refunds in the bank for refund-4:", Bank(root).count(p4["permitId"]))
         worker.cancel()
         await asyncio.gather(worker, return_exceptions=True)
-        (root / "checkpoint.json").write_text(json.dumps(authority_for(root, False).checkpoint()))
+        published = authority_for(root, False)
+        (root / "checkpoint.json").write_text(json.dumps(published.checkpoint()))
+        (root / "policy.json").write_text(json.dumps(published.policy_for(TOOL)))
         for wf in ("refund-1", "refund-2", "refund-4"):
             history = await client.get_workflow_handle(wf).fetch_history()
             (root / f"history-{wf}.json").write_text(history.to_json())
 
     print("5. An outsider verifies with the public key alone, network disabled.")
     with no_network():
+        policy = json.loads((root / "policy.json").read_text())
         report = verify_journal(root, [(root / "authority.pub").read_bytes()],
-                                json.loads((root / "checkpoint.json").read_text()))
+                                json.loads((root / "checkpoint.json").read_text()),
+                                trust=Trust(quorum_policies={policy["policyId"]: policy}))
     print(f"   {report['verdict']}: {report['verified']} of {report['records']} records verified;"
           f" outcomes {report['outcomes']}; failures {report['failures']}")
     print("6. The event history is your log. This is the record your customer's auditor can check without you.")

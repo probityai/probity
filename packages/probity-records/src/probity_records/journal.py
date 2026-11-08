@@ -201,10 +201,6 @@ def _check_revocations(pred: dict[str, Any], signer_id: str, trust: Trust, probl
         problems.append(f"{where}:signer_key_revoked")
     if pred.get("permitId") and trust.permit_revoked(str(pred["permitId"]), at):
         problems.append(f"{where}:permit_revoked")
-    for embedded in pred.get("approvalBindings") or []:
-        approver_key = ((embedded.get("record") or {}).get("approval") or {}).get("keyId")
-        if approver_key and trust.key_revoked(str(approver_key), at):
-            problems.append(f"{where}:approver_key_revoked")
 
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str,

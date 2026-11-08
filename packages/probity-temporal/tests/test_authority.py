@@ -12,10 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from probity_records import Signer, args_sha256, sign_approval, verify_journal, verify_permit
-from probity_temporal import (ApprovalPolicy, AwsSecretsManagerKey, EnvKey, FileKey, FirstOf,
-                              GcpSecretManagerKey, LocalAuthority, NotAdmissible, Request, Revocations,
-                              VaultKey, admit, errors, sign_revocations)
+from probity_records import (RevocationCache, Signer, args_sha256, sign_approval, sign_revocations, verify_journal,
+                             verify_permit)
+from probity_records.quorum import approval_policy
+from probity_temporal import (AwsSecretsManagerKey, EnvKey, FileKey, FirstOf, GcpSecretManagerKey, LocalAuthority,
+                              NotAdmissible, Request, VaultKey, admit, errors)
 from probity_temporal.authority import EVENT, PHASE
 
 TOOL = "refund_payment"
@@ -42,7 +43,8 @@ def _req(approvals, activity_id="1", **kw) -> Request:
 
 
 def _verify(path: Path, authority: LocalAuthority) -> dict:
-    return verify_journal(path, [authority.public_pem()], authority.checkpoint())
+    """The auditor pins the authority's published policies (``trust()``), never the records' copy."""
+    return verify_journal(path, [authority.public_pem()], authority.checkpoint(), trust=authority.trust())
 
 
 def test_every_code_is_stable_and_retry_split_is_stated() -> None:
@@ -111,7 +113,8 @@ def test_admission_refuses_pydantic_models_that_hide_a_value() -> None:
 
 def test_m_of_n_needs_distinct_approvers(tmp_path) -> None:
     a, b, c = Signer.generate(), Signer.generate(), Signer.generate()
-    policy = ApprovalPolicy({"human:a": a.public_pem(), "human:b": b.public_pem(), "human:c": c.public_pem()}, 2)
+    policy = approval_policy("refund-large",
+                             {"human:a": a.public_pem(), "human:b": b.public_pem(), "human:c": c.public_pem()}, 2)
     authority = LocalAuthority(tmp_path, tool_policies={TOOL: policy})
     one = authority.authorize(_req([_approval(a, "human:a")], "1"))
     assert (one.ok, one.code) == (False, errors.APPROVAL_THRESHOLD_NOT_MET)
@@ -125,31 +128,55 @@ def test_m_of_n_needs_distinct_approvers(tmp_path) -> None:
     assert report["verdict"] == "PASS", report["failures"]
     allow = [s["predicate"] for s in report["statements"] if s["predicate"]["decision"] == "allow"][0]
     assert allow["threshold"] == 2 and len(allow["approvalBindings"]) == 2
+    assert allow["approvalPolicyId"] == "refund-large" and all(b["approvalSig"] for b in allow["approvalBindings"])
+    # an auditor who pinned a stricter policy under the same id refuses the allow
+    stricter = dataclasses.replace(authority.trust(), quorum_policies={"refund-large": {**policy, "threshold": 3}})
+    strict = verify_journal(tmp_path, [authority.public_pem()], authority.checkpoint(), trust=stricter)
+    assert any("threshold_2_is_not_the_pinned_3" in f for f in strict["failures"]), strict["failures"]
 
 
 def test_revocation_refuses_keys_and_permits_rejects_rollback_and_goes_stale(tmp_path) -> None:
-    approver, revoker = Signer.generate(), Signer.generate()
+    approver, root = Signer.generate(), Signer.generate()
     clock = [0.0]
-    lists = [sign_revocations(revoker, 1, [], [], "2026-11-08T00:00:00Z")]
-    revs = Revocations(lambda: lists[-1], revoker.public_pem(), refresh_seconds=10, max_staleness=60,
-                       monotonic=lambda: clock[0])
-    authority = LocalAuthority(tmp_path, {"human:a": approver.public_pem()}, revocations=revs)
+    lists: list = []
+
+    def add(entries: list) -> None:
+        lists.append(sign_revocations(root, list_id="rl", seq=len(lists) + 1, issued_at="2026-11-08T00:00:00Z",
+                                      entries=entries, previous=lists[-1] if lists else None))
+
+    add([])
+    served = [list(lists)]
+    cache = RevocationCache(lambda: served[-1], {root.key_id}, refresh_seconds=10, max_stale_seconds=60,
+                            clock=lambda: clock[0])
+    authority = LocalAuthority(tmp_path, {"human:a": approver.public_pem()}, revocations=cache)
     assert authority.authorize(_req([_approval(approver, "human:a", "1" * 64)], "1")).ok
-    lists.append(sign_revocations(revoker, 2, [], ["2" * 64], "t"))
+    add([{"kind": "permit", "id": "2" * 64, "revokedAt": "2000-01-01T00:00:00Z"}])
+    served.append(list(lists))
     clock[0] = 11
     assert authority.authorize(_req([_approval(approver, "human:a", "2" * 64)], "2")).code == errors.PERMIT_REVOKED
-    lists.append(sign_revocations(revoker, 3, [approver.key_id], [], "t"))
+    assert authority.is_revoked("2" * 64)
+    add([{"kind": "permit", "id": "2" * 64, "revokedAt": "2000-01-01T00:00:00Z"},
+         {"kind": "key", "id": approver.key_id, "revokedAt": "2000-01-01T00:00:00Z"}])
+    served.append(list(lists))
     clock[0] = 22
     assert authority.authorize(_req([_approval(approver, "human:a", "3" * 64)], "3")).code == errors.APPROVER_REVOKED
-    lists.append(sign_revocations(revoker, 2, [], [], "t"))  # a rollback is refused; version 3 stays
+    served.append(lists[:2])  # a rollback is refused; the last good state stays
     clock[0] = 33
     assert authority.authorize(_req([_approval(approver, "human:a", "4" * 64)], "4")).code == errors.APPROVER_REVOKED
-    assert any(r.startswith("rollback_2_below_3") for r in revs.rejected)
-    lists.append(sign_revocations(Signer.generate(), 9, [], [], "t"))  # wrong key: refused, and time passes
-    clock[0] = 200
+    assert cache.last_error == "revocation_list_rolled_back"
+    served.append([sign_revocations(Signer.generate(), list_id="rl", seq=1, issued_at="t", entries=[])])
+    clock[0] = 200  # forged lists only, and time passes: stale, retryable, and permits fail closed
     stale = authority.authorize(_req([_approval(approver, "human:a", "5" * 64)], "5"))
     assert stale.code == errors.REVOCATION_STATE_STALE and errors.REVOCATION_STATE_STALE in errors.RETRYABLE
-    assert _verify(tmp_path, authority)["verdict"] == "PASS"
+    assert authority.is_revoked("1" * 64)
+    served.append(list(lists))
+    clock[0] = 211
+    report = _verify(tmp_path, authority)
+    # the lists date both revocations to 2000, so offline the auditor refuses exactly the one allow (line 1,
+    # the revoked approver) and the record naming the revoked permit (line 2), nothing else
+    assert sorted(report["failures"]) == ["line_1:binding_0:approver_key_revoked",
+                                          "line_1:recorded_allow_but_0_of_1_approvals_hold",
+                                          "line_2:permit_revoked"], report["failures"]
 
 
 def test_approval_source_pending_is_retryable_and_missing_is_final(tmp_path) -> None:
@@ -187,6 +214,19 @@ def test_shadow_mode_records_the_refusal_and_lets_the_call_through(tmp_path) -> 
     assert (decision.ok, decision.shadow, decision.permit, decision.code) == (True, True, None, errors.APPROVAL_MISSING)
     pred = _verify(tmp_path, authority)["statements"][0]["predicate"]
     assert (pred["decision"], pred["context"]["shadow"]) == ("deny", True)
+
+
+def test_shadow_allow_journals_intent_and_effect(tmp_path) -> None:
+    approver = Signer.generate()
+    authority = LocalAuthority(tmp_path, {"human:a": approver.public_pem()}, mode="shadow")
+    req = _req([_approval(approver, "human:a")])
+    decision = authority.authorize(req)
+    assert (decision.ok, decision.shadow, decision.code) == (True, True, None) and decision.permit is not None
+    authority.intent(req, decision.permit_id)
+    assert authority.effect(req, decision.permit_id, "confirmed", "00" * 32)[0] == "committed"
+    report = _verify(tmp_path, authority)
+    assert report["verdict"] == "PASS", report["failures"]
+    assert [s["predicate"]["phase"] for s in report["statements"]] == ["authorize", "intent", "effect"]
 
 
 def test_index_lost_after_a_crash_is_rebuilt_from_the_journal(tmp_path) -> None:
