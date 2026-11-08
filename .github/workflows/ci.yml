@@ -550,7 +550,7 @@ jobs:
       - name: image tag matches compose
         run: |
           want=$(sed -n 's/^ *image: *//p' docker/compose.yaml | head -1)
-          have=$(sed -n 's/^ *image: *\(mongodb\/mongodb-atlas-local:[^ ]*\).*$/\1/p' ../../.github/workflows/package-ratchet.yml | head -1)
+          have=$(sed -n 's/^ *image: *\(mongodb\/mongodb-atlas-local:[^ ]*\).*$/\1/p' ../../.github/workflows/ci.yml | head -1)
           echo "compose: $want  workflow: $have"
           test -n "$want" && test "$want" = "$have"
       - name: wait until mongot answers search-index calls
