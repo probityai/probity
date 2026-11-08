@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-records"
-version = "0.1.0"
+version = "0.2.0"
 description = "Signed, offline-verifiable records of agent tool calls: single-use permits, approval binding and lost-reply outcomes"
 readme = "README.md"
 requires-python = ">=3.12"
