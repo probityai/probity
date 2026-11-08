@@ -27,7 +27,7 @@ import re
 import subprocess
 import sys
 import tomllib
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,7 +46,7 @@ def _workspace():
     return module
 
 
-@lru_cache(maxsize=None)
+@cache
 def glob_regex(pattern: str) -> re.Pattern[str]:
     """Compile a GitHub path-filter glob: `**` crosses slashes, `*` and `?` do not."""
     out, i = [], 0
@@ -89,7 +89,7 @@ def changed_paths(base: str, head: str) -> list[str] | None:
     """The paths changed between base and head, or None when base is not a known commit."""
     if not base or set(base) == {"0"}:
         return None
-    known = subprocess.run(["git", "cat-file", "-e", f"{base}^{{commit}}"], cwd=ROOT, capture_output=True)
+    known = subprocess.run(["git", "cat-file", "-e", f"{base}^{{commit}}"], cwd=ROOT, check=False, capture_output=True)
     if known.returncode:
         return None
     return subprocess.run(["git", "diff", "--name-only", f"{base}...{head}"], cwd=ROOT, check=True,
