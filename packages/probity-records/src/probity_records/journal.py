@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from .authority import Trust, check_authority
+from .governance import GOVERNANCE_STEP, check_step
 from .core import Signer, load_public, open_envelope, sign_envelope, statement
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
 
@@ -174,6 +175,10 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str,
             _check_approval(pred, problems, where, trust)
         elif pred.get("phase") == "effect":
             _check_effect(pred, problems, where)
+    elif body.get("predicateType") == GOVERNANCE_STEP:
+        policies = trust.quorum_policies if trust else None
+        revoked = trust.key_revoked if trust else None
+        problems.extend(f"{where}:{p}" for p in check_step(pred, policies, str(pred.get("at")), revoked))
     return body, problems
 
 

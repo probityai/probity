@@ -11,12 +11,16 @@ from .quorum import (APPROVAL_QUORUM, QuorumResult, StillPending, await_quorum, 
                      request_hash, sign_vote)
 from .revocation import (REVOCATION_LIST, RevocationCache, RevocationError, RevocationState,
                          StaleRevocations, sign_revocations, verify_approval_live)
+from .governance import (EXCEPTION_ALLOW, GOVERNANCE_EXCEPTION, GOVERNANCE_STEP, STEPS, check_exception_call,
+                         exception_body, exception_digest, exception_evidence, route_by_risk, step_predicate)
 from .journal import CHECKPOINT_TYPE, JOURNAL_FILE, Journal, verify_journal
 from .records import (APPROVAL_BINDING_CONTRACT, OUTCOMES, REPLIES, TOOL_CALL_RECORD, UNCERTAIN_EFFECT_CONTRACT,
                       build_approval_binding, build_uncertain_effect, embed_approval_binding,
                       judge_approval_binding, judge_uncertain_effect, tool_call_predicate, verifier_case)
 
 __all__ = [
+    "EXCEPTION_ALLOW", "GOVERNANCE_EXCEPTION", "GOVERNANCE_STEP", "STEPS", "check_exception_call", "exception_body",
+    "exception_digest", "exception_evidence", "route_by_risk", "step_predicate",
     "REVOCATION_LIST", "RevocationCache", "RevocationError", "RevocationState", "StaleRevocations",
     "sign_revocations", "verify_approval_live",
     "APPROVAL_QUORUM", "QUORUM_ALLOW", "QuorumResult", "StillPending", "await_quorum", "count_votes", "request_hash",

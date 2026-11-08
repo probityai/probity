@@ -13,7 +13,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import grants, quorum
+from . import governance, grants, quorum
 from .revocation import RevocationState
 
 GRANT_ALLOW = "grant"
@@ -74,7 +74,14 @@ def _check_quorum(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: T
         problems.append(f"{where}:{outcome}")
 
 
-CHECKS: dict[str, Callable[..., None]] = {GRANT_ALLOW: _check_grant, QUORUM_ALLOW: _check_quorum}
+def _check_exception(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Trust, at: str,
+                     problems: list[str], where: str) -> None:
+    for problem in governance.verify_exception_evidence(pred, evidence, trust.quorum_policies, at, trust.key_revoked):
+        problems.append(f"{where}:{problem}")
+
+
+CHECKS: dict[str, Callable[..., None]] = {GRANT_ALLOW: _check_grant, QUORUM_ALLOW: _check_quorum,
+                                          governance.EXCEPTION_ALLOW: _check_exception}
 
 
 def check_authority(pred: Mapping[str, Any], trust: Trust | None, problems: list[str], where: str) -> bool:

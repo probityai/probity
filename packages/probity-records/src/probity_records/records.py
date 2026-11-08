@@ -134,7 +134,8 @@ def tool_call_predicate(*, phase: str, run_id: str, tool_call_id: str, tool: str
                         result_sha256: str | None = None, uncertain_effect: Mapping[str, Any] | None = None,
                         context: Mapping[str, Any] | None = None,
                         authority: Mapping[str, Any] | None = None,
-                        grant_digest: str | None = None) -> dict[str, Any]:
+                        grant_digest: str | None = None,
+                        exception_digest: str | None = None) -> dict[str, Any]:
     """The predicate of one tool-call record (the journal adds ``seq``, ``prev`` and ``at``).
 
     ``phase`` is ``authorize`` (a permit decision), ``intent`` (the call is about to leave the
@@ -145,7 +146,7 @@ def tool_call_predicate(*, phase: str, run_id: str, tool_call_id: str, tool: str
     if phase not in ("authorize", "intent", "effect"):
         raise ValueError("phase must be authorize, intent or effect")
     return {"approvalBinding": dict(approval_binding) if approval_binding else None,
-            "authority": dict(authority) if authority else None, "grantDigest": grant_digest,
+            "authority": dict(authority) if authority else None, "exceptionDigest": exception_digest, "grantDigest": grant_digest,
             "argsSha256": args_sha256_hex, "context": dict(context or {}), "decision": decision,
             "outcome": outcome, "permitId": permit_id, "phase": phase, "reason": reason,
             "resultSha256": result_sha256, "runId": run_id, "tool": tool, "toolCallId": tool_call_id,
