@@ -9,7 +9,7 @@ description = "Moved to agent-evidence-verify; this release installs it and keep
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
-dependencies = ["agent-evidence-verify>=0.5.1,<1"]
+dependencies = ["agent-evidence-verify>=0.5.1,<0.7"]
 classifiers = [
     "Development Status :: 7 - Inactive",
     "Programming Language :: Python :: 3",
