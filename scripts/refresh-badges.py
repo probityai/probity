@@ -39,6 +39,12 @@ COMBINED: dict[str, tuple[str, tuple[str, ...]]] = {
     "dl-verifier-total": ("verifier downloads", ("probity-verify", "agent-evidence-verify")),
 }
 
+# A name whose count is fixed at the moment its last release made it depend on the next
+# name. From then on installing the old name also downloads the new one, so adding the
+# old name's live total would count those installs twice. probity-verify 0.5.1 (published
+# 2026-11-08 about 17:30 UTC) depends on agent-evidence-verify; 10,003 is its pepy API
+# total read at 2026-11-08 16:44 UTC, before that release.
+FROZEN: dict[str, tuple[int, str]] = {"probity-verify": (10_003, "2026-11-08 16:44 UTC")}
 
 PYPI_PAGE = "https://pypi.org/project/agent-evidence-verify/"
 PEPY_PAGE = "https://pepy.tech/projects/agent-evidence-verify"
@@ -132,13 +138,13 @@ def combined_totals(names: tuple[str, ...]) -> dict[str, int]:
     key = os.environ.get("PEPY_API_KEY")
     if not key:
         raise ValueError("PEPY_API_KEY is not set; a combined total needs the pepy API")
-    return {name: pepy_total(name, key) for name in names}
+    return {name: FROZEN[name][0] if name in FROZEN else pepy_total(name, key) for name in names}
 
 
 def downloads_page(totals: dict[str, int], at: str) -> str:
     """The page the summed badge links: each name's total, the sum, the time and the source."""
     rows = "".join(
-        f"| [`{n}`](https://pypi.org/project/{n}/) | {v:,} | [pepy.tech/projects/{n}](https://pepy.tech/projects/{n}) |\n"
+        f"| [`{n}`](https://pypi.org/project/{n}/) | {v:,}{' (fixed)' if n in FROZEN else ''} | [pepy.tech/projects/{n}](https://pepy.tech/projects/{n}) |\n"
         for n, v in totals.items()
     )
     names = list(totals)
@@ -149,7 +155,13 @@ def downloads_page(totals: dict[str, int], at: str) -> str:
         "The downloads badge in the README is the sum of both.\n\n"
         "| PyPI name | Downloads | Source |\n|---|--:|---|\n"
         f"{rows}| **Total** | **{sum(totals.values()):,}** | sum of the rows above |\n\n"
-        f"Read from the pepy.tech API (`api.pepy.tech/api/v2/projects/<name>`, all-time totals) at {at}. "
+        + "".join(
+            f"`{n}` is fixed at its pepy API total read at {FROZEN[n][1]}, just before its last "
+            "release made it install the new name; counting it live after that would count each "
+            "of those installs twice.\n\n"
+            for n in names if n in FROZEN
+        )
+        + f"Read from the pepy.tech API (`api.pepy.tech/api/v2/projects/<name>`, all-time totals) at {at}. "
         "This page and the badge are written by the same scheduled run "
         "([scripts/refresh-badges.py](../scripts/refresh-badges.py)), so they always show the same numbers.\n\n"
         f"Install the current name: `pip install {names[-1]}`.\n"
@@ -222,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     ]
     for stem, (title, names) in COMBINED.items():
         if f"assets/badges/{stem}.svg" in text:
-            jobs.append((stem, title, "verifier ↓", lambda n=names: combined_totals(n)))
+            jobs.append((stem, title, "↓", lambda n=names: combined_totals(n)))
     if not jobs:
         print(f"FAILED: {readme} names no assets/badges/dl-*.svg file")
         return 1

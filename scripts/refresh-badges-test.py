@@ -26,7 +26,7 @@ def not_found() -> urllib.error.HTTPError:
 
 
 class CombinedBadgeTest(unittest.TestCase):
-    def run_main(self, fetch, key: str | None = "k") -> tuple[int, str]:
+    def run_main(self, fetch, key: str | None = "k", frozen: dict | None = None) -> tuple[int, str]:
         env = {"PEPY_API_KEY": key} if key else {}
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "assets" / "badges"
@@ -35,6 +35,7 @@ class CombinedBadgeTest(unittest.TestCase):
             with (
                 mock.patch.dict(os.environ, env, clear=True),
                 mock.patch.object(rb, "fetch", fetch),
+                mock.patch.dict(rb.FROZEN, frozen if frozen is not None else {}, clear=True),
                 redirect_stdout(io.StringIO()),
             ):
                 rc = rb.main(["--out", str(out)])
@@ -45,7 +46,19 @@ class CombinedBadgeTest(unittest.TestCase):
         rc, svg = self.run_main(lambda url, headers=None: {"total_downloads": totals[url.rsplit("/", 1)[1]]})
         self.assertEqual(rc, 0)
         self.assertIn("10.2k", svg)
-        self.assertIn("verifier", svg)
+        self.assertIn('aria-label="↓ 10.2k"', svg)  # the same label as every other download badge
+
+    def test_a_frozen_name_is_not_read_live(self) -> None:
+        seen = []
+
+        def fetch(url, headers=None):
+            seen.append(url)
+            return {"total_downloads": 1200}
+
+        rc, svg = self.run_main(fetch, frozen={"probity-verify": (9034, "2026-11-08 16:44 UTC")})
+        self.assertEqual(rc, 0)
+        self.assertIn("10.2k", svg)
+        self.assertFalse(any(u.endswith("/probity-verify") for u in seen))
 
     def test_a_name_pepy_has_not_seen_counts_zero(self) -> None:
         def fetch(url, headers=None):
