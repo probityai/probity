@@ -36,7 +36,7 @@
       "id": "https://probityai.github.io/probity/verifiers/agent-evidence-verify"
     }
   },
-  "version": "0.5.1",
+  "version": "0.6.0",
   "workflows": [
     {
       "path": ".github/workflows/release.yml",
