@@ -3315,7 +3315,7 @@ jobs:
   pypi-upload-selftest:
     name: "pypi-upload-selftest"
     needs: [changes]
-    if: ${{ (fromJSON(needs.changes.outputs.jobs)['pypi-upload-selftest']) && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ (fromJSON(needs.changes.outputs.jobs)['pypi-upload-selftest']) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
