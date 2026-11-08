@@ -50,7 +50,7 @@ def test_every_member_answered_as_the_manifest_expects(name: str, capsys) -> Non
 
 
 def test_unimplemented_suite_is_not_applicable_member_by_member(tmp_path: Path, capsys) -> None:
-    manifest = {"suite": "approval-binding/v1", "corpusDigest": "a" * 64,
+    manifest = {"suite": "some-other-suite/v1", "corpusDigest": "a" * 64,
                 "vectors": [{"id": "one"}, {"id": "two"}]}
     (tmp_path / "MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
     assert main(["corpus", str(tmp_path)]) == 0
