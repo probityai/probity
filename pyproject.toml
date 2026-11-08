@@ -9,7 +9,7 @@
 members = ["packages/*"]
 # packages/probity-effects is not a member of the one lock: its tests install the agent frameworks its adapters
 # drive (LangGraph first), and their dependency trees would bind every member's resolution. It keeps its own lock.
-exclude = ["packages/probity-effects"]
+exclude = ["packages/probity-effects", "packages/probity-records", "packages/probity-temporal"]
 
 [tool.uv.sources]
 # Members that depend on each other resolve to the tree beside them, so every change is tested against
