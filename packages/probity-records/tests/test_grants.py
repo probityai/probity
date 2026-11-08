@@ -19,7 +19,7 @@ CALL = {"amount_cents": 4000, "customer_id": "cust-alice", "payee_account": "acc
 
 def _root(issuer: Signer, holder: Signer, tools=TOOLS) -> dict:
     return issue_grant(issuer, grant_id="g-root", holder_key=raw_public(holder), tools=tools,
-                       not_before="2026-01-01T00:00:00Z", expires_at="2026-12-31T00:00:00Z")
+                       not_before="2026-01-01T00:00:00Z", expires_at="2099-12-31T00:00:00Z")
 
 
 @pytest.mark.parametrize(("c", "good", "bad"), [
@@ -74,7 +74,7 @@ def test_out_of_scope_call_refused_with_no_human_in_the_loop() -> None:
     extra = authorize_under_grant(chain, "refund_payment", {**CALL, "memo": "x"}, AT, roots)
     assert extra["reason"] == "argument_not_granted:memo"
     assert authorize_under_grant(chain, "delete_account", {}, AT, roots)["reason"] == "tool_not_granted"
-    assert authorize_under_grant(chain, "refund_payment", CALL, "2027-01-01T00:00:00Z", roots)["decision"] == "deny"
+    assert authorize_under_grant(chain, "refund_payment", CALL, "2100-01-01T00:00:00Z", roots)["decision"] == "deny"
     assert authorize_under_grant(chain, "refund_payment", CALL, AT, {"other"})["reason"] == "grant_root_untrusted"
 
 

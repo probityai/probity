@@ -13,9 +13,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import grants
+from . import grants, quorum
 
 GRANT_ALLOW = "grant"
+QUORUM_ALLOW = "quorum"
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,7 @@ class Trust:
     grant_root_key_ids: frozenset[str] = frozenset()
     revoked_grants: frozenset[str] = frozenset()
     key_revoked: Callable[[str, str], bool] | None = None
+    quorum_policies: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
     extra: Mapping[str, Any] = field(default_factory=dict)
 
 
@@ -42,13 +44,29 @@ def _check_grant(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Tr
     args = _args(evidence, pred, problems, where)
     verdict = grants.authorize(list(evidence.get("chain", [])), str(pred.get("tool")), args, at,
                                set(trust.grant_root_key_ids), set(trust.revoked_grants), trust.key_revoked)
-    if verdict["decision"] != "allow":
+    if verdict["decision"] == "needs_approval" and isinstance(evidence.get("quorum"), Mapping):
+        outcome = _quorum_outcome(pred, evidence["quorum"], trust, at)
+        if outcome != "ok":
+            problems.append(f"{where}:grant_approval_{outcome}")
+    elif verdict["decision"] != "allow":
         problems.append(f"{where}:grant_{verdict['decision']}:{verdict['reason']}")
     if verdict["grantDigest"] and verdict["grantDigest"] != pred.get("grantDigest"):
         problems.append(f"{where}:grant_digest_differs_from_record")
 
 
-CHECKS: dict[str, Callable[..., None]] = {GRANT_ALLOW: _check_grant}
+def _quorum_outcome(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Trust, at: str) -> str:
+    request = quorum.request_hash(str(pred.get("tool")), str(pred.get("argsSha256")), str(pred.get("permitId")))
+    return quorum.verify_evidence(evidence, trust.quorum_policies, request, at, trust.key_revoked)
+
+
+def _check_quorum(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Trust, at: str,
+                  problems: list[str], where: str) -> None:
+    outcome = _quorum_outcome(pred, evidence, trust, at)
+    if outcome != "ok":
+        problems.append(f"{where}:{outcome}")
+
+
+CHECKS: dict[str, Callable[..., None]] = {GRANT_ALLOW: _check_grant, QUORUM_ALLOW: _check_quorum}
 
 
 def check_authority(pred: Mapping[str, Any], trust: Trust | None, problems: list[str], where: str) -> bool:
