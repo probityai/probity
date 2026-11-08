@@ -155,27 +155,29 @@ def check_approval(pending: Mapping[str, Any], signed: Mapping[str, Any]) -> Non
         raise ValueError("approval_not_for_this_call")
 
 
-async def execute_gated_activity(activity_fn: Any, *args: Any, approvals: Sequence[Mapping[str, Any]],
-                                 tool_call_id: str, principal: str | None = None, **options: Any) -> Any:
-    """``workflow.execute_activity`` for a gated activity, carrying its approvals (M of N) in headers.
-
-    ``principal`` defaults to the one the starting client stamped on this workflow.
-    """
+@contextmanager
+def gated_call(*, approvals: Sequence[Mapping[str, Any]], tool_call_id: str, principal: str | None = None) -> Iterator[None]:
+    """Carry approvals (M of N) into the gated call started inside this block: an activity, a local
+    activity or a Nexus operation. ``principal`` defaults to the one the starting client stamped."""
     token = _GATED_CALL.set({"approvals": list(approvals), "principal": principal, "toolCallId": tool_call_id})
     try:
-        return await workflow.execute_activity(activity_fn, args=list(args), **options)
+        yield
     finally:
         _GATED_CALL.reset(token)
+
+
+async def execute_gated_activity(activity_fn: Any, *args: Any, approvals: Sequence[Mapping[str, Any]],
+                                 tool_call_id: str, principal: str | None = None, **options: Any) -> Any:
+    """``workflow.execute_activity`` for a gated activity, carrying its approvals (M of N) in headers."""
+    with gated_call(approvals=approvals, tool_call_id=tool_call_id, principal=principal):
+        return await workflow.execute_activity(activity_fn, args=list(args), **options)
 
 
 async def execute_gated_local_activity(activity_fn: Any, *args: Any, approvals: Sequence[Mapping[str, Any]],
                                        tool_call_id: str, principal: str | None = None, **options: Any) -> Any:
     """The local-activity form; the permit check runs on the worker exactly as for a normal activity."""
-    token = _GATED_CALL.set({"approvals": list(approvals), "principal": principal, "toolCallId": tool_call_id})
-    try:
+    with gated_call(approvals=approvals, tool_call_id=tool_call_id, principal=principal):
         return await workflow.execute_local_activity(activity_fn, args=list(args), **options)
-    finally:
-        _GATED_CALL.reset(token)
 
 
 def _gate_headers(headers: Mapping[str, Payload], args: Sequence[Any]) -> dict[str, Payload]:
@@ -219,6 +221,7 @@ def _workflow_interceptor(plugin: _Interceptor) -> type[WorkflowInboundIntercept
 
         async def start_nexus_operation(self, input: StartNexusOperationInput) -> Any:
             name = f"{input.service}/{input.operation}"
+            print('DBGOUT', name, plugin.gated_nexus, input.headers, flush=True)
             if name in plugin.gated_nexus:
                 call = _GATED_CALL.get() or {}
                 info = workflow.info()
@@ -423,6 +426,7 @@ class _NexusInbound(NexusOperationInboundInterceptor):
             return await self.next.execute_nexus_operation_start(input)
         headers = {k.lower(): v for k, v in (ctx.headers or {}).items()}
         values = json_values(PayloadConverter.default, [input.input])
+        print('DBGNEXUS', type(input.input), repr(input.input)[:200], values, headers.get(HEADER_DIGEST), flush=True)
         caller = json.loads(headers.get(HEADER_WORKFLOW, "{}") or "{}")
         req = Request(workflow_id=caller.get("workflowId", ""), run_id=caller.get("runId", ""),
                       activity_id=f"nexus:{ctx.request_id}", activity_type=name, attempt=1, args=values,

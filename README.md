@@ -59,6 +59,9 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | [probity-ratchet](packages/probity-ratchet/README.md)<br>[![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) | signed, replayable receipts for improving an agent against held-out cases | **0.4.0** |
 | [probity-ratchet-cases](packages/probity-ratchet-cases/README.md)<br>[![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) | agent task cases graded on final state: a simulated company, tool faults, exact graders | **0.2.0** |
 | [probity-effects](packages/probity-effects/README.md) | keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios | **0.2.0** |
+| [probity-records](packages/probity-records/README.md) | signed, offline-verifiable records of agent tool calls: single-use permits, human approvals, capability grants, revocation | **0.2.0** |
+| [probity-temporal](packages/probity-temporal/README.md) | Temporal plugin: a single-use permit bound to each activity's exact arguments, a signed record of what ran | **0.1.0** |
+| [probity-guard](packages/probity-guard/README.md) | inline content guard for agent tool calls: secrets and personal data redacted or blocked, fail closed | **0.1.0** |
 | [agent-evidence-replay](packages/agent-evidence-replay/README.md) | replays a lab's agent action record and flags a changed or missing step | **0.1.0** |
 
 Install any of them pinned to the version shown: `pip install <package>==<version>`.
