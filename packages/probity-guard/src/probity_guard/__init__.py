@@ -77,17 +77,17 @@ def _iban(text: str) -> bool:
 DEFAULT_CLASSIFIERS: tuple[Classifier, ...] = (
     Classifier("private_key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA |ENCRYPTED )?PRIVATE KEY-----")),
     Classifier("aws_access_key", re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b")),
-    Classifier("github_token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b")),
-    Classifier("slack_token", re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}\b")),
-    Classifier("stripe_secret", re.compile(r"\b(?:sk|rk)_live_[A-Za-z0-9]{20,}\b")),
+    Classifier("github_token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,255}\b")),
+    Classifier("slack_token", re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,250}\b")),
+    Classifier("stripe_secret", re.compile(r"\b(?:sk|rk)_live_[A-Za-z0-9]{20,247}\b")),
     Classifier("google_api_key", re.compile(r"\bAIza[0-9A-Za-z_\-]{35}\b")),
-    Classifier("jwt", re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b")),
-    Classifier("generic_secret", re.compile(r"(?i)(?:secret|password|passwd|api[_-]?key|token)[\"'\s:=]+([A-Za-z0-9/+_\-]{20,})"),
+    Classifier("jwt", re.compile(r"\beyJ[A-Za-z0-9_-]{8,160}\.eyJ[A-Za-z0-9_-]{8,160}\.[A-Za-z0-9_-]{8,170}\b")),
+    Classifier("generic_secret", re.compile(r"(?i)(?:secret|password|passwd|api[_-]?key|token)[\"'\s:=]{1,16}([A-Za-z0-9/+_\-]{20,256})"),
                check=lambda m: _entropy_ok(re.split(r"[\"'\s:=]+", m)[-1])),
     Classifier("payment_card", re.compile(r"\b\d(?:[ -]?\d){12,18}\b"), "redact", _luhn),
     Classifier("us_ssn", re.compile(r"\b(?!000|666|9\d\d)\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b"), "redact"),
     Classifier("iban", re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,3})?\b"), "redact", _iban),
-    Classifier("email", re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "redact"),
+    Classifier("email", re.compile(r"\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}\b"), "redact"),
 )
 
 

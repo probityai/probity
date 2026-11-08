@@ -80,3 +80,14 @@ def test_content_guard_hook_blocks_redactable_arguments() -> None:
     hook = Guard().content_guard()
     assert hook("t", b'{"note":"hi"}')["action"] == "allow"
     assert hook("t", b'{"note":"bob@example.com"}')["action"] == "block"
+
+
+def test_every_classifier_fits_the_stream_overlap() -> None:
+    """A match longer than the overlap could straddle two windows and be missed; every pattern is bounded."""
+    import re._parser as sre_parse
+
+    from probity_guard import DEFAULT_CLASSIFIERS, Guard
+
+    for c in DEFAULT_CLASSIFIERS:
+        lo, hi = sre_parse.parse(c.pattern.pattern, c.pattern.flags).getwidth()
+        assert hi <= Guard().max_match, (c.name, hi)
