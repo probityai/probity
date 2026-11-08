@@ -41,7 +41,10 @@ COMBINED: dict[str, tuple[str, tuple[str, ...]]] = {
 
 PYPI_PAGE = "https://pypi.org/project/agent-evidence-verify/"
 PEPY_PAGE = "https://pepy.tech/projects/agent-evidence-verify"
-VERIFIER_LINK = re.compile(re.escape(PYPI_PAGE) + "|" + re.escape(PEPY_PAGE))
+# The badge image is the sum of every name in COMBINED, so its link must open a page that
+# shows every one of them: pepy's compare page, not the project page of the newest name.
+COMPARE_PAGE = "https://pepy.tech/compare?packages=" + ",".join(COMBINED["dl-verifier-total"][1])
+VERIFIER_LINK = re.compile("|".join(re.escape(u) for u in (PYPI_PAGE, PEPY_PAGE, COMPARE_PAGE)))
 ROOT_README = "README.md"
 PACKAGE_README = "packages/agent-evidence-verify/README.md"
 BADGE_BLOCK = re.compile(
@@ -49,7 +52,7 @@ BADGE_BLOCK = re.compile(
 )
 PACKAGE_BADGE = (
     "[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/"
-    f"assets/badges/dl-verifier-total.svg)]({PEPY_PAGE})\n"
+    f"assets/badges/dl-verifier-total.svg)]({COMPARE_PAGE})\n"
 )
 
 
@@ -64,17 +67,18 @@ def page_exists(url: str) -> bool:
 
 
 def relink_verifier(root: Path, live: bool) -> list[str]:
-    """Keep the verifier download badge on its PePy page.
+    """Keep the verifier download badge on pepy's compare page for both package names.
 
-    The root badge line always links PEPY_PAGE, live or not (every download badge opens
-    pepy.tech; the PyPI page is never a download-badge target). The package README
+    The root badge line always links COMPARE_PAGE, live or not (every download badge opens
+    pepy.tech; the PyPI page is never a download-badge target, and the project page of the
+    newest name alone would hide the older name's downloads that the badge adds in). The package README
     (the PyPI page) carries its badge only when live, because PePy answers 404 for a
     name it has no data for. Returns the files changed."""
     changed = []
     root_path = root / ROOT_README
     if root_path.exists():
         lines = root_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        out = [VERIFIER_LINK.sub(PEPY_PAGE, ln) if "dl-verifier-total" in ln else ln for ln in lines]
+        out = [VERIFIER_LINK.sub(COMPARE_PAGE, ln) if "dl-verifier-total" in ln else ln for ln in lines]
         if out != lines:
             root_path.write_text("".join(out), encoding="utf-8")
             changed.append(ROOT_README)
