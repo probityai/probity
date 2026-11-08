@@ -6,7 +6,7 @@ import json
 
 from probity_records import (
     TOOL_CALL_RECORD, Journal, Signer, args_sha256, build_approval_binding, build_uncertain_effect,
-    canonical, embed_approval_binding, judge_approval_binding, judge_uncertain_effect, key_id,
+    canonical, embed_approval_binding, judge_approval_binding, judge_approval_binding_on_disk, judge_uncertain_effect, key_id,
     permit_id, sign_approval, tool_call_predicate, verify_approval, verify_journal,
 )
 
@@ -77,7 +77,7 @@ def _write_run(journal: Journal, approver: Signer, outcome: str, reply: str) -> 
               "args_sha256_hex": args_sha256(ARGS), "permit_id": pid}
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason="bound",
-        approval_binding=embed_approval_binding(record, payload), **common))
+        approval_bindings=[embed_approval_binding(record, payload)], threshold=1, **common))
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS),
                    tool_call_predicate(phase="intent", **common))
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS), tool_call_predicate(
@@ -125,3 +125,38 @@ def test_key_id_matches_agent_evidence_verify() -> None:
     from agent_evidence_verify.dsse import key_id as verifier_key_id
     signer = Signer.generate()
     assert key_id(signer.public) == verifier_key_id(signer.public)
+
+
+def test_in_memory_reader_agrees_with_the_file_reader() -> None:
+    approver = Signer.generate()
+    cases = [_binding(approver, ARGS, []), _binding(approver, ARGS, ["appr-1"]),
+             _binding(approver, {**ARGS, "amount_cents": 400000}, [])]
+    record, payload = _binding(approver, ARGS, [])
+    cases.append(({**record, "trustedKeys": {"human:ops": "00" * 32}}, payload))
+    cases.append(({**record, "use": {**record["use"], "principal": "someone-else"}}, payload))
+    for record, payload in cases:
+        assert judge_approval_binding(record, payload) == judge_approval_binding_on_disk(record, payload)
+
+
+def test_allow_needs_its_threshold_of_reader_allowed_bindings(tmp_path) -> None:
+    gate, approver = Signer.generate(), Signer.generate()
+    journal = Journal(tmp_path, gate)
+    record, payload = _binding(approver, ARGS, [])
+    pid = permit_id("pause", "call-1", args_sha256(ARGS))
+    journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS), tool_call_predicate(
+        phase="authorize", decision="allow", reason="bound", approval_bindings=[embed_approval_binding(record, payload)],
+        threshold=2, run_id="run", tool_call_id="call-1", tool="refund_payment",
+        args_sha256_hex=args_sha256(ARGS), permit_id=pid))
+    report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint())
+    assert any("reader_allows_1_of_2" in f for f in report["failures"]), report["failures"]
+
+
+def test_append_reads_only_new_bytes_and_sees_other_writers(tmp_path) -> None:
+    gate = Signer.generate()
+    a, b = Journal(tmp_path, gate), Journal(tmp_path, gate)
+    for n in range(5):
+        (a if n % 2 else b).append("t", f"s{n}", "00" * 32, {"n": n})
+    seqs = [s["predicate"]["seq"] for s in a.statements()]
+    assert seqs == [1, 2, 3, 4, 5]
+    report = verify_journal(tmp_path, [gate.public_pem()], a.checkpoint())
+    assert report["verdict"] == "PASS", report["failures"]

@@ -14,6 +14,7 @@ import fcntl
 import hashlib
 import json
 import os
+import threading
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -42,42 +43,73 @@ def _payload(envelope: Mapping[str, Any]) -> dict[str, Any]:
 
 
 class Journal:
-    """Append-only signed journal in ``directory``. Appends are serialised by a file lock and
-    fsynced, so a record that returned is on disk before the caller acts on it."""
+    """Append-only signed journal in ``directory``.
+
+    Appends are serialised by a file lock and fsynced, so a record that returned is on disk before the
+    caller acts on it. The head (line count, last hash, byte offset) is cached per instance and
+    refreshed only from bytes other writers appended since: an append costs the same at line one
+    million as at line one. Concurrent appenders in one process share fsyncs (group commit): a writer
+    whose bytes an earlier fsync already covered does not fsync again.
+    """
 
     def __init__(self, directory: str | os.PathLike[str], signer: Signer) -> None:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / JOURNAL_FILE
         self.signer = signer
+        self._offset, self._seq, self._head = 0, 0, GENESIS
+        self._synced = 0
+        self._sync_lock = threading.Lock()
+
+    def _refresh(self) -> tuple[int, str]:
+        """Bring the cached head up to the file's current end, reading only the new bytes."""
+        size = self.path.stat().st_size if self.path.exists() else 0
+        if size < self._offset:  # the file was replaced or truncated under us: rescan from the start
+            self._offset, self._seq, self._head = 0, 0, GENESIS
+        if size > self._offset:
+            with self.path.open("rb") as fh:
+                fh.seek(self._offset)
+                for line in fh:
+                    if not line.endswith(b"\n"):
+                        break  # a torn tail from a crashed writer is not a line
+                    self._offset += len(line)
+                    body = line.rstrip(b"\n")
+                    if body.strip():
+                        self._seq = int(_payload(json.loads(body))["predicate"]["seq"])
+                        self._head = _line_hash(body)
+        return self._seq, self._head
 
     def _tail(self) -> tuple[int, str]:
-        if not self.path.exists():
-            return 0, GENESIS
-        last = b""
-        with self.path.open("rb") as fh:
-            for line in fh:
-                if line.strip():
-                    last = line.rstrip(b"\n")
-        if not last:
-            return 0, GENESIS
-        return int(_payload(json.loads(last))["predicate"]["seq"]), _line_hash(last)
+        return self._refresh()
+
+    def _sync(self, fd: int, end: int) -> None:
+        with self._sync_lock:
+            if self._synced >= end:
+                return
+            os.fsync(fd)
+            self._synced = end
 
     def append(self, predicate_type: str, subject_name: str, subject_digest: str,
                predicate: Mapping[str, Any]) -> dict[str, Any]:
-        """Sign and append one statement; returns the envelope written."""
+        """Sign and append one statement; returns the envelope written, durable on return."""
         lock = self.directory / (JOURNAL_FILE + ".lock")
         with lock.open("w") as guard:
             fcntl.flock(guard, fcntl.LOCK_EX)
-            seq, head = self._tail()
+            seq, head = self._refresh()
             body = statement(subject_name, subject_digest, predicate_type,
                              {**dict(predicate), "at": now(), "prev": head, "seq": seq + 1})
             envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
-            line = json.dumps(envelope, sort_keys=True, separators=(",", ":"))
-            with self.path.open("a", encoding="utf-8") as fh:
-                fh.write(line + "\n")
-                fh.flush()
-                os.fsync(fh.fileno())
+            line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+            fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+            try:
+                os.write(fd, line)
+                self._offset += len(line)
+                self._seq, self._head = seq + 1, _line_hash(line.rstrip(b"\n"))
+                end = self._offset
+                fcntl.flock(guard, fcntl.LOCK_UN)  # order is fixed; durability may be shared
+                self._sync(fd, end)
+            finally:
+                os.close(fd)
         return envelope
 
     def statements(self) -> list[dict[str, Any]]:
@@ -87,7 +119,7 @@ class Journal:
 
     def checkpoint(self) -> dict[str, Any]:
         """A signed statement of the line count and head, for an outsider to pin."""
-        seq, head = self._tail()
+        seq, head = self._refresh()
         body = statement("tool-call-journal", head, CHECKPOINT_TYPE, {"at": now(), "count": seq, "head": head})
         return sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
 
@@ -108,21 +140,29 @@ RECONCILED_RETRY = "reconciled_absent_retry"
 def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> None:
     if pred.get("decision") == "allow" and check_authority(pred, trust, problems, where):
         return
-    embedded = pred.get("approvalBinding")
-    if not embedded:
+    bindings = pred.get("approvalBindings") or []
+    if not bindings:
         # An allow with no approval is accepted only as the authority's signed statement that its
         # policy required none for this call; verify_journal counts these apart (policyAllows).
         if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, RECONCILED_RETRY):
             problems.append(f"{where}:allow_without_approval_binding")
         return
-    payload = base64.b64decode(embedded["payloadB64"])
-    if hashlib.sha256(payload).hexdigest() != pred.get("argsSha256"):
-        problems.append(f"{where}:approval_payload_is_not_the_call_arguments")
-    verdict = judge_approval_binding(embedded["record"], payload)
-    if pred.get("decision") == "allow" and verdict["decision"] != "allow":
-        problems.append(f"{where}:recorded_allow_but_reader_says_{verdict['reason']}")
-    if pred.get("decision") == "deny" and verdict["decision"] == "deny" and verdict["reason"] != pred.get("reason"):
-        problems.append(f"{where}:deny_reason_{pred.get('reason')}_but_reader_says_{verdict['reason']}")
+    allowed: set[str] = set()
+    for n, embedded in enumerate(bindings):
+        payload = base64.b64decode(embedded["payloadB64"])
+        if hashlib.sha256(payload).hexdigest() != pred.get("argsSha256"):
+            problems.append(f"{where}:binding_{n}:approval_payload_is_not_the_call_arguments")
+        verdict = judge_approval_binding(embedded["record"], payload)
+        if verdict["decision"] == "allow":
+            allowed.add(str(embedded["record"].get("approval", {}).get("approver")))
+        elif pred.get("decision") == "deny" and verdict["reason"] != pred.get("reason") and len(bindings) == 1:
+            problems.append(f"{where}:deny_reason_{pred.get('reason')}_but_reader_says_{verdict['reason']}")
+    if pred.get("decision") == "allow":
+        threshold = pred.get("threshold")
+        if not isinstance(threshold, int) or threshold < 1:
+            problems.append(f"{where}:allow_without_threshold")
+        elif len(allowed) < threshold:
+            problems.append(f"{where}:recorded_allow_but_reader_allows_{len(allowed)}_of_{threshold}")
 
 
 def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str | None:
@@ -148,10 +188,10 @@ def _check_revocations(pred: dict[str, Any], signer_id: str, trust: Trust, probl
         problems.append(f"{where}:signer_key_revoked")
     if pred.get("permitId") and trust.permit_revoked(str(pred["permitId"]), at):
         problems.append(f"{where}:permit_revoked")
-    approval = ((pred.get("approvalBinding") or {}).get("record") or {}).get("approval") or {}
-    approver_key = approval.get("keyId")
-    if approver_key and trust.key_revoked(str(approver_key), at):
-        problems.append(f"{where}:approver_key_revoked")
+    for embedded in pred.get("approvalBindings") or []:
+        approver_key = ((embedded.get("record") or {}).get("approval") or {}).get("keyId")
+        if approver_key and trust.key_revoked(str(approver_key), at):
+            problems.append(f"{where}:approver_key_revoked")
 
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str,

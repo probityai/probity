@@ -46,8 +46,27 @@ def build_approval_binding(approval: Mapping[str, Any], use: Mapping[str, Any], 
 
 
 def judge_approval_binding(record: Mapping[str, Any], payload: bytes) -> dict[str, str]:
-    """``{"decision": "allow"|"deny", "reason": ...}`` from the published approval-binding reader."""
+    """``{"decision": "allow"|"deny", "reason": ...}`` from the published approval-binding reader.
+
+    Runs the reader's own check list in memory on the record exactly as a JSON reader would load it
+    (a JCS round trip), with no temporary files: the same verdict as ``approvalbinding.verify`` on
+    the record written to disk, at a fraction of the cost on the permit path.
+    """
     from agent_evidence_vectors import approvalbinding  # noqa: PLC0415 - optional at import time
+
+    name = str(record.get("use", {}).get("payloadFile", PAYLOAD_FILE))
+    if "/" in name or name in ("", ".", ".."):
+        return {"decision": "deny", "reason": "payload_file_unsafe"}
+    loaded = json.loads(canonical(dict(record)))
+    failure = approvalbinding._first_failure(loaded, payload, frozenset())  # noqa: SLF001 - the reader itself
+    if failure is not None:
+        return {"decision": approvalbinding.DENY, "reason": failure}
+    return {"decision": approvalbinding.ALLOW, "reason": "bound"}
+
+
+def judge_approval_binding_on_disk(record: Mapping[str, Any], payload: bytes) -> dict[str, str]:
+    """The same verdict through the reader's file entry point, for parity tests and audits."""
+    from agent_evidence_vectors import approvalbinding  # noqa: PLC0415
 
     with tempfile.TemporaryDirectory(prefix="probity-ab-") as tmp:
         path = Path(tmp) / "record.json"
@@ -130,7 +149,8 @@ def embed_approval_binding(record: Mapping[str, Any], payload: bytes) -> dict[st
 
 def tool_call_predicate(*, phase: str, run_id: str, tool_call_id: str, tool: str, args_sha256_hex: str,
                         permit_id: str | None, decision: str | None = None, reason: str | None = None,
-                        approval_binding: Mapping[str, Any] | None = None, outcome: str | None = None,
+                        approval_bindings: list[Mapping[str, Any]] | None = None, threshold: int | None = None,
+                        outcome: str | None = None,
                         result_sha256: str | None = None, uncertain_effect: Mapping[str, Any] | None = None,
                         context: Mapping[str, Any] | None = None,
                         authority: Mapping[str, Any] | None = None,
@@ -139,17 +159,19 @@ def tool_call_predicate(*, phase: str, run_id: str, tool_call_id: str, tool: str
     """The predicate of one tool-call record (the journal adds ``seq``, ``prev`` and ``at``).
 
     ``phase`` is ``authorize`` (a permit decision), ``intent`` (the call is about to leave the
-    worker) or ``effect`` (what came back, as an uncertain_effect/v1 record). ``authority`` is the
-    evidence an allow rests on when it is not a single approval (a grant chain, a quorum, an
-    exception); ``grant_digest`` is the grant the permit names.
+    worker) or ``effect`` (what came back, as an uncertain_effect/v1 record). An allow carries one
+    approval-binding record per approver and the ``threshold`` (M of N) the authority applied, or an
+    ``authority`` object when it rests on a grant chain, a quorum or an exception; ``grant_digest`` is
+    the grant the permit names.
     """
     if phase not in ("authorize", "intent", "effect"):
         raise ValueError("phase must be authorize, intent or effect")
-    return {"approvalBinding": dict(approval_binding) if approval_binding else None,
+    return {"approvalBindings": [dict(b) for b in approval_bindings or []],
             "authority": dict(authority) if authority else None, "exceptionDigest": exception_digest, "grantDigest": grant_digest,
             "argsSha256": args_sha256_hex, "context": dict(context or {}), "decision": decision,
             "outcome": outcome, "permitId": permit_id, "phase": phase, "reason": reason,
-            "resultSha256": result_sha256, "runId": run_id, "tool": tool, "toolCallId": tool_call_id,
+            "resultSha256": result_sha256, "runId": run_id, "threshold": threshold, "tool": tool,
+            "toolCallId": tool_call_id,
             "uncertainEffect": dict(uncertain_effect) if uncertain_effect else None}
 
 
