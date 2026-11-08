@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "agent-evidence-verify",
-      "project.version": "0.6.0",
+      "project.version": "0.5.1",
       "project.requires-python": ">=3.12",
       "project.dependencies": [
         "cryptography>=50.0.2,<51",
