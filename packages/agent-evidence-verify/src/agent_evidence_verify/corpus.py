@@ -6,12 +6,13 @@ agent-evidence-vectors publishes as ``vectors/verdict-line.schema.json``
 (schema identifier below). Several verifiers' lines over the same corpora are
 compared member by member by that package's checker.
 
-Two suites are answered here by this package's own implementations:
+Three suites are answered here by this package's own implementations:
 
 * ``adversarial-execution-evidence-conformance``, by ``execution_evidence.verify``
   with no consumer key policy (validity, the result token, and the first code);
 * ``uncertain-effect/v1``, by the uncertain-effect adapter's domain checks and
-  ordered checks.
+  ordered checks;
+* ``approval-binding/v1``, by the approval-binding adapter's ordered checks.
 
 Every member of any other suite is answered ``not-applicable``, member by member,
 so the output always covers the whole manifest and never reads as a pass.
@@ -27,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from . import execution_evidence as aee
-from .adapters import uncertain_effect
+from .adapters import approval_binding, uncertain_effect
 from .json_input import parse_json
 
 SCHEMA_ID = "https://probityai.github.io/agent-evidence-vectors/schema/verdict-line/v1"
@@ -64,6 +65,9 @@ def _answer(suite: str, root: Path, entry: dict[str, Any]) -> tuple[str, str | N
     if suite == UNCERTAIN_SUITE:
         verdict, reason = _uncertain(root / entry["path"] / "record.json")
         return verdict, reason, None
+    if suite == approval_binding.SUITE:
+        decision, reason = approval_binding.judge(root / entry["path"] / "record.json")
+        return ("accept" if decision == approval_binding.ALLOW else "reject"), reason, None
     return "not-applicable", "suite-not-implemented", None
 
 
