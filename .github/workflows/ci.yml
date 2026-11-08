@@ -1,20 +1,34 @@
 name: ci
 
-# One entry point for every pull request and every push to main. The changes
-# job asks scripts/workspace.py which members a change touches; each member's
-# checks run only when needed, and the `ci-ok` job is the one required check.
+# The one workflow of this repository for pull requests, the merge queue and pushes to main.
+# `changes` asks scripts/ci_select.py which jobs the change needs (scripts/ci_jobs.toml holds the
+# path table); every job runs only when selected, and `ci-ok` is the one required check.
+#
+#   pull_request   fast tier: the jobs the change touches, cancelled when a newer push replaces it
+#   merge_group    full tier, once per batch: the same selection over the batch, plus the "full" jobs
+#   push (main)    the same selection over the pushed range
+#   schedule       the weekly Haystack consumer check only
+#
+# Not folded in, because each needs its own trigger, permissions or environment: release.yml and
+# the called registry publisher, the post-release registry checks and badge refreshes, pin-refresh,
+# scorecard, the scheduled family-resolves and version-pins registry checks, the experiment runners
+# that start on a run/* branch, and the manual local-model inference runs.
 
 on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    - cron: '29 5 * * 0'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -25,6 +39,7 @@ jobs:
       rust: ${{ steps.map.outputs.rust }}
       runner: ${{ steps.map.outputs.runner }}
       plugins: ${{ steps.map.outputs.plugins }}
+      jobs: ${{ steps.map.outputs.jobs }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,32 +48,10 @@ jobs:
       - id: map
         env:
           EVENT: ${{ github.event_name }}
-          BASE: ${{ github.event.pull_request.base.sha }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: |
           set -euo pipefail
-          if [ "$EVENT" = "pull_request" ]; then
-            members="$(python3 scripts/workspace.py changes "$BASE" HEAD)"
-            rust=false
-            if git diff --name-only "$BASE...HEAD" | grep -qE '^(crates/|Cargo\.(toml|lock)$|\.github/)'; then rust=true; fi
-            runner=false
-            if git diff --name-only "$BASE...HEAD" | grep -qE '^(examples/checkout-runner/|\.github/workflows/ci\.yml$)'; then runner=true; fi
-            # The plugins are a harness, not a workspace member: their files decide alone.
-            plugins=false
-            if git diff --name-only "$BASE...HEAD" | grep -qE '^(harnesses/agent-evidence-plugins/|\.claude-plugin/|\.github/workflows/(ci|package-agent-evidence-plugins)\.yml$)'; then plugins=true; fi
-          else
-            # A push to main or a manual run checks everything.
-            members="$(python3 scripts/workspace.py changes HEAD HEAD | python3 -c 'import json,sys; print(json.dumps({k: True for k in json.load(sys.stdin)}))')"
-            rust=true
-            runner=true
-            plugins=true
-          fi
-          {
-            echo "members=$members"
-            echo "rust=$rust"
-            echo "runner=$runner"
-            echo "plugins=$plugins"
-          } >> "$GITHUB_OUTPUT"
-          echo "members: $members, rust: $rust, runner: $runner"
+          python3 scripts/ci_select.py "$EVENT" "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
 
   lint:
     runs-on: ubuntu-24.04
@@ -87,10 +80,193 @@ jobs:
           python3 scripts/readme-image-check.py README.md packages/*/README.md harnesses/*/README.md
           python3 scripts/readme-package-owner-lint.py README.md
 
-  agent-evidence-verify:
-    needs: changes
-    if: fromJSON(needs.changes.outputs.members)['agent-evidence-verify']
-    uses: ./.github/workflows/agent-evidence-verify.yml
+  agent-evidence-verify-conformance:
+    name: "agent-evidence-verify / conformance"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-verify'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-verify
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv sync --frozen --extra test
+      - run: uv run --frozen --extra test pytest
+      - run: uv run --frozen python scripts/build-recipes.py --check
+      - run: uv run --frozen python scripts/build-release-manifest.py --check
+      - run: uv run --frozen --extra test pytest tests/test_release_pins.py
+        env:
+          PROBITY_VERIFY_ONLINE: '1'
+      - run: uv run --frozen python examples/spend-reservation/generate.py --check
+      - run: uv run --frozen python examples/event-absence-v2/generate.py --check
+      - run: uv run --frozen python examples/brokered-file-write/generate.py --check
+      - run: uv run --frozen python examples/customer-support-action/generate.py --check
+      - run: uv run --frozen python examples/done-receipt/generate.py --check
+      - run: uv run --frozen --extra test python vectors-source-coverage/check_vectors.py --verifier 'agent-evidence-verify'
+      - run: uv run --frozen --extra test python vectors-operand-lineage/check_vectors.py --verifier 'agent-evidence-verify'
+      - run: uv run --frozen --extra test python vectors-done-checks/gen_vectors.py --check
+      - run: uv run --frozen --extra test python vectors-done-checks/check_vectors.py --verifier 'agent-evidence-verify'
+
+  # EXTERNAL witness scope is earned only from a witness co-signature, checked by
+  # agent-evidence-observer's witness module. That module needs the jcs-admit
+  # binding, whose distribution name (probityai) is also this workspace's probity
+  # command, so it runs in its own environment pinned by requirements-witness.txt.
+
+  agent-evidence-verify-witness-scope:
+    name: "agent-evidence-verify / witness-scope"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-verify'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-verify
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: '3.12'
+      - name: build the witness environment from its lock
+        run: |
+          uv venv --python 3.12 .build/witness
+          uv pip install --python .build/witness/bin/python -r requirements-witness.txt
+          uv pip install --python .build/witness/bin/python --no-deps .
+      - name: the lock is the compiled input
+        run: scripts/check-lock-current.sh requirements-witness.in requirements-witness.txt 3.12 .build
+      - run: .build/witness/bin/python -m pytest -q tests/witness_bundles.py tests/test_witnessed_scope.py
+      - run: .build/witness/bin/python scripts/mutation-check-done.py
+
+  agent-evidence-verify-a2a-transport:
+    name: "agent-evidence-verify / a2a-transport"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-verify'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-verify
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.12', '3.13']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --frozen --extra test --extra a2a
+      - run: uv run --frozen --extra test --extra a2a pytest
+
+  # Replays the source-coverage corpus shipped in the pinned agent-evidence-vectors
+  # package from PyPI against this checkout's verifier, the way any other verifier
+  # author would. A drift between the vendored and the published corpus is red here.
+
+  agent-evidence-verify-published-vectors:
+    name: "agent-evidence-verify / published-vectors"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-verify'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: '3.12'
+      - name: install this checkout's verifier into its own environment
+        run: |
+          uv venv --python 3.12 .build/verifier
+          uv pip install --python .build/verifier/bin/python .
+          .build/verifier/bin/agent-evidence-verify --help > /dev/null
+      - name: replay the published source-coverage corpus
+        run: >-
+          uv run --no-project --python 3.13
+          --with agent-evidence-vectors==0.18.1
+          agent-evidence-vectors
+          --corpus vectors-source-coverage
+          --verifier "$PWD/.build/verifier/bin/agent-evidence-verify"
+          --report .build/source-coverage-report.json
+      - name: the verifier answered every vector and none disagreed
+        run: |
+          python3 - <<'PYCODE'
+          import json
+          report = json.load(open(".build/source-coverage-report.json"))
+          totals = report["totals"]
+          executed = report["verifier"]["vectorsExecuted"]
+          print(f"rail {report['rail']}: {executed} of {totals['vectors']} executed, {totals['fail']} failed")
+          assert report["rail"] == "external", report["rail"]
+          assert executed == totals["vectors"] > 0, (executed, totals)
+          assert totals["fail"] == 0 and totals["suiteRefusals"] == 0, totals
+          PYCODE
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: source-coverage-report
+          if-no-files-found: error
+          path: packages/agent-evidence-verify/.build/source-coverage-report.json
+
+  # Replays the retained brokered-file-write capture (real hard exits, retained
+  # reports, policies and decisions) through a separately installed Verify CLI.
+  # The producing run is operated by the operator's runtime; nothing is produced here.
+
+  agent-evidence-verify-brokered-file-write:
+    name: "agent-evidence-verify / brokered-file-write"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-verify'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-verify
+    runs-on: ubuntu-24.04
+    env:
+      B: ${{ github.workspace }}/packages/agent-evidence-verify/.build/brokered-file-write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: '3.12'
+      - name: build and install the consumer environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv build --wheel --out-dir "$B/wheels"
+          uv venv --python 3.12 "$B/consumer"
+          uv pip install --python "$B/consumer/bin/python" "$B"/wheels/*.whl
+          uv pip freeze --python "$B/consumer/bin/python" > "$B/consumer-dependencies.txt"
+          "$B/consumer/bin/python" -I -c 'import importlib.util; assert importlib.util.find_spec("probity_observer") is None'
+      - name: replay the retained capture through the installed reader
+        run: >-
+          "$B/consumer/bin/python" -I
+          scripts/check-brokered-file-write.py
+          --verifier "$B/consumer/bin/agent-evidence-verify"
+          --output "$B/replay"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: brokered-file-write-retained-replay
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            ${{ env.B }}/replay
+            ${{ env.B }}/consumer-dependencies.txt
+
+  agent-evidence-verify-distribution:
+    name: "agent-evidence-verify / distribution"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-verify'] }}
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: agent-evidence-verify
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
@@ -158,10 +334,277 @@ jobs:
             cargo test --workspace --locked
           fi
 
-  package-ratchet:
-    needs: changes
-    if: fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases']
-    uses: ./.github/workflows/package-ratchet.yml
+  package-ratchet-lint:
+    name: "package-ratchet / lint"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases'] }}
+    defaults:
+      run:
+        working-directory: packages/probity-ratchet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      UV_PYTHON: "3.14"
+      UV_LOCKED: "1"
+      # Job-scoped: the other jobs need the package editable, because the pinned decision key is found
+      # relative to the source tree (ratchet.verify.keys.DEFAULT_KEY_PATH) and a site-packages install has none.
+      UV_NO_EDITABLE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      # Non-editable (UV_NO_EDITABLE above): agent-evidence-verify's editable install is an import hook mypy cannot follow.
+      - run: uv sync --all-groups --all-extras
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run mypy src
+      # agentdojo and tau2 are installed only by the cases-agentdojo and cases-tau2 jobs below, which test against them.
+      - run: uv run mypy --config-file ../probity-ratchet-cases/pyproject.toml --ignore-missing-imports ../probity-ratchet-cases/src
+      - run: python3 scripts/readme-lint.py README.md
+      - run: python3 scripts/readme-lint.py ../probity-ratchet-cases/README.md
+      # check-docs imports ratchet_cases to count the case families, so it runs inside the synced virtualenv
+      - run: uv run python scripts/check-docs.py
+
+  # The signed v3 refusal example: offline verification of the pinned results file, so the example cannot rot.
+
+  package-ratchet-refusal-example:
+    name: "package-ratchet / refusal-example"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases'] }}
+    defaults:
+      run:
+        working-directory: packages/probity-ratchet
+    env:
+      UV_PYTHON: "3.14"
+      UV_LOCKED: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uv sync
+      - run: uv run python examples/refusal-v3-cell/verify.py | tee refusal.out
+      - run: |
+          grep -qx 'decision verified, candidate refused, reason: identity controls breached' refusal.out
+
+  # The case suite on its own: built as a wheel and tested from a clean environment on the oldest and a
+  # current supported Python, so nothing in the root workspace can hide a missing file or dependency.
+
+  package-ratchet-cases:
+    name: "package-ratchet / cases"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases'] }}
+    defaults:
+      run:
+        working-directory: packages/probity-ratchet
+    env:
+      UV_PYTHON: "3.14"
+      UV_LOCKED: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # No cache: the job installs one wheel and pytest, and two matrix legs saving one cache key race.
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: false
+      - run: uv build --package probity-ratchet-cases --out-dir dist
+      - name: install the wheel alone
+        run: |
+          uv venv --no-project --python "${{ matrix.python }}" "$RUNNER_TEMP/cases"
+          uv pip install --python "$RUNNER_TEMP/cases/bin/python" dist/probity_ratchet_cases-*.whl pytest==9.1.1
+      - name: selftest, and the shipped digest equals the one DIGESTS.json records
+        run: |
+          "$RUNNER_TEMP/cases/bin/ratchet-cases" selftest
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' ../probity-ratchet-cases/src/ratchet_cases/__init__.py)
+          want="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' ../probity-ratchet-cases/src/ratchet_cases/cases/DIGESTS.json "$version")"
+          test "$("$RUNNER_TEMP/cases/bin/ratchet-cases" digest)" = "$want"
+      - name: pytest against the installed wheel
+        working-directory: packages/probity-ratchet-cases
+        run: '"$RUNNER_TEMP/cases/bin/python" -m pytest -q -W error -p no:cacheprovider'
+
+  # The AgentDojo benign-twin suite against the AgentDojo release it pins, from the installed wheel and its
+  # extra: every twin solvable by its ground truth, failed by a refuse-everything pipeline and by the paired
+  # attack, and accepted by AgentDojo's own check_suites. No model, no key.
+
+  package-ratchet-cases-agentdojo:
+    name: "package-ratchet / cases-agentdojo"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases'] }}
+    defaults:
+      run:
+        working-directory: packages/probity-ratchet
+    env:
+      UV_PYTHON: "3.14"
+      UV_LOCKED: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: false
+      - run: uv build --package probity-ratchet-cases --out-dir dist
+      - name: install the wheel with the agentdojo extra
+        run: |
+          uv venv --no-project --python "${{ matrix.python }}" "$RUNNER_TEMP/twins"
+          wheel="$(ls dist/probity_ratchet_cases-*.whl)"
+          # google-genai is agentdojo's unpinned transitive dependency. 3.0.0 (6 Nov 2026) ships an invalid
+          # escape sequence in types.py, which -W error turns into a collection failure, so the job installs the
+          # release uv.lock resolves.
+          uv pip install --python "$RUNNER_TEMP/twins/bin/python" "${wheel}[agentdojo]" google-genai==2.34.0 pytest==9.1.1
+      - name: pytest the twins against the installed wheel
+        working-directory: packages/probity-ratchet-cases
+        run: '"$RUNNER_TEMP/twins/bin/python" -m pytest -q -W error -p no:cacheprovider tests_agentdojo'
+
+  # retail_faults against tau2-bench itself. tau2-bench is not on PyPI under its own name (the PyPI project
+  # "tau2" is an unrelated package), so it is installed from its repository at the commit this job pins,
+  # with that commit's retail data. websockets is installed beside it because importing tau2 needs it while
+  # tau2 declares it only in its voice extra.
+
+  package-ratchet-cases-tau2:
+    name: "package-ratchet / cases-tau2"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases'] }}
+    defaults:
+      run:
+        working-directory: packages/probity-ratchet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      UV_PYTHON: "3.14"
+      UV_LOCKED: "1"
+      TAU2_COMMIT: 4ce7c0397c1eb65c9bbe59aeacfe1ca44a1cd699
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: false
+      - name: fetch tau2-bench code and retail data at the pinned commit
+        run: |
+          d="$RUNNER_TEMP/tau2-bench"
+          git init -q "$d"
+          git -C "$d" remote add origin https://github.com/sierra-research/tau2-bench
+          git -C "$d" sparse-checkout set --no-cone '/*' '!/data/' '/data/tau2/domains/retail/' \
+            '!/data/tau2/domains/retail/task_issues/' '!/data/tau2/domains/retail/tasks_voice.json' \
+            '!/data/tau2/domains/retail/audio_difficulty.json'
+          git -C "$d" fetch -q --depth 1 --filter=blob:none origin "$TAU2_COMMIT"
+          git -C "$d" checkout -q FETCH_HEAD
+          test "$(git -C "$d" rev-parse HEAD)" = "$TAU2_COMMIT"
+          echo "TAU2_DATA_DIR=$d/data" >> "$GITHUB_ENV"
+      - run: uv build --package probity-ratchet-cases --out-dir dist
+      - name: install the wheel beside tau2-bench
+        run: |
+          uv venv --no-project --python 3.12 "$RUNNER_TEMP/t2"
+          uv pip install --python "$RUNNER_TEMP/t2/bin/python" "$RUNNER_TEMP/tau2-bench" websockets==15.0.1 \
+            dist/probity_ratchet_cases-*.whl pytest==9.1.1
+      # tau2-bench imports the standard library's audioop, deprecated since Python 3.11, from its voice
+      # utilities at import time. That one warning comes from tau2-bench and is ignored by its exact text;
+      # every other warning still fails the job.
+      - name: faulted retail tasks, graded on the live databases
+        working-directory: packages/probity-ratchet-cases
+        run: >-
+          "$RUNNER_TEMP/t2/bin/python" -m pytest -q -p no:cacheprovider tests_tau2
+          -W error -W "ignore:'audioop' is deprecated and slated for removal in Python 3.13:DeprecationWarning"
+
+  package-ratchet-test:
+    name: "package-ratchet / test"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases'] }}
+    defaults:
+      run:
+        working-directory: packages/probity-ratchet
+    env:
+      UV_PYTHON: "3.14"
+      UV_LOCKED: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      # Same image, credentials and port mapping as docker/compose.yaml; the "image tag matches compose" step fails the
+      # job if the two drift apart.
+      atlas:
+        image: mongodb/mongodb-atlas-local:8.3.9-20260928T091948Z
+        env:
+          MONGODB_INITDB_ROOT_USERNAME: ratchet
+          MONGODB_INITDB_ROOT_PASSWORD: ratchet-local-dev
+        ports:
+          - 127.0.0.1:27018:27017
+        options: >-
+          --hostname ratchet-atlas
+          --ulimit nofile=1048576:1048576
+          --health-cmd "mongosh -u ratchet -p ratchet-local-dev --quiet --eval 1"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 30
+          --health-start-period 20s
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: image tag matches compose
+        run: |
+          want=$(sed -n 's/^ *image: *//p' docker/compose.yaml | head -1)
+          have=$(sed -n 's/^ *image: *\(mongodb\/mongodb-atlas-local:[^ ]*\).*$/\1/p' ../../.github/workflows/package-ratchet.yml | head -1)
+          echo "compose: $want  workflow: $have"
+          test -n "$want" && test "$want" = "$have"
+      - name: wait until mongot answers search-index calls
+        run: |
+          id=$(docker ps --filter ancestor="$(sed -n 's/^ *image: *//p' docker/compose.yaml | head -1)" --format '{{.ID}}' | head -1)
+          test -n "$id"
+          for i in $(seq 1 90); do
+            if docker exec "$id" mongosh -u ratchet -p ratchet-local-dev --quiet --eval "db.getSiblingDB('healthprobe').nothing.aggregate([{\$listSearchIndexes:{}}]).toArray().length" >/dev/null 2>&1; then
+              echo "search ready after $((i * 5)) s"; exit 0
+            fi
+            sleep 5
+          done
+          docker logs --tail 50 "$id"
+          exit 1
+      - run: uv sync --all-groups --all-extras
+      # Default selection: sandbox tests (hackathon cluster secrets) and live tests (VOYAGE_API_KEY) are deselected.
+      - name: pytest
+        run: >-
+          uv run --with pytest-timeout python -m pytest -q -W error --timeout=120 -rfEs --tb=short
+          -m "not sandbox and not live and not records"
+          --cov=src/ratchet --cov-report=term-missing:skip-covered
+
+  package-ratchet-demo-image:
+    name: "package-ratchet / demo-image (${{ matrix.arch }})"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-ratchet'] || fromJSON(needs.changes.outputs.members)['probity-ratchet-cases'] }}
+    defaults:
+      run:
+        working-directory: packages/probity-ratchet
+    env:
+      UV_PYTHON: "3.14"
+      UV_LOCKED: "1"
+    # The no-build demo: build the image, then run the reviewer sequence in a fresh container with no network
+    # and no host mount, on x86-64 and on arm64 (the image runs on Apple-silicon hosts and arm64 servers).
+    # The image is built here only; it is never pushed.
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: build the demo image
+        working-directory: .
+        run: docker build -f packages/probity-ratchet/docker/demo.Dockerfile -t ratchet-demo:ci .
+      - name: run the reviewer sequence
+        run: docker/demo/check.sh ratchet-demo:ci
+      - name: image size
+        run: docker image ls ratchet-demo:ci
 
   observer-distribution:
     needs: changes
@@ -172,10 +615,114 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
-  package-agent-evidence-mcp:
-    needs: changes
-    if: fromJSON(needs.changes.outputs.members)['agent-evidence-mcp']
-    uses: ./.github/workflows/package-agent-evidence-mcp.yml
+  package-agent-evidence-mcp-tests:
+    name: "package-agent-evidence-mcp / tests"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-mcp'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-mcp
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: install the pinned dependencies
+        run: |
+          uv venv --python ${{ matrix.python }}
+          uv pip install -e ".[test]"
+      - name: tests (real MCP client, real corpus, no mocks)
+        run: .venv/bin/python -m pytest -q
+      - name: every mutation of a tool output is caught by the tests
+        if: matrix.python == '3.12'
+        run: .venv/bin/python scripts/mutation_check.py
+      - name: the server answers over stdio from the built wheel
+        run: |
+          uv build --out-dir dist
+          uv venv --python ${{ matrix.python }} "$RUNNER_TEMP/wheel-venv"
+          uv pip install --python "$RUNNER_TEMP/wheel-venv/bin/python" dist/*.whl
+          "$RUNNER_TEMP/wheel-venv/bin/python" scripts/wheel_smoke.py "$RUNNER_TEMP/wheel-venv/bin/agent-evidence-mcp"
+
+  package-agent-evidence-mcp-family:
+    name: "package-agent-evidence-mcp / family"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-mcp'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-mcp
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: the declared ranges install beside the latest family releases
+        run: |
+          uv venv --python 3.12
+          uv pip install -e . agent-evidence-vectors agent-evidence-vocabulary agent-evidence-admission agent-evidence-verify jcs-admit
+          uv pip check
+
+  package-agent-evidence-mcp-image:
+    name: "package-agent-evidence-mcp / image"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-mcp'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-mcp
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: the container image builds and answers over stdio
+        run: |
+          docker build -t agent-evidence-mcp:ci .
+          docker inspect agent-evidence-mcp:ci --format '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}' | grep -qx 'io.github.probityai/agent-evidence-mcp'
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: a real MCP client gets the contradicted sample from the image
+        run: |
+          uv venv --python 3.12 "$RUNNER_TEMP/client-venv"
+          uv pip install --python "$RUNNER_TEMP/client-venv/bin/python" "mcp==2.3.0"
+          "$RUNNER_TEMP/client-venv/bin/python" scripts/wheel_smoke.py docker run --rm -i agent-evidence-mcp:ci
+
+  package-agent-evidence-mcp-hygiene:
+    name: "package-agent-evidence-mcp / hygiene"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-mcp'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: fetch the version-pins script at its pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: probityai/.github
+          ref: ecb47052aa3ae8188c74f3cdc31eb8f4e9402811
+          path: .github-scripts
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: every version a page names equals its manifest or the family lock
+        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config packages/agent-evidence-mcp/version-pins.toml
+      - name: manifests parse
+        working-directory: packages/agent-evidence-mcp
+        run: |
+          for f in server.json .mcp.json .claude-plugin/plugin.json .cursor-plugin/plugin.json ../../.cursor-plugin/marketplace.json; do python3 -m json.tool "$f" > /dev/null; done
+          python3 -m json.tool ../../gemini-extension.json > /dev/null
 
   agent-evidence-mcp-distribution:
     needs: changes
@@ -186,15 +733,102 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
-  package-agent-evidence-plugins:
-    needs: changes
-    if: needs.changes.outputs.plugins == 'true'
-    uses: ./.github/workflows/package-agent-evidence-plugins.yml
+  package-agent-evidence-plugins-tests:
+    name: "package-agent-evidence-plugins / tests"
+    needs: [changes]
+    if: ${{ needs.changes.outputs.plugins == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: harnesses/agent-evidence-plugins
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install the pinned verifier and the test runner
+        run: python -m pip install "agent-evidence-verify==0.5.1" "pytest>=8,<10"
+      - name: Tests
+        run: python -m pytest -q
 
-  package-agent-evidence-replay:
-    needs: changes
-    if: fromJSON(needs.changes.outputs.members)['agent-evidence-replay']
-    uses: ./.github/workflows/package-agent-evidence-replay.yml
+  package-agent-evidence-plugins-hygiene:
+    name: "package-agent-evidence-plugins / hygiene"
+    needs: [changes]
+    if: ${{ needs.changes.outputs.plugins == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: fetch the version-pins script at its pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: probityai/.github
+          ref: ecb47052aa3ae8188c74f3cdc31eb8f4e9402811
+          path: .github-scripts
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: every version a page names equals its manifest or the family lock
+        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config harnesses/agent-evidence-plugins/version-pins.toml
+      - name: manifests parse
+        run: |
+          for f in .claude-plugin/marketplace.json harnesses/agent-evidence-plugins/plugins/verdict-bundle-gate/.claude-plugin/plugin.json harnesses/agent-evidence-plugins/plugins/verdict-bundle-gate/hooks/hooks.json harnesses/agent-evidence-plugins/cursor/hooks.json; do python3 -m json.tool "$f" > /dev/null; done
+
+  package-agent-evidence-replay-tests:
+    name: "package-agent-evidence-replay / tests"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-replay'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-replay
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install ".[test]"
+      - name: Tests
+        run: python -m pytest -q
+      - name: README example runs as written
+        run: |
+          agent-evidence-replay verify tests/fixtures/accept-3
+          if agent-evidence-replay verify tests/fixtures/gap-2 --pin tests/fixtures/accept-3/pin.json; then
+            echo "the gap fixture replayed intact"; exit 1
+          fi
+
+  package-agent-evidence-replay-hygiene:
+    name: "package-agent-evidence-replay / hygiene"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-replay'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: fetch the version-pins script at its pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: probityai/.github
+          ref: ecb47052aa3ae8188c74f3cdc31eb8f4e9402811
+          path: .github-scripts
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: every version a page names equals its manifest or the family lock
+        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config packages/agent-evidence-replay/version-pins.toml
 
   agent-evidence-replay-distribution:
     needs: changes
@@ -205,10 +839,27 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
-  package-probity-effects:
-    needs: changes
-    if: fromJSON(needs.changes.outputs.members)['probity-effects']
-    uses: ./.github/workflows/package-probity-effects.yml
+  package-probity-effects-tests:
+    name: "package-probity-effects / tests"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['probity-effects'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python: ['3.11', '3.14']
+    defaults:
+      run:
+        working-directory: packages/probity-effects
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --frozen
+      - run: uv run --frozen python -m pytest
 
   probity-effects-distribution:
     needs: changes
@@ -219,9 +870,2541 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
+  observer-a2a-history-boundary:
+    name: "Native A2A caller and history boundary"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-a2a-history-boundary'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: a2aproject/a2a-python
+          ref: 52030cf43f2e96d25949952e385e3b73fe93bc2a
+          fetch-depth: 0
+          path: packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/native-sdk
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install source-lock dependencies and exact native SDK
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r native-requirements.lock -r test-requirements.lock --report install-report.json
+          python -m pip install --no-deps --no-build-isolation -e native-sdk
+          python -m pip check
+      - name: Start loopback-only bounded actual MySQL
+        run: |
+          docker run --detach --name probity-a2a-history --memory 512m --cpus 1 --pids-limit 128 --publish 127.0.0.1::3306 --env MYSQL_ALLOW_EMPTY_PASSWORD=yes --env MYSQL_DATABASE=probity_fixture --env MYSQL_USER=fixture --env MYSQL_PASSWORD=fixture-only-public public.ecr.aws/docker/library/mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b --innodb-buffer-pool-size=64M --performance-schema=OFF --max-connections=20 > container-id.txt
+          for _ in $(seq 1 30); do
+            if docker exec probity-a2a-history mysql --protocol=TCP --host=127.0.0.1 --user=fixture --password=fixture-only-public --database=probity_fixture --batch --skip-column-names -e 'SELECT VERSION(), @@port, 1'; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Verify semantic refusal controls
+        run: |
+          python -m ruff check --isolated boundary_common.py boundary_native.py boundary_run.py boundary_reader.py host_gate.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' boundary_common.py boundary_native.py boundary_run.py boundary_reader.py host_gate.py tests
+          python -m pytest -q tests --junitxml=test-results.xml
+      - name: Execute selected 20 real MySQL caller/history exercises
+        run: |
+          port=$(docker port probity-a2a-history 3306/tcp | cut -d: -f2)
+          PROBITY_FIXTURE_MYSQL_DSN="mysql+aiomysql://fixture:fixture-only-public@127.0.0.1:${port}/probity_fixture" timeout --signal=TERM --kill-after=5s 125s python boundary_run.py --sdk-source native-sdk --mysql-container probity-a2a-history --output fresh-run > native.stdout 2> native.stderr
+      - name: Build and install actual offline reader distribution
+        run: |
+          python -m pip wheel --no-deps --no-build-isolation --wheel-dir wheels .
+          sha256sum wheels/*.whl > wheels-sha256.txt
+          python -m venv "$RUNNER_TEMP/a2a-history-reader"
+          "$RUNNER_TEMP/a2a-history-reader/bin/python" -m pip install --require-hashes --only-binary=:all: -r reader-requirements.lock --report reader-install-report.json
+          "$RUNNER_TEMP/a2a-history-reader/bin/python" -m pip install --no-deps wheels/*.whl
+          "$RUNNER_TEMP/a2a-history-reader/bin/python" -m pip check
+          "$RUNNER_TEMP/a2a-history-reader/bin/python" - <<'PY'
+          import importlib.util
+          assert all(importlib.util.find_spec(n) is None for n in ['a2a', 'sqlalchemy', 'httpx', 'starlette'])
+          PY
+      - name: Retain host-selected installed-reader publication decision
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          raw = Path('fresh-run-pins.json').read_bytes()
+          Path('host-policy.json').write_text(json.dumps({'profile': 'probity-a2a-native-history-boundary-v1', 'pinsSha256': hashlib.sha256(raw).hexdigest(), 'plannedAttempts': 20}))
+          PY
+          python host_gate.py fresh-run --pins-file fresh-run-pins.json --policy-file host-policy.json --policy-sha256 "$(sha256sum host-policy.json | cut -d' ' -f1)" --reader "$RUNNER_TEMP/a2a-history-reader/bin/probity-read-a2a-history" --output host-receipts > host-decision.json
+      - name: Retain native database logs
+        if: always()
+        run: docker logs probity-a2a-history > mysql.stdout 2> mysql.stderr || true
+      - name: Retain complete public population and installation receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: a2a-history-${{ github.sha }}
+          path: |
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/fresh-run/
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/fresh-run-pins.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/host-receipts/
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/host-decision.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/native.stdout
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/native.stderr
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/mysql.stdout
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/mysql.stderr
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/install-report.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/reader-install-report.json
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/wheels/
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/wheels-sha256.txt
+            packages/agent-evidence-observer/interop/a2a-history-boundary-2026-10-02/test-results.xml
+          if-no-files-found: error
+          retention-days: 90
+      - name: Stop owned database container
+        if: always()
+        run: docker rm --force probity-a2a-history || true
+
+  observer-a2a-native:
+    name: "Native A2A SDK exchange"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-a2a-native'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install pinned SDK profile
+        run: python -m pip install -e 'interop/a2a-native-2026-10-02[test]'
+      - name: Check native execution and changed-envelope controls
+        run: python -m pytest -q interop/a2a-native-2026-10-02/tests --junitxml=a2a-results.xml
+      - name: Retain actual SDK client and server exchange
+        run: python interop/a2a-native-2026-10-02/a2a_demo.py a2a-native-run
+      - name: Recompute retained packet in a separate reader invocation
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys
+          from pathlib import Path
+          result = json.loads(Path('a2a-native-run/report.json').read_text())
+          subprocess.run([sys.executable, 'interop/a2a-native-2026-10-02/a2a_verify.py', 'a2a-native-run', '--native-pins', 'a2a-native-run/selected-native-pins.json', '--plan-sha256', result['plan_sha256'], '--history-sha256', result['history_sha256']], check=True)
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: native-a2a-sdk-reference
+          path: |
+            packages/agent-evidence-observer/a2a-native-run/
+            packages/agent-evidence-observer/a2a-results.xml
+          if-no-files-found: error
+
+  observer-adk-a2a-failed-task:
+    name: "Native ADK A2A failed-task installed consumer"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-adk-a2a-failed-task'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12.14'
+      - name: Install the public observer and the reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-a2a-failed-task-2026-10-03"
+          python -m venv "$RUNNER_TEMP/reader"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$profile"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+      - name: Check the retained record with public code only
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-a2a-failed-task-2026-10-03"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py"
+      - name: Run the reader fault controls over the retained packets
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-a2a-failed-task-2026-10-03"
+          for variant in baseline proposed-fix; do
+            ADK_FAILURE_VARIANT="$variant" "$RUNNER_TEMP/reader/bin/python" -I -B -m pytest -c /dev/null "$profile/test_native.py" --import-mode=importlib -q -p no:cacheprovider
+          done
+
+  observer-adk-current-consumer-retained-consumer:
+    name: "Current ADK installed publication consumer / Retained installed-consumer packet"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-adk-current-consumer'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Build the reader wheels from this repository and install the reader environment
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03"
+          python -m venv "$RUNNER_TEMP/adk-build"
+          "$RUNNER_TEMP/adk-build/bin/python" -m pip install --no-compile --require-hashes -r "$profile/build.lock"
+          env -u PYTHONDONTWRITEBYTECODE "$RUNNER_TEMP/adk-build/bin/python" -m pip wheel --no-deps --no-build-isolation "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-ticket-2026-10-02" --wheel-dir "$RUNNER_TEMP/adk-wheels"
+          python -m venv "$RUNNER_TEMP/adk-reader"
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock" -r "$profile/requirements-test-reader.lock"
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP"/adk-wheels/agent_evidence_observer-*.whl "$RUNNER_TEMP"/adk-wheels/probity_adk_reference-*.whl
+      - name: Replay the retained packet with the public reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03"
+          "$RUNNER_TEMP/adk-reader/bin/python" -I -B "$profile/verify_retained.py"
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$RUNNER_TEMP/adk-reader/bin/python" -I -B -m pytest -c /dev/null -o "cache_dir=$RUNNER_TEMP/adk-pytest-cache" "$profile/test_publish_reference.py" "$profile/test_native_current.py" -q --junitxml="$RUNNER_TEMP/adk-results.xml"
+      - name: Publish the retained packet through the installed gate
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03"
+          run="$profile/retained/fresh-current-run"
+          policy_sha="$(sha256sum "$run/host-policy.json" | cut -d ' ' -f 1)"
+          "$RUNNER_TEMP/adk-reader/bin/python" -I -B "$profile/publish_reference.py" "$run/packet" --policy "$run/host-policy.json" --policy-sha256 "$policy_sha" --python "$RUNNER_TEMP/adk-reader/bin/python" --reader "$RUNNER_TEMP/adk-reader/bin/probity-adk-read" --withheld-sources "$profile/retained/WITHHELD-SOURCES.json" --output "$RUNNER_TEMP/adk-publication"
+          cmp "$RUNNER_TEMP/adk-publication/publication-receipt.json" "$run/publication/publication-receipt.json"
+
+  observer-adk-current-consumer-upstream-full-tox:
+    name: "Current ADK installed publication consumer / Patched ADK full tox (${{ matrix.tox }})"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-adk-current-consumer-full'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {python: '3.10', tox: py310}
+          - {python: '3.11', tox: py311}
+          - {python: '3.12', tox: py312}
+          - {python: '3.13', tox: py313}
+          - {python: '3.14', tox: py314}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: google/adk-python
+          ref: e94c2e726a269e0f04e2e4b202f5c131c80c20de
+          path: packages/agent-evidence-observer/selected-adk
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify selected source corrections and add the exact focused sample
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03"
+          python -m venv "$RUNNER_TEMP/adk-tox"
+          "$RUNNER_TEMP/adk-tox/bin/python" -m pip install --require-hashes -r "$profile/tox-tools.lock"
+          "$RUNNER_TEMP/adk-tox/bin/python" -I -B "$profile/test_apply_tox_corrections.py" > "$RUNNER_TEMP/source-controls-${{ matrix.tox }}.stdout" 2> "$RUNNER_TEMP/source-controls-${{ matrix.tox }}.stderr"
+          "$RUNNER_TEMP/adk-tox/bin/python" -I -B "$profile/apply_tox_corrections.py" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-adk" "$RUNNER_TEMP/full-tox-source-${{ matrix.tox }}.json"
+          mkdir -p "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-adk/contributing/samples/plugins/plugin_report_publication"
+          cp "$profile/upstream-sample/publish_reference.py" "$profile/upstream-sample/README.md" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-adk/contributing/samples/plugins/plugin_report_publication/"
+          cp "$profile/upstream-sample/test_report_publication_sample.py" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-adk/tests/unittests/plugins/"
+      - name: Generate the missing upstream dependency lock without changing tox
+        working-directory: packages/agent-evidence-observer/selected-adk
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/adk-tox/bin/uv" lock 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
+      - name: Run unchanged tox on the recorded patched ADK source and sample
+        working-directory: packages/agent-evidence-observer/selected-adk
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/adk-tox/bin/tox" -e "${{ matrix.tox }}" 2>&1 | tee "$RUNNER_TEMP/full-tox-${{ matrix.tox }}.log"
+      - name: Retain the full supported-version tox attempt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: adk-patched-full-tox-${{ matrix.tox }}
+          path: |
+            ${{ runner.temp }}/full-tox-source-${{ matrix.tox }}.json
+            ${{ runner.temp }}/source-controls-${{ matrix.tox }}.stdout
+            ${{ runner.temp }}/source-controls-${{ matrix.tox }}.stderr
+            ${{ runner.temp }}/full-tox-${{ matrix.tox }}.log
+            ${{ runner.temp }}/full-lock-${{ matrix.tox }}.log
+            packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/full-tox-source-selection.json
+            packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/upstream-tox-corrections/
+            packages/agent-evidence-observer/selected-adk/uv.lock
+            packages/agent-evidence-observer/selected-adk/.tox/${{ matrix.tox }}/log/
+          if-no-files-found: warn
+          retention-days: 90
+
+  observer-adk-nested-compaction:
+    name: "ADK nested compaction and shared plugin lifecycle"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-adk-nested-compaction'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Install the public observer and the reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04"
+          python -m venv "$RUNNER_TEMP/reader"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$profile"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+      - name: Check the retained record with public code only
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py"
+      - name: Refuse semantic mutations even after their artifact hashes are reselected
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py" --materialize "$RUNNER_TEMP/run"
+          ADK_NESTED_PACKET="$RUNNER_TEMP/run/packet" "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/test_controls.py" -v
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: probityai/probity-verify
+          ref: e835ce2bd6a960e7a1cc2fa6522f16d55dce728a
+          path: packages/agent-evidence-observer/selected-verify
+          persist-credentials: false
+      - name: Install Verify and consume the retained projections twice
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/verify-wheels" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+          policy_sha="$(sha256sum "$RUNNER_TEMP/run/host-policy.json" | cut -d ' ' -f 1)"
+          python -I -B "$profile/verify_consumer.py" --reader "$RUNNER_TEMP/reader/bin/python" --source "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify" --wheel "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl" --packet "$RUNNER_TEMP/run/packet" --policy "$RUNNER_TEMP/run/host-policy.json" --policy-sha256 "$policy_sha" --output "$RUNNER_TEMP/verify-consumer"
+
+  observer-adk-ticket:
+    name: "Google ADK native plugin and protected ticket"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-adk-ticket'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/adk-ticket-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected dependencies, the public observer and the reference wheel
+        run: |
+          set -euo pipefail
+          python -m pip install --require-hashes -r requirements.lock
+          python -m pip install --no-deps ../..
+          python -m pip wheel --no-deps --no-build-isolation . --wheel-dir "$RUNNER_TEMP/adk-wheels"
+          python verify_wheels.py "$RUNNER_TEMP/adk-wheels" --selection source-selection.json > installed-source-proof.json
+          python -m pip install --no-deps "$RUNNER_TEMP/adk-wheels"/probity_adk_reference-0.0.1-py3-none-any.whl
+          python -m pip check
+      - name: Execute plugin, gate, retained replay and semantic refusal controls
+        run: |
+          set -euo pipefail
+          python -m pytest tests -q --junitxml=test-results.xml
+          ruff check --select E,F,I,C901 --config 'lint.mccabe.max-complexity=5' src tests verify_wheels.py verify_retained.py
+      - name: Verify the retained native packet with public code only
+        run: python verify_retained.py
+      - name: Install a separate reader without the ADK or MCP framework
+        run: |
+          set -euo pipefail
+          python -m venv "$RUNNER_TEMP/adk-reader"
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --require-hashes -r requirements-reader.lock
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-deps ../..
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip install --no-deps "$RUNNER_TEMP/adk-wheels"/probity_adk_reference-0.0.1-py3-none-any.whl
+          "$RUNNER_TEMP/adk-reader/bin/python" -m pip check
+          "$RUNNER_TEMP/adk-reader/bin/python" -c "import importlib.util; assert importlib.util.find_spec('google') is None and importlib.util.find_spec('mcp') is None"
+      - name: Replay the retained packet with the separate reader and host gate
+        run: |
+          set -euo pipefail
+          packet=retained/fresh-run/packet
+          cp "$packet/consumer-pins.json" "$RUNNER_TEMP/adk-selected-pins.json"
+          "$RUNNER_TEMP/adk-reader/bin/probity-adk-read" "$packet" --pins-file "$RUNNER_TEMP/adk-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/reader-stdout.json"
+          python -c "import json,os; from pathlib import Path; a=json.loads(Path(os.environ['RUNNER_TEMP'], 'reader-stdout.json').read_bytes()); c=json.loads(Path('retained/fresh-run/packet/report.json').read_bytes()); assert a==c and a['status']=='verified' and a['plannedAttempts']==12"
+          policy_sha="$(sha256sum "$RUNNER_TEMP/adk-selected-pins.json" | cut -d ' ' -f 1)"
+          "$RUNNER_TEMP/adk-reader/bin/probity-adk-gate" "$packet" --reader "$RUNNER_TEMP/adk-reader/bin/probity-adk-read" --policy "$RUNNER_TEMP/adk-selected-pins.json" --policy-sha256 "$policy_sha" --withheld-sources retained/WITHHELD-SOURCES.json --output "$RUNNER_TEMP/gate-receipt"
+
+  observer-adk-user-responses:
+    name: "ADK user FunctionResponse routing and effects"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-adk-user-responses'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Install the public observer and the reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04"
+          python -m venv "$RUNNER_TEMP/reader"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$profile"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+      - name: Check the retained record with public code only
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py"
+      - name: Refuse semantic mutations even after their artifact hashes are reselected
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py" --materialize "$RUNNER_TEMP/run"
+          ADK_RESPONSES_PACKET="$RUNNER_TEMP/run/packet" "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/test_controls.py" -v
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: probityai/probity-verify
+          ref: e835ce2bd6a960e7a1cc2fa6522f16d55dce728a
+          path: packages/agent-evidence-observer/selected-verify
+          persist-credentials: false
+      - name: Install Verify and consume the retained projections twice
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/verify-wheels" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+          policy_sha="$(sha256sum "$RUNNER_TEMP/run/host-policy.json" | cut -d ' ' -f 1)"
+          python -I -B "$profile/verify_consumer.py" --reader "$RUNNER_TEMP/reader/bin/python" --source "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify" --wheel "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl" --packet "$RUNNER_TEMP/run/packet" --policy "$RUNNER_TEMP/run/host-policy.json" --policy-sha256 "$policy_sha" --output "$RUNNER_TEMP/verify-consumer"
+
+  observer-ag2-push-authority:
+    name: "AG2 push URL authority and observed effects"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-ag2-push-authority'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12.14'
+      - name: Install the public observer and the reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04"
+          python -m venv "$RUNNER_TEMP/reader"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$profile"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+      - name: Check the retained record with public code only
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py"
+      - name: Refuse changed semantics after their hashes are reselected
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py" --materialize "$RUNNER_TEMP/run"
+          AG2_PUSH_PACKET="$RUNNER_TEMP/run/packet" "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/test_controls.py" -v
+
+  observer-aps-durable-refund:
+    name: "Native APS refund controls"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-aps-durable-refund'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Install locked reader dependencies and the exact Observer checkout
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: |
+          npm ci --ignore-scripts
+          uv venv "$RUNNER_TEMP/retained-venv" --python 3.12
+          uv pip install --python "$RUNNER_TEMP/retained-venv/bin/python" --require-hashes -r requirements.lock
+          uv pip install --python "$RUNNER_TEMP/retained-venv/bin/python" --no-deps ../.. .
+          uv pip check --python "$RUNNER_TEMP/retained-venv/bin/python"
+      - name: Lint the kept files
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: uvx ruff@0.15.6 check --isolated probity_aps_refund conftest.py test_reader.py verify_retained.py
+      - name: Run the public reader tests over the retained captures
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: '"$RUNNER_TEMP/retained-venv/bin/python" -m pytest -q test_reader.py'
+      - name: Verify the retained captures with public observer code
+        working-directory: packages/agent-evidence-observer/interop/aps-durable-refund-2026-10-05
+        run: '"$RUNNER_TEMP/retained-venv/bin/python" -I -B verify_retained.py'
+
+  observer-atomic-native-reader:
+    name: "Installed Atomic native reader"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-atomic-native-reader'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    env:
+      UV_NO_CONFIG: "1"
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Check out the native test producer at its exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: astrogilda/atomic
+          ref: 80be8dae6feb8b9106181b78fba2c7c6a7c8f4d8
+          path: packages/agent-evidence-observer/native-atomic
+          persist-credentials: false
+      - name: Install the native producer toolchain
+        run: rustup toolchain install 1.90.0 --profile minimal && rustup default 1.90.0
+      - name: Generate original native observations and retain the executable
+        run: python native-atomic/tools/native-evaluation/run.py --output atomic-native-run --jobs 2
+      - name: Build the consumer wheel and check refusal controls
+        run: |
+          python -m pip install -e '.[test]' build
+          python -m pytest -q tests/test_atomic_reader.py --junitxml=atomic-reader-tests.xml
+          python -m build --wheel --outdir dist
+          python -m venv "$RUNNER_TEMP/atomic-reader-env"
+          "$RUNNER_TEMP/atomic-reader-env/bin/python" -m pip install dist/*.whl
+          mkdir "$RUNNER_TEMP/atomic-reader-cwd"
+          cd "$RUNNER_TEMP/atomic-reader-cwd"
+          export PATH="$RUNNER_TEMP/atomic-reader-env/bin:$PATH"
+          python "$GITHUB_WORKSPACE/packages/agent-evidence-observer/examples/atomic_consumer_demo.py" --packet "$GITHUB_WORKSPACE/packages/agent-evidence-observer/atomic-native-run" --output "$GITHUB_WORKSPACE/packages/agent-evidence-observer/atomic-consumer-result"
+          python -c 'import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ("pytest", "inspect_ai", "a2a", "langgraph", "pydantic_ai"))'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: atomic-native-reader
+          path: |
+            packages/agent-evidence-observer/atomic-native-run/
+            packages/agent-evidence-observer/atomic-consumer-result/
+            packages/agent-evidence-observer/atomic-reader-tests.xml
+            packages/agent-evidence-observer/dist/*.whl
+          if-no-files-found: error
+
+  observer-authority-unreachable:
+    name: "Authority at dispatch and durable effect reference"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-authority-unreachable'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Install exact reader dependencies and the Observer checkout
+        run: |
+          python -m pip install -r interop/authority-unreachable-2026-10-03/requirements.txt
+          python -m pip install --no-deps .
+          python -m pip check
+      - name: Fetch immutable review source for bounded function checks
+        run: curl --fail --location --proto '=https' --output "$RUNNER_TEMP/alakris-publication_jobs.py" 'https://git.elibot.ru/agent-bot/aaif-publication-reference/raw/commit/6e0beb6d39bb1faa279087fd06cf2fe6c98e639c/core/agent-core/src/core/content/publication_jobs.py'
+      - name: Confirm vendored implementation records still match their sources
+        run: python interop/authority-unreachable-2026-10-03/implementation_records.py interop/authority-unreachable-2026-10-03/implementation-records "$RUNNER_TEMP/implementation-records-upstream.json" --check-upstream
+      - name: Lint and test the reader over the retained run
+        working-directory: packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03
+        run: |
+          python -m ruff check --isolated ./*.py
+          ALAKRIS_SOURCE="$RUNNER_TEMP/alakris-publication_jobs.py" python -m pytest -q -p no:cacheprovider
+      - name: Verify the retained run with public observer code
+        working-directory: packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03
+        run: python -I verify_retained.py
+      - name: Replay the retained run through a separately installed reader
+        run: bash interop/authority-unreachable-2026-10-03/verify_install.sh "$RUNNER_TEMP/authority-reader" "$RUNNER_TEMP/alakris-publication_jobs.py"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: authority-unreachable-reader-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/authority-reader/wheels/
+            ${{ runner.temp }}/authority-reader/*.json
+            ${{ runner.temp }}/authority-reader/*.xml
+            ${{ runner.temp }}/authority-reader/*.txt
+            ${{ runner.temp }}/implementation-records-upstream.json
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-boundary-probe-boundary:
+    name: "Observer public checks / boundary"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-boundary-probe'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - run: python -m pip install -e ../agent-evidence-verify -e '.[test,witness]'
+      - run: pytest -q
+      - run: python examples/attribution_demo.py ./attribution-run --native tests/fixtures/records/protected-action
+      - run: python examples/replay_demo.py ./replay-run --source-revision "$GITHUB_SHA" --native tests/fixtures/records/protected-action
+      - run: python examples/replay_demo.py ./replay-run --replay --native tests/fixtures/records/protected-action --trusted-policy ./replay-run/replay-policy.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: attribution-run
+          path: packages/agent-evidence-observer/attribution-run/
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: replay-run
+          path: packages/agent-evidence-observer/replay-run/
+
+  observer-boundary-probe-aae:
+    name: "Observer public checks / aae"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-boundary-probe'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[test]'
+      - run: pytest -q tests/test_aae_enforce.py tests/test_aae_binding.py
+      - run: python examples/aae_replay.py > aae-replay.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: aae-replay
+          path: packages/agent-evidence-observer/aae-replay.json
+
+  observer-consumer-host-gate:
+    name: "Consumer publication gate"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-consumer-host-gate'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Install hash-selected reader and build dependencies
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock
+      - name: Build and normally install the selected wheels from this repository
+        run: |
+          bash interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-BUILD-2026-10-02.sh "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$RUNNER_TEMP/framework-wheels"
+          python -m pip install --no-index --no-deps "$RUNNER_TEMP/framework-wheels/"*.whl
+          python -m pip check
+      - name: Replay the retained packets with the public readers and run the historical controls
+        run: |
+          python -m pip install pytest==8.4.2
+          python -I -B interop/framework-consumer-2026-10-02/verify_retained.py
+          python -m pytest -q interop/framework-consumer-2026-10-02/test_installed_readers.py interop/consumer-host-2026-10-02/test_framework_gate.py --junitxml=historical-baseline-tests.xml
+      - name: Build the durable reader wheel from this repository and normally upgrade
+        run: |
+          bash interop/framework-consumer-2026-10-02/FRAMEWORK-DURABLE-CONSUMER-BUILD-2026-10-02.sh "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$RUNNER_TEMP/durable-reader-wheels"
+          python -m pip install --no-index --no-deps --upgrade "$RUNNER_TEMP/durable-reader-wheels/"*.whl
+          python -m pip check
+      - name: Exercise installed commands and semantic refusals
+        run: |
+          python -m pip install pytest==8.4.2 ruff==0.15.6
+          python -m ruff check --isolated interop/consumer-host-2026-10-02/*.py
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' interop/consumer-host-2026-10-02/*.py
+          FRAMEWORK_DURABLE_SELECTED_SOURCE="$GITHUB_WORKSPACE/packages/agent-evidence-observer" python -m pytest -q interop/consumer-host-2026-10-02/test_framework_gate.py interop/consumer-host-2026-10-02/test_durable_framework_gate.py interop/framework-consumer-2026-10-02/test_installed_readers.py interop/framework-consumer-2026-10-02/test_durable_installed_reader.py --junitxml=consumer-gate-tests.xml
+      - name: Retain installation and control results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: consumer-publication-gate
+          path: |
+            ${{ runner.temp }}/framework-wheels/build-record.json
+            ${{ runner.temp }}/durable-reader-wheels/build-record.json
+            packages/agent-evidence-observer/historical-baseline-tests.xml
+            packages/agent-evidence-observer/consumer-gate-tests.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-control-arena-native-reader:
+    name: "Native ControlArena selected publication"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-control-arena-native-reader'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [asyncio, trio]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: astrogilda/control-arena
+          ref: 7c0ebaa21c9d59d146c0eafcf7d6938734e8e430
+          path: packages/agent-evidence-observer/selected-native-host
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12.14'
+      - name: Install selected build and verification tools
+        run: python -m pip install uv==0.13.5 ruff==0.15.8 pyright==1.1.408
+      - name: Install the immutable native host dependency lock
+        working-directory: packages/agent-evidence-observer/selected-native-host
+        env:
+          TZ: UTC
+        run: uv sync --dev --frozen
+      - name: Build the reviewed reader wheel and install it before the native run
+        env:
+          SOURCE_DATE_EPOCH: '946684800'
+        run: |
+          uv build --wheel --out-dir "$RUNNER_TEMP/reader-wheels" interop/control-arena-native-2026-10-02
+          uv venv --python python3.12 "$RUNNER_TEMP/reader-env"
+          uv pip install --python "$RUNNER_TEMP/reader-env/bin/python" --no-deps "$RUNNER_TEMP/reader-wheels/"*.whl
+          uv pip install --python "$RUNNER_TEMP/reader-env/bin/python" pytest==8.3.3 hypothesis==6.168.3
+      - name: Select outside policy, execute the actual native host, and gate publication
+        run: |
+          python interop/control-arena-native-2026-10-02/run_selected_host.py \
+            --reader-root "$GITHUB_WORKSPACE/packages/agent-evidence-observer" --reader-source-commit "$GITHUB_SHA" \
+            --reader-python "$RUNNER_TEMP/reader-env/bin/python" \
+            --wheel "$RUNNER_TEMP/reader-wheels/probity_control_arena_reader-0.0.2-py3-none-any.whl" \
+            --host-root "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-native-host" \
+            --host-python "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-native-host/.venv/bin/python" \
+            --host-origin https://github.com/astrogilda/control-arena \
+            --backend '${{ matrix.backend }}' --output-dir "$RUNNER_TEMP/native-selected-${{ matrix.backend }}"
+      - name: Verify installed native grammar and reselected-digest semantic mutants
+        working-directory: packages/agent-evidence-observer/interop/control-arena-native-2026-10-02
+        env:
+          CONTROL_ARENA_LOG: '${{ runner.temp }}/native-selected-${{ matrix.backend }}/native/control-arena.json'
+          CONTROL_ARENA_POLICY: '${{ runner.temp }}/native-selected-${{ matrix.backend }}/policy.json'
+          CONTROL_ARENA_WHEEL: '${{ runner.temp }}/reader-wheels/probity_control_arena_reader-0.0.2-py3-none-any.whl'
+        run: |
+          "$RUNNER_TEMP/reader-env/bin/python" -I -m pytest -q tests --import-mode=importlib --junitxml="$RUNNER_TEMP/reader-${{ matrix.backend }}.xml"
+          python -m ruff check .
+          python -m ruff format --check .
+          python -m pyright
+      - name: Verify native export controls and host static checks
+        working-directory: packages/agent-evidence-observer/selected-native-host
+        run: |
+          if [ '${{ matrix.backend }}' = trio ]; then
+            .venv/bin/python -m pytest -q --runtrio examples/evidence_publication/test_native.py --basetemp="$RUNNER_TEMP/native-tests-trio"
+          else
+            .venv/bin/python -m pytest -q examples/evidence_publication/test_native.py --basetemp="$RUNNER_TEMP/native-tests-asyncio"
+          fi
+          .venv/bin/ruff check .
+          .venv/bin/ruff format --check .
+          .venv/bin/pyright
+      - name: Retain original native logs, installed wheel, policy and decisions
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: control-arena-native-${{ matrix.backend }}
+          path: |
+            ${{ runner.temp }}/reader-wheels/
+            ${{ runner.temp }}/native-selected-${{ matrix.backend }}/
+            ${{ runner.temp }}/reader-${{ matrix.backend }}.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-crewai-job-fences:
+    name: "CrewAI native job fences and body effects"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-crewai-job-fences'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Install the public observer and the reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04"
+          python -m venv "$RUNNER_TEMP/reader"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-runtime-reader.lock"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$profile"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+      - name: Check the retained record with public code only
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py"
+      - name: Refuse thirty semantic mutations even when their hashes are reselected
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py" --materialize "$RUNNER_TEMP/run"
+          CREWAI_JOB_PACKET="$RUNNER_TEMP/run/packet" "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/test_controls.py" -v
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: probityai/probity-verify
+          ref: e835ce2bd6a960e7a1cc2fa6522f16d55dce728a
+          path: packages/agent-evidence-observer/selected-verify
+          persist-credentials: false
+      - name: Install Verify and consume the retained projections twice
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04"
+          "$RUNNER_TEMP/reader/bin/python" -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/verify-wheels" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+          policy_sha="$(sha256sum "$RUNNER_TEMP/run/host-policy.json" | cut -d ' ' -f 1)"
+          python -I -B "$profile/verify_consumer.py" --reader "$RUNNER_TEMP/reader/bin/python" --source "$GITHUB_WORKSPACE/packages/agent-evidence-observer/selected-verify" --wheel "$RUNNER_TEMP/verify-wheels/probity_verify-0.1.0-py3-none-any.whl" --packet "$RUNNER_TEMP/run/packet" --policy "$RUNNER_TEMP/run/host-policy.json" --policy-sha256 "$policy_sha" --output "$RUNNER_TEMP/verify-consumer"
+
+  observer-eight-component-host:
+    name: "Eight component host retained replay"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-eight-component-host'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      UV_NO_CONFIG: "1"
+      PYTHONDONTWRITEBYTECODE: '1'
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/eight-component-host-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected reader dependencies and the exact Observer checkout
+        run: |
+          python -m venv "$RUNNER_TEMP/retained-venv"
+          "$RUNNER_TEMP/retained-venv/bin/python" -m pip install --require-hashes --only-binary=:all: -r requirements.lock
+          "$RUNNER_TEMP/retained-venv/bin/python" -m pip install --no-deps ../..
+          "$RUNNER_TEMP/retained-venv/bin/python" -m pip check
+      - name: Lint the retained replay
+        run: |
+          "$RUNNER_TEMP/retained-venv/bin/python" -m ruff check --isolated verify_retained.py tests
+          "$RUNNER_TEMP/retained-venv/bin/python" -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' verify_retained.py tests
+      - name: Verify the retained run with public observer code
+        run: |
+          "$RUNNER_TEMP/retained-venv/bin/python" -I verify_retained.py
+          "$RUNNER_TEMP/retained-venv/bin/python" -m pytest -q tests
+
+  observer-evaluation-contract:
+    name: "Five-tier evaluation contract"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-evaluation-contract'] }}
+    env:
+      UV_NO_CONFIG: "1"
+      AGENT_EVIDENCE_INSPECT_SEAL: "off"
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install standalone test dependencies
+        run: python -m pip install -e '.[test]'
+      - name: Install pinned native mock harness and Observer adapter
+        run: python -m pip install -e '../..[inspect-historical]'
+      - name: Check declared populations and mutation controls
+        run: python -m pytest -q --junitxml=test-results.xml
+      - name: Retain five-tier synthetic contract exercise
+        run: python demo.py contract-run
+      - name: Retain native Inspect mock logs and their common mapping
+        run: python inspect_demo.py native-contract-run
+      - name: Retain native tool, agent and local workload execution
+        run: python inspect_execution.py native-execution-run
+      - name: Verify the retained joined packet offline with public code only
+        run: python verify_retained.py
+      - name: Reconstruct the retained joined packet with the reader command line
+        run: |
+          set -euo pipefail
+          cp retained/native-ticket-run/consumer-pins.json "$RUNNER_TEMP/inspect-ticket-selected-pins.json"
+          python inspect_ticket_reader.py retained/native-ticket-run --pins-file "$RUNNER_TEMP/inspect-ticket-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/inspect-ticket-reader.json"
+          python -c "import json,sys; json.load(open(sys.argv[1]))" "$RUNNER_TEMP/inspect-ticket-reader.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: five-tier-contract-reference
+          path: |
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/contract-run/
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-contract-run/
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/native-execution-run/
+            packages/agent-evidence-observer/interop/evaluation-contract-2026-10-01/test-results.xml
+          if-no-files-found: error
+
+  observer-evaluation-history:
+    name: "Evaluation history"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-evaluation-history'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+      AGENT_EVIDENCE_INSPECT_SEAL: "off"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[test,inspect-historical]'
+      - run: python -m pytest -q tests/test_evaluation_history.py tests/test_inspect_history.py tests/test_eval_adversarial.py
+      - run: python examples/evaluation_history_demo.py --output-dir evaluation-run
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: evaluation-run
+          path: packages/agent-evidence-observer/evaluation-run/
+
+  observer-execsurface-native-state:
+    name: "ExecSurface native state companion"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-execsurface-native-state'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/execsurface-state-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected profile dependencies
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements.lock --report install-report.json
+      - name: Retrieve and verify selected published native binary
+        run: |
+          python download_binary.py execsurface > download-report.json
+          ./execsurface doctor > doctor-report.json
+      - name: Check owned adapter code and complexity
+        run: |
+          python -m ruff check --isolated companion.py workload.py download_binary.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' companion.py workload.py download_binary.py tests
+      - name: Test real native execution, reference verifier and semantic refusal controls
+        env:
+          EXECSURFACE_BINARY: ${{ github.workspace }}/packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/execsurface
+        run: python -m pytest -q tests --junitxml=test-results.xml
+      - name: Execute finite exact-source capture and state binding
+        run: |
+          timeout --signal=TERM --kill-after=5s 60s python companion.py run native-run --binary ./execsurface --source-revision "$GITHUB_SHA" --write-pins "$RUNNER_TEMP/execsurface-pins.json" > native-report.json
+          cp "$RUNNER_TEMP/execsurface-pins.json" selected-pins.json
+      - name: Apply separately selected publication policy
+        run: |
+          cp publication-policy.json "$RUNNER_TEMP/execsurface-policy.json"
+          policy_digest=$(sha256sum publication-policy.json | cut -d' ' -f1)
+          python companion.py read native-run --pins-file "$RUNNER_TEMP/execsurface-pins.json" --policy-file "$RUNNER_TEMP/execsurface-policy.json" --policy-sha256 "$policy_digest" > publication-report.json
+      - name: Retain original trace, state bytes, authority, commitment and source selection
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: execsurface-state-${{ github.sha }}
+          path: |
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/native-run/
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/*-report.json
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/selected-pins.json
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/source-pins.json
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/test-results.xml
+            packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/execsurface.tar.gz
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-five-tier-breadth:
+    name: "Finite five-tier integration breadth"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-five-tier-breadth'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+      AGENT_EVIDENCE_INSPECT_SEAL: "off"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install selected native frameworks and regression dependencies
+        run: python -m pip install -e '.[inspect-historical]' -e 'interop/a2a-native-2026-10-02[test]' pytest==9.1.1 hypothesis==6.168.3 ruff==0.16.10
+      - name: Refuse changed native joins, transactions and rehashed wrappers
+        run: python -m pytest -q interop/five-tier-v0-2026-10-02/tests --junitxml=five-tier-v0-tests.xml
+      - name: Check focused lint and bounded production complexity
+        run: |
+          ruff check --isolated interop/five-tier-v0-2026-10-02
+          ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' interop/five-tier-v0-2026-10-02/*.py
+      - name: Execute frozen finite populations and fresh SDK HTTP interactions
+        run: timeout --signal=TERM --kill-after=5s 185s python interop/five-tier-v0-2026-10-02/run.py five-tier-v0-run > five-tier-v0-run.stdout.json
+      - name: Independently invoke the offline reader with retained selected inputs
+        run: |
+          test -s five-tier-v0-run/report.json
+          cp five-tier-v0-run/consumer-pins.json "$RUNNER_TEMP/five-tier-v0-selected-pins.json"
+          python interop/five-tier-v0-2026-10-02/run.py five-tier-v0-run --verify --pins-file "$RUNNER_TEMP/five-tier-v0-selected-pins.json" > five-tier-v0-offline.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: finite-five-tier-native-integration
+          path: |
+            packages/agent-evidence-observer/five-tier-v0-run/
+            packages/agent-evidence-observer/five-tier-v0-run.stdout.json
+            packages/agent-evidence-observer/five-tier-v0-offline.json
+            packages/agent-evidence-observer/five-tier-v0-tests.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-haystack-native:
+    name: "Native Haystack installed publication consumer"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-haystack-native'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Install the public observer and the reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/haystack-native-2026-10-03"
+          python -m venv "$RUNNER_TEMP/reader"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$profile"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+      - name: Check the retained record with public code only
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/haystack-native-2026-10-03"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py"
+      - name: Run the reader fault controls over the retained packets
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/haystack-native-2026-10-03"
+          "$RUNNER_TEMP/reader/bin/python" -I -B -m pytest -c /dev/null "$profile/test_native.py" -q -p no:cacheprovider
+
+  observer-inspect-current-consumer:
+    name: "Current Inspect installed consumer"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-inspect-current-consumer'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out the owned consumer selected by this event
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: packages/agent-evidence-observer/owned-consumer
+          persist-credentials: false
+      - name: Check out the immutable existing Observer reader
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: probityai/agent-evidence-observer
+          ref: 62f5d0c6fbd785259db2d5c8076dd844b53a0593
+          path: packages/agent-evidence-observer/existing-reader
+          persist-credentials: false
+      - name: Check out the actual supported current Inspect release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: UKGovernmentBEIS/inspect_ai
+          ref: 93f7182cf2ce9be22724b05e499cd1358d7ed41d
+          fetch-depth: 0
+          path: packages/agent-evidence-observer/current-inspect
+          persist-credentials: false
+      - name: Configure the selected runtime
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12.14'
+      - name: Install the declared build and workflow tools
+        run: |
+          python -m pip install uv==0.13.5
+          uv venv --python python3.12 "$RUNNER_TEMP/builder"
+          uv pip install --python "$RUNNER_TEMP/builder/bin/python" setuptools==81.0.0 wheel==0.46.3 pytest==8.3.3 cryptography==46.0.7 cffi==2.1.1 pycparser==3.0
+      - name: Build and normally install both separately selected reader wheels
+        env:
+          SOURCE_DATE_EPOCH: '946684800'
+        run: |
+          mkdir -p "$RUNNER_TEMP/observer-build"
+          cp existing-reader/pyproject.toml existing-reader/LICENSE "$RUNNER_TEMP/observer-build/"
+          cp -a existing-reader/src "$RUNNER_TEMP/observer-build/src"
+          cp -a owned-consumer/packages/agent-evidence-observer/interop/inspect-current-host-2026-10-03 "$RUNNER_TEMP/current-reader-build"
+          uv build --no-build-isolation --python "$RUNNER_TEMP/builder/bin/python" --wheel --out-dir "$RUNNER_TEMP/wheels" "$RUNNER_TEMP/observer-build"
+          uv build --no-build-isolation --python "$RUNNER_TEMP/builder/bin/python" --wheel --out-dir "$RUNNER_TEMP/wheels" "$RUNNER_TEMP/current-reader-build"
+          uv venv --python python3.12 "$RUNNER_TEMP/reader-env"
+          uv pip install --python "$RUNNER_TEMP/reader-env/bin/python" cryptography==46.0.7 cffi==2.1.1 pycparser==3.0
+          uv pip install --python "$RUNNER_TEMP/reader-env/bin/python" pytest==8.3.3
+          uv pip install --python "$RUNNER_TEMP/reader-env/bin/python" --no-deps "$RUNNER_TEMP/wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/wheels/probity_inspect_current_reader-0.0.1-py3-none-any.whl"
+          uv pip check --python "$RUNNER_TEMP/reader-env/bin/python"
+          uv pip install --python "$RUNNER_TEMP/builder/bin/python" --no-deps "$RUNNER_TEMP/wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/wheels/probity_inspect_current_reader-0.0.1-py3-none-any.whl"
+          uv pip check --python "$RUNNER_TEMP/builder/bin/python"
+      - name: Install actual current native host from its immutable dependency lock
+        working-directory: packages/agent-evidence-observer/current-inspect
+        run: |
+          uv sync --frozen --no-default-groups --no-install-project --python python3.12
+          uv pip install --python .venv/bin/python setuptools==81.0.0 wheel==0.46.3 setuptools-scm==9.2.2
+          uv pip install --python .venv/bin/python cryptography==46.0.7 cffi==2.1.1 pycparser==3.0
+          uv pip install --python .venv/bin/python --no-deps --no-build-isolation .
+          uv pip install --python .venv/bin/python --no-deps "$RUNNER_TEMP/wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" "$RUNNER_TEMP/wheels/probity_inspect_current_reader-0.0.1-py3-none-any.whl"
+          uv pip check --python .venv/bin/python
+      - name: Verify loader, population, installation and failure controls
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          "$RUNNER_TEMP/builder/bin/python" -B -m pytest -q -c /dev/null -p no:cacheprovider owned-consumer/packages/agent-evidence-observer/interop/inspect-current-host-2026-10-03/test_bootstrap.py --junitxml="$RUNNER_TEMP/inspect-bootstrap-controls.xml"
+      - name: Run the declared current host and repeated isolated consumer
+        env:
+          SELECTED_OWNED_COMMIT: ${{ github.sha }}
+        run: |
+          python owned-consumer/packages/agent-evidence-observer/interop/inspect-current-host-2026-10-03/bootstrap.py \
+            --candidate "$GITHUB_WORKSPACE/packages/agent-evidence-observer/owned-consumer" --candidate-sha "$SELECTED_OWNED_COMMIT" \
+            --host "$GITHUB_WORKSPACE/packages/agent-evidence-observer/current-inspect" --reader-source "$GITHUB_WORKSPACE/packages/agent-evidence-observer/existing-reader" \
+            --producer-python "$GITHUB_WORKSPACE/packages/agent-evidence-observer/current-inspect/.venv/bin/python" \
+            --reader-python "$RUNNER_TEMP/reader-env/bin/python" \
+            --observer-wheel "$RUNNER_TEMP/wheels/agent_evidence_observer-0.0.1-py3-none-any.whl" \
+            --adapter-wheel "$RUNNER_TEMP/wheels/probity_inspect_current_reader-0.0.1-py3-none-any.whl" \
+            --retained "$RUNNER_TEMP/inspect-current-retained"
+      - name: Test native semantics against fresh current originals
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+          INSPECT_CURRENT_PACKET: ${{ runner.temp }}/inspect-current-retained/packet
+        run: |
+          "$RUNNER_TEMP/reader-env/bin/python" -I -B -m pytest -q -c /dev/null -p no:cacheprovider --import-mode=importlib owned-consumer/packages/agent-evidence-observer/interop/inspect-current-host-2026-10-03/test_native_packet.py --junitxml="$RUNNER_TEMP/inspect-native-controls.xml"
+      - name: Retain originals, pre-run selection, installed wheels and refusals
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: inspect-current-installed-consumer
+          path: |
+            ${{ runner.temp }}/inspect-current-retained/
+            ${{ runner.temp }}/wheels/
+            ${{ runner.temp }}/inspect-bootstrap-controls.xml
+            ${{ runner.temp }}/inspect-native-controls.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-inspect-sealed-manifest:
+    name: "Inspect sealed manifest"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-inspect-sealed-manifest'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e ../agent-evidence-verify -e '.[test,inspect,witness]'
+      - run: python -m pytest -q tests/test_inspect_sealed_manifest.py
+      - run: python -m pytest -q interop/inspect-sealed-manifest-2026-11-03/test_real_run.py
+
+  observer-installed-framework-readers:
+    name: "Installed framework readers"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-installed-framework-readers'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Install hash-selected reader and build dependencies
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock
+      - name: Build and normally install the selected wheels from this repository
+        run: |
+          bash interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-BUILD-2026-10-02.sh "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$RUNNER_TEMP/framework-wheels"
+          python -m pip install --no-index --no-deps "$RUNNER_TEMP/framework-wheels/"*.whl
+          python -m pip check
+      - name: Replay the retained packets with the public readers and run the historical controls
+        run: |
+          python -m pip install pytest==8.4.2
+          python -I -B interop/framework-consumer-2026-10-02/verify_retained.py
+          python -m pytest -q interop/framework-consumer-2026-10-02/test_installed_readers.py interop/consumer-host-2026-10-02/test_framework_gate.py --junitxml=historical-baseline-tests.xml
+      - name: Build the durable reader wheel from this repository and normally upgrade
+        run: |
+          bash interop/framework-consumer-2026-10-02/FRAMEWORK-DURABLE-CONSUMER-BUILD-2026-10-02.sh "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$RUNNER_TEMP/durable-reader-wheels"
+          python -m pip install --no-index --no-deps --upgrade "$RUNNER_TEMP/durable-reader-wheels/"*.whl
+          python -m pip check
+      - name: Exercise installed commands and semantic refusals
+        run: |
+          python -m pip install pytest==8.4.2 ruff==0.15.6
+          python -m ruff check --isolated interop/framework-consumer-2026-10-02/*.py
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' interop/framework-consumer-2026-10-02/*.py
+          FRAMEWORK_DURABLE_SELECTED_SOURCE="$GITHUB_WORKSPACE/packages/agent-evidence-observer" python -m pytest -q interop/framework-consumer-2026-10-02/test_installed_readers.py interop/framework-consumer-2026-10-02/test_durable_installed_reader.py --junitxml=installed-reader-tests.xml
+      - name: Retain installation and control results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: installed-framework-readers
+          path: |
+            ${{ runner.temp }}/framework-wheels/build-record.json
+            ${{ runner.temp }}/durable-reader-wheels/build-record.json
+            packages/agent-evidence-observer/historical-baseline-tests.xml
+            packages/agent-evidence-observer/installed-reader-tests.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-joint-recovery:
+    name: "Joint process and current-authority recovery"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-joint-recovery'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/joint-recovery-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected reader dependencies and exact Observer checkout
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-reader.lock --report install-report.json
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check semantic refusal controls over the retained packet
+        run: |
+          python -m ruff check --isolated joint_*.py verify_retained.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' joint_*.py verify_retained.py tests
+          python -m pytest -q --junitxml=test-results.xml
+      - name: Verify the retained original packet with public observer code
+        run: python verify_retained.py
+      - name: Build and normally install a separate framework-free reader
+        run: |
+          python -m pip wheel --no-deps --no-build-isolation --wheel-dir wheels ../.. .
+          sha256sum wheels/*.whl > wheels-sha256.txt
+          python -m venv "$RUNNER_TEMP/joint-reader"
+          "$RUNNER_TEMP/joint-reader/bin/python" -m pip install --require-hashes --only-binary=:all: -r requirements-reader.lock --report reader-install-report.json
+          "$RUNNER_TEMP/joint-reader/bin/python" -m pip install --no-deps wheels/*.whl
+          "$RUNNER_TEMP/joint-reader/bin/python" -m pip check
+          "$RUNNER_TEMP/joint-reader/bin/python" -c 'import importlib.util; assert importlib.util.find_spec("langgraph") is None'
+      - name: Replay the retained packet through the installed reader
+        run: |
+          cp retained/fresh-run/consumer-pins.json "$RUNNER_TEMP/joint-selected-pins.json"
+          "$RUNNER_TEMP/joint-reader/bin/python" -I -B "$RUNNER_TEMP/joint-reader/bin/probity-read-joint-recovery" retained/fresh-run --pins-file "$RUNNER_TEMP/joint-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > installed-reader.stdout
+          cmp installed-reader.stdout retained/host-receipts/reader.stdout
+      - name: Retain installed reader receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: joint-recovery-${{ github.sha }}
+          path: |
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/installed-reader.stdout
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/install-report.json
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/reader-install-report.json
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/wheels-sha256.txt
+            packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/test-results.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-langgraph-crash-window:
+    name: "Native LangGraph effect checkpoint crash window"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-langgraph-crash-window'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected reader dependencies and exact Observer source
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r ../joint-recovery-2026-10-02/requirements-reader.lock --report install-report.json
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Verify the retained packet and meaningful semantic refusals
+        run: |
+          python -m ruff check --isolated crash_*.py consume_installed.py verify_retained.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' crash_*.py consume_installed.py verify_retained.py tests
+          python -m pytest -q --junitxml=test-results.xml
+          python verify_retained.py
+      - name: Build normal framework-free reader wheels and environment
+        run: |
+          python -m pip wheel --no-deps --no-build-isolation --wheel-dir reader-wheels ../.. ../joint-recovery-2026-10-02 .
+          sha256sum reader-wheels/*.whl > reader-wheels-sha256.txt
+          python -m venv "$RUNNER_TEMP/crash-window-reader"
+          "$RUNNER_TEMP/crash-window-reader/bin/python" -m pip install --require-hashes --only-binary=:all: -r ../joint-recovery-2026-10-02/requirements-reader.lock --report reader-install-report.json
+          "$RUNNER_TEMP/crash-window-reader/bin/python" -m pip install --no-deps reader-wheels/*.whl
+          "$RUNNER_TEMP/crash-window-reader/bin/python" -m pip check
+          "$RUNNER_TEMP/crash-window-reader/bin/python" -I -c 'import importlib.util; assert importlib.util.find_spec("langgraph") is None'
+      - name: Select host installation and pins and replay through isolated reader
+        run: |
+          cp retained/fresh-run/consumer-pins.json "$RUNNER_TEMP/crash-window-selected-pins.json"
+          cp retained/WITHHELD-SOURCES.json "$RUNNER_TEMP/crash-window-withheld.json"
+          PYTHONPATH=../joint-recovery-2026-10-02 python - "$RUNNER_TEMP/crash-window-reader/bin/probity-read-langgraph-crash-window" "$RUNNER_TEMP/crash-window-selected-closure.json" <<'PY'
+          import sys
+          from pathlib import Path
+          from joint_host_gate import reader_closure
+          from probity_observer.crypto import canonical
+          reader, output = map(Path, sys.argv[1:])
+          output.write_bytes(canonical(reader_closure(reader)))
+          PY
+          python consume_installed.py retained/fresh-run --pins-file "$RUNNER_TEMP/crash-window-selected-pins.json" --withheld-sources "$RUNNER_TEMP/crash-window-withheld.json" --reader "$RUNNER_TEMP/crash-window-reader/bin/probity-read-langgraph-crash-window" --selected-closure "$RUNNER_TEMP/crash-window-selected-closure.json" --output consumer-receipts > installed-report.json
+          python -c 'import json; assert json.load(open("retained/fresh-report.json")) == json.load(open("installed-report.json"))'
+      - name: Retain installed consumer receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: langgraph-crash-window-${{ github.sha }}
+          path: |
+            packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/consumer-receipts/
+            packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/installed-report.json
+            packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/reader-wheels-sha256.txt
+            packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/install-report.json
+            packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/reader-install-report.json
+            packages/agent-evidence-observer/interop/langgraph-crash-window-2026-10-03/test-results.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-langgraph-native-ticket:
+    name: "LangGraph protected ticket integration"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-langgraph-native-ticket'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/langgraph-ticket-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-pinned profile dependencies
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-restart.lock --report install-report.json
+      - name: Install this exact Observer checkout without changing dependency selection
+        run: |
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check reader code and complexity
+        run: |
+          python -m ruff check --isolated lg_common.py lg_reader.py durable_reader.py verify_retained.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' lg_common.py lg_reader.py durable_reader.py verify_retained.py tests
+      - name: Test the retained packets and semantic refusal controls
+        run: python -m pytest -q tests --junitxml=test-results.xml
+      - name: Verify the retained packets offline with public code only
+        run: python verify_retained.py
+      - name: Reconstruct the retained packets with the reader command line
+        run: |
+          set -euo pipefail
+          cp retained/fresh-run/consumer-pins.json "$RUNNER_TEMP/langgraph-selected-pins.json"
+          python lg_reader.py retained/fresh-run --pins-file "$RUNNER_TEMP/langgraph-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/fresh-reader.json"
+          cmp "$RUNNER_TEMP/fresh-reader.json" retained/fresh-reader.json
+          cp retained/durable-run/consumer-pins.json "$RUNNER_TEMP/langgraph-durable-selected-pins.json"
+          python durable_reader.py retained/durable-run --pins-file "$RUNNER_TEMP/langgraph-durable-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/durable-reader.json"
+          cmp "$RUNNER_TEMP/durable-reader.json" retained/durable-reader.json
+
+  observer-langgraph-recovery-authority:
+    name: "LangGraph recovery authority"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-langgraph-recovery-authority'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/langgraph-recovery-authority-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install selected native profile and exact Observer checkout
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r ../langgraph-ticket-2026-10-02/requirements-restart.lock --report install-report.json
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check reader and bounded complexity
+        run: |
+          python -m ruff check --isolated authority_common.py authority_reader.py verify_retained.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' authority_common.py authority_reader.py verify_retained.py tests
+      - name: Test the retained packet and reselected refusal controls
+        run: python -m pytest -q tests --junitxml=test-results.xml
+      - name: Verify the retained packet offline with public code only
+        run: python verify_retained.py
+      - name: Reconstruct the retained packet with the reader command line
+        run: |
+          set -euo pipefail
+          cp retained/fresh-run/consumer-pins.json "$RUNNER_TEMP/authority-host-pins.json"
+          python authority_reader.py retained/fresh-run --pins-file "$RUNNER_TEMP/authority-host-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/reader-report.json"
+          cmp "$RUNNER_TEMP/reader-report.json" retained/reader-report.json
+
+  observer-local-model-contract:
+    name: "Local model record contract"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-local-model-contract'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest==9.1.1 hypothesis==6.168.3
+      - name: Check the local-model reader's refusal contract
+        working-directory: packages/agent-evidence-observer/interop/local-model-2026-10-02
+        run: python -m pytest tests -q
+      - name: Check the operational task matrix reader and frozen rubric
+        working-directory: packages/agent-evidence-observer/interop/local-model-tasks-2026-10-02
+        run: python -m pytest tests -q
+      - name: Check paired model comparison selections, order and resource refusals
+        working-directory: packages/agent-evidence-observer/interop/local-model-comparison-2026-10-02
+        run: python -m pytest tests -q
+      - name: Check frozen native schema format-control selections and independent scores
+        working-directory: packages/agent-evidence-observer/interop/local-model-format-control-2026-10-02
+        run: python -m pytest tests -q
+      - name: Check new authored boundary tasks and CPU envelope reconstruction
+        working-directory: packages/agent-evidence-observer/interop/local-model-boundary-tasks-2026-10-02
+        run: python -m pytest tests -q
+
+  observer-local-model-tool-arguments-offline-controls:
+    name: "Prospective native tool arguments and abstention / offline-controls"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-local-model-tool-arguments'] }}
+    permissions:
+      contents: read
+      actions: read
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Install ordinary CI test tools (separate from native preparation)
+        run: python -m pip install pytest==8.3.3 hypothesis==6.168.3 ruff==0.15.8
+      - run: python -B -m pytest interop/local-model-tool-arguments-2026-10-03/tests -q
+      - run: python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' interop/local-model-tool-arguments-2026-10-03/*.py
+      # The preregistered controls select Git blobs relative to the repository
+      # root and cannot change, so give them a checkout whose root is the
+      # package tree: a commit with tree HEAD:packages/agent-evidence-observer and parent HEAD.
+      - name: Select the package tree as its own source root
+        run: |
+          set -euo pipefail
+          tree="$(git rev-parse HEAD:packages/agent-evidence-observer)"
+          date="$(git show -s --format=%cI HEAD)"
+          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/agent-evidence-observer tree of $GITHUB_SHA")"
+          git worktree add --detach "$RUNNER_TEMP/observer-root" "$commit"
+          test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse "HEAD^{tree}")" = "$tree"
+      - name: Really install and replay disclosed synthetic consumer controls
+        working-directory: ${{ runner.temp }}/observer-root
+        run: python -I -B interop/local-model-tool-arguments-2026-10-03/verify_installation.py . "$GITHUB_WORKSPACE/packages/agent-evidence-observer/installed-tool-argument-controls"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tool-argument-installed-offline-controls-${{ github.sha }}
+          path: packages/agent-evidence-observer/installed-tool-argument-controls
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-local-model-tool-arguments-retained-native-reader:
+    name: "Prospective native tool arguments and abstention / retained-native-reader"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-local-model-tool-arguments'] }}
+    permissions:
+      contents: read
+      actions: read
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Authenticate and extract the retained original packet without executing it
+        run: |
+          python -I -B - <<'PYTHON'
+          import hashlib, stat, zipfile
+          from pathlib import Path, PurePosixPath
+          selected=Path('interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382.zip')
+          raw=selected.read_bytes()
+          assert len(raw)==2639358 and hashlib.sha256(raw).hexdigest()=='67ef1e638e814c71bbf354fe9895ea0faf5d9ef11eae2ff76b10b065bd7a7e54'
+          output=Path('retained-tool-argument-packet');output.mkdir()
+          with zipfile.ZipFile(selected) as archive:
+              members=archive.infolist()
+              assert len(members)==331 and sum(item.file_size for item in members)<=64*1024*1024
+              assert len({item.filename for item in members})==len(members)
+              for item in members:
+                  relative=PurePosixPath(item.filename)
+                  mode=item.external_attr>>16
+                  assert not relative.is_absolute() and '..' not in relative.parts and len(relative.parts)<=32
+                  assert not item.is_dir() and stat.S_IFMT(mode) in (0,stat.S_IFREG)
+                  target=output.joinpath(*relative.parts);target.parent.mkdir(parents=True,exist_ok=True)
+                  with target.open('xb') as handle:handle.write(archive.read(item))
+          PYTHON
+      - name: Install the original selected reader and preserve all eight actual quality holds
+        run: |
+          python -I -B interop/local-model-tool-arguments-2026-10-03/consume_actual.py . retained-tool-argument-packet interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382-pins.json retained-tool-argument-consumer --reader-contract interop/local-model-tool-arguments-2026-10-03/reader-source-contract.json --reader-contract-sha256 edef015af7b63b8921d968e0c28b5f0da03f5cba2d23372e5fc8772bf0e2cecd
+          python -I -B - <<'PYTHON'
+          import json
+          from pathlib import Path
+          root=Path('retained-tool-argument-consumer')
+          receipt=json.loads((root/'receipt.json').read_bytes())
+          assert receipt['strictExit']==1 and receipt['evidenceExit']==0
+          assert receipt['modelCalls']==receipt['providerCalls']==0
+          assert receipt['qualityDecision']=='hold-tool-decision-quality'
+          assert receipt['wheel']['sha256']=='1688f8bc9aa035301ce585cd6dc7196eb7a437d50e4ce4ce7e26d7a529c6933d'
+          report=json.loads((root/'strict.stdout').read_bytes())
+          retained=Path('interop/local-model-tool-arguments-2026-10-03/retained/native-37116827382-report.json')
+          assert report==json.loads(retained.read_bytes())
+          assert report['population']=={'planned':128,'started':128,'scored':128,'error':0,'unsupported':0,'incomplete':0,'unknown-start':0}
+          assert len(report['quality'])==8 and all(row['fullyCorrectPairs']==row['correctAbstentions']==0 for row in report['quality'])
+          PYTHON
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tool-argument-installed-retained-native-${{ github.sha }}
+          path: packages/agent-evidence-observer/retained-tool-argument-consumer
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-local-model-vocabulary-offline-controls:
+    name: "Preregistered global action vocabulary intervention / offline-controls"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-local-model-vocabulary'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest==9.1.1 'setuptools>=68' wheel
+      - run: python -m pytest interop/local-model-vocabulary-2026-10-02/tests -q
+      - name: Build, install and repeat the offline consumer controls
+        run: python interop/local-model-vocabulary-2026-10-02/verify_installation.py ../.. installed-reader-controls
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: installed-vocabulary-reader-controls-${{ github.sha }}
+          path: packages/agent-evidence-observer/installed-reader-controls
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-local-model-vocabulary-retained-native-reader:
+    name: "Preregistered global action vocabulary intervention / retained-native-reader"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-local-model-vocabulary'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'setuptools>=68' wheel
+      - name: Verify the source-retained original archive and unpack the selected packet
+        run: |
+          python - <<'PYTHON'
+          import hashlib
+          import zipfile
+          from pathlib import Path
+          source = Path("interop/local-model-vocabulary-2026-10-02/retained/native-37094901561.zip")
+          expected = "eef05226335f9e2de6783ee797d891cbd1fe47058264e2d57eb41f1ec39131d8"
+          if hashlib.sha256(source.read_bytes()).hexdigest() != expected:
+              raise ValueError("source-selected native archive changed")
+          with zipfile.ZipFile(source) as archive:
+              archive.extractall("retained-vocabulary-native-packet")
+          PYTHON
+      - name: Build the reviewed frozen installed reader without a model runtime
+        run: python interop/local-model-vocabulary-2026-10-02/build_installed_reader.py ../.. retained-vocabulary-reader-wheel --contract interop/local-model-vocabulary-2026-10-02/reader-source-contract.json --contract-sha256 bba85e5835652af11f0a722a4bd819722e7adb840bcea1f2cc36cef7f608d77b
+      - name: Recompute the completed study and preserve all eight strict quality holds
+        run: |
+          python -I interop/local-model-vocabulary-2026-10-02/consume_native.py retained-vocabulary-reader-wheel/probity_policy_vocabulary_reader-0.1.0-py3-none-any.whl retained-vocabulary-native-packet interop/local-model-vocabulary-2026-10-02/retained/selected-pins-37094901561.json retained-vocabulary-consumer --expected-report interop/local-model-vocabulary-2026-10-02/retained/report-37094901561.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: retained-vocabulary-installed-native-consumer-${{ github.sha }}
+          path: |
+            packages/agent-evidence-observer/retained-vocabulary-consumer
+            packages/agent-evidence-observer/retained-vocabulary-reader-wheel
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-model-consumer-gate:
+    name: "Installed model publication gate"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-model-consumer-gate'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 5f5bacb3b4474675b028b1d6ad7c1bf166017bcf
+          path: packages/agent-evidence-observer/historical-model-reader
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c814f3c449ad8893737c5be7a84d8586633b4ab4
+          path: packages/agent-evidence-observer/previous-model-reader
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: e0cece4e53c0da4bac7f301ee4a9c371a437d08a
+          path: packages/agent-evidence-observer/boundary-baseline-model-reader
+          persist-credentials: false
+      - name: Install hash-selected build tools
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock
+      - name: Build the frozen0.0.1 baseline and install both clean environments
+        run: |
+          python historical-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/historical-model-reader/packages/observer" "$RUNNER_TEMP/baseline-model-wheels"
+          for environment in baseline-consumer previous-consumer; do
+            python -m venv "$RUNNER_TEMP/$environment"
+            "$RUNNER_TEMP/$environment/bin/python" -m pip install --no-index --no-deps "$RUNNER_TEMP/baseline-model-wheels/"*.whl
+          done
+      - name: Build the frozen 0.0.2 wheel and install the next upgrade baseline
+        run: |
+          python previous-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/previous-model-reader/packages/observer" "$RUNNER_TEMP/previous-model-wheels"
+          "$RUNNER_TEMP/previous-consumer/bin/python" -m pip install --no-index --no-deps --upgrade "$RUNNER_TEMP/previous-model-wheels/"*.whl
+      - name: Build frozen 0.0.3 and retain the next clean upgrade baseline
+        run: |
+          python boundary-baseline-model-reader/packages/observer/interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer/boundary-baseline-model-reader/packages/observer" "$RUNNER_TEMP/boundary-baseline-wheels"
+          for environment in format-consumer consumer; do
+            python -m venv "$RUNNER_TEMP/$environment"
+            "$RUNNER_TEMP/$environment/bin/python" -m pip install --no-index --no-deps "$RUNNER_TEMP/boundary-baseline-wheels/"*.whl
+          done
+      - name: Build exact 0.0.4 sources and normally upgrade without frameworks
+        run: |
+          python interop/model-consumer-2026-10-02/build_reader.py "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$RUNNER_TEMP/model-reader-wheels"
+          "$RUNNER_TEMP/consumer/bin/python" -m pip install --no-index --no-deps --upgrade "$RUNNER_TEMP/model-reader-wheels/"*.whl
+          "$RUNNER_TEMP/consumer/bin/python" -m pip check
+          echo "$RUNNER_TEMP/consumer/bin" >> "$GITHUB_PATH"
+      - name: Retain installed publication and quality refusal
+        run: python interop/model-consumer-2026-10-02/run_host_example.py "$RUNNER_TEMP/model-host-result"
+      - name: Retain actual installed profile upgrade and model quality refusal
+        run: |
+          python interop/model-consumer-2026-10-02/run_upgrade_example.py "$RUNNER_TEMP/model-upgrade-result" --baseline-python "$RUNNER_TEMP/baseline-consumer/bin/python" --candidate-python "$RUNNER_TEMP/previous-consumer/bin/python"
+      - name: Retain actual decoder upgrade and semantic refusal despite valid schemas
+        run: |
+          python interop/model-consumer-2026-10-02/run_format_upgrade_example.py "$RUNNER_TEMP/model-format-upgrade-result" --baseline-python "$RUNNER_TEMP/previous-consumer/bin/python" --candidate-python "$RUNNER_TEMP/format-consumer/bin/python"
+      - name: Retain immutable 384-call upgrade, prior report bytes and paired quality holds
+        run: |
+          python interop/model-consumer-2026-10-02/run_boundary_upgrade_example.py "$RUNNER_TEMP/model-boundary-upgrade-result" --baseline-python "$RUNNER_TEMP/format-consumer/bin/python" --candidate-python "$RUNNER_TEMP/consumer/bin/python"
+      - name: Execute installation, policy, runtime and native refusal controls
+        run: |
+          python -m pip install pytest==8.4.2 hypothesis==6.147.0 ruff==0.15.6
+          python -m ruff check --isolated interop/model-consumer-2026-10-02/
+          python -m ruff format --isolated --check interop/model-consumer-2026-10-02/
+          python -m pytest -q interop/model-consumer-2026-10-02/tests --junitxml=model-consumer-tests.xml
+      - name: Retain exact wheel, policies and command receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: model-consumer-publication
+          path: |
+            ${{ runner.temp }}/model-reader-wheels/
+            ${{ runner.temp }}/baseline-model-wheels/
+            ${{ runner.temp }}/previous-model-wheels/
+            ${{ runner.temp }}/boundary-baseline-wheels/
+            ${{ runner.temp }}/model-boundary-upgrade-result/
+            ${{ runner.temp }}/model-format-upgrade-result/
+            ${{ runner.temp }}/model-upgrade-result/
+            ${{ runner.temp }}/model-host-result/
+            packages/agent-evidence-observer/model-consumer-tests.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-native-consumer:
+    name: "Installed native consumer reader"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-native-consumer'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+      AGENT_EVIDENCE_INSPECT_SEAL: "off"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install producer and test environment
+        run: |
+          python -m pip install -e '.[test,inspect-historical]' build
+          python -m pip install -e 'interop/a2a-native-2026-10-02[test]'
+      - name: Check reader process and failure controls
+        run: python -m pytest -q tests/test_native_reader.py --junitxml=native-consumer-tests.xml
+      - name: Retain two native controlled packets
+        run: |
+          mkdir -p native-producer/inspect-execution native-producer/a2a
+          python interop/evaluation-contract-2026-10-01/inspect_execution.py native-producer/inspect-execution/native
+          python interop/a2a-native-2026-10-02/a2a_demo.py native-producer/a2a/native
+      - name: Build wheel and use it from an outside consumer directory
+        run: |
+          python -m build --wheel --outdir dist
+          python scripts/check-distribution.py dist/*.whl
+          python scripts/check-distribution-controls.py dist/*.whl
+          python -m venv "$RUNNER_TEMP/native-consumer-env"
+          "$RUNNER_TEMP/native-consumer-env/bin/python" -m pip install dist/*.whl
+          mkdir "$RUNNER_TEMP/native-consumer-cwd"
+          cd "$RUNNER_TEMP/native-consumer-cwd"
+          "$RUNNER_TEMP/native-consumer-env/bin/python" "$GITHUB_WORKSPACE/packages/agent-evidence-observer/examples/native_consumer_demo.py" --source-checkout "$GITHUB_WORKSPACE/packages/agent-evidence-observer" --native-root "$GITHUB_WORKSPACE/packages/agent-evidence-observer/native-producer" --output "$GITHUB_WORKSPACE/packages/agent-evidence-observer/native-consumer-result"
+          "$RUNNER_TEMP/native-consumer-env/bin/python" -c 'import importlib.util; assert importlib.util.find_spec("inspect_ai") is None; assert importlib.util.find_spec("a2a") is None'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: native-consumer-reader
+          path: |
+            packages/agent-evidence-observer/native-producer/
+            packages/agent-evidence-observer/native-consumer-result/
+            packages/agent-evidence-observer/native-consumer-tests.xml
+            packages/agent-evidence-observer/dist/*.whl
+          if-no-files-found: error
+
+  observer-openai-agents-ticket:
+    name: "OpenAI Agents native trace and protected ticket"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-openai-agents-ticket'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/openai-agents-ticket-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected dependencies, the public observer and the reference wheel
+        run: |
+          set -euo pipefail
+          python -m pip install --require-hashes -r requirements.lock
+          python -m pip install --no-deps ../..
+          python -m pip wheel --no-deps --no-build-isolation . --wheel-dir "$RUNNER_TEMP/openai-wheels"
+          python verify_wheels.py "$RUNNER_TEMP/openai-wheels" --selection source-selection.json > installed-source-proof.json
+          python -m pip install --no-deps "$RUNNER_TEMP/openai-wheels"/probity_openai_agents_reference-0.0.1-py3-none-any.whl
+          python -m pip check
+      - name: Execute processor, retained replay and semantic refusal controls
+        run: |
+          set -euo pipefail
+          python -m pytest tests -q --junitxml=test-results.xml
+          ruff check --select E,F,I,C901 --config 'lint.mccabe.max-complexity=5' src tests verify_wheels.py verify_retained.py
+      - name: Verify the retained native packet with public code only
+        run: python verify_retained.py
+      - name: Install a separate reader without the Agents SDK or OpenAI client
+        run: |
+          set -euo pipefail
+          python -m venv "$RUNNER_TEMP/openai-reader"
+          "$RUNNER_TEMP/openai-reader/bin/python" -m pip install --require-hashes -r requirements-reader.lock
+          "$RUNNER_TEMP/openai-reader/bin/python" -m pip install --no-deps ../..
+          "$RUNNER_TEMP/openai-reader/bin/python" -m pip install --no-deps "$RUNNER_TEMP/openai-wheels"/probity_openai_agents_reference-0.0.1-py3-none-any.whl
+          "$RUNNER_TEMP/openai-reader/bin/python" -m pip check
+          "$RUNNER_TEMP/openai-reader/bin/python" -c "import importlib.util; assert importlib.util.find_spec('agents') is None and importlib.util.find_spec('openai') is None"
+      - name: Replay the retained packet with the separate reader
+        run: |
+          set -euo pipefail
+          packet=retained/fresh-run/packet
+          cp "$packet/consumer-pins.json" "$RUNNER_TEMP/openai-selected-pins.json"
+          "$RUNNER_TEMP/openai-reader/bin/probity-openai-read" "$packet" --pins-file "$RUNNER_TEMP/openai-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/reader-stdout.json"
+          python -c "import json,os; from pathlib import Path; a=json.loads(Path(os.environ['RUNNER_TEMP'], 'reader-stdout.json').read_bytes()); c=json.loads(Path('retained/fresh-run/packet/report.json').read_bytes()); assert a==c and a['status']=='verified' and a['plannedAttempts']==6"
+
+  observer-pic-aps-refund-evidence:
+    name: "Native PIC and APS refund evidence"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-pic-aps-refund-evidence'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      UV_NO_CONFIG: "1"
+      TERM: dumb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: '0.13.5'
+      - name: Build installed readers and check the original native evidence
+        run: |
+          set -euo pipefail
+          results="$RUNNER_TEMP/pic-aps-refund-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          bash interop/pic-aps-refund-reader-2026-10-09/verify_install.sh "$results"
+      - name: Retain every completed phase and refusal
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: pic-aps-refund-evidence
+          retention-days: 90
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/pic-aps-refund-${{ github.run_id }}-${{ github.run_attempt }}/
+            !${{ runner.temp }}/pic-aps-refund-${{ github.run_id }}-${{ github.run_attempt }}/.venv/
+            !${{ runner.temp }}/pic-aps-refund-${{ github.run_id }}-${{ github.run_attempt }}/PIC-source/
+            !${{ runner.temp }}/pic-aps-refund-${{ github.run_id }}-${{ github.run_attempt }}/.coverage
+
+  observer-protected-action-operator:
+    name: "Protected action operator"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-protected-action-operator'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12.14'
+      - name: Install the public observer and the reader-side packages
+        run: |
+          python -m pip install --require-hashes -r interop/witness-operator-2026-10-03/requirements.lock
+          python -m pip install --no-deps --no-build-isolation . interop/witness-operator-2026-10-03 interop/protected-action-operator-2026-10-06
+      - name: Run the reader controls
+        run: python -m pytest -c /dev/null -q -p no:cacheprovider interop/protected-action-operator-2026-10-06/test_reader.py --junitxml="$RUNNER_TEMP/reader-tests.xml"
+      - name: Check complexity
+        run: python -I -B -m radon cc -j interop/protected-action-operator-2026-10-06/probity_protected_operator > "$RUNNER_TEMP/protected-operator-complexity.json"
+      - name: Replay the retained packets with public code
+        run: python -I -B interop/protected-action-operator-2026-10-06/verify_retained.py | tee "$RUNNER_TEMP/retained-replay.txt"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: protected-action-operator-retained-replay
+          retention-days: 90
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/reader-tests.xml
+            ${{ runner.temp }}/protected-operator-complexity.json
+            ${{ runner.temp }}/retained-replay.txt
+
+  observer-pydantic-ai-native:
+    name: "Pydantic AI native ticket consumer"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-pydantic-ai-native'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/pydantic-ai-native-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected dependencies, the public observer and the reference wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --require-hashes -r requirements.lock
+          python -m pip install --no-deps ../..
+          python -m pip wheel --no-deps --no-build-isolation . --wheel-dir "$RUNNER_TEMP/pydantic-wheels"
+          python -m pip install --no-deps "$RUNNER_TEMP/pydantic-wheels"/probity_pydantic_reference-0.0.1-py3-none-any.whl
+          python -m pip check
+      - name: Check retained transcript and refusal controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest tests -q --junitxml=test-results.xml
+          ruff check --select E,F,I,C901 --config 'lint.mccabe.max-complexity=5' src tests verify_retained.py
+      - name: Verify the retained native packet with public code only
+        shell: bash
+        run: python verify_retained.py
+      - name: Install separate offline consumer without agent framework
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "$RUNNER_TEMP/pydantic-reader"
+          "$RUNNER_TEMP/pydantic-reader/bin/python" -m pip install --require-hashes -r requirements-reader.lock
+          "$RUNNER_TEMP/pydantic-reader/bin/python" -m pip install --no-deps ../..
+          "$RUNNER_TEMP/pydantic-reader/bin/python" -m pip install --no-deps "$RUNNER_TEMP/pydantic-wheels"/probity_pydantic_reference-0.0.1-py3-none-any.whl
+          "$RUNNER_TEMP/pydantic-reader/bin/python" -m pip check
+          "$RUNNER_TEMP/pydantic-reader/bin/python" -c "import importlib.util; assert importlib.util.find_spec('pydantic_ai') is None"
+      - name: Consume the retained packet with separately supplied demonstration pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          packet=retained/fresh-run/packet
+          cp "$packet/consumer-pins.json" "$RUNNER_TEMP/pydantic-selected-pins.json"
+          "$RUNNER_TEMP/pydantic-reader/bin/probity-pydantic-read" "$packet" --pins-file "$RUNNER_TEMP/pydantic-selected-pins.json" --withheld-sources retained/WITHHELD-SOURCES.json > "$RUNNER_TEMP/consumer-report.json"
+          python -c "import json,os; from pathlib import Path; a=json.loads(Path(os.environ['RUNNER_TEMP'], 'consumer-report.json').read_bytes()); c=json.loads(Path('retained/fresh-run/packet/report.json').read_bytes()); assert a==c and a['status']=='verified' and a['plannedAttempts']==7"
+
+  observer-pydantic-recovery:
+    name: "Pydantic native deferred recovery"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-pydantic-recovery'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install the locked test tools and exact Observer checkout
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-test.lock --report install-report.json
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check semantic refusal controls over the retained packet
+        run: |
+          python -m ruff check --isolated recovery_host.py verify_retained.py probity_pydantic_recovery tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' recovery_host.py verify_retained.py probity_pydantic_recovery tests
+          timeout --signal=TERM --kill-after=5s 180s python -m pytest -q tests --junitxml=test-results.xml
+      - name: Verify the retained original packet with public observer code
+        run: python verify_retained.py
+      - name: Install a framework-free reader and replay the retained packet through the host gate
+        run: bash verify_install.sh "$(command -v python)"
+      - name: Retain installed-reader receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: pydantic-deferred-recovery-${{ github.sha }}
+          path: |
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/installed-receipts/
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/installed-repeat/
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/install-report.json
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/reader-install-report.json
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/test-results.xml
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/wheels-sha256.txt
+            packages/agent-evidence-observer/interop/pydantic-recovery-2026-10-03/wheels/*.whl
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-readme:
+    name: "README shape"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-readme'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: the README stays one screen and every link in it resolves
+        run: |
+          python3 scripts/readme-lint.py README.md
+          python3 scripts/readme-lint-test.py
+
+  observer-refund-handoff-conformance:
+    name: "Probity refund handoff conformance / Offline conformance (${{ matrix.label }})"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-refund-handoff-conformance'] }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            label: ubuntu-24.04
+          - os: windows-2025
+            label: windows-2025
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+      TERM: dumb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: '0.13.5'
+      # The verifier bundles and archives its repository root and checks the
+      # two agree, so give it a checkout whose root is the package tree: a
+      # commit with tree HEAD:packages/agent-evidence-observer and parent HEAD.
+      - name: Select the package tree as its own source root
+        run: |
+          set -euo pipefail
+          tree="$(git rev-parse HEAD:packages/agent-evidence-observer)"
+          date="$(git show -s --format=%cI HEAD)"
+          commit="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -c user.name=ci -c user.email=ci@localhost commit-tree "$tree" -p HEAD -m "packages/agent-evidence-observer tree of $GITHUB_SHA")"
+          git worktree add --detach "$RUNNER_TEMP/observer-root" "$commit"
+          test "$(git -C "$RUNNER_TEMP/observer-root" rev-parse "HEAD^{tree}")" = "$tree"
+      - name: Run the installed verifier over every public vector
+        working-directory: ${{ runner.temp }}/observer-root
+        run: |
+          set -euo pipefail
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            native_temp="$(cygpath -u "$RUNNER_TEMP")"
+          else
+            native_temp="$RUNNER_TEMP"
+          fi
+          results="$native_temp/refund-handoff-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          bash interop/refund-handoff-conformance-2026-10-12/verify_install.sh "$results"
+      - name: Retain every report and refusal
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: refund-handoff-conformance-${{ matrix.label }}
+          retention-days: 90
+          if-no-files-found: error
+          include-hidden-files: true
+          path: |
+            ${{ runner.temp }}/refund-handoff-${{ github.run_id }}-${{ github.run_attempt }}/
+            !${{ runner.temp }}/refund-handoff-${{ github.run_id }}-${{ github.run_attempt }}/.venv/
+            !${{ runner.temp }}/refund-handoff-${{ github.run_id }}-${{ github.run_attempt }}/test-source/
+            !${{ runner.temp }}/refund-handoff-${{ github.run_id }}-${{ github.run_attempt }}/evidence-source/
+
+  observer-smolagents-native:
+    name: "Native smolagents installed publication consumer"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-smolagents-native'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      UV_NO_CONFIG: "1"
+      SOURCE_DATE_EPOCH: '946684800'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13.15'
+      - name: Install the public observer and the reader
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/smolagents-native-2026-10-03"
+          python -m venv "$RUNNER_TEMP/reader"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --require-hashes -r "$profile/requirements-reader.lock"
+          "$RUNNER_TEMP/reader/bin/python" -m pip install --no-compile --no-deps "$GITHUB_WORKSPACE/packages/agent-evidence-observer" "$profile"
+          "$RUNNER_TEMP/reader/bin/python" -m pip check
+      - name: Check the retained record with public code only
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/smolagents-native-2026-10-03"
+          "$RUNNER_TEMP/reader/bin/python" -I -B "$profile/verify_retained.py"
+      - name: Run the reader fault controls over the retained packets
+        run: |
+          set -euo pipefail
+          profile="$GITHUB_WORKSPACE/packages/agent-evidence-observer/interop/smolagents-native-2026-10-03"
+          "$RUNNER_TEMP/reader/bin/python" -I -B -m pytest -c /dev/null "$profile/test_native.py" -q -p no:cacheprovider
+
+  observer-target-recovery:
+    name: "Protected target process recovery"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-target-recovery'] }}
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer/interop/target-recovery-2026-10-02
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Install hash-selected native target, test and wheel tools
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements.lock --report install-report.json
+          python -m pip install --no-deps -e ../..
+          python -m pip check
+      - name: Check native lifecycle and semantic refusal controls
+        run: |
+          python -m ruff check --isolated target_common.py target_reader.py host_gate.py verify_retained.py tests
+          python -m ruff check --isolated --select C901 --config 'lint.mccabe.max-complexity=5' target_common.py target_reader.py host_gate.py verify_retained.py tests
+          python -m pytest -q --junitxml=test-results.xml
+      - name: Verify the retained original packet with public observer code
+        run: python verify_retained.py
+      - name: Build actual Observer and additive reader distributions
+        run: |
+          python -m pip wheel --no-deps --no-build-isolation --wheel-dir wheels ../.. .
+          sha256sum wheels/*.whl > wheels-sha256.txt
+          python -m venv "$RUNNER_TEMP/target-reader"
+          "$RUNNER_TEMP/target-reader/bin/python" -m pip install --require-hashes --only-binary=:all: -r requirements.lock --report reader-install-report.json
+          "$RUNNER_TEMP/target-reader/bin/python" -m pip install --no-deps wheels/*.whl
+          "$RUNNER_TEMP/target-reader/bin/python" -m pip check
+      - name: Run separate installed reader under host-selected publication policy
+        run: |
+          cp retained/fresh-run/consumer-pins.json "$RUNNER_TEMP/target-selected-pins.json"
+          python - "$RUNNER_TEMP/target-selected-pins.json" "$RUNNER_TEMP/target-host-policy.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          pins = Path(sys.argv[1]).read_bytes()
+          Path(sys.argv[2]).write_text(json.dumps({'profile': 'probity-target-process-recovery-v1', 'pinsSha256': hashlib.sha256(pins).hexdigest(), 'plannedAttempts': 7}))
+          PY
+          python host_gate.py retained/fresh-run --withheld-sources retained/WITHHELD-SOURCES.json --pins-file "$RUNNER_TEMP/target-selected-pins.json" --policy-file "$RUNNER_TEMP/target-host-policy.json" --policy-sha256 "$(sha256sum "$RUNNER_TEMP/target-host-policy.json" | cut -d' ' -f1)" --reader "$RUNNER_TEMP/target-reader/bin/probity-read-target-recovery" --output host-receipts > host-decision.json
+      - name: Retain complete public packet and separately installed reader receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: target-recovery-${{ github.sha }}
+          path: |
+            packages/agent-evidence-observer/interop/target-recovery-2026-10-02/host-receipts/
+            packages/agent-evidence-observer/interop/target-recovery-2026-10-02/host-decision.json
+            packages/agent-evidence-observer/interop/target-recovery-2026-10-02/install-report.json
+            packages/agent-evidence-observer/interop/target-recovery-2026-10-02/reader-install-report.json
+            packages/agent-evidence-observer/interop/target-recovery-2026-10-02/wheels-sha256.txt
+            packages/agent-evidence-observer/interop/target-recovery-2026-10-02/wheels/
+            packages/agent-evidence-observer/interop/target-recovery-2026-10-02/test-results.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-tool-manifest-effect:
+    name: "Tool manifest and retained effect"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-tool-manifest-effect'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      UV_NO_CONFIG: "1"
+      TERM: dumb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: '0.13.5'
+      - name: Install and run the core source suite
+        run: |
+          uv venv .venv --python python3.12
+          uv pip install --python .venv/bin/python -e '.[test,witness]'
+          uv pip check --python .venv/bin/python
+          .venv/bin/python scripts/check-runtime-locks.py
+          .venv/bin/pytest -q
+      - name: Read the retained contributor case
+        run: .venv/bin/pytest -q tests/test_tool_manifest_effect.py
+
+  observer-witness-operator:
+    name: "Installed witness operator and public client"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-witness-operator'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12.14'
+      - name: Install the public observer and the reader-side packages
+        run: |
+          python -m pip install --require-hashes -r interop/witness-operator-2026-10-03/requirements.lock
+          python -m pip install --no-deps --no-build-isolation . interop/witness-operator-2026-10-03
+      - name: Run the operator, retention and fork controls
+        run: python -m pytest -c /dev/null -q -p no:cacheprovider interop/witness-operator-2026-10-03/test_operator.py interop/witness-operator-2026-10-03/test_retention.py interop/witness-operator-2026-10-03/test_reader_fork.py interop/witness-operator-2026-10-03/test_withheld_sources.py --junitxml="$RUNNER_TEMP/operator-tests.xml"
+      - name: Check complexity
+        run: python -I -B interop/witness-operator-2026-10-03/check_complexity.py > "$RUNNER_TEMP/complexity.json"
+      - name: Replay the retained native packet with public code
+        run: python -I -B interop/witness-operator-2026-10-03/verify_retained.py | tee "$RUNNER_TEMP/retained-replay.txt"
+      - name: Retain the control results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: witness-operator-retained-replay
+          path: |
+            ${{ runner.temp }}/operator-tests.xml
+            ${{ runner.temp }}/complexity.json
+            ${{ runner.temp }}/retained-replay.txt
+          if-no-files-found: error
+          retention-days: 90
+
+  observer-witness:
+    name: "Witness server"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-witness'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install the package with the witness extra (jcs-admit wheel from PyPI)
+        run: python -m pip install -e '.[test,witness]'
+      - name: Proof, log, scope, client and command-line tests
+        run: python -m pytest -q -p no:cacheprovider tests/witness
+      - name: Every verifier mutant fails the tests
+        run: python scripts/mutate-witness-proofs.py
+
+  observer-witnessed-run-selection:
+    name: "Installed witnessed run selection"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['observer-witnessed-run-selection'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-observer
+    env:
+      UV_NO_CONFIG: "1"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12.14'
+      - run: python -m pip install 'uv==0.8.22'
+      - run: bash interop/witnessed-run-selection-2026-10-04/verify_install.sh "$RUNNER_TEMP/run-selection"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: witnessed-run-selection-native
+          path: |
+            ${{ runner.temp }}/run-selection/native/
+            ${{ runner.temp }}/run-selection/wheels/
+            ${{ runner.temp }}/run-selection/*.json
+            ${{ runner.temp }}/run-selection/*.txt
+            ${{ runner.temp }}/run-selection/*.lock
+            ${{ runner.temp }}/run-selection/*-tests.xml
+          if-no-files-found: error
+          retention-days: 90
+
+  family-resolves:
+    name: "family-resolves"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['family-resolves'] }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: python3 scripts/family_resolves.py lint
+      - run: python3 scripts/family_resolves.py resolve
+
+  pypi-upload-selftest:
+    name: "pypi-upload-selftest"
+    needs: [changes]
+    if: ${{ (fromJSON(needs.changes.outputs.jobs)['pypi-upload-selftest']) && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: build a throwaway wheel with a version no earlier run used
+        env:
+          VERSION: 0.0.${{ github.run_id }}.${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          pkg="$RUNNER_TEMP/pkg"
+          mkdir -p "$pkg/probity_upload_selftest"
+          echo '"""Upload self-test of a release workflow; contains nothing."""' > "$pkg/probity_upload_selftest/__init__.py"
+          cat > "$pkg/pyproject.toml" <<EOF
+          [build-system]
+          requires = ["setuptools>=69"]
+          build-backend = "setuptools.build_meta"
+
+          [project]
+          name = "probity-upload-selftest"
+          version = "$VERSION"
+          description = "Upload self-test of a release workflow; contains nothing."
+          requires-python = ">=3.9"
+          EOF
+          python3 -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/dist" "$pkg"
+          ls -l "$RUNNER_TEMP/dist"
+      # Trusted publishing first, so a project with a registered publisher gets
+      # PEP 740 attestations. A project PyPI has no publisher for (a first
+      # release or a rename: HTTP 403 invalid-publisher or "OIDC scoped token is
+      # not valid for project") is uploaded with the account API token instead,
+      # so a release never waits on a pypi.org setting. skip-existing on both
+      # makes the second attempt upload only what the first did not; the
+      # read-back then proves every file on the index is the one built here.
+      # The PyPA action cannot run inside a local composite action (it pulls its
+      # image from the calling repository), so these steps sit in each job.
+      - id: oidc
+        name: upload with trusted publishing
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: ${{ runner.temp }}/dist
+          repository-url: https://test.pypi.org/legacy/
+          attestations: true
+          skip-existing: true
+      - name: the API token is set for the fallback
+        if: steps.oidc.outcome == 'failure'
+        env:
+          API_TOKEN: ${{ secrets.TESTPYPI_API_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::error::trusted publishing failed and the TESTPYPI_API_TOKEN secret is not set"
+            exit 1
+          fi
+          echo "::warning::trusted publishing failed; uploading with the account API token"
+      - name: upload with the API token
+        if: steps.oidc.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: ${{ runner.temp }}/dist
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TESTPYPI_API_TOKEN }}
+          attestations: false
+          skip-existing: true
+      - name: every file on the index has the digest of the file built here
+        run: python3 .github/scripts/verify_pypi_upload.py ${{ runner.temp }}/dist "https://test.pypi.org/simple"
+
+  version-pins:
+    name: "version-pins"
+    needs: [changes]
+    if: ${{ (fromJSON(needs.changes.outputs.jobs)['version-pins']) && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: every pinned version on a page agrees with its owner
+        uses: probityai/.github/actions/version-pins@bfaca9ac2695e0bb5c669adaf19c7caad19761d3 # main
+        with:
+          command: check
+
   ci-ok:
     if: always()
-    needs: [changes, lint, agent-evidence-verify, probityai, probityai-distribution, checkout-runner, rust, package-ratchet, observer-distribution, package-agent-evidence-mcp, agent-evidence-mcp-distribution, package-agent-evidence-plugins, package-agent-evidence-replay, agent-evidence-replay-distribution, package-probity-effects, probity-effects-distribution]
+    needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, observer-witness, observer-witnessed-run-selection, family-resolves, pypi-upload-selftest, version-pins]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed
