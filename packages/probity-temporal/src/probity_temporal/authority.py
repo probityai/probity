@@ -36,14 +36,15 @@ from pathlib import Path
 from typing import Any, Literal, Protocol
 
 from probity_records import (
-    TOOL_CALL_RECORD, Journal, Signer, build_approval_binding, build_uncertain_effect, canonical,
-    embed_approval_binding, judge_approval_binding, key_id, load_public, sign_permit,
-    tool_call_predicate, verify_approval,
+    TOOL_CALL_RECORD, Journal, RevocationCache, Signer, StaleRevocations, Trust, build_approval_binding,
+    build_uncertain_effect, canonical, embed_approval_binding, judge_approval_binding, key_id, load_public,
+    sign_permit, tool_call_predicate,
 )
+from probity_records.core import APPROVAL_DOMAIN, _unb64
+from probity_records.quorum import approval_policy, count_bindings, validate_policy
 
 from . import errors
 from .keys import KeyResolver, load_signer
-from .revocation import Revocations
 
 POLICY_RELEASE = {"firstServedAt": "2000-01-01T00:00:00Z", "graceSeconds": 0,
                   "lastServedAt": "2999-01-01T00:00:00Z", "lookup": "ok", "releaseId": "probity-temporal-local"}
@@ -70,20 +71,6 @@ class EffectOwner(Protocol):
 class ResultOwner(EffectOwner, Protocol):
     def result(self, key: str) -> Any:
         """The committed effect's result, as the activity would have returned it, or ``None``."""
-
-
-@dataclass(frozen=True)
-class ApprovalPolicy:
-    """Who may approve a tool, and how many distinct approvers one call needs."""
-
-    approvers: Mapping[str, bytes]
-    threshold: int = 1
-
-    def __post_init__(self) -> None:
-        if not self.approvers:
-            raise ValueError("an approval policy needs at least one approver")
-        if not 1 <= self.threshold <= len(self.approvers):
-            raise ValueError(f"threshold {self.threshold} is not between 1 and {len(self.approvers)}")
 
 
 @dataclass(frozen=True)
@@ -116,8 +103,8 @@ class Decision:
 
     @property
     def code(self) -> str | None:
-        if (self.ok and not self.shadow) or self.outcome == "committed":
-            return None  # a committed outcome is a success, never a refusal
+        if (self.ok and (not self.shadow or self.permit is not None)) or self.outcome == "committed":
+            return None  # an allow (shadow or not) or a committed outcome is a success, never a refusal
         if self.outcome == "unknown":
             return errors.OUTCOME_UNKNOWN
         return errors.code_for(self.reason.removeprefix("shadow:"))
@@ -147,8 +134,10 @@ class LocalAuthority:
     owners: Mapping[str, EffectOwner] = field(default_factory=dict)
     clock: Callable[[], str] = utc_now
     threshold: int = 1
-    tool_policies: Mapping[str, ApprovalPolicy] = field(default_factory=dict)
-    revocations: Revocations | None = None
+    #: Per-tool quorum policies (``probity_records.quorum``: policyId, threshold, approver raw keys),
+    #: the same objects an auditor pins in ``Trust.quorum_policies`` to re-count every allow.
+    tool_policies: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
+    revocations: RevocationCache | None = None
     approval_source: ApprovalSource | None = None
     content_guard: ContentGuard | None = None
     mode: Literal["enforce", "shadow"] = "enforce"
@@ -159,9 +148,17 @@ class LocalAuthority:
         self.directory.mkdir(parents=True, exist_ok=True)
         if self.mode not in ("enforce", "shadow"):
             raise ValueError("mode must be 'enforce' or 'shadow'")
-        self.default_policy = ApprovalPolicy(self.approvers, self.threshold) if self.approvers else None
+        self.default_policy = (approval_policy("default", self.approvers, self.threshold)
+                               if self.approvers else None)
         if self.default_policy is None and not self.tool_policies:
             raise ValueError("an authority needs approvers or tool_policies")
+        policies = [*self.tool_policies.values(), *([self.default_policy] if self.default_policy else [])]
+        by_id: dict[str, Mapping[str, Any]] = {}
+        for policy in policies:
+            validate_policy(policy)
+            if by_id.setdefault(policy["policyId"], policy) != policy:
+                raise ValueError(f"two different policies share the id {policy['policyId']!r}")
+        self._policies = by_id
         self.signer = load_signer(self.key) if self.key is not None else self._file_key()
         (self.directory / "authority.pub").write_bytes(self.signer.public_pem())
         self.journal = Journal(self.directory, self.signer)
@@ -224,7 +221,7 @@ class LocalAuthority:
         """Fold one journal record into the index; the only writer of ``ops``."""
         pid, phase = pred.get("permitId"), pred.get("phase")
         ctx = pred.get("context") or {}
-        if pid and phase == "authorize" and pred.get("decision") == "allow" and not ctx.get("shadow"):
+        if pid and phase == "authorize" and pred.get("decision") == "allow":
             db.execute("INSERT OR IGNORE INTO ops(pid, run_id, activity_id, tool, workflow_id, args_sha256,"
                        " tool_call_id) VALUES (?,?,?,?,?,?,?)",
                        (pid, pred.get("runId"), ctx.get("activityId"), pred.get("tool"), ctx.get("workflowId"),
@@ -275,7 +272,13 @@ class LocalAuthority:
     def checkpoint(self) -> dict[str, Any]:
         return self.journal.checkpoint()
 
-    def policy_for(self, tool: str) -> ApprovalPolicy:
+    def trust(self) -> Trust:
+        """What an auditor pins to re-check this authority's journal: its quorum policies and the
+        current revocation state. Publish it out of band; never read it back from the records."""
+        state = self.revocations.state() if self.revocations is not None else None
+        return Trust(quorum_policies=dict(self._policies), revocations=state)
+
+    def policy_for(self, tool: str) -> Mapping[str, Any]:
         policy = self.tool_policies.get(tool, self.default_policy)
         if policy is None:
             raise LookupError(f"no approval policy for {tool!r}")
@@ -302,11 +305,25 @@ class LocalAuthority:
                                          "idempotencyKey": pid, "issuedAt": self.clock(), "permitId": pid,
                                          "runId": req.run_id, "workflowId": req.workflow_id})
 
-    def _public(self, pem: bytes) -> Any:
-        key = self._keys.get(pem)
+    def _public(self, raw_b64: str) -> Any:
+        key = self._keys.get(raw_b64)
         if key is None:
-            key = self._keys[pem] = load_public(pem)
+            key = self._keys[raw_b64] = load_public(_unb64(raw_b64))
         return key
+
+    def _verified(self, signed: Any, policy: Mapping[str, Any]) -> dict[str, Any] | None:
+        """The approval body when its signature verifies under the key ``policy`` pins for its approver."""
+        if not isinstance(signed, Mapping) or not isinstance(signed.get("body"), dict):
+            return None
+        body = signed["body"]
+        raw = policy["approvers"].get(str(body.get("approver", "")))
+        if raw is None:
+            return None
+        try:
+            self._public(raw).verify(_unb64(signed.get("sig")), APPROVAL_DOMAIN + canonical(body))
+        except Exception:  # noqa: BLE001 - any failure to verify is a refusal of that approval
+            return None
+        return body
 
     def _approvals(self, req: Request) -> Sequence[Mapping[str, Any]]:
         if req.approvals:
@@ -325,10 +342,11 @@ class LocalAuthority:
             approvals = list(self._approvals(req))
         except Pending:
             return Decision(False, "approval_pending")  # not journalled: nothing was decided yet
-        snapshot = None
+        state = None
         if self.revocations is not None:
-            snapshot = self.revocations.current()
-            if snapshot is None:
+            try:
+                state = self.revocations.state()
+            except StaleRevocations:
                 return Decision(False, "revocation_state_stale")  # retryable; decided nothing
         guard_verdict = None
         if self.content_guard is not None:
@@ -339,53 +357,60 @@ class LocalAuthority:
         with self._txn() as db:
             if not approvals:
                 return self._deny(db, req, None, "approval_missing")
-            bodies: list[dict[str, Any]] = []
+            signed_bodies: list[tuple[dict[str, Any], str]] = []
             for signed in approvals:
-                body = verify_approval(signed, dict(policy.approvers))
+                body = self._verified(signed, policy)
                 if body is not None:
-                    bodies.append(body)
+                    signed_bodies.append((body, str(signed["sig"])))
+            bodies = [b for b, _ in signed_bodies]
             if not bodies:
                 return self._deny(db, req, None, "approval_signature_invalid")
             ids = {str(b.get("approvalId", "")) for b in bodies}
             if len(ids) != 1:
                 return self._deny(db, req, None, "approval_id_ambiguous")
             pid = ids.pop()
-            if snapshot is not None:
-                if any(key_id(self._public(policy.approvers[str(b["approver"])])) in snapshot.approver_key_ids
+            if state is not None:
+                now = self.clock()
+                if any(state.key_revoked(key_id(self._public(policy["approvers"][str(b["approver"])])), now)
                        for b in bodies):
-                    return self._deny(db, req, pid, "approver_revoked", context={"revocationVersion": snapshot.version})
-                if pid in snapshot.approval_ids:
-                    return self._deny(db, req, pid, "permit_revoked", context={"revocationVersion": snapshot.version})
+                    return self._deny(db, req, pid, "approver_revoked", context={"revocationSeq": state.seq})
+                if state.permit_revoked(pid, now):
+                    return self._deny(db, req, pid, "permit_revoked", context={"revocationSeq": state.seq})
             if guard_verdict is not None and guard_verdict.get("action") != "allow":
                 return self._deny(db, req, pid, "content_blocked", context={"contentGuard": guard_verdict})
             op = self._op(db, pid)
             if op is not None and op["activityId"] == req.activity_id and op["runId"] == req.run_id:
                 return self._resume(db, req, pid, op)
             consumed = [pid] if op is not None else []
-            bindings, allowed, first_refusal = [], set(), None
-            for body in bodies:
+            bindings, reader_allowed, first_refusal = [], set(), None
+            payload_bytes = canonical(req.args)
+            for body, sig in signed_bodies:
                 approver = str(body.get("approver"))
                 record, payload = build_approval_binding(
                     body, {"approvalId": pid, "event": EVENT, "phase": PHASE, "principal": req.principal,
                            "target": req.workflow_id, "tool": req.activity_type, "usedAt": self.clock()},
-                    canonical(req.args), consumed,
-                    {approver: key_id(self._public(policy.approvers[approver]))}, self.clock(), POLICY_RELEASE)
+                    payload_bytes, consumed,
+                    {approver: key_id(self._public(policy["approvers"][approver]))}, self.clock(), POLICY_RELEASE)
                 verdict = judge_approval_binding(record, payload)
-                bindings.append(embed_approval_binding(record, payload))
+                bindings.append(embed_approval_binding(record, payload, sig))
                 if verdict["decision"] == "allow":
-                    allowed.add(approver)
+                    reader_allowed.add(approver)
                 elif first_refusal is None:
                     first_refusal = verdict["reason"]
-            if len(allowed) < policy.threshold:
+            # The same count the offline verifier runs under the auditor's pinned policy.
+            signed_ok, _ = count_bindings(policy, bindings, self.clock(),
+                                          state.key_revoked if state is not None else None)
+            allowed = signed_ok & reader_allowed
+            quorum = {"approval_policy": policy["policyId"], "threshold": policy["threshold"]}
+            if len(allowed) < policy["threshold"]:
                 reason = first_refusal if first_refusal is not None else "approval_threshold_not_met"
                 return self._deny(db, req, pid, reason, bindings,
-                                  context={"approvers": sorted(allowed), "threshold": policy.threshold})
-            if self.mode == "shadow":
-                self._append(db, req, pid, phase="authorize", decision="allow", reason="bound",
-                             approval_bindings=bindings, threshold=policy.threshold, context={"shadow": True})
-                return Decision(True, "shadow:bound", shadow=True)
+                                  context={"approvers": sorted(allowed), "threshold": policy["threshold"]})
+            shadow = self.mode == "shadow"
             self._append(db, req, pid, phase="authorize", decision="allow", reason="bound",
-                         approval_bindings=bindings, threshold=policy.threshold)
+                         approval_bindings=bindings, context={"shadow": True} if shadow else {}, **quorum)
+            if shadow:  # observed, not enforced: the permit still lets the worker journal intent and effect
+                return Decision(True, "shadow:bound", self._permit(req, pid), shadow=True)
             return Decision(True, "bound", self._permit(req, pid))
 
     def _resume(self, db: sqlite3.Connection, req: Request, pid: str, op: dict[str, Any]) -> Decision:
@@ -464,8 +489,13 @@ class LocalAuthority:
                        args_sha256=row[4] or "", tool_call_id=row[5] or "", principal="")
 
     def is_revoked(self, permit_id: str) -> bool:
-        snap = self.revocations.current() if self.revocations else None
-        return snap is not None and permit_id in snap.approval_ids
+        if self.revocations is None:
+            return False
+        try:
+            state = self.revocations.state()
+        except StaleRevocations:
+            return True  # fail closed: a permit is not honoured on revocation state nobody can vouch for
+        return state.permit_revoked(permit_id, self.clock())
 
     def _close(self, db: sqlite3.Connection, req: Request, pid: str, op: dict[str, Any], outcome: str,
                result_sha256: str | None) -> None:

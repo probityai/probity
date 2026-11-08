@@ -353,7 +353,9 @@ class _ActivityInbound(ActivityInboundInterceptor):
             attrs["probity.decision"] = "allow" if decision.ok else "deny"
             attrs["probity.code"] = decision.code or "OK"
             telemetry.record(info.activity_type, info.workflow_type, decision.code, time.perf_counter() - started)
-        if decision.shadow:  # observe only: the refusal is recorded, the call runs as it would without us
+        if decision.shadow and decision.permit is None:
+            # observe only: the refusal is recorded and the call runs as it would without us. A shadow
+            # allow carries a permit and goes on below, so its intent and effect are journalled too.
             return await self.next.execute_activity(input)
         if not decision.ok:
             if decision.outcome == "committed":  # this call already happened: hand back its result
@@ -433,12 +435,13 @@ class _NexusInbound(NexusOperationInboundInterceptor):
             await asyncio.to_thread(authority.refuse, req, "arguments_changed_after_schedule")
             raise errors.refusal(errors.ARGS_CHANGED_AFTER_SCHEDULE, "arguments changed after schedule")
         decision = await asyncio.to_thread(authority.authorize, req)
-        if decision.shadow:
+        if decision.shadow and decision.permit is None:
             return await self.next.execute_nexus_operation_start(input)
         if not decision.ok:
             if decision.outcome == "committed":
-                raise errors.refusal(errors.OUTCOME_UNKNOWN, "operation already started for this approval",
-                                     outcome="committed")
+                raise errors.refusal(errors.OPERATION_ALREADY_COMMITTED,
+                                     "operation already started for this approval", outcome="committed",
+                                     permitId=decision.permit_id)
             raise _refusal(decision)
         pid = decision.permit_id or ""
         await asyncio.to_thread(authority.intent, req, pid)
