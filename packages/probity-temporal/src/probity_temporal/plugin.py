@@ -220,7 +220,9 @@ def _workflow_interceptor(plugin: _Interceptor) -> type[WorkflowInboundIntercept
             return super().start_local_activity(input)
 
         async def start_nexus_operation(self, input: StartNexusOperationInput) -> Any:
-            name = f"{input.service}/{input.operation}"
+            # operation_name, never operation: a workflow passes the nexusrpc.Operation object
+            # (ShipService.ship) or a callable as often as a string, and only the name matches.
+            name = f"{input.service}/{input.operation_name}"
             if name in plugin.gated_nexus:
                 call = _GATED_CALL.get() or {}
                 info = workflow.info()
