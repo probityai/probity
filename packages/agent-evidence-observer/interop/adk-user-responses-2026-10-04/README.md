@@ -29,7 +29,7 @@ consumer adoption.
 
 ## Run installed copies
 
-The producing operation is run by the operator's runtime: it replaces the release SDK with a normal install from the exact source checkout, checks all 778 installed SDK Python Git blobs before importing it, and saves the packet this directory retains. The [workflow](../../../../.github/workflows/package-observer-adk-user-responses.yml) installs the reader from its hash lock in an environment with no ADK distribution and checks the retained record. Python, dependency installation, site initialization and the host remain trusted. Source bytes of the producing run are held as digests in `retained/WITHHELD-SOURCES.json`.
+The producing operation is run by the operator's runtime: it replaces the release SDK with a normal install from the exact source checkout, checks all 778 installed SDK Python Git blobs before importing it, and saves the packet this directory retains. The [workflow](../../../../.github/workflows/ci.yml) installs the reader from its hash lock in an environment with no ADK distribution and checks the retained record. Python, dependency installation, site initialization and the host remain trusted. Source bytes of the producing run are held as digests in `retained/WITHHELD-SOURCES.json`.
 
 ```sh
 python -I -B verify_retained.py
