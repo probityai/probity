@@ -130,7 +130,7 @@ async def test_worker_killed_mid_call_never_reads_as_success_or_pays_twice(env, 
     authority = authority_for(tmp_path, with_owner=with_owner)
     target = env.client.service_client.config.target_host
     extra = ["--with-owner"] if with_owner else []
-    dying = subprocess.Popen([sys.executable, "-m", "probity_temporal.demo", "worker", "--dir", str(tmp_path),
+    dying = subprocess.Popen([sys.executable, "-m", "probity_temporal.cli", "demo", "worker", "--dir", str(tmp_path),
                               "--target", target, *extra],
                              env={**os.environ, "PROBITY_DEMO_DIR": str(tmp_path), "PROBITY_DEMO_HANG_AFTER_COMMIT": "1"})
     try:
@@ -156,3 +156,36 @@ async def test_worker_killed_mid_call_never_reads_as_success_or_pays_twice(env, 
     effect = [s["predicate"] for s in report["statements"] if s["predicate"]["phase"] == "effect"][0]
     assert effect["uncertainEffect"]["attempts"][0]["reply"] == "connection_lost"
     assert json.dumps(effect).count("confirmed") == 0
+
+
+def test_retry_after_lost_reply_needs_a_final_absent_answer(tmp_path):
+    class Owner:
+        id = "bank"
+        answer = "absent"
+
+        def lookup(self, key):
+            return self.answer
+
+        def count(self, key):
+            return 1 if self.answer == "present" else 0
+
+    from probity_records import args_sha256
+    from probity_temporal import LocalAuthority
+    owner = Owner()
+    approver = approver_key(tmp_path)
+    authority = LocalAuthority(tmp_path, {APPROVER: approver.public_pem()}, owners={TOOL: owner})
+    digest = args_sha256([REQ])
+    signed = sign_for(approver, {"permitId": "p" * 64, "argsSha256": digest, "tool": TOOL, "workflowId": "wf"},
+                      "customer:alice")
+    req = Request("wf", "run", "1", TOOL, 1, [REQ], digest, "call", "customer:alice", signed)
+    first = authority.authorize(req)
+    authority.intent(req, first.permit_id)  # the worker dies here
+    retry = authority.authorize(Request(*[*req.__dict__.values()][:4], 2, *[*req.__dict__.values()][5:]))
+    assert (retry.ok, retry.reason) == (True, "reconciled_absent_retry")
+    authority.intent(req, retry.permit_id)
+    assert authority.effect(req, retry.permit_id, "confirmed", "ab" * 32) == "committed"
+    report = _verify(tmp_path, authority)
+    assert report["verdict"] == "PASS", report["failures"]
+    owner.answer = None
+    again = authority.authorize(req)
+    assert (again.ok, again.outcome) == (False, "committed")

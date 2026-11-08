@@ -97,10 +97,18 @@ def _keys(public_pems: Iterable[bytes]) -> list[Any]:
     return keys
 
 
+NO_APPROVAL_REQUIRED = "no_approval_required"
+#: A fresh permit for a call whose earlier permit was used, issued only after the effect owner gave a
+#: final "absent" answer; valid only when an earlier allow for the same permit exists (checked below).
+RECONCILED_RETRY = "reconciled_absent_retry"
+
+
 def _check_approval(pred: dict[str, Any], problems: list[str], where: str) -> None:
     embedded = pred.get("approvalBinding")
     if not embedded:
-        if pred.get("decision") == "allow":
+        # An allow with no approval is accepted only as the authority's signed statement that its
+        # policy required none for this call; verify_journal counts these apart (policyAllows).
+        if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, RECONCILED_RETRY):
             problems.append(f"{where}:allow_without_approval_binding")
         return
     payload = base64.b64decode(embedded["payloadB64"])
@@ -163,6 +171,8 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
         pid = pred.get("permitId")
         phase = pred.get("phase")
         if phase == "authorize" and pred.get("decision") == "allow":
+            if pred.get("reason") == RECONCILED_RETRY and pid not in allowed:
+                problems.append(f"line_{i}:reconciled_retry_without_earlier_permit")
             allowed.add(pid)
         elif phase == "intent":
             if pid not in allowed:
@@ -193,6 +203,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     lines = [line for line in p.read_text().splitlines() if line.strip()] if p.exists() else []
     prev, failures, bodies, verified = GENESIS, [], [], 0
     outcomes: dict[str, int] = {}
+    policy_allows = 0
     for i, line in enumerate(lines, 1):
         body, problems = _check_line(i, line, keys, prev)
         prev = _line_hash(line.encode())
@@ -203,6 +214,9 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         if not problems:
             verified += 1
         pred = body.get("predicate", {})
+        if (pred.get("phase") == "authorize" and pred.get("decision") == "allow"
+                and pred.get("reason") == NO_APPROVAL_REQUIRED):
+            policy_allows += 1
         if pred.get("phase") == "effect" and pred.get("outcome"):
             outcomes[pred["outcome"]] = outcomes.get(pred["outcome"], 0) + 1
     failures.extend(_cross_checks(bodies))
@@ -228,5 +242,5 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     else:
         verdict = "PASS"
     return {"verdict": verdict, "records": len(lines), "verified": verified, "failures": failures,
-            "checkpoint": checkpoint, "outcomes": outcomes,
+            "checkpoint": checkpoint, "outcomes": outcomes, "policyAllows": policy_allows,
             "statements": [body for _, body in bodies]}

@@ -17,7 +17,13 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--key", type=Path, action="append", required=True, help="trusted authority public key (PEM)")
     v.add_argument("--checkpoint", type=Path, help="the signed checkpoint you pinned")
     v.add_argument("--json", action="store_true")
-    a = ap.parse_args(argv)
+    sub.add_parser("demo", help="the refund demo: run | worker (see probity_temporal.demo)", add_help=False)
+    args = sys.argv[1:] if argv is None else argv
+    if args[:1] == ["demo"]:
+        from .demo import main as demo_main  # noqa: PLC0415 - imported as a package module, never __main__
+
+        return demo_main(args[1:])
+    a = ap.parse_args(args)
     from probity_records import verify_journal  # noqa: PLC0415
 
     checkpoint = json.loads(a.checkpoint.read_text()) if a.checkpoint else None

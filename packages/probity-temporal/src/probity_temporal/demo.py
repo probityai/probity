@@ -1,8 +1,8 @@
 """The refund demo: a gated ``refund_payment`` activity, a mock payment processor that applies only
 authority-signed permits, and the six steps of the walkthrough.
 
-    python -m probity_temporal.demo run --dir demo-out     # starts a local Temporal dev server
-    python -m probity_temporal.demo worker --dir demo-out  # one worker process (used by step 4)
+    probity-temporal demo run --dir demo-out     # starts a local Temporal dev server
+    probity-temporal demo worker --dir demo-out --target HOST:PORT  # one worker (step 4)
 
 Everything the outsider needs lands in ``--dir``: ``authority.pub``, ``journal.jsonl`` and
 ``checkpoint.json``; step 5 verifies them with the network disabled.
@@ -246,7 +246,7 @@ async def demo(root: Path) -> int:
         worker.cancel()
         await asyncio.gather(worker, return_exceptions=True)
         env_vars = {**os.environ, "PROBITY_DEMO_DIR": str(root), "PROBITY_DEMO_HANG_AFTER_COMMIT": "1"}
-        dying = subprocess.Popen([sys.executable, "-m", "probity_temporal.demo", "worker", "--dir", str(root),
+        dying = subprocess.Popen([sys.executable, "-m", "probity_temporal.cli", "demo", "worker", "--dir", str(root),
                                   "--target", target], env=env_vars)
         h4 = await client.start_workflow(RefundWorkflow.run, {**req, "amount_cents": 2500},
                                          id="refund-4", task_queue=TASK_QUEUE)
