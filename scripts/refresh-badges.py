@@ -25,9 +25,9 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
 import urllib.error
 import urllib.request
+from datetime import UTC, datetime
 from pathlib import Path
 
 REF = re.compile(r"assets/badges/dl-(pypi|crates)-([A-Za-z0-9._-]+)\.svg")
@@ -189,7 +189,7 @@ def refresh_one(build, out: Path, stem: str, title: str, shown: str, getter) -> 
         if isinstance(total, dict):
             doc = out.parent.parent / DOWNLOADS_DOC
             doc.parent.mkdir(parents=True, exist_ok=True)
-            at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
             page = downloads_page(total, at)
             # rewrite only when a count moved, so the time alone never opens a refresh PR
             if not doc.exists() or STAMP.sub("", doc.read_text(encoding="utf-8")) != STAMP.sub("", page):
