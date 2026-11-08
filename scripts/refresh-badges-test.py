@@ -88,14 +88,14 @@ class PepyLinkTest(unittest.TestCase):
 
     def test_pepy_404_links_pepy_and_drops_package_badge(self) -> None:
         root_text, pkg_text = self.relink(False)
-        self.assertIn(f'href="{rb.COMPARE_PAGE}"', root_text)
+        self.assertIn(f'href="{rb.DOWNLOADS_PAGE}"', root_text)
         self.assertNotIn("pypi.org", root_text)
         self.assertEqual(pkg_text, self.PKG)
 
     def test_pepy_200_links_pepy_and_adds_package_badge(self) -> None:
         root_text, pkg_text = self.relink(True)
-        self.assertIn(f'href="{rb.COMPARE_PAGE}"', root_text)
-        self.assertIn(f"]({rb.COMPARE_PAGE})", pkg_text)
+        self.assertIn(f'href="{rb.DOWNLOADS_PAGE}"', root_text)
+        self.assertIn(f"]({rb.DOWNLOADS_PAGE})", pkg_text)
         self.assertIn("dl-verifier-total.svg", pkg_text)
 
     def test_badge_comes_back_off_again_when_pepy_goes_away(self) -> None:
@@ -108,28 +108,50 @@ class PepyLinkTest(unittest.TestCase):
             rb.relink_verifier(root, True)
             rb.relink_verifier(root, False)
             self.assertEqual(pkg.read_text(), self.PKG)
-            self.assertIn(rb.COMPARE_PAGE, (root / "README.md").read_text())
+            self.assertIn(rb.DOWNLOADS_PAGE, (root / "README.md").read_text())
 
-    def test_compare_link_names_every_summed_package(self) -> None:
+    def test_downloads_page_names_every_summed_package(self) -> None:
         names = rb.COMBINED["dl-verifier-total"][1]
         self.assertGreater(len(names), 1)
-        self.assertEqual(rb.COMPARE_PAGE, "https://pepy.tech/compare?packages=" + ",".join(names))
+        page = rb.downloads_page({n: 1000 + i for i, n in enumerate(names)}, "2026-11-08 16:00 UTC")
+        for n in names:
+            self.assertIn(f"https://pepy.tech/projects/{n}", page)
+        self.assertIn(f"**{sum(1000 + i for i in range(len(names))):,}**", page)
+        self.assertIn("2026-11-08 16:00 UTC", page)
 
-    def test_old_project_page_link_is_rewritten_to_compare(self) -> None:
+    def test_downloads_page_not_rewritten_for_time_alone(self) -> None:
+        build = rb.load_make_badge().build
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "assets" / "badges"
+            out.mkdir(parents=True)
+            doc = Path(tmp) / rb.DOWNLOADS_DOC
+            totals = {"a": 1, "b": 2}
+            self.assertEqual(rb.refresh_one(build, out, "dl-x-total", "t", "s", lambda: totals), 0)
+            first = doc.read_text()
+            with mock.patch.object(rb, "datetime") as dt:
+                dt.now.return_value.strftime.return_value = "2099-01-01 00:00 UTC"
+                rb.refresh_one(build, out, "dl-x-total", "t", "s", lambda: totals)
+                self.assertEqual(doc.read_text(), first)
+                rb.refresh_one(build, out, "dl-x-total", "t", "s", lambda: {"a": 1, "b": 3})
+                self.assertIn("2099-01-01 00:00 UTC", doc.read_text())
+
+    def test_old_links_are_rewritten_to_downloads_page(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             old = self.ROOT.replace("https://pypi.org/project/agent-evidence-verify/", rb.PEPY_PAGE)
             (root / "README.md").write_text(old)
             self.assertEqual(rb.relink_verifier(root, True), ["README.md"])
-            self.assertIn(rb.COMPARE_PAGE, (root / "README.md").read_text())
+            self.assertIn(rb.DOWNLOADS_PAGE, (root / "README.md").read_text())
             self.assertEqual(rb.relink_verifier(root, True), [])
+            (root / "README.md").write_text(self.ROOT.replace("https://pypi.org/project/agent-evidence-verify/", rb.OLD_COMPARE_PAGE))
+            self.assertEqual(rb.relink_verifier(root, True), ["README.md"])
 
-    def test_repo_readme_verifier_badge_links_the_compare_page(self) -> None:
+    def test_repo_readme_verifier_badge_links_the_downloads_page(self) -> None:
         text = (Path(rb.__file__).resolve().parent.parent / "README.md").read_text(encoding="utf-8")
         lines = [ln for ln in text.splitlines() if "dl-verifier-total" in ln]
         self.assertTrue(lines)
         for ln in lines:
-            self.assertIn(rb.COMPARE_PAGE, ln)
+            self.assertIn(rb.DOWNLOADS_PAGE, ln)
 
     def test_page_exists_is_false_on_http_error(self) -> None:
         with mock.patch.object(rb.urllib.request, "urlopen", side_effect=not_found()):
