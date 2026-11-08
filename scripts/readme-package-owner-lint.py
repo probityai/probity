@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 ROW = re.compile(r"^\|\s*\[([A-Za-z0-9._-]+)\]\(.*\*\*\d")
-BADGE = re.compile(r"dl-pypi-([A-Za-z0-9._-]+?)\.svg|pepy\.tech/projects/([A-Za-z0-9._-]+)")
+BADGE = re.compile(r"dl-pypi-([A-Za-z0-9._-]+?)\.(?:svg|json)|pepy\.tech/projects/([A-Za-z0-9._-]+)")
 
 
 def foreign(readme: Path, root: Path) -> list[str]:

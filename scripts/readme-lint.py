@@ -30,7 +30,7 @@ to that shape with three rules:
    on npmjs.com or npm-stat.com for an npm package, or on crates.io for a crate. Every
    PyPI download badge opens pepy.tech, never the PyPI page. A badge whose image is a
    summed total (a file named dl-<name>-total.svg, the sum of several package names)
-   links https://github.com/probityai/probity/blob/main/docs/downloads.md, the page the
+   links https://github.com/probityai/probity/blob/badges/downloads.md, the page the
    same refresh run writes with each name's total, the sum and the source, because a
    pepy project page shows only one name and hides the rest of the sum.
 
@@ -66,7 +66,7 @@ HTML_LINKED_IMG = re.compile(
 )
 MD_LINKED_IMG = re.compile(r"\[!\[([^\]]*)\]\([^)]*\)\]\(([^)\s]+)")
 DOWNLOAD_LINK_OK = re.compile(
-    r"^https://(?:pepy\.tech/projects/[A-Za-z0-9._-]+|github\.com/probityai/probity/blob/main/docs/downloads\.md|www\.npmjs\.com/package/\S+"
+    r"^https://(?:pepy\.tech/projects/[A-Za-z0-9._-]+|github\.com/probityai/probity/blob/badges/downloads\.md|www\.npmjs\.com/package/\S+"
     r"|npmjs\.com/package/\S+|npm-stat\.com/\S+|crates\.io/crates/[A-Za-z0-9_-]+)/?$"
 )
 EXTERNAL = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|#|//)", re.IGNORECASE)
@@ -117,13 +117,13 @@ def github_api_badges(text: str) -> list[str]:
     return GITHUB_API_BADGE.findall(text)
 
 
-SUMMED_BADGE = re.compile(r"\bdl-[a-z0-9-]+-total\.svg", re.IGNORECASE)
+SUMMED_BADGE = re.compile(r"\bdl-[a-z0-9-]+-total\.(?:svg|json)", re.IGNORECASE)
 HTML_LINKED_SRC = re.compile(
     r"<a\b[^>]*?\bhref=[\"']([^\"']+)[\"'][^>]*>\s*<img\b[^>]*?\bsrc=[\"']([^\"']+)[\"']", re.IGNORECASE
 )
 MD_LINKED_SRC = re.compile(r"\[!\[[^\]]*\]\(([^)\s]+)[^)]*\)\]\(([^)\s]+)")
-DOWNLOADS_PAGE = "https://github.com/probityai/probity/blob/main/docs/downloads.md"
-SUMMED_LINKS = (DOWNLOADS_PAGE, "docs/downloads.md")
+DOWNLOADS_PAGE = "https://github.com/probityai/probity/blob/badges/downloads.md"
+SUMMED_LINKS = (DOWNLOADS_PAGE, "downloads.md")
 
 
 def bad_summed_links(text: str) -> list[str]:

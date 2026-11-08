@@ -128,7 +128,7 @@ class ReadmeLintTest(unittest.TestCase):
         self.assertEqual(self.run_lint(GOOD + html + md), 0)
 
     def test_downloads_badge_linking_downloads_page_passes(self) -> None:
-        url = "https://github.com/probityai/probity/blob/main/docs/downloads.md"
+        url = "https://github.com/probityai/probity/blob/badges/downloads.md"
         html = f'\n<a href="{url}"><img height="16" alt="Downloads" src="assets/badges/dl-thing-total.svg"></a>\n'
         md = f'\n[![thing downloads](https://example.org/d.svg)]({url})\n'
         self.assertEqual(lint.bad_download_links(html + md), [])
@@ -153,7 +153,7 @@ class ReadmeLintTest(unittest.TestCase):
         img = "https://example.org/assets/badges/dl-verifier-total.svg"
         html = f'\n<a href="{one}"><img alt="Downloads" src="{img}"></a>\n'
         self.assertEqual(self.run_lint(GOOD + html), 1)
-        both = html.replace(one, "https://github.com/probityai/probity/blob/main/docs/downloads.md")
+        both = html.replace(one, "https://github.com/probityai/probity/blob/badges/downloads.md")
         self.assertEqual(self.run_lint(GOOD + both), 0)
 
     def test_downloads_badge_linking_pypi_fails(self) -> None:

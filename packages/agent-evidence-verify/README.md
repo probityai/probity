@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/agent-evidence-verify.svg)](https://pypi.org/project/agent-evidence-verify/)
 <!-- downloads-badge:begin -->
-[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-verifier-total.svg)](https://github.com/probityai/probity/blob/main/docs/downloads.md)
+[![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprobityai%2Fprobity%2Fbadges%2Fdl-verifier-total.json&cacheSeconds=3600)](https://github.com/probityai/probity/blob/badges/downloads.md)
 <!-- downloads-badge:end -->
 
 An offline verifier that decides whether a claim holds against evidence bytes the consumer pinned, with adapters for source passages, operand lineage, authority captures, bounded absence and spend journals.
