@@ -117,7 +117,7 @@ def test_authority_refuses_a_second_use_and_a_forged_approval(tmp_path):
     signed = sign_for(approver, pending, "customer:alice")
 
     def req(activity_id, approval):
-        return Request("wf", "run", activity_id, TOOL, 1, [REQ], digest, "call", "customer:alice", approval)
+        return Request("wf", "run", activity_id, TOOL, 1, [REQ], digest, "call", "customer:alice", [approval])
 
     assert authority.authorize(req("1", signed)).ok
     assert authority.authorize(req("2", signed)).reason == "approval_replayed"
@@ -125,7 +125,7 @@ def test_authority_refuses_a_second_use_and_a_forged_approval(tmp_path):
     assert authority.authorize(req("3", forged)).reason == "approval_signature_invalid"
 
 
-@pytest.mark.parametrize("with_owner,expected", [(False, "needs_reconciliation"), (True, "reconciled_committed")])
+@pytest.mark.parametrize("with_owner,expected", [(False, "needs_reconciliation"), (True, "done")])
 async def test_worker_killed_mid_call_never_reads_as_success_or_pays_twice(env, tmp_path, with_owner, expected):
     authority = authority_for(tmp_path, with_owner=with_owner)
     target = env.client.service_client.config.target_host
@@ -149,6 +149,8 @@ async def test_worker_killed_mid_call_never_reads_as_success_or_pays_twice(env, 
     finally:
         await _stop(worker)
     assert result["status"] == expected
+    if with_owner:  # the committed refund comes back as success, with the bank's own receipt
+        assert result["receipt"] == {"status": "applied", "ref": "RF-0001"}
     assert Bank(tmp_path).count(pending["permitId"]) == 1  # paid once, never twice
     report = _verify(tmp_path, authority)
     assert report["verdict"] == "PASS", report["failures"]
@@ -177,13 +179,14 @@ def test_retry_after_lost_reply_needs_a_final_absent_answer(tmp_path):
     digest = args_sha256([REQ])
     signed = sign_for(approver, {"permitId": "p" * 64, "argsSha256": digest, "tool": TOOL, "workflowId": "wf"},
                       "customer:alice")
-    req = Request("wf", "run", "1", TOOL, 1, [REQ], digest, "call", "customer:alice", signed)
+    req = Request("wf", "run", "1", TOOL, 1, [REQ], digest, "call", "customer:alice", [signed])
     first = authority.authorize(req)
     authority.intent(req, first.permit_id)  # the worker dies here
-    retry = authority.authorize(Request(*[*req.__dict__.values()][:4], 2, *[*req.__dict__.values()][5:]))
+    import dataclasses
+    retry = authority.authorize(dataclasses.replace(req, attempt=2))
     assert (retry.ok, retry.reason) == (True, "reconciled_absent_retry")
     authority.intent(req, retry.permit_id)
-    assert authority.effect(req, retry.permit_id, "confirmed", "ab" * 32) == "committed"
+    assert authority.effect(req, retry.permit_id, "confirmed", "ab" * 32) == ("committed", None)
     report = _verify(tmp_path, authority)
     assert report["verdict"] == "PASS", report["failures"]
     owner.answer = None

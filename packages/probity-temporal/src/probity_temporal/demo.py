@@ -33,8 +33,9 @@ with workflow.unsafe.imports_passed_through():
     from probity_records import Signer, canonical, sha256_hex, sign_approval, verify_permit
 
     from .authority import EVENT, PHASE, LocalAuthority
-    from .plugin import (COMMITTED, REFUSED, UNCERTAIN, ProbityPlugin, check_approval, current_permit,
-                         execute_gated_activity, pending_approval)
+    from . import errors
+    from .plugin import ProbityPlugin, check_approval, current_idempotency_key, current_permit, \
+        execute_gated_activity, pending_approval
 
 TASK_QUEUE = "probity-refunds"
 TOOL = "refund_payment"
@@ -82,10 +83,16 @@ class Bank:
     def count(self, key: str) -> int | None:
         return sum(1 for e in self.ledger()["applied"] if e["key"] == key)
 
+    def result(self, key: str) -> dict[str, Any] | None:
+        """The receipt the bank issued under ``key``: what the refund call returns."""
+        hits = [e for e in self.ledger()["applied"] if e["key"] == key]
+        return {"status": "applied", "ref": hits[0]["ref"]} if hits else None
+
 
 @activity.defn(name=TOOL)
 async def refund_payment(args: dict[str, Any]) -> dict[str, Any]:
     root = Path(os.environ["PROBITY_DEMO_DIR"])
+    assert current_idempotency_key() == (current_permit() or {}).get("claims", {}).get("permitId")
     receipt = Bank(root).apply(args, current_permit())
     if os.environ.get("PROBITY_DEMO_HANG_AFTER_COMMIT") == "1":
         (root / "committed.flag").write_text(receipt.get("ref", ""))
@@ -111,15 +118,16 @@ class RefundWorkflow:
             args = {**args, "amount_cents": request["tamper_amount_cents"]}  # an edit after approval
         try:
             receipt = await execute_gated_activity(
-                refund_payment, args, approval=self._approval, principal=f"customer:{args['customer_id']}",
+                refund_payment, args, approvals=[self._approval] if self._approval else [],
+                principal=f"customer:{args['customer_id']}",
                 tool_call_id="call-refund-1", start_to_close_timeout=timedelta(seconds=4),
                 retry_policy=RetryPolicy(maximum_attempts=3, initial_interval=timedelta(milliseconds=200)))
         except ActivityError as err:
             cause = err.cause
-            if isinstance(cause, ApplicationError) and cause.type in (REFUSED, UNCERTAIN, COMMITTED):
+            if isinstance(cause, ApplicationError) and (cause.type or "").startswith(errors.PREFIX):
                 detail = cause.details[0] if cause.details else {}
-                branch = {UNCERTAIN: "needs_reconciliation", COMMITTED: "reconciled_committed"}.get(cause.type, "refused")
-                return {"status": branch, "reason": detail.get("reason", str(cause))}
+                branch = "needs_reconciliation" if cause.type == errors.OUTCOME_UNKNOWN else "refused"
+                return {"status": branch, "reason": detail.get("reason", str(cause)), "code": cause.type}
             raise
         return {"status": "done", "receipt": receipt}
 

@@ -190,6 +190,7 @@ class LocalAuthority:
             db.execute("PRAGMA synchronous=NORMAL")  # the fsynced journal is the durable copy
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS ops (pid TEXT PRIMARY KEY, run_id TEXT, activity_id TEXT, tool TEXT,
+                    workflow_id TEXT, args_sha256 TEXT, tool_call_id TEXT,
                     attempts TEXT NOT NULL DEFAULT '[]', reconciliations TEXT NOT NULL DEFAULT '[]',
                     settled TEXT, task_token TEXT);
                 CREATE INDEX IF NOT EXISTS ops_token ON ops(task_token);
@@ -224,8 +225,10 @@ class LocalAuthority:
         pid, phase = pred.get("permitId"), pred.get("phase")
         ctx = pred.get("context") or {}
         if pid and phase == "authorize" and pred.get("decision") == "allow" and not ctx.get("shadow"):
-            db.execute("INSERT OR IGNORE INTO ops(pid, run_id, activity_id, tool) VALUES (?,?,?,?)",
-                       (pid, pred.get("runId"), ctx.get("activityId"), pred.get("tool")))
+            db.execute("INSERT OR IGNORE INTO ops(pid, run_id, activity_id, tool, workflow_id, args_sha256,"
+                       " tool_call_id) VALUES (?,?,?,?,?,?,?)",
+                       (pid, pred.get("runId"), ctx.get("activityId"), pred.get("tool"), ctx.get("workflowId"),
+                        pred.get("argsSha256"), pred.get("toolCallId")))
         elif pid and phase == "intent":
             attempts = json.loads(db.execute("SELECT attempts FROM ops WHERE pid=?", (pid,)).fetchone()[0])
             attempts.append({"dispatchedAt": pred.get("at"), "reply": None})
@@ -449,6 +452,16 @@ class LocalAuthority:
         db = self._db()
         row = db.execute("SELECT pid FROM ops WHERE task_token=?", (task_token.hex(),)).fetchone()
         return None if row is None else (row[0], self._op(db, row[0]) or {})
+
+    def request_for(self, permit_id: str) -> Request:
+        """The call a permit was issued for, as the index holds it (for async completion)."""
+        row = self._db().execute("SELECT workflow_id, run_id, activity_id, tool, args_sha256, tool_call_id,"
+                                 " attempts FROM ops WHERE pid=?", (permit_id,)).fetchone()
+        if row is None:
+            raise LookupError(f"no operation for permit {permit_id[:12]}")
+        return Request(workflow_id=row[0] or "", run_id=row[1] or "", activity_id=row[2] or "",
+                       activity_type=row[3] or "", attempt=len(json.loads(row[6])), args=[],
+                       args_sha256=row[4] or "", tool_call_id=row[5] or "", principal="")
 
     def is_revoked(self, permit_id: str) -> bool:
         snap = self.revocations.current() if self.revocations else None
