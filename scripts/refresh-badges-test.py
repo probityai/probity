@@ -88,17 +88,15 @@ class PepyLinkTest(unittest.TestCase):
 
     def test_pepy_404_links_pepy_and_drops_package_badge(self) -> None:
         root_text, pkg_text = self.relink(False)
-        self.assertIn('href="https://pepy.tech/projects/agent-evidence-verify"', root_text)
+        self.assertIn(f'href="{rb.COMPARE_PAGE}"', root_text)
         self.assertNotIn("pypi.org", root_text)
         self.assertEqual(pkg_text, self.PKG)
-        self.assertNotIn("probity-verify", root_text + pkg_text)
 
     def test_pepy_200_links_pepy_and_adds_package_badge(self) -> None:
         root_text, pkg_text = self.relink(True)
-        self.assertIn('href="https://pepy.tech/projects/agent-evidence-verify"', root_text)
-        self.assertIn("](https://pepy.tech/projects/agent-evidence-verify)", pkg_text)
+        self.assertIn(f'href="{rb.COMPARE_PAGE}"', root_text)
+        self.assertIn(f"]({rb.COMPARE_PAGE})", pkg_text)
         self.assertIn("dl-verifier-total.svg", pkg_text)
-        self.assertNotIn("probity-verify", root_text + pkg_text)
 
     def test_badge_comes_back_off_again_when_pepy_goes_away(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -110,7 +108,28 @@ class PepyLinkTest(unittest.TestCase):
             rb.relink_verifier(root, True)
             rb.relink_verifier(root, False)
             self.assertEqual(pkg.read_text(), self.PKG)
-            self.assertIn("pepy.tech/projects/agent-evidence-verify", (root / "README.md").read_text())
+            self.assertIn(rb.COMPARE_PAGE, (root / "README.md").read_text())
+
+    def test_compare_link_names_every_summed_package(self) -> None:
+        names = rb.COMBINED["dl-verifier-total"][1]
+        self.assertGreater(len(names), 1)
+        self.assertEqual(rb.COMPARE_PAGE, "https://pepy.tech/compare?packages=" + ",".join(names))
+
+    def test_old_project_page_link_is_rewritten_to_compare(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            old = self.ROOT.replace("https://pypi.org/project/agent-evidence-verify/", rb.PEPY_PAGE)
+            (root / "README.md").write_text(old)
+            self.assertEqual(rb.relink_verifier(root, True), ["README.md"])
+            self.assertIn(rb.COMPARE_PAGE, (root / "README.md").read_text())
+            self.assertEqual(rb.relink_verifier(root, True), [])
+
+    def test_repo_readme_verifier_badge_links_the_compare_page(self) -> None:
+        text = (Path(rb.__file__).resolve().parent.parent / "README.md").read_text(encoding="utf-8")
+        lines = [ln for ln in text.splitlines() if "dl-verifier-total" in ln]
+        self.assertTrue(lines)
+        for ln in lines:
+            self.assertIn(rb.COMPARE_PAGE, ln)
 
     def test_page_exists_is_false_on_http_error(self) -> None:
         with mock.patch.object(rb.urllib.request, "urlopen", side_effect=not_found()):
