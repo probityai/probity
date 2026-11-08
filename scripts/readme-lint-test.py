@@ -123,7 +123,7 @@ class ReadmeLintTest(unittest.TestCase):
         self.assertEqual(lint.top_badge_row(GOOD), [])
 
     def test_downloads_badge_linking_pepy_passes(self) -> None:
-        html = '\n<a href="https://pepy.tech/projects/thing"><img alt="Downloads" src="assets/d.svg"></a>\n'
+        html = '\n<a href="https://pepy.tech/projects/thing"><img alt="Downloads" src="https://example.org/d.svg"></a>\n'
         md = '\n[![thing downloads](https://example.org/d.svg)](https://pepy.tech/projects/thing)\n'
         self.assertEqual(self.run_lint(GOOD + html + md), 0)
 
