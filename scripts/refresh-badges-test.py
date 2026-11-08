@@ -86,9 +86,10 @@ class PepyLinkTest(unittest.TestCase):
             rb.relink_verifier(root, live)  # idempotent
             return (root / "README.md").read_text(), pkg.read_text()
 
-    def test_pepy_404_links_pypi_and_drops_package_badge(self) -> None:
+    def test_pepy_404_links_pepy_and_drops_package_badge(self) -> None:
         root_text, pkg_text = self.relink(False)
-        self.assertEqual(root_text, self.ROOT)
+        self.assertIn('href="https://pepy.tech/projects/agent-evidence-verify"', root_text)
+        self.assertNotIn("pypi.org", root_text)
         self.assertEqual(pkg_text, self.PKG)
         self.assertNotIn("probity-verify", root_text + pkg_text)
 
@@ -109,7 +110,7 @@ class PepyLinkTest(unittest.TestCase):
             rb.relink_verifier(root, True)
             rb.relink_verifier(root, False)
             self.assertEqual(pkg.read_text(), self.PKG)
-            self.assertEqual((root / "README.md").read_text(), self.ROOT)
+            self.assertIn("pepy.tech/projects/agent-evidence-verify", (root / "README.md").read_text())
 
     def test_page_exists_is_false_on_http_error(self) -> None:
         with mock.patch.object(rb.urllib.request, "urlopen", side_effect=not_found()):

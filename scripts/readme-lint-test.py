@@ -97,7 +97,10 @@ class ReadmeLintTest(unittest.TestCase):
         self.assertEqual(self.run_lint(GOOD + ok), 0)
 
     def _row(self, *alts: str) -> str:
-        badges = "\n".join(f'<a href="https://example.org"><img alt="{a}" src="https://example.org/{a}.svg"></a>' for a in alts)
+        def href(a: str) -> str:
+            return "https://pepy.tech/projects/thing" if "downloads" in a.lower() else "https://example.org"
+
+        badges = "\n".join(f'<a href="{href(a)}"><img alt="{a}" src="https://example.org/{a}.svg"></a>' for a in alts)
         return "# thing\n\n<p>\n" + badges + "\n</p>\n" + GOOD.split("\n", 1)[1]
 
     def test_badge_row_in_order_passes(self) -> None:
@@ -118,6 +121,28 @@ class ReadmeLintTest(unittest.TestCase):
     def test_prose_paragraph_is_not_a_badge_row(self) -> None:
         self.assertEqual(self.run_lint(GOOD), 0)
         self.assertEqual(lint.top_badge_row(GOOD), [])
+
+    def test_downloads_badge_linking_pepy_passes(self) -> None:
+        html = '\n<a href="https://pepy.tech/projects/thing"><img alt="Downloads" src="https://example.org/d.svg"></a>\n'
+        md = '\n[![thing downloads](https://example.org/d.svg)](https://pepy.tech/projects/thing)\n'
+        self.assertEqual(self.run_lint(GOOD + html + md), 0)
+
+    def test_downloads_badge_linking_pypi_fails(self) -> None:
+        html = '\n<a href="https://pypi.org/project/thing/"><img height="16" alt="Downloads" src="https://example.org/d.svg"></a>\n'
+        md = '\n[![thing DOWNLOADS](https://example.org/d.svg)](https://pypi.org/project/thing/)\n'
+        self.assertEqual(self.run_lint(GOOD + html), 1)
+        self.assertEqual(self.run_lint(GOOD + md), 1)
+        self.assertEqual(lint.bad_download_links(html + md), ["https://pypi.org/project/thing/"] * 2)
+
+    def test_downloads_badge_linking_npm_or_crates_passes(self) -> None:
+        npm = '\n[![Downloads](https://example.org/d.svg)](https://www.npmjs.com/package/thing)\n'
+        stat = '\n[![Downloads](https://example.org/d.svg)](https://npm-stat.com/charts.html?package=thing)\n'
+        crate = '\n[![Downloads](https://example.org/d.svg)](https://crates.io/crates/thing)\n'
+        self.assertEqual(self.run_lint(GOOD + npm + stat + crate), 0)
+
+    def test_non_downloads_image_may_link_anywhere(self) -> None:
+        other = '\n[![PyPI](https://example.org/v.svg)](https://pypi.org/project/thing/)\n'
+        self.assertEqual(self.run_lint(GOOD + other), 0)
 
     def test_badge_cache_above_an_hour_fails(self) -> None:
         slow = "![Version](https://img.shields.io/pypi/v/thing?cacheSeconds=86400)"

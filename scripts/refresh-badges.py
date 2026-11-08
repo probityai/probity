@@ -64,17 +64,17 @@ def page_exists(url: str) -> bool:
 
 
 def relink_verifier(root: Path, live: bool) -> list[str]:
-    """Follow PePy: its page once it answers 200, the PyPI page until then.
+    """Keep the verifier download badge on its PePy page.
 
-    The root badge line links PEPY_PAGE when live, else PYPI_PAGE. The package README
+    The root badge line always links PEPY_PAGE, live or not (every download badge opens
+    pepy.tech; the PyPI page is never a download-badge target). The package README
     (the PyPI page) carries its badge only when live, because PePy answers 404 for a
     name it has no data for. Returns the files changed."""
     changed = []
     root_path = root / ROOT_README
     if root_path.exists():
         lines = root_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        want = PEPY_PAGE if live else PYPI_PAGE
-        out = [VERIFIER_LINK.sub(want, ln) if "dl-verifier-total" in ln else ln for ln in lines]
+        out = [VERIFIER_LINK.sub(PEPY_PAGE, ln) if "dl-verifier-total" in ln else ln for ln in lines]
         if out != lines:
             root_path.write_text("".join(out), encoding="utf-8")
             changed.append(ROOT_README)
@@ -187,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     if any(job[0] == "dl-verifier-total" for job in jobs):
         live = page_exists(PEPY_PAGE)
         for rel in relink_verifier(readme.parent, live):
-            print(f"{rel}: verifier downloads badge follows pepy ({'live' if live else 'not yet'})")
+            print(f"{rel}: verifier downloads badge links pepy (page {'live' if live else 'not yet'})")
     return 1 if failed else 0
 
 
