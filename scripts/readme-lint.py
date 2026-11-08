@@ -28,7 +28,10 @@ to that shape with three rules:
 6. An image whose alt text contains "downloads" (any case), when wrapped in a link,
    links https://pepy.tech/projects/<name> for a PyPI package, or the package page
    on npmjs.com or npm-stat.com for an npm package, or on crates.io for a crate. Every
-   PyPI download badge opens pepy.tech, never the PyPI page.
+   PyPI download badge opens pepy.tech, never the PyPI page. A badge whose image is a
+   summed total (a file named dl-<name>-total.svg, the sum of several package names)
+   links https://pepy.tech/compare?packages=<a>,<b>[,...] naming at least two packages,
+   because a project page shows only one name and hides the rest of the sum.
 
 6. No shields.io badge sets cacheSeconds above 3600. The image proxy then keeps a
    version badge for that long, so a README can show a release older than the one
@@ -62,7 +65,7 @@ HTML_LINKED_IMG = re.compile(
 )
 MD_LINKED_IMG = re.compile(r"\[!\[([^\]]*)\]\([^)]*\)\]\(([^)\s]+)")
 DOWNLOAD_LINK_OK = re.compile(
-    r"^https://(?:pepy\.tech/projects/[A-Za-z0-9._-]+|www\.npmjs\.com/package/\S+"
+    r"^https://(?:pepy\.tech/projects/[A-Za-z0-9._-]+|pepy\.tech/compare\?packages=[A-Za-z0-9._-]+(?:,[A-Za-z0-9._-]+)*|www\.npmjs\.com/package/\S+"
     r"|npmjs\.com/package/\S+|npm-stat\.com/\S+|crates\.io/crates/[A-Za-z0-9_-]+)/?$"
 )
 EXTERNAL = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|#|//)", re.IGNORECASE)
@@ -111,6 +114,21 @@ def relative_targets(text: str) -> list[str]:
 def github_api_badges(text: str) -> list[str]:
     """Badge URLs that depend on the GitHub API through shields.io."""
     return GITHUB_API_BADGE.findall(text)
+
+
+SUMMED_BADGE = re.compile(r"\bdl-[a-z0-9-]+-total\.svg", re.IGNORECASE)
+HTML_LINKED_SRC = re.compile(
+    r"<a\b[^>]*?\bhref=[\"']([^\"']+)[\"'][^>]*>\s*<img\b[^>]*?\bsrc=[\"']([^\"']+)[\"']", re.IGNORECASE
+)
+MD_LINKED_SRC = re.compile(r"\[!\[[^\]]*\]\(([^)\s]+)[^)]*\)\]\(([^)\s]+)")
+COMPARE_LINK = re.compile(r"^https://pepy\.tech/compare\?packages=[^,\s]+(?:,[^,\s]+)+$")
+
+
+def bad_summed_links(text: str) -> list[str]:
+    """Targets of linked summed-total badges that are not a pepy compare page of 2+ names."""
+    pairs = [(src, url) for url, src in HTML_LINKED_SRC.findall(text)]
+    pairs += MD_LINKED_SRC.findall(text)
+    return [url for src, url in pairs if SUMMED_BADGE.search(src) and not COMPARE_LINK.match(url)]
 
 
 def bad_download_links(text: str) -> list[str]:
@@ -192,6 +210,11 @@ def check(readme: Path, max_words: int, first_screen: int) -> list[str]:
         failures.append(
             f"{readme}: downloads badge links {url[:90]}; link https://pepy.tech/projects/<name> "
             "for a PyPI package (npm and crates.io badges may link their own registry)."
+        )
+    for url in bad_summed_links(text):
+        failures.append(
+            f"{readme}: a summed-total badge links {url[:90]}, a page that shows one package "
+            "name; link https://pepy.tech/compare?packages=<a>,<b> so every summed name shows."
         )
     ranks = [badge_rank(alt) for alt in top_badge_row(text)]
     if ranks != sorted(ranks):
