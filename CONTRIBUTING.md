@@ -19,7 +19,7 @@ python3 scripts/readme-lint.py README.md
 
 A change that alters behaviour comes with a test that fails without it. A fix for a reported bug adds that report's bytes as a test case.
 
-CI runs the checks of every package your change touches. The one required check is `ci-ok`.
+CI runs the checks of every package your change touches. The one required check is `ci-ok`. Every check is a job of `.github/workflows/ci.yml`; `scripts/ci_jobs.toml` says which paths select which job, and the merge queue runs the full set once per batch.
 
 ## Licence
 
