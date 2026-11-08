@@ -29,7 +29,8 @@ PRINCIPAL = "customer:alice"
 @pytest.fixture
 async def env():
     async with await WorkflowEnvironment.start_local() as e:
-        yield SimpleNamespace(client=await _with_plugin(e.client))
+        # the starter is a separate connection: a plugin on a client also reaches every worker built from it
+        yield SimpleNamespace(client=e.client, starter=await _with_plugin(e.client))
 
 
 async def _with_plugin(client):
@@ -77,7 +78,7 @@ def _request(tool: str = SHIP, **extra):
 async def test_local_activity_is_refused_by_default_and_gated_when_allowed(env, tmp_path):
     authority = _authority(tmp_path)
     async with _worker(env.client, tmp_path, authority):
-        blocked = await env.client.start_workflow(SurfaceWorkflow.run, _request(local=True), id="wf-local-no",
+        blocked = await env.starter.start_workflow(SurfaceWorkflow.run, _request(local=True), id="wf-local-no",
                                                   task_queue=TASK_QUEUE)
         await _approve(blocked, tmp_path)
         with pytest.raises(WorkflowFailureError) as refused:
@@ -85,7 +86,7 @@ async def test_local_activity_is_refused_by_default_and_gated_when_allowed(env, 
         assert refused.value.cause.type == errors.LOCAL_ACTIVITY_BLOCKED
     assert not (tmp_path / "shipped.jsonl").exists()
     async with _worker(env.client, tmp_path, authority, allow_local_activities=True):
-        allowed = await env.client.start_workflow(SurfaceWorkflow.run, _request(local=True), id="wf-local-yes",
+        allowed = await env.starter.start_workflow(SurfaceWorkflow.run, _request(local=True), id="wf-local-yes",
                                                   task_queue=TASK_QUEUE)
         pending = await _approve(allowed, tmp_path)
         assert (await allowed.result())["result"] == {"shipped": "sku-1"}
@@ -97,7 +98,7 @@ async def test_local_activity_is_refused_by_default_and_gated_when_allowed(env, 
 async def test_approval_signed_for_other_bytes_is_rejected_before_any_local_activity_runs(env, tmp_path):
     authority = _authority(tmp_path)
     async with _worker(env.client, tmp_path, authority, allow_local_activities=True):
-        h = await env.client.start_workflow(SurfaceWorkflow.run, _request(local=True), id="wf-local-bad",
+        h = await env.starter.start_workflow(SurfaceWorkflow.run, _request(local=True), id="wf-local-bad",
                                             task_queue=TASK_QUEUE)
         pending = await _pending(h)
         other = {**pending, "argsSha256": "0" * 64}  # an approval signed for different bytes
@@ -111,7 +112,7 @@ async def test_approval_signed_for_other_bytes_is_rejected_before_any_local_acti
 async def test_async_completion_records_the_confirmed_outcome_then_completes(env, tmp_path):
     authority = _authority(tmp_path)
     async with _worker(env.client, tmp_path, authority):
-        h = await env.client.start_workflow(SurfaceWorkflow.run, _request(SHIP_ASYNC), id="wf-async",
+        h = await env.starter.start_workflow(SurfaceWorkflow.run, _request(SHIP_ASYNC), id="wf-async",
                                             task_queue=TASK_QUEUE)
         await _approve(h, tmp_path)
         token_file = tmp_path / "task-token"
@@ -133,7 +134,7 @@ async def test_unlisted_signal_is_dropped_and_unlisted_update_is_rejected_with_a
     authority = _authority(tmp_path)
     async with _worker(env.client, tmp_path, authority, authorized_signals=["mark"],
                        authorized_updates=["approve"]):
-        h = await env.client.start_workflow(SurfaceWorkflow.run, _request(), id="wf-allow", task_queue=TASK_QUEUE)
+        h = await env.starter.start_workflow(SurfaceWorkflow.run, _request(), id="wf-allow", task_queue=TASK_QUEUE)
         await _pending(h)
         await h.signal(SurfaceWorkflow.tamper, "evil")
         await h.signal(SurfaceWorkflow.mark, "fine")
@@ -149,7 +150,7 @@ async def test_unlisted_signal_is_dropped_and_unlisted_update_is_rejected_with_a
 async def test_without_an_allowlist_every_signal_and_update_still_works(env, tmp_path):
     authority = _authority(tmp_path)
     async with _worker(env.client, tmp_path, authority):
-        h = await env.client.start_workflow(SurfaceWorkflow.run, _request(), id="wf-open", task_queue=TASK_QUEUE)
+        h = await env.starter.start_workflow(SurfaceWorkflow.run, _request(), id="wf-open", task_queue=TASK_QUEUE)
         await _pending(h)
         await h.signal(SurfaceWorkflow.tamper, "x")
         assert await h.execute_update(SurfaceWorkflow.poke) == "poked"
@@ -161,9 +162,9 @@ async def test_principal_survives_continue_as_new_so_the_next_run_can_still_be_a
     authority = _authority(tmp_path)
     async with _worker(env.client, tmp_path, authority):
         with probity_principal(PRINCIPAL):
-            h = await env.client.start_workflow(SurfaceWorkflow.run, _request(hop=True, principal=None), id="wf-hop",
+            h = await env.starter.start_workflow(SurfaceWorkflow.run, _request(hop=True, principal=None), id="wf-hop",
                                                 task_queue=TASK_QUEUE)
-        latest = env.client.get_workflow_handle("wf-hop")  # follows the chain to the newest run
+        latest = env.starter.get_workflow_handle("wf-hop")  # follows the chain to the newest run
         pending = await _approve(latest, tmp_path, PRINCIPAL)
         assert (await latest.result())["status"] == "done"
         assert pending["workflowId"] == "wf-hop"

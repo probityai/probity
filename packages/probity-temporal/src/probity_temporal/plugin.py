@@ -221,7 +221,6 @@ def _workflow_interceptor(plugin: _Interceptor) -> type[WorkflowInboundIntercept
 
         async def start_nexus_operation(self, input: StartNexusOperationInput) -> Any:
             name = f"{input.service}/{input.operation}"
-            print('DBGOUT', name, plugin.gated_nexus, input.headers, flush=True)
             if name in plugin.gated_nexus:
                 call = _GATED_CALL.get() or {}
                 info = workflow.info()
@@ -426,7 +425,6 @@ class _NexusInbound(NexusOperationInboundInterceptor):
             return await self.next.execute_nexus_operation_start(input)
         headers = {k.lower(): v for k, v in (ctx.headers or {}).items()}
         values = json_values(PayloadConverter.default, [input.input])
-        print('DBGNEXUS', type(input.input), repr(input.input)[:200], values, headers.get(HEADER_DIGEST), flush=True)
         caller = json.loads(headers.get(HEADER_WORKFLOW, "{}") or "{}")
         req = Request(workflow_id=caller.get("workflowId", ""), run_id=caller.get("runId", ""),
                       activity_id=f"nexus:{ctx.request_id}", activity_type=name, attempt=1, args=values,

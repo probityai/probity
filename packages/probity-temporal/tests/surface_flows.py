@@ -96,9 +96,9 @@ class SurfaceWorkflow:
 
 
 # ---- Nexus ----------------------------------------------------------------------------------
-import nexusrpc
-
 with workflow.unsafe.imports_passed_through():
+    import nexusrpc
+
     from probity_temporal.plugin import gated_call
 
 NEXUS_ENDPOINT = "probity-ship-endpoint"
