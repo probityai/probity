@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "probity-temporal"
+version = "0.1.0"
+description = "Temporal plugin: a single-use permit bound to each activity's exact arguments, and a signed record of what ran that anyone can verify offline"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Sankalp Gilda"}]
+dependencies = [
+    "temporalio>=1.35.0,<2",
+    "probity-records==0.1.0",
+]
+keywords = ["temporal", "ai-agents", "approvals", "audit", "in-toto", "dsse", "human-in-the-loop"]
+
+[project.scripts]
+probity-temporal = "probity_temporal.cli:main"
+
+[project.urls]
+Source = "https://github.com/probityai/probity/tree/main/packages/probity-temporal"
+Issues = "https://github.com/probityai/probity/issues"
+
+[dependency-groups]
+dev = ["pytest>=9.2.0,<10", "pytest-asyncio>=1.2,<2"]
+
+[tool.uv.sources]
+probity-records = { path = "../probity-records", editable = true }
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
