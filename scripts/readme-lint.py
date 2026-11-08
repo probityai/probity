@@ -25,6 +25,10 @@ to that shape with three rules:
 5. A top badge row (the first paragraph after the title that holds only badge
    images) lists its badges in the fixed order CI, version, downloads, license,
    stars, and any other badge after them.
+6. An image whose alt text contains "downloads" (any case), when wrapped in a link,
+   links https://pepy.tech/projects/<name> for a PyPI package, or the package page
+   on npmjs.com or npm-stat.com for an npm package, or on crates.io for a crate. Every
+   PyPI download badge opens pepy.tech, never the PyPI page.
 
 Exit 0 when the README passes, 1 when a rule fails, 2 when it cannot be read.
 Standard library only, so any repository can run it without installing anything.
@@ -47,6 +51,16 @@ REF_DEF = re.compile(r"^\s*\[[^\]]+\]:\s*(\S+)", re.MULTILINE)
 GITHUB_API_BADGE = re.compile(r"https?://img\.shields\.io/github/[^\s)\"'>]*", re.IGNORECASE)
 BADGE_ORDER = ("ci", "version", "downloads", "license", "stars")
 BADGE_ALT = re.compile(r"!\[([^\]]*)\]\([^)]*\)|<img\b[^>]*?\balt=[\"']([^\"']*)[\"']", re.IGNORECASE)
+# A linked image: <a href="X"> ... <img alt="A"> ... </a>, or [![A](img)](X).
+HTML_LINKED_IMG = re.compile(
+    r"<a\b[^>]*?\bhref=[\"']([^\"']+)[\"'][^>]*>\s*<img\b[^>]*?\balt=[\"']([^\"']*)[\"']",
+    re.IGNORECASE,
+)
+MD_LINKED_IMG = re.compile(r"\[!\[([^\]]*)\]\([^)]*\)\]\(([^)\s]+)")
+DOWNLOAD_LINK_OK = re.compile(
+    r"^https://(?:pepy\.tech/projects/[A-Za-z0-9._-]+|www\.npmjs\.com/package/\S+"
+    r"|npmjs\.com/package/\S+|npm-stat\.com/\S+|crates\.io/crates/[A-Za-z0-9_-]+)/?$"
+)
 EXTERNAL = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|#|//)", re.IGNORECASE)
 
 
@@ -90,6 +104,15 @@ def relative_targets(text: str) -> list[str]:
 def github_api_badges(text: str) -> list[str]:
     """Badge URLs that depend on the GitHub API through shields.io."""
     return GITHUB_API_BADGE.findall(text)
+
+
+def bad_download_links(text: str) -> list[str]:
+    """Targets of linked images whose alt text says "downloads" and that are not allowed."""
+    pairs = [(alt, url) for url, alt in HTML_LINKED_IMG.findall(text)]
+    pairs += MD_LINKED_IMG.findall(text)
+    return [
+        url for alt, url in pairs if "downloads" in alt.lower() and not DOWNLOAD_LINK_OK.match(url)
+    ]
 
 
 def top_badge_row(text: str) -> list[str]:
@@ -148,6 +171,11 @@ def check(readme: Path, max_words: int, first_screen: int) -> list[str]:
         failures.append(
             f"{readme}: badge {url[:90]} calls the GitHub API through shields.io and fails "
             "intermittently; use GitHub's own workflow badge or a static badge."
+        )
+    for url in bad_download_links(text):
+        failures.append(
+            f"{readme}: downloads badge links {url[:90]}; link https://pepy.tech/projects/<name> "
+            "for a PyPI package (npm and crates.io badges may link their own registry)."
         )
     ranks = [badge_rank(alt) for alt in top_badge_row(text)]
     if ranks != sorted(ranks):
