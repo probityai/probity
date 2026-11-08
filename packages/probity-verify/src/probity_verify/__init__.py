@@ -13,7 +13,7 @@ import sys
 import warnings
 
 import agent_evidence_verify as _new
-from agent_evidence_verify import *  # noqa: F403
+from agent_evidence_verify import *
 
 OLD = "probity_verify"
 NEW = "agent_evidence_verify"
