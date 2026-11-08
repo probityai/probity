@@ -9,7 +9,7 @@ from probity_records import (
     authorize_under_grant, grant_digest, issue_grant, raw_public, sign_approval, sign_revocations,
     tool_call_predicate, verify_approval_live, verify_journal,
 )
-from test_records import ARGS, _approval, _write_run
+from test_records import ARGS, _approval, _trust, _write_run
 
 PAST = "2000-01-01T00:00:00Z"
 
@@ -50,7 +50,8 @@ def test_records_signed_after_revocation_fail_offline(tmp_path) -> None:
         [_list(root, 1, [{"kind": "permit", "id": pid, "revokedAt": PAST, "reason": "cancelled"}])], {root.key_id}))
     failures = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=permit_out)["failures"]
     assert sum("permit_revoked" in f for f in failures) == 3
-    clean = Trust(revocations=RevocationState.from_lists([], {root.key_id}))
+    clean = Trust(revocations=RevocationState.from_lists([], {root.key_id}),
+                  quorum_policies=_trust(("human:ops", approver)).quorum_policies)
     assert verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=clean)["verdict"] == "PASS"
 
 

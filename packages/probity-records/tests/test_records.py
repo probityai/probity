@@ -6,26 +6,29 @@ import json
 
 from probity_records import (
     TOOL_CALL_RECORD, Journal, Signer, args_sha256, build_approval_binding, build_uncertain_effect,
-    canonical, embed_approval_binding, judge_approval_binding, judge_approval_binding_on_disk, judge_uncertain_effect, key_id,
+    canonical, embed_approval_binding, judge_approval_binding, judge_uncertain_effect, key_id,
     permit_id, sign_approval, tool_call_predicate, verify_approval, verify_journal,
 )
+from probity_records.authority import Trust
+from probity_records.quorum import approval_policy
 
 ARGS = {"amount_cents": 4000, "customer_id": "alice", "payee_account": "acct-alice"}
 
 
-def _approval(signer: Signer, digest: str) -> dict:
-    return {"approvalId": "appr-1", "approver": "human:ops", "event": "tools/call",
+def _approval(signer: Signer, digest: str, who: str = "human:ops") -> dict:
+    return {"approvalId": "appr-1", "approver": who, "event": "tools/call",
             "expiresAt": "2099-01-01T00:00:00Z", "issuedAt": "2026-01-01T00:00:00Z",
             "keyId": signer.key_id, "payloadSha256": digest, "phase": "pre-execution",
             "principal": "customer:alice", "target": "acct-alice", "tool": "refund_payment"}
 
 
-def _binding(approver: Signer, payload_args: dict, consumed: list[str]) -> tuple[dict, bytes]:
-    approval = _approval(approver, args_sha256(ARGS))
+def _binding(approver: Signer, payload_args: dict, consumed: list[str],
+             who: str = "human:ops") -> tuple[dict, bytes]:
+    approval = _approval(approver, args_sha256(ARGS), who)
     use = {k: approval[k] for k in ("approvalId", "event", "phase", "principal", "target", "tool")}
     use["usedAt"] = "2026-06-01T00:00:00Z"
     return build_approval_binding(approval, use, canonical(payload_args), consumed,
-                                  {"human:ops": approver.key_id}, "2026-06-01T00:00:00Z",
+                                  {who: approver.key_id}, "2026-06-01T00:00:00Z",
                                   {"releaseId": "r1", "lookup": "ok", "graceSeconds": 300,
                                    "firstServedAt": "2026-01-01T00:00:00Z",
                                    "lastServedAt": "2099-01-01T00:00:00Z"})
@@ -70,14 +73,24 @@ def test_uncertain_effect_reader() -> None:
     assert (lie["decision"], lie["reason"]) == ("contradicted", "outcome_settled_without_authority")
 
 
+def _embedded(approver: Signer, who: str = "human:ops") -> dict:
+    record, payload = _binding(approver, ARGS, [], who)
+    sig = sign_approval(approver, record["approval"])["sig"]
+    return embed_approval_binding(record, payload, sig)
+
+
+def _trust(*approvers: tuple[str, Signer], threshold: int = 1) -> Trust:
+    policy = approval_policy("refunds", {who: s.public_pem() for who, s in approvers}, threshold)
+    return Trust(quorum_policies={"refunds": policy})
+
+
 def _write_run(journal: Journal, approver: Signer, outcome: str, reply: str) -> str:
     pid = permit_id("pause", "call-1", args_sha256(ARGS))
-    record, payload = _binding(approver, ARGS, [])
     common = {"run_id": "run", "tool_call_id": "call-1", "tool": "refund_payment",
               "args_sha256_hex": args_sha256(ARGS), "permit_id": pid}
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason="bound",
-        approval_bindings=[embed_approval_binding(record, payload)], threshold=1, **common))
+        approval_bindings=[_embedded(approver)], threshold=1, approval_policy="refunds", **common))
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS),
                    tool_call_predicate(phase="intent", **common))
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS), tool_call_predicate(
@@ -89,9 +102,12 @@ def test_journal_verifies_offline_and_reports_denominator(tmp_path) -> None:
     gate, approver = Signer.generate(), Signer.generate()
     journal = Journal(tmp_path, gate)
     _write_run(journal, approver, "committed", "confirmed")
-    report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint())
+    trust = _trust(("human:ops", approver))
+    report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=trust)
     assert (report["verdict"], report["verified"], report["records"]) == ("PASS", 3, 3), report["failures"]
-    assert verify_journal(tmp_path, [gate.public_pem()])["verdict"] == "NOT_ESTABLISHED"
+    assert verify_journal(tmp_path, [gate.public_pem()], trust=trust)["verdict"] == "NOT_ESTABLISHED"
+    unpinned = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint())
+    assert any("approval_allow_but_no_trust_pinned" in f for f in unpinned["failures"])
 
 
 def test_tamper_truncation_and_wrong_key_fail(tmp_path) -> None:
@@ -115,8 +131,9 @@ def test_tamper_truncation_and_wrong_key_fail(tmp_path) -> None:
 def test_effect_record_claiming_success_after_lost_reply_fails(tmp_path) -> None:
     gate = Signer.generate()
     journal = Journal(tmp_path, gate)
-    _write_run(journal, Signer.generate(), "committed", "connection_lost")
-    report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint())
+    approver = Signer.generate()
+    _write_run(journal, approver, "committed", "connection_lost")
+    report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=_trust(("human:ops", approver)))
     assert report["verdict"] == "FAIL"
     assert any("outcome_settled_without_authority" in f for f in report["failures"])
 
@@ -127,28 +144,47 @@ def test_key_id_matches_agent_evidence_verify() -> None:
     assert key_id(signer.public) == verifier_key_id(signer.public)
 
 
-def test_in_memory_reader_agrees_with_the_file_reader() -> None:
-    approver = Signer.generate()
-    cases = [_binding(approver, ARGS, []), _binding(approver, ARGS, ["appr-1"]),
-             _binding(approver, {**ARGS, "amount_cents": 400000}, [])]
-    record, payload = _binding(approver, ARGS, [])
-    cases.append(({**record, "trustedKeys": {"human:ops": "00" * 32}}, payload))
-    cases.append(({**record, "use": {**record["use"], "principal": "someone-else"}}, payload))
-    for record, payload in cases:
-        assert judge_approval_binding(record, payload) == judge_approval_binding_on_disk(record, payload)
-
-
-def test_allow_needs_its_threshold_of_reader_allowed_bindings(tmp_path) -> None:
-    gate, approver = Signer.generate(), Signer.generate()
-    journal = Journal(tmp_path, gate)
-    record, payload = _binding(approver, ARGS, [])
-    pid = permit_id("pause", "call-1", args_sha256(ARGS))
+def _allow(journal: Journal, bindings: list[dict], threshold: int) -> None:
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS), tool_call_predicate(
-        phase="authorize", decision="allow", reason="bound", approval_bindings=[embed_approval_binding(record, payload)],
-        threshold=2, run_id="run", tool_call_id="call-1", tool="refund_payment",
-        args_sha256_hex=args_sha256(ARGS), permit_id=pid))
-    report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint())
-    assert any("reader_allows_1_of_2" in f for f in report["failures"]), report["failures"]
+        phase="authorize", decision="allow", reason="bound", approval_bindings=bindings, threshold=threshold,
+        approval_policy="refunds", run_id="run", tool_call_id="call-1", tool="refund_payment",
+        args_sha256_hex=args_sha256(ARGS), permit_id=permit_id("pause", "call-1", args_sha256(ARGS))))
+
+
+def test_allow_is_recounted_under_the_pinned_policy(tmp_path) -> None:
+    gate, ops, lead = Signer.generate(), Signer.generate(), Signer.generate()
+    journal = Journal(tmp_path, gate)
+    _allow(journal, [_embedded(ops)], 2)
+    report = verify_journal(tmp_path, [gate.public_pem()], trust=_trust(("human:ops", ops), ("human:lead", lead), threshold=2))
+    assert any("1_of_2_approvals_hold" in f for f in report["failures"]), report["failures"]
+
+
+def test_authority_cannot_lower_the_threshold_or_fabricate_approvers(tmp_path) -> None:
+    gate, ops, lead, forger = Signer.generate(), Signer.generate(), Signer.generate(), Signer.generate()
+    trust = _trust(("human:ops", ops), ("human:lead", lead), threshold=2)
+    # the authority writes threshold 1 although the auditor pinned 2
+    journal = Journal(tmp_path / "low", gate)
+    _allow(journal, [_embedded(ops)], 1)
+    report = verify_journal(tmp_path / "low", [gate.public_pem()], trust=trust)
+    assert any("threshold_1_is_not_the_pinned_2" in f for f in report["failures"]), report["failures"]
+    # the authority signs a second "human:ops" approval with its own key: the pinned key refuses it
+    fake = _embedded(forger, "human:lead")
+    journal = Journal(tmp_path / "forged", gate)
+    _allow(journal, [_embedded(ops), fake], 2)
+    report = verify_journal(tmp_path / "forged", [gate.public_pem()], trust=trust)
+    assert report["verdict"] == "FAIL"
+    assert any("approval_signature_unverified" in f or "approval_key_id_is_not_the_pinned_key" in f
+               for f in report["failures"]), report["failures"]
+    # the same approver twice counts once
+    journal = Journal(tmp_path / "twice", gate)
+    _allow(journal, [_embedded(ops), _embedded(ops)], 2)
+    report = verify_journal(tmp_path / "twice", [gate.public_pem()], trust=trust)
+    assert any("duplicate_approver" in f for f in report["failures"]), report["failures"]
+    # two real approvers pass
+    journal = Journal(tmp_path / "ok", gate)
+    _allow(journal, [_embedded(ops), _embedded(lead, "human:lead")], 2)
+    report = verify_journal(tmp_path / "ok", [gate.public_pem()], trust=trust)
+    assert not report["failures"], report["failures"]
 
 
 def test_append_reads_only_new_bytes_and_sees_other_writers(tmp_path) -> None:

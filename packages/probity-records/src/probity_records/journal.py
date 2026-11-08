@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from .authority import Trust, check_authority
+from .quorum import count_bindings
 from .governance import GOVERNANCE_STEP, check_step
 from .core import Signer, load_public, open_envelope, sign_envelope, statement
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
@@ -147,22 +148,34 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
         if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, RECONCILED_RETRY):
             problems.append(f"{where}:allow_without_approval_binding")
         return
-    allowed: set[str] = set()
+    reader_allowed: set[str] = set()
     for n, embedded in enumerate(bindings):
         payload = base64.b64decode(embedded["payloadB64"])
         if hashlib.sha256(payload).hexdigest() != pred.get("argsSha256"):
             problems.append(f"{where}:binding_{n}:approval_payload_is_not_the_call_arguments")
         verdict = judge_approval_binding(embedded["record"], payload)
         if verdict["decision"] == "allow":
-            allowed.add(str(embedded["record"].get("approval", {}).get("approver")))
+            reader_allowed.add(str(embedded["record"].get("approval", {}).get("approver")))
         elif pred.get("decision") == "deny" and verdict["reason"] != pred.get("reason") and len(bindings) == 1:
             problems.append(f"{where}:deny_reason_{pred.get('reason')}_but_reader_says_{verdict['reason']}")
-    if pred.get("decision") == "allow":
-        threshold = pred.get("threshold")
-        if not isinstance(threshold, int) or threshold < 1:
-            problems.append(f"{where}:allow_without_threshold")
-        elif len(allowed) < threshold:
-            problems.append(f"{where}:recorded_allow_but_reader_allows_{len(allowed)}_of_{threshold}")
+    if pred.get("decision") != "allow":
+        return
+    # The M of N is re-counted under the quorum policy the AUDITOR pinned: the approver keys and the
+    # threshold come from Trust, never from the record the authority wrote.
+    if trust is None:
+        problems.append(f"{where}:approval_allow_but_no_trust_pinned")
+        return
+    policy = trust.quorum_policies.get(str(pred.get("approvalPolicyId")))
+    if policy is None:
+        problems.append(f"{where}:approval_policy_not_pinned")
+        return
+    if pred.get("threshold") != policy["threshold"]:
+        problems.append(f"{where}:threshold_{pred.get('threshold')}_is_not_the_pinned_{policy['threshold']}")
+    signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked)
+    problems.extend(f"{where}:{p}" for p in sig_problems)
+    counted = signed & reader_allowed
+    if len(counted) < policy["threshold"]:
+        problems.append(f"{where}:recorded_allow_but_{len(counted)}_of_{policy['threshold']}_approvals_hold")
 
 
 def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str | None:

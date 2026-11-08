@@ -8,12 +8,12 @@ from probity_records import Signer, compare_seals, seal_export, verify_export_se
 from probity_records.__main__ import main
 
 ENTITIES = {"content": [
-    {"id": "a1", "type": "AI_SYSTEM", "stage": "Approved", "createdBy": "u1", "lastModifiedBy": "u2",
+    {"id": "a1", "type": "service", "stage": "Approved", "createdBy": "u1", "lastModifiedBy": "u2",
      "createdDate": "2026-10-01T00:00:00Z", "lastUpdatedDate": "2026-10-05T00:00:00Z"},
-    {"id": "a2", "type": "AI_AGENT", "stage": "Under Review", "createdBy": "u1",
+    {"id": "a2", "type": "worker", "stage": "Pending", "createdBy": "u1",
      "createdDate": "2026-10-02T00:00:00Z"},
-    {"id": "a2", "type": "AI_AGENT", "stage": "Approved", "createdBy": "u3"},
-    {"type": "MODEL", "stage": "Intake"},
+    {"id": "a2", "type": "worker", "stage": "Approved", "createdBy": "u3"},
+    {"type": "dataset", "stage": "Draft"},
 ]}
 
 
@@ -30,7 +30,7 @@ def test_census_reports_denominators_and_defects() -> None:
     c = report["census"]
     assert (c["records"], c["missingIds"], c["duplicateIds"]) == (4, 1, ["a2"])
     assert c["fieldsPresent"]["modified_by"] == {"of": 4, "present": 1}
-    assert c["byStage"] == {"Approved": 2, "Intake": 1, "Under Review": 1}
+    assert c["byStage"] == {"Approved": 2, "Draft": 1, "Pending": 1}
 
 
 def test_any_change_to_the_export_or_seal_fails() -> None:
@@ -49,7 +49,7 @@ def test_compare_seals_finds_silent_edits_and_deletions() -> None:
     old = seal_export(signer, _bytes(ENTITIES), source="t", kind="entities", captured_at="2026-11-01T00:00:00Z")
     later = json.loads(_bytes(ENTITIES))
     later["content"][0]["stage"] = "Rejected"
-    later["content"] = [r for r in later["content"] if r.get("id") != "a2"] + [{"id": "a9", "stage": "Intake"}]
+    later["content"] = [r for r in later["content"] if r.get("id") != "a2"] + [{"id": "a9", "stage": "Draft"}]
     new = seal_export(signer, _bytes(later), source="t", kind="entities", captured_at="2026-11-08T00:00:00Z")
     assert compare_seals(old, new) == {"added": ["a9"], "changed": ["a1"], "removed": ["a2"]}
 

@@ -34,5 +34,8 @@ Each tool-call record carries two published contracts, and their published reade
 | `governance` | Exceptions with owner, rationale and expiry under a quorum; intake, risk routing, approval, attestation and sign-off as signed steps |
 | `exports` | `python -m probity_records seal-export`: a signed census of a governance platform export that anyone re-checks offline |
 
-`verify_journal(path, keys, checkpoint, trust=Trust(...))` re-runs every one of these checks from the
-records and the trust the auditor pins.
+`verify_journal(path, keys, checkpoint, trust=Trust(...))` re-runs the grant, quorum, revocation and
+governance checks from the records and the trust the auditor pins, and re-counts every human approval
+(M of N) under the approver keys and threshold the auditor pinned, re-verifying each approver's own
+signature. An export seal is re-checked with `verify_export_seal` or `python -m probity_records
+verify-export`.

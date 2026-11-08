@@ -39,9 +39,18 @@ def _host_ok(host: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatchcase(host, p.lower()) for p in patterns)
 
 
+def _star_only(pattern: str) -> bool:
+    return "[" not in pattern and "?" not in pattern
+
+
 def _hosts_narrow(child: list[str], parent: list[str]) -> bool:
-    """Child host patterns use only ``*``, so matching each against the parent's patterns is sound."""
-    return all(h in parent or ("[" not in h and "?" not in h and _host_ok(h, parent)) for h in child)
+    """Every child host pattern is one of the parent's, or both sides use only ``*`` and the child,
+    read as text, matches a parent pattern: a child ``*`` can then only be consumed by a parent
+    ``*``, so every host the child admits the parent admits too. A ``?`` or ``[...]`` on either
+    side admits hosts a textual match cannot bound (child ``a*`` under parent ``a?``), so it narrows
+    only by equality."""
+    star_parents = [p for p in parent if _star_only(p)]
+    return all(h in parent or (_star_only(h) and _host_ok(h, star_parents)) for h in child)
 
 
 def _private_host(host: str) -> bool:
@@ -85,8 +94,9 @@ def _check_url_pattern(c: dict[str, Any], v: Any) -> bool:
         return False
     scheme, host, path = parts
     norm = posixpath.normpath(path) if path != "/" else "/"
+    prefix = c.get("pathPrefix", "/").rstrip("/")
     return (scheme in c["schemes"] and _host_ok(host, c["hosts"])
-            and (norm == c.get("pathPrefix", "/").rstrip("/") or norm.startswith(c.get("pathPrefix", "/"))))
+            and (not prefix or norm == prefix or norm.startswith(prefix + "/")))
 
 
 def _check_url_safe(c: dict[str, Any], v: Any) -> bool:
@@ -198,7 +208,8 @@ def _same_type_narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:  
     if kind == "subpath":
         return _check_subpath(parent, child["root"])
     if kind == "url_pattern":
-        prefix_ok = child.get("pathPrefix", "/").startswith(parent.get("pathPrefix", "/"))
+        cp, pp = child.get("pathPrefix", "/").rstrip("/"), parent.get("pathPrefix", "/").rstrip("/")
+        prefix_ok = not pp or cp == pp or cp.startswith(pp + "/")
         return (set(child["schemes"]) <= set(parent["schemes"]) and prefix_ok
                 and _hosts_narrow(child["hosts"], parent["hosts"]))
     if kind == "url_safe":

@@ -179,3 +179,58 @@ def verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[st
     if result.ignored:
         return f"quorum_vote_invalid:{result.ignored[0]}"
     return "ok" if result.status == APPROVED else f"quorum_{result.status}"
+
+
+def approval_policy(policy_id: str, approver_pems: Mapping[str, bytes], threshold: int) -> dict[str, Any]:
+    """A quorum policy for signed human approvals, from each approver's public key (PEM or raw)."""
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat  # noqa: PLC0415
+
+    def raw(pem: bytes) -> str:
+        return _b64(load_public(pem).public_bytes(Encoding.Raw, PublicFormat.Raw))
+
+    policy = {"approvers": {who: raw(pem) for who, pem in approver_pems.items()},
+              "policyId": policy_id, "threshold": threshold}
+    validate_policy(policy)
+    return policy
+
+
+def count_bindings(policy: Mapping[str, Any], bindings: Iterable[Mapping[str, Any]], at: str,
+                   key_revoked: Callable[[str, str], bool] | None = None) -> tuple[set[str], list[str]]:
+    """The distinct approvers whose embedded approval-binding record carries a human approval signed
+    by the key ``policy`` pins for that approver, and the problems found.
+
+    This is the one M-of-N count for human approvals: the authority and an offline auditor run the
+    same function, the auditor with the policy it pinned (never one read from the records). Each
+    binding carries ``approvalSig``, the approver's signature over the approval body, so the count
+    re-verifies the human's signature rather than trusting the authority's word for it. The
+    published approval-binding reader is judged separately by the caller.
+    """
+    from .core import APPROVAL_DOMAIN  # noqa: PLC0415
+
+    validate_policy(policy)
+    counted: set[str] = set()
+    problems: list[str] = []
+    for n, embedded in enumerate(bindings):
+        approval = (embedded.get("record") or {}).get("approval") or {}
+        who = str(approval.get("approver", ""))
+        raw = policy["approvers"].get(who)
+        if raw is None:
+            problems.append(f"binding_{n}:approver_not_in_policy")
+            continue
+        try:
+            key = load_public(_unb64(raw))
+            key.verify(_unb64(embedded.get("approvalSig")), APPROVAL_DOMAIN + canonical(approval))
+        except (InvalidSignature, ValueError, TypeError):
+            problems.append(f"binding_{n}:approval_signature_unverified")
+            continue
+        if approval.get("keyId") != key_id(key):
+            problems.append(f"binding_{n}:approval_key_id_is_not_the_pinned_key")
+            continue
+        if key_revoked is not None and key_revoked(key_id(key), at):
+            problems.append(f"binding_{n}:approver_key_revoked")
+            continue
+        if who in counted:
+            problems.append(f"binding_{n}:duplicate_approver")
+            continue
+        counted.add(who)
+    return counted, problems

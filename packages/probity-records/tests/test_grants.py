@@ -133,3 +133,19 @@ def test_grant_allow_record_verifies_offline_and_a_tampered_one_fails(tmp_path) 
         grant_digest=verdict["grantDigest"], **{**common, "args_sha256_hex": args_sha256(over)}))
     failures = verify_journal(tmp_path / "bad", [gate.public_pem()], bad.checkpoint(), trust=trust)["failures"]
     assert any("grant_deny:constraint_violation:amount_cents" in f for f in failures), failures
+
+
+def test_host_and_path_narrowing_cannot_widen() -> None:
+    def url(hosts, prefix="/"):
+        return {"type": "url_pattern", "schemes": ["https"], "hosts": hosts, "pathPrefix": prefix}
+
+    assert not narrows(url(["a*"]), url(["a?"]))  # a* admits abc, a? does not
+    assert not narrows(url(["a*"]), url(["a[*]"]))
+    assert not narrows({"type": "url_safe", "hosts": ["a*"]}, {"type": "url_safe", "hosts": ["a?"]})
+    assert narrows(url(["a?"]), url(["a?"]))  # equality still narrows
+    assert narrows(url(["api.*.example.com"]), url(["*.example.com"]))
+    assert not narrows(url(["*.example.com"], "/apiary"), url(["*.example.com"], "/api"))
+    assert narrows(url(["*.example.com"], "/api/v1"), url(["*.example.com"], "/api"))
+    c = url(["*.example.com"], "/api")
+    assert check_constraint(c, "https://x.example.com/api/v1") and check_constraint(c, "https://x.example.com/api")
+    assert not check_constraint(c, "https://x.example.com/apiary")

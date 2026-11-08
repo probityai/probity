@@ -46,34 +46,16 @@ def build_approval_binding(approval: Mapping[str, Any], use: Mapping[str, Any], 
 
 
 def judge_approval_binding(record: Mapping[str, Any], payload: bytes) -> dict[str, str]:
-    """``{"decision": "allow"|"deny", "reason": ...}`` from the published approval-binding reader.
-
-    Runs the reader's own check list in memory on the record exactly as a JSON reader would load it
-    (a JCS round trip), with no temporary files: the same verdict as ``approvalbinding.verify`` on
-    the record written to disk, at a fraction of the cost on the permit path.
-    """
+    """``{"decision": "allow"|"deny", "reason": ...}`` from the published approval-binding reader,
+    through its public entry point on the record and payload exactly as an outsider would hold them."""
     from agent_evidence_vectors import approvalbinding  # noqa: PLC0415 - optional at import time
 
     name = str(record.get("use", {}).get("payloadFile", PAYLOAD_FILE))
     if "/" in name or name in ("", ".", ".."):
         return {"decision": "deny", "reason": "payload_file_unsafe"}
-    loaded = json.loads(canonical(dict(record)))
-    failure = approvalbinding._first_failure(loaded, payload, frozenset())  # noqa: SLF001 - the reader itself
-    if failure is not None:
-        return {"decision": approvalbinding.DENY, "reason": failure}
-    return {"decision": approvalbinding.ALLOW, "reason": "bound"}
-
-
-def judge_approval_binding_on_disk(record: Mapping[str, Any], payload: bytes) -> dict[str, str]:
-    """The same verdict through the reader's file entry point, for parity tests and audits."""
-    from agent_evidence_vectors import approvalbinding  # noqa: PLC0415
-
     with tempfile.TemporaryDirectory(prefix="probity-ab-") as tmp:
         path = Path(tmp) / "record.json"
         path.write_bytes(canonical(dict(record)))
-        name = str(record.get("use", {}).get("payloadFile", PAYLOAD_FILE))
-        if "/" in name or name in ("", ".", ".."):
-            return {"decision": "deny", "reason": "payload_file_unsafe"}
         (Path(tmp) / name).write_bytes(payload)
         verdict = approvalbinding.verify(path)
     return {"decision": verdict["decision"], "reason": verdict["reason"]}
@@ -142,14 +124,18 @@ def verifier_case(record: Mapping[str, Any]) -> tuple[bytes, dict[str, Any], dic
     return data, case, policy
 
 
-def embed_approval_binding(record: Mapping[str, Any], payload: bytes) -> dict[str, Any]:
-    """The form a tool-call predicate carries: the record plus its payload bytes in base64."""
-    return {"payloadB64": base64.b64encode(payload).decode("ascii"), "record": dict(record)}
+def embed_approval_binding(record: Mapping[str, Any], payload: bytes, approval_sig: str) -> dict[str, Any]:
+    """The form a tool-call predicate carries: the record, its payload bytes in base64, and the
+    approver's own signature over the approval body (``sign_approval``'s ``sig``), so an auditor
+    re-verifies the human's signature under a key it pinned, not the authority's word for it."""
+    return {"approvalSig": approval_sig, "payloadB64": base64.b64encode(payload).decode("ascii"),
+            "record": dict(record)}
 
 
 def tool_call_predicate(*, phase: str, run_id: str, tool_call_id: str, tool: str, args_sha256_hex: str,
                         permit_id: str | None, decision: str | None = None, reason: str | None = None,
                         approval_bindings: list[Mapping[str, Any]] | None = None, threshold: int | None = None,
+                        approval_policy: str | None = None,
                         outcome: str | None = None,
                         result_sha256: str | None = None, uncertain_effect: Mapping[str, Any] | None = None,
                         context: Mapping[str, Any] | None = None,
@@ -160,13 +146,14 @@ def tool_call_predicate(*, phase: str, run_id: str, tool_call_id: str, tool: str
 
     ``phase`` is ``authorize`` (a permit decision), ``intent`` (the call is about to leave the
     worker) or ``effect`` (what came back, as an uncertain_effect/v1 record). An allow carries one
-    approval-binding record per approver and the ``threshold`` (M of N) the authority applied, or an
+    approval-binding record per approver, the ``threshold`` (M of N) the authority applied and the id
+    of the quorum policy (``approval_policy``) the auditor pins to re-count them, or an
     ``authority`` object when it rests on a grant chain, a quorum or an exception; ``grant_digest`` is
     the grant the permit names.
     """
     if phase not in ("authorize", "intent", "effect"):
         raise ValueError("phase must be authorize, intent or effect")
-    return {"approvalBindings": [dict(b) for b in approval_bindings or []],
+    return {"approvalBindings": [dict(b) for b in approval_bindings or []], "approvalPolicyId": approval_policy,
             "authority": dict(authority) if authority else None, "exceptionDigest": exception_digest, "grantDigest": grant_digest,
             "argsSha256": args_sha256_hex, "context": dict(context or {}), "decision": decision,
             "outcome": outcome, "permitId": permit_id, "phase": phase, "reason": reason,
