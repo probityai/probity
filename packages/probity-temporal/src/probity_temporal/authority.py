@@ -116,8 +116,8 @@ class Decision:
 
     @property
     def code(self) -> str | None:
-        if self.ok and not self.shadow:
-            return None
+        if (self.ok and not self.shadow) or self.outcome == "committed":
+            return None  # a committed outcome is a success, never a refusal
         if self.outcome == "unknown":
             return errors.OUTCOME_UNKNOWN
         return errors.code_for(self.reason.removeprefix("shadow:"))
