@@ -79,9 +79,15 @@ def run(args: argparse.Namespace, prog: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     """Entry point of the ``agent-evidence-verify`` console script."""
+    args = sys.argv[1:] if argv is None else argv
+    if args[:1] == ["corpus"]:
+        # Corpus mode: one verdict line per member of each corpus named.
+        from .corpus import main as corpus_main
+
+        return corpus_main(args[1:])
     parser = argparse.ArgumentParser(prog="agent-evidence-verify", description=SUMMARY)
     add_arguments(parser)
-    return run(parser.parse_args(argv), "agent-evidence-verify")
+    return run(parser.parse_args(args), "agent-evidence-verify")
 
 
 def register(subparsers) -> None:
