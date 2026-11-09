@@ -181,7 +181,7 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-verify"
-version = "0.6.0"
+version = "0.5.1"
 source = { editable = "packages/agent-evidence-verify" }
 dependencies = [
     { name = "agent-evidence-vocabulary" },
