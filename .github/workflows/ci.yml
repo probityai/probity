@@ -33,6 +33,7 @@ concurrency:
 
 jobs:
   changes:
+    if: ${{ github.event_name != 'pull_request' || startsWith(github.head_ref, 'merge-train/') }}
     runs-on: ubuntu-24.04
     outputs:
       members: ${{ steps.map.outputs.members }}
@@ -54,6 +55,7 @@ jobs:
           python3 scripts/ci_select.py "$EVENT" "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
 
   lint:
+    if: ${{ github.event_name != 'pull_request' || startsWith(github.head_ref, 'merge-train/') }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1817,7 +1819,7 @@ jobs:
       - name: Install standalone test dependencies
         run: python -m pip install -e '.[test]'
       - name: Install pinned native mock harness and Observer adapter
-        run: python -m pip install -e '../..[inspect-historical]'
+        run: python -m pip install -e '../..[inspect-historical]' 'agent-client-protocol==0.12.1'
       - name: Check declared populations and mutation controls
         run: python -m pytest -q --junitxml=test-results.xml
       - name: Retain five-tier synthetic contract exercise
@@ -1861,7 +1863,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - run: python -m pip install -e '.[test,inspect-historical]'
+      - run: python -m pip install -e '.[test,inspect-historical]' 'agent-client-protocol==0.12.1'
       - run: python -m pytest -q tests/test_evaluation_history.py tests/test_inspect_history.py tests/test_eval_adversarial.py
       - run: python examples/evaluation_history_demo.py --output-dir evaluation-run
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -1947,7 +1949,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install selected native frameworks and regression dependencies
-        run: python -m pip install -e '.[inspect-historical]' -e 'interop/a2a-native-2026-10-02[test]' pytest==9.1.1 hypothesis==6.168.3 ruff==0.16.10
+        run: python -m pip install -e '.[inspect-historical]' -e 'interop/a2a-native-2026-10-02[test]' pytest==9.1.1 hypothesis==6.168.3 ruff==0.16.10 'agent-client-protocol==0.12.1'
       - name: Refuse changed native joins, transactions and rehashed wrappers
         run: python -m pytest -q interop/five-tier-v0-2026-10-02/tests --junitxml=five-tier-v0-tests.xml
       - name: Check focused lint and bounded production complexity
@@ -2128,7 +2130,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - run: python -m pip install -e ../agent-evidence-verify -e '.[test,inspect,witness]'
+      - run: python -m pip install -e ../agent-evidence-verify -e '.[test,inspect,witness]' 'agent-client-protocol==0.12.1'
       - run: python -m pytest -q tests/test_inspect_sealed_manifest.py
       - run: python -m pytest -q interop/inspect-sealed-manifest-2026-11-03/test_real_run.py
 
@@ -2729,7 +2731,7 @@ jobs:
           python-version: '3.12'
       - name: Install producer and test environment
         run: |
-          python -m pip install -e '.[test,inspect-historical]' build
+          python -m pip install -e '.[test,inspect-historical]' build 'agent-client-protocol==0.12.1'
           python -m pip install -e 'interop/a2a-native-2026-10-02[test]'
       - name: Check reader process and failure controls
         run: python -m pytest -q tests/test_native_reader.py --junitxml=native-consumer-tests.xml
@@ -3407,7 +3409,7 @@ jobs:
           command: check
 
   ci-ok:
-    if: always()
+    if: ${{ (github.event_name != 'pull_request' || startsWith(github.head_ref, 'merge-train/')) && (always()) }}
     needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, observer-witness, observer-witnessed-run-selection, family-resolves, pypi-upload-selftest, version-pins]
     runs-on: ubuntu-24.04
     steps:
