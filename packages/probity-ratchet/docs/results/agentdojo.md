@@ -158,7 +158,7 @@ No candidate was admitted in this run.
 
 ### slack (v1.2.2), run `slack-evolve-20261011T1446`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 17:15 ET on the integrator's order to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
+- Stop reason (`STOPPED.txt`): stopped at 17:15 ET to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
 - Agent model `gpt-5.6-luna`, improver model `gpt-5.6-terra`, endpoint `http://localhost:8787/v1`
 - AgentDojo package 0.1.35, reference clone commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`
 - Ratchet commit `019a4039b8d6e9c30dce7bbafa254b9d0505c091`, split seed 0, attack `important_instructions_no_model_name`
@@ -196,7 +196,7 @@ No candidate was admitted in this run.
 
 ### travel (v1.2.2), run `travel-evolve-20261011T1446`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 17:15 ET on the integrator's order to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
+- Stop reason (`STOPPED.txt`): stopped at 17:15 ET to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
 - Agent model `gpt-5.6-luna`, improver model `gpt-5.6-terra`, endpoint `http://localhost:8787/v1`
 - AgentDojo package 0.1.35, reference clone commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`
 - Ratchet commit `019a4039b8d6e9c30dce7bbafa254b9d0505c091`, split seed 0, attack `important_instructions_no_model_name`
@@ -255,7 +255,7 @@ No candidate was admitted in this run.
 
 ### banking (v1.2.2), run `banking-oss-evolve-20261011T1628`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 17:15 ET on the integrator's order to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
+- Stop reason (`STOPPED.txt`): stopped at 17:15 ET to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
 - Agent model `gpt-oss-120b-medium`, improver model `gpt-5.6-terra`, endpoint `http://localhost:8787/v1`
 - AgentDojo package 0.1.35, reference clone commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`
 - Ratchet commit `de2b745f8bd8ae802c94ed19a139835ef2dbbb8b`, split seed 0, attack `important_instructions_no_model_name`
@@ -288,7 +288,7 @@ No candidate was admitted in this run.
 
 ### slack (v1.2.2), run `slack-oss-evolve-20261011T1628`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 17:15 ET on the integrator's order to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
+- Stop reason (`STOPPED.txt`): stopped at 17:15 ET to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
 - Agent model `gpt-oss-120b-medium`, improver model `gpt-5.6-terra`, endpoint `http://localhost:8787/v1`
 - AgentDojo package 0.1.35, reference clone commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`
 - Ratchet commit `de2b745f8bd8ae802c94ed19a139835ef2dbbb8b`, split seed 0, attack `important_instructions_no_model_name`
@@ -324,7 +324,7 @@ No candidate was admitted in this run.
 
 ### travel (v1.2.2), run `travel-oss-evolve-20261011T1628`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 17:15 ET on the integrator's order to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
+- Stop reason (`STOPPED.txt`): stopped at 17:15 ET to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
 - Agent model `gpt-oss-120b-medium`, improver model `gpt-5.6-terra`, endpoint `http://localhost:8787/v1`
 - AgentDojo package 0.1.35, reference clone commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`
 - Ratchet commit `de2b745f8bd8ae802c94ed19a139835ef2dbbb8b`, split seed 0, attack `important_instructions_no_model_name`
@@ -345,7 +345,7 @@ No candidate was admitted in this run.
 
 ### workspace (v1.2.2), run `workspace-oss-evolve-20261011T1628`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 17:15 ET on the integrator's order to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
+- Stop reason (`STOPPED.txt`): stopped at 17:15 ET to move benchmark runs off the workstation (load average 68) and onto HiPerGator model endpoints; the evaluations recorded up to then stand as measured
 - Agent model `gpt-oss-120b-medium`, improver model `gpt-5.6-terra`, endpoint `http://localhost:8787/v1`
 - AgentDojo package 0.1.35, reference clone commit `089ed468cf3ed0322acc66b0211f26d9d90dbf60`
 - Ratchet commit `de2b745f8bd8ae802c94ed19a139835ef2dbbb8b`, split seed 0, attack `important_instructions_no_model_name`
@@ -366,7 +366,7 @@ No candidate was admitted in this run.
 
 ### banking (v1.2.2), run `box-20261011T1719/banking-hpg-oss`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the session running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/banking-hpg-oss
+- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the process running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/banking-hpg-oss
 - Agent model `gpt-oss-120b`, improver model `gpt-oss-120b`, endpoint `http://127.0.0.1:8801/v1`
 - AgentDojo package 0.1.35
 - Ratchet commit `1c5455cd165c6cf834b24e65f01570c29e8da646`, split seed 0, attack `important_instructions_no_model_name`
@@ -400,7 +400,7 @@ No candidate was admitted in this run.
 
 ### slack (v1.2.2), run `box-20261011T1719/slack-hpg-oss`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the session running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/slack-hpg-oss
+- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the process running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/slack-hpg-oss
 - Agent model `gpt-oss-120b`, improver model `gpt-oss-120b`, endpoint `http://127.0.0.1:8801/v1`
 - AgentDojo package 0.1.35
 - Ratchet commit `1c5455cd165c6cf834b24e65f01570c29e8da646`, split seed 0, attack `important_instructions_no_model_name`
@@ -421,7 +421,7 @@ No candidate was admitted in this run.
 
 ### travel (v1.2.2), run `box-20261011T1719/travel-hpg-oss`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the session running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/travel-hpg-oss
+- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the process running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/travel-hpg-oss
 - Agent model `gpt-oss-120b`, improver model `gpt-oss-120b`, endpoint `http://127.0.0.1:8801/v1`
 - AgentDojo package 0.1.35
 - Ratchet commit `1c5455cd165c6cf834b24e65f01570c29e8da646`, split seed 0, attack `important_instructions_no_model_name`
@@ -442,7 +442,7 @@ No candidate was admitted in this run.
 
 ### workspace (v1.2.2), run `box-20261011T1719/workspace-hpg-oss`, stopped
 
-- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the session running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/workspace-hpg-oss
+- Stop reason (`STOPPED.txt`): stopped at 16:00 PT (19:00 ET) when the process running it was killed (box job INTERRUPTED, signal 143); the HiPerGator gpt-oss-120b endpoint it used (job 45541415) was cancelled at 16:42 PT; rerun from the start as box-20261011T2025/workspace-hpg-oss
 - Agent model `gpt-oss-120b`, improver model `gpt-oss-120b`, endpoint `http://127.0.0.1:8801/v1`
 - AgentDojo package 0.1.35
 - Ratchet commit `1c5455cd165c6cf834b24e65f01570c29e8da646`, split seed 0, attack `important_instructions_no_model_name`

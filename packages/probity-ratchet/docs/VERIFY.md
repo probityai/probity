@@ -134,7 +134,7 @@ established, 2 malformed input.
 
 ## What the receipt must carry
 
-`Decision.to_payload()` of the admission lane:
+`Decision.to_payload()` of the admission component:
 
 | Field | Rule |
 |---|---|
@@ -159,7 +159,7 @@ each model event, in order). Each result row carries `case_digest`, the digest o
 (`ratchet.verify.runs.case_document`; for the case suite, the case as `probity-ratchet-cases` publishes it). The
 referee writes both from the traces and cases it holds, and the decision signs them through `report_digests`.
 
-Known drift: the admission lane's held-out gate still uses the margin `max(2, D + 1)`; ruling 2 requires two stable
+Known drift: the admission component's held-out gate still uses the margin `max(2, D + 1)`; ruling 2 requires two stable
 recoveries and no loss of a protected case. Supplying the four evaluation reports exposes any disagreement as
 `gate_recompute_mismatch:heldout`.
 

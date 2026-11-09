@@ -137,5 +137,5 @@ The store's integration tests need the local Atlas container from step 1.
 ## 7. Benchmarks
 
 The benchmark adapters are not part of this package. Their recorded results stay under `docs/results/`, and every
-results file there verifies offline with `ratchet.verify.results`. The producing operation is run by the operator's
-runtime; the results pages say which subset ran, with task counts.
+results file there verifies offline with `ratchet.verify.results`. The benchmark runs happen outside this
+package; the results pages say which subset ran, with task counts.

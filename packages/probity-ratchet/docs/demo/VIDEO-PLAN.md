@@ -1,7 +1,7 @@
 # Ratchet: the 1-minute submission video
 
 The video is a recording of real commands against the Atlas store, with a banner that says so and captions
-that carry the claims. Recording at 3:45 PM PT is one command:
+that carry the claims. Recording it is one command:
 
 ```sh
 docs/demo/video/record.sh

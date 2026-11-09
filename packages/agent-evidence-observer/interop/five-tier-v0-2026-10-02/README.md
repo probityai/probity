@@ -1,6 +1,6 @@
 # Finite five-tier integration breadth v0.1
 
-This additive profile expands the runnable integration population before the October 8 operational v0. It leaves earlier native profiles, the five-tier contract, and the actual SmolLM2 CPU baseline unchanged. The program's evaluation and distribution lanes can use this package as an installed-framework execution/regression starting point.
+This additive profile expands the runnable integration population before the October 8 operational v0. It leaves earlier native profiles, the five-tier contract, and the actual SmolLM2 CPU baseline unchanged. It can serve as an installed-framework execution and regression starting point.
 
 **Classification: Probity-operated native mock and deterministic integration.** Inspect's real solver/tool/agent loops execute controlled mock responses; SQLite commits and file readbacks are actual local operations. A2A is a fresh actual SDK client/server HTTP exchange. No new real-model quality result, independent judge, outside operator, external authority, custody or adoption is established.
 

@@ -40,7 +40,7 @@ NOT RUN, with the reason:
 - **Evolve on the full 115-task held-out split (`stopped-throughput-run-1`).** Stopped after 18 of 155 parent
   runs: the shared endpoint delivered about 1.2 runs a minute, which could not finish one generation (about
   800 runs) before the deadline. Replaced by `run-2` on the seeded 40-task subset.
-- **A second full-split trial for pass^k on all 115 tasks.** Moved to a Hetzner box per the integrator; the box
+- **A second full-split trial for pass^k on all 115 tasks.** Moved to a Hetzner box; the box
   runner refused it twice: "every reachable box is under its free-space floor of 15 GB even after one cleanup
   pass; nothing was uploaded" (the burst cap of 6 boxes was also reached).
 
@@ -64,7 +64,7 @@ NOT RUN, with the reason:
 ## Setup
 
 - `box/evolve-retail-run3/evolve/retail/run-3`: agent_model `gpt-5.6-luna`, user_model `gpt-5.6-luna`, improver_model `gpt-5.6-terra`, temperature `0.0`, tau_bench_commit `59a200c6d575d595120f1cb70fea53cef0632f6b`, workers `8`; split seed `20261011`, 30 train / 40 held-out, digest `ec6c39df6a347a06`. Stopped: Stopped after generation 1 of 2. Generation 1 is complete (9 candidates, 2 evaluated, 0 admitted, decisions signed with the pinned key). At about 20:27 PT 2026-10-11 the workstation lost its connections (its network address changed); the box launcher took box_run's exit 76 as the end of the job and removed the box checkout while the run was still in generation 2, so nothing after 20:27 PT could be written. The run was then stopped. Generation 2 is NOT RUN.
-- `evolve/retail/run-2`: agent_model `gpt-5.6-luna`, user_model `gpt-5.6-luna`, improver_model `gpt-5.6-terra`, temperature `0.0`, tau_bench_commit `59a200c6d575d595120f1cb70fea53cef0632f6b`, workers `8`; split seed `20261011`, 30 train / 40 held-out, digest `ec6c39df6a347a06`. Stopped: stopped at 18:19 EDT during generation 1's candidate evaluation (28 of 140 candidate runs done): the run could not end before the 16:15 PT cut-off the integrator set for workstation runs, so the candidate evaluations and admission decisions are NOT RUN
+- `evolve/retail/run-2`: agent_model `gpt-5.6-luna`, user_model `gpt-5.6-luna`, improver_model `gpt-5.6-terra`, temperature `0.0`, tau_bench_commit `59a200c6d575d595120f1cb70fea53cef0632f6b`, workers `8`; split seed `20261011`, 30 train / 40 held-out, digest `ec6c39df6a347a06`. Stopped: stopped at 18:19 EDT during generation 1's candidate evaluation (28 of 140 candidate runs done): the run could not end before the 16:15 PT cut-off for workstation runs, so the candidate evaluations and admission decisions are NOT RUN
 - `runs/retail/2ccb14a29382/all-trial-1`: agent_model `gpt-5.6-luna`, user_model `gpt-5.6-luna`, temperature `0.0`, tau_bench_commit `59a200c6d575d595120f1cb70fea53cef0632f6b`, workers `8`; split seed `20261011`, 40 train / 115 held-out, digest `a8e83ef4377f9030`. Note: ran before user-simulator retries existed; its 7 crashed runs are endpoint rate limits (HTTP 429) in the user simulator, counted here as failures (held-out 70/115; 70/108 over the runs that finished)
 
 Runs stopped before any evaluation finished (traces kept, nothing counted from them):
