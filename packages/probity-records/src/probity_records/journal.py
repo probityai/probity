@@ -94,7 +94,9 @@ class Journal:
                predicate: Mapping[str, Any]) -> dict[str, Any]:
         """Sign and append one statement; returns the envelope written, durable on return."""
         lock = self.directory / (JOURNAL_FILE + ".lock")
-        with lock.open("w") as guard:
+        # "a", never "w": O_TRUNC dirties the lock file's inode on every append, and the journal fsync
+        # then commits that metadata too (measured on ext4 burst boxes as part of the p95 cost).
+        with lock.open("a") as guard:
             fcntl.flock(guard, fcntl.LOCK_EX)
             seq, head = self._refresh()
             body = statement(subject_name, subject_digest, predicate_type,
