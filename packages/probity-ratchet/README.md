@@ -60,4 +60,4 @@ Version 0.2.0, built on 2026-10-11 at the MongoDB harness hackathon. The suite, 
 | [Claude Code hook](examples/claude-code/README.md) | Prove a guard on your own sessions, then install it |
 | [Built today and reused](docs/REUSED.md) | What was written at the event and what is pinned |
 | [Signed refusal example](examples/refusal-v3-cell/README.md) | Check a refused candidate offline |
-| [Build contract](docs/CONTRACT.md) | Types, lane interfaces and the full admission rule |
+| [Build contract](docs/CONTRACT.md) | Types, component interfaces and the full admission rule |

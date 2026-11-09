@@ -20,6 +20,7 @@ members = [
     "agent-evidence-verify",
     "probity-ratchet",
     "probity-ratchet-cases",
+    "probity-verify",
     "probityai",
 ]
 
@@ -196,6 +197,7 @@ a2a = [
 ]
 test = [
     { name = "hypothesis" },
+    { name = "poc-evidence-vectors" },
     { name = "pytest" },
 ]
 
@@ -205,6 +207,7 @@ requires-dist = [
     { name = "agent-evidence-vocabulary", specifier = ">=0.8.0,<0.10" },
     { name = "cryptography", specifier = ">=50.0.2,<51" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.170.14,<7" },
+    { name = "poc-evidence-vectors", marker = "extra == 'test'", specifier = "==0.1.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0,<10" },
     { name = "pyyaml", specifier = ">=6.0.2,<7" },
     { name = "uvicorn", marker = "extra == 'a2a'", specifier = "==0.54.0" },
@@ -4018,6 +4021,15 @@ wheels = [
 ]
 
 [[package]]
+name = "poc-evidence-vectors"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/3c/31578467f59cd6e0d2cb1f7adf554bb17abb9c0a4e54ac091416d7f339c6/poc_evidence_vectors-0.1.0.tar.gz", hash = "sha256:8040c5eb7e39f9aa6b8e2d7ddf1ed150746aa77309955e9ff3581404b1028fa7", size = 52790, upload-time = "2026-10-25T15:54:28.233Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/c6/e15c49de2af677c1f6d05dc57350071e53fdc6ac7d67c6bf8427ae784ad3/poc_evidence_vectors-0.1.0-py3-none-any.whl", hash = "sha256:3d8828e1eea6eb195900cd48ddf844a72fbcb2b6742e6c0a42add4c2bc083e86", size = 215527, upload-time = "2026-10-25T15:54:26.831Z" },
+]
+
+[[package]]
 name = "probity-ratchet"
 version = "0.4.0"
 source = { editable = "packages/probity-ratchet" }
@@ -4087,6 +4099,17 @@ agentdojo = [
 [package.metadata]
 requires-dist = [{ name = "agentdojo", marker = "extra == 'agentdojo'", specifier = "==0.1.35" }]
 provides-extras = ["agentdojo"]
+
+[[package]]
+name = "probity-verify"
+version = "0.5.1"
+source = { editable = "packages/probity-verify" }
+dependencies = [
+    { name = "agent-evidence-verify" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "agent-evidence-verify", editable = "packages/agent-evidence-verify" }]
 
 [[package]]
 name = "probityai"

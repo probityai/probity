@@ -38,13 +38,21 @@ COMBINED: dict[str, tuple[str, tuple[str, ...]]] = {
     "dl-verifier-total": ("verifier downloads", ("probity-verify", "agent-evidence-verify")),
 }
 
+# A name whose count is fixed at the moment its last release made it depend on the next
+# name. From then on installing the old name also downloads the new one, so adding the
+# old name's live total would count those installs twice. probity-verify 0.5.1 (published
+# 2026-11-08 about 17:30 UTC) depends on agent-evidence-verify; 10,003 is its pepy API
+# total read at 2026-11-08 16:44 UTC, before that release.
+FROZEN: dict[str, int] = {"probity-verify": 10_003}
 
 PYPI_PAGE = "https://pypi.org/project/agent-evidence-verify/"
 PEPY_PAGE = "https://pepy.tech/projects/agent-evidence-verify"
-# The badge image is the sum of every name in COMBINED, so its link must open a page that
-# shows every one of them: pepy's compare page, not the project page of the newest name.
-COMPARE_PAGE = "https://pepy.tech/compare?packages=" + ",".join(COMBINED["dl-verifier-total"][1])
-VERIFIER_LINK = re.compile("|".join(re.escape(u) for u in (PYPI_PAGE, PEPY_PAGE, COMPARE_PAGE)))
+OLD_COMPARE_PAGE = "https://pepy.tech/compare?packages=" + ",".join(COMBINED["dl-verifier-total"][1])
+# The badge image is the sum of every name in COMBINED, but its link is the pepy.tech page
+# of the current name, the page a reader expects a downloads badge to open. The per-name
+# breakdown of the sum is written to docs/downloads.md from the same numbers.
+DOWNLOADS_DOC = "docs/downloads.md"
+VERIFIER_LINK = re.compile("|".join(re.escape(u) for u in (PYPI_PAGE, PEPY_PAGE, OLD_COMPARE_PAGE)))
 ROOT_README = "README.md"
 PACKAGE_README = "packages/agent-evidence-verify/README.md"
 BADGE_BLOCK = re.compile(
@@ -52,7 +60,7 @@ BADGE_BLOCK = re.compile(
 )
 PACKAGE_BADGE = (
     "[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/"
-    f"assets/badges/dl-verifier-total.svg)]({COMPARE_PAGE})\n"
+    f"assets/badges/dl-verifier-total.svg)]({PEPY_PAGE})\n"
 )
 
 
@@ -67,18 +75,17 @@ def page_exists(url: str) -> bool:
 
 
 def relink_verifier(root: Path, live: bool) -> list[str]:
-    """Keep the verifier download badge on pepy's compare page for both package names.
+    """Keep the verifier download badge linking the pepy.tech page of the current name.
 
-    The root badge line always links COMPARE_PAGE, live or not (every download badge opens
-    pepy.tech; the PyPI page is never a download-badge target, and the project page of the
-    newest name alone would hide the older name's downloads that the badge adds in). The package README
-    (the PyPI page) carries its badge only when live, because PePy answers 404 for a
-    name it has no data for. Returns the files changed."""
+    The root badge line always links PEPY_PAGE, live or not (the PyPI page is never a
+    download-badge target). The package README (the PyPI page) carries its badge only
+    when live, because pepy answers 404 for a name it has no data for.
+    Returns the files changed."""
     changed = []
     root_path = root / ROOT_README
     if root_path.exists():
         lines = root_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        out = [VERIFIER_LINK.sub(COMPARE_PAGE, ln) if "dl-verifier-total" in ln else ln for ln in lines]
+        out = [VERIFIER_LINK.sub(PEPY_PAGE, ln) if "dl-verifier-total" in ln else ln for ln in lines]
         if out != lines:
             root_path.write_text("".join(out), encoding="utf-8")
             changed.append(ROOT_README)
@@ -121,11 +128,31 @@ def pepy_total(name: str, key: str) -> int:
     return int(data["total_downloads"])
 
 
-def combined_total(names: tuple[str, ...]) -> int:
+def combined_totals(names: tuple[str, ...]) -> dict[str, int]:
     key = os.environ.get("PEPY_API_KEY")
     if not key:
         raise ValueError("PEPY_API_KEY is not set; a combined total needs the pepy API")
-    return sum(pepy_total(name, key) for name in names)
+    return {name: FROZEN[name] if name in FROZEN else pepy_total(name, key) for name in names}
+
+
+def downloads_page(totals: dict[str, int]) -> str:
+    """The public breakdown of the summed badge: each name, its downloads, the total.
+
+    The page is public text, so it carries no counting method and no timestamp. Why a
+    FROZEN name is fixed lives in the comment on FROZEN, not here."""
+    rows = "".join(
+        f"| [`{n}`](https://pypi.org/project/{n}/) | {v:,} | [pepy.tech/projects/{n}](https://pepy.tech/projects/{n}) |\n"
+        for n, v in totals.items()
+    )
+    names = list(totals)
+    return (
+        "# Verifier downloads\n\n"
+        f"The verifier was renamed from `{names[0]}` to `{names[-1]}`. Both names are on PyPI, "
+        "and the total is the downloads of both.\n\n"
+        "| Name | Downloads | pepy.tech |\n|---|--:|---|\n"
+        f"{rows}| **Total** | **{sum(totals.values()):,}** | |\n\n"
+        f"Install the current name: `pip install {names[-1]}`.\n"
+    )
 
 
 def crate_total(name: str) -> int:
@@ -151,10 +178,20 @@ def load_make_badge():
 
 
 def refresh_one(build, out: Path, stem: str, title: str, shown: str, getter) -> int:
-    """Write one badge file from getter(); 1 when the source could not be read."""
+    """Write one badge file from getter(); 1 when the source could not be read.
+
+    getter returns an int, or a dict of per-name totals for a summed badge, in which case
+    the downloads page is written beside the README from the same numbers."""
     target = out / f"{stem}.svg"
     try:
         total = getter()
+        if isinstance(total, dict):
+            doc = out.parent.parent / DOWNLOADS_DOC
+            doc.parent.mkdir(parents=True, exist_ok=True)
+            page = downloads_page(total)
+            if not doc.exists() or doc.read_text(encoding="utf-8") != page:
+                doc.write_text(page, encoding="utf-8")
+            total = sum(total.values())
     except (OSError, ValueError, KeyError, TypeError) as exc:  # no answer changes nothing
         note = "file left unchanged"
         if not target.exists():  # a README must never point at a missing image
@@ -182,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
     ]
     for stem, (title, names) in COMBINED.items():
         if f"assets/badges/{stem}.svg" in text:
-            jobs.append((stem, title, "verifier ↓", lambda n=names: combined_total(n)))
+            jobs.append((stem, title, "↓", lambda n=names: combined_totals(n)))
     if not jobs:
         print(f"FAILED: {readme} names no assets/badges/dl-*.svg file")
         return 1
@@ -191,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
     if any(job[0] == "dl-verifier-total" for job in jobs):
         live = page_exists(PEPY_PAGE)
         for rel in relink_verifier(readme.parent, live):
-            print(f"{rel}: verifier downloads badge links pepy (page {'live' if live else 'not yet'})")
+            print(f"{rel}: verifier downloads badge links the pepy page (pepy page {'live' if live else 'not yet'})")
     return 1 if failed else 0
 
 

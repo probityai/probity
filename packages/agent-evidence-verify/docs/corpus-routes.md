@@ -109,6 +109,18 @@ as the reason, and the check keeps the corpus's verdict (`valid`, `invalid` or `
 does not establish that the identity provider issued the token: the token and the issuer's key set are
 not carried.
 
+### `proof_of_control/v1` (`poc-evidence-vectors`, 171 cases)
+
+The assessment names one `input` artifact: a Proof-of-Control artifact as the `poc-evidence-vectors` corpus writes
+it (a signed token, a Merkle inclusion or consistency proof, a token chain, or a canonical-form check). The check
+parses it strictly (duplicate keys, lone surrogates and non-canonical numbers are refused), verifies Ed25519
+signatures, recomputes RFC 6962 inclusion and consistency proofs, walks the chain against the expected measurement
+and anchor, and recomputes the JCS digest. A verifying artifact is `supported` / `artifact_verifies`; any refusal is
+`contradicted` with the corpus's code as the reason. The same rules run as `agent-evidence-verify-poc`, which reads
+one artifact on stdin and prints `{"result": "accept"}` or `{"result": "reject", "code": ...}`, the interface the
+corpus runner calls: `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` passes all
+171 cases. The check does not establish that the keys or roots it is given are the ones a consumer should trust.
+
 ## Why the rules are ported, not imported
 
 The rule code of each claim type is a port of the corpus's own reader, at the commit named in each

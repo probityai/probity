@@ -91,7 +91,7 @@ held-out cases only and needs two (a case failing in both parent runs and passin
 Only one of the four held-out tasks, polyglot-rust-c, failed in both parent runs, so no candidate could
 reach two. Run 2 below uses a wider held-out split for that reason.
 
-Run 1 was killed at 16:00 PT (19:00 ET) on 2026-10-11, in generation 2, when the session running it was
+Run 1 was killed at 16:00 PT (19:00 ET) on 2026-10-11, in generation 2, when the process running it was
 killed. Generation 1 above is complete; the run's records hold no generation-2 evaluation.
 
 Every decision in the runs on this page was signed with a fresh per-run key, not the pinned decision key

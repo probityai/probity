@@ -296,6 +296,15 @@
       "documentation": "docs/corpus-routes.md",
       "expected_decision": "supported",
       "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
+    },
+    {
+      "task": "Check a Proof-of-Control token chain, inclusion proof or canonical form",
+      "claim_type": "proof_of_control/v1",
+      "case": "examples/corpus-routes/proof-of-control/case.json",
+      "policy": "examples/corpus-routes/proof-of-control/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Member of the poc-evidence-vectors corpus; its keys and roots carry no trust outside the corpus."
     }
   ]
 }

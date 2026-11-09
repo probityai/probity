@@ -6,22 +6,23 @@ signed, independently checkable admission record. Every version, trace, evaluati
 Atlas. Admitted changes satisfy the recorded-history and evaluation gates; every decision states exactly what
 evidence was checked, and every rejection stays in the record.
 
-This file is the interface every lane builds against. Change it only through the integrator (main session).
+This file is the interface every component builds against: the package layout, the shared types and each component's
+entry points.
 
 ## Package layout (Python 3.12+, `uv`, package `ratchet`, src layout)
 
 ```
 src/ratchet/
-  world/      lane WORLD   simulated company: billing provider, tickets, approvals, policy, mail
-  cases/      lane WORLD   case families, variants, train/held-out split, deterministic graders
-  agent/      lane AGENT   harness bundle, worker loop, guard runtime, model client
-  store/      lane STORE   Atlas persistence, vector search, checkpoints, change streams
-  improve/    lane IMPROVE diagnosis, candidate synthesis, replay validation, admission, receipts
-  cli.py      integrator   `ratchet run|evolve|replay|show|verify`
+  world/      WORLD        simulated company: billing provider, tickets, approvals, policy, mail
+  cases/      WORLD        case families, variants, train/held-out split, deterministic graders
+  agent/      AGENT        harness bundle, worker loop, guard runtime, model client
+  store/      STORE        Atlas persistence, vector search, checkpoints, change streams
+  improve/    IMPROVE      diagnosis, candidate synthesis, replay validation, admission, receipts
+  cli.py      CLI          `ratchet run|evolve|replay|show|verify`
 tests/        one test module per source module, plus tests/integration/
 ```
 
-## Shared types (`src/ratchet/types.py`, owned by the integrator, frozen dataclasses, JSON round-trip)
+## Shared types (`src/ratchet/types.py`, frozen dataclasses, JSON round-trip)
 
 - `ToolCall(name: str, args: dict, call_id: str)`
 - `ToolResult(call_id: str, ok: bool, data: dict | None, error: str | None)`; an error that hides a
@@ -40,7 +41,7 @@ tests/        one test module per source module, plus tests/integration/
   `Harness.content_of`); `version` is the first 12 hex chars of `digest`. Every read and every verification
   recomputes both and rejects a mismatch.
 
-## Lane interfaces
+## Component interfaces
 
 - WORLD: `World.from_case(case) -> World`; `World.tools() -> list[ToolSpec]` (OpenAI tool-schema JSON);
   `World.call(ToolCall) -> ToolResult`; `World.view() -> StateView` (read-only); `World.digest() -> str`.
@@ -343,8 +344,8 @@ far above the candidate tolerance, and that tolerance would no longer be
 calibrated. The minimum does not make the aggregate check free of noise at
 8 cases or above. For an unchanged arm, every case at a 50% pass rate (the
 worst case), at least one aggregate check fails with probability 0.31 at
-8 cases and 0.15 at 19. A noise-calibrated limit is a separate proposal
-that needs operator acceptance (docs/design/sequential-v3.md).
+8 cases and 0.15 at 19. A noise-calibrated limit is a separate proposal,
+not yet adopted (docs/design/sequential-v3.md).
 
 A candidate with no change to the effective system prompt, procedures,
 guards, or tool permissions is ineligible for improvement admission.
@@ -381,15 +382,7 @@ receipt also carries `min_cohort_cases` and the `cohort_size` gate.
 Decisions signed under v3 remain v3 decisions and verify with v3's gates.
 Existing ruling-2 decisions remain ruling-2 decisions.
 
-Operator acceptance, 2026-10-11: stochastic policy v3 is adopted for nondeterministic evaluators, including its tolerances (a per-case observed decline of up to 8 of 40 passes and an aggregate decline of up to 5 percentage points). A decision made under v3 never claims zero regressions.
-
-## Public text (operator ruling, 2026-10-11)
-
-No public artifact (README, docs/, code comments, docstrings, commit messages, demo, video, submission form, posts,
-pull requests) cites, credits or names any external paper, method, project or person as prior or related work.
-Research lineage stays in `private/` only. Two things are not citations and stay: the dependency manifest (pinned
-packages and their versions, required by the hackathon's new-work rule) and the name of a public benchmark next to a
-result measured on it.
+Stochastic policy v3 applies to nondeterministic evaluators, including its tolerances (a per-case observed decline of up to 8 of 40 passes and an aggregate decline of up to 5 percentage points). A decision made under v3 never claims zero regressions.
 
 ## Safety
 
@@ -400,6 +393,6 @@ result measured on it.
 
 ## Commit discipline
 
-Each lane owns its directories and their tests. Commit each unit the moment its tests pass (conventional
-commits, plain ASCII, imperative, no AI attribution, no internal IDs). Never edit another lane's files; ask the
-integrator to change a shared type. Zero warnings from `ruff`, `mypy --strict`, `pytest -W error`.
+Each component keeps its tests beside it, one test module per source module. Commits are conventional, plain
+ASCII and imperative. A change to a shared type in `types.py` touches every component, so it goes in a commit of
+its own. Zero warnings from `ruff`, `mypy --strict`, `pytest -W error`.
