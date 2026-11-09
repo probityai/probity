@@ -9,13 +9,14 @@
 members = ["packages/*"]
 # packages/probity-effects is not a member of the one lock: its tests install the agent frameworks its adapters
 # drive (LangGraph first), and their dependency trees would bind every member's resolution. It keeps its own lock.
-exclude = ["packages/probity-effects", "packages/probity-records", "packages/probity-temporal"]
+exclude = ["packages/probity-effects"]
 
 [tool.uv.sources]
 # Members that depend on each other resolve to the tree beside them, so every change is tested against
 # the versions it ships with.
 agent-evidence-verify = { workspace = true }
 probity-ratchet-cases = { workspace = true }
+probity-records = { workspace = true }
 [tool.uv]
 package = false
 # Two Inspect pins cannot share one environment: the historical profiles keep the release they were

@@ -21,5 +21,3 @@ Issues = "https://github.com/probityai/probity/issues"
 [dependency-groups]
 dev = ["pytest>=9.2.0,<10"]
 
-[tool.uv.sources]
-probity-records = { path = "../probity-records", editable = true }
