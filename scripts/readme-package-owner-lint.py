@@ -16,7 +16,8 @@ import re
 import sys
 from pathlib import Path
 
-ROW = re.compile(r"^\|\s*\[([A-Za-z0-9._-]+)\]\(.*\*\*\d")
+# A row names its package with non-breaking hyphens (&#8209;) so the name stays on one line.
+ROW = re.compile(r"^\|\s*\[([A-Za-z0-9._&#;-]+)\]\(.*\*\*\d")
 BADGE = re.compile(r"dl-pypi-([A-Za-z0-9._-]+?)\.svg|pepy\.tech/projects/([A-Za-z0-9._-]+)")
 
 
@@ -27,7 +28,7 @@ def foreign(readme: Path, root: Path) -> list[str]:
         names = []
         row = ROW.match(line)
         if row:
-            names.append(row.group(1))
+            names.append(row.group(1).replace("&#8209;", "-"))
         names += [a or b for a, b in BADGE.findall(line)]
         for name in dict.fromkeys(names):
             if name not in owned:

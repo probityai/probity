@@ -176,6 +176,7 @@ class PepyLinkTest(unittest.TestCase):
         self.assertTrue(rows)
         for ln in rows:
             self.assertNotIn("<br>", ln)
+            self.assertNotIn("-", ln.split(" | ")[0].split("](")[0])  # names use &#8209; so they never wrap
             self.assertEqual(len(ln.split(" | ")), 4, ln)
         self.assertTrue(any("dl-verifier-total" in ln for ln in rows))
 

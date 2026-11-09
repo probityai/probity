@@ -46,6 +46,12 @@ class OwnerLintTest(unittest.TestCase):
         self.assertEqual(self.run_lint(ROW), 0)
         self.assertEqual(self.run_lint(ROW + FOREIGN_ROW), 1)
 
+    def test_non_breaking_hyphen_names_are_read(self) -> None:
+        own = "| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.0** | - |\n"
+        foreign = "| [agent&#8209;evidence&#8209;vocabulary](https://github.com/x/y) | PyPI | **0.9.0** | - |\n"
+        self.assertEqual(self.run_lint(own), 0)
+        self.assertEqual(self.run_lint(own + foreign), 1)
+
     def test_foreign_row_and_badge_fail(self) -> None:
         self.assertEqual(self.run_lint(OWN + OLD), 1)
 
