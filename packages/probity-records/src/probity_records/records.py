@@ -47,17 +47,13 @@ def build_approval_binding(approval: Mapping[str, Any], use: Mapping[str, Any], 
 
 def judge_approval_binding(record: Mapping[str, Any], payload: bytes) -> dict[str, str]:
     """``{"decision": "allow"|"deny", "reason": ...}`` from the published approval-binding reader,
-    through its public entry point on the record and payload exactly as an outsider would hold them."""
+    through its public in-memory entry point on the record and payload exactly as an outsider would hold them."""
     from agent_evidence_vectors import approvalbinding  # noqa: PLC0415 - optional at import time
 
     name = str(record.get("use", {}).get("payloadFile", PAYLOAD_FILE))
     if "/" in name or name in ("", ".", ".."):
         return {"decision": "deny", "reason": "payload_file_unsafe"}
-    with tempfile.TemporaryDirectory(prefix="probity-ab-") as tmp:
-        path = Path(tmp) / "record.json"
-        path.write_bytes(canonical(dict(record)))
-        (Path(tmp) / name).write_bytes(payload)
-        verdict = approvalbinding.verify(path)
+    verdict = approvalbinding.verify_record(dict(record), payload)
     return {"decision": verdict["decision"], "reason": verdict["reason"]}
 
 
