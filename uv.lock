@@ -122,11 +122,9 @@ cover = [
     { name = "coverage" },
 ]
 inspect = [
-    { name = "agent-client-protocol" },
     { name = "inspect-ai", version = "0.3.287", source = { registry = "https://pypi.org/simple" } },
 ]
 inspect-historical = [
-    { name = "agent-client-protocol" },
     { name = "inspect-ai", version = "0.3.281", source = { registry = "https://pypi.org/simple" } },
 ]
 test = [
@@ -140,8 +138,6 @@ witness = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agent-client-protocol", marker = "extra == 'inspect'", specifier = "==0.12.1" },
-    { name = "agent-client-protocol", marker = "extra == 'inspect-historical'", specifier = "==0.12.1" },
     { name = "coverage", marker = "extra == 'cover'", specifier = ">=7.10,<8" },
     { name = "cryptography", specifier = ">=46,<51" },
     { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6,<7" },
