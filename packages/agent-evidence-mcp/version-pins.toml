@@ -19,11 +19,11 @@ publisher = "probityai/probity"
 # Packages other repositories release that a page here names.
 [family]
 "pypi:agent-evidence-verify" = "0.5.1"
-"pypi:agent-evidence-vectors" = "0.35.0"
+"pypi:agent-evidence-vectors" = "0.36.3"
 "pypi:agent-evidence-vocabulary" = "0.9.0"
 "pypi:agent-evidence-admission" = "0.2.0"
 "pypi:jcs-admit" = "0.1.1"
-"action:agent-evidence-vectors" = "0.36.1"
+"action:agent-evidence-vectors" = "0.36.3"
 
 [scan]
 include = ["packages/agent-evidence-mcp/**/*.md", "packages/agent-evidence-mcp/llms*.txt"]
