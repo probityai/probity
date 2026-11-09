@@ -36,7 +36,7 @@ CLOSED_EFFECT_STATES = ("CONSUMED", "UNCERTAIN_CLOSE")
 
 
 def _when(value: Any) -> datetime:
-    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return datetime.fromisoformat(str(value))
 
 
 def _accepted_into(record: dict[str, Any]) -> list[dict[str, Any]]:
@@ -124,7 +124,7 @@ def judge(record_path: Path) -> tuple[str, str]:
     record = parse_json(record_path.read_bytes(), max_bytes=MAX_RECORD_BYTES,
                         max_depth=32, max_nodes=32768)
     if not isinstance(record, dict):
-        raise ValueError("record: expected a JSON object")
+        raise TypeError("record: expected a JSON object")
     used = (record_path.parent / record["use"]["payloadFile"]).read_bytes()
     failure = first_failure(record, used)
     return (ALLOW, ACCEPTED) if failure is None else (DENY, failure)

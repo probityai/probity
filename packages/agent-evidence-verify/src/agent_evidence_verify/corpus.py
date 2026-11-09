@@ -49,7 +49,7 @@ def _uncertain(record_path: Path) -> tuple[str, str]:
     record = parse_json(record_path.read_bytes(), max_bytes=uncertain_effect.MAX_RECORD_BYTES,
                         max_depth=32, max_nodes=32768)
     if not isinstance(record, dict):
-        raise ValueError("record: expected a JSON object")
+        raise TypeError("record: expected a JSON object")
     uncertain_effect.check_domains(record)
     failure = uncertain_effect.first_failure(record)
     return ("accept", uncertain_effect.ACCEPTED) if failure is None else ("reject", failure)
@@ -76,7 +76,7 @@ def lines(root: Path) -> list[dict[str, Any]]:
     manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
     suite, digest, entries = manifest.get("suite"), manifest.get("corpusDigest"), manifest.get("vectors")
     if not isinstance(suite, str) or not isinstance(digest, str) or not isinstance(entries, list):
-        raise ValueError(f"{root}/MANIFEST.json names no suite, corpusDigest or vectors list")
+        raise TypeError(f"{root}/MANIFEST.json names no suite, corpusDigest or vectors list")
     verifier = {"name": NAME, "version": version()}
     out = []
     for entry in entries:
@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         rendered = [json.dumps(line, sort_keys=True, separators=(",", ":"))
                     for root in args.corpus for line in lines(root)]
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, TypeError) as exc:
         print(f"agent-evidence-verify corpus: NOT RUN: {exc}", file=sys.stderr)
         return 2
     sys.stdout.write("".join(text + "\n" for text in rendered))
