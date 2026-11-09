@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "probity-verify"
+version = "0.5.1"
+description = "Moved to agent-evidence-verify; this release installs it and keeps the old imports working"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = ["agent-evidence-verify>=0.5.1,<0.7"]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.urls]
+"New project" = "https://pypi.org/project/agent-evidence-verify/"
+Source = "https://github.com/probityai/probity/tree/main/packages/agent-evidence-verify"
+Downloads = "https://github.com/probityai/probity/blob/main/docs/downloads.md"
+
+[project.scripts]
+probity-verify = "agent_evidence_verify.cli:main"

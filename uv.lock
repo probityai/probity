@@ -20,6 +20,7 @@ members = [
     "agent-evidence-verify",
     "probity-ratchet",
     "probity-ratchet-cases",
+    "probity-verify",
     "probityai",
 ]
 
@@ -4098,6 +4099,17 @@ agentdojo = [
 [package.metadata]
 requires-dist = [{ name = "agentdojo", marker = "extra == 'agentdojo'", specifier = "==0.1.35" }]
 provides-extras = ["agentdojo"]
+
+[[package]]
+name = "probity-verify"
+version = "0.5.1"
+source = { editable = "packages/probity-verify" }
+dependencies = [
+    { name = "agent-evidence-verify" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "agent-evidence-verify", editable = "packages/agent-evidence-verify" }]
 
 [[package]]
 name = "probityai"

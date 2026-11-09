@@ -127,15 +127,15 @@ class ReadmeLintTest(unittest.TestCase):
         md = '\n[![thing downloads](https://example.org/d.svg)](https://pepy.tech/projects/thing)\n'
         self.assertEqual(self.run_lint(GOOD + html + md), 0)
 
-    def test_downloads_badge_linking_pepy_compare_passes(self) -> None:
-        url = "https://pepy.tech/compare?packages=old-name,new-name"
+    def test_downloads_badge_linking_downloads_page_passes(self) -> None:
+        url = "https://github.com/probityai/probity/blob/main/docs/downloads.md"
         html = f'\n<a href="{url}"><img height="16" alt="Downloads" src="assets/badges/dl-thing-total.svg"></a>\n'
         md = f'\n[![thing downloads](https://example.org/d.svg)]({url})\n'
         self.assertEqual(lint.bad_download_links(html + md), [])
         self.assertEqual(lint.bad_summed_links(html), [])
 
-    def test_downloads_badge_with_malformed_compare_fails(self) -> None:
-        for url in ("https://pepy.tech/compare", "https://pepy.tech/compare?packages=", "https://pepy.tech/compare?x=a,b"):
+    def test_downloads_badge_linking_pepy_compare_fails(self) -> None:
+        for url in ("https://pepy.tech/compare?packages=a,b", "https://github.com/probityai/probity/blob/main/docs/other.md"):
             md = f'\n[![thing downloads](https://example.org/d.svg)]({url})\n'
             self.assertEqual(lint.bad_download_links(md), [url], url)
 
@@ -145,14 +145,15 @@ class ReadmeLintTest(unittest.TestCase):
         md = f'\n[![new-name downloads](assets/badges/dl-verifier-total.svg)]({one})\n'
         self.assertEqual(lint.bad_download_links(html + md), [])  # a legal pepy link on its own
         self.assertEqual(lint.bad_summed_links(html + md), [one, one])
-        self.assertEqual(lint.bad_summed_links(html.replace(one, "https://pepy.tech/compare?packages=only-one")), ["https://pepy.tech/compare?packages=only-one"])
+        cmp = "https://pepy.tech/compare?packages=old-name,new-name"
+        self.assertEqual(lint.bad_summed_links(html.replace(one, cmp)), [cmp])
 
     def test_summed_badge_is_checked_by_the_linter(self) -> None:
         one = "https://pepy.tech/projects/new-name"
         img = "https://example.org/assets/badges/dl-verifier-total.svg"
         html = f'\n<a href="{one}"><img alt="Downloads" src="{img}"></a>\n'
         self.assertEqual(self.run_lint(GOOD + html), 1)
-        both = html.replace(one, "https://pepy.tech/compare?packages=old-name,new-name")
+        both = html.replace(one, "https://github.com/probityai/probity/blob/main/docs/downloads.md")
         self.assertEqual(self.run_lint(GOOD + both), 0)
 
     def test_downloads_badge_linking_pypi_fails(self) -> None:
