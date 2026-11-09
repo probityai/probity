@@ -15,7 +15,7 @@ dependencies = [
     "cryptography>=44,<51",
     "jcs-admit~=0.1.1",
     "agent-evidence-verify>=0.5.1,<0.7",
-    "agent-evidence-vectors>=0.38.0,<0.39",
+    "agent-evidence-vectors>=0.39.0,<0.40",
 ]
 keywords = ["ai-agents", "dsse", "in-toto", "approvals", "tool-calls", "audit"]
 
