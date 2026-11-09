@@ -14,7 +14,7 @@ authors = [{name = "Sankalp Gilda"}]
 dependencies = [
     "cryptography>=44,<51",
     "jcs-admit~=0.1.1",
-    "agent-evidence-verify>=0.5.1,<0.6",
+    "agent-evidence-verify>=0.5.1,<0.7",
     "agent-evidence-vectors>=0.36.3,<0.38",
 ]
 keywords = ["ai-agents", "dsse", "in-toto", "approvals", "tool-calls", "audit"]
