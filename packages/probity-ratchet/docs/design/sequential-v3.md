@@ -1,7 +1,7 @@
 # Sequential stochastic policy v3, and a decline limit set from measured spread
 
 Status: design proposal. Nothing here changes the adopted v3 text in `docs/CONTRACT.md`. Both changes
-below alter an operator-accepted policy and need operator acceptance before they are built.
+below alter the adopted policy, and neither is built.
 
 All numbers come from the 3,800 recorded executions of the live v3 cohort (database `ratchet_v3_full`:
 parent, two identity controls and candidates `ad50dac8194c` and `b972467a3b9a`, 19 held-out cases, 40

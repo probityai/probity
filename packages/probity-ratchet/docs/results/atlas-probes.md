@@ -16,7 +16,7 @@ documentation pages and their `SHA256SUMS` are in `research/_raw/atlas-probes/` 
 | 2 | `autoEmbed` vector index (Atlas-run Voyage embeddings) | works | works | ship |
 | 3 | Database trigger writing sanitized failure memory | works | works | ship |
 | 4 | Agent Engine Policy Engine (integration demonstration) | not tested | works | widening refused by the platform; revision monotonicity not enforced |
-| 4 | Agent Engine standalone memory | not tested | NOT RUN | needs operator approval of three secrets and network access |
+| 4 | Agent Engine standalone memory | not tested | NOT RUN | needs three secrets and network access this run did not have |
 | 5 | MongoDB MCP server, restricted identity, one training read | works | works | ship |
 
 Recommendation for retrieval (item 1, numbers below): use vector search alone, with server-side `autoEmbed`,
@@ -242,5 +242,5 @@ environment. Reproduce: `uv run python -m ratchet.atlas_features.mcp_probe` (nee
   with a longer limit seconds later.
 - The sandbox access list holds two egress addresses and the workstation alternated between them within one
   session; both are on the list.
-- Another lane's cleanup emptied the original probe database once; it was renamed to `ratchet_featureprobe`
+- A cleanup of another database emptied the original probe database once; it was renamed to `ratchet_featureprobe`
   and every probe re-seeds its own data idempotently.
