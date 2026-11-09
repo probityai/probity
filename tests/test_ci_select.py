@@ -76,6 +76,7 @@ def test_the_workflow_and_the_table_name_the_same_jobs():
 def test_every_job_is_a_need_of_the_aggregator():
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     ids = re.findall(r"^  ([a-z0-9-]+):\s*$", workflow.split("\njobs:\n", 1)[1], re.MULTILINE)
-    needs = re.search(r"^  ci-ok:\n    if: always\(\)\n    needs: \[(.*?)\]\n", workflow, re.MULTILINE | re.DOTALL)
-    assert needs, "ci-ok must run with if: always() and list its needs"
+    needs = re.search(r"^  ci-ok:\n    if: \$\{\{ \(.*\) && \(always\(\)\) \}\}\n    needs: \[(.*?)\]\n",
+                      workflow, re.MULTILINE | re.DOTALL)
+    assert needs, "ci-ok must run with the batch gate and always() and list its needs"
     assert set(ids) - {"ci-ok"} == {n.strip() for n in needs.group(1).split(",")}
