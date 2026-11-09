@@ -1,0 +1,9 @@
+{
+  "assessments": {
+    "poc-CHN-P-prefix-of-anchored": {
+      "claim_type": "proof_of_control/v1",
+      "input": "artifact.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
