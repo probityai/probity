@@ -30,9 +30,8 @@ to that shape with three rules:
    on npmjs.com or npm-stat.com for an npm package, or on crates.io for a crate. Every
    PyPI download badge opens pepy.tech, never the PyPI page. A badge whose image is a
    summed total (a file named dl-<name>-total.svg, the sum of several package names)
-   links https://github.com/probityai/probity/blob/main/docs/downloads.md, the page the
-   same refresh run writes with each name's total, the sum and the source, because a
-   pepy project page shows only one name and hides the rest of the sum.
+   links https://pepy.tech/projects/agent-evidence-verify, the pepy.tech page of the
+   current name, never docs/downloads.md.
 
 6. No shields.io badge sets cacheSeconds above 3600. The image proxy then keeps a
    version badge for that long, so a README can show a release older than the one
@@ -122,12 +121,12 @@ HTML_LINKED_SRC = re.compile(
     r"<a\b[^>]*?\bhref=[\"']([^\"']+)[\"'][^>]*>\s*<img\b[^>]*?\bsrc=[\"']([^\"']+)[\"']", re.IGNORECASE
 )
 MD_LINKED_SRC = re.compile(r"\[!\[[^\]]*\]\(([^)\s]+)[^)]*\)\]\(([^)\s]+)")
-DOWNLOADS_PAGE = "https://github.com/probityai/probity/blob/main/docs/downloads.md"
-SUMMED_LINKS = (DOWNLOADS_PAGE, "docs/downloads.md")
+SUMMED_PAGE = "https://pepy.tech/projects/agent-evidence-verify"
+SUMMED_LINKS = (SUMMED_PAGE,)
 
 
 def bad_summed_links(text: str) -> list[str]:
-    """Targets of linked summed-total badges that do not open the per-name downloads page."""
+    """Targets of linked summed-total badges that do not open the pepy.tech page of the current name."""
     pairs = [(src, url) for url, src in HTML_LINKED_SRC.findall(text)]
     pairs += MD_LINKED_SRC.findall(text)
     return [url for src, url in pairs if SUMMED_BADGE.search(src) and url not in SUMMED_LINKS]
@@ -215,8 +214,8 @@ def check(readme: Path, max_words: int, first_screen: int) -> list[str]:
         )
     for url in bad_summed_links(text):
         failures.append(
-            f"{readme}: a summed-total badge links {url[:90]}; link {DOWNLOADS_PAGE}, the page "
-            "scripts/refresh-badges.py writes with each name's total and the source."
+            f"{readme}: a summed-total badge links {url[:90]}; link {SUMMED_PAGE}, the "
+            "pepy.tech page of the current name."
         )
     ranks = [badge_rank(alt) for alt in top_badge_row(text)]
     if ranks != sorted(ranks):

@@ -27,7 +27,6 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from datetime import UTC, datetime
 from pathlib import Path
 
 REF = re.compile(r"assets/badges/dl-(pypi|crates)-([A-Za-z0-9._-]+)\.svg")
@@ -44,20 +43,16 @@ COMBINED: dict[str, tuple[str, tuple[str, ...]]] = {
 # old name's live total would count those installs twice. probity-verify 0.5.1 (published
 # 2026-11-08 about 17:30 UTC) depends on agent-evidence-verify; 10,003 is its pepy API
 # total read at 2026-11-08 16:44 UTC, before that release.
-FROZEN: dict[str, tuple[int, str]] = {"probity-verify": (10_003, "2026-11-08 16:44 UTC")}
+FROZEN: dict[str, int] = {"probity-verify": 10_003}
 
 PYPI_PAGE = "https://pypi.org/project/agent-evidence-verify/"
 PEPY_PAGE = "https://pepy.tech/projects/agent-evidence-verify"
 OLD_COMPARE_PAGE = "https://pepy.tech/compare?packages=" + ",".join(COMBINED["dl-verifier-total"][1])
-# The badge image is the sum of every name in COMBINED, so its link opens a page this run
-# writes from the same numbers: each name's total, the sum, the time and the source, with a
-# link to each name's own pepy page. An absolute URL, so the link also works on PyPI.
+# The badge image is the sum of every name in COMBINED, but its link is the pepy.tech page
+# of the current name, the page a reader expects a downloads badge to open. The per-name
+# breakdown of the sum is written to docs/downloads.md from the same numbers.
 DOWNLOADS_DOC = "docs/downloads.md"
-STAMP = re.compile(r"all-time totals\) at [^.]*UTC")
-DOWNLOADS_PAGE = "https://github.com/probityai/probity/blob/main/" + DOWNLOADS_DOC
-VERIFIER_LINK = re.compile(
-    "|".join(re.escape(u) for u in (PYPI_PAGE, PEPY_PAGE, OLD_COMPARE_PAGE, DOWNLOADS_PAGE))
-)
+VERIFIER_LINK = re.compile("|".join(re.escape(u) for u in (PYPI_PAGE, PEPY_PAGE, OLD_COMPARE_PAGE)))
 ROOT_README = "README.md"
 PACKAGE_README = "packages/agent-evidence-verify/README.md"
 BADGE_BLOCK = re.compile(
@@ -65,7 +60,7 @@ BADGE_BLOCK = re.compile(
 )
 PACKAGE_BADGE = (
     "[![Downloads](https://raw.githubusercontent.com/probityai/probity/main/"
-    f"assets/badges/dl-verifier-total.svg)]({DOWNLOADS_PAGE})\n"
+    f"assets/badges/dl-verifier-total.svg)]({PEPY_PAGE})\n"
 )
 
 
@@ -80,18 +75,17 @@ def page_exists(url: str) -> bool:
 
 
 def relink_verifier(root: Path, live: bool) -> list[str]:
-    """Keep the verifier download badge on the downloads page that shows both package names.
+    """Keep the verifier download badge linking the pepy.tech page of the current name.
 
-    The root badge line always links DOWNLOADS_PAGE, live or not (the PyPI page is never a
-    download-badge target, and the pepy page of the newest name alone would hide the older
-    name's downloads that the badge adds in). The package README
-    (the PyPI page) carries its badge only when live, because PePy answers 404 for a
-    name it has no data for. Returns the files changed."""
+    The root badge line always links PEPY_PAGE, live or not (the PyPI page is never a
+    download-badge target). The package README (the PyPI page) carries its badge only
+    when live, because pepy answers 404 for a name it has no data for.
+    Returns the files changed."""
     changed = []
     root_path = root / ROOT_README
     if root_path.exists():
         lines = root_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        out = [VERIFIER_LINK.sub(DOWNLOADS_PAGE, ln) if "dl-verifier-total" in ln else ln for ln in lines]
+        out = [VERIFIER_LINK.sub(PEPY_PAGE, ln) if "dl-verifier-total" in ln else ln for ln in lines]
         if out != lines:
             root_path.write_text("".join(out), encoding="utf-8")
             changed.append(ROOT_README)
@@ -138,32 +132,25 @@ def combined_totals(names: tuple[str, ...]) -> dict[str, int]:
     key = os.environ.get("PEPY_API_KEY")
     if not key:
         raise ValueError("PEPY_API_KEY is not set; a combined total needs the pepy API")
-    return {name: FROZEN[name][0] if name in FROZEN else pepy_total(name, key) for name in names}
+    return {name: FROZEN[name] if name in FROZEN else pepy_total(name, key) for name in names}
 
 
-def downloads_page(totals: dict[str, int], at: str) -> str:
-    """The page the summed badge links: each name's total, the sum, the time and the source."""
+def downloads_page(totals: dict[str, int]) -> str:
+    """The public breakdown of the summed badge: each name, its downloads, the total.
+
+    The page is public text, so it carries no counting method and no timestamp. Why a
+    FROZEN name is fixed lives in the comment on FROZEN, not here."""
     rows = "".join(
-        f"| [`{n}`](https://pypi.org/project/{n}/) | {v:,}{' (fixed)' if n in FROZEN else ''} | [pepy.tech/projects/{n}](https://pepy.tech/projects/{n}) |\n"
+        f"| [`{n}`](https://pypi.org/project/{n}/) | {v:,} | [pepy.tech/projects/{n}](https://pepy.tech/projects/{n}) |\n"
         for n, v in totals.items()
     )
     names = list(totals)
     return (
         "# Verifier downloads\n\n"
-        f"The verifier was published on PyPI as `{names[0]}` and is now published as "
-        f"`{names[-1]}`. PyPI has no way to rename a project, so each name keeps its own count. "
-        "The downloads badge in the README is the sum of both.\n\n"
-        "| PyPI name | Downloads | Source |\n|---|--:|---|\n"
-        f"{rows}| **Total** | **{sum(totals.values()):,}** | sum of the rows above |\n\n"
-        + "".join(
-            f"`{n}` is fixed at its pepy API total read at {FROZEN[n][1]}, just before its last "
-            "release made it install the new name; counting it live after that would count each "
-            "of those installs twice.\n\n"
-            for n in names if n in FROZEN
-        )
-        + f"Read from the pepy.tech API (`api.pepy.tech/api/v2/projects/<name>`, all-time totals) at {at}. "
-        "This page and the badge are written by the same scheduled run "
-        "([scripts/refresh-badges.py](../scripts/refresh-badges.py)), so they always show the same numbers.\n\n"
+        f"The verifier was renamed from `{names[0]}` to `{names[-1]}`. Both names are on PyPI, "
+        "and the total is the downloads of both.\n\n"
+        "| Name | Downloads | pepy.tech |\n|---|--:|---|\n"
+        f"{rows}| **Total** | **{sum(totals.values()):,}** | |\n\n"
         f"Install the current name: `pip install {names[-1]}`.\n"
     )
 
@@ -201,10 +188,8 @@ def refresh_one(build, out: Path, stem: str, title: str, shown: str, getter) -> 
         if isinstance(total, dict):
             doc = out.parent.parent / DOWNLOADS_DOC
             doc.parent.mkdir(parents=True, exist_ok=True)
-            at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
-            page = downloads_page(total, at)
-            # rewrite only when a count moved, so the time alone never opens a refresh PR
-            if not doc.exists() or STAMP.sub("", doc.read_text(encoding="utf-8")) != STAMP.sub("", page):
+            page = downloads_page(total)
+            if not doc.exists() or doc.read_text(encoding="utf-8") != page:
                 doc.write_text(page, encoding="utf-8")
             total = sum(total.values())
     except (OSError, ValueError, KeyError, TypeError) as exc:  # no answer changes nothing
@@ -243,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
     if any(job[0] == "dl-verifier-total" for job in jobs):
         live = page_exists(PEPY_PAGE)
         for rel in relink_verifier(readme.parent, live):
-            print(f"{rel}: verifier downloads badge links the downloads page (pepy page {'live' if live else 'not yet'})")
+            print(f"{rel}: verifier downloads badge links the pepy page (pepy page {'live' if live else 'not yet'})")
     return 1 if failed else 0
 
 
