@@ -170,6 +170,24 @@ class PepyLinkTest(unittest.TestCase):
         for ln in lines:
             self.assertIn(rb.PEPY_PAGE, ln)
 
+    def test_package_table_rows_stay_on_one_line(self) -> None:
+        text = (Path(rb.__file__).resolve().parent.parent / "README.md").read_text(encoding="utf-8")
+        rows = [ln for ln in text.splitlines() if ln.startswith("| [") and "**" in ln]
+        self.assertTrue(rows)
+        for ln in rows:
+            self.assertNotIn("<br>", ln)
+            self.assertEqual(len(ln.split(" | ")), 4, ln)
+        self.assertTrue(any("dl-verifier-total" in ln for ln in rows))
+
+    def test_relink_leaves_a_one_line_table_row_on_one_line(self) -> None:
+        row = "| [v](packages/v/README.md) | PyPI | **1.0.0** | [![d](assets/badges/dl-verifier-total.svg)](https://pypi.org/project/agent-evidence-verify/) |\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "README.md").write_text(row)
+            rb.relink_verifier(root, True)
+            new = (root / "README.md").read_text()
+            self.assertEqual(new, row.replace("https://pypi.org/project/agent-evidence-verify/", rb.PEPY_PAGE))
+
     def test_page_exists_is_false_on_http_error(self) -> None:
         with mock.patch.object(rb.urllib.request, "urlopen", side_effect=not_found()):
             self.assertFalse(rb.page_exists("https://pepy.tech/projects/x"))
