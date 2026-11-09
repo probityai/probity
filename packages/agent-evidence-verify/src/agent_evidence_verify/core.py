@@ -28,6 +28,7 @@ from .adapters import (
     observed_effect,
     operand_lineage,
     probe_observed,
+    proof_of_control,
     protected_paths,
     restoration,
     source_coverage,
@@ -65,6 +66,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "restoration_record/v1": restoration.adjudicate_record,
     "restoration_bundle/v1": restoration.adjudicate_bundle,
     "jcs_canonical/v1": jcs_canonical.adjudicate,
+    "proof_of_control/v1": proof_of_control.adjudicate,
     "observed_effect/v1": observed_effect.adjudicate,
     "audit_principal/v1": audit_principal.adjudicate,
 }

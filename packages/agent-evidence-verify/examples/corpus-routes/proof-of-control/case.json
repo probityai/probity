@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "artifact.json": {
+      "length": 5124,
+      "path": "artifact.json",
+      "sha256": "64c591b100dd1501f5545cf5067ea6bbb56f1e98e3c2eb2fe52b21932d695f1e"
+    }
+  },
+  "case_id": "poc-CHN-P-prefix-of-anchored",
+  "schema_version": "probity-case/v1"
+}
