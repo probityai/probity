@@ -47,8 +47,8 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 
 | package | registry | version | downloads |
 | --- | --- | :---: | :---: |
-| [agent-evidence-mcp](packages/agent-evidence-mcp/README.md) | PyPI | **0.2.5** | [![agent-evidence-mcp downloads](assets/badges/dl-pypi-agent-evidence-mcp.svg)](https://pepy.tech/projects/agent-evidence-mcp) |
-| [agent-evidence-observer](packages/agent-evidence-observer/README.md) | PyPI | **0.2.0** | [![agent-evidence-observer downloads](assets/badges/dl-pypi-agent-evidence-observer.svg)](https://pepy.tech/projects/agent-evidence-observer) |
+| [`agent-evidence-mcp`](packages/agent-evidence-mcp/README.md) | PyPI | **0.2.5** | [![agent-evidence-mcp downloads](assets/badges/dl-pypi-agent-evidence-mcp.svg)](https://pepy.tech/projects/agent-evidence-mcp) |
+| [`agent-evidence-observer`](packages/agent-evidence-observer/README.md) | PyPI | **0.2.0** | [![agent-evidence-observer downloads](assets/badges/dl-pypi-agent-evidence-observer.svg)](https://pepy.tech/projects/agent-evidence-observer) |
 
 - `agent-evidence-mcp`: offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors
 - `agent-evidence-observer`: records what an agent run did as pinned evidence
@@ -57,12 +57,12 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 
 | package | registry | version | downloads |
 | --- | --- | :---: | :---: |
-| [probityai](packages/probityai/README.md) | PyPI | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.1** | [![agent-evidence-verify downloads](assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/agent-evidence-verify) |
-| [probity-ratchet](packages/probity-ratchet/README.md) | PyPI | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
-| [probity-ratchet-cases](packages/probity-ratchet-cases/README.md) | PyPI | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
-| [probity-effects](packages/probity-effects/README.md) | PyPI | **0.2.0** | - |
-| [agent-evidence-replay](packages/agent-evidence-replay/README.md) | PyPI | **0.1.0** | - |
+| [`probityai`](packages/probityai/README.md) | PyPI | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
+| [`agent-evidence-verify`](packages/agent-evidence-verify/README.md) | PyPI | **0.5.1** | [![agent-evidence-verify downloads](assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/agent-evidence-verify) |
+| [`probity-ratchet`](packages/probity-ratchet/README.md) | PyPI | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
+| [`probity-ratchet-cases`](packages/probity-ratchet-cases/README.md) | PyPI | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
+| [`probity-effects`](packages/probity-effects/README.md) | PyPI | **0.2.0** | - |
+| [`agent-evidence-replay`](packages/agent-evidence-replay/README.md) | PyPI | **0.1.0** | - |
 
 - `probityai`: the `probityai` command; `probityai verify` today
 - `agent-evidence-verify`: offline verifier: supported, contradicted or not established
@@ -86,7 +86,7 @@ uv run python -m pytest
 
 | page | read it for |
 | --- | --- |
-| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | the verifier, its adapters and its recipes |
+| [`agent-evidence-verify`](packages/agent-evidence-verify/README.md) | the verifier, its adapters and its recipes |
 | [Repository layout](docs/architecture/MONOREPO.md) | the workspace, the `probityai` command seam, CI and releases |
 | [Agent instructions](AGENTS.md) | commands to run before a change |
 | [Contributing](CONTRIBUTING.md) | reporting a problem and opening a pull request |
