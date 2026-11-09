@@ -1,0 +1,12 @@
+# Allowed matches for scripts/public-voice-lint.py: <path glob><TAB><rule><TAB><text or *>.
+# Each entry says why the match is written for a reader and not for the maintainers.
+
+# GitHub merge queue: contributors need to know their change is tested again in a batch.
+CONTRIBUTING.md	process	merge queue
+
+# Run records: the start, stop and outage times of a measured run are part of the result.
+packages/probity-ratchet/docs/results/*.md	timestamp	*
+packages/agent-evidence-observer/interop/local-model-tool-arguments-2026-10-03/README.md	timestamp	*
+
+# An outside operator is the third party who runs an agent; their acceptance is a custody fact.
+packages/agent-evidence-verify/docs/observation-vantage.md	process	operator's acceptance

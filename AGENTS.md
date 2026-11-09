@@ -4,6 +4,7 @@
 - Run `uv run --only-group dev ruff check .` before every commit.
 - Run `python3 scripts/readme-lint.py <README>` after editing any README. Keep each under 600 prose words; detail goes in `docs/`.
 - Never edit `scripts/readme-lint.py` or `scripts/readme-lint-test.py`; they are shared byte-for-byte with sibling repositories.
+- Run `python3 scripts/public-voice-lint.py` after editing any README or docs page: public text is written for an outside reader, with no internal process notes, tracker ids or bracketed statuses. A legitimate match goes in `scripts/public-voice-allowlist.txt` with its reason; `scripts/public-voice-lint.py` is shared byte-for-byte with sibling repositories.
 - Member rules live with the member: [packages/agent-evidence-verify/AGENTS.md](packages/agent-evidence-verify/AGENTS.md).
 - A new member is a directory under `packages/` with its own `pyproject.toml`, `README.md` and `LICENSE`. `scripts/workspace.py` finds it; add its CI job to `.github/workflows/ci.yml` and to the `needs` of `ci-ok`, and a path-selected job also gets a row in `scripts/ci_jobs.toml` (`tests/test_ci_select.py` checks the two agree).
 - A new `probityai` subcommand is an entry point in the `probityai.cli_subcommands` group; never add a name to the launcher.
