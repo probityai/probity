@@ -1,7 +1,7 @@
 """Where the time of one gated decision goes, on this host.
 
-Runs the 2,000-call speed test's workload three ways (as shipped, with fsync stubbed out, under
-cProfile), measures a bare append-and-fsync on the same filesystem, and records CPU steal over each
+Runs the 2,000-call speed test's workload as the current code, with fsync stubbed out, under cProfile,
+and with each of the two fixes put back to its first-shipped form (as shipped, fix 1 only, fix 2 only, both, twice each), measures a bare append-and-fsync on the same filesystem, and records CPU steal over each
 phase, so a p95 over budget can be attributed to the code, the disk or the host.
 
     uv run python scripts/profile_authorize.py [--dir DIR] [--out FILE]
@@ -76,44 +76,45 @@ def _bare_fsync(directory: Path, n: int = 2000) -> dict[str, float]:
     return _summary(times, 0.0)
 
 
-def _in_memory_judge() -> Callable[[], None]:
-    """The published reader's checks on the record and bytes in memory, no scratch directory."""
+def _disk_judge() -> Callable[[], None]:
+    """The judge as first shipped: a scratch directory with two files per call, read back from disk."""
+    import tempfile as tf
+
     from agent_evidence_vectors import approvalbinding
 
     import probity_temporal.authority as auth
 
     def judge(record, payload):  # noqa: ANN001, ANN202
-        failure = approvalbinding._first_failure(json.loads(canonical(dict(record))), payload, frozenset())  # noqa: SLF001
-        return {"decision": "deny", "reason": failure} if failure else {"decision": "allow", "reason": "bound"}
+        name = str(record.get("use", {}).get("payloadFile", "payload.bin"))
+        with tf.TemporaryDirectory(prefix="probity-ab-") as tmp:
+            path = Path(tmp) / "record.json"
+            path.write_bytes(canonical(dict(record)))
+            (Path(tmp) / name).write_bytes(payload)
+            verdict = approvalbinding.verify(path)
+        return {"decision": verdict["decision"], "reason": verdict["reason"]}
 
     real = auth.judge_approval_binding
     auth.judge_approval_binding = judge
     return lambda: setattr(auth, "judge_approval_binding", real)
 
 
-def _lock_no_truncate() -> Callable[[], None]:
-    """Open the journal lock file without O_TRUNC, so taking the lock dirties no inode."""
-    import probity_records.journal as journal
-
+def _lock_truncate() -> Callable[[], None]:
+    """The journal lock as first shipped: opened "w", which truncates and dirties the inode each call."""
     real_open = Path.open
 
     def opener(self, mode="r", *a, **k):  # noqa: ANN001, ANN002, ANN003, ANN202
-        if mode == "w" and self.name.endswith(".lock"):
-            mode = "a"
+        if mode == "a" and self.name.endswith(".lock"):
+            mode = "w"
         return real_open(self, mode, *a, **k)
 
     Path.open = opener  # type: ignore[method-assign]
-    del journal
     return lambda: setattr(Path, "open", real_open)
 
 
-def _both() -> Callable[[], None]:
-    undo = [_in_memory_judge(), _lock_no_truncate()]
-    return lambda: [u() for u in reversed(undo)] and None
-
-
-def _variants() -> dict[str, Callable[[], Callable[[], None]]]:
-    return {"in_memory_judge": _in_memory_judge, "lock_no_truncate": _lock_no_truncate, "both": _both}
+def _variants() -> dict[str, list[Callable[[], Callable[[], None]]]]:
+    """Each variant is the set of old behaviours put back; the code under test has both fixes."""
+    return {"as_shipped": [_disk_judge, _lock_truncate], "fix1_in_memory_judge": [_lock_truncate],
+            "fix2_lock_no_truncate": [_disk_judge], "both_fixes": []}
 
 
 def main() -> None:
@@ -136,12 +137,14 @@ def main() -> None:
     finally:
         os.fsync = real_fsync
     report["bare_fsync"] = _bare_fsync(base)
-    for name, patch in _variants().items():
-        undo = patch()
-        try:
-            report[name] = _summary(*_workload(base / name))
-        finally:
-            undo()
+    for run in (1, 2):
+        for name, patches in _variants().items():
+            undo = [patch() for patch in patches]
+            try:
+                report[f"{name}_run{run}"] = _summary(*_workload(base / f"{name}-{run}"))
+            finally:
+                for restore in reversed(undo):
+                    restore()
     prof = cProfile.Profile()
     prof.enable()
     _workload(base / "profiled")
