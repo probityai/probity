@@ -65,7 +65,7 @@ HTML_LINKED_IMG = re.compile(
 )
 MD_LINKED_IMG = re.compile(r"\[!\[([^\]]*)\]\([^)]*\)\]\(([^)\s]+)")
 DOWNLOAD_LINK_OK = re.compile(
-    r"^https://(?:pepy\.tech/projects/[A-Za-z0-9._-]+|github\.com/probityai/probity/blob/main/docs/downloads\.md|www\.npmjs\.com/package/\S+"
+    r"^https://(?:pepy\.tech/projects/[A-Za-z0-9._-]+|www\.npmjs\.com/package/\S+"
     r"|npmjs\.com/package/\S+|npm-stat\.com/\S+|crates\.io/crates/[A-Za-z0-9_-]+)/?$"
 )
 EXTERNAL = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|#|//)", re.IGNORECASE)

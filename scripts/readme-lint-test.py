@@ -140,7 +140,11 @@ class ReadmeLintTest(unittest.TestCase):
             self.assertEqual(lint.bad_summed_links(html), [url], url)
 
     def test_downloads_badge_linking_pepy_compare_fails(self) -> None:
-        for url in ("https://pepy.tech/compare?packages=a,b", "https://github.com/probityai/probity/blob/main/docs/other.md"):
+        for url in (
+            "https://pepy.tech/compare?packages=a,b",
+            "https://github.com/probityai/probity/blob/main/docs/other.md",
+            "https://github.com/probityai/probity/blob/main/docs/downloads.md",
+        ):
             md = f'\n[![thing downloads](https://example.org/d.svg)]({url})\n'
             self.assertEqual(lint.bad_download_links(md), [url], url)
 
