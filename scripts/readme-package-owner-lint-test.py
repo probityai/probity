@@ -17,6 +17,14 @@ OWN = (
     "| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | verifier | **0.5.0** | "
     "[![d](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |\n"
 )
+ROW = (
+    "| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.0** | "
+    "[![d](assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/agent-evidence-verify) |\n"
+)
+FOREIGN_ROW = (
+    "| [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | PyPI | **0.9.0** | "
+    "[![d](assets/badges/dl-pypi-agent-evidence-vocabulary.svg)](https://pepy.tech/projects/agent-evidence-vocabulary) |\n"
+)
 OLD = (
     "| [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | terms | **0.9.0** | "
     "[![d](assets/badges/dl-pypi-agent-evidence-vocabulary.svg)](https://pepy.tech/projects/agent-evidence-vocabulary) |\n"
@@ -33,6 +41,16 @@ class OwnerLintTest(unittest.TestCase):
 
     def test_own_package_passes(self) -> None:
         self.assertEqual(self.run_lint(OWN), 0)
+
+    def test_one_line_row_with_registry_column(self) -> None:
+        self.assertEqual(self.run_lint(ROW), 0)
+        self.assertEqual(self.run_lint(ROW + FOREIGN_ROW), 1)
+
+    def test_non_breaking_hyphen_names_are_read(self) -> None:
+        own = "| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.0** | - |\n"
+        foreign = "| [agent&#8209;evidence&#8209;vocabulary](https://github.com/x/y) | PyPI | **0.9.0** | - |\n"
+        self.assertEqual(self.run_lint(own), 0)
+        self.assertEqual(self.run_lint(own + foreign), 1)
 
     def test_foreign_row_and_badge_fail(self) -> None:
         self.assertEqual(self.run_lint(OWN + OLD), 1)
