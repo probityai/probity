@@ -273,7 +273,6 @@ def test_the_stock_verifyprocessor_verifies_our_export_unchanged(collector_facto
     stored = col.stored(4)
     assert _status(stored) == ["verified"] * 4
     # What the sink stored is still ours to verify, chain and witness included.
-    from probity_records.otel import _records_of_all  # noqa: PLC0415
     assert verify_stream(stored, [stream.certificate], witness_keys=[witness.public_pem()],
                          require_witness=True).ok
 

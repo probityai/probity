@@ -5,11 +5,11 @@ from __future__ import annotations
 import pytest
 
 from probity_records import (
-    TOOL_CALL_RECORD, Journal, RevocationError, RevocationState, Signer, Trust,
+    Journal, RevocationError, RevocationState, Signer, Trust,
     verify_grant_allow, grant_digest, issue_grant, raw_public, sign_approval, sign_revocations,
-    tool_call_predicate, verify_approval_live, verify_journal,
+    verify_approval_live, verify_journal,
 )
-from test_records import ARGS, _approval, _trust, _write_run
+from test_records import _approval, _trust, _write_run
 
 PAST = "2000-01-01T00:00:00Z"
 

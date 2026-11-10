@@ -34,7 +34,6 @@ roles and raise the threshold, by at least one for every approver added (``widen
 
 from __future__ import annotations
 
-import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any

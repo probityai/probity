@@ -15,8 +15,7 @@ from the successor and no longer from the revoked key.
 
 from __future__ import annotations
 
-import time
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 

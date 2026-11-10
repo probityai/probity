@@ -23,7 +23,7 @@ from typing import Any
 from .authority import Trust, check_authority
 from .quorum import count_bindings
 from .governance import GOVERNANCE_STEP, check_step
-from .core import Signer, load_public, open_envelope, sign_envelope, statement
+from .core import load_public, open_envelope, sign_envelope, statement
 from .grants import grant_digest, spend_of
 from .identity import act_grade, check_principals
 from .signing import Delegation, verify_delegation
