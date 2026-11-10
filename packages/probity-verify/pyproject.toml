@@ -19,7 +19,7 @@ classifiers = [
 [project.urls]
 "New project" = "https://pypi.org/project/agent-evidence-verify/"
 Source = "https://github.com/probityai/probity/tree/main/packages/agent-evidence-verify"
-Downloads = "https://github.com/probityai/probity/blob/main/docs/downloads.md"
+Downloads = "https://pepy.tech/projects/probity-verify"
 
 [project.scripts]
 probity-verify = "agent_evidence_verify.cli:main"
