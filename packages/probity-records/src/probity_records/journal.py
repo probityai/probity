@@ -186,8 +186,14 @@ def _delegations(directory: Path, roots: list[Any], failures: list[str]) -> dict
 
 NO_APPROVAL_REQUIRED = "no_approval_required"
 #: A fresh permit for a call whose earlier permit was used, issued only after the effect owner gave a
-#: final "absent" answer; valid only when an earlier allow for the same permit exists (checked below).
+#: final "absent" answer, which the record carries (``context.reconciliation``); valid only when an
+#: earlier allow for the same permit exists (checked below).
 RECONCILED_RETRY = "reconciled_absent_retry"
+#: A fresh permit for a call whose earlier permit never led to an effect the journal cannot account
+#: for: no intent was journalled since the last permit (intent is fsynced before the call leaves, so
+#: the call never left), or the last effect record for the permit settled ``not_run``.
+NOT_RUN_RETRY = "not_run_retry"
+RETRY_REASONS = (RECONCILED_RETRY, NOT_RUN_RETRY)
 
 
 def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> None:
@@ -197,7 +203,7 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
     if not bindings:
         # An allow with no approval is accepted only as the authority's signed statement that its
         # policy required none for this call; verify_journal counts these apart (policyAllows).
-        if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, RECONCILED_RETRY):
+        if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, *RETRY_REASONS):
             problems.append(f"{where}:allow_without_approval_binding")
         return
     reader_allowed: set[str] = set()
@@ -347,14 +353,30 @@ def _budget_problems(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def _retry_problem(pred: dict[str, Any], since_allow: list[str], last_effect: str | None) -> str | None:
+    """Why a re-issued permit is not supported by the journal itself, or ``None`` when it is."""
+    if pred.get("reason") == RECONCILED_RETRY:
+        answer = (pred.get("context") or {}).get("reconciliation") or {}
+        if answer.get("result") != "absent" or answer.get("final") is not True:
+            return "reconciled_retry_without_final_absent_answer"
+        return None
+    # not_run_retry: nothing left the worker since the last permit, or the call settled not_run.
+    if "intent" not in since_allow or (since_allow[-1] == "effect" and last_effect == "not_run"):
+        return None
+    return "not_run_retry_but_an_effect_may_have_happened"
+
+
 def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
-    """Run-level rules: an effect needs an earlier allow for its permit; a permit has one effect
-    record; an intent with no effect record is an open operation, reported, never read as success;
-    an intent or effect names the same grant as the allow its permit rests on; grant budgets hold."""
+    """Run-level rules: an effect needs an earlier allow for its permit; a re-issued permit needs an
+    earlier allow and the journal's own evidence that the earlier call did not take effect; a permit
+    whose outcome settled (committed or unknown) gets no later effect record; an intent with no effect
+    record is an open operation, reported, never read as success; an intent or effect names the same
+    grant as the allow its permit rests on; grant budgets hold."""
     problems: list[str] = _budget_problems(bodies)
     grant_of: dict[str, Any] = {}
     allowed: set[str] = set()
-    effects: dict[str, int] = {}
+    effects: dict[str, str | None] = {}  # pid -> outcome of its latest effect record
+    since_allow: dict[str, list[str]] = {}  # pid -> phases journalled since its latest allow
     intents: dict[str, int] = {}
     for i, body in bodies:
         if body.get("predicateType") != TOOL_CALL_RECORD:
@@ -363,9 +385,15 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
         pid = pred.get("permitId")
         phase = pred.get("phase")
         if phase == "authorize" and pred.get("decision") == "allow":
-            if pred.get("reason") == RECONCILED_RETRY and pid not in allowed:
-                problems.append(f"line_{i}:reconciled_retry_without_earlier_permit")
+            if pred.get("reason") in RETRY_REASONS:
+                if pid not in allowed:
+                    problems.append(f"line_{i}:retry_without_earlier_permit")
+                else:
+                    why = _retry_problem(pred, since_allow.get(pid, []), effects.get(pid))
+                    if why is not None:
+                        problems.append(f"line_{i}:{why}")
             allowed.add(pid)
+            since_allow[pid] = []
             grant_of.setdefault(pid, pred.get("grantDigest"))
         elif phase in ("intent", "effect") and pid in grant_of and pred.get("grantDigest") != grant_of[pid]:
             problems.append(f"line_{i}:{phase}_grant_differs_from_permit")
@@ -373,12 +401,14 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
             if pid not in allowed:
                 problems.append(f"line_{i}:intent_without_permit")
             intents.setdefault(pid, i)
+            since_allow.setdefault(pid, []).append("intent")
         elif phase == "effect":
             if pid not in allowed:
                 problems.append(f"line_{i}:effect_without_permit")
-            if pid in effects and pred.get("outcome") == "committed":
-                problems.append(f"line_{i}:second_effect_record_for_permit")
-            effects[pid] = i
+            if effects.get(pid) in ("committed", "unknown"):
+                problems.append(f"line_{i}:effect_record_after_settled_outcome")
+            effects[pid] = pred.get("outcome")
+            since_allow.setdefault(pid, []).append("effect")
     for pid, i in intents.items():
         if pid not in effects:
             problems.append(f"line_{i}:open_intent_no_effect_record:{pid[:12]}")

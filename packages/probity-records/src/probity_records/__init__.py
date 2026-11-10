@@ -14,7 +14,8 @@ from .revocation import (REVOCATION_LIST, RevocationError, RevocationState, sign
 from .governance import (EXCEPTION_ALLOW, GOVERNANCE_EXCEPTION, GOVERNANCE_STEP, STEPS, check_exception_call,
                          exception_body, exception_digest, exception_evidence, route_by_risk, step_predicate)
 from .exports import EXPORT_SEAL, FieldMap, census as export_census, compare_seals, seal_export, verify_export_seal
-from .journal import CHECKPOINT_TYPE, JOURNAL_FILE, KEYS_FILE, Journal, verify_journal
+from .journal import (CHECKPOINT_TYPE, JOURNAL_FILE, KEYS_FILE, NOT_RUN_RETRY, RECONCILED_RETRY, RETRY_REASONS,
+                      Journal, verify_journal)
 from .signing import (AwsKmsKey, DelegatedKey, Delegation, GcpKmsKey, SigningError, SigningKey, VaultTransitKey,
                       delegate, verify_delegation)
 from .records import (APPROVAL_BINDING_CONTRACT, OUTCOMES, REPLIES, TOOL_CALL_RECORD, UNCERTAIN_EFFECT_CONTRACT,
@@ -35,7 +36,7 @@ __all__ = [
     "grant_permit_claims", "grant_walk", "mint_grant_permit",
     "CAPABILITY_GRANT", "ConstraintError", "GRANT_ALLOW", "Trust", "check_constraint", "verify_call_under_grant", "verify_grant_allow",
     "grant_digest", "grant_evidence", "issue_grant", "narrows", "raw_public", "verify_chain",
-    "APPROVAL_BINDING_CONTRACT", "APPROVAL_DOMAIN", "CHECKPOINT_TYPE", "IN_TOTO_PAYLOAD_TYPE", "JOURNAL_FILE", "Journal", "OUTCOMES", "REPLIES",
+    "APPROVAL_BINDING_CONTRACT", "APPROVAL_DOMAIN", "CHECKPOINT_TYPE", "IN_TOTO_PAYLOAD_TYPE", "JOURNAL_FILE", "Journal", "NOT_RUN_RETRY", "OUTCOMES", "RECONCILED_RETRY", "RETRY_REASONS", "REPLIES",
     "Signer", "TOOL_CALL_RECORD", "UNCERTAIN_EFFECT_CONTRACT", "args_digest", "args_sha256",
     "build_approval_binding", "build_uncertain_effect", "canonical", "embed_approval_binding",
     "judge_approval_binding", "judge_uncertain_effect", "key_id", "load_public", "open_envelope", "pae",
