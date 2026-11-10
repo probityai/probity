@@ -229,7 +229,8 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
         return
     if pred.get("threshold") != policy["threshold"]:
         problems.append(f"{where}:threshold_{pred.get('threshold')}_is_not_the_pinned_{policy['threshold']}")
-    signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked)
+    signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked,
+                                          oidc_pins=trust.identity_issuers)
     problems.extend(f"{where}:{p}" for p in sig_problems)
     counted = signed & reader_allowed
     if len(counted) < policy["threshold"]:

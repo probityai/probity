@@ -72,7 +72,7 @@ def validate_policy(policy: Mapping[str, Any]) -> None:
         raise ValueError("quorum_policy_without_approvers")
     if not isinstance(m, int) or isinstance(m, bool) or not 1 <= m <= len(approvers):
         raise ValueError("quorum_threshold_out_of_range")
-    if len({str(v) for v in approvers.values()}) != len(approvers):
+    if len({canonical(v) if isinstance(v, dict) else str(v) for v in approvers.values()}) != len(approvers):
         raise ValueError("quorum_approvers_share_a_key")
     if not isinstance(policy.get("proposerBound", False), bool):
         raise ValueError("quorum_proposer_bound_shape")
@@ -307,7 +307,8 @@ def approval_policy(policy_id: str, approver_pems: Mapping[str, bytes], threshol
 
 
 def count_bindings(policy: Mapping[str, Any], bindings: Iterable[Mapping[str, Any]], at: str,
-                   key_revoked: Callable[[str, str], bool] | None = None) -> tuple[set[str], list[str]]:
+                   key_revoked: Callable[[str, str], bool] | None = None,
+                   oidc_pins: Mapping[str, Iterable[str]] | None = None) -> tuple[set[str], list[str]]:
     """The distinct approvers whose embedded approval-binding record carries a human approval signed
     by the key ``policy`` pins for that approver, and the problems found.
 
@@ -316,8 +317,14 @@ def count_bindings(policy: Mapping[str, Any], bindings: Iterable[Mapping[str, An
     binding carries ``approvalSig``, the approver's signature over the approval body, so the count
     re-verifies the human's signature rather than trusting the authority's word for it. The
     published approval-binding reader is judged separately by the caller.
+
+    An approver the policy pins as ``{"issuer", "subject"}`` approves by signing in at that OpenID
+    Connect provider: its binding carries the provider's ID token in place of ``approvalSig`` and is
+    counted only when ``oidc_approval.verify_oidc_approval`` accepts it under ``oidc_pins`` (issuer to
+    the provider key thumbprints the counter pinned; none pinned, none counted).
     """
     from .core import APPROVAL_DOMAIN  # noqa: PLC0415
+    from .oidc_approval import verify_oidc_approval  # noqa: PLC0415
 
     validate_policy(policy)
     counted: set[str] = set()
@@ -328,6 +335,16 @@ def count_bindings(policy: Mapping[str, Any], bindings: Iterable[Mapping[str, An
         raw = policy["approvers"].get(who)
         if raw is None:
             problems.append(f"binding_{n}:approver_not_in_policy")
+            continue
+        if isinstance(raw, Mapping) or "approvalToken" in embedded:
+            problem = verify_oidc_approval(embedded, raw, oidc_pins or {})
+            if problem is not None:
+                problems.append(f"binding_{n}:{problem}")
+                continue
+            if who in counted:
+                problems.append(f"binding_{n}:duplicate_approver")
+                continue
+            counted.add(who)
             continue
         try:
             key = load_public(_unb64(raw))
