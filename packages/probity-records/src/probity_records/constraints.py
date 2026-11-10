@@ -55,9 +55,45 @@ def _hosts_narrow(child: list[str], parent: list[str]) -> bool:
     return all(h in parent or (_star_only(h) and _host_ok(h, star_parents)) for h in child)
 
 
+_NUMERIC_LABEL = re.compile(r"0x[0-9a-f]*|[0-9]+")
+#: Percent escapes that decode to a path separator, a dot, or another escape: a server that decodes
+#: them before resolving dot segments reads a different path than the one the constraint checked.
+_PATH_ESCAPE = re.compile(r"%(?:2e|2f|5c|25)", re.IGNORECASE)
+
+
+def _inet_aton(host: str) -> ipaddress.IPv4Address | None:
+    """The IPv4 address a C resolver reads from a numeric host (``127.1``, ``0x7f.0.0.1``,
+    ``0177.0.0.1``, ``2130706433``), or None when the host is not all numeric labels."""
+    labels = host.split(".")
+    if not 1 <= len(labels) <= 4 or not all(_NUMERIC_LABEL.fullmatch(x) for x in labels):
+        return None
+    values = []
+    for x in labels:
+        if x.startswith("0x"):
+            values.append(int(x[2:] or "0", 16))
+        elif len(x) > 1 and x.startswith("0"):
+            values.append(int(x, 8) if set(x) <= set("01234567") else -1)
+        else:
+            values.append(int(x))
+    *head, last = values
+    if any(not 0 <= v <= 255 for v in head) or not 0 <= last < 256 ** (5 - len(values)):
+        return ipaddress.IPv4Address(0)  # unparseable by every resolver: treated as private (refused)
+    number = 0
+    for v in head:
+        number = number * 256 + v
+    return ipaddress.IPv4Address(number * 256 ** (5 - len(values)) + last)
+
+
 def _private_host(host: str) -> bool:
+    """True for loopback, link-local, private and reserved hosts in every notation a resolver accepts.
+    A DNS name that resolves to a private address is not visible here: the egress layer re-checks
+    the address it actually connects to."""
+    host = host.rstrip(".")
     if host in ("localhost", "localhost.localdomain") or host.endswith(".localhost"):
         return True
+    numeric = _inet_aton(host)
+    if numeric is not None:
+        return not numeric.is_global
     try:
         ip = ipaddress.ip_address(host.strip("[]"))
     except ValueError:
@@ -87,6 +123,8 @@ def _url_parts(v: Any) -> tuple[str, str, str] | None:
         return None
     if parts.username is not None or parts.password is not None or not parts.hostname:
         return None
+    if "\\" in parts.path or _PATH_ESCAPE.search(parts.path):
+        return None  # an encoded separator, dot or escape: the path the server resolves is not this one
     return parts.scheme.lower(), parts.hostname.lower(), parts.path or "/"
 
 
