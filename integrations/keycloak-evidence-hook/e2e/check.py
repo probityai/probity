@@ -111,7 +111,9 @@ def main() -> int:
                "contradicted", "grant_scope_exceeds_expected")
         # Remove a line from the middle of the log, never the receipt itself. A removed first
         # line is a truncated prefix, which the chain alone cannot show; see docs/design.md.
-        victim = 1 if lines.index(matches[0]) != 1 else len(lines) - 2
+        victim = 1
+        if lines.index(matches[0]) == victim or len(lines) < 3:
+            raise SystemExit("the log-removal control needs a middle line other than the receipt")
         cut = b"\n".join(line for i, line in enumerate(lines) if i != victim) + b"\n"
         expect("log-line-removed", run_case(verifier, out / "log-line-removed", "log-line-removed",
                                             envelope, cut, key, expected),
