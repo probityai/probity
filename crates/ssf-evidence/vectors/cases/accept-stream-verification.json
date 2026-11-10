@@ -1,0 +1,10 @@
+{
+  "description": "An SSF stream verification event, which carries no evidence and needs none.",
+  "expect": {
+    "accept": true,
+    "event_type": "https://schemas.openid.net/secevent/ssf/event-type/verification"
+  },
+  "id": "accept-stream-verification",
+  "served": {},
+  "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3QtdHJhbnNtaXR0ZXItcnMyNTYiLCJ0eXAiOiJzZWNldmVudCtqd3QifQ.eyJhdWQiOiJodHRwczovL3JlY2VpdmVyLmV4YW1wbGUudGVzdC9zc2YiLCJldmVudHMiOnsiaHR0cHM6Ly9zY2hlbWFzLm9wZW5pZC5uZXQvc2VjZXZlbnQvc3NmL2V2ZW50LXR5cGUvdmVyaWZpY2F0aW9uIjp7InN0YXRlIjoiYzNSaGRHVSJ9fSwiaWF0IjoxNzYyNzMyODAwLCJpc3MiOiJodHRwczovL3RyYW5zbWl0dGVyLmV4YW1wbGUudGVzdC8iLCJqdGkiOiJ2ZWN0b3ItMDAwMSIsInN1Yl9pZCI6eyJmb3JtYXQiOiJvcGFxdWUiLCJpZCI6InN0cmVhbS0xIn19.IBJDxwifhahJ4-uOVKdoVwHq4xopBXYi1RrD0s85ilFHKqT-uapNA4v-YfXBux1KzBmR-tp_BJbJNybkVfy8SmGTenyQnkywWd_uwkvCdp9DjcDOoAF6Mmrf8L8iKpcnYmes7bp43ujclPHRCuFJiOYcVztN8gorFzkhv6XmM3XTRjIovwII50ntaDHk3AoUA3mNFD26X-bAqNZA2nJIP8dXxxi9TVF1E63w1lWaFeoYRwYAjtAYRpEJKwo9vlf9ItDKd6OFO8dLFKx0LQb06cJ1O9v7HL-ExSWNOen9zgi5ld0tXLCopP91gE8q1RHdiT4dHxZEQ6_KLTcY1Hj-TQ"
+}

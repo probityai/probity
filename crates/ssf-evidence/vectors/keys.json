@@ -1,0 +1,33 @@
+{
+  "audience": "https://receiver.example.test/ssf",
+  "claim": "https://w3id.org/agent-evidence/secevent/v1/evidence-ref",
+  "evidence_keys": [
+    {
+      "ed25519_public_hex": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "keyid": "test-evidence-ed25519"
+    }
+  ],
+  "evidence_policy": "required",
+  "evidence_threshold": 1,
+  "issuer": "https://transmitter.example.test/",
+  "transmitter_jwks": {
+    "keys": [
+      {
+        "alg": "RS256",
+        "e": "AQAB",
+        "kid": "test-transmitter-rs256",
+        "kty": "RSA",
+        "n": "tVvSua20Tlz9KcPLn_aYLZUrJgpNN1tNC2u4LFdHfpMz4StZ10RFKNjnJ90UqaPxrD_XcilU9ZrKIF5ABc0MKBr9TrjuiAkyK2A5G8byNSyMzYgKLz7Bw8MbjIqBCJr52DmeGtiwTJVy1SZrtAt48wShglr5WppQ4ZV9C24QezoNYG-hQ0pRu7GVblBj75mIPlbd8ugKWdEnmXiPPvW38NR8GQ4DFGCdLqke2UOj4K0ZvEEnmbDvk9_PBDksba2FHmmuCNmbCie930hZwd7ej5L8wYxTsyXInEzR85w5qklw61fukp0R0dFVH0nuTTZsfF20kgDJj7t0yhkPa1BlzQ",
+        "use": "sig"
+      },
+      {
+        "alg": "Ed25519",
+        "crv": "Ed25519",
+        "kid": "test-transmitter-ed25519",
+        "kty": "OKP",
+        "use": "sig",
+        "x": "F8t5-ytBIPKx7GXkGY1uCLKOgT_rAeSkAIObheGAgM4"
+      }
+    ]
+  }
+}
