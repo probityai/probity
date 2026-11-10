@@ -32,12 +32,6 @@ Each pins its public key at construction and refuses a service that answers with
 issues a short-lived session key signed by a root key, and `verify_delegation` re-checks the certificate
 offline. The key's provenance travels in every permit and checkpoint it signs.
 
-In `probity-temporal`, `AuthorityService` serves the authority from its own uid on a Unix socket. It checks
-the caller's uid with `SO_PEERCRED` against an allowlist and offers no raw-sign operation: a worker can ask
-for a permit only with a real approval. With the worker as `nobody`, a measured run was denied the key file and
-the journal, got `op_unknown` for sign, `approval_missing` with no approval and `approval_signature_invalid`
-with a forged one.
-
 The witness key belongs to the customer. The journal publishes a C2SP tlog checkpoint feed. A witness the
 customer runs, with a key we never hold, cosigns each checkpoint over an RFC 9162 consistency proof and refuses a
 split view with HTTP 422. `Witness` and `serve_witness` are the server, `Feed` the client. The auditor pins a
