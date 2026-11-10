@@ -1,0 +1,27 @@
+# Keycloak with the evidence hook mounted, for the end-to-end run in run.sh.
+# Host networking keeps the issuer identical for Keycloak and the driver
+# (http://127.0.0.1:8080/realms/agents) and lets Keycloak reach the CIBA
+# authentication-device stub on 127.0.0.1:8099.
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
+    network_mode: host
+    command:
+      - start-dev
+      - --import-realm
+      - --http-port=8080
+      - --spi-ciba-auth-channel--ciba-http-auth-channel--http-authentication-channel-uri=http://127.0.0.1:8099/ciba
+      - --spi-events-listener--evidence-hook--signing-key-file=/opt/evidence/keys/recorder.pem
+      - --spi-events-listener--evidence-hook--public-key-file=/opt/evidence/keys/recorder.pub.pem
+      - --spi-events-listener--evidence-hook--sink-file=/opt/evidence/sink/receipts.jsonl
+      - --spi-events-listener--evidence-hook--stream=e2e-node-1
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-e2e-only
+      KC_HOSTNAME: http://127.0.0.1:8080
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./realm-agents.json:/opt/keycloak/data/import/realm-agents.json:ro
+      - ../target/keycloak-evidence-hook-0.1.0.jar:/opt/keycloak/providers/keycloak-evidence-hook-0.1.0.jar:ro
+      - ${EVIDENCE_WORK:?set EVIDENCE_WORK}/keys:/opt/evidence/keys:ro
+      - ${EVIDENCE_WORK:?set EVIDENCE_WORK}/sink:/opt/evidence/sink
