@@ -40,7 +40,7 @@ def test_child_grant_that_drops_a_parent_constraint_is_refused() -> None:
     from probity_records.core import _b64, canonical as jcs
     from probity_records.grants import GRANT_DOMAIN, grant_digest
 
-    body = {"expiresAt": T1, "grantId": "g2", "holderKey": raw_public(Signer.generate()),
+    body = {"context": {}, "expiresAt": T1, "grantId": "g2", "holderKey": raw_public(Signer.generate()),
             "issuerKey": raw_public(holder), "maxDepth": 0, "notBefore": T0, "parent": grant_digest(parent["body"]),
             "tools": widened}
     child = {"body": body, "sig": _b64(holder.sign(GRANT_DOMAIN + jcs(body)))}
