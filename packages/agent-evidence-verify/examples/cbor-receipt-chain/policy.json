@@ -1,0 +1,15 @@
+{
+  "assessments": {
+    "receipt-chain-six-allowed-calls": {
+      "claim_type": "cbor_receipt_chain/v1",
+      "count": 6,
+      "head": "07a7cb0302498e02421df0eb9135648d0710ea672786336cf53f0ae73ba663e1",
+      "profile": "profile.json",
+      "records": "chain.jsonl",
+      "signer_keys": [
+        "8dd2d7723f80c3100bd14b60615302373a418757a333c662565481a8372a2a21"
+      ]
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
