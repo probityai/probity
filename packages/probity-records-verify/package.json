@@ -1,0 +1,14 @@
+{
+  "name": "@probityai/records-verify",
+  "version": "0.1.0",
+  "description": "Offline verifier for probity-records journals: the same verdicts as the Python verifier, byte for byte, on the shared vectors",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Sankalp Gilda",
+  "repository": {"type": "git", "url": "git+https://github.com/probityai/probity.git", "directory": "packages/probity-records-verify"},
+  "exports": {".": "./src/verify.ts"},
+  "bin": {"probity-records-verify": "./src/cli.ts"},
+  "engines": {"node": ">=22.18"},
+  "scripts": {"test": "node --test test/"},
+  "dependencies": {"@bufbuild/cel": "0.6.0"}
+}
