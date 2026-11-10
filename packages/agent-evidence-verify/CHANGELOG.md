@@ -2,12 +2,16 @@
 
 ## Unreleased (0.6.0 at release)
 
-A minor release: one new claim type and one new console script; the decisions for every existing claim type are
+A minor release: two new claim types and one new console script; the decisions for every existing claim type are
 unchanged.
 
 - `proof_of_control/v1`: checks a Proof-of-Control artifact (signed token, Merkle inclusion or consistency proof,
   token chain, canonical form) offline and passes all 171 cases of `poc-evidence-vectors` 0.1.0, which the `test`
   extra pins. Route and example: `docs/corpus-routes.md`, `examples/corpus-routes/proof-of-control/`.
+- `token_grant_receipt/v1`: checks a signed receipt an identity provider wrote for a token exchange, client
+  credentials or CIBA grant against the values the consumer expects, and optionally the recorder's whole hash-chained
+  log. The Keycloak evidence hook in `integrations/keycloak-evidence-hook` writes these receipts. Page:
+  `docs/token-grant-receipt.md`.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.

@@ -3305,6 +3305,31 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+  integration-keycloak-evidence-hook:
+    name: "integration / keycloak-evidence-hook"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.jobs)['integration-keycloak-evidence-hook'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EVIDENCE_OUT: ${{ github.workspace }}/.build/keycloak-evidence-hook
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: '3.12'
+      - name: build, start Keycloak with the listener, drive three grants, check every receipt
+        run: bash integrations/keycloak-evidence-hook/e2e/run.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: keycloak-evidence-hook-e2e
+          if-no-files-found: error
+          retention-days: 90
+          path: ${{ env.EVIDENCE_OUT }}
+
   family-resolves:
     name: "family-resolves"
     needs: [changes]
@@ -3410,7 +3435,7 @@ jobs:
 
   ci-ok:
     if: ${{ (github.event_name != 'pull_request' || startsWith(github.head_ref, 'merge-train/')) && (always()) }}
-    needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, observer-witness, observer-witnessed-run-selection, family-resolves, pypi-upload-selftest, version-pins]
+    needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, observer-witness, observer-witnessed-run-selection, family-resolves, integration-keycloak-evidence-hook, pypi-upload-selftest, version-pins]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed
