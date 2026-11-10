@@ -111,6 +111,7 @@ jobs:
       - run: uv run --frozen python examples/brokered-file-write/generate.py --check
       - run: uv run --frozen python examples/customer-support-action/generate.py --check
       - run: uv run --frozen python examples/done-receipt/generate.py --check
+      - run: uv run --frozen python examples/cbor-receipt-chain/generate.py --check
       - run: uv run --frozen --extra test python vectors-source-coverage/check_vectors.py --verifier 'agent-evidence-verify'
       - run: uv run --frozen --extra test python vectors-operand-lineage/check_vectors.py --verifier 'agent-evidence-verify'
       - run: uv run --frozen --extra test python vectors-done-checks/gen_vectors.py --check
