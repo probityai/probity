@@ -6,8 +6,9 @@ account. The identity provider keeps a second account of the same issuance in it
 it writes on its own side and exports through a log stream or its log API. This claim reconciles
 the two. For every signed record the consumer pins, the provider's export must hold a successful
 token issuance to the same client, for the same subject, within the skew tolerance of the record's
-``principal.issuedAt``. A mismatch is a finding with its own code. The first contradicting finding in record order is
-the decision's reason; when nothing contradicts, the first finding that leaves the claim open is.
+``principal.issuedAt``. A mismatch is a finding with its own code. The first contradicting finding
+in record order is the decision's reason; when nothing contradicts, the first finding that leaves
+the claim open is.
 
 Two exports are read, each in its published shape:
 
@@ -86,7 +87,7 @@ AGENT_MARKERS = frozenset({"ai_agent", "AIAgent", "WorkloadPrincipal"})
 class _Event:
     """One normalized issuance or refusal from the provider's export."""
 
-    __slots__ = ("event_id", "at", "clients", "subjects", "issued", "agent")
+    __slots__ = ("agent", "at", "clients", "event_id", "issued", "subjects")
 
     def __init__(self, event_id: str, at: datetime.datetime, clients: set[str],
                  subjects: set[str], issued: bool, agent: bool) -> None:
@@ -101,7 +102,7 @@ class _Event:
 def _instant(value: Any, label: str) -> datetime.datetime:
     text = _string(value, label)
     try:
-        moment = datetime.datetime.fromisoformat(text.replace("Z", "+00:00"))
+        moment = datetime.datetime.fromisoformat(text)
     except ValueError as error:
         raise CaseError(f"{label}: expected an RFC 3339 timestamp") from error
     if moment.tzinfo is None:
@@ -201,7 +202,7 @@ def _principal(raw: bytes) -> dict[str, Any]:
 
 def _finding(principal: dict[str, Any], events: list[_Event]) -> tuple[str | None, set[str]]:
     """The first finding for one principal, or ``None``, and the event ids that back it."""
-    issued_at = datetime.datetime.fromisoformat(principal["issuedAt"].replace("Z", "+00:00"))
+    issued_at = datetime.datetime.fromisoformat(principal["issuedAt"])
     client, subject = principal["clientId"], principal["subject"]
     near = [e for e in events if abs(e.at - issued_at) <= SKEW and client in e.clients]
     backing = {e.event_id for e in near if e.issued and subject in e.subjects}
@@ -275,7 +276,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
             checks.append({"id": f"record:{name}", "status": "fail", "finding": report.codes[0]})
             continue
         principal = _principal(raw)
-        issued_at = datetime.datetime.fromisoformat(principal["issuedAt"].replace("Z", "+00:00"))
+        issued_at = datetime.datetime.fromisoformat(principal["issuedAt"])
         if principal["issuer"] != issuer:
             code, status, verdict = "principal-issuer-unpinned", "fail", "contradicted"
             backing: set[str] = set()

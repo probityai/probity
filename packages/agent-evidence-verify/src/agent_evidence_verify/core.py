@@ -24,6 +24,7 @@ from .adapters import (
     done_receipt,
     event_absence,
     execution_evidence,
+    idp_log_witness,
     jcs_canonical,
     observed_effect,
     operand_lineage,
@@ -69,6 +70,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "proof_of_control/v1": proof_of_control.adjudicate,
     "observed_effect/v1": observed_effect.adjudicate,
     "audit_principal/v1": audit_principal.adjudicate,
+    "idp_log_witness/v1": idp_log_witness.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
