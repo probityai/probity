@@ -31,8 +31,30 @@ APPROVAL_DOMAIN = b"probity-approval-v1\x00"
 PERMIT_DOMAIN = b"probity-permit-v1\x00"
 
 
+#: JCS prints every number as an IEEE double, so an integer beyond this has no one-to-one form:
+#: 2**53 and 2**53 + 1 print the same bytes, and an approval over one would hold for the other.
+MAX_EXACT_INT = 2**53 - 1
+
+
+def _refuse_inexact_ints(value: Any, depth: int = 0) -> None:
+    if depth > 256:
+        raise ValueError("value_too_deep")
+    if isinstance(value, bool):
+        return
+    if isinstance(value, int):
+        if not -MAX_EXACT_INT <= value <= MAX_EXACT_INT:
+            raise ValueError(f"integer_beyond_exact_json_range:{value}")
+    elif isinstance(value, dict):
+        for item in value.values():
+            _refuse_inexact_ints(item, depth + 1)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _refuse_inexact_ints(item, depth + 1)
+
+
 def canonical(value: Any) -> bytes:
-    """The RFC 8785 bytes of a JSON value."""
+    """The RFC 8785 bytes of a JSON value; an integer JCS cannot print exactly is refused."""
+    _refuse_inexact_ints(value)
     raw = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     return jcs_admit.admit(raw.encode("utf-8"))
 
