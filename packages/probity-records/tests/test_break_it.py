@@ -22,7 +22,7 @@ T1 = "2027-01-01T00:00:00Z"
 # ---- widened grant -------------------------------------------------------------------------------
 def _root_and_holder() -> tuple[Signer, Signer, dict]:
     root, holder = Signer.generate(), Signer.generate()
-    parent = issue_grant(root, grant_id="g1", holder_key=raw_public(holder), not_before=T0, expires_at=T1,
+    parent = issue_grant(root, grant_id="g1", holder_key=raw_public(holder), not_before=T0, expires_at=T1, max_depth=1,
                          tools={"transfer": {"args": {"to": {"type": "exact", "value": "acct-1"},
                                                       "amount": {"type": "range", "max": 100}}}})
     return root, holder, parent
@@ -41,7 +41,7 @@ def test_child_grant_that_drops_a_parent_constraint_is_refused() -> None:
     from probity_records.grants import GRANT_DOMAIN, grant_digest
 
     body = {"expiresAt": T1, "grantId": "g2", "holderKey": raw_public(Signer.generate()),
-            "issuerKey": raw_public(holder), "notBefore": T0, "parent": grant_digest(parent["body"]),
+            "issuerKey": raw_public(holder), "maxDepth": 0, "notBefore": T0, "parent": grant_digest(parent["body"]),
             "tools": widened}
     child = {"body": body, "sig": _b64(holder.sign(GRANT_DOMAIN + jcs(body)))}
     leaf, reason = verify_chain([parent, child], {root.key_id}, "2026-06-01T00:00:00Z")
