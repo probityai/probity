@@ -171,9 +171,13 @@ def narrowing_problem(child: Mapping[str, Any], parent: Mapping[str, Any]) -> st
             problem = widening_problem(spec.get("quorum"), pspec["quorum"])
             if problem:
                 return f"{problem}:{tool}"
+        added = sorted(set(spec["args"]) - set(pspec["args"]))
+        if added:
+            return f"child_adds_argument:{tool}.{added[0]}"
+        dropped = sorted(set(pspec["args"]) - set(spec["args"]))
+        if dropped:  # a call without the argument would leave it to the tool's default, unbounded
+            return f"child_drops_argument:{tool}.{dropped[0]}"
         for name, c in spec["args"].items():
-            if name not in pspec["args"]:
-                return f"child_adds_argument:{tool}.{name}"
             if not constraints.narrows(c, pspec["args"][name]):
                 return f"child_widens_constraint:{tool}.{name}"
     return None
