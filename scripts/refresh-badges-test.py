@@ -63,7 +63,7 @@ class RepoReadmeTest(unittest.TestCase):
         self.assertTrue(pairs)
         for url, name in pairs:
             self.assertEqual(url, f"https://pepy.tech/projects/{name}")
-        self.assertIn("dl-pypi-probity-verify.svg", text)
+        self.assertIn("dl-pypi-probity-verify.svg", text.split("</p>", 1)[1])
         self.assertIn("dl-pypi-agent-evidence-verify.svg", text)
 
     def test_package_table_rows_stay_on_one_line(self) -> None:

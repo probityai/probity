@@ -4,7 +4,6 @@
 <a href="https://github.com/probityai/probity/actions/workflows/ci.yml"><img height="16" alt="CI" src="https://github.com/probityai/probity/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://pypi.org/project/agent-evidence-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/agent-evidence-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white&cacheSeconds=3600"></a>
 <a href="https://pepy.tech/projects/agent-evidence-verify"><img height="16" alt="Downloads" src="assets/badges/dl-pypi-agent-evidence-verify.svg"></a>
-<a href="https://pepy.tech/projects/probity-verify"><img height="16" alt="Downloads of the former name probity-verify" src="assets/badges/dl-pypi-probity-verify.svg"></a>
 <a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="assets/badges/license.svg"></a>
 <a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="assets/badges/stars.svg"></a>
 </p>
