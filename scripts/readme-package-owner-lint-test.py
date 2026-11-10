@@ -19,7 +19,7 @@ OWN = (
 )
 ROW = (
     "| [agent-evidence-verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.0** | "
-    "[![d](assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/agent-evidence-verify) |\n"
+    "[![d](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |\n"
 )
 FOREIGN_ROW = (
     "| [agent-evidence-vocabulary](https://github.com/probityai/agent-evidence-vectors) | PyPI | **0.9.0** | "

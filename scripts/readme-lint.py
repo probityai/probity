@@ -28,10 +28,11 @@ to that shape with three rules:
 6. An image whose alt text contains "downloads" (any case), when wrapped in a link,
    links https://pepy.tech/projects/<name> for a PyPI package, or the package page
    on npmjs.com or npm-stat.com for an npm package, or on crates.io for a crate. Every
-   PyPI download badge opens pepy.tech, never the PyPI page. A badge whose image is a
-   summed total (a file named dl-<name>-total.svg, the sum of several package names)
-   links https://pepy.tech/projects/agent-evidence-verify, the pepy.tech page of the
-   current name, never docs/downloads.md.
+   PyPI download badge opens pepy.tech, never the PyPI page. A committed badge image
+   names its one package (dl-pypi-<name>.svg or dl-crates-<name>.svg) and links the
+   page of that same name, so the number on the badge is the number the link shows.
+   A summed badge (dl-<name>-total.svg) is refused: one image has one link, and no
+   page shows the sum of two package names. A renamed package gets a badge per name.
 
 6. No shields.io badge sets cacheSeconds above 3600. The image proxy then keeps a
    version badge for that long, so a README can show a release older than the one
@@ -116,20 +117,30 @@ def github_api_badges(text: str) -> list[str]:
     return GITHUB_API_BADGE.findall(text)
 
 
+NAMED_BADGE = re.compile(r"\bdl-(pypi|crates)-([A-Za-z0-9._-]+)\.svg\b")
 SUMMED_BADGE = re.compile(r"\bdl-[a-z0-9-]+-total\.svg", re.IGNORECASE)
 HTML_LINKED_SRC = re.compile(
     r"<a\b[^>]*?\bhref=[\"']([^\"']+)[\"'][^>]*>\s*<img\b[^>]*?\bsrc=[\"']([^\"']+)[\"']", re.IGNORECASE
 )
 MD_LINKED_SRC = re.compile(r"\[!\[[^\]]*\]\(([^)\s]+)[^)]*\)\]\(([^)\s]+)")
-SUMMED_PAGE = "https://pepy.tech/projects/agent-evidence-verify"
-SUMMED_LINKS = (SUMMED_PAGE,)
+NAMED_PAGE = {"pypi": "https://pepy.tech/projects/{}", "crates": "https://crates.io/crates/{}"}
 
 
-def bad_summed_links(text: str) -> list[str]:
-    """Targets of linked summed-total badges that do not open the pepy.tech page of the current name."""
+def mismatched_badge_links(text: str) -> list[str]:
+    """Linked download-badge images whose link is not the page of the one name they count.
+
+    A summed badge (dl-*-total.svg) is always reported: no single page shows its number."""
     pairs = [(src, url) for url, src in HTML_LINKED_SRC.findall(text)]
     pairs += MD_LINKED_SRC.findall(text)
-    return [url for src, url in pairs if SUMMED_BADGE.search(src) and url not in SUMMED_LINKS]
+    bad = []
+    for src, url in pairs:
+        if SUMMED_BADGE.search(src):
+            bad.append(src)
+            continue
+        m = NAMED_BADGE.search(src)
+        if m and url.rstrip("/") != NAMED_PAGE[m.group(1)].format(m.group(2)):
+            bad.append(src)
+    return bad
 
 
 def bad_download_links(text: str) -> list[str]:
@@ -212,10 +223,12 @@ def check(readme: Path, max_words: int, first_screen: int) -> list[str]:
             f"{readme}: downloads badge links {url[:90]}; link https://pepy.tech/projects/<name> "
             "for a PyPI package (npm and crates.io badges may link their own registry)."
         )
-    for url in bad_summed_links(text):
+    for src in mismatched_badge_links(text):
         failures.append(
-            f"{readme}: a summed-total badge links {url[:90]}; link {SUMMED_PAGE}, the "
-            "pepy.tech page of the current name."
+            f"{readme}: download badge {src[:90]} does not link the page of the one package it "
+            "counts; a dl-pypi-<name>.svg badge links https://pepy.tech/projects/<name>, a "
+            "dl-crates-<name>.svg badge links https://crates.io/crates/<name>, and a summed "
+            "badge has no such page, so use one badge per name."
         )
     ranks = [badge_rank(alt) for alt in top_badge_row(text)]
     if ranks != sorted(ranks):
