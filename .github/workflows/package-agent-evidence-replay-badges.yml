@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: probityai/.github
-          ref: ecb47052aa3ae8188c74f3cdc31eb8f4e9402811
+          ref: 254c480fa2f8fe086de36fcee1b8d17df731b6b9
           path: .github-scripts
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0

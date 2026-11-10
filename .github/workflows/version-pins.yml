@@ -30,6 +30,6 @@ jobs:
         with:
           persist-credentials: false
       - name: manifests, tags, registries and the family lock agree
-        uses: probityai/.github/actions/version-pins@bfaca9ac2695e0bb5c669adaf19c7caad19761d3 # main
+        uses: probityai/.github/actions/version-pins@254c480fa2f8fe086de36fcee1b8d17df731b6b9 # main
         with:
           command: registry
