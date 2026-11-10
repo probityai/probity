@@ -1,0 +1,11 @@
+{
+  "schema_version": "probity-case/v1",
+  "case_id": "tampered-payload",
+  "artifacts": {
+    "envelope": {
+      "path": "envelope.json",
+      "length": 1689,
+      "sha256": "5d209f90f85e7b2a88758b8d7a54de484804f52fcaea98e8ccdd0bb2947623bc"
+    }
+  }
+}

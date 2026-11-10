@@ -1,0 +1,38 @@
+[
+  {
+    "case": "token-exchange",
+    "decision": "supported",
+    "reason": "grant_recorded_as_expected",
+    "as_expected": true
+  },
+  {
+    "case": "tampered-payload",
+    "decision": "not_established",
+    "reason": "receipt_signature_unverified",
+    "as_expected": true
+  },
+  {
+    "case": "scope-not-allowed",
+    "decision": "contradicted",
+    "reason": "grant_scope_exceeds_expected",
+    "as_expected": true
+  },
+  {
+    "case": "log-line-removed",
+    "decision": "not_established",
+    "reason": "receipt_log_unestablished",
+    "as_expected": true
+  },
+  {
+    "case": "client-credentials",
+    "decision": "supported",
+    "reason": "grant_recorded_as_expected",
+    "as_expected": true
+  },
+  {
+    "case": "ciba",
+    "decision": "supported",
+    "reason": "grant_recorded_as_expected",
+    "as_expected": true
+  }
+]

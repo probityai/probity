@@ -1,0 +1,23 @@
+{
+  "schema_version": "probity-policy/v1",
+  "assessments": {
+    "ciba": {
+      "claim_type": "token_grant_receipt/v1",
+      "envelope": "envelope",
+      "recorder_public_key": "ecfce101367794aa22acc7c03397d0b88c40293ebfd3d477fba1ee3fc02c1a15",
+      "expected": {
+        "issuer": "http://127.0.0.1:8080/realms/agents",
+        "grant_type": "urn:openid:params:grant-type:ciba",
+        "actor_client_id": "agent-gateway",
+        "access_token_id_sha256": "bf97d5810337b42592f3a7cf0e89a0fdd0e891fb71bb9552d78e43413422b28e",
+        "subject_user_id": "854cbc17-7d78-4c24-9990-014d045e2d58",
+        "scope_allowed": [
+          "openid",
+          "tools:execute",
+          "tools:read"
+        ]
+      },
+      "log": "log"
+    }
+  }
+}

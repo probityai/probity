@@ -1,0 +1,16 @@
+{
+  "schema_version": "probity-case/v1",
+  "case_id": "ciba",
+  "artifacts": {
+    "envelope": {
+      "path": "envelope.json",
+      "length": 1649,
+      "sha256": "1b071bf675fd00bedc28462481bbd2b9fe6472f654c85331580448ca4435b0e0"
+    },
+    "log": {
+      "path": "receipts.jsonl",
+      "length": 4871,
+      "sha256": "3f766a7a3362c6315522ba592c2651fb9ea8cb41790348dabd3f134820fee1fc"
+    }
+  }
+}

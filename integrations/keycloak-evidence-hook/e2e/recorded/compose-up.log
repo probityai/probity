@@ -1,0 +1,20 @@
+ keycloak Pulling 
+ f4389c7e7e04 Pulling fs layer 
+ f4389c7e7e04 Download complete 
+ f9e37a008610 Pulling fs layer 
+ 8ac1089577ec Pulling fs layer 
+ 88d121847581 Pulling fs layer 
+ f9e37a008610 Download complete 
+ 8ac1089577ec Downloading [====================>                              ]  66.04MB/158.6MB
+ 88d121847581 Downloading [=========================>                         ]  43.77MB/84.2MB
+ 8ac1089577ec Downloading [================================================>  ]  155.2MB/158.6MB
+ 8ac1089577ec Download complete 
+ 88d121847581 Download complete 
+ 135fd1641cb6 Pulling fs layer 
+ 135fd1641cb6 Download complete 
+ 135fd1641cb6 Download complete 
+ keycloak Pulled 
+ Container e2e-keycloak-1  Creating
+ Container e2e-keycloak-1  Created
+ Container e2e-keycloak-1  Starting
+ Container e2e-keycloak-1  Started

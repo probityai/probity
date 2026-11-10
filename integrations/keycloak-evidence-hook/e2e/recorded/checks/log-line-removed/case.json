@@ -1,0 +1,16 @@
+{
+  "schema_version": "probity-case/v1",
+  "case_id": "log-line-removed",
+  "artifacts": {
+    "envelope": {
+      "path": "envelope.json",
+      "length": 1689,
+      "sha256": "fce19faa7c56f6b6a1a7345e3b4ac33f87a18619b8eac9a49ce932bd5e66c747"
+    },
+    "log": {
+      "path": "receipts.jsonl",
+      "length": 3338,
+      "sha256": "fffa765006cbb09e8d9f0d46ee3683a8d55b16b75e34d5df7fab552dee72873d"
+    }
+  }
+}

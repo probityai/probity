@@ -1,0 +1,21 @@
+keycloak-1  | Updating the configuration and installing your custom providers, if any. Please wait.
+keycloak-1  | 2026-11-10 14:44:11,038 WARN  [org.keycloak.services] (build-13) KC-SERVICES0047: evidence-hook (io.github.probityai.keycloak.evidence.EvidenceHookProviderFactory) is implementing the internal SPI eventsListener. This SPI is internal and may change without notice
+keycloak-1  | 2026-11-10 14:44:15,476 INFO  [io.quarkus.deployment.QuarkusAugmentor] (main) Quarkus augmentation completed in 7074ms
+keycloak-1  | Running the server in development mode. DO NOT use this configuration in production.
+keycloak-1  | 2026-11-10 14:44:17,642 INFO  [io.github.probityai.keycloak.evidence.EvidenceHookProviderFactory] (main) evidence-hook: recording [AUTHREQID_TO_TOKEN, CLIENT_LOGIN, TOKEN_EXCHANGE] to /opt/evidence/sink/receipts.jsonl as stream e2e-node-1 under key acc50711e1a4922b9b04fa78554fac5d1548cf29932c1d3896e8102178bbaa24
+keycloak-1  | 2026-11-10 14:44:18,123 INFO  [org.keycloak.url.HostnameV2ProviderFactory] (main) If hostname is specified, hostname-strict is effectively ignored
+keycloak-1  | 2026-11-10 14:44:20,641 INFO  [org.hibernate.orm.jdbc.batch] (JPA Startup Thread) HHH100501: Automatic JDBC statement batching enabled (maximum batch size 32)
+keycloak-1  | 2026-11-10 14:44:21,910 INFO  [org.keycloak.quarkus.runtime.storage.database.liquibase.QuarkusJpaUpdaterProvider] (main) Initializing database schema. Using changelog META-INF/jpa-changelog-master.xml
+keycloak-1  | 2026-11-10 14:44:25,419 INFO  [org.infinispan.CONTAINER] (main) Virtual threads support enabled
+keycloak-1  | 2026-11-10 14:44:25,590 INFO  [org.infinispan.CONTAINER] (main) ISPN000556: Starting user marshaller 'org.infinispan.commons.marshall.ImmutableProtoStreamMarshaller'
+keycloak-1  | 2026-11-10 14:44:26,003 INFO  [org.keycloak.connections.infinispan.DefaultInfinispanConnectionProviderFactory] (main) Node name: node_223721, Site name: null
+keycloak-1  | 2026-11-10 14:44:26,280 INFO  [org.keycloak.exportimport.dir.DirImportProvider] (main) Importing from directory /opt/keycloak/bin/../data/import
+keycloak-1  | 2026-11-10 14:44:26,449 INFO  [org.keycloak.services] (main) KC-SERVICES0050: Initializing master realm
+keycloak-1  | 2026-11-10 14:44:27,980 INFO  [org.keycloak.exportimport.singlefile.SingleFileImportProvider] (main) Full importing from file /opt/keycloak/bin/../data/import/realm-agents.json
+keycloak-1  | 2026-11-10 14:44:29,237 INFO  [org.keycloak.exportimport.util.ImportUtils] (main) Realm 'agents' imported
+keycloak-1  | 2026-11-10 14:44:29,237 INFO  [org.keycloak.services] (main) KC-SERVICES0030: Full model import requested. Strategy: IGNORE_EXISTING
+keycloak-1  | 2026-11-10 14:44:29,238 INFO  [org.keycloak.services] (main) KC-SERVICES0032: Import finished successfully
+keycloak-1  | 2026-11-10 14:44:29,364 INFO  [org.keycloak.services] (main) KC-SERVICES0077: Created temporary admin user with username admin
+keycloak-1  | 2026-11-10 14:44:29,553 INFO  [io.quarkus] (main) Keycloak 26.4.7 on JVM (powered by Quarkus 3.27.1) started in 13.825s. Listening on: http://0.0.0.0:8080
+keycloak-1  | 2026-11-10 14:44:29,553 INFO  [io.quarkus] (main) Profile dev activated. 
+keycloak-1  | 2026-11-10 14:44:29,553 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, hibernate-orm, jdbc-h2, keycloak, narayana-jta, opentelemetry, reactive-routes, rest, rest-jackson, smallrye-context-propagation, vertx]
