@@ -58,6 +58,7 @@ class RevocationState:
     roots: frozenset[str] = frozenset()
     seq: int = 0
     head: str | None = None
+    issued_at: str | None = None
 
     @classmethod
     def from_lists(cls, lists: Iterable[Mapping[str, Any]], root_key_ids: Iterable[str]) -> RevocationState:
@@ -94,7 +95,8 @@ class RevocationState:
                 roots.discard(ident)
                 if e.get("successor"):
                     roots.add(key_id(load_public(_unb64(e["successor"]))))
-        return RevocationState(keys, permits, grants_, frozenset(roots), body["seq"], list_digest(body))
+        return RevocationState(keys, permits, grants_, frozenset(roots), body["seq"], list_digest(body),
+                               body.get("issuedAt"))
 
     def key_revoked(self, kid: str, at: str) -> bool:
         """True when ``kid`` was revoked at or before ``at``: anything it signs from then on is refused."""

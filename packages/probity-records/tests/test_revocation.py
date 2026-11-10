@@ -101,3 +101,10 @@ def test_revoking_a_parent_grant_revokes_its_descendants() -> None:
     assert verdict["reason"] == "grant_issuer_key_revoked:1"
 
 
+
+
+def test_state_carries_the_newest_lists_signed_issue_time() -> None:
+    root = Signer.generate()
+    first = sign_revocations(root, list_id="L", seq=1, issued_at="2026-06-01T00:00:00Z", entries=[])
+    second = sign_revocations(root, list_id="L", seq=2, issued_at="2026-06-02T00:00:00Z", entries=[], previous=first)
+    assert RevocationState.from_lists([first, second], {root.key_id}).issued_at == "2026-06-02T00:00:00Z"
