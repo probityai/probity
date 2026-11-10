@@ -76,12 +76,20 @@ def verdict_for_code(code: str) -> VerdictCode | None:
     return table[code]
 
 
-def verdict_for_report(verdict: str, codes: list[str], tiers: list[str] | None) -> VerdictCode | None:
-    """The verdict code of one verification report, or None when the report is clean."""
+def verdict_for_report(verdict: str, codes: list[str], tiers: list[str] | None,
+                       policy_codes: list[str] | None = None) -> VerdictCode | None:
+    """The verdict code of one verification report, or None when the report is clean.
+
+    A valid report whose consumer pinned a published test key is not publicly verifiable
+    whatever its tiers say: anyone holding the published recipe could have signed it.
+    """
     if verdict != "valid":
         if not codes:
             raise UnknownCode("an invalid report names no code")
         return verdict_for_code(codes[0])
+    for policy_code in policy_codes or []:
+        if verdict_for_code(policy_code) is VerdictCode.NOT_PUBLICLY_VERIFIABLE:
+            return VerdictCode.NOT_PUBLICLY_VERIFIABLE
     for tier in ("unattested", "declared"):
         if tier in (tiers or []):
             return TIER_CODES[tier]

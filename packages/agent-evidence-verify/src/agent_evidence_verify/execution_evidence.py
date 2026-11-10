@@ -42,7 +42,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from .verdict_codes import verdict_for_report
 
@@ -1834,6 +1835,7 @@ class Report:
     codes: list[str] = field(default_factory=list)
     result: str | None = None
     tiers: list[str] | None = None
+    policy_codes: list[str] = field(default_factory=list)
 
     @property
     def primary_code(self) -> str | None:
@@ -1842,11 +1844,12 @@ class Report:
     def as_dict(self) -> dict:
         out: dict[str, Any] = {"verdict": self.verdict, "codes": list(self.codes),
                                "primary_code": self.primary_code}
-        code = verdict_for_report(self.verdict, self.codes, self.tiers)
+        code = verdict_for_report(self.verdict, self.codes, self.tiers, self.policy_codes)
         out["verdict_code"] = code.value if code else None
         if self.verdict == VALID:
             out["result"] = self.result
             out["tiers"] = list(self.tiers or [])
+            out["policy_codes"] = list(self.policy_codes)
         return out
 
 
@@ -1857,8 +1860,31 @@ def load_public_key(raw: bytes) -> Ed25519PublicKey:
     return Ed25519PublicKey.from_public_bytes(raw)
 
 
-def verify(statement: bytes, substrate_keys: list[Ed25519PublicKey] | None = None) -> Report:
-    """Run GATE 0, GATE 1, recompute equality and GATE 2 over one statement's bytes."""
+# Roles whose Ed25519 seed the conformance corpus publishes: SHA-256("in-toto-aee-test-key/<role>/v1").
+PUBLISHED_TEST_KEY_ROLES = ("substrate-observation-test", "wrong-signer-test", "statement-test",
+                            "no-pae-verify")
+PUBLISHED_KEY_CODE = "observation-key-published"
+
+
+def _raw(key: Ed25519PublicKey) -> bytes:
+    return key.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+
+
+def published_test_keys() -> set[bytes]:
+    """The raw public halves of every published test seed."""
+    return {_raw(Ed25519PrivateKey.from_private_bytes(
+        hashlib.sha256(f"in-toto-aee-test-key/{role}/v1".encode()).digest()).public_key())
+        for role in PUBLISHED_TEST_KEY_ROLES}
+
+
+def verify(statement: bytes, substrate_keys: list[Ed25519PublicKey] | None = None,
+           allow_published_test_keys: bool = False) -> Report:
+    """Run GATE 0, GATE 1, recompute equality and GATE 2 over one statement's bytes.
+
+    A pinned key whose seed the corpus publishes leaves the tiers as derived but adds the
+    policy code ``observation-key-published``, which makes the verdict code
+    NOT_PUBLICLY_VERIFIABLE, unless the consumer declines that refusal by name.
+    """
     try:
         s = parse_statement(statement)
     except JSONError:
@@ -1885,4 +1911,7 @@ def verify(statement: bytes, substrate_keys: list[Ed25519PublicKey] | None = Non
         attested = not row_codes and all(
             _verifies(states[index], p.records[index].signatures, keys) for index in covering)
         tiers.append(TIER_ATTESTED if attested else TIER_UNATTESTED)
-    return Report(VALID, [], p.result, tiers)
+    policy_codes = []
+    if not allow_published_test_keys and {_raw(k) for k in keys} & published_test_keys():
+        policy_codes.append(PUBLISHED_KEY_CODE)
+    return Report(VALID, [], p.result, tiers, policy_codes)
