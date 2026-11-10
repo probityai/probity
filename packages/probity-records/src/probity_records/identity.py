@@ -211,7 +211,9 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> s
     if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), unb64url(sig_b64)):
         return "token_signature_unverified"
     aud = claims.get("aud")
-    expected = {"issuer": claims.get("iss"), "subject": claims.get("sub"), "clientId": claims.get("client_id"),
+    # An ID token names its client in ``azp`` (OpenID Connect Core 1.0, section 2); an access token in ``client_id``.
+    client = claims.get("client_id") or (claims.get("azp") if p.get("source") == "id-token" else None)
+    expected = {"issuer": claims.get("iss"), "subject": claims.get("sub"), "clientId": client,
                 "audience": aud if isinstance(aud, list) else [aud], "issuedAt": _iso(claims.get("iat", 0)),
                 "expiresAt": _iso(claims.get("exp", 0))}
     for member, value in expected.items():
