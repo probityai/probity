@@ -41,7 +41,7 @@ def _judge(tmp_path: Path, receipts: list[bytes] | bytes, profile: dict | None =
         "chain.jsonl": bind("chain.jsonl", data), "profile.json": bind("profile.json", raw_profile)}}
     policy = {"schema_version": "probity-policy/v1", "assessments": {"chain": {
         "claim_type": "cbor_receipt_chain/v1", "records": "chain.jsonl", "profile": "profile.json",
-        "signer_keys": signers or [rb.public_hex(KEY)], **assessment}}}
+        "signer_keys": [rb.public_hex(KEY)] if signers is None else signers, **assessment}}}
     return adjudicate(case, policy, tmp_path)
 
 
