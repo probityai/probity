@@ -39,4 +39,4 @@ Six checks ran, none failed.
 
 ## Reproduce
 
-Run `cd integrations/keycloak-evidence-hook && e2e/run.sh` on a host with Docker, Java 17 and Maven.
+Run `cd integrations/keycloak-evidence-hook && e2e/run.sh` on a host with Docker, a JDK and Maven (see build.sh).
