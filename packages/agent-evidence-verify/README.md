@@ -31,7 +31,7 @@ Reason: selected_span_missing_from_record
 Policy SHA-256: dfda1551714f92702169d1411af6b0bfeee54732f934ce71265534af775fa388
 ```
 
-A selected passage is in the source capture but missing from the stored report. The packet goes on to list every artifact binding and check. Swap in `policy-april.json` for `not_established`, or `case-complete.json` with `policy-complete.json` for `supported`. To run from a pinned source checkout instead, see [Install a pinned version](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/install.md#run-the-source-quick-start).
+A selected passage is in the source capture but missing from the stored report. Swap in `policy-april.json` for `not_established`, or `case-complete.json` with `policy-complete.json` for `supported`. To run from a pinned source checkout instead, see [Install a pinned version](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/install.md#run-the-source-quick-start).
 
 ## Use the decision in a check
 
@@ -65,6 +65,7 @@ Version 0.5.1 is on PyPI and ships the sample inputs used above. See [release in
 | [Choose a claim check](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/recipes.md) | select a task from checked recipes and retrieve exact commands and input digests |
 | [Select a consumer adapter](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/adapter-api.md) | supply exact adapter versions through adjudication, bundle creation and replay |
 | [Check a customer offer](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/customer-support-action.md) | compare a draft with raw company records and an exact manager approval |
+| [Trust boundary](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/trust-boundary.md) | what a decision reports, does not prove, and needs no trust in |
 | <a name="run"></a><a name="inputs-and-decisions"></a>[Running the verifier](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/running.md) | every example command, the case and policy inputs, and what each decision means |
 | <a name="share-a-replayable-decision"></a><a name="index-decisions-and-disputes"></a>[Replayable decisions and the index](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/bundles-and-index.md) | ZIP bundles, replay, and the local index of decisions, challenges and supersessions |
 | <a name="operand-lineage"></a><a name="authority-anchor"></a><a name="event-absence"></a>[Adapters](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/docs/adapters.md) | what operand lineage, authority anchor and event absence check, and what they leave to the consumer |

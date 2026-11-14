@@ -1,12 +1,9 @@
 # Cargo workspace for the Rust crates. Each crate keeps its own crates.io name,
-# version and licence. The change that imports the first crate sets members to
-# ["crates/*"]: Cargo refuses a glob that matches no directory, so the list is
-# empty until then. `cargo metadata` reads the empty workspace and CI's rust job
-# reports zero members.
+# version and licence. Every directory under crates/ is a member.
 
 [workspace]
 resolver = "3"
-members = []
+members = ["crates/*"]
 
 [workspace.package]
 edition = "2024"

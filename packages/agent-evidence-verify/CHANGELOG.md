@@ -8,6 +8,10 @@ unchanged.
 - `proof_of_control/v1`: checks a Proof-of-Control artifact (signed token, Merkle inclusion or consistency proof,
   token chain, canonical form) offline and passes all 171 cases of `poc-evidence-vectors` 0.1.0, which the `test`
   extra pins. Route and example: `docs/corpus-routes.md`, `examples/corpus-routes/proof-of-control/`.
+- `cbor_receipt_chain/v1`: checks that a stream of signed CBOR receipts is one whole, ordered chain under
+  consumer-pinned keys, through a format profile the case pins. Refuses a repeated receipt, a re-issued authorization,
+  swapped receipts and an unpinned signer, and reports a restart, an unpinned head, a missing effect or a missing
+  revocation commitment as `not_established`. Doc: `docs/cbor-receipt-chain.md`, example: `examples/cbor-receipt-chain/`.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.
