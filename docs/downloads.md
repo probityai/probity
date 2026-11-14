@@ -5,7 +5,7 @@ The verifier was renamed from `probity-verify` to `agent-evidence-verify`. Both 
 | Name | Downloads | pepy.tech |
 |---|--:|---|
 | [`probity-verify`](https://pypi.org/project/probity-verify/) | 10,003 | [pepy.tech/projects/probity-verify](https://pepy.tech/projects/probity-verify) |
-| [`agent-evidence-verify`](https://pypi.org/project/agent-evidence-verify/) | 3,218 | [pepy.tech/projects/agent-evidence-verify](https://pepy.tech/projects/agent-evidence-verify) |
-| **Total** | **13,221** | |
+| [`agent-evidence-verify`](https://pypi.org/project/agent-evidence-verify/) | 4,998 | [pepy.tech/projects/agent-evidence-verify](https://pepy.tech/projects/agent-evidence-verify) |
+| **Total** | **15,001** | |
 
 Install the current name: `pip install agent-evidence-verify`.
