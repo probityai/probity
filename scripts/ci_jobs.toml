@@ -190,6 +190,10 @@ tier = "fast"
 paths = ["packages/agent-evidence-observer/**"]
 tier = "fast"
 
+[jobs.records-verify-tests]
+paths = ["packages/probity-records-verify/**", "packages/probity-records/vectors/**", "packages/probity-records/scripts/gen_shared_vectors.py"]
+tier = "fast"
+
 [jobs.observer-witness]
 paths = ["packages/agent-evidence-observer/**"]
 tier = "fast"

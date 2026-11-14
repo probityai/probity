@@ -1,0 +1,383 @@
+[
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjAyMDgyMVoiLCJjb3VudCI6MSwiaGVhZCI6IjhjYWUwZmNmNmRjYzM2YzRjMWI1MGQ1YTIyYjYwOTU2YzgyNDc1YWVlMzAxZjg1Y2VhMmVhM2Y0YzYxODQ0N2QifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjhjYWUwZmNmNmRjYzM2YzRjMWI1MGQ1YTIyYjYwOTU2YzgyNDc1YWVlMzAxZjg1Y2VhMmVhM2Y0YzYxODQ0N2QifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "/H7l+aL7PT4NSEawNrO61vB6CWdZqBTOx7LqYu5s6/NwVMEqDGvSoauV/gwjIPeacnSMKaa00lnnbIg18YeyBg=="
+        }
+      ]
+    },
+    "description": "two approvers fill the two roles; the proposer does not vote",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [],
+      "records": 1,
+      "verdict": "PASS",
+      "verified": 1
+    },
+    "id": "QV1",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjAxMjc1NVoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNhcm9sIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJzaWciOiJuOWtKeEU1MXlDamV0bVkrTm5VM29xZXpiSGFzZHMrNFVoYUs1TUtwU2xCUVA2SStlTkpGbEJvYmJDVHVpd3p5aWlUdVJJeW5ieXFPVmxQYmFjUjBCQT09In0seyJib2R5Ijp7ImFwcHJvdmVyIjoiYWxpY2UiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJzZWN1cml0eSJ9LCJzaWciOiJUU09hM242M3lhdGM0OTBXaTlxK2FpUzE1aFBQYS8vQyt3cUgySmZseHVNaGFWVm13YzBteCsweW5DdllyekVGeGQxK3hzeU9Hd29Pbitwa2taeFhEQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"YjXxors9YZgPLLGg3xrU3oXpfnI7ecjc35Y7Pz34DbHy4XSTpWSIh9hsEK+tzfkZL2HsHdF4gutvss+Lr2fBAg==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjAzNTYxM1oiLCJjb3VudCI6MSwiaGVhZCI6IjIwY2ZlNDBkZjViZDMwZTM1ODllMWM0ODk3N2IwYWViNWJmMDBjNTM1MjRlNjA0MWI1ZWVlOTRlOWM5ZGZkNjEifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjIwY2ZlNDBkZjViZDMwZTM1ODllMWM0ODk3N2IwYWViNWJmMDBjNTM1MjRlNjA0MWI1ZWVlOTRlOWM5ZGZkNjEifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "1qParDRA8WXYMuLVM0KFI2Vf5lNhfUW82qj+u0wVP5civhkyREGAgWbvxzkqh0I4X4sOT36NIy2PrxnneKxvBg=="
+        }
+      ]
+    },
+    "description": "one approval where two are required",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_pending"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV2",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjAyNzY5NFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNhcm9sIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJzaWciOiJuOWtKeEU1MXlDamV0bVkrTm5VM29xZXpiSGFzZHMrNFVoYUs1TUtwU2xCUVA2SStlTkpGbEJvYmJDVHVpd3p5aWlUdVJJeW5ieXFPVmxQYmFjUjBCQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"gw2Jkgh/KvnRAJji6IqvAoTFOD4BlkaI+spn6EgohMd2VUhDMJtr5FQiQ4lZWkTz2rJKUdPMPIMIrXqECKPgAw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjA0MjIyOFoiLCJjb3VudCI6MSwiaGVhZCI6ImI5ZDZlYTVkYWJjNjFmODM5Nzg5MjVjMDNmNjM4YzY2NDcxNzEwMTA1OTc3MzhmYWVjZWQ5MDk0Mjg4NWE1M2EifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImI5ZDZlYTVkYWJjNjFmODM5Nzg5MjVjMDNmNjM4YzY2NDcxNzEwMTA1OTc3MzhmYWVjZWQ5MDk0Mjg4NWE1M2EifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "yxqpCh4YnQSTDaNhGb9p602qjtG9O/DVBvffJHe17A71NonCEIw1T7V08jiIzJ1NR01IQ9ze4xokdXe9OUiZCA=="
+        }
+      ]
+    },
+    "description": "one person votes in both roles",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:vote_duplicate_approver"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV3",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjAzODg1OFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImJvYiIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6ImZpbmFuY2UifSwic2lnIjoiUEEvVkpUMlhlOEN5YVZ2cVpYNGlLemZHY0M4YmtyaGZtTFl1emljRVI1UjA2NFVaZWlGNXJmQnZQSkRsOEJGd0RrL28zbzVSaUg3OFlFN3dkenluQXc9PSJ9LHsiYm9keSI6eyJhcHByb3ZlciI6ImJvYiIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6Im94WmhsaEI5VEN1YkNDR2h5STFBSlc2eS9jcjluWFdIaUFEa2RPc1pxVnA5ZFduZ1Y5NGlsdW9LNXhjNk1ZYWRZd3haT0RkTy84eUtFSDBpL0NKZUJ3PT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"2bMZdCRdvmz1bkk5MWi2CPG3uGdmByl24bJ74ynWB+FjAADoMJauOffTkX6QZCKrPU1giTpFRW4Glwnk+uXWDw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjA0NzgyNFoiLCJjb3VudCI6MSwiaGVhZCI6ImYzZTliZTk5YzY2Zjk4NTUzZmEyZDk2ZmY1MjM0ZWUxNTY4NDUxMjk5ZDI4OTg2OTllZjFlNjQ4NDY4ZmJhMDkifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImYzZTliZTk5YzY2Zjk4NTUzZmEyZDk2ZmY1MjM0ZWUxNTY4NDUxMjk5ZDI4OTg2OTllZjFlNjQ4NDY4ZmJhMDkifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "fnRGY84g6yu/NXU5opsNUFWymkEr3bKDN/J1TX4JK0HB4+/2peQKYYfKegMv8v/VrOva24q5MOmbpqJ55IfCDw=="
+        }
+      ]
+    },
+    "description": "a deputy votes for bob in finance, alice in security",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [],
+      "records": 1,
+      "verdict": "PASS",
+      "verified": 1
+    },
+    "id": "QV4",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjA0NDk5NloiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImVyaW4iLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJvbkJlaGFsZk9mIjoiYm9iIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJkZWxlZ2F0aW9uIjp7ImJvZHkiOnsiZGVsZWdhdG9yIjoiYm9iIiwiZGVwdXR5IjoiZXJpbiIsImRlcHV0eUtleSI6IlBBcnpmTGtFQi9hSEFDUjUvWm5FcUp6aTRLOFVldE9wMTVsNzVUV25PZk09IiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJub3RCZWZvcmUiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5Iiwicm9sZXMiOlsiZmluYW5jZSJdfSwic2lnIjoiUVlNK3E4WS9Yd1l6YW5SQVY4VGR2RlphandkNE92TXl6a0IreDZPUzhQZU1WNWt3Szg5SGdYV1g1S0YxMVh4ZURuelBGUDR0SllvTXpKOWZ2SkFPQkE9PSJ9LCJzaWciOiJuclpXc3ZSb0pFaVBQM21CMjM1aUt5R0p2bDdnTHJQSTE2bVpaNlFhOE5WdHFoeW5oY292UFMwcnB4M1dYVExGdytkZERMUVdpSGFwdlNLazM3bUFEZz09In0seyJib2R5Ijp7ImFwcHJvdmVyIjoiYWxpY2UiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJzZWN1cml0eSJ9LCJzaWciOiJUU09hM242M3lhdGM0OTBXaTlxK2FpUzE1aFBQYS8vQyt3cUgySmZseHVNaGFWVm13YzBteCsweW5DdllyekVGeGQxK3hzeU9Hd29Pbitwa2taeFhEQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"ugdM/B6/psZulSmxi93Vvpy5tGvsGV9nX7ovvDXJGZDzSayyXxy9rGnUqmrx69uRnzns2KZd7op4B6A/NJ6VCw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjA1NjY4NVoiLCJjb3VudCI6MSwiaGVhZCI6ImY5YTYzNTdjMWQ0NjBiYzE3ZDBkY2RmMmZlMThlNjRhNDhlZTdlMmQ5ZWMxNjY2YmMwM2ViNWU3M2VmMjkzY2IifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImY5YTYzNTdjMWQ0NjBiYzE3ZDBkY2RmMmZlMThlNjRhNDhlZTdlMmQ5ZWMxNjY2YmMwM2ViNWU3M2VmMjkzY2IifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "3EmVkg+K6nYoppqySqVKnWUZRe546NgjhPvVtBzBeU7XAWNF9PmhXfGYIQiGVGEvGhJvwlFTt98O8a5yRYLEDg=="
+        }
+      ]
+    },
+    "description": "the record drops the proposer to let the proposer vote",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_for_another_request"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV5",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTExLTA4VDIwOjUxOjM2LjA1NDE2N1oiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNhcm9sIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJzaWciOiJuOWtKeEU1MXlDamV0bVkrTm5VM29xZXpiSGFzZHMrNFVoYUs1TUtwU2xCUVA2SStlTkpGbEJvYmJDVHVpd3p5aWlUdVJJeW5ieXFPVmxQYmFjUjBCQT09In0seyJib2R5Ijp7ImFwcHJvdmVyIjoiYWxpY2UiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJzZWN1cml0eSJ9LCJzaWciOiJUU09hM242M3lhdGM0OTBXaTlxK2FpUzE1aFBQYS8vQyt3cUgySmZseHVNaGFWVm13YzBteCsweW5DdllyekVGeGQxK3hzeU9Hd29Pbitwa2taeFhEQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"aZL6apKOpbV8/jMr8P7cRVDa1hSijblp1Y0Wc6CAtm7rEQPTGhNwViGDSL38AhNfdwt6neDmmCrh3C6Eze09DQ==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  }
+]
