@@ -1,0 +1,30 @@
+[package]
+name = "ssf-evidence"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.88"
+license = "Apache-2.0"
+repository.workspace = true
+description = "Security Event Tokens for the OpenID Shared Signals Framework whose CAEP events carry a DSSE evidence reference, and a verifier that refuses any event whose evidence does not resolve and verify."
+keywords = ["ssf", "caep", "secevent", "dsse", "in-toto"]
+categories = ["authentication", "cryptography"]
+readme = "README.md"
+include = ["src/**", "tests/**", "vectors/**", "docs/**", "README.md", "LICENSE", "Cargo.toml"]
+
+[features]
+default = ["http"]
+# Push delivery (RFC 8935) and evidence retrieval over HTTP.
+http = ["dep:ureq"]
+
+[dependencies]
+base64 = "0.23.1"
+dsse = "=0.1.6"
+jcs-admit = "=0.1.3"
+ring = "0.17.14"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0"
+ureq = { version = "3.5.1", optional = true }
+
+[lints]
+workspace = true

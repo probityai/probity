@@ -122,6 +122,11 @@
       "sha256": "9a0b45b24fb366d4f207c09dd74cbb94d0b3ee0eb84ce6ba1bf572cd2323edad"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
+      "bytes": 18588,
+      "sha256": "9cb952aa20a70b2b9a3182c76bf4a490c69853719c57055ae33792795a1f297e"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/completion_claim.py",
       "bytes": 8581,
       "sha256": "b5f8f00f0de83f82ee079beef20084aaccba2a9dc759002f13c994913f28d963"
@@ -233,8 +238,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 10863,
-      "sha256": "6ba08a1f2681cf55fa8080b648aa4933b00df4536c150f7b5d9836a0b5cc0a7a"
+      "bytes": 10947,
+      "sha256": "fb1bb2e49fcaa3252c5b97331852a0875a8840dcb44b1c070e6c29db42432891"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -1834,6 +1839,47 @@
           "path": "examples/corpus-routes/proof-of-control/artifact.json",
           "bytes": 5124,
           "sha256": "64c591b100dd1501f5545cf5067ea6bbb56f1e98e3c2eb2fe52b21932d695f1e"
+        }
+      ]
+    },
+    {
+      "task": "Check that a stream of signed CBOR receipts is one whole, ordered chain",
+      "claim_type": "cbor_receipt_chain/v1",
+      "case": "examples/cbor-receipt-chain/case.json",
+      "policy": "examples/cbor-receipt-chain/policy.json",
+      "documentation": "docs/cbor-receipt-chain.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic stream; signed with a published test key that carries no trust outside the example.",
+      "case_id": "receipt-chain-six-allowed-calls",
+      "expected_reason": "receipt_chain_holds",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/cbor-receipt-chain/case.json",
+        "--policy",
+        "examples/cbor-receipt-chain/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/cbor-receipt-chain/case.json",
+          "bytes": 436,
+          "sha256": "46cf113450f4b540ccf6968eca174c93cd744a6f1c9d38dd5e3667a7392e72b8"
+        },
+        {
+          "path": "examples/cbor-receipt-chain/policy.json",
+          "bytes": 431,
+          "sha256": "616ac9ac6c94d1d9fe0540b9e2fdbd726f1ceb45f1507edf68a343e003544fee"
+        },
+        {
+          "path": "examples/cbor-receipt-chain/chain.jsonl",
+          "bytes": 3084,
+          "sha256": "4e96dabe72e920d75fccff2db3368b3da853515fc6e4f25e426ff708f06ede49"
+        },
+        {
+          "path": "examples/cbor-receipt-chain/profile.json",
+          "bytes": 484,
+          "sha256": "09d7d15b48571badd01e523a18657ae285142087a6c6413aea130535d13160ec"
         }
       ]
     }

@@ -12,6 +12,10 @@ unchanged.
   credentials or CIBA grant against the values the consumer expects, and optionally the recorder's whole hash-chained
   log. The Keycloak evidence hook in `integrations/keycloak-evidence-hook` writes these receipts. Page:
   `docs/token-grant-receipt.md`.
+- `cbor_receipt_chain/v1`: checks that a stream of signed CBOR receipts is one whole, ordered chain under
+  consumer-pinned keys, through a format profile the case pins. Refuses a repeated receipt, a re-issued authorization,
+  swapped receipts and an unpinned signer, and reports a restart, an unpinned head, a missing effect or a missing
+  revocation commitment as `not_established`. Doc: `docs/cbor-receipt-chain.md`, example: `examples/cbor-receipt-chain/`.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.

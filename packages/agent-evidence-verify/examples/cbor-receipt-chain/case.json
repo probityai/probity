@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "chain.jsonl": {
+      "length": 3084,
+      "path": "chain.jsonl",
+      "sha256": "4e96dabe72e920d75fccff2db3368b3da853515fc6e4f25e426ff708f06ede49"
+    },
+    "profile.json": {
+      "length": 484,
+      "path": "profile.json",
+      "sha256": "09d7d15b48571badd01e523a18657ae285142087a6c6413aea130535d13160ec"
+    }
+  },
+  "case_id": "receipt-chain-six-allowed-calls",
+  "schema_version": "probity-case/v1"
+}

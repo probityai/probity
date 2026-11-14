@@ -305,6 +305,15 @@
       "documentation": "docs/corpus-routes.md",
       "expected_decision": "supported",
       "scope": "Member of the poc-evidence-vectors corpus; its keys and roots carry no trust outside the corpus."
+    },
+    {
+      "task": "Check that a stream of signed CBOR receipts is one whole, ordered chain",
+      "claim_type": "cbor_receipt_chain/v1",
+      "case": "examples/cbor-receipt-chain/case.json",
+      "policy": "examples/cbor-receipt-chain/policy.json",
+      "documentation": "docs/cbor-receipt-chain.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic stream; signed with a published test key that carries no trust outside the example."
     }
   ]
 }
