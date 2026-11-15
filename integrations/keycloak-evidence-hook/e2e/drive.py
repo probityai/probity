@@ -17,6 +17,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import ClassVar
 
 KC = "http://127.0.0.1:8080"
 ISSUER = f"{KC}/realms/agents"
@@ -72,9 +73,9 @@ def observed(name: str, grant_type: str, jwt: str, subject_token: str | None) ->
 class AuthDevice(http.server.BaseHTTPRequestHandler):
     """Stub of the user's authentication device for the CIBA grant: it approves every request."""
 
-    seen: list[str] = []
+    seen: ClassVar[list[str]] = []
 
-    def do_POST(self) -> None:  # noqa: N802 -- http.server API
+    def do_POST(self) -> None:
         self.rfile.read(int(self.headers.get("Content-Length", "0")))
         AuthDevice.seen.append(self.headers.get("Authorization", "").removeprefix("Bearer "))
         self.send_response(201)
