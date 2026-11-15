@@ -51,7 +51,7 @@ def _args(evidence: Mapping[str, Any], pred: Mapping[str, Any], problems: list[s
     raw = base64.b64decode(evidence.get("argsB64", ""))
     if hashlib.sha256(raw).hexdigest() != pred.get("argsSha256"):
         problems.append(f"{where}:authority_args_are_not_the_call_arguments")
-    import json  # noqa: PLC0415
+    import json
 
     return json.loads(raw) if raw else None
 

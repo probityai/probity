@@ -19,7 +19,15 @@ from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from .core import Signer, load_public, open_envelope, sha256_hex, sign_envelope, statement, canonical
+from .core import (
+    Signer,
+    canonical,
+    load_public,
+    open_envelope,
+    sha256_hex,
+    sign_envelope,
+    statement,
+)
 from .journal import now
 
 EXPORT_SEAL = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/export-seal"

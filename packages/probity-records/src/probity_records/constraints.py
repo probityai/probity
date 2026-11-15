@@ -238,7 +238,7 @@ def check(c: dict[str, Any], value: Any) -> bool:
     return _CHECKS[c["type"]](c, value)
 
 
-def _same_type_narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:  # noqa: PLR0911 - type dispatch
+def _same_type_narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:
     kind = parent["type"]
     if kind == "range":
         lo_ok = "min" not in parent or ("min" in child and child["min"] >= parent["min"])

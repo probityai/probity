@@ -185,7 +185,7 @@ def _verify_jws(alg: str, jwk: Mapping[str, Any], signing_input: bytes, sig: byt
 
 
 def _iso(seconds: Any) -> str:
-    from datetime import UTC, datetime  # noqa: PLC0415
+    from datetime import UTC, datetime
 
     return datetime.fromtimestamp(int(seconds), UTC).isoformat().replace("+00:00", "Z")
 

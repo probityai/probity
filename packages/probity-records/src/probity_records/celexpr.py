@@ -53,7 +53,7 @@ def compile_expr(expr: str) -> Any:
         raise ValueError("cel_expression_empty")
     try:
         return _env().compile(expr)
-    except Exception as exc:  # noqa: BLE001 - the runtime raises its own status types
+    except Exception as exc:
         raise ValueError(f"cel_compile_failed:{exc}") from exc
 
 

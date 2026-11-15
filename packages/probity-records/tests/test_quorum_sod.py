@@ -3,12 +3,28 @@
 from __future__ import annotations
 
 import pytest
-
 from probity_records import (
-    GRANT_ALLOW, TOOL_CALL_RECORD, Journal, Signer, Trust, args_sha256, verify_grant_allow, grant_evidence,
-    issue_grant, permit_id, raw_public, tool_call_predicate, verify_journal,
+    GRANT_ALLOW,
+    TOOL_CALL_RECORD,
+    Journal,
+    Signer,
+    Trust,
+    args_sha256,
+    grant_evidence,
+    issue_grant,
+    permit_id,
+    raw_public,
+    tool_call_predicate,
+    verify_grant_allow,
+    verify_journal,
 )
-from probity_records.quorum import count, request_hash, sign_deputy, sign_vote, widening_problem
+from probity_records.quorum import (
+    count,
+    request_hash,
+    sign_deputy,
+    sign_vote,
+    widening_problem,
+)
 
 AT = "2026-06-01T00:00:00Z"
 W = {"issued_at": "2026-05-01T00:00:00Z", "expires_at": "2099-01-01T00:00:00Z"}

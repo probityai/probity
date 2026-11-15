@@ -3,11 +3,26 @@
 from __future__ import annotations
 
 import pytest
-
 from probity_records import (
-    EXCEPTION_ALLOW, GOVERNANCE_STEP, TOOL_CALL_RECORD, Journal, Signer, Trust, args_sha256, check_exception_call,
-    count_votes, exception_body, exception_digest, exception_evidence, permit_id, raw_public, route_by_risk,
-    sign_vote, step_predicate, tool_call_predicate, verify_journal,
+    EXCEPTION_ALLOW,
+    GOVERNANCE_STEP,
+    TOOL_CALL_RECORD,
+    Journal,
+    Signer,
+    Trust,
+    args_sha256,
+    check_exception_call,
+    count_votes,
+    exception_body,
+    exception_digest,
+    exception_evidence,
+    permit_id,
+    raw_public,
+    route_by_risk,
+    sign_vote,
+    step_predicate,
+    tool_call_predicate,
+    verify_journal,
 )
 
 ARGS = {"amount_cents": 250000, "customer_id": "cust-alice"}

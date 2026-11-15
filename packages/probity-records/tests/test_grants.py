@@ -3,10 +3,22 @@
 from __future__ import annotations
 
 import pytest
-
 from probity_records import (
-    GRANT_ALLOW, TOOL_CALL_RECORD, Journal, Signer, Trust, args_sha256, verify_grant_allow, check_constraint,
-    grant_evidence, issue_grant, narrows, permit_id, raw_public, tool_call_predicate, verify_journal,
+    GRANT_ALLOW,
+    TOOL_CALL_RECORD,
+    Journal,
+    Signer,
+    Trust,
+    args_sha256,
+    check_constraint,
+    grant_evidence,
+    issue_grant,
+    narrows,
+    permit_id,
+    raw_public,
+    tool_call_predicate,
+    verify_grant_allow,
+    verify_journal,
 )
 
 AT = "2026-06-01T00:00:00Z"

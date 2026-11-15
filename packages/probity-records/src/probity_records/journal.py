@@ -21,13 +21,13 @@ from pathlib import Path
 from typing import Any
 
 from .authority import Trust, check_authority
-from .quorum import count_bindings
-from .governance import GOVERNANCE_STEP, check_step
 from .core import load_public, open_envelope, sign_envelope, statement
+from .governance import GOVERNANCE_STEP, check_step
 from .grants import grant_digest, spend_of
 from .identity import act_grade, check_principals
-from .signing import Delegation, verify_delegation
+from .quorum import count_bindings
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
+from .signing import Delegation, verify_delegation
 
 GENESIS = "0" * 64
 CHECKPOINT_TYPE = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/tool-call-journal-checkpoint"
@@ -418,7 +418,7 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
 
 def _check_witnessed(note: str | None, lines: list[str], trust: Trust, failures: list[str]) -> dict[str, Any]:
     """The witnessed checkpoint against the auditor's pinned tlog-policy and the journal's own lines."""
-    from . import witness  # noqa: PLC0415 - keeps the policy parser off the import path of plain verifies
+    from . import witness
 
     if note is None:
         failures.append("witnessed_checkpoint_required_by_policy")

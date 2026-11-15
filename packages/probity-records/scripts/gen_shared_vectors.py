@@ -16,15 +16,37 @@ import tempfile
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
-from probity_records import (GRANT_ALLOW, QUORUM_ALLOW, TOOL_CALL_RECORD, Journal, Signer, Trust, args_sha256,
-                             verify_grant_allow, build_approval_binding, build_uncertain_effect, canonical as jcs,
-                             embed_approval_binding, grant_evidence, issue_grant, permit_id, raw_public,
-                             sign_approval, tool_call_predicate, verify_journal)
+from probity_records import (
+    GRANT_ALLOW,
+    QUORUM_ALLOW,
+    TOOL_CALL_RECORD,
+    Journal,
+    Signer,
+    Trust,
+    args_sha256,
+    build_approval_binding,
+    build_uncertain_effect,
+    embed_approval_binding,
+    grant_evidence,
+    issue_grant,
+    permit_id,
+    raw_public,
+    sign_approval,
+    tool_call_predicate,
+    verify_grant_allow,
+    verify_journal,
+)
+from probity_records import canonical as jcs
 from probity_records.core import _b64, canonical
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import vectors as identity_vectors
-from probity_records.quorum import approval_policy, count, request_hash, sign_deputy, sign_vote
+from probity_records.quorum import (
+    approval_policy,
+    count,
+    request_hash,
+    sign_deputy,
+    sign_vote,
+)
 
 NB, EXP, AT = "2026-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "2026-06-01T00:00:00Z"
 TOOLS = {"refund": {"approval": "none", "when": ["args.amount_cents < 3000 || args.currency == 'USD'"], "args": {
@@ -198,8 +220,8 @@ def approval_case(directory: Path, bindings: list[dict], *, decision: str = "all
 
 
 def approval_rows() -> list[tuple[str, str, object]]:
-    ops = lambda **kw: binding(OPS, WHO["ops"], **kw)  # noqa: E731
-    lead = lambda **kw: binding(LEAD, WHO["lead"], **kw)  # noqa: E731
+    ops = lambda **kw: binding(OPS, WHO["ops"], **kw)
+    lead = lambda **kw: binding(LEAD, WHO["lead"], **kw)
     two = {"policy": "refunds2", "threshold": 2}
     renew = {"transitions": [{"status": "accepted", "mode": "exclusive-replacement", "predecessorApprovalId": "appr-0",
                               "successorApprovalId": "appr-1", "predecessorDecisionId": "d0", "successorDecisionId": "d1",
@@ -299,7 +321,7 @@ def effect_case(directory: Path, record: dict | None, *, outcome: str | None = N
 def effect_rows() -> list[tuple[str, str, object]]:
     def case(vid: str, description: str, record: dict | None, **kw) -> tuple[str, str, object]:
         return vid, description, lambda d: effect_case(d, record, **kw)
-    lease = lambda token, a, b: {"worker": "w1", "fencingToken": token, "acquiredAt": a, "expiresAt": b}  # noqa: E731
+    lease = lambda token, a, b: {"worker": "w1", "fencingToken": token, "acquiredAt": a, "expiresAt": b}
     base = effect_record("committed", ["confirmed"])
     return [
         case("EV1", "a confirmed effect reported committed", base),

@@ -10,9 +10,15 @@ from __future__ import annotations
 import json
 
 import pytest
-
-from probity_records import (Signer, canonical, issue_grant, raw_public, seal_export, verify_chain,
-                             verify_export_seal)
+from probity_records import (
+    Signer,
+    canonical,
+    issue_grant,
+    raw_public,
+    seal_export,
+    verify_chain,
+    verify_export_seal,
+)
 from probity_records.constraints import check
 
 T0 = "2026-01-01T00:00:00Z"
@@ -37,7 +43,8 @@ def test_child_grant_that_drops_a_parent_constraint_is_refused() -> None:
         issue_grant(holder, grant_id="g2", holder_key=raw_public(Signer.generate()), not_before=T0,
                     expires_at=T1, tools=widened, parent=parent)
     # A forged chain that skips issue_grant's own check is refused by every verifier.
-    from probity_records.core import _b64, canonical as jcs
+    from probity_records.core import _b64
+    from probity_records.core import canonical as jcs
     from probity_records.grants import GRANT_DOMAIN, grant_digest
 
     body = {"context": {}, "expiresAt": T1, "grantId": "g2", "holderKey": raw_public(Signer.generate()),

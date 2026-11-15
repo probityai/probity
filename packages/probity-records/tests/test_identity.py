@@ -4,8 +4,16 @@ from __future__ import annotations
 
 import hashlib
 
-from probity_records import TOOL_CALL_RECORD, Journal, Signer, Trust, args_sha256, permit_id, tool_call_predicate
-from probity_records import verify_journal
+from probity_records import (
+    TOOL_CALL_RECORD,
+    Journal,
+    Signer,
+    Trust,
+    args_sha256,
+    permit_id,
+    tool_call_predicate,
+    verify_journal,
+)
 from probity_records.identity import check_principals, verify_token
 from probity_records.identity_vectors import ISSUER, base, check, vectors
 

@@ -15,7 +15,10 @@ from typing import Any
 
 import jcs_admit
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
     NoEncryption,
@@ -241,7 +244,7 @@ def verify_permit(permit: Any, authority_pem: bytes) -> dict[str, Any] | None:
     root = load_public(authority_pem)
     keys = [root]
     if permit.get("delegation") is not None:
-        from .signing import verify_delegation  # noqa: PLC0415 - signing imports core
+        from .signing import verify_delegation
 
         try:
             delegation = verify_delegation(permit["delegation"], [root])

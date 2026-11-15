@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from .core import sign_permit, Signer
+from .core import Signer, sign_permit
 from .grants import grant_digest
 from .records import TOOL_CALL_RECORD
 

@@ -15,10 +15,21 @@ from types import SimpleNamespace
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-
-from probity_records import (AwsKmsKey, GcpKmsKey, Journal, Signer, SigningError, SigningKey, Trust,
-                             VaultTransitKey, delegate, sign_permit, verify_delegation, verify_journal,
-                             verify_permit)
+from probity_records import (
+    AwsKmsKey,
+    GcpKmsKey,
+    Journal,
+    Signer,
+    SigningError,
+    SigningKey,
+    Trust,
+    VaultTransitKey,
+    delegate,
+    sign_permit,
+    verify_delegation,
+    verify_journal,
+    verify_permit,
+)
 from probity_records.journal import KEYS_FILE
 
 
@@ -36,7 +47,7 @@ class FakeVault:
     def rotate(self) -> None:
         self.keys[max(self.keys) + 1] = Ed25519PrivateKey.generate()
 
-    def __call__(self, req, timeout=None):  # noqa: ANN001 - urlopen signature
+    def __call__(self, req, timeout=None):
         self.calls.append((req.get_method(), req.full_url, req.headers))
         if req.get_method() == "GET":
             body = {"data": {"type": self.kind, "latest_version": max(self.keys),
@@ -87,7 +98,7 @@ class FakeAwsKms:
     def __init__(self, spec: str = "ECC_NIST_EDWARDS25519") -> None:
         self.key, self.spec, self.calls = Ed25519PrivateKey.generate(), spec, []
 
-    def get_public_key(self, KeyId):  # noqa: N803 - boto3 names
+    def get_public_key(self, KeyId):
         der = self.key.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
         return {"KeyId": f"arn:aws:kms:us-east-1:111122223333:key/{KeyId}", "KeySpec": self.spec, "PublicKey": der}
 

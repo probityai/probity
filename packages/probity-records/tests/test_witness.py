@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 from probity_records import Journal, Signer, Trust, verify_journal
 from probity_records import witness as w
 
@@ -121,7 +120,7 @@ def test_a_rewritten_or_truncated_journal_fails_and_a_new_tail_is_not_establishe
 
 
 def test_the_witness_refuses_a_split_view_and_an_unproven_extension(tmp_path) -> None:
-    signer, journal, servers, pairs, feed_vkey = _setup(tmp_path)
+    signer, journal, servers, pairs, _feed_vkey = _setup(tmp_path)
     url = pairs[0][0]
     _append(journal, 3)
     leaves = w.journal_leaves(journal.path)
@@ -155,7 +154,7 @@ def test_the_witness_remembers_across_restarts_and_the_feed_recovers_from_409(tm
     servers[0].shutdown()
     wit = w.Witness("customer.example/witness-0", key, {ORIGIN: [w.parse_vkey(feed_vkey)]},
                     state_dir=tmp_path / "witness-0")
-    assert wit._latest[ORIGIN][0] == 2  # noqa: SLF001 - restored from its state directory
+    assert wit._latest[ORIGIN][0] == 2
     srv = w.serve_witness(wit)
     url = f"http://127.0.0.1:{srv.server_address[1]}"
     for f in feed.directory.glob("witness-*.size"):
@@ -173,7 +172,7 @@ def test_the_witness_remembers_across_restarts_and_the_feed_recovers_from_409(tm
 
 
 def test_publish_fails_closed_when_the_quorum_is_missing_and_the_lag_gate_stops_permits(tmp_path) -> None:
-    signer, journal, servers, pairs, feed_vkey = _setup(tmp_path, witnesses=2)
+    _signer, journal, servers, pairs, feed_vkey = _setup(tmp_path, witnesses=2)
     text = _policy(feed_vkey, pairs, quorum="both").replace("quorum both", "group both all w0 w1\nquorum both")
     policy = w.parse_policy(text)
     feed = w.Feed(journal, ORIGIN, pairs, policy=policy)
@@ -205,7 +204,7 @@ def test_cosignature_bytes_follow_the_c2sp_layout() -> None:
     k = Ed25519PrivateKey.generate()
     text = w.Checkpoint(ORIGIN, 1, w.leaf_hash(b"x")).text()
     line = w.cosign(text, "c.example/w", k, 1700000000)
-    assert line.key_id == w.note_key_id("c.example/w", 0x04, w._raw(k.public_key()))  # noqa: SLF001
+    assert line.key_id == w.note_key_id("c.example/w", 0x04, w._raw(k.public_key()))
     assert int.from_bytes(line.sig[:8], "big") == 1700000000
     k.public_key().verify(line.sig[8:], b"cosignature/v1\ntime 1700000000\n" + text.encode())
     assert line.encode().startswith("— c.example/w ")

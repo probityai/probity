@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from test_records import ARGS, _effect, _write_run
-
 from probity_records import (
-    NOT_RUN_RETRY, RECONCILED_RETRY, TOOL_CALL_RECORD, Journal, Signer, args_sha256, permit_id, tool_call_predicate,
+    NOT_RUN_RETRY,
+    RECONCILED_RETRY,
+    TOOL_CALL_RECORD,
+    Journal,
+    Signer,
+    args_sha256,
+    permit_id,
+    tool_call_predicate,
     verify_journal,
 )
+from test_records import ARGS, _effect, _write_run
 
 
 def _common(pid: str) -> dict:

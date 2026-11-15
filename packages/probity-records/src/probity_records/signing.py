@@ -29,8 +29,15 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol, runtime_checkable
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_der_public_key
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    PublicFormat,
+    load_der_public_key,
+)
 
 from .core import _b64, _unb64, canonical, key_id, load_public
 
@@ -160,7 +167,7 @@ class AwsKmsKey(_PinnedKey):
 
     def __post_init__(self) -> None:
         if self.client is None:
-            import boto3  # noqa: PLC0415 - optional extra
+            import boto3
 
             self.client = boto3.client("kms", region_name=self.region)
         out = self.client.get_public_key(KeyId=self.key)
@@ -194,7 +201,7 @@ class GcpKmsKey(_PinnedKey):
 
     def __post_init__(self) -> None:
         if self.client is None:
-            from google.cloud import kms  # noqa: PLC0415 - optional extra
+            from google.cloud import kms
 
             self.client = kms.KeyManagementServiceClient()
         out = self.client.get_public_key(request={"name": self.name})
@@ -287,7 +294,7 @@ class Delegation:
 def _parse(text: str) -> datetime:
     if not isinstance(text, str) or not text.endswith("Z"):
         raise ValueError("expected an RFC 3339 UTC time ending in Z")
-    return datetime.fromisoformat(text[:-1] + "+00:00")
+    return datetime.fromisoformat(text)
 
 
 def verify_delegation(certificate: Any, roots: list[Ed25519PublicKey]) -> Delegation:

@@ -21,7 +21,16 @@ from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 
-from .core import _b64, _unb64, canonical, key_id, load_public, sha256_hex, verify_approval, Signer
+from .core import (
+    Signer,
+    _b64,
+    _unb64,
+    canonical,
+    key_id,
+    load_public,
+    sha256_hex,
+    verify_approval,
+)
 from .grants import raw_public, ts
 
 REVOCATION_DOMAIN = b"probity-revocation-v1\x00"

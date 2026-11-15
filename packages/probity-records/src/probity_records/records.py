@@ -48,7 +48,7 @@ def build_approval_binding(approval: Mapping[str, Any], use: Mapping[str, Any], 
 def judge_approval_binding(record: Mapping[str, Any], payload: bytes) -> dict[str, str]:
     """``{"decision": "allow"|"deny", "reason": ...}`` from the published approval-binding reader,
     through its public entry point on the record and payload exactly as an outsider would hold them."""
-    from agent_evidence_vectors import approvalbinding  # noqa: PLC0415 - optional at import time
+    from agent_evidence_vectors import approvalbinding
 
     name = str(record.get("use", {}).get("payloadFile", PAYLOAD_FILE))
     if "/" in name or name in ("", ".", ".."):
@@ -97,7 +97,7 @@ def build_uncertain_effect(*, record_id: str, action: str, operation_id: str, id
 
 def judge_uncertain_effect(record: Mapping[str, Any]) -> dict[str, Any]:
     """The decision of agent-evidence-verify's built-in ``uncertain_effect/v1`` adapter."""
-    from agent_evidence_verify.core import adjudicate  # noqa: PLC0415 - optional at import time
+    from agent_evidence_verify.core import adjudicate
 
     data = canonical(dict(record))
     with tempfile.TemporaryDirectory(prefix="probity-ue-") as tmp:

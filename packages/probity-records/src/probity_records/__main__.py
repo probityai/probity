@@ -39,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
     idv.add_argument("--check", type=Path)
     args = parser.parse_args(argv)
     if args.cmd == "identity-vectors":
-        from .identity_vectors import check, vectors  # noqa: PLC0415
+        from .identity_vectors import check, vectors
 
         if args.check is None:
             print(json.dumps(vectors(), indent=2, sort_keys=True))

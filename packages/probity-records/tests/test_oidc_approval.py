@@ -6,7 +6,12 @@ from __future__ import annotations
 import base64
 from typing import Any
 
-from probity_records import Signer, build_approval_binding, embed_approval_binding, sign_approval
+from probity_records import (
+    Signer,
+    build_approval_binding,
+    embed_approval_binding,
+    sign_approval,
+)
 from probity_records.identity import jwk_thumbprint
 from probity_records.identity_vectors import _jwk, _key, _principal, _token
 from probity_records.oidc_approval import (

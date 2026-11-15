@@ -20,7 +20,13 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .core import sha256_hex
-from .identity import b64url, check_principals, jwk_thumbprint, jwks_digest, verify_token
+from .identity import (
+    b64url,
+    check_principals,
+    jwk_thumbprint,
+    jwks_digest,
+    verify_token,
+)
 
 AT = "2026-11-08T12:00:00Z"
 _AT_EPOCH = 1794139200  # AT as seconds since the epoch
@@ -29,7 +35,7 @@ ISSUER = "https://idp.example.com/realms/agents"
 
 
 def _iso_at(seconds: int) -> str:
-    from .identity import _iso  # noqa: PLC0415
+    from .identity import _iso
 
     return _iso(seconds)
 
@@ -50,7 +56,7 @@ def _token(priv: Ed25519PrivateKey, kid: str, claims: dict[str, Any], typ: str =
 
 
 def _principal(token: str, jwk: dict, jwks: dict, source: str, claims: dict) -> dict[str, Any]:
-    from .identity import _iso  # noqa: PLC0415
+    from .identity import _iso
 
     p = {"audience": [claims["aud"]], "authMethod": "private_key_jwt", "clientId": claims["client_id"],
          "expiresAt": _iso(claims["exp"]), "issuedAt": _iso(claims["iat"]), "issuer": claims["iss"],

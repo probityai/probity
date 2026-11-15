@@ -30,7 +30,10 @@ from pathlib import Path
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 SIG_ED25519 = 0x01
@@ -403,7 +406,7 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
 
 
 # ---- tlog-witness protocol ------------------------------------------------------------------------
-class WitnessRefused(Exception):  # noqa: N818 - carries the HTTP status the spec assigns
+class WitnessRefused(Exception):
     def __init__(self, status: int, message: str, body: str = "") -> None:
         super().__init__(f"{status}: {message}")
         self.status, self.body = status, body
@@ -514,7 +517,7 @@ def serve_witness(witness: Witness, host: str = "127.0.0.1", port: int = 0) -> T
         def log_message(self, *_: Any) -> None:
             return
 
-        def do_POST(self) -> None:  # noqa: N802 - http.server API
+        def do_POST(self) -> None:
             if self.path.rstrip("/").split("/")[-1] != "add-checkpoint":
                 self._reply(404, "not found\n")
                 return
@@ -670,5 +673,5 @@ class LagGate:
     max_unwitnessed: int
 
     def __call__(self, _request: Any = None) -> str | None:
-        seq, _ = self.feed.journal._tail()  # noqa: SLF001 - O(new bytes)
+        seq, _ = self.feed.journal._tail()
         return "witness_lag_exceeded" if seq - self.feed.witnessed_size() > self.max_unwitnessed else None

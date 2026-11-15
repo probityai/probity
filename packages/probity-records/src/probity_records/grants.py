@@ -38,7 +38,7 @@ from typing import Any
 from cryptography.exceptions import InvalidSignature
 
 from . import celexpr, constraints
-from .core import _b64, _unb64, canonical, key_id, load_public, sha256_hex, Signer
+from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
 
 GRANT_DOMAIN = b"probity-grant-v1\x00"
 CAPABILITY_GRANT = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/capability-grant"
@@ -46,12 +46,12 @@ APPROVAL_LEVELS = ("none", "required")
 
 
 def ts(text: str) -> datetime:
-    return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    return datetime.fromisoformat(text)
 
 
 def raw_public(signer: Signer) -> str:
     """The base64 raw public key a grant names as issuer or holder."""
-    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat  # noqa: PLC0415
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
     return _b64(signer.public.public_bytes(Encoding.Raw, PublicFormat.Raw))
 
@@ -95,7 +95,7 @@ def _validate_tools(tools: Any) -> None:
         for w in when:
             celexpr.compile_expr(w)
         if "quorum" in spec:
-            from .quorum import validate_policy  # noqa: PLC0415 - quorum imports this module
+            from .quorum import validate_policy
 
             validate_policy(spec["quorum"])
             if not spec["quorum"].get("proposerBound"):
@@ -166,7 +166,7 @@ def narrowing_problem(child: Mapping[str, Any], parent: Mapping[str, Any]) -> st
         if missing:
             return f"child_drops_condition:{tool}"
         if "quorum" in pspec:
-            from .quorum import widening_problem  # noqa: PLC0415 - quorum imports this module
+            from .quorum import widening_problem
 
             problem = widening_problem(spec.get("quorum"), pspec["quorum"])
             if problem:
@@ -213,7 +213,7 @@ def _structure(chain: list[Mapping[str, Any]], root_key_ids: frozenset[str]) -> 
     """The time-independent half of a chain check: shapes, signatures, root trust, parent links and
     the narrowing proof. Returns (issuer key ids, grant digests, "ok" or the refusal). Memoised on
     the exact chain content and the pinned roots, so an altered byte anywhere misses the cache."""
-    import json  # noqa: PLC0415
+    import json
 
     try:
         cache_key = (json.dumps(chain, sort_keys=True, separators=(",", ":")), root_key_ids)

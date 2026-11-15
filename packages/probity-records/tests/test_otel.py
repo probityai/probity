@@ -17,11 +17,20 @@ import urllib.error
 from pathlib import Path
 
 import pytest
-
 from probity_records import Journal, Signer, tool_call_predicate
-from probity_records.otel import (AuditStream, Reveal, certificate_pem, export_journal, fingerprint,
-                                  integrity_hash, post_logs, reveal_matches, signing_payload, verify_stream,
-                                  witness_signer)
+from probity_records.otel import (
+    AuditStream,
+    Reveal,
+    certificate_pem,
+    export_journal,
+    fingerprint,
+    integrity_hash,
+    post_logs,
+    reveal_matches,
+    signing_payload,
+    verify_stream,
+    witness_signer,
+)
 
 
 def _attrs(actor: str = "agent:orders") -> dict:
@@ -199,7 +208,7 @@ service:
 """
         (tmp / f"config-{failure_mode}.yaml").write_text(config)
         self.proc = subprocess.Popen([OTELCOL, "--config", str(tmp / f"config-{failure_mode}.yaml")],
-                                     stdout=subprocess.DEVNULL, stderr=open(tmp / f"col-{failure_mode}.log", "wb"))
+                                     stdout=subprocess.DEVNULL, stderr=open(tmp / f"col-{failure_mode}.log", "wb"))  # noqa: SIM115 held open for the child process lifetime
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
             with socket.socket() as sock:

@@ -3,16 +3,27 @@
 from __future__ import annotations
 
 import pytest
-
 from probity_records import (
-    GRANT_ALLOW, TOOL_CALL_RECORD, Journal, Signer, Trust, args_sha256, verify_grant_allow,
-    build_uncertain_effect, check_constraint, grant_evidence, issue_grant, narrows, permit_id, raw_public,
-    tool_call_predicate, verify_journal,
+    GRANT_ALLOW,
+    TOOL_CALL_RECORD,
+    Journal,
+    Signer,
+    Trust,
+    args_sha256,
+    build_uncertain_effect,
+    check_constraint,
+    grant_evidence,
+    issue_grant,
+    narrows,
+    permit_id,
+    raw_public,
+    tool_call_predicate,
+    verify_grant_allow,
+    verify_journal,
 )
+from probity_records.core import _b64, canonical, verify_permit
 from probity_records.grants import GRANT_DOMAIN
-from probity_records.core import _b64, canonical
 from probity_records.walk import grant_walk, mint_grant_permit
-from probity_records.core import verify_permit
 
 AT = "2026-06-01T00:00:00Z"
 NB, EXP = "2026-01-01T00:00:00Z", "2099-12-31T00:00:00Z"

@@ -164,7 +164,7 @@ def from_otlp_record(item: Mapping[str, Any]) -> dict[str, Any]:
                                              for a in item.get("attributes", [])}}
     if item.get("eventName"):
         record["event_name"] = item["eventName"]
-    if "body" in item and item["body"]:
+    if item.get("body"):
         record["body"] = _from_otlp(item["body"])
     if item.get("timeUnixNano"):
         record["timestamp"] = int(item["timeUnixNano"])
@@ -339,7 +339,7 @@ def post_logs(endpoint: str, request: Mapping[str, Any], timeout: float = 10.0) 
     """POST an export request to an OTLP/HTTP receiver (``.../v1/logs``); returns the HTTP status."""
     data = json.dumps(request).encode("utf-8")
     req = urllib.request.Request(endpoint, data=data, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as reply:  # noqa: S310 - the caller names its collector
+    with urllib.request.urlopen(req, timeout=timeout) as reply:
         return int(reply.status)
 
 

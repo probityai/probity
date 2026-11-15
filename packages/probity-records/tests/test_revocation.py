@@ -3,11 +3,20 @@
 from __future__ import annotations
 
 import pytest
-
 from probity_records import (
-    Journal, RevocationError, RevocationState, Signer, Trust,
-    verify_grant_allow, grant_digest, issue_grant, raw_public, sign_approval, sign_revocations,
-    verify_approval_live, verify_journal,
+    Journal,
+    RevocationError,
+    RevocationState,
+    Signer,
+    Trust,
+    grant_digest,
+    issue_grant,
+    raw_public,
+    sign_approval,
+    sign_revocations,
+    verify_approval_live,
+    verify_grant_allow,
+    verify_journal,
 )
 from test_records import _approval, _trust, _write_run
 

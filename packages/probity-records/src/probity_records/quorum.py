@@ -40,7 +40,7 @@ from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 
-from .core import _b64, _unb64, canonical, key_id, load_public, sha256_hex, Signer
+from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
 from .grants import ts
 
 VOTE_DOMAIN = b"probity-quorum-vote-v1\x00"
@@ -295,7 +295,7 @@ def _verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[s
 
 def approval_policy(policy_id: str, approver_pems: Mapping[str, bytes], threshold: int) -> dict[str, Any]:
     """A quorum policy for signed human approvals, from each approver's public key (PEM or raw)."""
-    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat  # noqa: PLC0415
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
     def raw(pem: bytes) -> str:
         return _b64(load_public(pem).public_bytes(Encoding.Raw, PublicFormat.Raw))
@@ -323,8 +323,8 @@ def count_bindings(policy: Mapping[str, Any], bindings: Iterable[Mapping[str, An
     counted only when ``oidc_approval.verify_oidc_approval`` accepts it under ``oidc_pins`` (issuer to
     the provider key thumbprints the counter pinned; none pinned, none counted).
     """
-    from .core import APPROVAL_DOMAIN  # noqa: PLC0415
-    from .oidc_approval import verify_oidc_approval  # noqa: PLC0415
+    from .core import APPROVAL_DOMAIN
+    from .oidc_approval import verify_oidc_approval
 
     validate_policy(policy)
     counted: set[str] = set()
