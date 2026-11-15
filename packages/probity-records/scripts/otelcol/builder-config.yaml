@@ -1,0 +1,13 @@
+# A collector with the contrib signing and verify processors, the OTLP receiver and the file exporter:
+# what the OTel export tests run against. Built by build.sh with the OpenTelemetry Collector Builder.
+dist:
+  name: otelcol-audit
+  description: OTLP receiver, contrib signing and verify processors, file exporter
+  output_path: ./dist
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.165.0
+processors:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor v0.165.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/verifyprocessor v0.165.0
+exporters:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.165.0

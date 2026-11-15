@@ -50,5 +50,34 @@ class ImageCheckTest(unittest.TestCase):
         self.assertIn("nothing", out[0])
 
 
+    def test_own_main_image_is_read_from_the_checkout(self) -> None:
+        own = "https://raw.githubusercontent.com/probityai/probity/main/assets/badges/x.svg"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            readme = root / "README.md"
+            readme.write_text(f"![x]({own})\n")
+            fail = ric.check(readme, lambda url: self.fail(f"fetched {url}"), root)
+            self.assertIn("does not hold", fail[0])
+            (root / "assets/badges").mkdir(parents=True)
+            (root / "assets/badges/x.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'/>")
+            self.assertEqual(ric.check(readme, lambda url: self.fail(f"fetched {url}"), root), [])
+            (root / "assets/badges/x.svg").write_text('{"error": "not found"}')
+            self.assertIn("not an image", ric.check(readme, lambda url: (200, "image/svg+xml"), root)[0])
+
+    def test_own_image_path_cannot_leave_the_checkout(self) -> None:
+        own = "https://raw.githubusercontent.com/probityai/probity/main/../../etc/passwd"
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(f"![x]({own})\n")
+            self.assertIn("does not hold", ric.check(readme, lambda url: (200, "image/png"), Path(tmp))[0])
+
+    def test_other_branch_of_own_repo_is_fetched(self) -> None:
+        url = "https://raw.githubusercontent.com/probityai/probity/v1/a.svg"
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(f"![x]({url})\n")
+            self.assertEqual(ric.check(readme, lambda u: (200, "image/svg+xml"), Path(tmp)), [])
+
+
 if __name__ == "__main__":
     unittest.main()

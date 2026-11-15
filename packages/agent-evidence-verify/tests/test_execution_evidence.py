@@ -45,14 +45,16 @@ def _test_key(role: str) -> str:
 SUBSTRATE_KEY = _test_key("substrate-observation-test")
 
 
-def decide(member: dict, keys: list[str], root: Path = CORPUS) -> dict:
+def decide(member: dict, keys: list[str], root: Path = CORPUS, allow_published: bool = False) -> dict:
     data = (CORPUS / member["file"]).read_bytes()
     case = {"schema_version": "probity-case/v1", "case_id": member["id"],
             "artifacts": {"statement": {"path": member["file"], "length": len(data),
                                         "sha256": hashlib.sha256(data).hexdigest()}}}
     policy = {"schema_version": "probity-policy/v1",
               "assessments": {member["id"]: {"claim_type": CLAIM, "statement": "statement",
-                                             "substrate_observation_keys": keys}}}
+                                             "substrate_observation_keys": keys,
+                                             **({"allow_published_test_keys": True}
+                                                if allow_published else {})}}}
     return adjudicate(case, policy, root)
 
 
@@ -198,3 +200,13 @@ def test_carried_base64_must_be_canonical():
     for bad in ("YWI", "YWJ=", "YW\nI=", "é"):
         with pytest.raises(ValueError):
             aee.decode_carried_base64(bad)
+
+
+def test_the_published_key_refusal_reaches_the_decision_and_can_be_declined():
+    member = next(m for m in MEMBERS if "attested" in m["expected"].get("tierWithPinnedKey", []))
+    refused = decide(member, [SUBSTRATE_KEY])["checks"][0]
+    assert refused["policy_codes"] == ["observation-key-published"]
+    assert refused["verdict_code"] == "NOT_PUBLICLY_VERIFIABLE"
+    assert refused["tiers"] == member["expected"]["tierWithPinnedKey"]
+    declined = decide(member, [SUBSTRATE_KEY], allow_published=True)["checks"][0]
+    assert declined["policy_codes"] == [] and declined["verdict_code"] is None
