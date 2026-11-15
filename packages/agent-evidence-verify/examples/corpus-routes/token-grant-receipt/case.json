@@ -1,0 +1,16 @@
+{
+  "schema_version": "probity-case/v1",
+  "case_id": "client-credentials",
+  "artifacts": {
+    "envelope": {
+      "path": "envelope.json",
+      "length": 1533,
+      "sha256": "c4e7647690b7d789e300f58b6021e0b4f291b76a36e356d2847d783466d785b1"
+    },
+    "log": {
+      "path": "receipts.jsonl",
+      "length": 4871,
+      "sha256": "3f766a7a3362c6315522ba592c2651fb9ea8cb41790348dabd3f134820fee1fc"
+    }
+  }
+}

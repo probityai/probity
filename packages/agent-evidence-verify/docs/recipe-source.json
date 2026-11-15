@@ -323,6 +323,15 @@
       "documentation": "docs/adapters.md",
       "expected_decision": "supported",
       "scope": "Authored synthetic identity-provider export over two corpus members; signed with a published test key that carries no trust outside the corpus."
+    },
+    {
+      "task": "Check an identity provider's signed token grant receipt against the grant you expect",
+      "claim_type": "token_grant_receipt/v1",
+      "case": "examples/corpus-routes/token-grant-receipt/case.json",
+      "policy": "examples/corpus-routes/token-grant-receipt/policy.json",
+      "documentation": "docs/token-grant-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Recorded Keycloak client-credentials grant from the hook's end-to-end run; the recorder key signs only that run and carries no trust outside it."
     }
   ]
 }
