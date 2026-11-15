@@ -17,6 +17,7 @@ read the same answer. Standard library only: CI runs it before any install.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import subprocess
@@ -88,7 +89,15 @@ def changed(paths: list[str], root: Path = ROOT) -> dict[str, bool]:
     return result
 
 
-def release_target(tag: str, root: Path = ROOT) -> dict[str, str]:
+def _release_links():
+    """Load scripts/release_links.py from beside this file; the tests load this file by path."""
+    spec = importlib.util.spec_from_file_location("release_links", Path(__file__).with_name("release_links.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def release_target(tag: str, root: Path = ROOT, check_links: bool = False) -> dict[str, str]:
     """Resolve a release tag ``<distribution>-v<version>`` to the member it releases."""
     match = _TAG.match(tag)
     if not match:
@@ -99,6 +108,10 @@ def release_target(tag: str, root: Path = ROOT) -> dict[str, str]:
         raise SystemExit(f"release tag {tag!r} names no workspace member (members: {', '.join(table)})")
     if member.version != match["version"]:
         raise SystemExit(f"release tag {tag!r} does not match {member.directory} version {member.version}")
+    if check_links:
+        problems = _release_links().check_manifest(root / member.directory / "pyproject.toml")
+        if problems:
+            raise SystemExit("the registry page would link to nowhere useful:\n" + "\n".join(problems))
     return {"distribution": member.distribution, "directory": member.directory,
             "version": member.version}
 
@@ -127,7 +140,7 @@ def main(argv: list[str]) -> int:
         print(json.dumps(changed(diff), sort_keys=True))
         return 0
     if len(argv) == 2 and argv[0] == "release-target":
-        print(json.dumps(release_target(argv[1]), sort_keys=True))
+        print(json.dumps(release_target(argv[1], check_links=True), sort_keys=True))
         return 0
     if len(argv) == 2 and argv[0] == "requires":
         print("\n".join(requires(argv[1])))
