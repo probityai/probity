@@ -4102,7 +4102,7 @@ provides-extras = ["agentdojo"]
 
 [[package]]
 name = "probity-verify"
-version = "0.5.1"
+version = "0.5.2"
 source = { editable = "packages/probity-verify" }
 dependencies = [
     { name = "agent-evidence-verify" },

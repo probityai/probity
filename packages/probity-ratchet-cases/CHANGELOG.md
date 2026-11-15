@@ -3,6 +3,12 @@
 Every version maps to one suite digest, recorded in `src/ratchet_cases/cases/DIGESTS.json`. While the
 version is 0.x, a change to a shipped case, a grader rule or a fault's meaning is a minor version.
 
+## 0.2.1 (2026-11-15)
+
+Package metadata only. The Source and Issues links on PyPI point at probityai/probity, where this package is
+developed, instead of an archived repository. The 52 shipped cases are unchanged: the suite digest is still
+`7d4c38e0d18c39c7d6cb955a28cb9bbc134cd1f78958c2c4ac5b2f04dd9b6679`.
+
 ## 0.2.0 (2026-10-12)
 
 The 52 shipped cases are unchanged: the suite digest is still
