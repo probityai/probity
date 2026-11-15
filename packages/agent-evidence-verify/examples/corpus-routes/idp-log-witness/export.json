@@ -1,0 +1,30 @@
+[
+  {
+    "agent_id": "agt_1",
+    "client_id": "reconciler",
+    "date": "2026-09-19T11:00:01.000Z",
+    "description": "",
+    "details": {
+      "actor": {
+        "act": {
+          "sub": "spa-client"
+        },
+        "sub": "agt_1"
+      }
+    },
+    "hostname": "idp.example.org",
+    "log_id": "a1",
+    "type": "success_on_behalf_of_token_exchange",
+    "user_id": "user:alice@example.org"
+  },
+  {
+    "agent_id": "agt_1",
+    "client_id": "reconciler",
+    "date": "2026-09-19T11:00:01.000Z",
+    "description": "",
+    "external_agent_id": "reconciler",
+    "hostname": "idp.example.org",
+    "log_id": "a2",
+    "type": "seccft"
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "assessments": {
+    "idp-log-witness-reconciles": {
+      "claim_type": "idp_log_witness/v1",
+      "envelopes": [
+        "PR1.json",
+        "PR2.json"
+      ],
+      "export_window": {
+        "end": "2026-09-19T12:00:00Z",
+        "start": "2026-09-19T10:00:00Z"
+      },
+      "idp_export": "export.json",
+      "issuer": "https://idp.example.org/oauth2/default",
+      "observer_public_key": "60b9ca613738a46a9350086999c93389e65c342482bbf65c6589d43116de5e7a",
+      "provider": "auth0"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
