@@ -157,6 +157,11 @@
       "sha256": "214c2ebdf4d655cc61f2555638a9d0b2f77d801665d42436b4f44f729414c31c"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/idp_log_witness.py",
+      "bytes": 15082,
+      "sha256": "cf1fb18757a617b07803fd6a2f108b6324aa34c08ca6e06440d50412a1bbaf1b"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/jcs_canonical.py",
       "bytes": 6494,
       "sha256": "425c5d072cefe672908f1e2fa38c60244078e06b6027f1531df8a2acaedc0d3a"
@@ -238,8 +243,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 10947,
-      "sha256": "fb1bb2e49fcaa3252c5b97331852a0875a8840dcb44b1c070e6c29db42432891"
+      "bytes": 11022,
+      "sha256": "7dc1fcfe1b1c2f7f908bf753e673d8712ee12c7c6c5ed9d90a6c50ec65c46fcb"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -1880,6 +1885,52 @@
           "path": "examples/cbor-receipt-chain/profile.json",
           "bytes": 484,
           "sha256": "09d7d15b48571badd01e523a18657ae285142087a6c6413aea130535d13160ec"
+        }
+      ]
+    },
+    {
+      "task": "Reconcile the principal each signed agent audit record names with identity-provider log events",
+      "claim_type": "idp_log_witness/v1",
+      "case": "examples/corpus-routes/idp-log-witness/case.json",
+      "policy": "examples/corpus-routes/idp-log-witness/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic identity-provider export over two corpus members; signed with a published test key that carries no trust outside the corpus.",
+      "case_id": "idp-log-witness-reconciles",
+      "expected_reason": "issuances_reconciled",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/corpus-routes/idp-log-witness/case.json",
+        "--policy",
+        "examples/corpus-routes/idp-log-witness/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/idp-log-witness/case.json",
+          "bytes": 579,
+          "sha256": "cd0126fc540b01b98c4cf8b7273ace8c4de6d3c935bad581a77d13729d444144"
+        },
+        {
+          "path": "examples/corpus-routes/idp-log-witness/policy.json",
+          "bytes": 550,
+          "sha256": "c24050b9824283864a87590f12abae501635e2ffd8721dbfb72eb435b98fa494"
+        },
+        {
+          "path": "examples/corpus-routes/idp-log-witness/PR1.json",
+          "bytes": 5895,
+          "sha256": "25048425b3cf423555642e030cd5f617931c2094353a65d2edaad18cb6436174"
+        },
+        {
+          "path": "examples/corpus-routes/idp-log-witness/PR2.json",
+          "bytes": 5875,
+          "sha256": "717e1bb82abc81e9227da888537cadcc41e6720c57aac99c26fac9594a5620ad"
+        },
+        {
+          "path": "examples/corpus-routes/idp-log-witness/export.json",
+          "bytes": 650,
+          "sha256": "b3126c839997dcb517f92bd9aebb099f10730795b7d732c005c4d96863de0b3f"
         }
       ]
     }

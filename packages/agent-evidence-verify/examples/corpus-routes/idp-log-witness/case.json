@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "PR1.json": {
+      "length": 5895,
+      "path": "PR1.json",
+      "sha256": "25048425b3cf423555642e030cd5f617931c2094353a65d2edaad18cb6436174"
+    },
+    "PR2.json": {
+      "length": 5875,
+      "path": "PR2.json",
+      "sha256": "717e1bb82abc81e9227da888537cadcc41e6720c57aac99c26fac9594a5620ad"
+    },
+    "export.json": {
+      "length": 650,
+      "path": "export.json",
+      "sha256": "b3126c839997dcb517f92bd9aebb099f10730795b7d732c005c4d96863de0b3f"
+    }
+  },
+  "case_id": "idp-log-witness-reconciles",
+  "schema_version": "probity-case/v1"
+}

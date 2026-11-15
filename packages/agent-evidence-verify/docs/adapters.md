@@ -78,3 +78,30 @@ detection order, and for a valid statement the result and each row's tier (`atte
 covering record verifies under a pinned key). [examples/execution-evidence](../examples/execution-evidence)
 uses a conformance-corpus statement and the corpus's published test key, which carries no trust
 outside the corpus.
+
+## Identity-provider log witness
+
+`idp_log_witness/v1` reconciles the principal each signed agent audit record names with the
+identity provider's own account of the same token issuance. The policy pins the records, the
+observer key they are signed under, an export of the provider's log, the provider (`auth0` or
+`okta`), the issuer the records must name, and the window the export covers.
+
+The export is read in its published shape. For Auth0 it is tenant log events as a JSON array,
+newline-delimited JSON or log-stream batches; token-exchange success codes count as issuances and
+the matching failure codes as refusals, and the subject of an event is its `user_id`, `agent_id`,
+`external_agent_id` or any `sub` in the on-behalf-of actor chain. For Okta it is System Log events
+of type `app.oauth2.as.token.grant.access_token` or `.id_token`, with the client and subject read
+from the ids of the actor and its targets.
+
+Each record is first judged by `audit_principal/v1`. A conforming record is backed when the export
+holds a successful issuance to the same client for the same subject within 300 seconds of the
+record's `principal.issuedAt`. Otherwise the record gets a finding: `principal-issuer-unpinned`,
+`issuance-refused`, `issuance-principal-mismatch` or `issuance-unlogged`, each of which
+contradicts the claim, or `issuance-outside-window`, which leaves it `not_established`. The first
+contradicting finding is the reason. The `unobserved_issuances` check lists issuances to an agent
+principal inside the window that no record accounts for: a token the provider issued that the
+records never saw used.
+
+`supported` means the two accounts agree for every pinned record. It does not establish that the
+export is complete or unaltered; the consumer pins its bytes and declares its window. A malformed
+export exits 2 without a verdict.

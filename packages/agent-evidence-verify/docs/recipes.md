@@ -40,6 +40,7 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check the principal an agent audit record names](corpus-routes.md) | `audit_principal/v1` | `supported` | Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus. |
 | [Check a Proof-of-Control token chain, inclusion proof or canonical form](corpus-routes.md) | `proof_of_control/v1` | `supported` | Member of the poc-evidence-vectors corpus; its keys and roots carry no trust outside the corpus. |
 | [Check that a stream of signed CBOR receipts is one whole, ordered chain](cbor-receipt-chain.md) | `cbor_receipt_chain/v1` | `supported` | Authored synthetic stream; signed with a published test key that carries no trust outside the example. |
+| [Reconcile the principal each signed agent audit record names with identity-provider log events](adapters.md) | `idp_log_witness/v1` | `supported` | Authored synthetic identity-provider export over two corpus members; signed with a published test key that carries no trust outside the corpus. |
 
 ## Retrieve a command
 
