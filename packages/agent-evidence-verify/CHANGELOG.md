@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 (2026-11-15)
+## 0.6.0 (unreleased)
 
 A minor release: four new claim types, a corpus mode and one new console script. One decision changes: a statement
 checked under a pinned key whose seed the conformance corpus publishes no longer reads as publicly verifiable (see
