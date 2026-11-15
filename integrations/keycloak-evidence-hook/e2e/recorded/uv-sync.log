@@ -1,0 +1,12 @@
+Using CPython 3.14.7
+Creating virtual environment at: .venv
+   Building agent-evidence-verify @ file:///home/gate/work/probity-kc-e2e-1110e/packages/agent-evidence-verify
+      Built agent-evidence-verify @ file:///home/gate/work/probity-kc-e2e-1110e/packages/agent-evidence-verify
+Prepared 2 packages in 1.21s
+Installed 6 packages in 4ms
+ + agent-evidence-verify==0.5.1 (from file:///home/gate/work/probity-kc-e2e-1110e/packages/agent-evidence-verify)
+ + agent-evidence-vocabulary==0.9.0
+ + cffi==2.1.1
+ + cryptography==50.0.2
+ + pycparser==3.11
+ + pyyaml==6.0.3

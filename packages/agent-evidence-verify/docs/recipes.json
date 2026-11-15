@@ -207,6 +207,11 @@
       "sha256": "c7763c9aa8220ca46a230a9d1a052f5dbf53f1b2e1a38e60f9c6a6786fa57a8b"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/token_grant_receipt.py",
+      "bytes": 16704,
+      "sha256": "075e5c560cb8eaed8aad7779e749f20bad31ccc7bb8463de5d8c2a2688c9b90e"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/tool_claim_match.py",
       "bytes": 22170,
       "sha256": "c2c494d4808c270b537254485fa2104000b52853d7d1f09f9d558b1a6e85a44f"
@@ -243,8 +248,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11022,
-      "sha256": "7dc1fcfe1b1c2f7f908bf753e673d8712ee12c7c6c5ed9d90a6c50ec65c46fcb"
+      "bytes": 11109,
+      "sha256": "c89107fcce80992470fbc958a0b2b6e8ed349444b96ae8c6056f8144e7682cff"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -1931,6 +1936,47 @@
           "path": "examples/corpus-routes/idp-log-witness/export.json",
           "bytes": 650,
           "sha256": "b3126c839997dcb517f92bd9aebb099f10730795b7d732c005c4d96863de0b3f"
+        }
+      ]
+    },
+    {
+      "task": "Check an identity provider's signed token grant receipt against the grant you expect",
+      "claim_type": "token_grant_receipt/v1",
+      "case": "examples/corpus-routes/token-grant-receipt/case.json",
+      "policy": "examples/corpus-routes/token-grant-receipt/policy.json",
+      "documentation": "docs/token-grant-receipt.md",
+      "expected_decision": "supported",
+      "scope": "Recorded Keycloak client-credentials grant from the hook's end-to-end run; the recorder key signs only that run and carries no trust outside it.",
+      "case_id": "client-credentials",
+      "expected_reason": "grant_recorded_as_expected",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/corpus-routes/token-grant-receipt/case.json",
+        "--policy",
+        "examples/corpus-routes/token-grant-receipt/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/token-grant-receipt/case.json",
+          "bytes": 416,
+          "sha256": "5837f3a52abbbe20facf80bfff7c48761a94fde5edb785c11d3e871e01ec90e7"
+        },
+        {
+          "path": "examples/corpus-routes/token-grant-receipt/policy.json",
+          "bytes": 724,
+          "sha256": "a9b81f39b80a1b67797d3929db4ee8c900df5cbac30ffee7e316abfe7d785719"
+        },
+        {
+          "path": "examples/corpus-routes/token-grant-receipt/envelope.json",
+          "bytes": 1533,
+          "sha256": "c4e7647690b7d789e300f58b6021e0b4f291b76a36e356d2847d783466d785b1"
+        },
+        {
+          "path": "examples/corpus-routes/token-grant-receipt/receipts.jsonl",
+          "bytes": 4871,
+          "sha256": "3f766a7a3362c6315522ba592c2651fb9ea8cb41790348dabd3f134820fee1fc"
         }
       ]
     }

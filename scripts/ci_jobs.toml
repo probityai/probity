@@ -9,6 +9,10 @@
 #
 # A change to ci.yml, scripts/ci_select.py or this file selects every job.
 
+[jobs.integration-keycloak-evidence-hook]
+paths = ["integrations/keycloak-evidence-hook/**", "packages/agent-evidence-verify/src/**", "packages/agent-evidence-verify/pyproject.toml"]
+tier = "fast"
+
 [jobs.family-resolves]
 paths = ["packages/**/pyproject.toml", "scripts/family_resolves.py", "tests/test_family_resolves.py"]
 tier = "fast"

@@ -1,0 +1,22 @@
+{
+  "schema_version": "probity-policy/v1",
+  "assessments": {
+    "client-credentials": {
+      "claim_type": "token_grant_receipt/v1",
+      "envelope": "envelope",
+      "recorder_public_key": "ecfce101367794aa22acc7c03397d0b88c40293ebfd3d477fba1ee3fc02c1a15",
+      "expected": {
+        "issuer": "http://127.0.0.1:8080/realms/agents",
+        "grant_type": "client_credentials",
+        "actor_client_id": "agent-gateway",
+        "access_token_id_sha256": "33c69d363bae2290fe7c8098ce26d7d827051738f4486f497df48d397ae909e8",
+        "subject_user_id": "f9576b44-8970-4d4c-8584-e415b84902a0",
+        "scope_allowed": [
+          "tools:execute",
+          "tools:read"
+        ]
+      },
+      "log": "log"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------< io.github.probityai:keycloak-evidence-hook >-------------
+[INFO] Building keycloak-evidence-hook 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ keycloak-evidence-hook ---
+[INFO] 
+[INFO] --- enforcer:3.6.1:enforce (pin-plugin-versions) @ keycloak-evidence-hook ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.RequirePluginVersions passed
+[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ keycloak-evidence-hook ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ keycloak-evidence-hook ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 7 source files with javac [debug release 21] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ keycloak-evidence-hook ---
+[INFO] skip non existing resourceDirectory /src/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ keycloak-evidence-hook ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 5 source files with javac [debug release 21] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.5.3:test (default-test) @ keycloak-evidence-hook ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.github.probityai.keycloak.evidence.ChainedSinkTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.174 s -- in io.github.probityai.keycloak.evidence.ChainedSinkTest
+[INFO] Running io.github.probityai.keycloak.evidence.GrantRecordTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in io.github.probityai.keycloak.evidence.GrantRecordTest
+[INFO] Running io.github.probityai.keycloak.evidence.DsseSignerTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.066 s -- in io.github.probityai.keycloak.evidence.DsseSignerTest
+[INFO] Running io.github.probityai.keycloak.evidence.CanonicalJsonTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in io.github.probityai.keycloak.evidence.CanonicalJsonTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ keycloak-evidence-hook ---
+[INFO] Building jar: /src/target/keycloak-evidence-hook-0.1.0.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.407 s
+[INFO] Finished at: 2026-11-10T14:43:58Z
+[INFO] ------------------------------------------------------------------------
+LOCK_OK 262 artifacts match maven.lock
+3e51ca81ccf948efdbda1c067703c1d6aaa63bee96e533e86cf9f1198b020d8c  target/keycloak-evidence-hook-0.1.0.jar

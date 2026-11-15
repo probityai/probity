@@ -1,0 +1,53 @@
+{
+  "grants": [
+    {
+      "access_token_id_sha256": "f69cf49734e917852fab2c2df850be661c6d9ca7b43308643dd81bdb8693ca69",
+      "actor_client_id": "agent-gateway",
+      "audience": [
+        "tools-api"
+      ],
+      "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+      "issuer": "http://127.0.0.1:8080/realms/agents",
+      "name": "token-exchange",
+      "scope": [
+        "tools:execute",
+        "tools:read"
+      ],
+      "subject_token_sha256": "0bde86c00a04b8d4ab4df16811df2acdce5c27d5922506296910219b288337e6",
+      "subject_user_id": "854cbc17-7d78-4c24-9990-014d045e2d58"
+    },
+    {
+      "access_token_id_sha256": "33c69d363bae2290fe7c8098ce26d7d827051738f4486f497df48d397ae909e8",
+      "actor_client_id": "agent-gateway",
+      "audience": [
+        "tools-api"
+      ],
+      "grant_type": "client_credentials",
+      "issuer": "http://127.0.0.1:8080/realms/agents",
+      "name": "client-credentials",
+      "scope": [
+        "tools:execute",
+        "tools:read"
+      ],
+      "subject_token_sha256": null,
+      "subject_user_id": "f9576b44-8970-4d4c-8584-e415b84902a0"
+    },
+    {
+      "access_token_id_sha256": "bf97d5810337b42592f3a7cf0e89a0fdd0e891fb71bb9552d78e43413422b28e",
+      "actor_client_id": "agent-gateway",
+      "audience": [
+        "tools-api"
+      ],
+      "grant_type": "urn:openid:params:grant-type:ciba",
+      "issuer": "http://127.0.0.1:8080/realms/agents",
+      "name": "ciba",
+      "scope": [
+        "openid",
+        "tools:execute",
+        "tools:read"
+      ],
+      "subject_token_sha256": null,
+      "subject_user_id": "854cbc17-7d78-4c24-9990-014d045e2d58"
+    }
+  ]
+}

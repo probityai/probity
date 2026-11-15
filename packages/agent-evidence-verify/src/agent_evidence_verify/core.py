@@ -35,6 +35,7 @@ from .adapters import (
     restoration,
     source_coverage,
     spend_reservation,
+    token_grant_receipt,
     tool_claim_match,
     uncertain_effect,
 )
@@ -71,6 +72,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "proof_of_control/v1": proof_of_control.adjudicate,
     "observed_effect/v1": observed_effect.adjudicate,
     "audit_principal/v1": audit_principal.adjudicate,
+    "token_grant_receipt/v1": token_grant_receipt.adjudicate,
     "idp_log_witness/v1": idp_log_witness.adjudicate,
     "cbor_receipt_chain/v1": cbor_receipt_chain.adjudicate,
 }

@@ -1,0 +1,214 @@
+{
+  "realm": "agents",
+  "enabled": true,
+  "sslRequired": "none",
+  "accessTokenLifespan": 300,
+  "attributes": {
+    "cibaBackchannelTokenDeliveryMode": "poll",
+    "cibaExpiresIn": "120",
+    "cibaInterval": "2",
+    "cibaAuthRequestedUserHint": "login_hint"
+  },
+  "clientScopes": [
+    {
+      "name": "tools:read",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "tools:write",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "tools:execute",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "tools:lifecycle",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "tools:network",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "tools:volume",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "tools:admin",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "tools-api-audience",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "tools-api-audience-aud",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "tools-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "agent-gateway-audience",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "agent-gateway-audience-aud",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "agent-gateway",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "subject",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "subject",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Operator",
+      "email": "alice@example.test",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alice-e2e-password",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "tools-api",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "resource-not-used-a",
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "agent-gateway",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "gateway-e2e-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "standard.token.exchange.enabled": "true",
+        "oidc.ciba.grant.enabled": "true"
+      },
+      "defaultClientScopes": [
+        "tools-api-audience",
+        "subject"
+      ],
+      "optionalClientScopes": [
+        "tools:read",
+        "tools:write",
+        "tools:execute",
+        "tools:lifecycle",
+        "tools:network",
+        "tools:volume",
+        "tools:admin"
+      ]
+    },
+    {
+      "clientId": "agent-ui",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect",
+      "defaultClientScopes": [
+        "agent-gateway-audience",
+        "subject"
+      ],
+      "optionalClientScopes": [
+        "tools:read",
+        "tools:write",
+        "tools:execute",
+        "tools:lifecycle",
+        "tools:network",
+        "tools:volume",
+        "tools:admin"
+      ]
+    }
+  ],
+  "eventsListeners": [
+    "jboss-logging",
+    "evidence-hook"
+  ]
+}
