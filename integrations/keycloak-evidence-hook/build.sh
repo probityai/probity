@@ -10,7 +10,7 @@ trap 'rm -rf "$M2"' EXIT
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e MAVEN_CONFIG=/tmp/.m2 \
   -v "$PWD":/src -v "$M2":/m2 -w /src "$IMAGE" \
   mvn -B -ntp -Dmaven.repo.local=/m2/repository -Dstyle.color=never clean verify
-(cd "$M2/repository" && find . -type f \( -name '*.jar' -o -name '*.pom' \) -print0 | sort -z \
+(cd "$M2/repository" && find . -type f \( -name '*.jar' -o -name '*.pom' \) -print0 | LC_ALL=C sort -z \
   | xargs -0 sha256sum) > "$M2/resolved.lock"
 if [ "${1:-}" = "--update-lock" ]; then
   cp "$M2/resolved.lock" maven.lock
