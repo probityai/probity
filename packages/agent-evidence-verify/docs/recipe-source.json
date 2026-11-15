@@ -314,6 +314,15 @@
       "documentation": "docs/cbor-receipt-chain.md",
       "expected_decision": "supported",
       "scope": "Authored synthetic stream; signed with a published test key that carries no trust outside the example."
+    },
+    {
+      "task": "Reconcile the principal each signed agent audit record names with identity-provider log events",
+      "claim_type": "idp_log_witness/v1",
+      "case": "examples/corpus-routes/idp-log-witness/case.json",
+      "policy": "examples/corpus-routes/idp-log-witness/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic identity-provider export over two corpus members; signed with a published test key that carries no trust outside the corpus."
     }
   ]
 }
