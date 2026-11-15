@@ -29,6 +29,11 @@ the last bullet). The decisions for every other existing claim type are unchange
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.
+- `jcs_canonical/v1` refuses an integer outside the I-JSON exact range +-(2**53 - 1) under every target, with
+  `no_canonical_form` and the refusal `number_not_interoperable`. Before, `{"n":9007199254740993}` and
+  `{"n":9007199254740992}` canonicalized to the same bytes, so one signature verified two different numbers. A new
+  target `rfc8785-safe-integer` (also `canonical_bounded()`) is the profile for signing inputs: it also refuses a
+  number whose double reaches 2**53, such as `12345678901234567.5`. The A2A conformance vectors are unchanged.
 - A valid `adversarial_execution_evidence/v1` statement whose consumer pinned a key derived from the published
   conformance recipe now carries the policy code `observation-key-published` and the verdict code
   `NOT_PUBLICLY_VERIFIABLE`, because anyone holding the recipe could have signed it. The tiers are derived as before.
