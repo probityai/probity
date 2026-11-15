@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased (0.6.0 at release)
+## 0.6.0 (2026-11-15)
 
-A minor release: two new claim types and one new console script; the decisions for every existing claim type are
-unchanged.
+A minor release: four new claim types, a corpus mode and one new console script. One decision changes: a statement
+checked under a pinned key whose seed the conformance corpus publishes no longer reads as publicly verifiable (see
+the last bullet). The decisions for every other existing claim type are unchanged.
 
 - `proof_of_control/v1`: checks a Proof-of-Control artifact (signed token, Merkle inclusion or consistency proof,
   token chain, canonical form) offline and passes all 171 cases of `poc-evidence-vectors` 0.1.0, which the `test`
@@ -16,9 +17,22 @@ unchanged.
   consumer-pinned keys, through a format profile the case pins. Refuses a repeated receipt, a re-issued authorization,
   swapped receipts and an unpinned signer, and reports a restart, an unpinned head, a missing effect or a missing
   revocation commitment as `not_established`. Doc: `docs/cbor-receipt-chain.md`, example: `examples/cbor-receipt-chain/`.
+- `idp_log_witness/v1`: reconciles the principal each signed audit record names with an identity provider's own
+  account of the token issuance, read from a pinned Auth0 tenant-log or Okta System Log export. A record with no
+  matching successful issuance for the same client and subject near its issuance time is a finding with its own code.
+  Section: `docs/adapters.md`.
+- `agent-evidence-verify corpus DIR...` (also `python -m agent_evidence_verify`): prints one verdict line per corpus
+  member in the agent-evidence-vectors verdict-line format, so several verifiers' lines over the same corpora can be
+  compared member by member. It answers the execution-evidence, uncertain-effect and approval-binding suites with this
+  package's own checks, and every member of any other suite as `not-applicable`. The approval-binding checks are an
+  adapter that judges whether an approval is bound to the exact use it is presented for.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.
+- A valid `adversarial_execution_evidence/v1` statement whose consumer pinned a key derived from the published
+  conformance recipe now carries the policy code `observation-key-published` and the verdict code
+  `NOT_PUBLICLY_VERIFIABLE`, because anyone holding the recipe could have signed it. The tiers are derived as before.
+  A consumer declines the refusal by name with `allow_published_test_keys`.
 
 ## 0.5.1 (2026-11-07)
 
