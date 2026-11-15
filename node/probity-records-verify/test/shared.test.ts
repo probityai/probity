@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { checkPrincipals, verifyJournal } from "../src/verify.ts";
 
-const dir = new URL("../../probity-records/vectors/shared/", import.meta.url);
+const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
 
 const JOURNAL_FAMILIES = ["grants", "quorum", "constraints", "approvals", "effects"];

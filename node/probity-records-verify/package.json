@@ -5,7 +5,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "author": "Sankalp Gilda",
-  "repository": {"type": "git", "url": "git+https://github.com/probityai/probity.git", "directory": "packages/probity-records-verify"},
+  "repository": {"type": "git", "url": "git+https://github.com/probityai/probity.git", "directory": "node/probity-records-verify"},
   "exports": {".": "./src/verify.ts"},
   "bin": {"probity-records-verify": "./src/cli.ts"},
   "engines": {"node": ">=22.18"},

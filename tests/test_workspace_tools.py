@@ -112,10 +112,10 @@ def test_the_root_workspace_holds_every_member_but_the_one_with_its_own_lock():
     root = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())
     assert root["tool"]["uv"]["workspace"] == {
         "members": ["packages/*"],
-        "exclude": ["packages/probity-effects"],
+        "exclude": ["packages/probity-effects", "packages/probity-records"],
     }
     locks = {p.parent.name for p in (Path(__file__).parents[1] / "packages").glob("*/uv.lock")}
-    assert locks == {"probity-effects"}
+    assert locks == {"probity-effects", "probity-records"}
 
 
 def test_a_hatch_dynamic_version_is_read_from_its_file(tmp_path):
