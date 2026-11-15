@@ -153,8 +153,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/execution_evidence.py",
-      "bytes": 3857,
-      "sha256": "9c786c4458c3726c809d1500889bdfec244cccd137ed36b330bbe00cfd649669"
+      "bytes": 4158,
+      "sha256": "214c2ebdf4d655cc61f2555638a9d0b2f77d801665d42436b4f44f729414c31c"
     },
     {
       "path": "src/agent_evidence_verify/adapters/jcs_canonical.py",
@@ -253,8 +253,8 @@
     },
     {
       "path": "src/agent_evidence_verify/execution_evidence.py",
-      "bytes": 70179,
-      "sha256": "00a324bdb9810b071d5838cbae5fa362a4aa843cd7fba10fbbaf39ea26a31315"
+      "bytes": 71607,
+      "sha256": "1a565c61d7c187a4e9936b93290b22b200c4870c9332d035107093ee0c27971c"
     },
     {
       "path": "src/agent_evidence_verify/index.py",
@@ -268,8 +268,8 @@
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
-      "bytes": 3467,
-      "sha256": "4ae62fb2c3027d4946564e3134f37f895d7c3b93d81cf9c1585fe219471209f6"
+      "bytes": 3889,
+      "sha256": "31e0e26102191c1cec968ae2cf53287ad65ea6febcc3fae5f3bfb920ecde1f47"
     },
     {
       "path": "src/agent_evidence_verify/vocabulary.py",

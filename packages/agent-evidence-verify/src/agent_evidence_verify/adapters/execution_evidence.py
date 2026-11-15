@@ -43,7 +43,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     if not isinstance(artifacts, dict) or not isinstance(assessments, dict):
         raise CaseError("artifacts and assessments: expected objects")
     assessment = _object(assessments.get(case_id), "assessment",
-                         {"claim_type", "statement"}, {"substrate_observation_keys"})
+                         {"claim_type", "statement"}, {"substrate_observation_keys", "allow_published_test_keys"})
     if assessment["claim_type"] != CLAIM_TYPE:
         raise CaseError("unsupported claim_type")
     statement_id = _string(assessment["statement"], "statement")
@@ -54,15 +54,19 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
         keys = [aee.load_public_key(raw) for raw in raw_keys]
     except ValueError as exc:
         raise CaseError("substrate_observation_keys: not an Ed25519 public key") from exc
+    allow_published = assessment.get("allow_published_test_keys", False)
+    if not isinstance(allow_published, bool):
+        raise CaseError("allow_published_test_keys: expected true or false")
     data, binding = _artifact(artifact_root, artifacts[statement_id], f"artifacts.{statement_id}")
     scope = {"claim_type": CLAIM_TYPE, "predicate_type": aee.PREDICATE_TYPE,
              "statement": {"id": statement_id, "artifact": binding},
-             "substrate_observation_keys": [key.hex() for key in raw_keys], "limit": LIMIT}
+             "substrate_observation_keys": [key.hex() for key in raw_keys],
+             "allow_published_test_keys": allow_published, "limit": LIMIT}
     result = {"schema_version": "probity-decision/v1", "case_id": case_id,
               "claim_type": CLAIM_TYPE, "scope": scope, "checks": []}
     if data is None:
         return {**result, "decision": "not_established", "reason": "statement_unavailable"}
-    report = aee.verify(data, keys)
+    report = aee.verify(data, keys, allow_published)
     valid = report.verdict == aee.VALID
     result["checks"] = [{"id": "execution_evidence", "status": "met" if valid else "failed",
                          **report.as_dict()}]
