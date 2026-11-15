@@ -9,7 +9,7 @@
 members = ["packages/*"]
 # packages/probity-effects is not a member of the one lock: its tests install the agent frameworks its adapters
 # drive (LangGraph first), and their dependency trees would bind every member's resolution. It keeps its own lock.
-exclude = ["packages/probity-effects"]
+exclude = ["packages/probity-effects", "packages/probity-records"]
 
 [tool.uv.sources]
 # Members that depend on each other resolve to the tree beside them, so every change is tested against
@@ -46,3 +46,6 @@ extend-exclude = ["packages/*/vectors-*/cases", "packages/agent-evidence-observe
 # A resource directory read with importlib.resources, not an importable module;
 # its hyphenated name is part of the published layout.
 "packages/agent-evidence-verify/examples/source-coverage/__init__.py" = ["N999"]
+# The records package's contract is that every malformed input raises ValueError, which its
+# callers and the shared vectors catch; TypeError would change that contract.
+"packages/probity-records/src/**" = ["TRY004"]

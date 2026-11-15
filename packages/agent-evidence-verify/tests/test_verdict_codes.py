@@ -56,8 +56,33 @@ def test_an_attested_report_carries_no_code_and_an_unkeyed_one_is_not_publicly_v
         serialization.Encoding.Raw, serialization.PublicFormat.Raw))
     member = next(m for m in MEMBERS.values() if m["expected"].get("tierWithPinnedKey") == ["attested"])
     data = (CORPUS / member["file"]).read_bytes()
-    assert aee.verify(data, [key]).as_dict()["verdict_code"] is None
+    assert aee.verify(data, [key], allow_published_test_keys=True).as_dict()["verdict_code"] is None
     assert aee.verify(data).as_dict()["verdict_code"] == "NOT_PUBLICLY_VERIFIABLE"
+
+
+def test_a_published_test_key_is_not_publicly_verifiable_unless_declined_by_name() -> None:
+    seed = hashlib.sha256(b"in-toto-aee-test-key/substrate-observation-test/v1").digest()
+    key = aee.load_public_key(Ed25519PrivateKey.from_private_bytes(seed).public_key().public_bytes(
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw))
+    member = next(m for m in MEMBERS.values() if m["expected"].get("tierWithPinnedKey") == ["attested"])
+    data = (CORPUS / member["file"]).read_bytes()
+    refused = aee.verify(data, [key]).as_dict()
+    assert refused["tiers"] == ["attested"]
+    assert refused["policy_codes"] == ["observation-key-published"]
+    assert refused["verdict_code"] == "NOT_PUBLICLY_VERIFIABLE"
+    declined = aee.verify(data, [key], allow_published_test_keys=True).as_dict()
+    assert declined["policy_codes"] == []
+    assert declined["verdict_code"] is None
+
+
+def test_a_key_that_is_not_a_published_seed_is_not_refused() -> None:
+    other = Ed25519PrivateKey.from_private_bytes(hashlib.sha256(b"a private key").digest())
+    key = aee.load_public_key(other.public_key().public_bytes(
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw))
+    member = next(m for m in MEMBERS.values() if m["expected"].get("tierWithPinnedKey") == ["attested"])
+    report = aee.verify((CORPUS / member["file"]).read_bytes(), [key]).as_dict()
+    assert report["policy_codes"] == []
+    assert report["verdict_code"] == "NOT_PUBLICLY_VERIFIABLE"
 
 
 def test_every_code_the_corpus_names_is_classified() -> None:

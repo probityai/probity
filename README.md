@@ -3,7 +3,7 @@
 <p>
 <a href="https://github.com/probityai/probity/actions/workflows/ci.yml"><img height="16" alt="CI" src="https://github.com/probityai/probity/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://pypi.org/project/agent-evidence-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/agent-evidence-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white&cacheSeconds=3600"></a>
-<a href="https://pepy.tech/projects/agent-evidence-verify"><img height="16" alt="Downloads" src="assets/badges/dl-verifier-total.svg"></a>
+<a href="https://pepy.tech/projects/agent-evidence-verify"><img height="16" alt="Downloads" src="assets/badges/dl-pypi-agent-evidence-verify.svg"></a>
 <a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="assets/badges/license.svg"></a>
 <a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="assets/badges/stars.svg"></a>
 </p>
@@ -58,7 +58,8 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | package | registry | version | downloads |
 | --- | --- | :---: | :---: |
 | [probityai](packages/probityai/README.md) | PyPI | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.1** | [![agent-evidence-verify downloads](assets/badges/dl-verifier-total.svg)](https://pepy.tech/projects/agent-evidence-verify) |
+| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.1** | [![agent-evidence-verify downloads](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |
+| [probity&#8209;verify](packages/probity-verify/README.md) | PyPI | **0.5.1** | [![probity-verify downloads](assets/badges/dl-pypi-probity-verify.svg)](https://pepy.tech/projects/probity-verify) |
 | [probity&#8209;ratchet](packages/probity-ratchet/README.md) | PyPI | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
 | [probity&#8209;ratchet&#8209;cases](packages/probity-ratchet-cases/README.md) | PyPI | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
 | [probity&#8209;effects](packages/probity-effects/README.md) | PyPI | **0.2.0** | - |
@@ -66,6 +67,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 
 - `probityai`: the `probityai` command; `probityai verify` today
 - `agent-evidence-verify`: offline verifier: supported, contradicted or not established
+- `probity-verify`: the former name of `agent-evidence-verify`; installs it
 - `probity-ratchet`: signed, replayable receipts for improving an agent against held-out cases
 - `probity-ratchet-cases`: agent task cases graded on final state: a simulated company, tool faults, exact graders
 - `probity-effects`: keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios
