@@ -31,7 +31,6 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
-import json
 import re
 from pathlib import Path
 from typing import Any
@@ -40,6 +39,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import CaseError, _digest, _object, _string
+from ..ijson import IJSONError, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "token_grant_receipt/v1"
@@ -80,24 +80,10 @@ def _b64(text: Any, label: str) -> bytes:
     raise CaseError(f"{label}: expected canonical padded base64")
 
 
-def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in out:
-            raise CaseError(f"repeated JSON member {key!r}")
-        out[key] = value
-    return out
-
-
-def _refuse(text: str) -> Any:
-    raise CaseError(f"JSON value {text!r} is outside the receipt profile")
-
-
 def _strict_json(data: bytes, label: str) -> Any:
     try:
-        return json.loads(data.decode("utf-8"), object_pairs_hook=_no_duplicates,
-                          parse_float=_refuse, parse_constant=_refuse)
-    except (UnicodeDecodeError, ValueError) as error:
+        return parse_ijson(data, integers_only=True)
+    except IJSONError as error:
         raise CaseError(f"{label}: not strict UTF-8 JSON") from error
 
 

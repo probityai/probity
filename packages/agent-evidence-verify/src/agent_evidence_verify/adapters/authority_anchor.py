@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 from ..common import CaseError, _artifact, _digest, _instant, _object, _string
+from ..ijson import IJSONError, parse_ijson
 
 CLAIM_TYPE = "authority_anchor/v1"
 
@@ -27,18 +27,9 @@ def _https_url(value: Any, label: str) -> str:
 
 def _capture(data: bytes) -> dict:
     """Read a bound JSON capture without accepting ambiguous object keys."""
-    def unique(pairs: list[tuple[str, Any]]) -> dict:
-        value: dict = {}
-        for key, item in pairs:
-            if key in value:
-                raise ValueError("duplicate JSON key")
-            value[key] = item
-        return value
-
     try:
-        value = json.loads(data.decode("utf-8"), object_pairs_hook=unique,
-                           parse_constant=lambda _: (_ for _ in ()).throw(ValueError()))
-    except (UnicodeDecodeError, ValueError) as exc:
+        value = parse_ijson(data)
+    except IJSONError as exc:
         raise CaseError("capture is not unambiguous UTF-8 JSON") from exc
     return _object(value, "capture", {"schema_version", "request_url", "captured_at",
                                       "status", "body"})

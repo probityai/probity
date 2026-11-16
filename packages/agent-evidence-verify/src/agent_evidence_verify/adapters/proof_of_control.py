@@ -24,6 +24,8 @@ import hashlib
 import json
 import re
 
+from ..ijson import parse_ijson
+
 # ------------------------------------------------------------------ ed25519
 _P = 2**255 - 19
 _L = 2**252 + 27742317777372353535851937790883648493
@@ -526,7 +528,7 @@ def adjudicate(case, policy, artifact_root):
     if source is None:
         return decision(case_id, CLAIM_TYPE, scope, "not_established", "input_unavailable")
     try:
-        artifact = json.loads(source.decode("utf-8"))
+        artifact = parse_ijson(source)
         code = judge(artifact)
     except (ValueError, KeyError, TypeError) as exc:
         raise CaseError(f"assessment.input: not a Proof-of-Control artifact: {exc}") from exc
@@ -542,7 +544,7 @@ def main() -> int:
     """Read one artifact on stdin and print its verdict as one JSON line."""
     import sys
     try:
-        code = judge(json.loads(sys.stdin.read()))
+        code = judge(parse_ijson(sys.stdin.buffer.read()))
     except (ValueError, KeyError, TypeError) as exc:
         print(json.dumps({"result": "error", "code": str(exc)}))
         return 2

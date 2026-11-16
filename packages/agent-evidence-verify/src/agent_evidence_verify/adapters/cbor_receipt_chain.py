@@ -36,7 +36,6 @@ tail leaves a valid prefix); a required effect with no effect member gives ``not
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +43,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import CaseError, _object, _string
+from ..ijson import IJSONError, describe, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "cbor_receipt_chain/v1"
@@ -136,9 +136,9 @@ def _profile(raw: bytes | None) -> dict:
     if raw is None:
         raise CaseError("profile: the artifact is unavailable")
     try:
-        value = json.loads(raw)
-    except ValueError as exc:
-        raise CaseError("profile: not JSON") from exc
+        value = parse_ijson(raw)
+    except IJSONError as exc:
+        raise CaseError(f"profile: not JSON ({describe(exc)})") from exc
     profile = _object(value, "profile", {"schema_version", "profile_id", "line_member",
                                          "signature_context_hex", "outer", "key_form", "fields",
                                          "allow_outcome"})
@@ -204,8 +204,8 @@ def _lines(data: bytes, profile: dict) -> list[str]:
             continue
         if profile["line_member"] is not None:
             try:
-                text = json.loads(text)[profile["line_member"]]
-            except (ValueError, KeyError, TypeError) as exc:
+                text = parse_ijson(text)[profile["line_member"]]
+            except (IJSONError, KeyError, TypeError) as exc:
                 raise Malformed(f"line {number}: no {profile['line_member']} member") from exc
         if not isinstance(text, str):
             raise Malformed(f"line {number}: receipt is not a string")
