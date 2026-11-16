@@ -307,11 +307,12 @@ def test_an_inclusion_proof_counts_in_json_integers_only(field: str, value) -> N
 
 # ---- the first consumer: proof_of_control/v1 -----------------------------------------------------
 
-def _poc(tmp_path: Path, key_authority) -> dict:
-    from agent_evidence_verify.adapters import proof_of_control
+#: Read from the checkout, never from the installed package: the floor lane runs these tests
+#: against an installed wheel, which carries no ``examples/``.
+POC_EXAMPLE = Path(__file__).resolve().parents[1] / "examples/corpus-routes/proof-of-control/artifact.json"
 
-    artifact = json.loads((Path(proof_of_control.__file__).parents[3]
-                           / "examples/corpus-routes/proof-of-control/artifact.json").read_text())
+def _poc(tmp_path: Path, key_authority) -> dict:
+    artifact = json.loads(POC_EXAMPLE.read_text())
     data = json.dumps(artifact).encode()
     (tmp_path / "artifact.json").write_bytes(data)
     assessment = {"claim_type": "proof_of_control/v1", "input": "artifact"}
@@ -338,10 +339,7 @@ def test_a_signed_artifact_agrees_only_under_the_consumers_key_authority(tmp_pat
 
 def _poc_with(tmp_path: Path, key_authority: dict, extra: dict[str, bytes]) -> tuple[dict, bytes, dict]:
     """The example chain judged under ``key_authority``, with ``extra`` bound as case artifacts."""
-    from agent_evidence_verify.adapters import proof_of_control
-
-    artifact = json.loads((Path(proof_of_control.__file__).parents[3]
-                           / "examples/corpus-routes/proof-of-control/artifact.json").read_text())
+    artifact = json.loads(POC_EXAMPLE.read_text())
     files = {"artifact": json.dumps(artifact).encode(), **extra}
     bindings = {}
     for name, data in files.items():
