@@ -4,6 +4,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "four principals, user credential names the agent in act: strict",
     "expected": {
       "act": "act-chain",
@@ -27,6 +28,18 @@
         }
       ]
     },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
     "pins": {
       "https://idp.example.com/realms/agents": [
         "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
@@ -125,6 +138,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -137,6 +151,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "no act on the user credential: accepted, graded basic, act-absent",
     "expected": {
       "act": "act-absent",
@@ -160,6 +175,18 @@
         }
       ]
     },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
     "pins": {
       "https://idp.example.com/realms/agents": [
         "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
@@ -255,6 +282,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -267,6 +295,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "no sponsor: accepted, basic",
     "expected": {
       "act": "act-chain",
@@ -288,6 +317,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -365,6 +406,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -377,6 +419,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "thumbprint does not recompute from the key",
     "expected": {
       "act": "act-chain",
@@ -401,6 +444,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -500,6 +555,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -512,6 +568,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:20:00Z",
+    "audiences": {},
     "description": "credential expired at the record time",
     "expected": {
       "act": "act-chain",
@@ -540,6 +597,18 @@
         }
       ]
     },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
     "pins": {
       "https://idp.example.com/realms/agents": [
         "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
@@ -638,6 +707,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -650,6 +720,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "issuer missing",
     "expected": {
       "act": "act-chain",
@@ -675,6 +746,18 @@
         }
       ]
     },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
     "pins": {
       "https://idp.example.com/realms/agents": [
         "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
@@ -772,6 +855,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -784,6 +868,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "issuer not pinned by the auditor",
     "expected": {
       "act": "act-chain",
@@ -811,6 +896,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {},
     "principals": {
@@ -906,6 +1003,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -918,6 +1016,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "key not pinned for the issuer",
     "expected": {
       "act": "act-chain",
@@ -945,6 +1044,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -1044,6 +1155,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -1056,6 +1168,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "act names an agent other than the agent principal",
     "expected": {
       "act": "act-chain",
@@ -1080,6 +1193,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -1179,6 +1304,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -1191,6 +1317,7 @@
       "carol@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "approver principal did not sign an approval",
     "expected": {
       "act": "act-chain",
@@ -1215,6 +1342,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -1314,6 +1453,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -1326,6 +1466,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "kid differs from the key",
     "expected": {
       "act": "act-chain",
@@ -1350,6 +1491,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -1449,6 +1602,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -1461,6 +1615,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "private member in the key",
     "expected": {
       "act": "act-chain",
@@ -1485,6 +1640,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -1585,6 +1752,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -1597,6 +1765,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T11:19:59Z",
+    "audiences": {},
     "description": "credential not yet valid",
     "expected": {
       "act": "act-chain",
@@ -1624,6 +1793,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -1723,6 +1904,7 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
@@ -1735,6 +1917,7 @@
       "bob@example.com"
     ],
     "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
     "description": "agent principal missing",
     "expected": {
       "act": "act-chain",
@@ -1758,6 +1941,18 @@
           "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
         }
       ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
     },
     "pins": {
       "https://idp.example.com/realms/agents": [
@@ -1835,6 +2030,1259 @@
         "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
       }
     },
+    "revocations": [],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS11c2VyIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.s0dhSKHofAt0AlYzY-rcxrHByVXfs9imDIg9s0buwJJNKOzLv53OEiujbGQSOPCODvrgPBilmDURq3M7Eh1ACA"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
+    "description": "act names the agent's subject, but the agent principal is another pinned issuer's",
+    "expected": {
+      "act": "act-chain",
+      "grade": null,
+      "problems": [
+        "principal_act_issuer_differs"
+      ],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": null
+      }
+    },
+    "id": "ID15",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      },
+      "https://partner-idp.example.net": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "p1",
+            "kty": "OKP",
+            "x": "cRPOmqxwmIO4IpcDpgwqm9CWMEWbloLH-Nt7NpNK_rs"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ],
+      "https://partner-idp.example.net": [
+        "3oY6ycww__8Ajg8Isf4Fl7m3r4JFusgaqNcEiS11U_g"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://partner-idp.example.net",
+        "jwksDigest": "1de6411a976d951a59ea11d57eaf8118a02eb1083ea7054f9845ca92dbc74f82",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "p1",
+          "kty": "OKP",
+          "x": "cRPOmqxwmIO4IpcDpgwqm9CWMEWbloLH-Nt7NpNK_rs"
+        },
+        "keyThumbprint": "3oY6ycww__8Ajg8Isf4Fl7m3r4JFusgaqNcEiS11U_g",
+        "kid": "p1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "a8d933480c28546ea53ecb6716aa26cae69a8cc8f6c6ed946ca25a1c355573db"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
+      }
+    },
+    "revocations": [],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6InAxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9wYXJ0bmVyLWlkcC5leGFtcGxlLm5ldCIsImp0aSI6Imp0aS1hZ2VudC1wYXJ0bmVyIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.7pTtriVRABNMeSiJz6eosa00YANS-JdQ27AHlnB3A09kEcvEr51sJeHFavDs4cwcx0YgP0wDyTfyClpw-EnKBg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS11c2VyIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.s0dhSKHofAt0AlYzY-rcxrHByVXfs9imDIg9s0buwJJNKOzLv53OEiujbGQSOPCODvrgPBilmDURq3M7Eh1ACA"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
+    "description": "act carries iss naming the agent principal's issuer (cross-domain): strict",
+    "expected": {
+      "act": "act-chain",
+      "grade": "strict",
+      "problems": [],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": null
+      }
+    },
+    "id": "ID16",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      },
+      "https://partner-idp.example.net": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "p1",
+            "kty": "OKP",
+            "x": "cRPOmqxwmIO4IpcDpgwqm9CWMEWbloLH-Nt7NpNK_rs"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ],
+      "https://partner-idp.example.net": [
+        "3oY6ycww__8Ajg8Isf4Fl7m3r4JFusgaqNcEiS11U_g"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://partner-idp.example.net",
+        "jwksDigest": "1de6411a976d951a59ea11d57eaf8118a02eb1083ea7054f9845ca92dbc74f82",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "p1",
+          "kty": "OKP",
+          "x": "cRPOmqxwmIO4IpcDpgwqm9CWMEWbloLH-Nt7NpNK_rs"
+        },
+        "keyThumbprint": "3oY6ycww__8Ajg8Isf4Fl7m3r4JFusgaqNcEiS11U_g",
+        "kid": "p1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "a8d933480c28546ea53ecb6716aa26cae69a8cc8f6c6ed946ca25a1c355573db"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "iss": "https://partner-idp.example.net",
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "be9c1cb068bbe5e41d66166520e66bd8a3ea056caa1a8dfe621de716d355f8b3"
+      }
+    },
+    "revocations": [],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6InAxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9wYXJ0bmVyLWlkcC5leGFtcGxlLm5ldCIsImp0aSI6Imp0aS1hZ2VudC1wYXJ0bmVyIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.7pTtriVRABNMeSiJz6eosa00YANS-JdQ27AHlnB3A09kEcvEr51sJeHFavDs4cwcx0YgP0wDyTfyClpw-EnKBg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsiaXNzIjoiaHR0cHM6Ly9wYXJ0bmVyLWlkcC5leGFtcGxlLm5ldCIsInN1YiI6ImFnZW50LXJlZnVuZHMifSwiYXVkIjoiaHR0cHM6Ly9hcGkuZXhhbXBsZS5jb20iLCJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiZXhwIjoxNzk0MTQwNDAwLCJpYXQiOjE3OTQxMzY4MDAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJqdGkiOiJqdGktdXNlciIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn0.CRPqWiILg-fUW0Bwsl3giNgsjwTSe5nBmjsLlPN8PhNvdTDpbvICrJKiDAZ5cfCvB1hhcvitmCuRW2WnyZU9Cw"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
+    "description": "the issuer's signing key was revoked before the record time, still pinned",
+    "expected": {
+      "act": "act-chain",
+      "grade": null,
+      "problems": [
+        "principal_user:principal_key_revoked",
+        "principal_agent:principal_key_revoked",
+        "principal_sponsor:principal_key_revoked",
+        "principal_approver:principal_key_revoked"
+      ],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": null
+      }
+    },
+    "id": "ID17",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "43964126633c4f7d2d9317be28506d752af587effca421e5226e0cb683001d2f"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
+      }
+    },
+    "revocations": [
+      {
+        "id": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kind": "key",
+        "revokedAt": "2026-11-08T11:30:00Z"
+      }
+    ],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS11c2VyIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.s0dhSKHofAt0AlYzY-rcxrHByVXfs9imDIg9s0buwJJNKOzLv53OEiujbGQSOPCODvrgPBilmDURq3M7Eh1ACA"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
+    "description": "the issuer's signing key was revoked after the record time: strict",
+    "expected": {
+      "act": "act-chain",
+      "grade": "strict",
+      "problems": [],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": null
+      }
+    },
+    "id": "ID18",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "43964126633c4f7d2d9317be28506d752af587effca421e5226e0cb683001d2f"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
+      }
+    },
+    "revocations": [
+      {
+        "id": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kind": "key",
+        "revokedAt": "2026-11-08T12:30:00Z"
+      }
+    ],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS11c2VyIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.s0dhSKHofAt0AlYzY-rcxrHByVXfs9imDIg9s0buwJJNKOzLv53OEiujbGQSOPCODvrgPBilmDURq3M7Eh1ACA"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
+    "description": "the sponsor was suspended before the record time",
+    "expected": {
+      "act": "act-chain",
+      "grade": null,
+      "problems": [
+        "principal_sponsor:principal_revoked"
+      ],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": null
+      }
+    },
+    "id": "ID19",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "43964126633c4f7d2d9317be28506d752af587effca421e5226e0cb683001d2f"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
+      }
+    },
+    "revocations": [
+      {
+        "id": "https://idp.example.com/realms/agents#owner@example.com",
+        "kind": "principal",
+        "revokedAt": "2026-11-01T00:00:00Z"
+      }
+    ],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS11c2VyIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.s0dhSKHofAt0AlYzY-rcxrHByVXfs9imDIg9s0buwJJNKOzLv53OEiujbGQSOPCODvrgPBilmDURq3M7Eh1ACA"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {
+      "agent": [
+        "https://api.other-tenant.example.org"
+      ]
+    },
+    "description": "the agent's credential was minted for another deployment's audience",
+    "expected": {
+      "act": "act-chain",
+      "grade": null,
+      "problems": [
+        "principal_agent:principal_audience_not_pinned"
+      ],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": null
+      }
+    },
+    "id": "ID20",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "43964126633c4f7d2d9317be28506d752af587effca421e5226e0cb683001d2f"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
+      }
+    },
+    "revocations": [],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS11c2VyIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.s0dhSKHofAt0AlYzY-rcxrHByVXfs9imDIg9s0buwJJNKOzLv53OEiujbGQSOPCODvrgPBilmDURq3M7Eh1ACA"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {
+      "agent": [
+        "https://api.example.com"
+      ],
+      "approver": [
+        "console"
+      ],
+      "sponsor": [
+        "console"
+      ],
+      "user": [
+        "https://api.example.com"
+      ]
+    },
+    "description": "every credential's audience is one the auditor pins for its role: strict",
+    "expected": {
+      "act": "act-chain",
+      "grade": "strict",
+      "problems": [],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": null
+      }
+    },
+    "id": "ID21",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "43964126633c4f7d2d9317be28506d752af587effca421e5226e0cb683001d2f"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
+      }
+    },
+    "revocations": [],
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLXNwb25zb3IiLCJzdWIiOiJvd25lckBleGFtcGxlLmNvbSJ9.BgoMoi5tjMP3lcWOfDdUl6U_I8VZWlmF6i7SganB6MJ9ExNKvAEkPkbJlSVEi2R3ryYfmOBPSMJUkoBfQRV8Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS11c2VyIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.s0dhSKHofAt0AlYzY-rcxrHByVXfs9imDIg9s0buwJJNKOzLv53OEiujbGQSOPCODvrgPBilmDURq3M7Eh1ACA"
+    }
+  },
+  {
+    "approvers": [
+      "bob@example.com"
+    ],
+    "at": "2026-11-08T12:00:00Z",
+    "audiences": {},
+    "description": "act carries iss naming another issuer than the agent principal's",
+    "expected": {
+      "act": "act-chain",
+      "grade": null,
+      "problems": [
+        "principal_act_issuer_differs"
+      ],
+      "tokens": {
+        "agent": null,
+        "approver": null,
+        "sponsor": null,
+        "user": "token_claim_mismatch:act"
+      }
+    },
+    "id": "ID22",
+    "jwks": {
+      "keys": [
+        {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        }
+      ]
+    },
+    "jwksByIssuer": {
+      "https://idp.example.com/realms/agents": {
+        "keys": [
+          {
+            "crv": "Ed25519",
+            "kid": "k1",
+            "kty": "OKP",
+            "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+          }
+        ]
+      }
+    },
+    "pins": {
+      "https://idp.example.com/realms/agents": [
+        "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
+      ]
+    },
+    "principals": {
+      "agent": {
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "jwt-access-token",
+        "subject": "agent-refunds",
+        "tokenDigest": "43964126633c4f7d2d9317be28506d752af587effca421e5226e0cb683001d2f"
+      },
+      "approver": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "bob@example.com",
+        "tokenDigest": "dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323"
+      },
+      "sponsor": {
+        "audience": [
+          "console"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "console",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-token",
+        "subject": "owner@example.com",
+        "tokenDigest": "75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e"
+      },
+      "user": {
+        "act": {
+          "iss": "https://partner-idp.example.net",
+          "sub": "agent-refunds"
+        },
+        "audience": [
+          "https://api.example.com"
+        ],
+        "authMethod": "private_key_jwt",
+        "clientId": "agent-refunds",
+        "expiresAt": "2026-11-08T12:20:00Z",
+        "issuedAt": "2026-11-08T11:20:00Z",
+        "issuer": "https://idp.example.com/realms/agents",
+        "jwksDigest": "5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af",
+        "key": {
+          "crv": "Ed25519",
+          "kid": "k1",
+          "kty": "OKP",
+          "x": "AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg"
+        },
+        "keyThumbprint": "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds",
+        "kid": "k1",
+        "source": "id-jag",
+        "subject": "alice@example.com",
+        "tokenDigest": "f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf"
+      }
+    },
+    "revocations": [],
     "tokens": {
       "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLmNvbSIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTQxNDA0MDAsImlhdCI6MTc5NDEzNjgwMCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsImp0aSI6Imp0aS1hZ2VudCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.JgWTZtTT_oRZc2foeDtxXAaKL5EeGwb4vO_UgnpOn32cjN4BRH22apP3F8PaDAyCkE-CMw1U_Lm4BlxOgUAoDg",
       "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjb25zb2xlIiwiY2xpZW50X2lkIjoiY29uc29sZSIsImV4cCI6MTc5NDE0MDQwMCwiaWF0IjoxNzk0MTM2ODAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwianRpIjoianRpLWFwcHJvdmVyIiwic3ViIjoiYm9iQGV4YW1wbGUuY29tIn0.I3dEaOFHlghAUPMRJ69oo2sl3tF1FF6ZD27Bg-u-T1aUUgyGn00L7i3PchfeBcdcPKHCnEovHHgqu-3CRF58AA",

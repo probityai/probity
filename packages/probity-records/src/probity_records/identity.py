@@ -9,8 +9,24 @@ tokenDigest, issuedAt, expiresAt, kid, key, keyThumbprint, jwksDigest; ``tenant`
 
 Refused: a missing or unknown member, a thumbprint that does not recompute from ``key``, a ``kid``
 mismatch, a credential not valid at the record's time, an issuer the auditor did not pin or a key
-whose thumbprint the auditor did not pin for that issuer, an ``act`` chain that names an agent other
-than the agent principal, and an approver principal who is not among the approvals the record counts.
+whose thumbprint the auditor did not pin for that issuer, a key or principal revoked at or before the
+record's time, a credential whose audience is not one the auditor pinned for that role, an ``act``
+chain that names an agent other than the agent principal or names it in another issuer's namespace,
+and an approver principal who is not among the approvals the record counts.
+
+Subjects are unique only within their issuer (OpenID Connect Core 1.0, section 2: ``sub`` is "locally
+unique and never reassigned within the Issuer"). So the actor an ``act`` claim names is read in the
+namespace of the ``act``'s own ``iss`` when it carries one, else of the token's issuer (RFC 8693,
+section 4.1), and it matches the agent principal only when the agent principal comes from that same
+issuer: an agent from another pinned issuer that happens to reuse the subject string is not the
+delegated agent.
+
+Revocation (``revoked(kind, id, at)``, fed by the auditor's signed revocation lists): an identity key
+is revoked under kind ``key`` with its RFC 7638 thumbprint as the id, so a key the auditor still pins
+to verify old records cannot sign a record made after its revocation; a principal (a suspended
+sponsor, a disabled agent or user) is revoked under kind ``principal`` with the id
+``<issuer>#<subject>`` (an OAuth issuer identifier carries no fragment, RFC 8414 section 2, so the
+id is unambiguous).
 
 Graded, never refused, on delegation: ``act-chain`` when the user's credential names the agent in
 ``act``, ``act-absent`` when it carries no ``act``. ``strict`` conformance needs all four principals
@@ -26,7 +42,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
@@ -45,6 +61,11 @@ OPTIONAL = ("tenant", "act")
 SOURCES = ("jwt-access-token", "id-token", "jwt-assertion", "id-jag")
 AUTH_METHODS = ("none", "client_secret_post", "client_secret_basic", "client_secret_jwt", "private_key_jwt",
                 "tls_client_auth", "self_signed_tls_client_auth")
+#: The JOSE ``typ`` values that name one credential type; a token whose ``typ`` names another source
+#: than the principal states is refused (an ID-JAG is an assertion for an authorization server's
+#: token endpoint, never an access token; an RFC 9068 access token is never a login ID token).
+TYP_SOURCE = {"oauth-id-jag+jwt": "id-jag", "at+jwt": "jwt-access-token"}
+Revoked = Callable[[str, str, str], bool]
 THUMBPRINT_MEMBERS = {"RSA": ("e", "kty", "n"), "EC": ("crv", "kty", "x", "y"), "OKP": ("crv", "kty", "x")}
 
 
@@ -99,12 +120,20 @@ def _act_subjects(act: Any) -> list[str] | None:
     while act is not None:
         if not isinstance(act, dict) or not isinstance(act.get("sub"), str):
             return None
+        if "iss" in act and not isinstance(act["iss"], str):
+            return None
         out.append(act["sub"])
         act = act.get("act")
     return out
 
 
-def check_principal(p: Any, at: str, pins: Mapping[str, Any]) -> str | None:
+def principal_id(p: Mapping[str, Any]) -> str:
+    """The revocation id of a principal: ``<issuer>#<subject>``."""
+    return f"{p['issuer']}#{p['subject']}"
+
+
+def check_principal(p: Any, at: str, pins: Mapping[str, Any], revoked: Revoked | None = None,
+                    audiences: Any = None) -> str | None:
     problem = _shape(p)
     if problem:
         return problem
@@ -129,21 +158,30 @@ def check_principal(p: Any, at: str, pins: Mapping[str, Any]) -> str | None:
     pinned = pins.get(p["issuer"])
     if pinned is None:
         return "principal_issuer_untrusted"
-    if thumb not in pinned:
+    if isinstance(pinned, str) or thumb not in pinned:
         return "principal_key_not_pinned"
+    if revoked is not None and revoked("key", thumb, at):
+        return "principal_key_revoked"
+    if revoked is not None and revoked("principal", principal_id(p), at):
+        return "principal_revoked"
+    if audiences is not None and not set(map(str, p["audience"])) & set(audiences):
+        return "principal_audience_not_pinned"
     if "act" in p and _act_subjects(p["act"]) is None:
         return "principal_act_malformed"
     return None
 
 
-def check_principals(block: Any, at: str, pins: Mapping[str, Any],
-                     approvers: set[str] | None = None) -> tuple[list[str], str | None]:
+def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: set[str] | None = None,
+                     revoked: Revoked | None = None,
+                     audiences: Mapping[str, Any] | None = None) -> tuple[list[str], str | None]:
     """(problems, grade) for one record's ``principals``. Grade is ``strict`` or ``basic``; None
-    when a problem refuses the block."""
+    when a problem refuses the block. ``audiences`` maps a role to the audiences the auditor pins
+    for it (its own deployment); a role it does not name is not audience-checked."""
     if not isinstance(block, dict) or not block or set(block) - set(ROLES):
         return ["principals_malformed"], None
+    auds = audiences or {}
     problems = [f"principal_{role}:{prob}" for role in ROLES if role in block
-                for prob in [check_principal(block[role], at, pins)] if prob]
+                for prob in [check_principal(block[role], at, pins, revoked, auds.get(role))] if prob]
     if "user" not in block or "agent" not in block:
         problems.append("principals_need_user_and_agent")
     if problems:
@@ -152,6 +190,8 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any],
     chain = _act_subjects(user.get("act")) if "act" in user else []
     if chain and chain[0] not in (agent["subject"], agent["clientId"]):
         return ["principal_act_names_another_agent"], None
+    if chain and agent["issuer"] != user["act"].get("iss", user["issuer"]):
+        return ["principal_act_issuer_differs"], None
     if "approver" in block and approvers is not None and block["approver"]["subject"] not in approvers:
         return ["principal_approver_not_an_approval_signer"], None
     strict = chain and all(r in block for r in ROLES)
@@ -190,9 +230,11 @@ def _iso(seconds: Any) -> str:
     return datetime.fromtimestamp(int(seconds), UTC).isoformat().replace("+00:00", "Z")
 
 
-def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> str | None:
+def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: str | None = None) -> str | None:
     """None when ``token`` is the credential ``p`` names, its JWS verifies under the key ``p`` names,
-    that key is in the JWKS snapshot whose digest ``p`` carries, and every stated claim matches."""
+    that key is in the JWKS snapshot whose digest ``p`` carries, its ``typ`` names no other credential
+    type than ``p``'s source, and every stated claim matches. With ``at`` (the record's time), a
+    token whose ``nbf`` is after ``at`` is refused as not yet valid (RFC 7519, section 4.1.5)."""
     if sha256_hex(token.encode("ascii")) != p.get("tokenDigest"):
         return "token_digest_mismatch"
     if jwks_digest(jwks) != p.get("jwksDigest"):
@@ -208,6 +250,9 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> s
         return "token_kid_mismatch"
     if p.get("source") == "id-jag" and header.get("typ") != "oauth-id-jag+jwt":
         return "token_typ_not_id_jag"
+    typ = str(header.get("typ", "")).lower().removeprefix("application/")
+    if TYP_SOURCE.get(typ, p.get("source")) != p.get("source"):
+        return f"token_typ_names_another_source:{TYP_SOURCE[typ]}"
     if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), unb64url(sig_b64)):
         return "token_signature_unverified"
     aud = claims.get("aud")
@@ -221,4 +266,10 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> s
             return f"token_claim_mismatch:{member}"
     if claims.get("act") != p.get("act"):
         return "token_claim_mismatch:act"
+    if at is not None and "nbf" in claims:
+        try:
+            if int(claims["nbf"]) > ts(at).timestamp():
+                return "token_not_yet_valid"
+        except (ValueError, TypeError):
+            return "token_malformed"
     return None

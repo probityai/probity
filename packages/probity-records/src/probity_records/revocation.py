@@ -5,8 +5,13 @@ A revocation list is signed by a revocation root. Lists form a chain (``seq`` ri
 ``previous`` is the digest of the prior body) and only grow: an entry, once published, stays in
 every later list unchanged, so nobody can quietly un-revoke. Entries::
 
-    {"kind": "key" | "permit" | "grant", "id": key id | permit id | grant digest,
+    {"kind": "key" | "permit" | "grant" | "principal",
+     "id": key id | permit id | grant digest | "<issuer>#<subject>",
      "revokedAt": iso, "reason": str, "successor": b64 raw Ed25519 (optional, key kind only)}
+
+A ``key`` entry also revokes an identity provider's signing key under its RFC 7638 thumbprint, and a
+``principal`` entry suspends an identity-provider principal (a sponsor, agent, user or approver) from
+``revokedAt`` on; the identity check refuses a record made at or after either.
 
 Revoking a grant revokes every grant delegated under it (the chain check refuses any chain that
 contains it). Revoking a root key with a ``successor`` rotates the root: later lists are accepted
@@ -35,7 +40,7 @@ from .grants import raw_public, ts
 
 REVOCATION_DOMAIN = b"probity-revocation-v1\x00"
 REVOCATION_LIST = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
-KINDS = ("key", "permit", "grant")
+KINDS = ("key", "permit", "grant", "principal")
 
 
 def list_digest(body: Mapping[str, Any]) -> str:
@@ -68,6 +73,7 @@ class RevocationState:
     seq: int = 0
     head: str | None = None
     issued_at: str | None = None
+    principals: Mapping[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_lists(cls, lists: Iterable[Mapping[str, Any]], root_key_ids: Iterable[str]) -> RevocationState:
@@ -91,21 +97,24 @@ class RevocationState:
         if body.get("seq") != self.seq + 1 or body.get("previous") != self.head:
             raise RevocationError(f"revocation_list_out_of_order:{body.get('seq')}")
         entries = {(e["kind"], e["id"]): e for e in body.get("entries", [])}
-        for kind, table in (("key", self.keys), ("permit", self.permits), ("grant", self.grants)):
+        for kind, table in (("key", self.keys), ("permit", self.permits), ("grant", self.grants),
+                            ("principal", self.principals)):
             for ident, at in table.items():
                 kept = entries.get((kind, ident))
                 if kept is None or kept["revokedAt"] != at:
                     raise RevocationError(f"revocation_list_drops_entry:{kind}:{ident[:12]}")
-        keys, permits, grants_ = dict(self.keys), dict(self.permits), dict(self.grants)
+        keys, permits, grants_, principals = dict(self.keys), dict(self.permits), dict(self.grants), dict(self.principals)
         roots = set(self.roots)
         for (kind, ident), e in entries.items():
-            {"key": keys, "permit": permits, "grant": grants_}[kind][ident] = e["revokedAt"]
+            if kind not in KINDS:
+                raise RevocationError(f"revocation_entry_kind_unknown:{kind}")
+            {"key": keys, "permit": permits, "grant": grants_, "principal": principals}[kind][ident] = e["revokedAt"]
             if kind == "key" and ident in roots:
                 roots.discard(ident)
                 if e.get("successor"):
                     roots.add(key_id(load_public(_unb64(e["successor"]))))
         return RevocationState(keys, permits, grants_, frozenset(roots), body["seq"], list_digest(body),
-                               body.get("issuedAt"))
+                               body.get("issuedAt"), principals)
 
     def key_revoked(self, kid: str, at: str) -> bool:
         """True when ``kid`` was revoked at or before ``at``: anything it signs from then on is refused."""
@@ -114,6 +123,11 @@ class RevocationState:
 
     def permit_revoked(self, pid: str, at: str) -> bool:
         when = self.permits.get(pid)
+        return when is not None and ts(when) <= ts(at)
+
+    def principal_revoked(self, principal: str, at: str) -> bool:
+        """True when ``principal`` (``<issuer>#<subject>``) was suspended at or before ``at``."""
+        when = self.principals.get(principal)
         return when is not None and ts(when) <= ts(at)
 
     def revoked_grants(self) -> frozenset[str]:

@@ -31,6 +31,14 @@ EXPECTED = {
     "ID12": (["principal_agent:principal_key_invalid"], None),
     "ID13": ([f"principal_{r}:principal_not_yet_valid" for r in ALL], None),
     "ID14": (["principals_need_user_and_agent"], None),
+    "ID15": (["principal_act_issuer_differs"], None),
+    "ID16": ([], "strict"),
+    "ID17": ([f"principal_{r}:principal_key_revoked" for r in ALL], None),
+    "ID18": ([], "strict"),
+    "ID19": (["principal_sponsor:principal_revoked"], None),
+    "ID20": (["principal_agent:principal_audience_not_pinned"], None),
+    "ID21": ([], "strict"),
+    "ID22": (["principal_act_issuer_differs"], None),
 }
 
 
