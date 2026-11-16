@@ -200,6 +200,111 @@ def test_a_key_in_the_pinned_log_is_authorized_and_a_proof_for_another_leaf_is_n
                      inclusion_proof=other_head).reason == "inclusion_proof_for_another_tree_head"
 
 
+# ---- break-it counter-examples (b22-verify-break, 15 Nov 2026) -----------------------------------
+
+def _doc(**members) -> bytes:
+    return json.dumps({"id": DID, **members}).encode()
+
+
+def test_a_shared_method_id_never_promotes_a_key_to_assertions() -> None:
+    """KEY sits only under verificationMethod; assertionMethod embeds the same id with OTHER.
+
+    A reader that keeps the first copy trusts KEY for assertions, one that keeps the last trusts
+    OTHER: the document is malformed, and neither key is authorised.
+    """
+    shadow = _doc(verificationMethod=[{"id": "#k1", "publicKeyJwk": _jwk(KEY)}],
+                  authentication=["#k1"],
+                  assertionMethod=[{"id": "#k1", "publicKeyJwk": _jwk(OTHER)}])
+    for key in (KEY, OTHER):
+        result = authorize(_did_authority(shadow), key, did_document=shadow)
+        assert (result.outcome, result.reason) == (UNAUTHORIZED, "did_document_malformed")
+    twice = _doc(verificationMethod=[{"id": "#k1", "publicKeyJwk": _jwk(KEY)},
+                                     {"id": f"{DID}#k1", "publicKeyJwk": _jwk(OTHER)}],
+                 assertionMethod=["#k1"])
+    for key in (KEY, OTHER):
+        assert authorize(_did_authority(twice), key, did_document=twice).reason == "did_document_malformed"
+    listless = _doc(verificationMethod={"id": "#k1"}, assertionMethod=["#k1"])
+    assert authorize(_did_authority(listless), KEY, did_document=listless).reason == "did_document_malformed"
+
+
+@pytest.mark.parametrize("marks", [{"use": "enc"}, {"key_ops": ["encrypt"]}, {"key_ops": "verify"}])
+def test_a_jwk_marked_for_another_use_does_not_sign(marks: dict) -> None:
+    document = _doc(verificationMethod=[{"id": "#k1", "publicKeyJwk": {**_jwk(KEY), **marks}}],
+                    assertionMethod=["#k1"])
+    result = authorize(_did_authority(document), KEY, did_document=document)
+    assert (result.outcome, result.reason) == (UNAUTHORIZED, "key_not_for_signing")
+    signing = _doc(verificationMethod=[{"id": "#k1", "publicKeyJwk": {**_jwk(KEY), "use": "sig",
+                                                                       "key_ops": ["verify"]}}],
+                   assertionMethod=["#k1"])
+    assert authorize(_did_authority(signing), KEY, did_document=signing).outcome == AUTHORIZED
+
+
+def test_a_key_id_is_read_relative_only_to_this_did() -> None:
+    """``did:web:other.example#k9`` is one character shorter than this DID's prefix plus ``#``."""
+    foreign = "did:web:other.example#k9"
+    document = _doc(verificationMethod=[{"id": foreign, "publicKeyJwk": _jwk(KEY)}],
+                    assertionMethod=[foreign])
+    assert authorize(_did_authority(document), KEY, kid="k9", did_document=document).reason == (
+        "key_id_mismatch")
+    assert authorize(_did_authority(document), KEY, kid=foreign, did_document=document).outcome == (
+        AUTHORIZED)
+
+
+def test_a_pin_that_names_a_key_id_needs_the_record_to_name_it() -> None:
+    authority = {"kind": "pin", "keys": [{"public_key_sha256": key_sha256(KEY), "kid": "k1"}]}
+    assert authorize(authority, KEY).reason == "key_id_mismatch"
+    either = {"kind": "pin", "keys": [{"public_key_sha256": key_sha256(KEY), "kid": "k1"},
+                                      {"public_key_sha256": key_sha256(KEY)}]}
+    assert authorize(either, KEY).outcome == AUTHORIZED
+
+
+@pytest.mark.parametrize("text", ["2026-W46-1T00:00:00Z", "20261115T000000Z", "2026-11-15T00:00:00,5Z",
+                                  "2026-11-15 00:00:00Z", "2026-11-15T00:00Z", "2026-11-15T00:00:00",
+                                  "2026-02-30T00:00:00Z", "2026-11-15T00:00:00+24:00",
+                                  "\uff12026-11-15T00:00:00Z"])
+def test_a_binding_instant_that_is_not_rfc_3339_is_the_consumers_case_error(text: str) -> None:
+    authority = {"kind": "registry", "bindings": [
+        {"subject": "agent-a", "public_key_sha256": key_sha256(KEY), "not_before": text}]}
+    with pytest.raises(CaseError):
+        authorize(authority, KEY, subject="agent-a", at=_t("2026-12-01T00:00:00+00:00"))
+
+
+def test_rfc_3339_forms_python_alone_would_misread_are_read_exactly() -> None:
+    from agent_evidence_verify.key_authority import parse_instant
+
+    assert parse_instant("2026-12-31T23:59:60Z") < parse_instant("2027-01-01T00:00:00Z")
+    assert parse_instant("2026-12-31T23:59:60Z") > parse_instant("2026-12-31T23:59:59.5Z")
+    assert parse_instant("2026-11-15t00:00:00z") == parse_instant("2026-11-15T00:00:00+00:00")
+    assert parse_instant("2026-11-15T00:00:00.1234567Z").microsecond == 123456
+    assert parse_instant("2026-11-15T01:00:00+01:00") == parse_instant("2026-11-15T00:00:00Z")
+
+
+def test_a_revoked_key_stays_revoked_under_a_second_binding() -> None:
+    authority = {"kind": "registry", "bindings": [
+        {"subject": "agent-a", "public_key_sha256": key_sha256(KEY), "not_before": "2026-01-01T00:00:00Z",
+         "revoked_at": "2026-03-01T00:00:00Z"},
+        {"subject": "agent-a", "public_key_sha256": key_sha256(KEY), "not_before": "2026-01-01T00:00:00Z"},
+    ]}
+    before = authorize(authority, KEY, subject="agent-a", at=_t("2026-02-01T00:00:00+00:00"))
+    after = authorize(authority, KEY, subject="agent-a", at=_t("2026-04-01T00:00:00+00:00"))
+    assert before.outcome == AUTHORIZED
+    assert (after.outcome, after.reason) == (UNAUTHORIZED, "key_revoked")
+    assert after.key_set_sha256 == key_set_fingerprint([])
+
+
+@pytest.mark.parametrize("field,value", [("index", True), ("index", 1.0), ("tree_size", 2.0),
+                                         ("tree_size", True)])
+def test_an_inclusion_proof_counts_in_json_integers_only(field: str, value) -> None:
+    leaves = [b"x", kt_leaf(KEY, "agent-a")]
+    root, paths = _log(leaves)
+    authority = {"kind": "kt-inclusion", "tree_size": 2, "root_sha256": root.hex()}
+    proof = {"index": 1, "tree_size": 2, "path": [h.hex() for h in paths[1]]}
+    assert authorize(authority, KEY, subject="agent-a", inclusion_proof=proof).outcome == AUTHORIZED
+    bent = {**proof, field: value}
+    result = authorize(authority, KEY, subject="agent-a", inclusion_proof=bent)
+    assert (result.outcome, result.reason) == (UNAUTHORIZED, "inclusion_proof_malformed")
+
+
 # ---- the first consumer: proof_of_control/v1 -----------------------------------------------------
 
 def _poc(tmp_path: Path, key_authority) -> dict:

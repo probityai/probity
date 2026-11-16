@@ -12,25 +12,37 @@ Authority kinds, each a JSON object in the consumer policy:
 
 ``pin``
     ``{"kind": "pin", "keys": [{"public_key_sha256": "<hex>", "kid": "<optional>"}]}``. The key is
-    authorised when the SHA-256 of its bytes is pinned (and, when the pin names a ``kid``, the
-    record's key id is that ``kid``).
+    authorised when the SHA-256 of its bytes is pinned and, when every pin of that key names a
+    ``kid``, the record names one of those key ids (a record that names no key id cannot meet a
+    pin that names one).
 ``did-web``
     ``{"kind": "did-web", "did": "did:web:...", "document": "<artifact>",
     "document_sha256": "<hex>"}``. The consumer pins the bytes of the DID document; the key is
     authorised when a verification method listed under ``assertionMethod`` carries it and, when the
     record names a key id, that method's id is the key id. A method present only under
-    ``verificationMethod`` or ``authentication`` is not authorised to make assertions.
+    ``verificationMethod`` or ``authentication`` is not authorised to make assertions. A document in
+    which two verification methods (listed or embedded under any relationship) share an id, after a
+    relative ``#fragment`` is resolved against the DID, is malformed (DID Core 1.0 section 5.2): a
+    reader that kept the first and one that kept the last would trust different keys. A JWK whose
+    ``use`` is not ``sig``, or whose ``key_ops`` omits ``verify``, does not sign.
 ``registry``
     ``{"kind": "registry", "bindings": [{"subject": "...", "public_key_sha256": "<hex>",
     "not_before": "<RFC 3339>", "not_after": "<RFC 3339, optional>",
     "revoked_at": "<RFC 3339, optional>"}]}``. The key is authorised for a subject at an instant when
-    a binding of that subject covers the instant and was not revoked at or before it.
+    a binding of that subject and key covers the instant and no binding of that subject and key was
+    revoked at or before it: revocation ends the key for the subject, so a second, unrevoked
+    binding of the same key does not bring it back. Instants are RFC 3339 ``date-time`` exactly
+    (section 5.6: ``T`` and ``Z`` in either case, a numeric offset or ``Z``, no week or ordinal
+    dates, no basic format); a leap second (``:60``) reads as the last microsecond of its minute,
+    and a fraction finer than a microsecond is truncated.
 ``kt-inclusion``
     ``{"kind": "kt-inclusion", "tree_size": n, "root_sha256": "<hex>"}``. The consumer pins a
     transparency-log tree head; the case supplies an RFC 6962 inclusion proof
     ``{"index": i, "tree_size": n, "path": ["<hex>", ...]}`` for the leaf
     ``RFC 8785({"key_sha256": "<hex>", "subject": "<subject>"})``. The key is authorised when the
-    proof reaches the pinned root.
+    proof reaches the pinned root. ``index`` and ``tree_size`` are JSON integers, never ``true`` or
+    ``2.0``. Inclusion shows the binding was logged; it does not show a later log entry did not
+    revoke it.
 
 Outcomes: ``authorized``; ``unauthorized`` with a reason (the evidence says the key may not speak
 for the record); ``unknown`` with a reason (the evidence to decide is missing). An adapter maps
@@ -144,16 +156,39 @@ def multibase_key_bytes(value: Any, label: str = "publicKeyMultibase") -> bytes:
     return raw[2:]
 
 
-def _instant(value: Any, label: str) -> datetime.datetime:
-    if not isinstance(value, str):
-        raise CaseError(f"{label}: expected an RFC 3339 instant")
+#: RFC 3339 section 5.6 ``date-time``. ABNF literals are case-insensitive, so ``t`` and ``z`` match.
+_RFC3339 = re.compile(r"(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?"
+                      r"(?:([Zz])|([+-])(\d{2}):(\d{2}))", re.ASCII)
+
+
+def parse_instant(value: Any, label: str = "instant") -> datetime.datetime:
+    """An RFC 3339 ``date-time`` as an aware datetime, or :class:`CaseError`.
+
+    ``datetime.fromisoformat`` is not this: from Python 3.11 it also reads ISO 8601 week dates
+    (``2026-W46-1T00:00:00Z``), the basic format (``20261115T000000Z``), a comma fraction and a
+    space separator, none of which RFC 3339 allows, and it refuses a leap second, which RFC 3339
+    allows. Two verifiers reading one policy would then bound a key's validity differently.
+    """
+    match = _RFC3339.fullmatch(value) if isinstance(value, str) else None
+    if match is None:
+        raise CaseError(f"{label}: expected an RFC 3339 date-time with an offset")
+    year, month, day, hour, minute, second = (int(match.group(n)) for n in range(1, 7))
+    fraction, zulu, sign, off_hour, off_minute = match.group(7, 8, 9, 10, 11)
+    micro = int((fraction or "0")[:6].ljust(6, "0"))
+    if second == 60:  # a leap second: the last representable instant of its minute
+        second, micro = 59, 999_999
     try:
-        moment = datetime.datetime.fromisoformat(value)
+        if zulu:
+            zone = datetime.UTC
+        else:
+            if int(off_hour) > 23 or int(off_minute) > 59:
+                raise ValueError("offset out of range")
+            offset = datetime.timedelta(hours=int(off_hour), minutes=int(off_minute))
+            zone = datetime.timezone(-offset if sign == "-" else offset)
+        return datetime.datetime(year, month, day, hour, minute, second, micro, tzinfo=zone)
     except ValueError as exc:
-        raise CaseError(f"{label}: expected an RFC 3339 instant") from exc
-    if moment.tzinfo is None:
-        raise CaseError(f"{label}: an instant carries its offset")
-    return moment
+        raise CaseError(f"{label}: expected an RFC 3339 date-time with an offset") from exc
+
 
 
 def _digest(value: Any, label: str) -> str:
@@ -176,40 +211,82 @@ def _pin(config: dict, key: bytes, kid: str | None) -> tuple[str, str, list[str]
     matches = [pin_kid for d, pin_kid in pins if d == key_sha256(key)]
     if not matches:
         return UNAUTHORIZED, "key_not_pinned", digests
-    if kid is not None and all(pin_kid is not None and pin_kid != kid for pin_kid in matches):
+    if all(pin_kid is not None for pin_kid in matches) and kid not in matches:
         return UNAUTHORIZED, "key_id_mismatch", digests
     return AUTHORIZED, "key_pinned", digests
 
 
+#: The verification relationships of DID Core 1.0 section 5.3, each of which may embed a method.
+_RELATIONSHIPS = ("authentication", "assertionMethod", "keyAgreement", "capabilityInvocation",
+                  "capabilityDelegation")
+
+
+class _MalformedDocument(ValueError):
+    """A DID document two conforming readers could resolve to different keys."""
+
+
 def _did_methods(document: dict, did: str) -> tuple[dict[str, dict], set[str]]:
-    """The verification methods by id, and the ids listed under ``assertionMethod``."""
+    """The verification methods by id, and the ids listed under ``assertionMethod``.
+
+    Every method, whether listed under ``verificationMethod`` or embedded under a relationship,
+    must carry a distinct id once a relative ``#fragment`` is resolved against the DID; a repeat
+    raises :class:`_MalformedDocument` rather than letting one copy shadow the other.
+    """
     methods: dict[str, dict] = {}
 
     def absolute(ref: str) -> str:
         return did + ref if ref.startswith("#") else ref
 
-    for method in document.get("verificationMethod", []) or []:
-        if isinstance(method, dict) and isinstance(method.get("id"), str):
-            methods[absolute(method["id"])] = method
+    def add(method: Any) -> str:
+        if not isinstance(method, dict) or not isinstance(method.get("id"), str):
+            raise _MalformedDocument("a verification method carries a string id")
+        mid = absolute(method["id"])
+        if mid in methods:
+            raise _MalformedDocument(f"two verification methods share the id {mid}")
+        methods[mid] = method
+        return mid
+
+    def entries(member: str) -> list:
+        value = document.get(member, [])
+        if not isinstance(value, list):
+            raise _MalformedDocument(f"{member} is a list")
+        return value
+
+    for method in entries("verificationMethod"):
+        add(method)
     asserting = set()
-    for entry in document.get("assertionMethod", []) or []:
-        if isinstance(entry, str):
-            asserting.add(absolute(entry))
-        elif isinstance(entry, dict) and isinstance(entry.get("id"), str):
-            methods.setdefault(absolute(entry["id"]), entry)
-            asserting.add(absolute(entry["id"]))
+    for relationship in _RELATIONSHIPS:
+        for entry in entries(relationship):
+            if isinstance(entry, str):
+                ref = absolute(entry)
+            elif isinstance(entry, dict):
+                ref = add(entry)
+            else:
+                raise _MalformedDocument(f"{relationship} lists ids and methods")
+            if relationship == "assertionMethod":
+                asserting.add(ref)
     return methods, asserting
 
 
-def _method_key(method: dict, label: str) -> bytes | None:
+def _method_key(method: dict, label: str) -> tuple[bytes | None, bool]:
+    """The method's raw key, and whether it may verify signatures."""
     try:
         if "publicKeyJwk" in method:
-            return jwk_key_bytes(method["publicKeyJwk"], label)
+            jwk = method["publicKeyJwk"]
+            return jwk_key_bytes(jwk, label), _jwk_signs(jwk)
         if "publicKeyMultibase" in method:
-            return multibase_key_bytes(method["publicKeyMultibase"], label)
+            return multibase_key_bytes(method["publicKeyMultibase"], label), True
     except CaseError:
-        return None
-    return None
+        return None, False
+    return None, False
+
+
+def _jwk_signs(jwk: dict) -> bool:
+    """RFC 7517 sections 4.2 and 4.3: a key marked for encryption, or not for verify, never signs."""
+    if "use" in jwk and jwk["use"] != "sig":
+        return False
+    ops = jwk.get("key_ops")
+    return ops is None or (isinstance(ops, list) and "verify" in ops)
 
 
 def _did_web(config: dict, key: bytes, kid: str | None, document_bytes: bytes | None,
@@ -228,15 +305,28 @@ def _did_web(config: dict, key: bytes, kid: str | None, document_bytes: bytes | 
         return UNAUTHORIZED, "did_document_malformed", []
     if not isinstance(document, dict) or document.get("id") != did:
         return UNAUTHORIZED, "did_document_id_mismatch", []
-    methods, asserting = _did_methods(document, did)
+    try:
+        methods, asserting = _did_methods(document, did)
+    except _MalformedDocument:
+        return UNAUTHORIZED, "did_document_malformed", []
     keyed = {mid: _method_key(m, f"verificationMethod {mid}") for mid, m in methods.items()}
-    trusted = [key_sha256(raw) for mid, raw in keyed.items() if raw is not None and mid in asserting]
-    holders = [mid for mid, raw in keyed.items() if raw == key]
+    trusted = [key_sha256(raw) for mid, (raw, signs) in keyed.items()
+               if raw is not None and signs and mid in asserting]
+    holders = [mid for mid, (raw, _) in keyed.items() if raw == key]
     if not holders:
         return UNAUTHORIZED, "key_not_in_did_document", trusted
-    if not any(mid in asserting for mid in holders):
+    asserted = [mid for mid in holders if mid in asserting]
+    if not asserted:
         return UNAUTHORIZED, "key_not_in_assertion_method", trusted
-    if kid is not None and not any(mid in asserting and kid in (mid, mid[len(did):]) for mid in holders):
+    signing = [mid for mid in asserted if keyed[mid][1]]
+    if not signing:
+        return UNAUTHORIZED, "key_not_for_signing", trusted
+
+    def names(mid: str) -> tuple[str, ...]:
+        relative = mid[len(did):] if mid.startswith(did + "#") else None
+        return (mid, relative) if relative else (mid,)
+
+    if kid is not None and not any(kid in names(mid) for mid in signing):
         return UNAUTHORIZED, "key_id_mismatch", trusted
     return AUTHORIZED, "key_in_assertion_method", trusted
 
@@ -255,26 +345,36 @@ def _registry(config: dict, key: bytes, subject: str | None, at: datetime.dateti
             raise CaseError(f"{label}: expected subject, public_key_sha256, not_before, "
                             "and optional not_after and revoked_at")
         parsed.append((binding["subject"], _digest(binding["public_key_sha256"], label),
-                       _instant(binding["not_before"], f"{label}.not_before"),
-                       _instant(binding["not_after"], f"{label}.not_after")
+                       parse_instant(binding["not_before"], f"{label}.not_before"),
+                       parse_instant(binding["not_after"], f"{label}.not_after")
                        if "not_after" in binding else None,
-                       _instant(binding["revoked_at"], f"{label}.revoked_at")
+                       parse_instant(binding["revoked_at"], f"{label}.revoked_at")
                        if "revoked_at" in binding else None))
     if subject is None:
         return UNKNOWN, "record_subject_unknown", [d for _, d, *_ in parsed]
     if at is None:
         return UNKNOWN, "record_time_unknown", [d for _, d, *_ in parsed]
     mine = [b for b in parsed if b[0] == subject]
-    trusted = [d for s, d, start, end, revoked in mine
-               if start <= at and (end is None or at < end) and (revoked is None or at < revoked)]
-    held = [b for b in mine if b[1] == key_sha256(key)]
-    if not held:
+    # Revocation ends a key for the subject: the earliest revocation of any binding of that key.
+    ended: dict[str, datetime.datetime] = {}
+    for _, digest, _, _, revoked in mine:
+        if revoked is not None and (digest not in ended or revoked < ended[digest]):
+            ended[digest] = revoked
+    trusted = [d for _, d, start, end, _ in mine
+               if start <= at and (end is None or at < end) and (d not in ended or at < ended[d])]
+    digest = key_sha256(key)
+    if not any(b[1] == digest for b in mine):
         return UNAUTHORIZED, "key_not_bound_to_subject", trusted
-    if key_sha256(key) in trusted:
+    if digest in trusted:
         return AUTHORIZED, "key_bound_at_time", trusted
-    if any(revoked is not None and revoked <= at for *_, revoked in held):
+    if digest in ended and ended[digest] <= at:
         return UNAUTHORIZED, "key_revoked", trusted
     return UNAUTHORIZED, "key_outside_validity", trusted
+
+
+def _json_int(value: Any) -> bool:
+    """A JSON integer: Python's ``bool`` is an ``int`` and ``2.0 == 2``, so neither test alone is."""
+    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def kt_leaf(key: bytes, subject: str) -> bytes:
@@ -294,6 +394,7 @@ def _kt_inclusion(config: dict, key: bytes, subject: str | None, proof: Any,
     if proof is None:
         return UNKNOWN, "inclusion_proof_unavailable", []
     if (not isinstance(proof, dict) or set(proof) != {"index", "tree_size", "path"}
+            or not all(_json_int(proof[m]) for m in ("index", "tree_size"))
             or not isinstance(proof["path"], list)
             or not all(isinstance(h, str) and _HEX64.fullmatch(h) for h in proof["path"])):
         return UNAUTHORIZED, "inclusion_proof_malformed", []
