@@ -68,6 +68,11 @@ def package_binding(root: Path) -> dict:
             "values": values, "sha256": hashlib.sha256(canonical).hexdigest()}
 
 
+def _requires_python(root: Path) -> str:
+    """The Python range the package declares, read from its manifest rather than restated."""
+    return tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["requires-python"]
+
+
 def build(root: Path, source: dict) -> dict:
     recipes = source["recipes"]
     claims = {recipe["claim_type"] for recipe in recipes}
@@ -104,7 +109,8 @@ def build(root: Path, source: dict) -> dict:
         "schema_scope": "Project recipe convention; not a discovery standard.",
         "repository": "https://github.com/probityai/probity/tree/main/packages/agent-evidence-verify",
         "distribution": {"name": "agent-evidence-verify", "status": "published",
-                         "installation": "docs/install.md", "python": ">=3.12"},
+                         "installation": "docs/install.md",
+                         "python": _requires_python(root)},
         "fixture_scope": "source-checkout",
         "operator": "author-run synthetic fixtures",
         "error_behavior": {"exit_code": 2, "verdict": False},
