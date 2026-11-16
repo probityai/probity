@@ -3260,6 +3260,8 @@ jobs:
           node-version: '22.18'
       - run: npm ci
       - run: node --test test/*.test.ts
+      # The published tarball ships plain JavaScript built from src/ (Node will not run TypeScript from node_modules).
+      - run: npm pack --dry-run
       # The twin as an external verifier under agent-evidence-vectors' own a2a-jcs harness, from a
       # hash-pinned release: every rfc8785 vector must pass (53 of 53 at 0.37.0).
       - name: a2a-jcs corpus, rfc8785 target
