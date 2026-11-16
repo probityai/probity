@@ -119,7 +119,11 @@ and anchor, and recomputes the JCS digest. A verifying artifact is `supported` /
 `contradicted` with the corpus's code as the reason. The same rules run as `agent-evidence-verify-poc`, which reads
 one artifact on stdin and prints `{"result": "accept"}` or `{"result": "reject", "code": ...}`, the interface the
 corpus runner calls: `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` passes all
-171 cases. The check does not establish that the keys or roots it is given are the ones a consumer should trust.
+171 cases. A signed artifact (a token or a chain) carries its own public key, which proves nothing alone, so its
+verdict also needs that key authorised under the assessment's `key_authority` ([key authority](key-authority.md)):
+an unauthorised key is `contradicted` with the authority's reason, and a key no authority decides is
+`not_established`. The roots of an inclusion or consistency proof are the artifact's own and carry no trust outside
+it.
 
 ## Why the rules are ported, not imported
 

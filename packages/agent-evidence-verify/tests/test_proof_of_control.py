@@ -53,8 +53,11 @@ def test_claim_type_decisions(tmp_path: Path) -> None:
         record = {"schema_version": "probity-case/v1", "case_id": name,
                   "artifacts": {"input": {"path": name, "length": len(data),
                                           "sha256": hashlib.sha256(data).hexdigest()}}}
-        policy = {"schema_version": "probity-policy/v1",
-                  "assessments": {name: {"claim_type": "proof_of_control/v1", "input": "input"}}}
+        assessment = {"claim_type": "proof_of_control/v1", "input": "input"}
+        if case.get("public_key"):  # a signed artifact agrees only under the consumer's own pin
+            assessment["key_authority"] = {"kind": "pin", "keys": [{"public_key_sha256": hashlib.sha256(
+                bytes.fromhex(case["public_key"])).hexdigest()}]}
+        policy = {"schema_version": "probity-policy/v1", "assessments": {name: assessment}}
         result = adjudicate(record, policy, tmp_path)
         assert result["decision"] == want
 

@@ -11,7 +11,12 @@ is RFC 8032 in plain integers. Each check returns None to accept or a short code
 reject; codes follow the reference validator where it defines one.
 
 Decisions: an artifact that verifies is ``supported`` / ``artifact_verifies``; one that
-fails is ``contradicted`` with the check's code as the reason.
+fails is ``contradicted`` with the check's code as the reason. A signed artifact (``token``,
+``chain``) carries its own public key, which proves nothing alone: whoever re-signs an artifact
+embeds their own key. Its verdict therefore also needs the key authorised under the consumer's
+``key_authority`` (see :mod:`agent_evidence_verify.key_authority`): an unauthorised key is
+``contradicted`` with the authority's reason, a key no authority decides (no ``key_authority`` in
+the policy, or a token that carries no key at all) is ``not_established``.
 
 ``main`` is the stdin bridge for ``python -m poc_evidence_vectors.run_vectors
 --verifier agent-evidence-verify-poc``: one case on stdin, one JSON line out.
@@ -491,8 +496,10 @@ def check_chain(records, pubkey_hex, expected_measurement_hex, anchor):
 # ------------------------------------------------------------- claim type
 CLAIM_TYPE = "proof_of_control/v1"
 LIMIT = ("Checks the artifact's structure, canonical form, signatures and Merkle or chain "
-         "proofs against the keys and roots it is given. It says nothing about whether those "
-         "keys or roots are the ones a consumer should trust.")
+         "proofs. A signing key must be authorised under the consumer's key authority; the roots of "
+         "an inclusion or consistency proof are the artifact's own and carry no trust outside it.")
+#: Artifact kinds whose verdict rests on a signature under the key the artifact carries.
+SIGNED_KINDS = ("token", "chain")
 
 
 def judge(case: dict) -> str | None:
@@ -521,8 +528,10 @@ def judge(case: dict) -> str | None:
 def adjudicate(case, policy, artifact_root):
     """Verify the bound Proof-of-Control artifact."""
     from ..common import CaseError
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authorize
     from .bound_records import assessment_for, bound, decision
-    case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, {"input"})
+    case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, {"input"},
+                                                    {"key_authority"})
     source, binding = bound(artifacts, artifact_root, assessment["input"], "assessment.input")
     scope = {"input": binding, "limit": LIMIT}
     if source is None:
@@ -534,10 +543,25 @@ def adjudicate(case, policy, artifact_root):
         raise CaseError(f"assessment.input: not a Proof-of-Control artifact: {exc}") from exc
     check = {"id": "proof_of_control", "status": "pass" if code is None else "fail",
              "kind": artifact.get("kind")}
-    if code is None:
+    if code is not None:
+        check["code"] = code
+        return decision(case_id, CLAIM_TYPE, scope, "contradicted", code, [check])
+    if artifact.get("kind") not in SIGNED_KINDS:
         return decision(case_id, CLAIM_TYPE, scope, "supported", "artifact_verifies", [check])
-    check["code"] = code
-    return decision(case_id, CLAIM_TYPE, scope, "contradicted", code, [check])
+    key_hex = artifact.get("public_key")
+    if not isinstance(key_hex, str) or not key_hex:
+        return decision(case_id, CLAIM_TYPE, scope, "not_established", "signature_key_absent", [check])
+    try:
+        key = bytes.fromhex(key_hex)
+    except ValueError:
+        return decision(case_id, CLAIM_TYPE, scope, "contradicted", "signature_key_malformed", [check])
+    authority = authorize(assessment.get("key_authority"), key)
+    checks = [check, authority.check()]
+    if authority.outcome == AUTHORIZED:
+        return decision(case_id, CLAIM_TYPE, scope, "supported", "artifact_verifies", checks)
+    if authority.outcome == UNAUTHORIZED:
+        return decision(case_id, CLAIM_TYPE, scope, "contradicted", authority.reason, checks)
+    return decision(case_id, CLAIM_TYPE, scope, "not_established", authority.reason, checks)
 
 
 def main() -> int:
