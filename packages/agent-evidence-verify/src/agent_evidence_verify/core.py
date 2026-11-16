@@ -239,7 +239,7 @@ def render_packet(result: dict) -> str:
         f"Reason: {result['reason']}",
         f"Policy SHA-256: {result['policy_sha256']}",
         f"Reference verifier: {result['reference']['verifier']['id']}",
-        f"Verifier release: {result['reference']['verifier'].get('version', 'not installed')}",
+        f"Verifier release: {result['reference']['verifier'].get('version', 'not an installed release')}",
         f"Verifier package SHA-256: {result['reference']['verifier']['package_sha256']}",
         "Scope and evidence:",
         json.dumps(result["scope"], indent=2, sort_keys=True, ensure_ascii=True),

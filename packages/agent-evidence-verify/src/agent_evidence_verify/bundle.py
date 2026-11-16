@@ -24,8 +24,6 @@ import sys
 import tempfile
 import zipfile
 from collections.abc import Callable, Mapping
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _distribution_version
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -38,6 +36,7 @@ from .core import (
     canonical_json,
     render_packet,
 )
+from .identity import running_release
 from .json_input import parse_json
 
 _CONTROL_LIMIT = 1024 * 1024
@@ -65,11 +64,16 @@ _LEGACY_SHAPES: tuple[tuple[str, Callable[[dict], dict]], ...] = (
 
 
 def _release() -> str:
-    """The installed release of this verifier, recorded in every new bundle."""
-    try:
-        return _distribution_version("agent-evidence-verify")
-    except PackageNotFoundError as exc:
-        raise CaseError("agent-evidence-verify is not installed, so its release is unknown") from exc
+    """The release of the running verifier, recorded in every new bundle.
+
+    A source tree imported ahead of an installed wheel has no release of its own: recording the
+    wheel's version would name bytes that did not run (see :func:`.identity.release_of`).
+    """
+    release = running_release()
+    if release is None:
+        raise CaseError("the running agent-evidence-verify is not an installed release, so its "
+                        "release is unknown")
+    return release
 
 
 def _producer_record() -> dict:

@@ -66,8 +66,13 @@ party that holds the wheel recomputes it and compares:
 python -m agent_evidence_verify.identity agent_evidence_verify-0.6.1-py3-none-any.whl
 ```
 
-A decision whose `package_sha256` differs from the wheel's came from other bytes, whatever its
-`id` and `version` say. Bundles written by releases that named the verifier by `id` alone still
+A decision whose `package_sha256` differs from the wheel's says it came from other bytes, whatever its
+`id` and `version` say. A match is the producer's own statement, not an authentication: any program can
+print any digest, and the digest does not cover dependencies, `sitecustomize`, a `.pth` hook or
+`__pycache__` bytecode. Read it as evidence of the bytes that ran only when the runner is one you trust to
+report its own runtime, such as your own CI. `version` is named only when the running package is the
+installed release's own files or an editable install's source tree; a checkout imported ahead of an
+installed wheel names no version. Bundles written by releases that named the verifier by `id` alone still
 replay: their decision must match in every other field.
 
 ## Signed bundles

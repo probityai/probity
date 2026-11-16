@@ -86,3 +86,62 @@ def test_manifest_matches_pyproject_version(path):
     import tomllib
     version = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
     assert json.loads((ROOT / path).read_text())["version"] == version
+
+
+class _FakeDist:
+    """Just the metadata ``identity.release_of`` reads."""
+
+    version = "9.9.9"
+
+    def __init__(self, site: Path, files: list[str], direct_url: str | None = None) -> None:
+        from importlib.metadata import PackagePath
+
+        self._site, self._direct = site, direct_url
+        self.files = [PackagePath(name) for name in files]
+
+    def locate_file(self, path):
+        return self._site / str(path)
+
+    def read_text(self, name: str):
+        return self._direct if name == "direct_url.json" else None
+
+
+def test_a_source_tree_ahead_of_the_wheel_does_not_borrow_its_version(tmp_path):
+    """Break-it counter-example: PYTHONPATH=<checkout>/src with an older wheel installed.
+
+    The decision carried the wheel's version beside a digest of the checkout's files, so it named
+    a release whose bytes did not run.
+    """
+    from agent_evidence_verify import identity
+
+    site, checkout = tmp_path / "site-packages", tmp_path / "checkout/src/agent_evidence_verify"
+    for root in (site / "agent_evidence_verify", checkout):
+        root.mkdir(parents=True)
+        (root / "identity.py").write_text("")
+    wheel = _FakeDist(site, ["agent_evidence_verify/identity.py"])
+    assert identity.release_of(wheel, site / "agent_evidence_verify/identity.py") == "9.9.9"
+    assert identity.release_of(wheel, checkout / "identity.py") is None
+    editable = _FakeDist(site, ["__editable__.pth"], json.dumps(
+        {"url": (tmp_path / "checkout").as_uri(), "dir_info": {"editable": True}}))
+    assert identity.release_of(editable, checkout / "identity.py") == "9.9.9"
+    elsewhere = _FakeDist(site, ["__editable__.pth"], json.dumps(
+        {"url": (tmp_path / "other").as_uri(), "dir_info": {"editable": True}}))
+    assert identity.release_of(elsewhere, checkout / "identity.py") is None
+    assert identity.release_of(_FakeDist(site, [], "{not json"), checkout / "identity.py") is None
+
+
+def test_a_wheel_member_under_purelib_counts_toward_the_package_digest(tmp_path):
+    """PEP 427 ``<dist>.data/purelib`` members install into the package; the digest must see them."""
+    import zipfile
+
+    from agent_evidence_verify import identity
+
+    plain, data = tmp_path / "a-0-py3-none-any.whl", tmp_path / "b-0-py3-none-any.whl"
+    with zipfile.ZipFile(plain, "w") as archive:
+        archive.writestr("agent_evidence_verify/__init__.py", "")
+    with zipfile.ZipFile(data, "w") as archive:
+        archive.writestr("agent_evidence_verify/__init__.py", "")
+        archive.writestr("agent_evidence_verify-0.data/purelib/agent_evidence_verify/core.py", "x = 1\n")
+    assert identity.wheel_digest(plain) != identity.wheel_digest(data)
+    assert identity.wheel_digest(data) == identity.package_digest(
+        [("agent_evidence_verify/__init__.py", b""), ("agent_evidence_verify/core.py", b"x = 1\n")])
