@@ -514,6 +514,7 @@ def write_families(out: Path, cases: dict, trust: Trust | None = None, doc: dict
 
 def main_identity(out: Path) -> None:
     """The identity families alone: ``identity.json`` and ``identity-journal.json``."""
+    out.mkdir(parents=True, exist_ok=True)
     trust, doc = identity_trust()
     write_families(out, {"identity-journal": identity_journal_rows()}, trust, doc)
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
