@@ -188,12 +188,28 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: '3.11'
-      - name: install at the lowest direct versions on Python 3.11
+      - name: build the wheel and install it at the lowest direct versions on Python 3.11
         run: |
+          uv build --wheel --out-dir .build/dist .
           uv venv --python 3.11 .build/floor
-          uv pip install --python .build/floor/bin/python --resolution lowest-direct '.[test]'
+          uv pip install --python .build/floor/bin/python --resolution lowest-direct "$(ls .build/dist/*.whl)[test]"
           .build/floor/bin/python -c "import sys, cryptography; print(sys.version.split()[0], cryptography.__version__); assert sys.version_info[:2] == (3, 11); assert cryptography.__version__ == '50.0.0'"
       - run: .build/floor/bin/python -m pytest
+      - name: a decision from the installed wheel names that wheel's package digest
+        run: |
+          .build/floor/bin/python - "$(ls .build/dist/*.whl)" <<'PYCODE'
+          import json, sys
+          from pathlib import Path
+          from agent_evidence_verify import adjudicate
+          from agent_evidence_verify.identity import wheel_digest
+          root = Path("examples/source-coverage")
+          case = json.loads((root / "case.json").read_text())
+          policy = json.loads((root / "policy-june.json").read_text())
+          verifier = adjudicate(case, policy, root)["reference"]["verifier"]
+          expected = wheel_digest(Path(sys.argv[1]))
+          print(f"wheel {expected} decision {verifier['package_sha256']} version {verifier['version']}")
+          assert verifier["package_sha256"] == expected
+          PYCODE
       - name: a 3.11 consumer project locks against the package
         run: |
           mkdir -p .build/consumer
