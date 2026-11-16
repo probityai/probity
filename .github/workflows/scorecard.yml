@@ -2,7 +2,7 @@
 # protection, review discipline, pinned dependencies, token permissions),
 # publishes the result to the OpenSSF API so the public score and badge exist,
 # and uploads the SARIF to code scanning. Same pinned actions as
-# probityai/agent-evidence; no visibility gate, because this repository is public.
+# probityai/agent-evidence-vectors; no visibility gate, because this repository is public.
 
 name: scorecard
 

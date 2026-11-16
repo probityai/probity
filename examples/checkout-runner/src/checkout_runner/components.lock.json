@@ -160,7 +160,7 @@
     },
     "refund-handoff-0.1": {
       "what": "refund-handoff/0.1 conformance: 80 hostile vectors for the signed admission record, authenticated handoff, attempts, effects and cutoff",
-      "repo": "https://github.com/probityai/agent-evidence-observer",
+      "repo": "https://github.com/probityai-archive/agent-evidence-observer",
       "commit": "38e75b16a967fb01048ef93ed4e12290c8f3a540",
       "fetch": "main",
       "steps": [
