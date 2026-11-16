@@ -1,6 +1,6 @@
 """One strict I-JSON reader (RFC 7493) for every adapter, so no two adapters read one byte string apart.
 
-Python's ``json`` module is lenient in five ways that let two readers of the same bytes disagree
+Python's ``json`` module is lenient in six ways that let two readers of the same bytes disagree
 about what a record says while both report a clean parse:
 
 * a repeated member name keeps the last value silently (``{"a":1,"a":2}`` reads as ``{"a":2}``);
@@ -9,6 +9,9 @@ about what a record says while both report a clean parse:
 * an integer outside +-(2**53 - 1) parses exactly in Python and rounds in every double-based reader,
   so ``9007199254740993`` names one number here and another in JavaScript;
 * ``1e400`` parses to ``inf`` and ``NaN``, ``Infinity`` and ``-Infinity`` parse at all;
+* ``1e-400`` parses to ``0.0``, so a nonzero number reads as zero (and as false), and
+  ``3.141592653589793238462643383279`` keeps 31 significant digits a double holds 17 of, so a
+  decimal reader and a double reader read two numbers (RFC 7493 section 2.2 names both kinds);
 * nesting has no bound below the interpreter's recursion limit.
 
 ``parse_ijson`` refuses each of these, plus input that is not UTF-8 (including a UTF-8 encoded
@@ -72,10 +75,21 @@ def _safe_int(text: str) -> int:
     return value
 
 
+#: Significant decimal digits that round-trip every IEEE 754 double; more is precision a double drops.
+MAX_SIGNIFICANT_DIGITS = 17
+
+
 def _finite_float(text: str) -> float:
     value = float(text)
     if not math.isfinite(value):
         raise IJSONError("value-not-representable", f"{text} is not a finite double")
+    mantissa = text.lstrip("-").lower().split("e")[0].replace(".", "")
+    digits = mantissa.lstrip("0").rstrip("0")
+    if value == 0 and digits:
+        raise IJSONError("value-not-representable", f"{text} is nonzero and reads as a double zero")
+    if len(digits) > MAX_SIGNIFICANT_DIGITS:
+        raise IJSONError("value-not-representable",
+                         f"{text} has more significant digits than a double holds")
     return value
 
 

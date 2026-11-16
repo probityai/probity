@@ -278,8 +278,8 @@
     },
     {
       "path": "src/agent_evidence_verify/ijson.py",
-      "bytes": 8135,
-      "sha256": "052a512f8e46547264aab4f104dfad06a50d6a5b255e6c083523fbd9019a9c87"
+      "bytes": 8971,
+      "sha256": "36f41ce6ad1808e314f5884ff4467b77c1bd525784f33d06401fc91179facebe"
     },
     {
       "path": "src/agent_evidence_verify/index.py",

@@ -213,3 +213,28 @@ def test_no_adapter_keeps_a_private_last_member_wins_parser() -> None:
         if found:
             counts[path.name] = found
     assert counts == PRIVATE_PARSERS
+
+
+#: Break-it counter-examples: numbers a double reader and a decimal reader read apart.
+DOUBLE_LOSSY = [
+    b'{"a":1e-400}',  # nonzero, reads as 0.0 and so as false (corpusreaders number-truth class)
+    b'{"a":-2e-324}',  # rounds to -0.0
+    b'{"a":3.141592653589793238462643383279}',  # RFC 7493 section 2.2's own example
+    b'{"a":123456789012345678.0}',  # 18 significant digits
+]
+
+
+@pytest.mark.parametrize("raw", DOUBLE_LOSSY)
+def test_a_number_a_double_cannot_hold_is_refused(raw: bytes) -> None:
+    with pytest.raises(IJSONError) as caught:
+        parse_ijson(raw)
+    assert caught.value.code == "value-not-representable"
+    _raises(ENTRY_POINTS["json_input.parse_json"], raw)
+
+
+@pytest.mark.parametrize("raw,expected", [
+    (b'{"a":5e-324}', 5e-324), (b'{"a":0.0e-999}', 0.0), (b'{"a":-0.0}', -0.0),
+    (b'{"a":0.30000000000000004}', 0.30000000000000004), (b'{"a":1.10000000000000000000}', 1.1),
+])
+def test_a_number_a_double_holds_is_read(raw: bytes, expected: float) -> None:
+    assert parse_ijson(raw)["a"] == expected
