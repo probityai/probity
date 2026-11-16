@@ -8,7 +8,7 @@ import { checkPrincipals, verifyJournal } from "../src/verify.ts";
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
 
-const JOURNAL_FAMILIES = ["grants", "quorum", "constraints", "approvals", "effects"];
+const JOURNAL_FAMILIES = ["grants", "quorum", "constraints", "approvals", "effects", "identity-journal"];
 for (const family of JOURNAL_FAMILIES) {
   for (const v of load(`${family}.json`)) {
     test(`${v.id} ${v.description}`, () => {
@@ -20,7 +20,7 @@ for (const family of JOURNAL_FAMILIES) {
 
 for (const v of load("identity.json")) {
   test(`${v.id} ${v.description}`, () => {
-    const [problems, grade] = checkPrincipals(v.principals, v.at, v.pins, new Set(v.approvers));
+    const [problems, grade] = checkPrincipals(v.principals, v.at, v.pins, new Set(v.approvers), v.revocations, v.audiences);
     assert.deepEqual({ problems, grade }, { problems: v.expected.problems, grade: v.expected.grade });
   });
 }
