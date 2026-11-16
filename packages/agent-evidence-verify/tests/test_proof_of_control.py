@@ -70,3 +70,30 @@ def test_stdin_bridge() -> None:
                          input=json.dumps(case), text=True, capture_output=True, check=True)
     got = json.loads(out.stdout)
     assert got["result"] in {"accept", "reject"}
+
+
+def _anchored_chain() -> dict:
+    return next(c for c in CASES if c["id"] == "CHN-P-six-steps-anchored")
+
+
+def test_an_anchor_counts_heads_from_genesis() -> None:
+    """Break-it counter-example: the twin reads ``records[index - 1]``.
+
+    An anchor at index 0 therefore compared against the last head, so ``{"index": 0, "root":
+    <last head>}`` passed and the true head after zero steps, the genesis head, failed.
+    """
+    case = dict(_anchored_chain())
+    genesis = hashlib.sha256(b"poc-genesis").hexdigest()
+    last = case["records"][-1]["poc_claims"]["chain_head"].split(":", 1)[1]
+    assert proof_of_control.judge(dict(case, anchor={"index": 0, "root": genesis})) is None
+    assert proof_of_control.judge(dict(case, anchor={"index": 0, "root": last})) == "history-rewritten"
+    first = case["records"][0]["poc_claims"]["chain_head"].split(":", 1)[1]
+    assert proof_of_control.judge(dict(case, anchor={"index": 1, "root": first})) is None
+
+
+@pytest.mark.parametrize("index", [-1, True, 1.0, "1"])
+def test_an_anchor_index_that_is_not_a_count_of_steps_is_malformed(index) -> None:
+    """``-1`` named the second-to-last head and ``true`` the first; neither is a step count."""
+    case = _anchored_chain()
+    with pytest.raises(ValueError):
+        proof_of_control.judge(dict(case, anchor={"index": index, "root": "0" * 64}))

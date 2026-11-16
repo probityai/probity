@@ -467,8 +467,16 @@ def _material_leaf(token) -> bytes:
 
 def check_chain(records, pubkey_hex, expected_measurement_hex, anchor):
     """Replay a list of evidence records. `anchor` is None or
-    {"index": n, "root": <hex chain head after n steps>}."""
+    {"index": n, "root": <hex chain head after n steps>}.
+
+    ``n`` is a JSON integer from 0 (the genesis head, before any step) to the number of records.
+    The reference twin reads ``records[n - 1]``, so an anchor at 0 or below names a head counted
+    from the end of the chain: ``{"index": 0, "root": <last head>}`` passed and ``{"index": 0,
+    "root": <genesis>}`` failed. Here the heads are counted from genesis, and any other index is
+    malformed.
+    """
     head = hashlib.sha256(b"poc-genesis").hexdigest()
+    heads = [head]
     pk = bytes.fromhex(pubkey_hex)
     for i, tok in enumerate(records):
         body = {k: v for k, v in tok.items() if k != "signature"}
@@ -490,11 +498,14 @@ def check_chain(records, pubkey_hex, expected_measurement_hex, anchor):
         if want != c["chain_head"].split(":", 1)[1]:
             return "chain-break"
         head = want
+        heads.append(head)
     if anchor is not None:
-        if anchor["index"] > len(records):
+        index = anchor["index"]
+        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
+            raise ValueError("anchor.index: expected a non-negative integer")
+        if index > len(records):
             return "truncation"
-        at = records[anchor["index"] - 1]["poc_claims"]["chain_head"].split(":", 1)[1]
-        if at != anchor["root"]:
+        if heads[index] != anchor["root"]:
             return "history-rewritten"
     return None
 

@@ -115,7 +115,9 @@ The assessment names one `input` artifact: a Proof-of-Control artifact as the `p
 it (a signed token, a Merkle inclusion or consistency proof, a token chain, or a canonical-form check). The check
 parses it strictly (duplicate keys, lone surrogates and non-canonical numbers are refused), verifies Ed25519
 signatures, recomputes RFC 6962 inclusion and consistency proofs, walks the chain against the expected measurement
-and anchor, and recomputes the JCS digest. A verifying artifact is `supported` / `artifact_verifies`; any refusal is
+and anchor, and recomputes the JCS digest. A chain anchor's `index` counts steps from genesis: 0 names the genesis
+head, and an index below 0 or not a JSON integer is malformed (the corpus's reference twin reads `records[index -
+1]`, which counts an index of 0 or below from the end of the chain; no corpus case uses one). A verifying artifact is `supported` / `artifact_verifies`; any refusal is
 `contradicted` with the corpus's code as the reason. The same rules run as `agent-evidence-verify-poc`, which reads
 one artifact on stdin and prints `{"result": "accept"}` or `{"result": "reject", "code": ...}`, the interface the
 corpus runner calls: `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` passes all
