@@ -80,3 +80,19 @@ def test_every_job_is_a_need_of_the_aggregator():
                       workflow, re.MULTILINE | re.DOTALL)
     assert needs, "ci-ok must run with the batch gate and always() and list its needs"
     assert set(ids) - {"ci-ok"} == {n.strip() for n in needs.group(1).split(",")}
+
+
+def test_every_package_and_node_directory_selects_a_job():
+    """A changed path must select the jobs that test it, so no package may be left unmapped."""
+    import tomllib
+
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    used = set(re.findall(r"outputs\.members\)\['([a-z0-9-]+)'\]", workflow))
+    members = {tomllib.loads(p.read_text(encoding="utf-8"))["project"]["name"]: p.parent.name
+               for p in (ROOT / "packages").glob("*/pyproject.toml")}
+    unmapped = sorted(name for name in members if name not in used)
+    assert not unmapped, f"no job in ci.yml is selected by a change to these packages: {unmapped}"
+    globs = [g for job in ci_select.table().values() for g in job["paths"]]
+    bare = sorted(d.name for d in (ROOT / "node").iterdir()
+                  if d.is_dir() and not any(ci_select.glob_regex(g).match(f"node/{d.name}/package.json") for g in globs))
+    assert not bare, f"no entry of scripts/ci_jobs.toml selects a change to these node packages: {bare}"
