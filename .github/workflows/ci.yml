@@ -168,10 +168,11 @@ jobs:
       - run: uv sync --frozen --extra test --extra a2a
       - run: uv run --frozen --extra test --extra a2a pytest
 
-  # The package declares Python 3.11 and the lowest cryptography release it allows, so a consumer
-  # that tests on 3.11 or locks cryptography 50.0.0 can pin it. The workspace lock is for 3.12 and
-  # later, so this lane installs the built wheel from its own manifest with cryptography held at
-  # 50.0.0, runs the whole suite on 3.11, and locks a scratch 3.11 consumer project against it.
+  # The package declares Python 3.11 and a lower bound for every runtime dependency, so a consumer
+  # that tests on 3.11 or locks any of those bounds can pin it. The workspace lock is for 3.12 and
+  # later, so this lane installs the built wheel from its own manifest with every runtime dependency
+  # held at its declared lower bound (read from pyproject.toml, so a raised bound is tested the day it
+  # is raised), runs the whole suite on 3.11, and locks a scratch 3.11 consumer project against it.
   agent-evidence-verify-python-floor:
     name: "agent-evidence-verify / python-floor"
     needs: [changes]
@@ -188,12 +189,29 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: '3.11'
-      - name: build the wheel and install it with the lowest cryptography it allows, on Python 3.11
+      - name: build the wheel and install it with every runtime dependency at its lower bound, on Python 3.11
         run: |
           uv build --wheel --out-dir .build/dist .
           uv venv --python 3.11 .build/floor
-          uv pip install --python .build/floor/bin/python "$(ls .build/dist/*.whl)[test]" cryptography==50.0.0
-          .build/floor/bin/python -c "import sys, cryptography; print(sys.version.split()[0], cryptography.__version__); assert sys.version_info[:2] == (3, 11); assert cryptography.__version__ == '50.0.0'"
+          .build/floor/bin/python - > .build/floor-pins.txt <<'PYCODE'
+          import re, tomllib
+          deps = tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]
+          for dep in deps:
+              match = re.fullmatch(r"([A-Za-z0-9_.-]+)\s*>=\s*([0-9][0-9A-Za-z.]*)(\s*,.*)?", dep)
+              assert match, f"runtime dependency {dep!r} declares no lower bound the floor lane can hold"
+              print(f"{match.group(1)}=={match.group(2)}")
+          PYCODE
+          cat .build/floor-pins.txt
+          uv pip install --python .build/floor/bin/python "$(ls .build/dist/*.whl)[test]" -r .build/floor-pins.txt
+          .build/floor/bin/python - .build/floor-pins.txt <<'PYCODE'
+          import sys
+          from importlib.metadata import version
+          assert sys.version_info[:2] == (3, 11), sys.version
+          for line in open(sys.argv[1]).read().split():
+              name, floor = line.split("==")
+              print(name, version(name))
+              assert version(name) == floor, f"{name} resolved {version(name)}, not its floor {floor}"
+          PYCODE
       - run: .build/floor/bin/python -m pytest
       - name: a decision from the installed wheel names that wheel's package digest
         run: |
