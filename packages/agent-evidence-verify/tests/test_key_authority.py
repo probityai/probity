@@ -261,7 +261,9 @@ def test_a_pin_that_names_a_key_id_needs_the_record_to_name_it() -> None:
 @pytest.mark.parametrize("text", ["2026-W46-1T00:00:00Z", "20261115T000000Z", "2026-11-15T00:00:00,5Z",
                                   "2026-11-15 00:00:00Z", "2026-11-15T00:00Z", "2026-11-15T00:00:00",
                                   "2026-02-30T00:00:00Z", "2026-11-15T00:00:00+24:00",
-                                  "\uff12026-11-15T00:00:00Z"])
+                                  "\uff12026-11-15T00:00:00Z",
+                                  # A leap second falls only at 23:59:60 UTC (RFC 3339 section 5.7).
+                                  "2026-11-16T12:30:60Z", "2026-12-31T23:59:60+01:00"])
 def test_a_binding_instant_that_is_not_rfc_3339_is_the_consumers_case_error(text: str) -> None:
     authority = {"kind": "registry", "bindings": [
         {"subject": "agent-a", "public_key_sha256": key_sha256(KEY), "not_before": text}]}
@@ -275,7 +277,9 @@ def test_rfc_3339_forms_python_alone_would_misread_are_read_exactly() -> None:
     assert parse_instant("2026-12-31T23:59:60Z") < parse_instant("2027-01-01T00:00:00Z")
     assert parse_instant("2026-12-31T23:59:60Z") > parse_instant("2026-12-31T23:59:59.5Z")
     assert parse_instant("2026-11-15t00:00:00z") == parse_instant("2026-11-15T00:00:00+00:00")
-    assert parse_instant("2026-11-15T00:00:00.1234567Z").microsecond == 123456
+    assert parse_instant("2026-11-15T00:00:00.1234567Z").microsecond == 123457
+    assert parse_instant("2026-11-15T00:00:00.1234560Z").microsecond == 123456
+    assert parse_instant("1990-12-31T15:59:60-08:00") == parse_instant("1990-12-31T23:59:60Z")
     assert parse_instant("2026-11-15T01:00:00+01:00") == parse_instant("2026-11-15T00:00:00Z")
 
 
@@ -337,9 +341,10 @@ def test_a_signed_artifact_agrees_only_under_the_consumers_key_authority(tmp_pat
     assert (silent["decision"], silent["reason"]) == ("not_established", "no_key_authority_in_policy")
 
 
-def _poc_with(tmp_path: Path, key_authority: dict, extra: dict[str, bytes]) -> tuple[dict, bytes, dict]:
-    """The example chain judged under ``key_authority``, with ``extra`` bound as case artifacts."""
-    artifact = json.loads(POC_EXAMPLE.read_text())
+def _poc_with(tmp_path: Path, key_authority: dict, extra: dict[str, bytes],
+              artifact: dict | None = None) -> tuple[dict, bytes, dict]:
+    """The example chain (or ``artifact``) judged under ``key_authority``, ``extra`` bound beside it."""
+    artifact = json.loads(POC_EXAMPLE.read_text()) if artifact is None else artifact
     files = {"artifact": json.dumps(artifact).encode(), **extra}
     bindings = {}
     for name, data in files.items():
@@ -351,16 +356,40 @@ def _poc_with(tmp_path: Path, key_authority: dict, extra: dict[str, bytes]) -> t
     return adjudicate(case, policy, tmp_path), bytes.fromhex(artifact["public_key"]), artifact
 
 
+def _resigned(issuer: str) -> tuple[dict, bytes]:
+    """The example chain with every record's ``iss`` set to ``issuer``, signed again by a fresh key."""
+    from agent_evidence_verify.adapters.proof_of_control import jcs
+
+    private = Ed25519PrivateKey.generate()
+    artifact = json.loads(POC_EXAMPLE.read_text())
+    for record in artifact["records"]:
+        record["iss"] = issuer
+        body = {name: value for name, value in record.items() if name != "signature"}
+        record["signature"] = private.sign(jcs(body)).hex()
+    public = private.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
+    artifact["public_key"] = public.hex()
+    return artifact, public
+
+
 def test_a_did_web_authority_decides_through_proof_of_control(tmp_path: Path) -> None:
-    """Before the fix the adapter never bound the DID document: every did-web policy was unknown."""
+    """Before the fix the adapter never bound the DID document: every did-web policy was unknown.
+
+    The records must also name the DID as their issuer: the example chain says
+    ``https://verifier.example/poc``, and a DID's key does not vouch for another issuer.
+    """
     _, carried, _ = _poc_with(tmp_path, {"kind": "pin", "keys": [
         {"public_key_sha256": key_sha256(KEY)}]}, {})
-    document = _did(key=carried)
-    agreed, _, _ = _poc_with(tmp_path, _did_authority(document), {"did.json": document})
+    foreign = _did(key=carried)
+    elsewhere, _, _ = _poc_with(tmp_path, _did_authority(foreign), {"did.json": foreign})
+    assert (elsewhere["decision"], elsewhere["reason"]) == ("contradicted", "record_subject_not_did")
+    artifact, public = _resigned(DID)
+    document = _did(key=public)
+    agreed, _, _ = _poc_with(tmp_path, _did_authority(document), {"did.json": document},
+                             artifact=artifact)
     assert (agreed["decision"], agreed["reason"]) == ("supported", "artifact_verifies")
     assert agreed["scope"]["key_authority_document"]["sha256"] == hashlib.sha256(document).hexdigest()
-    hidden = _did(key=carried, asserting=False)
-    refused, _, _ = _poc_with(tmp_path, _did_authority(hidden), {"did.json": hidden})
+    hidden = _did(key=public, asserting=False)
+    refused, _, _ = _poc_with(tmp_path, _did_authority(hidden), {"did.json": hidden}, artifact=artifact)
     assert (refused["decision"], refused["reason"]) == ("contradicted", "key_not_in_assertion_method")
 
 
@@ -400,3 +429,94 @@ def test_a_kt_inclusion_authority_reads_the_proof_the_policy_names(tmp_path: Pat
     with pytest.raises(CaseError):
         _poc_with(tmp_path, {"kind": "pin", "keys": [{"public_key_sha256": key_sha256(carried)}],
                              "document": "proof.json"}, {"proof.json": proof})
+
+
+# ---- round 2 of the break-it pass: inputs the first fixes still accepted ---------------------------
+
+def _two_materials(first: bytes, second: bytes) -> bytes:
+    method = {"id": f"{DID}#k1", "type": "Multikey", "controller": DID, "publicKeyJwk": _jwk(first),
+              "publicKeyMultibase": "z" + _b58(b"\xed\x01" + second)}
+    return json.dumps({"id": DID, "verificationMethod": [method], "assertionMethod": ["#k1"]}).encode()
+
+
+def _b58(data: bytes) -> str:
+    alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+    number, text = int.from_bytes(data, "big"), ""
+    while number:
+        number, rest = divmod(number, 58)
+        text = alphabet[rest] + text
+    return "1" * (len(data) - len(data.lstrip(b"\0"))) + text
+
+
+def test_a_method_with_two_key_materials_is_malformed() -> None:
+    """Counter-example: publicKeyJwk names KEY and publicKeyMultibase names OTHER in one method.
+
+    The JWK was read and the multibase key ignored, so KEY was authorised; a reader that prefers
+    the multibase value trusts OTHER instead. DID Core 1.0 section 5.2.1 forbids the pair.
+    """
+    document = _two_materials(KEY, OTHER)
+    for key in (KEY, OTHER):
+        answer = authorize(_did_authority(document), key, did_document=document)
+        assert (answer.outcome, answer.reason) == (UNAUTHORIZED, "did_document_malformed")
+
+
+def test_a_did_key_does_not_speak_for_another_subject() -> None:
+    """Counter-example: the DID's assertion key signs a record that names another issuer."""
+    document = _did()
+    other = authorize(_did_authority(document), KEY, subject="did:web:mallory.example",
+                      did_document=document)
+    assert (other.outcome, other.reason) == (UNAUTHORIZED, "record_subject_not_did")
+    same = authorize(_did_authority(document), KEY, subject=DID, did_document=document)
+    assert (same.outcome, same.reason) == (AUTHORIZED, "key_in_assertion_method")
+    unnamed = authorize(_did_authority(document), KEY, did_document=document)
+    assert unnamed.outcome == AUTHORIZED
+
+
+@pytest.mark.parametrize(("authority", "member"), [
+    ({"kind": "did-web", "did": DID, "document": "did.json", "document_sha256": "0" * 64,
+      "kid": "#k9"}, "kid"),
+    ({"kind": "registry", "bindings": [{"subject": "s", "public_key_sha256": "0" * 64,
+                                        "not_before": "2026-01-01T00:00:00Z"}],
+      "revocations": []}, "revocations"),
+    ({"kind": "pin", "keys": [{"public_key_sha256": "0" * 64}], "subject": "s"}, "subject"),
+    ({"kind": "kt-inclusion", "tree_size": 1, "root_sha256": "0" * 64, "index": 0}, "index"),
+])
+def test_a_member_no_kind_reads_is_the_consumers_case_error(authority: dict, member: str) -> None:
+    """Counter-example: a restriction written under a member nobody reads widened the trust.
+
+    ``kid`` on a did-web authority and ``revocations`` beside registry bindings were ignored, so a
+    key the consumer meant to exclude was authorised.
+    """
+    with pytest.raises(CaseError, match=member):
+        authorize(authority, KEY, subject="s", at=_t("2026-06-01T00:00:00+00:00"))
+
+
+@pytest.mark.parametrize("authority", [
+    {"kind": "pin", "keys": [{"public_key_sha256": "0" * 64, "kid": 1}]},
+    {"kind": "registry", "bindings": [{"subject": ["s"], "public_key_sha256": "0" * 64,
+                                       "not_before": "2026-01-01T00:00:00Z"}]},
+])
+def test_a_key_id_or_subject_that_is_not_a_string_is_the_consumers_case_error(authority: dict) -> None:
+    with pytest.raises(CaseError):
+        authorize(authority, KEY, subject="s", at=_t("2026-06-01T00:00:00+00:00"))
+
+
+def test_a_bound_finer_than_a_microsecond_orders_exactly() -> None:
+    """Counter-example: a record 0.5 microseconds before not_before was authorised.
+
+    Truncating ``.0000005`` put the bound on the record's own microsecond. Rounding up keeps the
+    order exact against a record time, which is on the microsecond grid.
+    """
+    def registry(**bounds: str) -> dict:
+        return {"kind": "registry", "bindings": [{"subject": "s", "public_key_sha256": key_sha256(KEY),
+                                                  **bounds}]}
+
+    start = _t("2026-01-01T00:00:00+00:00")
+    early = authorize(registry(not_before="2026-01-01T00:00:00.0000005Z"), KEY, subject="s", at=start)
+    assert (early.outcome, early.reason) == (UNAUTHORIZED, "key_outside_validity")
+    inside = authorize(registry(not_before="2025-01-01T00:00:00Z",
+                                not_after="2026-01-01T00:00:00.0000005Z"), KEY, subject="s", at=start)
+    assert inside.outcome == AUTHORIZED
+    revoked = authorize(registry(not_before="2025-01-01T00:00:00Z",
+                                 revoked_at="2026-01-01T00:00:00.0000005Z"), KEY, subject="s", at=start)
+    assert revoked.outcome == AUTHORIZED

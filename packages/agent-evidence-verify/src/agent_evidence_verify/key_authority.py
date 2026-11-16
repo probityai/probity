@@ -24,7 +24,12 @@ Authority kinds, each a JSON object in the consumer policy:
     which two verification methods (listed or embedded under any relationship) share an id, after a
     relative ``#fragment`` is resolved against the DID, is malformed (DID Core 1.0 section 5.2): a
     reader that kept the first and one that kept the last would trust different keys. A JWK whose
-    ``use`` is not ``sig``, or whose ``key_ops`` omits ``verify``, does not sign.
+    ``use`` is not ``sig``, or whose ``key_ops`` omits ``verify``, does not sign. A method that
+    carries more than one verification material property (``publicKeyJwk`` and
+    ``publicKeyMultibase``, say) is malformed (DID Core 1.0 section 5.2.1): one reader would trust
+    the JWK and another the multibase key. The DID is the subject the key speaks for: a record
+    whose own subject is another identifier is refused, so a key of ``did:web:alice`` never
+    vouches for a record that says ``did:web:bob`` issued it.
 ``registry``
     ``{"kind": "registry", "bindings": [{"subject": "...", "public_key_sha256": "<hex>",
     "not_before": "<RFC 3339>", "not_after": "<RFC 3339, optional>",
@@ -33,8 +38,10 @@ Authority kinds, each a JSON object in the consumer policy:
     revoked at or before it: revocation ends the key for the subject, so a second, unrevoked
     binding of the same key does not bring it back. Instants are RFC 3339 ``date-time`` exactly
     (section 5.6: ``T`` and ``Z`` in either case, a numeric offset or ``Z``, no week or ordinal
-    dates, no basic format); a leap second (``:60``) reads as the last microsecond of its minute,
-    and a fraction finer than a microsecond is truncated.
+    dates, no basic format); a leap second (``:60``) is read only where one can fall, at 23:59 UTC
+    once the offset is applied, as the last microsecond of that minute, and a fraction finer than a
+    microsecond rounds up, so a bound compares exactly with a record time, which is on the
+    microsecond grid.
 ``kt-inclusion``
     ``{"kind": "kt-inclusion", "tree_size": n, "root_sha256": "<hex>", "inclusion_proof":
     "<artifact, optional>"}``. The consumer pins a transparency-log tree head; the case artifact
@@ -44,6 +51,11 @@ Authority kinds, each a JSON object in the consumer policy:
     proof reaches the pinned root. ``index`` and ``tree_size`` are JSON integers, never ``true`` or
     ``2.0``. Inclusion shows the binding was logged; it does not show a later log entry did not
     revoke it.
+
+Each kind reads only the members named above; any other member is the consumer's error and is
+refused, because a restriction the consumer wrote under a name this module does not read (a
+``kid`` on a ``did-web`` authority, a ``revocations`` list beside ``bindings``) would otherwise
+widen what is trusted without a word.
 
 Outcomes: ``authorized``; ``unauthorized`` with a reason (the evidence says the key may not speak
 for the record); ``unknown`` with a reason (the evidence to decide is missing). An adapter maps
@@ -72,6 +84,10 @@ from .ijson import IJSONError, parse_ijson
 KINDS = ("pin", "did-web", "registry", "kt-inclusion")
 AUTHORIZED, UNAUTHORIZED, UNKNOWN = "authorized", "unauthorized", "unknown"
 _HEX64 = re.compile(r"[0-9a-f]{64}")
+#: The members each kind reads; any other member of the consumer's authority is refused.
+_MEMBERS = {"pin": {"kind", "keys"}, "did-web": {"kind", "did", "document", "document_sha256"},
+            "registry": {"kind", "bindings"},
+            "kt-inclusion": {"kind", "tree_size", "root_sha256", "inclusion_proof"}}
 #: The curve and point length of each JWK key type this module turns into raw key bytes.
 _EC_CURVES = {"P-256": 32, "P-384": 48}
 _OKP_CURVES = {"Ed25519": 32, "Ed448": 57}
@@ -175,18 +191,26 @@ def parse_instant(value: Any, label: str = "instant") -> datetime.datetime:
         raise CaseError(f"{label}: expected an RFC 3339 date-time with an offset")
     year, month, day, hour, minute, second = (int(match.group(n)) for n in range(1, 7))
     fraction, zulu, sign, off_hour, off_minute = match.group(7, 8, 9, 10, 11)
-    micro = int((fraction or "0")[:6].ljust(6, "0"))
-    if second == 60:  # a leap second: the last representable instant of its minute
-        second, micro = 59, 999_999
+    fraction = fraction or ""
+    micro = int(fraction[:6].ljust(6, "0"))
+    # Round a finer fraction up: a record time is on the microsecond grid, and against such a time
+    # the rounded-up bound gives the same order as the exact one (truncation would not).
+    finer = datetime.timedelta(microseconds=1 if fraction[6:].strip("0") else 0)
     try:
         if zulu:
-            zone = datetime.UTC
+            offset = datetime.timedelta(0)
         else:
             if int(off_hour) > 23 or int(off_minute) > 59:
                 raise ValueError("offset out of range")
             offset = datetime.timedelta(hours=int(off_hour), minutes=int(off_minute))
-            zone = datetime.timezone(-offset if sign == "-" else offset)
-        return datetime.datetime(year, month, day, hour, minute, second, micro, tzinfo=zone)
+            offset = -offset if sign == "-" else offset
+        if second == 60:  # RFC 3339 section 5.7: a leap second ends a UTC day, at 23:59:60
+            utc_minute = (hour * 60 + minute - offset // datetime.timedelta(minutes=1)) % 1440
+            if utc_minute != 23 * 60 + 59:
+                raise ValueError("a leap second falls only at 23:59:60 UTC")
+            second, micro, finer = 59, 999_999, datetime.timedelta(0)
+        return datetime.datetime(year, month, day, hour, minute, second, micro,
+                                 tzinfo=datetime.timezone(offset)) + finer
     except ValueError as exc:
         raise CaseError(f"{label}: expected an RFC 3339 date-time with an offset") from exc
 
@@ -204,8 +228,10 @@ def _pin(config: dict, key: bytes, kid: str | None) -> tuple[str, str, list[str]
         raise CaseError("authority.keys: expected a non-empty list of pins")
     pins = []
     for index, pin in enumerate(keys):
-        if not isinstance(pin, dict) or not set(pin) <= {"public_key_sha256", "kid"}:
-            raise CaseError(f"authority.keys[{index}]: expected public_key_sha256 and optional kid")
+        if (not isinstance(pin, dict) or not set(pin) <= {"public_key_sha256", "kid"}
+                or not isinstance(pin.get("kid", ""), str)):
+            raise CaseError(f"authority.keys[{index}]: expected public_key_sha256 and optional "
+                            "string kid")
         pins.append((_digest(pin.get("public_key_sha256"), f"authority.keys[{index}]"),
                      pin.get("kid")))
     digests = [d for d, _ in pins]
@@ -242,6 +268,8 @@ def _did_methods(document: dict, did: str) -> tuple[dict[str, dict], set[str]]:
         if not isinstance(method, dict) or not isinstance(method.get("id"), str):
             raise _MalformedDocument("a verification method carries a string id")
         mid = absolute(method["id"])
+        if sum(1 for name in method if name.startswith("publicKey")) > 1:
+            raise _MalformedDocument(f"{mid} carries more than one verification material property")
         if mid in methods:
             raise _MalformedDocument(f"two verification methods share the id {mid}")
         methods[mid] = method
@@ -290,8 +318,8 @@ def _jwk_signs(jwk: dict) -> bool:
     return ops is None or (isinstance(ops, list) and "verify" in ops)
 
 
-def _did_web(config: dict, key: bytes, kid: str | None, document_bytes: bytes | None,
-             ) -> tuple[str, str, list[str]]:
+def _did_web(config: dict, key: bytes, kid: str | None, subject: str | None,
+             document_bytes: bytes | None) -> tuple[str, str, list[str]]:
     did = config.get("did")
     if not isinstance(did, str) or not did.startswith("did:web:"):
         raise CaseError("authority.did: expected a did:web identifier")
@@ -313,6 +341,8 @@ def _did_web(config: dict, key: bytes, kid: str | None, document_bytes: bytes | 
     keyed = {mid: _method_key(m, f"verificationMethod {mid}") for mid, m in methods.items()}
     trusted = [key_sha256(raw) for mid, (raw, signs) in keyed.items()
                if raw is not None and signs and mid in asserting]
+    if subject is not None and subject != did:
+        return UNAUTHORIZED, "record_subject_not_did", trusted
     holders = [mid for mid, (raw, _) in keyed.items() if raw == key]
     if not holders:
         return UNAUTHORIZED, "key_not_in_did_document", trusted
@@ -345,6 +375,8 @@ def _registry(config: dict, key: bytes, subject: str | None, at: datetime.dateti
                                                  "not_after", "revoked_at"}:
             raise CaseError(f"{label}: expected subject, public_key_sha256, not_before, "
                             "and optional not_after and revoked_at")
+        if not isinstance(binding["subject"], str):
+            raise CaseError(f"{label}.subject: expected a string")
         parsed.append((binding["subject"], _digest(binding["public_key_sha256"], label),
                        parse_instant(binding["not_before"], f"{label}.not_before"),
                        parse_instant(binding["not_after"], f"{label}.not_after")
@@ -424,10 +456,13 @@ def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: st
     if not isinstance(key, bytes) or not key:
         raise CaseError("the signing key is not key bytes")
     kind = authority["kind"]
+    unread = sorted(set(authority) - _MEMBERS[kind])
+    if unread:
+        raise CaseError(f"authority: {kind} reads no member {', '.join(unread)}")
     if kind == "pin":
         outcome, reason, trusted = _pin(authority, key, kid)
     elif kind == "did-web":
-        outcome, reason, trusted = _did_web(authority, key, kid, did_document)
+        outcome, reason, trusted = _did_web(authority, key, kid, subject, did_document)
     elif kind == "registry":
         outcome, reason, trusted = _registry(authority, key, subject, at)
     else:

@@ -21,7 +21,7 @@ Outcomes:
 | Outcome | Adapter decision | Examples of the reason |
 |---|---|---|
 | `authorized` | the adapter's own verdict stands | `key_pinned`, `key_in_assertion_method`, `key_bound_at_time`, `key_in_log` |
-| `unauthorized` | `contradicted` | `key_not_pinned`, `key_id_mismatch`, `key_not_in_assertion_method`, `key_not_for_signing`, `did_document_not_pinned`, `did_document_malformed`, `inclusion_proof_malformed`, `key_revoked`, `key_outside_validity`, `key_not_bound_to_subject`, `key_not_in_log` |
+| `unauthorized` | `contradicted` | `key_not_pinned`, `key_id_mismatch`, `record_subject_not_did`, `key_not_in_assertion_method`, `key_not_for_signing`, `did_document_not_pinned`, `did_document_malformed`, `inclusion_proof_malformed`, `key_revoked`, `key_outside_validity`, `key_not_bound_to_subject`, `key_not_in_log` |
 | `unknown` | `not_established` | `no_key_authority_in_policy`, `did_document_unavailable`, `record_subject_unknown`, `inclusion_proof_unavailable` |
 
 Rules a second reader of the same policy and evidence must apply the same way:
@@ -30,13 +30,23 @@ Rules a second reader of the same policy and evidence must apply the same way:
   the DID, is malformed, whether the methods sit under `verificationMethod` or are embedded under a relationship
   (DID Core 1.0 section 5.2). A reader that kept the first copy and one that kept the last would trust different
   keys. `verificationMethod` and each relationship must be lists.
+- A verification method that carries more than one verification material property (`publicKeyJwk` and
+  `publicKeyMultibase`, say) makes the document malformed (DID Core 1.0 section 5.2.1): one reader would trust
+  the JWK and another the multibase key.
 - A JWK whose `use` is not `sig`, or whose `key_ops` does not list `verify`, does not sign (RFC 7517 sections 4.2
   and 4.3).
+- A DID's key speaks for that DID only: a record whose own subject is another identifier is
+  `record_subject_not_did`. A record that names no subject is judged on the key alone.
+- Each kind reads only the members its row names. Any other member (a `kid` on `did-web`, a `revocations` list
+  beside `bindings`) is the consumer's case error, never ignored: an ignored restriction widens what is trusted.
+  A pin's `kid` and a binding's `subject` are strings.
 - Revocation ends a key for its subject: a second, unrevoked binding of the same subject and key does not bring
   it back.
 - Instants are RFC 3339 `date-time` exactly: `T` and `Z` in either case, `Z` or a numeric offset. ISO 8601 week
   and ordinal dates, the basic format, a comma fraction and a space separator are refused. A leap second (`:60`)
-  reads as the last microsecond of its minute; a fraction finer than a microsecond is truncated.
+  is read only at 23:59 UTC once the offset is applied (RFC 3339 section 5.7), as the last microsecond of that
+  minute. A fraction finer than a microsecond rounds up: a record time is on the microsecond grid, and against it
+  the rounded-up bound orders exactly where truncation would let a record 0.5 microseconds early through.
 - An inclusion proof's `index` and `tree_size` are JSON integers; `true` and `2.0` are malformed. Inclusion shows
   the binding was logged, not that no later entry revoked it.
 
