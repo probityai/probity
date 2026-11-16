@@ -36,8 +36,9 @@ Authority kinds, each a JSON object in the consumer policy:
     dates, no basic format); a leap second (``:60``) reads as the last microsecond of its minute,
     and a fraction finer than a microsecond is truncated.
 ``kt-inclusion``
-    ``{"kind": "kt-inclusion", "tree_size": n, "root_sha256": "<hex>"}``. The consumer pins a
-    transparency-log tree head; the case supplies an RFC 6962 inclusion proof
+    ``{"kind": "kt-inclusion", "tree_size": n, "root_sha256": "<hex>", "inclusion_proof":
+    "<artifact, optional>"}``. The consumer pins a transparency-log tree head; the case artifact
+    the policy names supplies an RFC 6962 inclusion proof
     ``{"index": i, "tree_size": n, "path": ["<hex>", ...]}`` for the leaf
     ``RFC 8785({"key_sha256": "<hex>", "subject": "<subject>"})``. The key is authorised when the
     proof reaches the pinned root. ``index`` and ``tree_size`` are JSON integers, never ``true`` or

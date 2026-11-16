@@ -334,3 +334,71 @@ def test_a_signed_artifact_agrees_only_under_the_consumers_key_authority(tmp_pat
     assert (refused["decision"], refused["reason"]) == ("contradicted", "key_not_pinned")
     silent, _ = _poc(tmp_path, None)
     assert (silent["decision"], silent["reason"]) == ("not_established", "no_key_authority_in_policy")
+
+
+def _poc_with(tmp_path: Path, key_authority: dict, extra: dict[str, bytes]) -> tuple[dict, bytes, dict]:
+    """The example chain judged under ``key_authority``, with ``extra`` bound as case artifacts."""
+    from agent_evidence_verify.adapters import proof_of_control
+
+    artifact = json.loads((Path(proof_of_control.__file__).parents[3]
+                           / "examples/corpus-routes/proof-of-control/artifact.json").read_text())
+    files = {"artifact": json.dumps(artifact).encode(), **extra}
+    bindings = {}
+    for name, data in files.items():
+        (tmp_path / name).write_bytes(data)
+        bindings[name] = {"path": name, "length": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+    case = {"schema_version": "probity-case/v1", "case_id": "c", "artifacts": bindings}
+    assessment = {"claim_type": "proof_of_control/v1", "input": "artifact", "key_authority": key_authority}
+    policy = {"schema_version": "probity-policy/v1", "assessments": {"c": assessment}}
+    return adjudicate(case, policy, tmp_path), bytes.fromhex(artifact["public_key"]), artifact
+
+
+def test_a_did_web_authority_decides_through_proof_of_control(tmp_path: Path) -> None:
+    """Before the fix the adapter never bound the DID document: every did-web policy was unknown."""
+    _, carried, _ = _poc_with(tmp_path, {"kind": "pin", "keys": [
+        {"public_key_sha256": key_sha256(KEY)}]}, {})
+    document = _did(key=carried)
+    agreed, _, _ = _poc_with(tmp_path, _did_authority(document), {"did.json": document})
+    assert (agreed["decision"], agreed["reason"]) == ("supported", "artifact_verifies")
+    assert agreed["scope"]["key_authority_document"]["sha256"] == hashlib.sha256(document).hexdigest()
+    hidden = _did(key=carried, asserting=False)
+    refused, _, _ = _poc_with(tmp_path, _did_authority(hidden), {"did.json": hidden})
+    assert (refused["decision"], refused["reason"]) == ("contradicted", "key_not_in_assertion_method")
+
+
+def test_a_registry_authority_reads_each_records_issuer_and_issue_time(tmp_path: Path) -> None:
+    """The example chain's records say iss https://verifier.example/poc, iat 1754400000 (5 Aug 2025)."""
+    _, carried, artifact = _poc_with(tmp_path, {"kind": "pin", "keys": [
+        {"public_key_sha256": key_sha256(KEY)}]}, {})
+    issuer = artifact["records"][0]["iss"]
+
+    def registry(not_before: str, **more) -> dict:
+        return {"kind": "registry", "bindings": [{"subject": issuer, "public_key_sha256": key_sha256(carried),
+                                                  "not_before": not_before, **more}]}
+
+    covered, _, _ = _poc_with(tmp_path, registry("2025-01-01T00:00:00Z"), {})
+    assert (covered["decision"], covered["reason"]) == ("supported", "artifact_verifies")
+    early, _, _ = _poc_with(tmp_path, registry("2025-09-01T00:00:00Z"), {})
+    assert (early["decision"], early["reason"]) == ("contradicted", "key_outside_validity")
+    revoked, _, _ = _poc_with(tmp_path, registry("2025-01-01T00:00:00Z",
+                                                 revoked_at="2025-08-01T00:00:00Z"), {})
+    assert (revoked["decision"], revoked["reason"]) == ("contradicted", "key_revoked")
+
+
+def test_a_kt_inclusion_authority_reads_the_proof_the_policy_names(tmp_path: Path) -> None:
+    _, carried, artifact = _poc_with(tmp_path, {"kind": "pin", "keys": [
+        {"public_key_sha256": key_sha256(KEY)}]}, {})
+    issuer = artifact["records"][0]["iss"]
+    root, paths = _log([b"x", kt_leaf(carried, issuer)])
+    authority = {"kind": "kt-inclusion", "tree_size": 2, "root_sha256": root.hex(),
+                 "inclusion_proof": "proof.json"}
+    proof = json.dumps({"index": 1, "tree_size": 2, "path": [h.hex() for h in paths[1]]}).encode()
+    agreed, _, _ = _poc_with(tmp_path, authority, {"proof.json": proof})
+    assert (agreed["decision"], agreed["reason"]) == ("supported", "artifact_verifies")
+    broken, _, _ = _poc_with(tmp_path, authority, {"proof.json": b'{"index":1,"index":1}'})
+    assert (broken["decision"], broken["reason"]) == ("contradicted", "inclusion_proof_malformed")
+    silent, _, _ = _poc_with(tmp_path, {k: v for k, v in authority.items() if k != "inclusion_proof"}, {})
+    assert (silent["decision"], silent["reason"]) == ("not_established", "inclusion_proof_unavailable")
+    with pytest.raises(CaseError):
+        _poc_with(tmp_path, {"kind": "pin", "keys": [{"public_key_sha256": key_sha256(carried)}],
+                             "document": "proof.json"}, {"proof.json": proof})

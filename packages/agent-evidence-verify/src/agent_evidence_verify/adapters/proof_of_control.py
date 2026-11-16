@@ -16,7 +16,12 @@ fails is ``contradicted`` with the check's code as the reason. A signed artifact
 embeds their own key. Its verdict therefore also needs the key authorised under the consumer's
 ``key_authority`` (see :mod:`agent_evidence_verify.key_authority`): an unauthorised key is
 ``contradicted`` with the authority's reason, a key no authority decides (no ``key_authority`` in
-the policy, or a token that carries no key at all) is ``not_established``.
+the policy, or a token that carries no key at all) is ``not_established``. The authority is asked
+once per signed statement (the token, or every record of a chain) with that statement's ``iss`` as
+the subject and its ``iat`` as the instant, so a ``registry`` or ``kt-inclusion`` authority can
+decide. The evidence a ``did-web`` or ``kt-inclusion`` authority needs is a case artifact the policy
+names: ``document`` for the DID document, ``inclusion_proof`` for the log's inclusion proof. The
+least favourable answer across the statements decides.
 
 ``main`` is the stdin bridge for ``python -m poc_evidence_vectors.run_vectors
 --verifier agent-evidence-verify-poc``: one case on stdin, one JSON line out.
@@ -25,6 +30,7 @@ the policy, or a token that carries no key at all) is ``not_established``.
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import json
 import re
@@ -500,6 +506,61 @@ LIMIT = ("Checks the artifact's structure, canonical form, signatures and Merkle
          "an inclusion or consistency proof are the artifact's own and carry no trust outside it.")
 #: Artifact kinds whose verdict rests on a signature under the key the artifact carries.
 SIGNED_KINDS = ("token", "chain")
+#: Which answer decides when statements of one artifact get different answers.
+_SEVERITY = {"unauthorized": 2, "unknown": 1, "authorized": 0}
+
+
+def _signed_statements(artifact: dict) -> list[tuple[str | None, object]]:
+    """``(iss, at)`` of every statement the artifact's key signed, in order, without repeats."""
+    if artifact["kind"] == "token":
+        bodies = [parse(artifact["text"])]
+    else:
+        bodies = list(artifact["records"])
+    seen: list[tuple[str | None, object]] = []
+    for body in bodies:
+        iss = body.get("iss") if isinstance(body, dict) else None
+        entry = (iss if isinstance(iss, str) else None,
+                 _issued_at(body.get("iat") if isinstance(body, dict) else None))
+        if entry not in seen:
+            seen.append(entry)
+    return seen
+
+
+def _issued_at(iat):
+    """A token's ``iat`` (seconds since the epoch) as an aware instant, or None when unusable."""
+    if isinstance(iat, bool) or not isinstance(iat, (int, float)):
+        return None
+    try:
+        return datetime.datetime.fromtimestamp(iat, datetime.UTC)
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _authority_evidence(authority, artifacts, artifact_root, scope):
+    """The DID document bytes and the inclusion proof the policy names as case artifacts."""
+    from ..common import CaseError
+    from ..ijson import IJSONError
+    from .bound_records import bound
+    document = proof = None
+    if not isinstance(authority, dict):
+        return document, proof
+    kind = authority.get("kind")
+    if kind == "did-web":
+        document, scope["key_authority_document"] = bound(
+            artifacts, artifact_root, authority.get("document"), "assessment.key_authority.document")
+    elif kind == "kt-inclusion":
+        if "inclusion_proof" in authority:
+            raw, scope["key_authority_inclusion_proof"] = bound(
+                artifacts, artifact_root, authority["inclusion_proof"],
+                "assessment.key_authority.inclusion_proof")
+            if raw is not None:
+                try:
+                    proof = parse_ijson(raw)
+                except IJSONError:
+                    proof = "malformed"  # authorize() answers inclusion_proof_malformed
+    elif "document" in authority or "inclusion_proof" in authority:
+        raise CaseError("assessment.key_authority: evidence named for a kind that reads none")
+    return document, proof
 
 
 def judge(case: dict) -> str | None:
@@ -555,7 +616,12 @@ def adjudicate(case, policy, artifact_root):
         key = bytes.fromhex(key_hex)
     except ValueError:
         return decision(case_id, CLAIM_TYPE, scope, "contradicted", "signature_key_malformed", [check])
-    authority = authorize(assessment.get("key_authority"), key)
+    config = assessment.get("key_authority")
+    document, proof = _authority_evidence(config, artifacts, artifact_root, scope)
+    answers = [authorize(config, key, subject=subject, at=at, did_document=document,
+                         inclusion_proof=proof)
+               for subject, at in _signed_statements(artifact) or [(None, None)]]
+    authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
     checks = [check, authority.check()]
     if authority.outcome == AUTHORIZED:
         return decision(case_id, CLAIM_TYPE, scope, "supported", "artifact_verifies", checks)

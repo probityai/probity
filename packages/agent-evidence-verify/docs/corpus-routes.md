@@ -122,7 +122,8 @@ corpus runner calls: `python3 -m poc_evidence_vectors.run_vectors --verifier age
 171 cases. A signed artifact (a token or a chain) carries its own public key, which proves nothing alone, so its
 verdict also needs that key authorised under the assessment's `key_authority` ([key authority](key-authority.md)):
 an unauthorised key is `contradicted` with the authority's reason, and a key no authority decides is
-`not_established`. The roots of an inclusion or consistency proof are the artifact's own and carry no trust outside
+`not_established`. The authority is asked for each signed statement with its `iss` and `iat`, so a registry or
+key-transparency authority can decide; a DID document or an inclusion proof is a case artifact the policy names. The roots of an inclusion or consistency proof are the artifact's own and carry no trust outside
 it.
 
 ## Why the rules are ported, not imported
