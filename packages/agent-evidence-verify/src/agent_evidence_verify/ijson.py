@@ -177,12 +177,24 @@ def describe(exc: IJSONError) -> str:
     return f"{LEGACY_WORDS.get(exc.code, exc.code)}: {exc.detail}"
 
 
+#: Whitespace in RFC 8259 section 2. ``str.strip`` and ``str.splitlines`` also treat U+2028,
+#: U+0085, U+001C and others as breaks or blanks, which JSON allows raw inside a string.
+JSON_WHITESPACE = " \t\n\r"
+
+
 def parse_lines(data: bytes | str, **options: Any) -> list[Any]:
-    """Newline-delimited I-JSON: each non-blank line under :func:`parse_ijson`."""
+    """Newline-delimited I-JSON: each line with JSON content under :func:`parse_ijson`.
+
+    Records are split on LF alone, with one CR before it dropped (CRLF), as NDJSON and JSON Lines
+    define it. ``str.splitlines`` would also split on CR alone, U+001C to U+001E, U+0085, U+2028
+    and U+2029: it would cut a valid record whose string carries one of those raw, and read
+    ``{"a":1}<U+001C>{"b":2}``, one line no JSON reader accepts, as two records.
+    """
     text = decode_utf8(data)
     out = []
-    for number, line in enumerate(text.splitlines(), start=1):
-        if not line.strip():
+    for number, piece in enumerate(text.split("\n"), start=1):
+        line = piece.removesuffix("\r")
+        if not line.strip(JSON_WHITESPACE):
             continue
         try:
             out.append(parse_ijson(line, **options))

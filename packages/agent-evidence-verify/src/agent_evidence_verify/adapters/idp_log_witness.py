@@ -54,7 +54,14 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _digest, _string
-from ..ijson import IJSONError, decode_utf8, describe, parse_ijson, parse_lines
+from ..ijson import (
+    JSON_WHITESPACE,
+    IJSONError,
+    decode_utf8,
+    describe,
+    parse_ijson,
+    parse_lines,
+)
 from . import audit_principal
 from .bound_records import assessment_for, bound, decision
 
@@ -128,7 +135,7 @@ def _actor_subjects(actor: Any) -> set[str]:
 
 def _auth0_events(raw: bytes) -> list[_Event]:
     try:
-        stripped = decode_utf8(raw).strip()
+        stripped = decode_utf8(raw).strip(JSON_WHITESPACE)
         items = parse_ijson(stripped) if stripped.startswith("[") else parse_lines(stripped)
     except IJSONError as error:
         raise CaseError(f"idp export: not JSON or newline-delimited JSON ({describe(error)})") from error

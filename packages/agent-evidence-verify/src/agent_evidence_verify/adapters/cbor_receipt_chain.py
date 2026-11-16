@@ -43,7 +43,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import CaseError, _object, _string
-from ..ijson import IJSONError, describe, parse_ijson
+from ..ijson import JSON_WHITESPACE, IJSONError, decode_utf8, describe, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "cbor_receipt_chain/v1"
@@ -197,9 +197,14 @@ def _spec(assessment: dict) -> dict:
 
 
 def _lines(data: bytes, profile: dict) -> list[str]:
+    """One receipt per LF-delimited line; bytes that are not UTF-8 are refused, never replaced."""
+    try:
+        whole = decode_utf8(data)
+    except IJSONError as exc:
+        raise Malformed(f"records: {describe(exc)}") from exc
     out = []
-    for number, raw in enumerate(data.decode("ascii", "replace").splitlines(), 1):
-        text = raw.strip()
+    for number, raw in enumerate(whole.split("\n"), 1):
+        text = raw.strip(JSON_WHITESPACE)
         if not text:
             continue
         if profile["line_member"] is not None:

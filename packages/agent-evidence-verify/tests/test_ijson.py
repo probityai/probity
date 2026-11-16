@@ -90,6 +90,46 @@ def test_parse_lines_names_the_line() -> None:
         parse_lines(b'{"a":1}\n{"b":1,"b":2}\n')
 
 
+#: Break-it counter-examples against ``str.splitlines``: a record whose string carries a separator
+#: Python treats as a line break, and one line that holds two values behind a non-JSON separator.
+VALID_LINES = [
+    ('{"a":"x\u2028y"}\n'.encode(), [{"a": "x\u2028y"}]),
+    ('{"a":"x\u0085y"}\n'.encode(), [{"a": "x\u0085y"}]),
+    (b'{"a":1}\r\n{"b":2}\r\n', [{"a": 1}, {"b": 2}]),
+    (b' \t{"a":1}\t \n', [{"a": 1}]),
+]
+INVALID_LINES = [b'{"a":1}\x1c{"b":2}\n', b'{"a":1}\r{"b":2}\n', '{"a":1}\u2028{"b":2}\n'.encode(),
+                 '\u00a0{"a":1}\n'.encode(), b'{"a":1}\x0b\n']
+
+
+@pytest.mark.parametrize("raw,records", VALID_LINES)
+def test_parse_lines_splits_on_line_feed_alone(raw: bytes, records: list) -> None:
+    assert parse_lines(raw) == records
+
+
+@pytest.mark.parametrize("raw", INVALID_LINES)
+def test_parse_lines_never_splits_one_line_into_two_records(raw: bytes) -> None:
+    with pytest.raises(IJSONError):
+        parse_lines(raw)
+
+
+def test_an_idp_export_behind_a_non_json_blank_is_refused() -> None:
+    from agent_evidence_verify.adapters import idp_log_witness
+
+    with pytest.raises(CaseError):
+        idp_log_witness._auth0_events('\u00a0[{"type":"seacft"}]'.encode())
+    with pytest.raises(CaseError):
+        idp_log_witness._auth0_events(b'{"type":"seacft"}\x1c{"type":"seacft"}\n')
+
+
+def test_receipt_lines_that_are_not_utf8_are_refused_not_replaced() -> None:
+    profile = {"line_member": "receipt"}
+    with pytest.raises(cbor_receipt_chain.Malformed, match="not-utf8"):
+        cbor_receipt_chain._lines(b'{"receipt":"oA","note":"\xff"}\n', profile)
+    assert cbor_receipt_chain._lines(b'{"receipt":"oA"}\r\n\n{"receipt":"oB"}\n',
+                                     profile) == ["oA", "oB"]
+
+
 def test_an_unregistered_code_is_a_programming_error() -> None:
     with pytest.raises(AssertionError):
         IJSONError("made-up", "x")
