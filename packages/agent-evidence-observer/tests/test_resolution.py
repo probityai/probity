@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from probity_observer import SigningKey, VerificationError, verify_trajectory
 from probity_observer.resolution import ResolutionObserver
 

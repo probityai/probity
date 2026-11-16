@@ -30,7 +30,13 @@ import os
 from pathlib import Path
 from typing import Any
 
-from .crypto import SigningKey, VerificationError, canonical, strict_loads, verify_signature
+from .crypto import (
+    SigningKey,
+    VerificationError,
+    canonical,
+    strict_loads,
+    verify_signature,
+)
 from .history import GENESIS
 from .ledger import HEAD_DOMAIN
 

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 from pathlib import Path
 from typing import Any
 
 import pytest
 import rfc8785
-
 from probity_observer import SigningKey, VerificationError
 from probity_observer.history import GENESIS
 from probity_observer.ledger import HEAD_DOMAIN
@@ -73,7 +73,7 @@ def test_prev_is_plain_sha256_over_rfc8785_bytes(tmp_path: Path) -> None:
     path, head, _ = _closed(tmp_path)
     entries = _entries(path)
     assert entries[0]["prev"] == GENESIS
-    for earlier, later in zip(entries, entries[1:]):
+    for earlier, later in itertools.pairwise(entries):
         assert later["prev"] == hashlib.sha256(rfc8785.dumps(earlier)).hexdigest()
     assert head["head"] == hashlib.sha256(rfc8785.dumps(entries[-1])).hexdigest()
 

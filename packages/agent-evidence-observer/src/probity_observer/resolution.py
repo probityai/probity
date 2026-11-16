@@ -41,7 +41,7 @@ __all__ = ["CALL_KIND", "RESOLUTION_KIND", "ResolutionObserver"]
 def _instant(value: str) -> str:
     if not isinstance(value, str) or not _RFC3339.fullmatch(value):
         raise VerificationError("observer time must be RFC 3339 UTC ending in Z")
-    datetime.fromisoformat(value.replace("Z", "+00:00"))
+    datetime.fromisoformat(value)
     return value
 
 
