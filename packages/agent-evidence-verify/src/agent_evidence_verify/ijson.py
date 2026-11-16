@@ -162,7 +162,7 @@ def parse_ijson(data: bytes | str, *, integers_only: bool = False, max_depth: in
         raise
     except RecursionError as exc:
         raise IJSONError("nesting-too-deep", "nesting exceeds the interpreter's limit") from exc
-    except ValueError as exc:
+    except json.JSONDecodeError as exc:  # a caller's own hook raises through unchanged
         raise IJSONError("not-parseable", str(exc)) from exc
     _surrogate_free(value)
     return value

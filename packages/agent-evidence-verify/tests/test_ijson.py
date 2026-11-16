@@ -77,6 +77,14 @@ def test_integers_only_refuses_a_fraction() -> None:
     assert caught.value.code == "value-not-representable"
 
 
+def test_a_callers_own_hook_error_passes_through_unchanged() -> None:
+    def no_fraction(text: str) -> float:
+        raise CaseError("record number must be a safe integer")
+
+    with pytest.raises(CaseError, match="safe integer"):
+        parse_json(b'{"a":1.5}', max_bytes=64, max_depth=4, max_nodes=16, parse_float=no_fraction)
+
+
 def test_parse_lines_names_the_line() -> None:
     assert parse_lines(b'{"a":1}\n\n{"b":2}\n') == [{"a": 1}, {"b": 2}]
     with pytest.raises(IJSONError, match="line 2"):
