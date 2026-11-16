@@ -42,10 +42,10 @@ def partition(alerts: list[dict], rules: list[dict[str, str]]) -> tuple[list[tup
 
 def fetch_open(repo: str = REPO) -> list[dict]:
     out = subprocess.run(
-        ["gh", "api", "--paginate", "--slurp", f"repos/{repo}/dependabot/alerts?state=open&per_page=100"],
+        ["gh", "api", "--paginate", "--jq", ".[]", f"repos/{repo}/dependabot/alerts?state=open&per_page=100"],
         capture_output=True, text=True, check=True,
     ).stdout
-    return [alert for page in json.loads(out) for alert in page]
+    return [json.loads(line) for line in out.splitlines() if line.strip()]
 
 
 def dismiss(alert: dict, rule: dict[str, str], repo: str = REPO) -> None:
