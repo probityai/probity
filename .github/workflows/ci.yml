@@ -168,6 +168,44 @@ jobs:
       - run: uv sync --frozen --extra test --extra a2a
       - run: uv run --frozen --extra test --extra a2a pytest
 
+  # The package declares Python 3.11 and the lowest cryptography release it allows, so a consumer
+  # that tests on 3.11 or locks cryptography 50.0.0 can pin it. The workspace lock is for 3.12 and
+  # later, so this lane installs the package from its own manifest at the lowest direct versions,
+  # runs the whole suite on 3.11, and locks a scratch 3.11 consumer project against it.
+  agent-evidence-verify-python-floor:
+    name: "agent-evidence-verify / python-floor"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-verify'] }}
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: '3.11'
+      - name: install at the lowest direct versions on Python 3.11
+        run: |
+          uv venv --python 3.11 .build/floor
+          uv pip install --python .build/floor/bin/python --resolution lowest-direct '.[test]'
+          .build/floor/bin/python -c "import sys, cryptography; print(sys.version.split()[0], cryptography.__version__); assert sys.version_info[:2] == (3, 11); assert cryptography.__version__ == '50.0.0'"
+      - run: .build/floor/bin/python -m pytest
+      - name: a 3.11 consumer project locks against the package
+        run: |
+          mkdir -p .build/consumer
+          cat > .build/consumer/pyproject.toml <<TOML
+          [project]
+          name = "floor-consumer"
+          version = "0"
+          requires-python = ">=3.11"
+          dependencies = ["agent-evidence-verify @ file://$PWD", "cryptography==50.0.0"]
+          TOML
+          uv lock --project .build/consumer
+
   # Replays the source-coverage corpus shipped in the pinned agent-evidence-vectors
   # package from PyPI against this checkout's verifier, the way any other verifier
   # author would. A drift between the vendored and the published corpus is red here.
@@ -3456,7 +3494,7 @@ jobs:
 
   ci-ok:
     if: ${{ (github.event_name != 'pull_request' || startsWith(github.head_ref, 'merge-train/')) && (always()) }}
-    needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, records-verify-tests, observer-witness, observer-witnessed-run-selection, family-resolves, integration-keycloak-evidence-hook, pypi-upload-selftest, version-pins]
+    needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-python-floor, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, records-verify-tests, observer-witness, observer-witnessed-run-selection, family-resolves, integration-keycloak-evidence-hook, pypi-upload-selftest, version-pins]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed
