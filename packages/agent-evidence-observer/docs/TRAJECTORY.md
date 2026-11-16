@@ -20,23 +20,35 @@ accepted and every other value is refused.
 
 ```python
 from pathlib import Path
-from probity_observer import SigningKey, TrajectoryRecorder, verify_trajectory
+from probity_observer import TrajectoryRecorder, TrajectoryWitness, verify_trajectory
 
-recorder = TrajectoryRecorder(Path("trajectory.jsonl"), trajectory_id="run-42")
+witness = TrajectoryWitness(witness_key)   # runs where the agent cannot reach witness_key
+recorder = TrajectoryRecorder(Path("trajectory.jsonl"), trajectory_id="run-42", witness=witness)
 recorder.emit({"type": "tool.call", "tool": "lookup", "status": "ok"})
-head = recorder.close(witness_key)          # witness_key is held outside the agent
+head = recorder.close()
 verify_trajectory(Path("trajectory.jsonl"), head, pinned_witness_public_hex, trajectory_id="run-42")
 ```
 
-`close(witness)` writes a head in the `probity-trajectory-head-v1` format:
+The witness counts the trajectory itself. `TrajectoryWitness.open(id)`
+registers an identifier once and never again, `observe(id, entry)` takes each
+entry as the recorder writes it and checks `seq` and `prev` against the
+witness's own count and last digest, and `close(id, claimed)` signs the head
+the witness counted, refusing a claim whose identifier, count or last digest
+differs. A producer that drops the tail, swaps or rewrites an entry the witness
+already saw, or opens the identifier again to start over, gets no head for it.
+That holds against the producer only when the witness runs in a process or
+account the producer cannot reach; in the agent's own process it holds against
+a third party who edits storage.
+
+`close()` returns a head in the `probity-trajectory-head-v1` format:
 `format`, `trajectory` (the identifier), `count`, `head` (the last entry's
 digest, or the genesis for an empty trajectory), `keyid` and an Ed25519
 `signature` over the first four, in the `probity-trajectory-head-v1` signing
 domain. The domain is not the [witness ledger](WITNESS-LEDGER.md)'s
 `probity-witness-ledger-head-v0`, so a witness that signs both never has a
 ledger head read as a trajectory head. The recorder never holds the witness
-key; `head_payload()` gives the unsigned payload when the signer lives in
-another process.
+key; `head_payload()` is only its claim, which the witness compares and never
+signs.
 
 `verify_trajectory(path, retained_head, pinned_witness_key, trajectory_id=..., canonicalization=...)`
 takes the identifier from the consumer, never from the producer's files, and

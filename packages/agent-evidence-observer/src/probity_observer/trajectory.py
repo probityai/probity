@@ -13,12 +13,18 @@ The chain fixes the start and the middle of a trajectory and nothing about its
 end: a producer that drops the last events still holds a chain that verifies.
 Closing the trajectory therefore writes a head in the
 ``probity-trajectory-head-v1`` format (identifier, count and last digest),
-signed by a witness key the caller supplies and the consumer pins. The head has
-its own signing domain, so a witness that also signs ledger heads cannot have
-one read as the other, and it names the identifier, so the head of one
-trajectory never verifies another. Only a head signed by a key outside the
-producer's reach fixes the end; a head the producer signs with its own key fixes
-it only against a third party who edits storage.
+signed by a :class:`TrajectoryWitness` whose public key the consumer pins. The
+witness never signs a head the producer composed: it registers the identifier
+once at open, receives every entry as it is written, checks each link itself,
+and at close signs only its own count and last digest, refusing a close whose
+claim differs. A producer that drops, swaps or rewrites entries after the
+witness saw them, or reopens an identifier to start again, cannot get a head
+for that. The head has its own signing domain, so a witness that also signs
+ledger heads cannot have one read as the other, and it names the identifier, so
+the head of one trajectory never verifies another. A witness in the producer's
+own process fixes the end only against a third party who edits storage; it
+fixes it against the producer when it runs in a process or account the
+producer cannot reach.
 
 The canonical bytes are the observer's JSON profile: RFC 8785 restricted to
 integers below 2^53, with floats refused. That is the
@@ -42,6 +48,7 @@ from .crypto import (
     strict_loads,
     verify_signature,
 )
+
 CANONICALIZATION_TERM = "https://w3id.org/agent-evidence/vocab/v1/canonicalization"
 CANONICALIZATIONS = frozenset({"jcs_integer_only_v1", "rfc8785"})
 DEFAULT_CANONICALIZATION = "jcs_integer_only_v1"
@@ -58,6 +65,7 @@ __all__ = [
     "GENESIS_FORMAT",
     "HEAD_FORMAT",
     "TrajectoryRecorder",
+    "TrajectoryWitness",
     "entry_digest",
     "genesis",
     "verify_trajectory",
@@ -105,24 +113,125 @@ def genesis(trajectory_id: str) -> str:
         {"format": GENESIS_FORMAT, "trajectory": check_trajectory_id(trajectory_id)})).hexdigest()
 
 
-class TrajectoryRecorder:
-    """Append hash-linked entries to a JSONL file and close it with a signed head.
+def _check_entry(entry: Any, label: str) -> dict[str, Any]:
+    """Return an entry with exactly the entry fields, an integer ``seq`` and an object event."""
+    if not isinstance(entry, dict) or set(entry) != ENTRY_FIELDS:
+        raise VerificationError(f"{label} has invalid fields")
+    if type(entry["seq"]) is not int:
+        raise VerificationError(f"{label}: seq is not an integer")
+    if not isinstance(entry["event"], dict):
+        raise VerificationError(f"{label}: event is not a JSON object")
+    return entry
 
-    The recorder never holds the witness key. ``close`` takes the signer from
-    the caller, so a deployment can keep the witness key in a separate process
-    or account and hand only the head payload across.
+
+class TrajectoryWitness:
+    """Count trajectories as their entries arrive and sign only what was counted.
+
+    The witness holds the signing key. ``open`` registers an identifier once,
+    ``observe`` takes each entry as it is written and checks ``seq`` and
+    ``prev`` against the witness's own count and last digest, and ``close``
+    signs the witness's own head payload. A producer's claim is compared, never
+    signed: a close whose identifier, count or last digest differs from what the
+    witness counted is refused, and an identifier is never opened twice.
+    Run it in a process or account the producer cannot reach for the head to
+    bind the producer; in the same process it binds only storage edits.
     """
 
-    def __init__(self, path: Path, *, trajectory_id: str,
+    def __init__(self, key: SigningKey) -> None:
+        self._key = key
+        self._open: dict[str, tuple[int, str]] = {}
+        self._used: set[str] = set()
+
+    @property
+    def public_hex(self) -> str:
+        """The public key a consumer pins for this witness's heads."""
+        return self._key.public_hex
+
+    def open(self, trajectory_id: str) -> str:
+        """Register a new trajectory and return its identifier.
+
+        Raises:
+            VerificationError: The identifier is invalid or was opened before.
+        """
+        check_trajectory_id(trajectory_id)
+        if trajectory_id in self._used:
+            raise VerificationError(f"trajectory {trajectory_id!r} was already opened at this witness")
+        self._used.add(trajectory_id)
+        self._open[trajectory_id] = (0, genesis(trajectory_id))
+        return trajectory_id
+
+    def _state(self, trajectory_id: str) -> tuple[int, str]:
+        if trajectory_id not in self._open:
+            raise VerificationError(f"trajectory {trajectory_id!r} is not open at this witness")
+        return self._open[trajectory_id]
+
+    def observe(self, trajectory_id: str, entry: dict[str, Any]) -> str:
+        """Count one entry of an open trajectory and return its digest.
+
+        Raises:
+            VerificationError: The trajectory is not open, or the entry does not
+                follow the last entry this witness counted.
+        """
+        count, last = self._state(trajectory_id)
+        _check_entry(entry, "observed entry")
+        if entry["seq"] != count + 1:
+            raise VerificationError(f"observed entry seq {entry['seq']}: the witness expects {count + 1}")
+        if entry["prev"] != last:
+            raise VerificationError(f"observed entry {entry['seq']}: prev does not link to the last counted entry")
+        digest = entry_digest(entry)
+        self._open[trajectory_id] = (count + 1, digest)
+        return digest
+
+    def head_payload(self, trajectory_id: str) -> dict[str, Any]:
+        """The witness's own unsigned head for an open trajectory."""
+        count, last = self._state(trajectory_id)
+        return {"format": HEAD_FORMAT, "trajectory": trajectory_id, "count": count, "head": last}
+
+    def close(self, trajectory_id: str, claimed: dict[str, Any]) -> dict[str, Any]:
+        """Close a trajectory and sign the head the witness counted.
+
+        Args:
+            trajectory_id: The trajectory to close.
+            claimed: The head payload the producer asks for.
+
+        Returns:
+            The signed head: ``format``, ``trajectory``, ``count``, ``head``,
+            ``keyid`` and ``signature``.
+
+        Raises:
+            VerificationError: The claim differs from what the witness counted;
+                the trajectory stays open, so a correct claim can still close it.
+        """
+        own = self.head_payload(trajectory_id)
+        if claimed != own:
+            raise VerificationError(
+                f"close refused: the witness counted {own['count']} entries of {trajectory_id!r} ending at "
+                f"{own['head']}, and the claim differs")
+        signature = self._key.sign(HEAD_FORMAT, own)
+        del self._open[trajectory_id]
+        return {**own, "keyid": self._key.public_hex, "signature": signature}
+
+
+class TrajectoryRecorder:
+    """Append hash-linked entries to a JSONL file and close it with a witnessed head.
+
+    The recorder never holds the witness key. It hands each entry to the
+    witness as it writes it, so the witness counts the trajectory itself, and
+    ``close`` asks the witness to sign the head it counted.
+    """
+
+    def __init__(self, path: Path, *, trajectory_id: str, witness: TrajectoryWitness,
                  canonicalization: str = DEFAULT_CANONICALIZATION) -> None:
         self.path = path
         self.trajectory_id = check_trajectory_id(trajectory_id)
         self.canonicalization = check_canonicalization(canonicalization)
+        if path.exists() and path.stat().st_size:
+            raise VerificationError("trajectory file already holds entries; start a new trajectory")
+        self.witness = witness
+        witness.open(trajectory_id)
         self._count = 0
         self._last = genesis(trajectory_id)
         self._closed = False
-        if path.exists() and path.stat().st_size:
-            raise VerificationError("trajectory file already holds entries; start a new trajectory")
 
     @property
     def count(self) -> int:
@@ -154,31 +263,30 @@ class TrajectoryRecorder:
             handle.write(line)
             handle.flush()
             os.fsync(handle.fileno())
+        self._last = self.witness.observe(self.trajectory_id, entry)
         self._count += 1
-        self._last = entry_digest(entry)
         return entry
 
     def head_payload(self) -> dict[str, Any]:
-        """The unsigned head payload a separate witness signs."""
+        """The head payload this recorder claims at close."""
         return {"format": HEAD_FORMAT, "trajectory": self.trajectory_id,
                 "count": self._count, "head": self._last}
 
-    def close(self, witness: SigningKey) -> dict[str, Any]:
-        """Close the trajectory and return its signed head.
-
-        Args:
-            witness: The witness signer. Its public half is what the consumer
-                pins; tests use an ephemeral key, never a committed secret.
+    def close(self) -> dict[str, Any]:
+        """Close the trajectory and return the head the witness counted and signed.
 
         Returns:
             A head with exactly the fields ``format``, ``trajectory``,
             ``count``, ``head``, ``keyid`` and ``signature``, signed in the
             ``probity-trajectory-head-v1`` domain.
+
+        Raises:
+            VerificationError: The witness counted something other than this
+                recorder claims.
         """
-        payload = self.head_payload()
-        signature = witness.sign(HEAD_FORMAT, payload)
+        head = self.witness.close(self.trajectory_id, self.head_payload())
         self._closed = True
-        return {**payload, "keyid": witness.public_hex, "signature": signature}
+        return head
 
 
 def _read_entries(path: Path, trajectory_id: str) -> list[dict[str, Any]]:
@@ -188,15 +296,11 @@ def _read_entries(path: Path, trajectory_id: str) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     previous = genesis(trajectory_id)
     for number, line in enumerate(raw.splitlines(), start=1):
-        entry = strict_loads(line)
-        if not isinstance(entry, dict) or set(entry) != ENTRY_FIELDS:
-            raise VerificationError(f"trajectory entry {number} has invalid fields")
-        if type(entry["seq"]) is not int or entry["seq"] != number:
+        entry = _check_entry(strict_loads(line), f"trajectory entry {number}")
+        if entry["seq"] != number:
             raise VerificationError(f"trajectory entry {number}: seq is not contiguous from 1")
         if entry["prev"] != previous:
             raise VerificationError(f"trajectory entry {number}: prev does not link to entry {number - 1}")
-        if not isinstance(entry["event"], dict):
-            raise VerificationError(f"trajectory entry {number}: event is not a JSON object")
         entries.append(entry)
         previous = entry_digest(entry)
     return entries

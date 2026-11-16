@@ -11,14 +11,16 @@ each exist.
 
 ```python
 from pathlib import Path
+from probity_observer import TrajectoryWitness
 from probity_observer.resolution import ResolutionObserver
 
-observer = ResolutionObserver(Path("observed.jsonl"), trajectory_id="run-42")
+observer = ResolutionObserver(Path("observed.jsonl"), trajectory_id="run-42",
+                              witness=TrajectoryWitness(witness_key))
 seq = observer.resolved(name="_a2a._agents.example.com", svcb=rrset, sig=sig,
                         jwks_url=jwks_url, jwks_bytes=jwks, dnssec_chain=chain,
                         at="2026-11-15T20:00:00Z")
 observer.called(endpoint="https://agent.example.com:443", at="2026-11-15T20:00:01Z", resolution=seq)
-head = observer.trajectory.close(witness_key)
+head = observer.trajectory.close()
 ```
 
 The raw JWKS and chain bytes stay with the caller; each event binds them by
