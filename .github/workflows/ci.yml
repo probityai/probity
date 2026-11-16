@@ -215,7 +215,7 @@ jobs:
       # The corpus suites run the agent-evidence-verify console script, so the floor venv's bin
       # goes first on PATH; without it they found no verifier and executed 0 cases.
       - run: PATH="$PWD/.build/floor/bin:$PATH" .build/floor/bin/python -m pytest
-      - name: a decision from the installed wheel names that wheel's package digest
+      - name: a decision from the installed wheel names that wheel's package digest and release
         run: |
           .build/floor/bin/python - "$(ls .build/dist/*.whl)" <<'PYCODE'
           import json, sys
@@ -227,8 +227,11 @@ jobs:
           policy = json.loads((root / "policy-june.json").read_text())
           verifier = adjudicate(case, policy, root)["reference"]["verifier"]
           expected = wheel_digest(Path(sys.argv[1]))
-          print(f"wheel {expected} decision {verifier['package_sha256']} version {verifier['version']}")
+          release = Path(sys.argv[1]).name.split("-")[1]
+          print(f"wheel {expected} {release} decision {verifier['package_sha256']} {verifier.get('version')}")
           assert verifier["package_sha256"] == expected
+          # The installed wheel's own files are running, so the decision names its release too.
+          assert verifier.get("version") == release, verifier
           PYCODE
       - name: a 3.11 consumer project locks against the package
         run: |
