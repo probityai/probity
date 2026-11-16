@@ -3,7 +3,8 @@
 Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint", "keys": [pem],
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
-principal-level vectors of ``identity_vectors``. Run from the package: ``uv run python
+principal-level vectors of ``identity_vectors``; ``identity-journal.json`` holds journal cases whose
+records carry principals, under that family's own trust document. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
 """
 
@@ -39,6 +40,7 @@ from probity_records import (
 from probity_records import canonical as jcs
 from probity_records.core import _b64, canonical
 from probity_records.grants import GRANT_DOMAIN
+from probity_records.identity_vectors import base as identity_base
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.quorum import (
     approval_policy,
@@ -380,6 +382,72 @@ def effect_rows() -> list[tuple[str, str, object]]:
     ]
 
 
+# ---- identity in the journal: strict omission, a party swapped inside a permit, uncounted approver ----
+
+IPOL = {"refunds1of2": approval_policy("refunds1of2", {WHO["ops"]: OPS.public_pem(), WHO["lead"]: LEAD.public_pem()}, 1)}
+
+
+def wide_principals(**subjects: str) -> dict:
+    """The identity vectors' principals, valid from 2026 to 2099 so a journal stamped now holds them."""
+    block = identity_base()["principals"]
+    for p in block.values():
+        p["issuedAt"], p["expiresAt"] = NB, EXP
+    for role, sub in subjects.items():
+        block[role]["subject"] = sub
+    return block
+
+
+def identity_case(directory: Path, lines: list[dict]) -> Journal:
+    j = Journal(directory, GATE)
+    for pred in lines:
+        j.append(TOOL_CALL_RECORD, f"tool-call:{pred['toolCallId']}", pred["argsSha256"], pred)
+    return j
+
+
+def icall(phase: str, principals: dict | None, **kw) -> dict:
+    args = {"x": 1}
+    return tool_call_predicate(phase=phase, run_id="r1", tool_call_id="i1", tool="t", args_sha256_hex=args_sha256(args),
+                               permit_id=permit_id("p", "i1", args_sha256(args)), principals=principals, **kw)
+
+
+def approved(approver: str) -> dict:
+    return tool_call_predicate(
+        phase="authorize", decision="allow", reason="bound", threshold=1, approval_policy="refunds1of2",
+        approval_bindings=[binding(OPS, WHO["ops"]), binding(LEAD, WHO["lead"], consumed=("appr-1",))],
+        run_id="run", tool_call_id="a1", tool="refund_payment", args_sha256_hex=args_sha256(AARGS),
+        permit_id=permit_id("pause", "a1", args_sha256(AARGS)), principals=wide_principals(approver=approver))
+
+
+def identity_journal_rows() -> list[tuple[str, str, object]]:
+    allow = lambda block: icall("authorize", block, decision="allow", reason="no_approval_required")
+    swapped = wide_principals(agent="agent-payroll")
+    swapped["user"]["act"] = {"sub": "agent-payroll"}
+    elsewhere = wide_principals()
+    elsewhere["agent"]["audience"] = ["https://api.other-tenant.example.org"]
+    return [
+        ("IJ1", "an allow naming all four parties under strict", lambda d: identity_case(d, [allow(wide_principals())])),
+        ("IJ2", "strict identity, an authorize record that carries no principals",
+         lambda d: identity_case(d, [allow(None)])),
+        ("IJ3", "the intent names another agent than the allow its permit rests on",
+         lambda d: identity_case(d, [allow(wide_principals()), icall("intent", swapped)])),
+        ("IJ4", "the approver principal names an approver whose replayed approval was not counted",
+         lambda d: identity_case(d, [approved(WHO["lead"])])),
+        ("IJ5", "the approver principal names the approver the allow counted",
+         lambda d: identity_case(d, [approved(WHO["ops"])])),
+        ("IJ6", "the agent's credential names another deployment's audience",
+         lambda d: identity_case(d, [allow(elsewhere)])),
+    ]
+
+
+def identity_trust() -> tuple[Trust, dict]:
+    v = identity_base()
+    auds = {"agent": ["https://api.example.com"]}
+    trust = Trust(quorum_policies=IPOL, identity_issuers={k: frozenset(t) for k, t in v["pins"].items()},
+                  identity_profile="strict", identity_audiences={r: frozenset(a) for r, a in auds.items()})
+    return trust, {"quorumPolicies": IPOL, "identityIssuers": v["pins"], "identityProfile": "strict",
+                   "identityAudiences": auds}
+
+
 def trust_doc() -> dict:
     return {"grantRootKeyIds": [ROOT.key_id], "quorumPolicies": {"pay": POLICY, **APOL}}
 
@@ -422,7 +490,13 @@ def main(out: Path) -> None:
     cases["constraints"] = constraint_rows()
     cases["approvals"] = approval_rows()
     cases["effects"] = effect_rows()
-    trust = Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
+    write_families(out, cases)
+    (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
+
+
+def write_families(out: Path, cases: dict, trust: Trust | None = None, doc: dict | None = None) -> None:
+    trust = trust or Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
+    doc = doc or trust_doc()
     for family, rows in cases.items():
         out_rows = []
         for vid, description, build in rows:
@@ -432,12 +506,23 @@ def main(out: Path) -> None:
                 lines = [line for line in j.path.read_text().splitlines() if line.strip()]
                 report = verify_journal(tmp, [GATE.public_pem()], checkpoint, trust=trust)
             out_rows.append({"id": vid, "description": description, "journal": lines, "checkpoint": checkpoint,
-                             "keys": [GATE.public_pem().decode()], "trust": trust_doc(),
+                             "keys": [GATE.public_pem().decode()], "trust": doc,
                              "expected": {k: report[k] for k in ("verdict", "records", "verified", "failures",
                                                                  "checkpoint")}})
         (out / f"{family}.json").write_text(json.dumps(out_rows, indent=2, sort_keys=True) + "\n")
+
+
+def main_identity(out: Path) -> None:
+    """The identity families alone: ``identity.json`` and ``identity-journal.json``."""
+    out.mkdir(parents=True, exist_ok=True)
+    trust, doc = identity_trust()
+    write_families(out, {"identity-journal": identity_journal_rows()}, trust, doc)
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]))
+    if sys.argv[2:] == ["--identity-only"]:
+        main_identity(Path(sys.argv[1]))
+    else:
+        main(Path(sys.argv[1]))
+        main_identity(Path(sys.argv[1]))

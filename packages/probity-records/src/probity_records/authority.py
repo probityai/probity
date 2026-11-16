@@ -29,8 +29,12 @@ class Trust:
     revocations: RevocationState | None = None
     #: issuer URL -> the RFC 7638 thumbprints the auditor pins for that issuer's signing keys
     identity_issuers: Mapping[str, frozenset[str]] = field(default_factory=dict)
-    #: "basic" accepts a principals block without an act chain (graded); "strict" refuses it
+    #: "basic" accepts a principals block without an act chain (graded); "strict" refuses it, and
+    #: refuses a tool-call authorize record that carries no principals block at all
     identity_profile: str = "basic"
+    #: role ("user", "agent", "sponsor", "approver") -> the audiences of THIS deployment; a credential
+    #: for that role whose audience names none of them was minted for another deployment
+    identity_audiences: Mapping[str, frozenset[str]] = field(default_factory=dict)
     #: Signing key id -> the custody backend its checkpoint must name ("aws-kms", "vault-transit", ...).
     key_custody: Mapping[str, str] = field(default_factory=dict)
     #: A c2sp.org/tlog-policy (text): when set, a journal verifies only with a checkpoint its quorum
@@ -39,6 +43,13 @@ class Trust:
 
     def key_revoked(self, kid: str, at: str) -> bool:
         return self.revocations is not None and self.revocations.key_revoked(kid, at)
+
+    def principal_revoked(self, principal: str, at: str) -> bool:
+        return self.revocations is not None and self.revocations.principal_revoked(principal, at)
+
+    def identity_revoked(self, kind: str, ident: str, at: str) -> bool:
+        """The identity check's revocation question: an IdP key (by thumbprint) or a principal."""
+        return self.key_revoked(ident, at) if kind == "key" else self.principal_revoked(ident, at)
 
     def permit_revoked(self, pid: str, at: str) -> bool:
         return self.revocations is not None and self.revocations.permit_revoked(pid, at)

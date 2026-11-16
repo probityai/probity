@@ -2,9 +2,13 @@
 
 Every key comes from a fixed seed and every time is fixed, so the vectors are byte-identical on every
 run and any verifier (this package, the TypeScript verifier) can be checked against them. Each vector
-is ``{"id", "description", "at", "principals", "pins", "approvers", "tokens", "jwks", "expected"}``
-where ``expected`` is ``{"problems": [...], "grade": "strict" | "basic" | None, "act": ...}`` and
-``tokens`` maps a role to its escrowed token for ``verify_token``.
+is ``{"id", "description", "at", "principals", "pins", "approvers", "revocations", "audiences",
+"tokens", "jwks", "expected"}`` where ``expected`` is ``{"problems": [...], "grade": "strict" |
+"basic" | None, "act": ...}``, ``tokens`` maps a role to its escrowed token for ``verify_token``,
+``revocations`` lists the auditor's revocation entries ``{"kind": "key" | "principal", "id",
+"revokedAt"}`` (a key by its RFC 7638 thumbprint, a principal as ``<issuer>#<subject>``) and
+``audiences`` maps a role to the audiences the auditor pins for its own deployment; ``jwksByIssuer``
+is each issuer's JWKS snapshot (``jwks`` is the first issuer's).
 
 ``python -m probity_records identity-vectors`` prints them as JSON; ``check`` re-runs them.
 """
@@ -20,11 +24,13 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .core import sha256_hex
+from .grants import ts
 from .identity import (
     b64url,
     check_principals,
     jwk_thumbprint,
     jwks_digest,
+    principal_id,
     verify_token,
 )
 
@@ -32,6 +38,7 @@ AT = "2026-11-08T12:00:00Z"
 _AT_EPOCH = 1794139200  # AT as seconds since the epoch
 IAT, EXP = _AT_EPOCH - 2400, _AT_EPOCH + 1200  # 11:20 .. 12:20 on the vectors' day
 ISSUER = "https://idp.example.com/realms/agents"
+PARTNER = "https://partner-idp.example.net"
 
 
 def _iso_at(seconds: int) -> str:
@@ -86,7 +93,41 @@ def base() -> dict[str, Any]:
         tokens[role] = _token(priv, "k1", claims, typ)
         principals[role] = _principal(tokens[role], dict(jwk), jwks, source, claims)
     return {"at": AT, "principals": principals, "pins": {ISSUER: [jwk_thumbprint(jwk)]},
-            "approvers": ["bob@example.com"], "tokens": tokens, "jwks": jwks}
+            "approvers": ["bob@example.com"], "revocations": [], "audiences": {}, "tokens": tokens, "jwks": jwks,
+            "jwksByIssuer": {ISSUER: jwks}}
+
+
+def revoked_by(entries: list[dict[str, Any]]):
+    """The ``revoked(kind, id, at)`` question answered from a vector's revocation entries."""
+    def revoked(kind: str, ident: str, at: str) -> bool:
+        return any(e["kind"] == kind and e["id"] == ident and ts(e["revokedAt"]) <= ts(at) for e in entries)
+    return revoked
+
+
+def _partner_agent(v: dict[str, Any], *, act_iss: str | None = None) -> None:
+    """Move the agent principal to a second pinned issuer that reuses the same subject string; with
+    ``act_iss`` the user's credential is re-minted with an ``act`` naming that issuer."""
+    priv = _key("probity-identity-vectors/partner-key-1")
+    jwk = _jwk(priv, "p1")
+    jwks = {"keys": [jwk]}
+    claims = {"iss": PARTNER, "iat": IAT, "exp": EXP, "jti": "jti-agent-partner", "sub": "agent-refunds",
+              "client_id": "agent-refunds", "aud": "https://api.example.com"}
+    v["tokens"]["agent"] = _token(priv, "p1", claims, "at+jwt")
+    v["principals"]["agent"] = _principal(v["tokens"]["agent"], jwk, jwks, "jwt-access-token", claims)
+    v["pins"][PARTNER] = [jwk_thumbprint(jwk)]
+    v["jwksByIssuer"][PARTNER] = jwks
+    if act_iss is not None:
+        user_priv = _key("probity-identity-vectors/issuer-key-1")
+        user_jwk = _jwk(user_priv, "k1")
+        claims = {"iss": ISSUER, "iat": IAT, "exp": EXP, "jti": "jti-user", "sub": "alice@example.com",
+                  "client_id": "agent-refunds", "aud": "https://api.example.com",
+                  "act": {"sub": "agent-refunds", "iss": act_iss}}
+        v["tokens"]["user"] = _token(user_priv, "k1", claims, "oauth-id-jag+jwt")
+        v["principals"]["user"] = _principal(v["tokens"]["user"], user_jwk, {"keys": [user_jwk]}, "id-jag", claims)
+
+
+def _revoke(v: dict[str, Any], kind: str, ident: str, at: str) -> None:
+    v["revocations"].append({"kind": kind, "id": ident, "revokedAt": at})
 
 
 def _mut(vid: str, description: str, fn) -> dict[str, Any]:
@@ -117,11 +158,30 @@ def vectors() -> list[dict[str, Any]]:
              lambda v: v["principals"]["agent"]["key"].__setitem__("d", "AA")),
         _mut("ID13", "credential not yet valid", lambda v: v.__setitem__("at", _iso_at(IAT - 1))),
         _mut("ID14", "agent principal missing", lambda v: v["principals"].pop("agent")),
+        _mut("ID15", "act names the agent's subject, but the agent principal is another pinned issuer's",
+             lambda v: _partner_agent(v)),
+        _mut("ID16", "act carries iss naming the agent principal's issuer (cross-domain): strict",
+             lambda v: _partner_agent(v, act_iss=PARTNER)),
+        _mut("ID17", "the issuer's signing key was revoked before the record time, still pinned",
+             lambda v: _revoke(v, "key", v["principals"]["agent"]["keyThumbprint"], "2026-11-08T11:30:00Z")),
+        _mut("ID18", "the issuer's signing key was revoked after the record time: strict",
+             lambda v: _revoke(v, "key", v["principals"]["agent"]["keyThumbprint"], "2026-11-08T12:30:00Z")),
+        _mut("ID19", "the sponsor was suspended before the record time",
+             lambda v: _revoke(v, "principal", principal_id(v["principals"]["sponsor"]), "2026-11-01T00:00:00Z")),
+        _mut("ID20", "the agent's credential was minted for another deployment's audience",
+             lambda v: v.__setitem__("audiences", {"agent": ["https://api.other-tenant.example.org"]})),
+        _mut("ID21", "every credential's audience is one the auditor pins for its role: strict",
+             lambda v: v.__setitem__("audiences", {"user": ["https://api.example.com"],
+                                                   "agent": ["https://api.example.com"],
+                                                   "sponsor": ["console"], "approver": ["console"]})),
+        _mut("ID22", "act carries iss naming another issuer than the agent principal's",
+             lambda v: v["principals"]["user"].__setitem__("act", {"sub": "agent-refunds", "iss": PARTNER})),
     ]
     for v in out:
         problems, grade = check_principals(v["principals"], v["at"], {k: frozenset(t) for k, t in v["pins"].items()},
-                                           set(v["approvers"]))
-        token_checks = {role: verify_token(p, v["tokens"][role], v["jwks"])
+                                           set(v["approvers"]), revoked_by(v["revocations"]),
+                                           {r: frozenset(a) for r, a in v["audiences"].items()})
+        token_checks = {role: verify_token(p, v["tokens"][role], v["jwksByIssuer"].get(p.get("issuer"), v["jwks"]))
                         for role, p in v["principals"].items() if role in v["tokens"]}
         v["expected"] = {"problems": problems, "grade": grade,
                          "act": "act-chain" if "act" in v["principals"].get("user", {}) else "act-absent",

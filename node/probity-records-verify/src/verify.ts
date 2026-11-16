@@ -581,10 +581,17 @@ function principalShape(p: J): string | null {
 }
 function actSubjects(act: J): string[] | null {
   const out: string[] = [];
-  while (act !== undefined && act !== null) { if (!isObj(act) || typeof act.sub !== "string") return null; out.push(act.sub); act = act.act; }
+  while (act !== undefined && act !== null) {
+    if (!isObj(act) || typeof act.sub !== "string" || ("iss" in act && typeof act.iss !== "string")) return null;
+    out.push(act.sub); act = act.act;
+  }
   return out;
 }
-function checkPrincipal(p: J, at: string, pins: Record<string, string[]>): string | null {
+/** One revocation entry the auditor holds: an IdP key by its RFC 7638 thumbprint, or a principal as `<issuer>#<subject>`. */
+export interface IdentityRevocation { kind: "key" | "principal"; id: string; revokedAt: string }
+const revokedBy = (entries: IdentityRevocation[], kind: string, id: string, at: string): boolean =>
+  entries.some((e) => e.kind === kind && e.id === id && ts(e.revokedAt) <= ts(at));
+function checkPrincipal(p: J, at: string, pins: Record<string, string[]>, revocations: IdentityRevocation[] = [], audiences?: string[]): string | null {
   const s = principalShape(p); if (s) return s;
   let thumb: string;
   try { thumb = jwkThumbprint(p.key); } catch { return "principal_key_invalid"; }
@@ -597,26 +604,32 @@ function checkPrincipal(p: J, at: string, pins: Record<string, string[]>): strin
   if (w >= e) return "principal_expired";
   const pinned = pins[p.issuer];
   if (pinned === undefined) return "principal_issuer_untrusted";
-  if (!pinned.includes(thumb)) return "principal_key_not_pinned";
+  if (typeof pinned === "string" || !pinned.includes(thumb)) return "principal_key_not_pinned";
+  if (revokedBy(revocations, "key", thumb, at)) return "principal_key_revoked";
+  if (revokedBy(revocations, "principal", `${p.issuer}#${p.subject}`, at)) return "principal_revoked";
+  if (audiences !== undefined && !p.audience.some((a: J) => audiences.includes(String(a)))) return "principal_audience_not_pinned";
   if ("act" in p && actSubjects(p.act) === null) return "principal_act_malformed";
   return null;
 }
 const ROLES = ["user", "agent", "sponsor", "approver"];
-export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null): [string[], string | null] {
+export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null,
+  revocations: IdentityRevocation[] = [], audiences: Record<string, string[]> = {}): [string[], string | null] {
   if (!isObj(block) || !Object.keys(block).length || Object.keys(block).some((k) => !ROLES.includes(k))) return [["principals_malformed"], null];
   const problems: string[] = [];
-  for (const r of ROLES) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
+  for (const r of ROLES) if (r in block) { const p = checkPrincipal(block[r], at, pins, revocations, audiences[r]); if (p) problems.push(`principal_${r}:${p}`); }
   if (!("user" in block) || !("agent" in block)) problems.push("principals_need_user_and_agent");
   if (problems.length) return [problems, null];
   const chain = "act" in block.user ? actSubjects(block.user.act) ?? [] : [];
   if (chain.length && ![block.agent.subject, block.agent.clientId].includes(chain[0])) return [["principal_act_names_another_agent"], null];
+  // A subject is unique only within its issuer: the actor is read in the act's own iss, else the token issuer's.
+  if (chain.length && block.agent.issuer !== (block.user.act.iss ?? block.user.issuer)) return [["principal_act_issuer_differs"], null];
   if ("approver" in block && approvers !== null && !approvers.has(block.approver.subject)) return [["principal_approver_not_an_approval_signer"], null];
   return [[], chain.length && ROLES.every((r) => r in block) ? "strict" : "basic"];
 }
 
 // ---------- journal ----------
 
-export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string }
+export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; identityAudiences?: Record<string, string[]> }
 
 function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], where: string): boolean {
   const reason = pred.reason;
@@ -642,12 +655,11 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
   return true;
 }
 
-function approvalSigners(pred: J): Set<string> | null {
+function voteSigners(pred: J): Set<string> {
   const names = new Set<string>();
-  for (const b of pred.approvalBindings ?? []) names.add(String(b?.record?.approval?.approver));
   const a = pred.authority ?? {}, q = a.quorum ?? a;
   for (const v of q.votes ?? []) if (isObj(v)) names.add(String(v.body?.onBehalfOf ?? v.body?.approver));
-  return names.size ? names : null;
+  return names;
 }
 
 // ---------- approval-binding/v1 reader ----------
@@ -916,12 +928,15 @@ function countBindings(policy: J, bindings: J[]): { counted: Set<string>; proble
 const NO_APPROVAL_REQUIRED = "no_approval_required";
 const RECONCILED_RETRY = "reconciled_absent_retry";
 
-function checkApproval(pred: J, problems: string[], where: string, trust: TrustDoc | null): void {
-  if (pred.decision === "allow" && checkAuthority(pred, trust, problems, where)) return;
+/** Checks the approvals an authorize record rests on and returns the approvers it COUNTS, the only
+ * set an approver principal may name (null when the record rests on no approvals). */
+function checkApproval(pred: J, problems: string[], where: string, trust: TrustDoc | null): Set<string> | null {
+  const before = problems.length;
+  if (pred.decision === "allow" && checkAuthority(pred, trust, problems, where)) return problems.length === before ? voteSigners(pred) : new Set();
   const bindings: J[] = pred.approvalBindings ?? [];
   if (!bindings.length) {
     if (pred.decision === "allow" && ![NO_APPROVAL_REQUIRED, RECONCILED_RETRY].includes(pred.reason)) problems.push(`${where}:allow_without_approval_binding`);
-    return;
+    return null;
   }
   const readerAllowed = new Set<string>();
   bindings.forEach((embedded, n) => {
@@ -932,15 +947,16 @@ function checkApproval(pred: J, problems: string[], where: string, trust: TrustD
     else if (pred.decision === "deny" && verdict.reason !== pred.reason && bindings.length === 1)
       problems.push(`${where}:deny_reason_${pred.reason}_but_reader_says_${verdict.reason}`);
   });
-  if (pred.decision !== "allow") return;
-  if (trust === null) { problems.push(`${where}:approval_allow_but_no_trust_pinned`); return; }
+  if (pred.decision !== "allow") return new Set(bindings.map((b) => String(b?.record?.approval?.approver)));
+  if (trust === null) { problems.push(`${where}:approval_allow_but_no_trust_pinned`); return new Set(); }
   const policy = (trust.quorumPolicies ?? {})[String(pred.approvalPolicyId)];
-  if (policy === undefined) { problems.push(`${where}:approval_policy_not_pinned`); return; }
+  if (policy === undefined) { problems.push(`${where}:approval_policy_not_pinned`); return new Set(); }
   if (!pyEq(pred.threshold, policy.threshold)) problems.push(`${where}:threshold_${pyRepr(pred.threshold, isFloat(pred, "threshold", pred.threshold))}_is_not_the_pinned_${pyRepr(policy.threshold, isFloat(policy, "threshold", policy.threshold))}`);
   const { counted: signed, problems: sigProblems } = countBindings(policy, bindings);
   problems.push(...sigProblems.map((p) => `${where}:${p}`));
   const counted = [...signed].filter((a) => readerAllowed.has(a));
   if (counted.length < policy.threshold) problems.push(`${where}:recorded_allow_but_${counted.length}_of_${policy.threshold}_approvals_hold`);
+  return new Set(counted);
 }
 
 function checkEffect(pred: J, problems: string[], where: string): void {
@@ -967,18 +983,20 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   const pred = body.predicate ?? {};
   if (pred.seq !== i) problems.push(`${where}:seq_${pred.seq ?? "None"}_not_${i}`);
   if (pred.prev !== prev) problems.push(`${where}:chain_broken`);
-  if (body.predicateType === TOOL_CALL_RECORD && pred.principals !== undefined && pred.principals !== null) {
-    if (trust === null) problems.push(`${where}:principals_but_no_trust_pinned`);
-    else {
-      const [found, grade] = checkPrincipals(pred.principals, String(pred.at), trust.identityIssuers ?? {}, approvalSigners(pred));
-      problems.push(...found.map((p) => `${where}:${p}`));
-      if (grade !== null && trust.identityProfile === "strict" && grade !== "strict")
-        problems.push(`${where}:principals_below_strict:${"act" in (pred.principals.user ?? {}) ? "act-chain" : "act-absent"}`);
-    }
-  }
   if (body.predicateType === TOOL_CALL_RECORD) {
-    if (pred.phase === "authorize") checkApproval(pred, problems, where, trust);
-    else if (pred.phase === "effect") checkEffect(pred, problems, where);
+    // Approvals first: the approver principal may name only an approver this record counts.
+    const approvers = pred.phase === "authorize" ? checkApproval(pred, problems, where, trust) : null;
+    if (pred.phase === "effect") checkEffect(pred, problems, where);
+    if (pred.principals !== undefined && pred.principals !== null) {
+      if (trust === null) problems.push(`${where}:principals_but_no_trust_pinned`);
+      else {
+        const [found, grade] = checkPrincipals(pred.principals, String(pred.at), trust.identityIssuers ?? {}, approvers, [], trust.identityAudiences ?? {});
+        problems.push(...found.map((p) => `${where}:${p}`));
+        if (grade !== null && trust.identityProfile === "strict" && grade !== "strict")
+          problems.push(`${where}:principals_below_strict:${"act" in (pred.principals.user ?? {}) ? "act-chain" : "act-absent"}`);
+      }
+    } else if (pred.phase === "authorize" && trust !== null && trust.identityProfile === "strict")
+      problems.push(`${where}:principals_required_by_profile`);
   } else if (body.predicateType !== TOOL_CALL_RECORD && pred.phase === undefined && body.predicateType?.endsWith("/governance-step"))
     problems.push(`${where}:governance_step_not_ported`);
   return [body, problems];
@@ -1013,6 +1031,9 @@ function crossChecks(bodies: [number, J][]): string[] {
     }
   }
   const grantOf = new Map<J, J>(), allowed = new Set<J>(), effects = new Map<J, number>(), intents = new Map<J, number>();
+  // Who a principals block names, role by role: credentials may be refreshed inside a permit, the parties may not.
+  const who = (b: J): string | null => isObj(b) ? JSON.stringify(Object.keys(b).sort().map((r) => [r, b[r]?.issuer ?? null, b[r]?.subject ?? null])) : null;
+  const whoOf = new Map<J, string | null>();
   for (const [i, body] of bodies) {
     if (body.predicateType !== TOOL_CALL_RECORD) continue;
     const pred = body.predicate, pid = pred.permitId ?? null, phase = pred.phase;
@@ -1020,8 +1041,12 @@ function crossChecks(bodies: [number, J][]): string[] {
       if (pred.reason === "reconciled_absent_retry" && !allowed.has(pid)) problems.push(`line_${i}:reconciled_retry_without_earlier_permit`);
       allowed.add(pid);
       if (!grantOf.has(pid)) grantOf.set(pid, pred.grantDigest ?? null);
+      if (!whoOf.has(pid)) whoOf.set(pid, who(pred.principals));
     } else if ((phase === "intent" || phase === "effect") && grantOf.has(pid) && (pred.grantDigest ?? null) !== grantOf.get(pid))
       problems.push(`line_${i}:${phase}_grant_differs_from_permit`);
+    if ((phase === "intent" || phase === "effect") && whoOf.has(pid) && pred.principals !== undefined && pred.principals !== null
+      && who(pred.principals) !== whoOf.get(pid))
+      problems.push(`line_${i}:${phase}_principals_differ_from_permit`);
     if (phase === "intent") {
       if (!allowed.has(pid)) problems.push(`line_${i}:intent_without_permit`);
       if (!intents.has(pid)) intents.set(pid, i);
