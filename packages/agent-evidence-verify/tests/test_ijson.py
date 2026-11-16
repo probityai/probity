@@ -11,7 +11,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from agent_evidence_verify import ijson
 from agent_evidence_verify.adapters import (
     audit_principal,

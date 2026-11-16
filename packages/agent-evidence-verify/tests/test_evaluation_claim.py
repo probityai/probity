@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from agent_evidence_verify import adjudicate
 from agent_evidence_verify.adapters import evaluation_claim
 from agent_evidence_verify.common import CaseError
