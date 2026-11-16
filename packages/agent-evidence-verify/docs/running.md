@@ -72,8 +72,10 @@ print any digest, and the digest does not cover dependencies, `sitecustomize`, a
 `__pycache__` bytecode. Read it as evidence of the bytes that ran only when the runner is one you trust to
 report its own runtime, such as your own CI. `version` is named only when the running package is the
 installed release's own files or an editable install's source tree; a checkout imported ahead of an
-installed wheel names no version. Bundles written by releases that named the verifier by `id` alone still
-replay: their decision must match in every other field.
+installed wheel names no version. Bundles written by releases that named the verifier by `id` alone (0.5.1 and
+earlier) still replay: their decision must match in every other field. A bundle from a later release whose
+decision lacks the version and digest has been altered and is refused. A bundle whose decision differs only in
+`package_sha256` was written by other files of the same release, and the refusal says so.
 
 ## Signed bundles
 

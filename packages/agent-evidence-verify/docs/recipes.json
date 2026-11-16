@@ -238,8 +238,8 @@
     },
     {
       "path": "src/agent_evidence_verify/bundle.py",
-      "bytes": 16415,
-      "sha256": "bbf9538d0a26be8a6bd5f55e135e97e1baca62e0da57f2568be089d6b4460cd6"
+      "bytes": 18211,
+      "sha256": "a00ac6893ed312b9157630d8dce2b13552e0272ff8a68c2498f36bdb1f909afa"
     },
     {
       "path": "src/agent_evidence_verify/cli.py",

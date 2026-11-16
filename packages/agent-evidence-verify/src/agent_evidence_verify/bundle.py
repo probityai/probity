@@ -46,6 +46,14 @@ _CONTROLS = {"case.json", "policy.json", "decision.json"}
 _PRODUCER = "bundle.json"
 _PRODUCER_SCHEMA = "probity-bundle/v1"
 _RELEASE = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
+#: The last release whose decisions named the verifier by id alone. A later release always writes
+#: the version and package digest, so its decision with the detail removed has been altered.
+_LAST_ID_ONLY_RELEASE = (0, 5, 1)
+
+
+def _names_verifier_by_id_only(producer: str | None) -> bool:
+    """Whether the release that wrote a bundle wrote ``reference.verifier`` as an id alone."""
+    return producer is None or tuple(int(part) for part in producer.split(".")) <= _LAST_ID_ONLY_RELEASE
 
 
 def _without_reference(decision: dict) -> dict:
@@ -298,13 +306,13 @@ def _check_decision(stored: bytes, result: dict, producer: str | None) -> None:
     if stored == canonical_json(result):
         return
     current = _release()
-    # A decision written before the rename names the predecessor identifier and nothing else differs.
     predecessor = {**result, "reference": {"verifier": {"id": PREDECESSOR_VERIFIER_ID}}}
-    if stored == canonical_json(predecessor):
-        return
-    # Releases up to 0.5.1 named the verifier by id only; every other field must still match.
-    if stored == canonical_json({**result, "reference": {"verifier": {"id": REFERENCE_VERIFIER_ID}}}):
-        return
+    if _names_verifier_by_id_only(producer):
+        # A decision written before the rename names the predecessor identifier and nothing else
+        # differs; releases up to 0.5.1 named the verifier by id alone. Every other field must match.
+        id_only = {**result, "reference": {"verifier": {"id": REFERENCE_VERIFIER_ID}}}
+        if stored in (canonical_json(predecessor), canonical_json(id_only)):
+            return
     if producer is None:
         if any(stored == canonical_json(shape(result)) or stored == canonical_json(shape(predecessor))
                for _, shape in _LEGACY_SHAPES):
@@ -319,7 +327,31 @@ def _check_decision(stored: bytes, result: dict, producer: str | None) -> None:
             f"bundled decision differs from replay: the bundle was written by agent-evidence-verify "
             f"{producer} and this is {current}; rebuild it with {current}, or replay it with "
             f"{producer} to check it against the release that wrote it")
+    _refuse_other_bytes_of_this_release(stored, result)
     raise CaseError("bundled decision differs from replay")
+
+
+def _refuse_other_bytes_of_this_release(stored: bytes, result: dict) -> None:
+    """Name the case where only the package digest differs: other files of the same release ran.
+
+    That is not an altered bundle: a source checkout and the wheel of one version can hold
+    different files. The refusal says so rather than calling the bundle altered.
+    """
+    try:
+        recorded = _parse_json(stored, "decision.json")
+        digest = recorded["reference"]["verifier"]["package_sha256"]
+    except (CaseError, KeyError, TypeError):
+        return
+    if not isinstance(digest, str):
+        return
+    ours = result["reference"]["verifier"].get("package_sha256")
+    same = {**result, "reference": {"verifier": {**result["reference"]["verifier"],
+                                                 "package_sha256": digest}}}
+    if digest != ours and stored == canonical_json(same):
+        raise CaseError(
+            "bundled decision differs from replay only in the verifier's package digest: the "
+            f"bundle was written by files of this release digesting to {digest}, and the files "
+            f"running now digest to {ours}; replay it with the installed wheel that wrote it")
 
 
 def replay_bundle(
