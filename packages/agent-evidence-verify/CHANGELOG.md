@@ -2,8 +2,16 @@
 
 ## Unreleased (0.6.0 at release)
 
-A minor release: two new claim types and one new console script; the decisions for every existing claim type are
-unchanged.
+A minor release: two new claim types and one new console script. The decisions for every existing claim type are
+unchanged except `uncertain_effect/v1`, which now refuses two records it used to support (below).
+
+- `uncertain_effect/v1`: ported to agent-evidence-vectors v0.37.0 (commit 7b8b97a7c), adding the corpus's crash,
+  redelivery and rewind cases. Two checks join the order: `idempotency_key_follows_trigger` refuses a redelivery,
+  replay or completion that runs the step under a key other than the operation's own, and `owner_effect_unaccounted`
+  refuses a record whose owner holds more effects than the trail has attempts that could have made one. Before this,
+  a record whose history was deleted after the effect (one owner effect, no attempt) was `supported` with
+  `effect_held`, and five crash cases raised `CaseError` because `worker_crashed` was not a known reply. All 54
+  members of the corpus now get the verdict it declares.
 
 - `proof_of_control/v1`: checks a Proof-of-Control artifact (signed token, Merkle inclusion or consistency proof,
   token chain, canonical form) offline and passes all 171 cases of `poc-evidence-vectors` 0.1.0, which the `test`

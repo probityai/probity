@@ -4,9 +4,10 @@ The record is one runtime's trail for one intended effect: the operation and its
 each dispatch attempt with its reply, the workers' leases, the effect owner's reconciliation
 answers, the owner's own effect count, the reservation, the reported outcome and, optionally, a
 stop. The claim: the trail is consistent with at most one effect, and the reported outcome is one
-the owner's answers support. Thirteen checks run in a fixed order and the first that fails is the
+the owner's answers support. Fifteen checks run in a fixed order and the first that fails is the
 reason. The rules are a port of probityai/agent-evidence-vectors at commit
-317df600f9a1503f32bcc2742b9f111036bdee32, ``packaging/agent_evidence_vectors/uncertaineffect.py``.
+7b8b97a7cee6f9c594faa41cf08066ac4318afef (v0.37.0),
+``packaging/agent_evidence_vectors/uncertaineffect.py``.
 
 A record that passes every check is ``supported`` with reason ``effect_held``; a failing check is
 ``contradicted`` with the check's name. A record that is not strict JSON, or that is not an object
@@ -29,7 +30,10 @@ from .bound_records import assessment_for, bound, decision
 CLAIM_TYPE = "uncertain_effect/v1"
 CONTRACT_ID = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/uncertain-effect"
 ACCEPTED = "effect_held"
-UNKNOWN_REPLIES = ("timeout", "connection_lost")
+UNKNOWN_REPLIES = ("timeout", "connection_lost", "worker_crashed")
+# What set an attempt off when it is not a first dispatch or a plain retry: the engine redelivered
+# the task, a replay or rewind re-ran the step, or a completion signal ran it.
+TRIGGER_KINDS = ("redelivery", "replay", "completion")
 REPLIES = ("confirmed", "no_effect", *UNKNOWN_REPLIES)
 ANSWERS = ("present", "absent")
 OUTCOMES = ("committed", "not_run", "unknown")
@@ -41,8 +45,10 @@ CHECKS = (
     "contract_id_unknown",
     "operation_identity_missing",
     "idempotency_key_args_changed",
+    "idempotency_key_follows_trigger",
     "dispatch_beyond_lease",
     "retry_after_unknown",
+    "owner_effect_unaccounted",
     "duplicate_effect",
     "unknown_released",
     "outcome_settled_without_authority",
@@ -91,6 +97,19 @@ def _key_args_changed(record: Record) -> bool:
     return any(item.get("idempotencyKey") == operation.get("idempotencyKey")
                and item.get("argsDigest") != operation.get("argsDigest")
                for item in record["attempts"])
+
+
+def _key_ignores_trigger(record: Record) -> bool:
+    """Whether a triggered attempt carries a key other than the operation's own."""
+    key = record["operation"].get("idempotencyKey")
+    return any((item.get("trigger") or {}).get("kind") in TRIGGER_KINDS
+               and item.get("idempotencyKey") != key for item in record["attempts"])
+
+
+def _effect_unaccounted(record: Record) -> bool:
+    """Whether the owner holds more effects than the trail has attempts that could make one."""
+    producing = sum(1 for item in record["attempts"] if item["reply"] != "no_effect")
+    return bool(record["ownerEffects"] > producing)
 
 
 def _outside_lease(attempt: dict[str, Any], leases: list[dict[str, Any]]) -> bool:
@@ -190,8 +209,10 @@ def first_failure(record: Record) -> str | None:
         "contract_id_unknown": lambda: record.get("contractId", CONTRACT_ID) != CONTRACT_ID,
         "operation_identity_missing": lambda: _identity_missing(record),
         "idempotency_key_args_changed": lambda: _key_args_changed(record),
+        "idempotency_key_follows_trigger": lambda: _key_ignores_trigger(record),
         "dispatch_beyond_lease": lambda: _beyond_lease(record),
         "retry_after_unknown": lambda: _unprotected_retry(record),
+        "owner_effect_unaccounted": lambda: _effect_unaccounted(record),
         "duplicate_effect": lambda: record["ownerEffects"] > 1,
         "unknown_released": lambda: _unknown_released(record),
         "outcome_settled_without_authority": lambda: _settled_without_authority(record),
@@ -249,6 +270,9 @@ def check_domains(record: Record) -> None:
     _require(type(count) is int and count >= 0, "ownerEffects")
     for item in _objects(record, "attempts"):
         _word(item, "reply", REPLIES)
+        trigger = item.get("trigger")
+        _require(trigger is None or (isinstance(trigger, dict)
+                                     and isinstance(trigger.get("kind"), str)), "trigger")
     for item in _objects(record, "reconciliations"):
         _word(item, "result", ANSWERS)
         _flag(item, "final")
