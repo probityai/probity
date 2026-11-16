@@ -212,7 +212,9 @@ jobs:
               print(name, version(name))
               assert version(name) == floor, f"{name} resolved {version(name)}, not its floor {floor}"
           PYCODE
-      - run: .build/floor/bin/python -m pytest
+      # The corpus suites run the agent-evidence-verify console script, so the floor venv's bin
+      # goes first on PATH; without it they found no verifier and executed 0 cases.
+      - run: PATH="$PWD/.build/floor/bin:$PATH" .build/floor/bin/python -m pytest
       - name: a decision from the installed wheel names that wheel's package digest
         run: |
           .build/floor/bin/python - "$(ls .build/dist/*.whl)" <<'PYCODE'
