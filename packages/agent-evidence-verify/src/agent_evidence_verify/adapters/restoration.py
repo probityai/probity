@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from ..common import CaseError
-from ..ijson import parse_ijson
+from ..ijson import IJSONError, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 HOST = "https://probityai.github.io/agent-evidence-vectors"
@@ -127,8 +127,14 @@ Json = Any
 
 def strict_json(data: bytes) -> Json:
     """Parse strict JSON with the shared I-JSON reader: UTF-8, no duplicate member at any depth,
-    no NaN, no integer outside +-(2**53 - 1), and no string escaping a lone surrogate."""
-    return parse_ijson(data)
+    no NaN, no integer outside +-(2**53 - 1), and no string escaping a lone surrogate. Input nested
+    past the reader's bound gets no verdict, as input too deep to walk always has."""
+    try:
+        return parse_ijson(data)
+    except IJSONError as exc:
+        if exc.code == "nesting-too-deep":
+            raise CaseError("an input is nested too deeply to judge") from exc
+        raise
 
 
 def _exact(value: Json, required: tuple[str, ...], optional: tuple[str, ...] = ()) -> bool:
@@ -535,6 +541,8 @@ def check_record_bytes(data: bytes) -> tuple[str, str]:
     """Check one statement's bytes: strict JSON first, then its document."""
     try:
         statement = strict_json(data)
+    except CaseError:
+        raise
     except (UnicodeDecodeError, ValueError):
         return "reject", "statement-malformed"
     return check_statement(statement)

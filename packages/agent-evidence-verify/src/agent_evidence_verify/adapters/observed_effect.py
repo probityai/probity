@@ -1107,6 +1107,8 @@ def verify(raw: bytes, policy: Policy) -> Report:
         # code the corpus pins; every other I-JSON rule is the shared reader's.
         statement = parse_ijson(payload, parse_float=Decimal, parse_int=int)
     except IJSONError as exc:
+        if exc.code == "nesting-too-deep":  # too deep to walk: no verdict, never a refusal
+            raise CaseError("an input is nested too deeply to judge") from exc
         code = "duplicate-member" if exc.code == "duplicate-member" else "not-parseable"
         return Report("malformed", [code])
     except (KeyError, TypeError, ValueError, ArithmeticError):
