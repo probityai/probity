@@ -171,6 +171,10 @@ def test_every_adapter_entry_point_refuses_at_the_parse_layer(name: str, raw: by
 def test_signed_record_readers_refuse_the_statement_as_malformed(raw: bytes, code: str) -> None:
     with pytest.raises(audit_principal.Malformed):
         audit_principal._parse(_envelope(raw))
+    if code == "nesting-too-deep":  # too deep to walk: no verdict, the kernel's recursion answer
+        with pytest.raises(CaseError, match="nested too deeply"):
+            observed_effect.verify(_envelope(raw), None)
+        return
     report = observed_effect.verify(_envelope(raw), None)
     assert report.verdict == "malformed", report
 

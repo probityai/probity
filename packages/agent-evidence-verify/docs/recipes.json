@@ -123,8 +123,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
-      "bytes": 18651,
-      "sha256": "8497b9416e4bff6ddb896544aff211f3b6a1ab52588b9cfd775a7eb91b5beaf3"
+      "bytes": 18903,
+      "sha256": "c21cded71b6da06e7328baefd9351784f2c0169ed776f7cf56d9f63dc8826ae5"
     },
     {
       "path": "src/agent_evidence_verify/adapters/completion_claim.py",
@@ -163,8 +163,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/idp_log_witness.py",
-      "bytes": 15056,
-      "sha256": "886add0b8b9014ac975630f1677e16e541f79285555d0fe087d9622824293446"
+      "bytes": 15117,
+      "sha256": "c39f1cae5116475f3840f505d51115e8780dee2048090103878818c1e90af8a8"
     },
     {
       "path": "src/agent_evidence_verify/adapters/jcs_canonical.py",
@@ -188,8 +188,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/proof_of_control.py",
-      "bytes": 19483,
-      "sha256": "ac2aa6102006298a6f0544c6e50a2d65df7c04902407db0014fbee56d3c3ba87"
+      "bytes": 22751,
+      "sha256": "4e796d09b41ee014667b30a60e71635952969ca08458706610752c6a1b8d747a"
     },
     {
       "path": "src/agent_evidence_verify/adapters/protected_paths.py",
@@ -238,8 +238,8 @@
     },
     {
       "path": "src/agent_evidence_verify/bundle.py",
-      "bytes": 16299,
-      "sha256": "2d01ac6d50446f63f26b6e470e5f4c6ccd8e7718e67000a0413d3b3efb99b57f"
+      "bytes": 16415,
+      "sha256": "bbf9538d0a26be8a6bd5f55e135e97e1baca62e0da57f2568be089d6b4460cd6"
     },
     {
       "path": "src/agent_evidence_verify/cli.py",
@@ -253,8 +253,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11544,
-      "sha256": "f862a053a8048fbd4c5e99f4736b9717695b314b200c1bdcc560a6376f347310"
+      "bytes": 11555,
+      "sha256": "c0a4a377ee1b23e170afd46fc3ace1bc6635625690612fab51716e146f4eb78b"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -273,13 +273,13 @@
     },
     {
       "path": "src/agent_evidence_verify/identity.py",
-      "bytes": 4247,
-      "sha256": "49b9d355d26a3affb484c41ddad07d9f10cc304f475a05c2e3c3f21f2400b891"
+      "bytes": 6593,
+      "sha256": "69e79868b19bec9ba93b56190e06f579760fb20ea6099ad79efbc41274424d31"
     },
     {
       "path": "src/agent_evidence_verify/ijson.py",
-      "bytes": 7486,
-      "sha256": "6532712cf237e8eb2fd664fc2e7a2f802248bea1efb99eddb49a0af77e10bdd6"
+      "bytes": 8135,
+      "sha256": "052a512f8e46547264aab4f104dfad06a50d6a5b255e6c083523fbd9019a9c87"
     },
     {
       "path": "src/agent_evidence_verify/index.py",
@@ -293,8 +293,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 16389,
-      "sha256": "cee00cf6ede3a6d5d2acf08b22ee8f6e3e460cd77b8d1308d9b3e473a17c79cc"
+      "bytes": 21660,
+      "sha256": "ce64f3b86efc81fe18fbc6416aa1dcad46f854ba0229338938afae8a438c1ce3"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
