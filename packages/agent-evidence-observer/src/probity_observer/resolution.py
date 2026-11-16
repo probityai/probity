@@ -33,7 +33,7 @@ from .trajectory import DEFAULT_CANONICALIZATION, TrajectoryRecorder
 
 RESOLUTION_KIND = "resolution"
 CALL_KIND = "call"
-_RFC3339 = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z\Z")
+_RFC3339 = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z\Z")
 
 __all__ = ["CALL_KIND", "RESOLUTION_KIND", "ResolutionObserver"]
 
@@ -41,7 +41,10 @@ __all__ = ["CALL_KIND", "RESOLUTION_KIND", "ResolutionObserver"]
 def _instant(value: str) -> str:
     if not isinstance(value, str) or not _RFC3339.fullmatch(value):
         raise VerificationError("observer time must be RFC 3339 UTC ending in Z")
-    datetime.fromisoformat(value)
+    try:
+        datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise VerificationError(f"observer time {value!r} is not a calendar time") from exc
     return value
 
 
@@ -64,11 +67,14 @@ class ResolutionObserver:
 
     Args:
         path: The trajectory file (a new, empty file).
+        trajectory_id: The identifier the consumer will verify the trajectory under.
         canonicalization: The trajectory's declared canonicalization.
     """
 
-    def __init__(self, path: Path, *, canonicalization: str = DEFAULT_CANONICALIZATION) -> None:
-        self.trajectory = TrajectoryRecorder(path, canonicalization=canonicalization)
+    def __init__(self, path: Path, *, trajectory_id: str,
+                 canonicalization: str = DEFAULT_CANONICALIZATION) -> None:
+        self.trajectory = TrajectoryRecorder(path, trajectory_id=trajectory_id,
+                                             canonicalization=canonicalization)
         self._resolutions: set[int] = set()
 
     def resolved(
@@ -120,8 +126,8 @@ class ResolutionObserver:
             resolution: The ``seq`` of the resolution the call relied on, or
                 ``None`` when the caller used no discovery answer.
         """
-        if resolution is not None and resolution not in self._resolutions:
-            raise VerificationError("a call can only name a resolution recorded earlier")
+        if resolution is not None and (type(resolution) is not int or resolution not in self._resolutions):
+            raise VerificationError("a call can only name a resolution recorded earlier, by its integer seq")
         event = {"kind": CALL_KIND, "endpoint": _text(endpoint, "endpoint"),
                  "resolution": resolution, "at": _instant(at)}
         return self.trajectory.emit(event)["seq"]
