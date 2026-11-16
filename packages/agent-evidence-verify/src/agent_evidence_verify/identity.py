@@ -34,7 +34,7 @@ import sys
 import zipfile
 from collections.abc import Iterable
 from functools import lru_cache
-from importlib.metadata import Distribution, PackageNotFoundError, distribution
+from importlib.metadata import Distribution, distributions
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlparse
 
@@ -118,11 +118,19 @@ def without_release_detail(output: bytes) -> bytes:
 
 
 def running_release() -> str | None:
-    """The release of the running package, or None when it is not the distribution's own files."""
-    try:
-        return release_of(distribution(DISTRIBUTION), Path(__file__))
-    except PackageNotFoundError:
-        return None  # a source tree that was never installed has no release to name
+    """The release of the running package, or None when it is not the distribution's own files.
+
+    Every distribution of the name on ``sys.path`` is asked, not only the first: a build of the
+    source tree leaves ``src/agent_evidence_verify.egg-info`` beside the package, and with ``src``
+    on ``sys.path`` that metadata is found ahead of the installed distribution while owning none of
+    the running files.
+    """
+    running = Path(__file__)
+    for dist in distributions(name=DISTRIBUTION):
+        release = release_of(dist, running)
+        if release is not None:
+            return release
+    return None  # a source tree that was never installed has no release to name
 
 
 @lru_cache(maxsize=1)

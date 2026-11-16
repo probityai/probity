@@ -145,3 +145,33 @@ def test_a_wheel_member_under_purelib_counts_toward_the_package_digest(tmp_path)
     assert identity.wheel_digest(plain) != identity.wheel_digest(data)
     assert identity.wheel_digest(data) == identity.package_digest(
         [("agent_evidence_verify/__init__.py", b""), ("agent_evidence_verify/core.py", b"x = 1\n")])
+
+
+def test_build_metadata_beside_the_source_does_not_hide_the_install(tmp_path, monkeypatch):
+    """Break-it counter-example: ``src/agent_evidence_verify.egg-info`` found first on ``sys.path``.
+
+    A setuptools build of the source tree leaves that metadata beside the package. With ``src`` on
+    ``sys.path`` (the dsse-bundle generator inserts it) ``distribution()`` returned the egg-info,
+    which owns none of the running files, so the decision dropped its version and the committed
+    vectors went stale. Every distribution of the name is asked now.
+    """
+    from agent_evidence_verify import identity
+
+    package = Path(identity.__file__).resolve().parent
+    stale = tmp_path / "agent_evidence_verify.egg-info"
+    stale.mkdir()
+    (stale / "PKG-INFO").write_text("Metadata-Version: 2.1\nName: agent-evidence-verify\n"
+                                    "Version: 0.0.1\n")
+    (stale / "SOURCES.txt").write_text("src/agent_evidence_verify/identity.py\n")
+    owner = tmp_path / "site-packages"
+    record = owner / "agent_evidence_verify-9.9.9.dist-info"
+    record.mkdir(parents=True)
+    (record / "METADATA").write_text("Metadata-Version: 2.1\nName: agent-evidence-verify\n"
+                                     "Version: 9.9.9\n")
+    (record / "RECORD").write_text("__editable__.pth,,\n")
+    (record / "direct_url.json").write_text(json.dumps(
+        {"url": package.parent.as_uri(), "dir_info": {"editable": True}}))
+    monkeypatch.setattr("sys.path", [str(tmp_path), str(owner)])
+    assert identity.running_release() == "9.9.9"
+    monkeypatch.setattr("sys.path", [str(tmp_path)])
+    assert identity.running_release() is None
