@@ -78,6 +78,13 @@ jobs:
         run: |
           python3 scripts/public-voice-lint-test.py
           python3 scripts/public-voice-lint.py
+      - name: no live link to a repository the organisation archived
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/archived-repo-gate-test.py
+          python3 scripts/archived-repo-gate.py
+          python3 scripts/archived-repo-gate.py --live
       - name: every package in the README has its source here
         run: |
           python3 scripts/readme-package-owner-lint-test.py
