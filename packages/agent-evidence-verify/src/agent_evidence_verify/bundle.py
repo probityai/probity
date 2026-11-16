@@ -298,6 +298,9 @@ def _check_decision(stored: bytes, result: dict, producer: str | None) -> None:
     predecessor = {**result, "reference": {"verifier": {"id": PREDECESSOR_VERIFIER_ID}}}
     if stored == canonical_json(predecessor):
         return
+    # Releases up to 0.5.1 named the verifier by id only; every other field must still match.
+    if stored == canonical_json({**result, "reference": {"verifier": {"id": REFERENCE_VERIFIER_ID}}}):
+        return
     if producer is None:
         if any(stored == canonical_json(shape(result)) or stored == canonical_json(shape(predecessor))
                for _, shape in _LEGACY_SHAPES):

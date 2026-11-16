@@ -21,8 +21,33 @@ def _decision():
 
 
 def test_decision_carries_reference_verifier_id():
-    assert _decision()["reference"] == {"verifier": {"id": EXPECTED_ID}}
+    verifier = _decision()["reference"]["verifier"]
+    assert verifier["id"] == EXPECTED_ID
+    assert set(verifier) == {"id", "version", "package_sha256"}
     assert REFERENCE_VERIFIER_ID == EXPECTED_ID
+
+
+def test_the_package_digest_is_the_files_that_run(tmp_path):
+    """The digest a decision carries equals the digest of a wheel holding the same files."""
+    import hashlib
+    import zipfile
+
+    from agent_evidence_verify import identity
+
+    package = Path(identity.__file__).resolve().parent
+    wheel = tmp_path / "agent_evidence_verify-0-py3-none-any.whl"
+    with zipfile.ZipFile(wheel, "w") as archive:
+        for path in sorted(package.rglob("*")):
+            if path.is_file():
+                archive.write(path, f"agent_evidence_verify/{path.relative_to(package).as_posix()}")
+        archive.writestr("agent_evidence_verify-0.dist-info/RECORD", "")
+    expected = identity.wheel_digest(wheel)
+    assert _decision()["reference"]["verifier"]["package_sha256"] == expected
+    assert len(expected) == 64 and expected != hashlib.sha256(b"").hexdigest()
+    with zipfile.ZipFile(wheel, "a") as archive:
+        archive.writestr("agent_evidence_verify/injected.py", "x = 1\n")
+    assert identity.wheel_digest(wheel) != expected
+    assert identity.main([str(wheel)]) == 0
 
 
 def test_cli_json_and_packet_name_the_reference_verifier(capsys, tmp_path):
@@ -30,7 +55,9 @@ def test_cli_json_and_packet_name_the_reference_verifier(capsys, tmp_path):
     assert main(argv + ["--json"]) == 0
     assert json.loads(capsys.readouterr().out)["reference"]["verifier"]["id"] == EXPECTED_ID
     assert main(argv) == 0
-    assert f"Reference verifier: {EXPECTED_ID}" in capsys.readouterr().out
+    packet = capsys.readouterr().out
+    assert f"Reference verifier: {EXPECTED_ID}" in packet
+    assert "Verifier package SHA-256: " in packet
 
 
 def test_release_manifest_is_current_and_names_the_verifier():

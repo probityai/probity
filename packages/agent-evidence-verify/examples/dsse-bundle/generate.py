@@ -85,6 +85,7 @@ def expected(name, run, key, status):
     import io
 
     from agent_evidence_verify.cli import main
+    from agent_evidence_verify.identity import placeholder_release_detail
 
     err = io.StringIO()
     argv = [str(HERE / f"{name}.dsse.json"), "--case", str(DONE / run / "receipt.case.json"),
@@ -98,7 +99,7 @@ def expected(name, run, key, status):
     if code != status:
         raise SystemExit(f"{name}: exit {code}, expected {status}: {err.getvalue()}")
     text = stdout.getvalue() if status == 0 else err.getvalue().encode("utf-8")
-    return text.replace(str(HERE).encode(), b"<vectors>")
+    return placeholder_release_detail(text.replace(str(HERE).encode(), b"<vectors>"))
 
 
 def files():

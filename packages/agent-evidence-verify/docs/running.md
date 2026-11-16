@@ -53,6 +53,23 @@ scripts, styles, and templates. It does not evaluate CSS or infer what a
 browser displayed. Text matching does not establish that the selected
 passages are material or that the report is otherwise complete.
 
+### Which verifier bytes decided
+
+Every decision names the verifier that produced it as `reference.verifier`: the stable
+`id` (`https://probityai.github.io/probity/verifiers/agent-evidence-verify`), the installed
+`version`, and `package_sha256`, a digest of the files of the running
+`agent_evidence_verify` package. The digest is SHA-256 over one `sha256sum`-style line per
+file (`<file sha256>  agent_evidence_verify/<path>`), sorted, with bytecode left out. A relying
+party that holds the wheel recomputes it and compares:
+
+```bash
+python -m agent_evidence_verify.identity agent_evidence_verify-0.6.1-py3-none-any.whl
+```
+
+A decision whose `package_sha256` differs from the wheel's came from other bytes, whatever its
+`id` and `version` say. Bundles written by releases that named the verifier by `id` alone still
+replay: their decision must match in every other field.
+
 ## Signed bundles
 
 `probityai verify` reads its first argument as a probity case or as a DSSE
