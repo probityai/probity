@@ -41,6 +41,9 @@ only on the ARD constructions and only when `crit` names it. ES256 signatures ar
 `entry` (and `manifest`, for `ai-catalog-2026-11`) select the object; both default to 0.
 `attestations` lists, per attestation of the signed object, the vendored DSSE envelope or `null` for
 one the consumer did not vendor. `role` is `publisher` or `contributor`; `at` is the check time.
+The role is not read for `ai-catalog-snapshot`: the AI Catalog defines no mapping from a
+signer to catalog authority ("Catalog Authorization" at `e2b425f9`: a configured policy must
+identify authorized operators), so for a snapshot that policy is the key authority alone.
 
 ## Checks
 
@@ -99,6 +102,18 @@ The checks, their order and their codes are a port of the reference reader in
 [agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors)
 (`packaging/agent_evidence_vectors/catalogtrust.py` at commit `01086cf0`). The parity test runs that
 commit's 115-case corpus, copied to `tests/data/catalog-trust-manifest/`, and the nine break vectors
-of matrix row 11, and requires the reference reader's decision and code on each. Two differences
-are by design: the gates the consumer controls are case errors here, and a vendored file is named
-through the case's artifact binding, which refuses a path that is not normalized before any read.
+of matrix row 11, and requires the reference reader's decision and code on each. The port reads
+apart from that reference reader, by design, on inputs no corpus case carries:
+
+- the gates the consumer controls (`construction_unknown`, `role_unknown`, the check time) are
+  case errors here;
+- a vendored file is named through the case's artifact binding, which refuses a path that is not
+  normalized before any read;
+- an artifact or vendored attestation that is not bound is `not_established`, never a refusal, and
+  never masks a later refusal (the reference reader answers `artifact_digest_mismatch` or
+  `attestation_digest_mismatch`);
+- a DSSE envelope is read through the package's own DSSE reader, so one malformed signature entry
+  refuses the envelope;
+- an integer token or a fraction of seconds past CPython's 4300-digit `int()` limit is read (the
+  reference reader raises `ValueError` there): the integer as out of the safe range, the fraction
+  exactly.
