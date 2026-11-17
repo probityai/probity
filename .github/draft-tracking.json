@@ -1,0 +1,10 @@
+{
+  "issue_title": "[draft-watch] Internet-Draft state",
+  "drafts": [
+    {
+      "slug": "draft-kroehl-agentic-trust-aae",
+      "known_rev": "02",
+      "why": "the observer's AAE enforcer and its fixtures (packages/agent-evidence-observer/tests/fixtures/aae-enforce) follow this revision's section references"
+    }
+  ]
+}

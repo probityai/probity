@@ -1,10 +1,17 @@
 name: pin-refresh
 
 # Moves every family lock (the root version-pins.toml and the package configs) and the
-# pages they hold to the newest releases as a pull request, runs ci.yml on it and
-# merges it when green. A finished release run triggers it at once; the hourly run is
-# the path for releases made in other repositories, which reach this repository within
-# an hour, inside the one-day grace registry-verify allows.
+# pages they hold to the newest releases as a pull request and lands it when green. A
+# finished release run triggers it at once; the hourly run is the path for releases made
+# in other repositories, which reach this repository within an hour, inside the one-day
+# grace registry-verify allows.
+#
+# With the organisation's pin-refresh App (variable PIN_REFRESH_APP_CLIENT_ID, secret
+# PIN_REFRESH_APP_PRIVATE_KEY) the pull request is opened with its installation token, so
+# it gets its own pull_request run, and is handed to auto-merge and the merge queue in this
+# job. Without them the action uses the Actions token and dispatches ci.yml itself
+# (probityai/.github docs/pin-refresh.md). verify_pr checks an open bump pull request
+# without changing anything: it fails unless ci.yml has a started pull_request run there.
 
 on:
   schedule:
@@ -18,6 +25,16 @@ on:
         description: "why it runs now"
         required: false
         type: string
+      dry_run:
+        description: "show the bump and change nothing remote"
+        required: false
+        type: boolean
+        default: false
+      verify_pr:
+        description: "a bump pull request number: change nothing, fail unless ci.yml has a started pull_request run on it"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -44,7 +61,7 @@ jobs:
         run: python3 scripts/refresh-badges.py || true
         env:
           PEPY_API_KEY: ${{ secrets.PEPY_API_KEY }}
-      - uses: probityai/.github/actions/pin-refresh@f36e582cb61bebb245a40451f2b6f63d2fb9d5c1 # main
+      - uses: probityai/.github/actions/pin-refresh@449849e49f23d5c9a3e2422bb8366aac738dd076 # main
         with:
           configs: |
             version-pins.toml
@@ -52,4 +69,7 @@ jobs:
             packages/agent-evidence-replay/version-pins.toml
             harnesses/agent-evidence-plugins/version-pins.toml
           ci: ci.yml
-          token: ${{ github.token }}
+          app-client-id: ${{ vars.PIN_REFRESH_APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.PIN_REFRESH_APP_PRIVATE_KEY }}
+          dry-run: ${{ inputs.dry_run == true }}
+          verify-pr: ${{ inputs.verify_pr }}

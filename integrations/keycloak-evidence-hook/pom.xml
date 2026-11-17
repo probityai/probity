@@ -22,7 +22,7 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>2026-11-10T00:00:00Z</project.build.outputTimestamp>
-    <keycloak.version>26.4.7</keycloak.version>
+    <keycloak.version>26.6.3</keycloak.version>
     <junit.version>5.13.4</junit.version>
   </properties>
 
@@ -40,8 +40,9 @@
       <scope>provided</scope>
     </dependency>
     <!-- Maven does not pass a provided dependency's own provided dependencies on, so the
-         classes the listener names directly are declared here at the versions Keycloak 26.4.7
-         ships (Quarkus 3.27.1). -->
+         classes the listener names directly are declared here at the versions Keycloak ships:
+         the ones the Quarkus BOM imported by keycloak-parent manages (Quarkus 3.33.2 for
+         Keycloak 26.6.3). build.sh fails when one of them drifts from that BOM. -->
     <dependency>
       <groupId>org.keycloak</groupId>
       <artifactId>keycloak-core</artifactId>
@@ -57,13 +58,13 @@
     <dependency>
       <groupId>org.jboss.logging</groupId>
       <artifactId>jboss-logging</artifactId>
-      <version>3.6.1.Final</version>
+      <version>3.6.2.Final</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
-      <version>4.0.0</version>
+      <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
