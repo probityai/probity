@@ -276,8 +276,8 @@ def check_manifest(manifest_raw: bytes, consumed: dict[str, bytes | None], autho
                    "detail": f"{total} of {total} consumed items carry one digest"
                    + (f"; {len(unread)} references name no consumed item" if unread else "")})
     undeclared = []
-    for item_id in consumed:
-        ref, data = by_id[item_id], consumed[item_id]
+    for item_id, data in consumed.items():
+        ref = by_id[item_id]
         if ref["form"] is None:
             undeclared.append(item_id)
             continue
@@ -292,7 +292,7 @@ def check_manifest(manifest_raw: bytes, consumed: dict[str, bytes | None], autho
                        "detail": f"{len(undeclared)} references declare no canonical form"})
         return "not_established", "undeclared_canonical_form"
     checks.append({"id": "consumed_copy_bound", "status": "pass" if pending is None else "unavailable",
-                   "detail": f"every available digest binds the copy the consumer reads"})
+                   "detail": "every available digest binds the copy the consumer reads"})
     if pending is not None:
         return "not_established", pending
     return "supported", "digests_bind_consumed_copy"

@@ -129,7 +129,7 @@ def _time(value: Any, label: str) -> datetime.datetime:
     if not isinstance(value, str) or not TIME.fullmatch(value):
         raise Refused("timestamp_grammar", f"{label} is not YYYY-MM-DDTHH:MM:SSZ in ASCII digits")
     try:
-        return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+        return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.UTC)
     except ValueError as exc:
         raise Refused("timestamp_grammar", f"{label} is not a calendar time") from exc
 
@@ -262,7 +262,7 @@ def _state(assessment: dict) -> dict:
     return {"issuers": {k: v.lower() for k, v in issuers.items()},
             "cosigners": {k: {"public_key": v["public_key"].lower(), "authority": v["authority"]}
                           for k, v in cosigners.items()},
-            "at": datetime.datetime.strptime(at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc),
+            "at": datetime.datetime.strptime(at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.UTC),
             "revoked": set(revoked)}
 
 

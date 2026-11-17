@@ -22,16 +22,16 @@ from cryptography.hazmat.primitives.asymmetric import ec, mldsa, padding, rsa
 from cryptography.x509.oid import NameOID
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def rsa_key(name: str = "signer") -> rsa.RSAPrivateKey:
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def tsa() -> tuple[ec.EllipticCurvePrivateKey, x509.Certificate]:
     key = ec.derive_private_key(int.from_bytes(hashlib.sha256(b"aep-test/tsa").digest(), "big") % (2**255), ec.SECP256R1())
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test time-stamp authority")])
-    now = datetime.datetime(2026, 11, 1, tzinfo=datetime.timezone.utc)
+    now = datetime.datetime(2026, 11, 1, tzinfo=datetime.UTC)
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key())
             .serial_number(7).not_valid_before(now).not_valid_after(now + datetime.timedelta(days=3650))
             .sign(key, hashes.SHA256()))

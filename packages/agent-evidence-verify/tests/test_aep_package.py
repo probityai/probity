@@ -127,7 +127,7 @@ def test_bad_time_stamp_is_refused(tmp_path: Path, kwargs: dict, detail: str) ->
     items["timestamp.tsr"] = ab.timestamp_response(bytes.fromhex(items["hash.sha256"].decode().strip()), **kwargs)
     result = _judge(tmp_path, ab.zip_bytes(items), **ab.authorities())
     assert _verdict(result) == ("contradicted", "timestamp")
-    assert detail in [c for c in result["checks"] if c["id"] == "timestamp"][0]["detail"]
+    assert detail in next(c for c in result["checks"] if c["id"] == "timestamp")["detail"]
 
 
 def test_time_stamp_over_another_hash_or_signed_by_another_key_is_refused(tmp_path: Path) -> None:
@@ -197,7 +197,7 @@ def test_exact_legacy_encoding_is_accepted_and_named(tmp_path: Path) -> None:
                                                             canonical_bin=items["canonical.bin"]))
     result = _judge(tmp_path, ab.zip_bytes(items), **ab.authorities())
     assert _verdict(result) == ("supported", "package_verifies")
-    assert "legacy DigestInfo" in [c for c in result["checks"] if c["id"] == "rsa_signature"][0]["detail"]
+    assert "legacy DigestInfo" in next(c for c in result["checks"] if c["id"] == "rsa_signature")["detail"]
 
 
 def test_rfc8017_block_equals_the_library_signature() -> None:

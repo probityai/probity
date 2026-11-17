@@ -281,7 +281,7 @@ def check_package(data: bytes, authority: Any, tsa_authority: Any) -> tuple[list
     def hash_layer() -> str:
         e = state["entries"]
         text = e["hash.sha256"].decode("ascii", "replace")
-        text = text[:-1] if text.endswith("\n") else text
+        text = text.removesuffix("\n")
         actual = hashlib.sha256(e["canonical.bin"]).hexdigest()
         if text != actual:
             raise Fail("hash", "SHA-256 of canonical.bin is not hash.sha256")

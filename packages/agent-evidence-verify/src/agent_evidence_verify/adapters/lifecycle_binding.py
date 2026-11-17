@@ -213,7 +213,8 @@ def evaluate(records: list[Any], bindings: dict, revocation: dict,
         cited = decisions.get(key[0])
         ids = {a["record_id"] for a in members} | {key[0]}
 
-        def state(value: str, detail: str) -> dict:
+        def state(value: str, detail: str, key: tuple[str, str] = key, controls: list = controls,
+                  executions: list = executions) -> dict:
             return {"id": "group", "decision": key[0], "instruction": key[1], "state": value,
                     "status": {"satisfied": "pass", "failure": "fail"}.get(value, "unavailable"),
                     "controls": len(controls), "executions": len(executions), "detail": detail}

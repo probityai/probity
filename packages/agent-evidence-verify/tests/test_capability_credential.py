@@ -61,7 +61,7 @@ def _judge(tmp_path: Path, raw: bytes | dict, **state: Any) -> dict:
     case = {"schema_version": "probity-case/v1", "case_id": "c", "artifacts": {"credential.json": {
         "path": "credential.json", "length": len(data), "sha256": hashlib.sha256(data).hexdigest()}}}
     policy = {"schema_version": "probity-policy/v1", "assessments": {"c": {
-        "claim_type": "capability_credential/v1", "credential": "credential.json", **{**STATE, **state}}}}
+        "claim_type": "capability_credential/v1", "credential": "credential.json", **STATE, **state}}}
     return adjudicate(case, policy, tmp_path)
 
 
