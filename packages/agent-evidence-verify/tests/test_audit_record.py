@@ -10,6 +10,7 @@ consumption limit, the dating result of a retained record, and the joint result 
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -18,7 +19,9 @@ from typing import Any
 
 import pytest
 from agent_evidence_verify import adjudicate
+from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.adapters import audit_record
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 DATA = Path(__file__).parent / "data" / "audit-record"
 MANIFEST = json.loads((DATA / "MANIFEST.json").read_text(encoding="utf-8"))
@@ -56,6 +59,12 @@ def _record_problems(expected: dict[str, Any], record: dict[str, Any]) -> list[s
     return problems
 
 
+def _set_size(entry: dict[str, Any]) -> int:
+    """How many records a set member's file holds, read off the file, not off the check."""
+    records = json.loads((DATA / entry["file"]).read_bytes()).get("records")
+    return len(records) if isinstance(records, list) else 0
+
+
 def problems_of(entry: dict[str, Any], check: dict[str, Any]) -> list[str]:
     """How the check departs from what the member declares; empty when it agrees."""
     expected = entry["expected"]
@@ -64,6 +73,9 @@ def problems_of(entry: dict[str, Any], check: dict[str, Any]) -> list[str]:
         return [] if check["verdict"] in allowed else [f"verdict {check['verdict']} not in {allowed}"]
     if "set" in expected:
         out = []
+        held = _set_size(entry)
+        if expected["set"]["codes"] != ["set-unreadable"] and len(check["records"]) != held:
+            out.append(f"{len(check['records'])} records judged of the {held} the set holds")
         for index, record in enumerate(check["records"]):
             out += [f"record {index + 1}: {p}" for p in _record_problems(expected, record)]
         declared = expected["set"]
@@ -152,3 +164,132 @@ def test_a_retained_record_without_the_pinned_heads_dates_nothing(tmp_path: Path
     (tmp_path / entry["file"]).write_bytes((DATA / entry["file"]).read_bytes())
     check = _decide(entry, tmp_path, "trust.json")["checks"][0]
     assert "datedAt" not in check["dating"]
+
+
+# Hostile inputs: each was a crash, a wrong verdict or a shape the bytes chose before the reader
+# and the adapter were fixed (probityai/agent-evidence-vectors scripts/auditrecord-hostile-input-test.py
+# holds the reference reader to the same answers).
+
+
+def _decide_bytes(body: bytes, shape: str, tmp_path: Path, trust: bytes | None = None) -> dict:
+    (tmp_path / "record.json").write_bytes(body)
+    (tmp_path / "trust.json").write_bytes(trust if trust is not None else (DATA / "MANIFEST.json").read_bytes())
+    artifacts = {}
+    for name, rel in (("record", "record.json"), ("trust", "trust.json")):
+        data = (tmp_path / rel).read_bytes()
+        artifacts[name] = {"path": rel, "length": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+    assessment = {"claim_type": audit_record.CLAIM_TYPE, "record": "record", "trust": "trust", "shape": shape}
+    case = {"schema_version": "probity-case/v1", "case_id": "hostile", "artifacts": artifacts}
+    policy = {"schema_version": "probity-policy/v1", "assessments": {"hostile": assessment}}
+    return adjudicate(case, policy, tmp_path)
+
+
+def _unsigned(payload: bytes) -> dict[str, Any]:
+    return {"payload": base64.b64encode(payload).decode(), "payloadType": "application/vnd.in-toto+json",
+            "signatures": [{"keyid": "unknown", "sig": base64.b64encode(bytes(64)).decode()}]}
+
+
+def test_the_shape_is_the_consumers_and_is_required(tmp_path: Path) -> None:
+    """R7's dating fails; stripped to its envelope it must not pass because the bytes changed shape."""
+    entry = MEMBERS["R7"]
+    retained = (DATA / entry["file"]).read_bytes()
+    assert _decide_bytes(retained, "retained", tmp_path)["reason"] == "entry-anchor-late"
+    stripped = json.dumps(json.loads(retained)["envelope"]).encode()
+    found = _decide_bytes(stripped, "retained", tmp_path)
+    assert (found["decision"], found["reason"]) == ("contradicted", "retained-unreadable")
+    case = {"schema_version": "probity-case/v1", "case_id": "c", "artifacts": {}}
+    policy = {"schema_version": "probity-policy/v1",
+              "assessments": {"c": {"claim_type": audit_record.CLAIM_TYPE, "record": "r", "trust": "t"}}}
+    with pytest.raises(CaseError):
+        adjudicate(case, policy, tmp_path)
+    with pytest.raises(CaseError, match="assessment.shape"):
+        _decide_bytes(retained, "bundle", tmp_path)
+
+
+@pytest.mark.parametrize("payload, code", [
+    (b'{"a":"\\ud800"}', "not-parseable"),
+    (b'{"\\udc00":1}', "not-parseable"),
+    (b'{"a":' * 5000 + b"1" + b"}" * 5000, "nesting-too-deep"),
+    (b'{"a":' * 500000 + b"1" + b"}" * 500000, "nesting-too-deep"),
+    (b'{"n":1' + b"0" * 4300 + b"}", "unsafe-integer"),
+])
+def test_a_hostile_unsigned_payload_is_judged_not_raised(payload: bytes, code: str, tmp_path: Path) -> None:
+    found = _decide_bytes(json.dumps(_unsigned(payload)).encode(), "envelope", tmp_path)
+    assert (found["decision"], found["reason"]) == ("contradicted", code)
+
+
+#: The corpus's published observer test key (gen_vectors.py derives it from this fixed seed).
+OBSERVER_SEED = bytes.fromhex("00" * 31 + "33")
+
+
+def _signed(statement: dict[str, Any]) -> bytes:
+    reader = audit_record.reader
+    canonical = reader.canonical_bytes(statement)
+    key = Ed25519PrivateKey.from_private_bytes(OBSERVER_SEED)
+    envelope = _unsigned(canonical)
+    envelope["signatures"][0]["sig"] = base64.b64encode(
+        key.sign(reader.pae(reader.PAYLOAD_TYPE, canonical))).decode()
+    return json.dumps(envelope).encode()
+
+
+def test_the_test_key_signs_a_member_the_reader_accepts(tmp_path: Path) -> None:
+    statement = json.loads(base64.b64decode(json.loads((DATA / MEMBERS["A1"]["file"]).read_bytes())["payload"]))
+    assert _decide_bytes(_signed(statement), "envelope", tmp_path)["decision"] == "supported"
+
+
+@pytest.mark.parametrize("issued_at", ["2026-W38-6T11:04:11Z", "20260919T110411Z", "2026-09-19T11:04:11,5Z",
+                                       "2026-09-19T11:04:11+0000", "2026-09-19 11:04:11Z"])
+def test_a_signed_time_value_that_is_not_rfc3339_is_malformed(issued_at: str, tmp_path: Path) -> None:
+    """A1 re-signed with issuedAt in an ISO 8601 form RFC 3339 does not allow."""
+    statement = json.loads(base64.b64decode(json.loads((DATA / MEMBERS["A1"]["file"]).read_bytes())["payload"]))
+    statement["predicate"]["issuedAt"] = issued_at
+    found = _decide_bytes(_signed(statement), "envelope", tmp_path)
+    assert (found["decision"], found["reason"]) == ("contradicted", "timestamp-malformed")
+
+
+def test_the_rfc3339_lowercase_separator_and_zone_read(tmp_path: Path) -> None:
+    statement = json.loads(base64.b64decode(json.loads((DATA / MEMBERS["A1"]["file"]).read_bytes())["payload"]))
+    statement["predicate"]["issuedAt"] = statement["predicate"]["issuedAt"].lower()
+    assert _decide_bytes(_signed(statement), "envelope", tmp_path)["decision"] == "supported"
+
+
+@pytest.mark.parametrize("within, entry", [(3 * 10**11, "well-formed"), (2**53 - 1, "well-formed"),
+                                           (2**53, "malformed")])
+def test_any_anchor_within_is_judged_exactly(within: int, entry: str, tmp_path: Path) -> None:
+    bundle = json.loads((DATA / MEMBERS["R1"]["file"]).read_bytes())
+    bundle["retention"]["anchorWithin"] = within
+    check = _decide_bytes(json.dumps(bundle).encode(), "retained", tmp_path)["checks"][0]
+    assert check["dating"]["entry"] == entry
+
+
+def test_an_issued_at_in_year_one_dates_without_overflow(tmp_path: Path) -> None:
+    bundle = json.loads((DATA / MEMBERS["R2"]["file"]).read_bytes())
+    statement = json.loads(base64.b64decode(bundle["envelope"]["payload"]))
+    statement["predicate"]["issuedAt"] = "0001-01-01T00:00:00Z"
+    envelope = _unsigned(audit_record.reader.canonical_bytes(statement))
+    digest = hashlib.sha256(audit_record.reader.canonical_bytes(envelope)).hexdigest()
+    bundle = {"envelope": envelope, "retention": dict(bundle["retention"], envelopeDigest=digest)}
+    found = _decide_bytes(json.dumps(bundle).encode(), "retained", tmp_path)
+    assert (found["decision"], found["reason"]) == ("contradicted", "signature-invalid")
+
+
+def test_a_deep_retained_record_is_unreadable_not_raised(tmp_path: Path) -> None:
+    bundle = json.loads((DATA / MEMBERS["R1"]["file"]).read_bytes())
+    bundle["envelope"]["deep"] = json.loads('{"a":' * 900 + "1" + "}" * 900)
+    found = _decide_bytes(json.dumps(bundle).encode(), "retained", tmp_path)
+    assert (found["decision"], found["reason"]) == ("contradicted", "retained-unreadable")
+
+
+@pytest.mark.parametrize("change", [
+    lambda t: t.update(keys=[]),
+    lambda t: t["keys"]["observer"].update(publicKey=7),
+    lambda t: t.update(predicateType=["x"]),
+    lambda t: t.update(anchorTrust={"treeHeads": [{"logId": "zz"}]}),
+    lambda t: t.update(anchorTrust={"blockHeaders": [{"height": 1, "header": "00"}]}),
+])
+def test_an_unreadable_trust_document_is_the_consumers_error(change: Any, tmp_path: Path) -> None:
+    trust = copy.deepcopy(MANIFEST)
+    change(trust)
+    with pytest.raises(CaseError, match="assessment.trust"):
+        _decide_bytes((DATA / MEMBERS["R1"]["file"]).read_bytes(), "retained", tmp_path,
+                      json.dumps(trust).encode())

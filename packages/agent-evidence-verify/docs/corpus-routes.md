@@ -111,10 +111,12 @@ not carried.
 
 ### `agent_audit_record/v1` (`vectors-agent-audit-record`, every member)
 
-The assessment names a `record` artifact and a `trust` artifact, and may name a `predicate_type`. The
-record is a DSSE envelope holding an agent audit record, a retained record (`envelope` beside the
-retention entry a retaining party keeps for it), or a set (`records`, judged one by one and then
-together under one consumption ledger). The trust document is the consumer's: any JSON object carrying
+The assessment names a `record` artifact, a `trust` artifact and the `shape` the consumer holds, and
+may name a `predicate_type`. The shape is `envelope` (a DSSE envelope holding an agent audit record),
+`retained` (`envelope` beside the retention entry a retaining party keeps for it) or `set` (`records`,
+judged one by one and then together under one consumption ledger). It is required and never read off
+the record, because a presenter who could choose it would strip a retention entry whose dating fails
+and have the bare envelope pass. The trust document is the consumer's: any JSON object carrying
 `keys.observer.publicKey`, `predicateType` and, for a retained record, `anchorTrust` (the tree heads
 and Bitcoin block headers it already holds). The corpus `MANIFEST.json` is one. Nothing the record
 carries chooses its own key or its own trusted heads.
@@ -125,7 +127,11 @@ result and missing permits of a set. Each time comparison keeps its own bound: t
 300 second skew tolerance only, the past side the entry's `maxAge`, the late anchor bound `anchorWithin`
 plus the tolerance, and an OpenTimestamps time the 7200 second allowance on both the `receivedAt` and
 the late bound. Every integer is read inside the I-JSON range before any arithmetic, so `maxAge` of
-2^53 or more is `unsafe-integer` and 2^53-1 is read.
+2^53 or more is `unsafe-integer` and 2^53-1 is read; an `anchorWithin` of 2^53 or more makes the
+entry malformed, and any smaller one is compared exactly. A time value is an RFC 3339 date-time and
+nothing else, so a week date or a comma fraction is `timestamp-malformed`. A lone surrogate escape is
+`not-parseable`, nesting past 128 levels is `nesting-too-deep` at any depth, and no input, signed or
+not, makes the reader raise.
 
 A valid record, with a well-formed retention entry where it has one and a valid joint result where it
 is a set, is `supported` / `record_conforms`. Anything else is `contradicted` with the first refusal

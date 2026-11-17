@@ -21,7 +21,12 @@ unchanged.
   (verdict and first code, recomputed tier, `withinLimit`, dating, joint set result). Each time bound is kept apart
   (skew only on the future side, `maxAge` on the past, the OpenTimestamps allowance on both anchor bounds) and every
   integer is range-checked before arithmetic. All 235 corpus members agree, so the Action's reference stage can read
-  M of M on that corpus. Route and example: `docs/corpus-routes.md`, `examples/corpus-routes/audit-record/`.
+  M of M on that corpus. The assessment names the `shape` it holds (`envelope`, `retained` or `set`), never read off the
+  record, so a retained record stripped of a failing retention entry cannot pass as an envelope. A time value is an
+  RFC 3339 date-time only, and no input, signed or not, makes the reader raise: a lone surrogate, nesting past the
+  stack, a 4300-digit integer, an `anchorWithin` no timedelta holds and an `issuedAt` in year 1 are each judged. A
+  trust document the reader cannot read is refused as the consumer's error. Route and example:
+  `docs/corpus-routes.md`, `examples/corpus-routes/audit-record/`.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.

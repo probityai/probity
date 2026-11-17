@@ -15,11 +15,12 @@ past side the entry's ``maxAge``, the late anchor bound ``anchorWithin`` plus th
 OpenTimestamps time the 7200 second allowance on both the ``receivedAt`` and the late bound. Every
 integer is read inside the I-JSON range before any arithmetic, so 2^53 and above is refused.
 
-The assessment may name the ``shape`` the consumer holds (``envelope``, ``retained`` or ``set``);
-without it the shape is read off the record's top-level members. The trust document is any JSON
-object carrying ``keys.observer.publicKey``, ``predicateType`` and, for a retained record,
-``anchorTrust``; the corpus MANIFEST.json is one. Nothing the record carries
-chooses its own key or its own trusted heads.
+The assessment names the ``shape`` the consumer holds (``envelope``, ``retained`` or ``set``), and
+the record never chooses it: a reader that took the shape off the bytes would let a presenter strip
+a retention entry whose dating fails and be judged as a bare envelope that passes. The trust
+document is any JSON object carrying ``keys.observer.publicKey``, ``predicateType`` and, for a
+retained record, ``anchorTrust``; the corpus MANIFEST.json is one. Nothing the record carries
+chooses its own key, its own trusted heads or the rules it is judged under.
 
 Decisions: a record the reader finds valid, with a well-formed retention entry where it has one and
 a valid joint result where it is a set, is ``supported`` / ``record_conforms``; anything else is
@@ -44,40 +45,38 @@ LIMIT = ("Checks the record's signature under the pinned observer key, its JSON 
          "the observer saw every write, or that a dated anchor was obtained when it says.")
 
 
-def _trust(raw: bytes | None) -> dict[str, Any]:
+def _trust(raw: bytes | None) -> tuple[dict[str, Any], reader.AnchorTrust]:
+    """The consumer's trust document and the tree heads and block headers it pins. A
+    document the reader cannot read is the consumer's error, refused before any record."""
     if raw is None:
         raise CaseError("assessment.trust: the trust document is not available")
     try:
         trust = json.loads(raw)
-    except (UnicodeDecodeError, ValueError) as error:
+    except (UnicodeDecodeError, ValueError, RecursionError) as error:
         raise CaseError(f"assessment.trust: not JSON: {error}") from error
     if not isinstance(trust, dict):
         raise CaseError("assessment.trust: expected a JSON object")
-    return trust
+    keys = trust.get("keys")
+    observer = keys.get("observer") if isinstance(keys, dict) else None
+    if not isinstance(observer, dict) or not isinstance(observer.get("publicKey"), str):
+        raise CaseError("assessment.trust: keys.observer.publicKey: expected a string")
+    if not isinstance(trust.get("predicateType", ""), str):
+        raise CaseError("assessment.trust: predicateType: expected a string")
+    try:
+        heads = reader.tree_heads(trust)
+    except (AttributeError, KeyError, TypeError, ValueError, OverflowError) as error:
+        raise CaseError(f"assessment.trust: anchorTrust unreadable: {error!r}") from error
+    return trust, heads
 
 
 SHAPES = ("envelope", "retained", "set")
-
-
-def _shape(raw: bytes) -> str:
-    """``retained``, ``set`` or ``envelope``, read off the top-level members only, for a
-    consumer that declared none; a record too broken to show its shape reads as an envelope."""
-    try:
-        document = json.loads(raw)
-    except (UnicodeDecodeError, ValueError):
-        return "envelope"
-    if isinstance(document, dict) and set(document) == {"envelope", "retention"}:
-        return "retained"
-    if isinstance(document, dict) and "records" in document and "payload" not in document:
-        return "set"
-    return "envelope"
 
 
 def _within_limit(envelope: bytes) -> bool | None:
     try:
         predicate = json.loads(reader._envelope_payload(envelope)[1])["predicate"]
         return reader.within_limit(predicate)
-    except (reader.Malformed, KeyError, TypeError, ValueError):
+    except (reader.Malformed, KeyError, TypeError, ValueError, RecursionError):
         return None
 
 
@@ -85,7 +84,7 @@ def _retained_envelope(raw: bytes) -> bytes:
     """The envelope a retained record carries, re-serialized; empty when it cannot be read."""
     try:
         return json.dumps(json.loads(raw)["envelope"]).encode()
-    except (UnicodeDecodeError, ValueError, KeyError, TypeError):
+    except (UnicodeDecodeError, ValueError, KeyError, TypeError, RecursionError):
         return b""
 
 
@@ -99,17 +98,18 @@ def _record(report: reader.Report, envelope: bytes) -> dict[str, Any]:
     return out
 
 
-def judge(raw: bytes, trust: dict[str, Any], predicate_type: str | None = None,
-          shape: str | None = None) -> dict[str, Any]:
+def judge(raw: bytes, trust: dict[str, Any], heads: reader.AnchorTrust, shape: str,
+          predicate_type: str | None = None) -> dict[str, Any]:
     """The reader's result for one record, retained record or set, as one check. ``shape`` is
     what the consumer says it holds; a retained record or set whose bytes cannot be read is
     then refused as that shape, never re-read as a bare envelope."""
+    if shape not in SHAPES:
+        raise CaseError(f"assessment.shape: expected one of {', '.join(SHAPES)}")
     configured = {"predicateType": predicate_type} if predicate_type else None
     policy = reader.policy_for(trust, configured)
-    shape = shape or _shape(raw)
     check: dict[str, Any] = {"id": "agent_audit_record_rules", "shape": shape}
     if shape == "retained":
-        report, dated = reader.verify_retained(raw, policy, reader.tree_heads(trust))
+        report, dated = reader.verify_retained(raw, policy, heads)
         check.update(_record(report, _retained_envelope(raw)))
         check["dating"] = reader.dating_dict(dated)
         ok = report.verdict == "valid" and dated.entry == "well-formed"
@@ -120,7 +120,7 @@ def judge(raw: bytes, trust: dict[str, Any], predicate_type: str | None = None,
             envelopes = reader.set_records(raw)
         except (reader.Malformed, ValueError, KeyError, TypeError):
             envelopes = []
-        check["records"] = [_record(r, e) for r, e in zip(reports, envelopes, strict=False)]
+        check["records"] = [_record(r, e) for r, e in zip(reports, envelopes, strict=True)]
         check["set"] = {"verdict": joint.verdict, "codes": list(joint.codes),
                         "missing": joint.missing}
         check["verdict"], check["codes"] = joint.verdict, list(joint.codes)
@@ -139,22 +139,23 @@ def judge(raw: bytes, trust: dict[str, Any], predicate_type: str | None = None,
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     """Judge one bound agent audit record under the consumer's pinned trust document."""
     case_id, artifacts, assessment = assessment_for(
-        case, policy, CLAIM_TYPE, {"record", "trust"}, {"predicate_type", "shape"})
+        case, policy, CLAIM_TYPE, {"record", "trust", "shape"}, {"predicate_type"})
     raw, binding = bound(artifacts, artifact_root, assessment["record"], "assessment.record")
     trust_raw, trust_binding = bound(artifacts, artifact_root, assessment["trust"],
                                      "assessment.trust")
     predicate_type = assessment.get("predicate_type")
     if predicate_type is not None and not isinstance(predicate_type, str):
         raise CaseError("assessment.predicate_type: expected a string")
-    shape = assessment.get("shape")
-    if shape is not None and shape not in SHAPES:
+    shape = assessment["shape"]
+    if shape not in SHAPES:
         raise CaseError(f"assessment.shape: expected one of {', '.join(SHAPES)}")
     scope = {"record": binding, "trust": trust_binding, "limit": LIMIT}
     if raw is None:
         return decision(case_id, CLAIM_TYPE, scope, "not_established", "record_unavailable")
-    trust = _trust(trust_raw)
+    trust, heads = _trust(trust_raw)
     scope["predicate_type"] = predicate_type or trust.get("predicateType", "")
-    check = judge(raw, trust, predicate_type, shape)
+    scope["shape"] = shape
+    check = judge(raw, trust, heads, shape, predicate_type)
     if check["status"] == "pass":
         return decision(case_id, CLAIM_TYPE, scope, "supported", "record_conforms", [check])
     return decision(case_id, CLAIM_TYPE, scope, "contradicted", check["first_code"], [check])
