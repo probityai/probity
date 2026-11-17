@@ -107,6 +107,11 @@ def _value(value: Any) -> str:
     raise Refusal(f"{type(value).__name__} is not a JSON value")
 
 
+def serialize(value: Any) -> bytes:
+    """The RFC 8785 bytes of an already parsed JSON value; raises :class:`Refusal` when it has none."""
+    return _value(value).encode("utf-8")
+
+
 def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, item in pairs:
