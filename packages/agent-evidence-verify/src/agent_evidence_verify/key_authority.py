@@ -504,3 +504,30 @@ def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: st
     else:
         outcome, reason, trusted = _kt_inclusion(authority, key, subject, inclusion_proof)
     return Authority(outcome, reason, kind, key_set_fingerprint(trusted))
+
+
+def authority_evidence(authority: Any, artifacts: dict, artifact_root: Any,
+                       scope: dict) -> tuple[bytes | None, Any]:
+    """The DID document bytes and the inclusion proof the consumer's authority names as case
+    artifacts, each bound and recorded in ``scope``; ``(None, None)`` when the kind reads neither."""
+    from .adapters.bound_records import bound
+    document = proof = None
+    if not isinstance(authority, dict):
+        return document, proof
+    kind = authority.get("kind")
+    if kind == "did-web":
+        document, scope["key_authority_document"] = bound(
+            artifacts, artifact_root, authority.get("document"), "assessment.key_authority.document")
+    elif kind == "kt-inclusion":
+        if "inclusion_proof" in authority:
+            raw, scope["key_authority_inclusion_proof"] = bound(
+                artifacts, artifact_root, authority["inclusion_proof"],
+                "assessment.key_authority.inclusion_proof")
+            if raw is not None:
+                try:
+                    proof = parse_ijson(raw)
+                except IJSONError:
+                    proof = "malformed"  # authorize() answers inclusion_proof_malformed
+    elif "document" in authority or "inclusion_proof" in authority:
+        raise CaseError("assessment.key_authority: evidence named for a kind that reads none")
+    return document, proof
