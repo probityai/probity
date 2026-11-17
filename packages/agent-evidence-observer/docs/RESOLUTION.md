@@ -11,21 +11,25 @@ each exist.
 
 ```python
 from pathlib import Path
+from probity_observer import TrajectoryWitness
 from probity_observer.resolution import ResolutionObserver
 
-observer = ResolutionObserver(Path("observed.jsonl"), trajectory_id="run-42")
+observer = ResolutionObserver(Path("observed.jsonl"), trajectory_id="run-42",
+                              witness=TrajectoryWitness(witness_key, Path("witness-registry")))
 seq = observer.resolved(name="_a2a._agents.example.com", svcb=rrset, sig=sig,
                         jwks_url=jwks_url, jwks_bytes=jwks, dnssec_chain=chain,
                         at="2026-11-15T20:00:00Z")
 observer.called(endpoint="https://agent.example.com:443", at="2026-11-15T20:00:01Z", resolution=seq)
-head = observer.trajectory.close(witness_key)
+head = observer.trajectory.close()
 ```
 
 The raw JWKS and chain bytes stay with the caller; each event binds them by
 SHA-256, so a verifier handed the bytes can check them. `at` is the
 observer's clock and nothing more: no trusted time is claimed. It is written
 `YYYY-MM-DDTHH:MM:SS[.fraction]Z` with ASCII digits and must be a calendar
-time; anything else is refused before an event is written.
+time with seconds 00 to 59. RFC 3339 allows a leap second (`:60`), but a POSIX
+clock never reads one, so it is refused like anything else outside this form
+before an event is written. The fraction is kept as written, at any length.
 
 A joining verifier compares each recorded call with a verified binding: a
 call to the bound endpoint inside the key authority's window agrees; a call
