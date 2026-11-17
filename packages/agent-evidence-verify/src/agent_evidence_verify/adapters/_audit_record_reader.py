@@ -1,9 +1,9 @@
 """The agent audit record reader that ``agent_audit_record/v1`` runs.
 
 A port of probityai/agent-evidence-vectors ``packaging/agent_evidence_vectors/auditrecord.py`` at
-commit 5928a5866 with that repository's branch lane/left12-break-1117 applied (RFC 3339 time values
-only; a lone surrogate, any depth past 128, a 4300-digit integer and the dating bounds judged, never
-raised), the reader of ``corpora/vectors-agent-audit-record``, rule for rule and code for code, so the
+commit 5928a5866 with that repository's pull request 653 applied (RFC 3339 time values only; NaN, a
+lone surrogate, any depth past 128, a 4300-digit integer and the dating bounds judged, never raised),
+the reader of ``corpora/vectors-agent-audit-record``, rule for rule and code for code, so the
 first refusal this reader names is the code a corpus member pins. The one change: the Ed25519 check
 runs through ``cryptography`` instead of the vectors rail. Its module text follows.
 
