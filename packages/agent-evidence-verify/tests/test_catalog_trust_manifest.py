@@ -437,6 +437,40 @@ def test_a_number_outside_the_signed_bytes_does_not_refuse(tmp_path: Path) -> No
     assert (result["decision"], result["reason"]) == ("supported", "signature_covers_release")
 
 
+#: An integer token past CPython's 4300-digit int() limit: valid JSON (RFC 8259 bounds none).
+_HUGE = "9" * 5000
+
+
+def test_an_integer_too_long_to_convert_is_json_outside_the_signed_bytes(tmp_path: Path) -> None:
+    """Such a token used to read as json_invalid wherever it sat, while 2**53 + 1 in the same
+    unsigned member was accepted: the profile reads number range in the signed bytes only."""
+    name = "accept-draft-eddsa"
+    root = _copy(tmp_path, name)
+    for file, member in (("did-documents.json", "x-big"), ("catalog.json", "x-host-big")):
+        path = root / name / file
+        text = path.read_text(encoding="utf-8").rstrip()
+        assert text.endswith("}")
+        path.write_text(f'{text[:-1]}, "{member}": -{_HUGE}}}', encoding="utf-8")
+    # Pins from the unedited documents: the stdlib json the helper uses cannot read the token.
+    case, policy = _inputs(root, name, key_authority=_pin_all(DATA / "cases" / name))
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("supported", "signature_covers_release")
+
+
+def test_an_integer_too_long_to_convert_in_the_signed_bytes_is_not_interoperable(
+        tmp_path: Path) -> None:
+    name = "accept-draft-eddsa"
+    root = _copy(tmp_path, name)
+    path = root / name / "catalog.json"
+    text = path.read_text(encoding="utf-8")
+    anchor = '"identity": '
+    assert text.count(anchor) == 1
+    path.write_text(text.replace(anchor, f'"x-big": {_HUGE}, {anchor}'), encoding="utf-8")
+    case, policy = _inputs(root, name)
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("contradicted", "number_not_interoperable")
+
+
 def test_the_der_reader_refuses_a_non_minimal_integer() -> None:
     raw = bytes([0x30, 0x07, 0x02, 0x02, 0x00, 0x01, 0x02, 0x01, 0x01])
     assert reader.der_signature(raw) is None

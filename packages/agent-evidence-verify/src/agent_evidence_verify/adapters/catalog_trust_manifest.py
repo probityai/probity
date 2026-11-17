@@ -51,6 +51,7 @@ from __future__ import annotations
 import base64
 import copy
 import hashlib
+import math
 import re
 from pathlib import Path
 from typing import Any
@@ -170,14 +171,24 @@ class Unavailable(Exception):
 
 # --------------------------------------------------------------------------- reading
 
+def _integer(token: str) -> int | float:
+    """An integer token, kept exact; one too long for ``int()`` (4300 digits) is far past 2**53 - 1,
+    so it reads as the signed infinity, which the signed-bytes rule refuses the same way."""
+    try:
+        return int(token)
+    except ValueError:
+        return -math.inf if token.startswith("-") else math.inf
+
+
 def load(data: bytes) -> Any:
     """Strict JSON under the profile: duplicates refused, nesting bounded at :data:`MAX_NESTING`.
 
-    Integers past 2**53 - 1, non-finite doubles and lone surrogates are kept, because the profile
-    refuses them only in the signed bytes (``number_not_interoperable``, ``no_canonical_form``).
-    Raises :class:`IJSONError`, or ``ValueError`` for an integer token too long to convert.
+    Integers past 2**53 - 1 (of any length), non-finite doubles and lone surrogates are kept,
+    because the profile refuses them only in the signed bytes (``number_not_interoperable``,
+    ``no_canonical_form``): a long integer in an unsigned member is valid JSON, not
+    ``json_invalid``. Raises :class:`IJSONError`.
     """
-    return parse_ijson(data, max_depth=MAX_NESTING, parse_int=int, parse_float=float,
+    return parse_ijson(data, max_depth=MAX_NESTING, parse_int=_integer, parse_float=float,
                        lone_surrogates=True)
 
 
