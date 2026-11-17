@@ -4,7 +4,12 @@ Two targets. ``rfc8785`` canonicalizes one JSON value. ``card-signing-input`` is
 signing input: the card without its top-level ``signatures`` member, canonicalized (A2A
 specification 8.4.1 rules 2 and 3). Numbers are IEEE 754 doubles written as ECMAScript
 ``Number::toString``; members sort by their UTF-16 code units; a lone surrogate, NaN, Infinity, a
-duplicate member or an integer outside the double range has no canonical form. The canonicalizer is
+duplicate member or an integer outside the I-JSON exact range +-(2**53 - 1) has no canonical form: RFC 8785
+section 3.1 takes I-JSON input, and RFC 7493 section 2.2 gives that range for exact integers. Without the
+integer refusal, 9007199254740993 and 9007199254740992 canonicalize to the same bytes, so one signature
+would cover two different numbers. A third target, ``rfc8785-safe-integer``, is the bounded profile for
+signing inputs: it also refuses a number whose double reaches 2**53 (``12345678901234567.5`` canonicalizes
+to the integer 12345678901234568, which the profile refuses on input). The canonicalizer is
 a port of probityai/agent-evidence-vectors at commit 317df600f9a1503f32bcc2742b9f111036bdee32,
 ``packaging/agent_evidence_vectors/a2ajcs.py``.
 
@@ -25,7 +30,9 @@ from ..common import CaseError, _string
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "jcs_canonical/v1"
-TARGETS = ("rfc8785", "card-signing-input")
+TARGETS = ("rfc8785", "card-signing-input", "rfc8785-safe-integer")
+MAX_EXACT_INTEGER = 2**53 - 1
+TWO_POW_53 = float(2**53)
 LIMIT = ("Recomputes canonical bytes from the bound input. It says nothing about who produced the "
          "input or whether a signature over the bytes is valid.")
 
@@ -83,7 +90,7 @@ def _string_form(text: str) -> str:
     return "".join(out)
 
 
-def _value(value: Any) -> str:
+def _value(value: Any, bounded: bool = False) -> str:
     if value is None:
         return "null"
     if value is True:
@@ -91,19 +98,26 @@ def _value(value: Any) -> str:
     if value is False:
         return "false"
     if isinstance(value, int):
+        if abs(value) > MAX_EXACT_INTEGER:
+            raise Refusal("number_not_interoperable: integer outside the I-JSON exact range "
+                          "+-(2**53 - 1)")
         try:
             return _number(float(value))
         except OverflowError as exc:
             raise Refusal("integer outside the IEEE 754 double range") from exc
     if isinstance(value, float):
+        if bounded and math.isfinite(value) and abs(value) >= TWO_POW_53:
+            raise Refusal("number_not_interoperable: number whose double is an integer outside "
+                          "the I-JSON exact range")
         return _number(value)
     if isinstance(value, str):
         return _string_form(value)
     if isinstance(value, list):
-        return "[" + ",".join(_value(item) for item in value) + "]"
+        return "[" + ",".join(_value(item, bounded) for item in value) + "]"
     if isinstance(value, dict):
         keys = sorted(value, key=lambda key: key.encode("utf-16-be", "surrogatepass"))
-        return "{" + ",".join(_string_form(key) + ":" + _value(value[key]) for key in keys) + "}"
+        return "{" + ",".join(_string_form(key) + ":" + _value(value[key], bounded)
+                         for key in keys) + "}"
     raise Refusal(f"{type(value).__name__} is not a JSON value")
 
 
@@ -126,7 +140,14 @@ def canonical(target: str, text: str) -> bytes:
         raise Refusal(f"not JSON text: {exc}") from exc
     if target == "card-signing-input" and isinstance(value, dict):
         value = {key: item for key, item in value.items() if key != "signatures"}
+    if target == "rfc8785-safe-integer":
+        return _value(value, True).encode("utf-8")
     return _value(value).encode("utf-8")
+
+
+def canonical_bounded(text: str) -> bytes:
+    """RFC 8785 bytes for a signing input under the safe-integer profile: one signature, one number."""
+    return canonical("rfc8785-safe-integer", text)
 
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:

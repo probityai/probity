@@ -62,7 +62,7 @@ canonicalized per RFC 8785 (A2A specification 8.4.1 rules 2 and 3).
 
 - Equal bytes: `supported` / `canonical_bytes_match`.
 - Input with no canonical form (a lone surrogate, NaN or Infinity, a duplicate member, text that is not
-  JSON, an integer outside the double range): `contradicted` / `no_canonical_form`.
+  JSON, an integer outside the I-JSON exact range +-(2**53 - 1)): `contradicted` / `no_canonical_form`.
 - Different bytes: `contradicted` / `canonical_bytes_differ`.
 
 The route builds the claim from each vector. A MUST-ACCEPT vector claims its
