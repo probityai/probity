@@ -133,13 +133,13 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/declared_versus_acted.py",
-      "bytes": 18925,
-      "sha256": "9a0563df9d1fff279d0d08b4361b25f36454820b64c2c16882cb9736d523c12f"
+      "bytes": 20134,
+      "sha256": "fa0fa52efcffc04a349aed4dd988db70550633845604ca4fc78332527e265fae"
     },
     {
       "path": "src/agent_evidence_verify/adapters/dns_aid_sig.py",
-      "bytes": 18647,
-      "sha256": "4163875c7431386af36ac51d5530a363c945ecbd561b53ac2a48a24310949cb1"
+      "bytes": 21456,
+      "sha256": "7f475d4c79f6f23586766f63a0107135a83727d2caca2110a59debb4187f833d"
     },
     {
       "path": "src/agent_evidence_verify/adapters/dnssec_rrset.py",
@@ -278,8 +278,8 @@
     },
     {
       "path": "src/agent_evidence_verify/dnssec.py",
-      "bytes": 22061,
-      "sha256": "c898d5d78a9cb84bf18957e773f908296ba645199647a4afdc6eb04c71b6b0e3"
+      "bytes": 22535,
+      "sha256": "1d6c440132dd4e0018ac6722ac2f0b529b3557296ff0f23b98475c830879a839"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
@@ -313,8 +313,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 31634,
-      "sha256": "c60542aad7dedc61a521f53601e30c78c18e88ac1d0b51242fab476bf167b28c"
+      "bytes": 32129,
+      "sha256": "d3d1fd64c9413c42b9102c65e48a551296a4b3a0b9fcffda8f24a19d96e11d6e"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",

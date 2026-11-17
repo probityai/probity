@@ -25,14 +25,19 @@ The rules form the profile `https://probityai.github.io/agent-evidence-vectors/p
 - Header and payload are I-JSON: a repeated member name is refused, so a first-wins and a last-wins
   reader cannot bind two different `fqdn` values to one signature.
 - `crit` in the header is refused (RFC 7515 section 4.1.11), and `alg` is `ES256`.
-- `port`, `iat` and `exp` are JSON integers (`443.0` is refused).
+- `port`, `iat` and `exp` are JSON integers (`443.0` is refused); the record's `port` is 0 to 65535,
+  and a window whose `exp` is at or before its `iat` is refused (`payload_window_inverted`).
 - The record is expired when `exp` is at or before the instant, and not yet valid when `iat` is more
   than 300 seconds after it.
 - The signed `alpn` is compared with the record's `proto` when it has one (draft-dawn-dnsaid-00
   Table 1: `alpn` names the transport, `proto` the agent protocol), and with its `alpn` otherwise.
 - The `svcb` digest is `svcb1:` followed by the RFC 8785 form of the present parameters; an empty
   value is a value, so a parameter the publisher never set cannot be injected as `""`.
-- A `jwks_url` on another host than `dns-aid.<zone>` or the zone apex is refused.
+- A `jwks_url` on another host than `dns-aid.<zone>` or the zone apex is refused (`jwks_host_not_zone`),
+  and so is one that clients read differently (`jwks_url_malformed`): a backslash, userinfo, a control
+  character, a percent-encoded or non-hostname host, or a port outside 0 to 65535.
+  `https://evil.example\@dns-aid.example.com/` names `dns-aid.example.com` to Python's `urlsplit` and
+  `evil.example` to urllib3 and browsers.
 - The signature verifying is not enough: `supported` needs the key authorised for the zone under the
   consumer's `key_authority`. With none, the verdict stops at `not_established`
   (`no_key_authority_in_policy`). For `did-web` the subject is `did:web:<zone>`; for every other kind
@@ -41,13 +46,15 @@ The rules form the profile `https://probityai.github.io/agent-evidence-vectors/p
 | Decision | Reasons |
 |---|---|
 | `supported` | `binding_verified` |
-| `contradicted` | `record_malformed`, `record_not_ijson`, `jws_malformed`, `jws_header_not_ijson`, `jws_header_not_object`, `jws_crit_unsupported`, `jws_alg_not_es256`, `jws_signature_malformed`, `signature_invalid`, `payload_not_ijson`, `payload_not_object`, `payload_member_not_integer`, `binding_expired`, `endpoint_not_bound`, `params_not_bound`, `jwks_host_not_zone`, and every `unauthorized` reason of the key authority |
+| `contradicted` | `record_malformed`, `record_not_ijson`, `jws_malformed`, `jws_header_not_ijson`, `jws_header_not_object`, `jws_crit_unsupported`, `jws_alg_not_es256`, `jws_signature_malformed`, `signature_invalid`, `payload_not_ijson`, `payload_not_object`, `payload_member_not_integer`, `payload_window_inverted`, `binding_expired`, `endpoint_not_bound`, `params_not_bound`, `jwks_host_not_zone`, `jwks_url_malformed`, and every `unauthorized` reason of the key authority |
 | `not_established` | `record_unavailable`, `jwks_unavailable`, `jwks_malformed`, `jwks_no_usable_key`, `zone_does_not_contain_record`, `binding_not_yet_valid`, `endpoint_only`, and every `unknown` reason of the key authority |
 
 Every decision's scope states `dns_aid_status` (the publisher's own status vocabulary: `full`,
 `endpoint_only`, `unbound`, `expired`, `invalid`, `no_key`, `not_yet_valid`), `signature_coverage`
 (vocabulary term `signature_coverage`: `full`, `endpoint_only`, `none`) and `jwks_key_set_sha256`,
-the SHA-256 over the sorted raw-key digests of the JWKS signing keys read, one per line. Every
+the SHA-256 over the sorted raw-key digests of the JWKS signing keys read, one per line. A decision
+past the signature check also states the `fqdn` and `zone` the record claimed: the zone is the
+record's own word, and the key authority was asked about that zone alone. Every
 malformed input a record, a signature or a JWKS can carry gets a verdict; only the consumer's own
 policy is refused with exit 2.
 
@@ -64,7 +71,9 @@ https://data.iana.org/root-anchors/root-anchors.xml. The validator
 it reads RSA/SHA-256 and SHA-512, ECDSA P-256 and P-384, Ed25519 and Ed448, and DS digests SHA-256
 and SHA-384.
 
-`supported` (`rrset_validated`) names the signer and the SHA-256 of each validated RDATA.
+`supported` (`rrset_validated`) names the signer and the SHA-256 of each validated RDATA. A key
+with the REVOKE bit (RFC 5011 section 2.1) never validates zone data, so whoever kept a revoked
+key cannot sign for the zone that revoked it.
 `contradicted` means the chain is present and a check fails (`signature_invalid`, `rrsig_expired`,
 `rrsig_not_yet_valid`, `ds_mismatch`, `ds_malformed`, `signer_not_authoritative`,
 `chain_malformed`). `not_established` means a record the chain needs is missing (`rrset_missing`,
@@ -80,17 +89,23 @@ a head signed by a witness key the consumer pins (`witness_key`, raw Ed25519 as 
 trajectory id the consumer expects. The adapter verifies the hash links and the head itself, then
 joins each `call` event to the SVCB records of the resolution it names (or of every earlier
 resolution when it names none), judging each declaring record's `sig` with the `dns_aid_sig/v1`
-rules at the call's own instant. `evidence` lists the case artifacts (JWKS bytes, DNSSEC chains); a
+rules at the call's own instant. A call timed before the resolution it names is
+`call_before_resolution`, and an unnamed call relies only on resolutions timed at or before it.
+A trajectory line ends at `\n` and nothing else, and the head signature is canonical base64. The
+call's endpoint is read as every common HTTP client reads it: an endpoint with a backslash,
+userinfo, a control character or a non-hostname host is `call_endpoint_malformed`, because
+`https://collector.example.net\@chat.example.com/` names `chat.example.com` to Python's `urlsplit`
+and `collector.example.net` to urllib3, the client under `requests`. `evidence` lists the case artifacts (JWKS bytes, DNSSEC chains); a
 resolution picks them by the SHA-256 it recorded. A `dnssec-chain` authority with no `chain` member
 reads each resolution's own recorded chain.
 
 | Decision | When |
 |---|---|
 | `supported` (`every_call_declared_and_bound`) | every call went to a host and port a record declared, and that record's binding is `supported` at the call's instant |
-| `contradicted` | a call went to an endpoint no record declared (`call_not_declared`), after `exp`, or under a key the authority refuses; or the trajectory fails (`trajectory_tail_missing`, `trajectory_link_broken`, `trajectory_head_other_key`, ...) |
+| `contradicted` | a call went to an endpoint no record declared (`call_not_declared`), to an endpoint clients read differently (`call_endpoint_malformed`), before the resolution it names (`call_before_resolution`), after `exp`, or under a key the authority refuses; or the trajectory fails (`trajectory_tail_missing`, `trajectory_link_broken`, `trajectory_head_other_key`, ...) |
 | `not_established` | the best binding is endpoint-only, unsigned or has no key authority, its bytes were not supplied, or no call was recorded (`no_calls_recorded`) |
 
 The scope carries the denominator: events, resolutions, calls, and calls bound, contradicted and
 unestablished. A call the observer did not record is missing, never clean: the witnessed head fixes
-the count. The tests run ten trajectories written by the observer's own recorder, among them a
+the count. The tests run thirteen trajectories written by the observer's own recorder, among them a
 planted call to an undeclared host and a trajectory whose last call was dropped.
