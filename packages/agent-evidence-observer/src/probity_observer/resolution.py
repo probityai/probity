@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from .crypto import VerificationError
-from .trajectory import DEFAULT_CANONICALIZATION, TrajectoryRecorder
+from .trajectory import DEFAULT_CANONICALIZATION, TrajectoryRecorder, TrajectoryWitness
 
 RESOLUTION_KIND = "resolution"
 CALL_KIND = "call"
@@ -39,6 +39,7 @@ __all__ = ["CALL_KIND", "RESOLUTION_KIND", "ResolutionObserver"]
 
 
 def _instant(value: str) -> str:
+    """Return an observer clock reading, refusing a leap second as a POSIX clock never reads one."""
     if not isinstance(value, str) or not _RFC3339.fullmatch(value):
         raise VerificationError("observer time must be RFC 3339 UTC ending in Z")
     try:
@@ -68,12 +69,13 @@ class ResolutionObserver:
     Args:
         path: The trajectory file (a new, empty file).
         trajectory_id: The identifier the consumer will verify the trajectory under.
+        witness: The witness that counts every event and signs the head.
         canonicalization: The trajectory's declared canonicalization.
     """
 
-    def __init__(self, path: Path, *, trajectory_id: str,
+    def __init__(self, path: Path, *, trajectory_id: str, witness: TrajectoryWitness,
                  canonicalization: str = DEFAULT_CANONICALIZATION) -> None:
-        self.trajectory = TrajectoryRecorder(path, trajectory_id=trajectory_id,
+        self.trajectory = TrajectoryRecorder(path, trajectory_id=trajectory_id, witness=witness,
                                              canonicalization=canonicalization)
         self._resolutions: set[int] = set()
 

@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from .authority import Trust, check_authority
-from .core import load_public, open_envelope, sign_envelope, statement
+from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
 from .grants import grant_digest, spend_of
 from .identity import act_grade, check_principals
@@ -286,8 +286,8 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
     problems: list[str] = []
     where = f"line_{i}"
     try:
-        payload, signer_id = open_envelope(json.loads(line), keys)
-        body = json.loads(payload)
+        payload, signer_id = open_envelope(admitted_loads(line), keys)
+        body = admitted_loads(payload)
     except (ValueError, KeyError, TypeError) as exc:
         return None, [f"{where}:{exc}"]
     pred = body.get("predicate", {})
@@ -322,7 +322,7 @@ def _grant_charges(pred: dict[str, Any]) -> list[tuple[str, dict[str, Any] | Non
     if not isinstance(evidence, Mapping) or evidence.get("kind") != "grant":
         return []
     try:
-        args = json.loads(base64.b64decode(evidence.get("argsB64", ""))) if evidence.get("argsB64") else None
+        args = admitted_loads(base64.b64decode(evidence.get("argsB64", ""))) if evidence.get("argsB64") else None
         return [(grant_digest(g["body"]), g["body"].get("budget"), args) for g in evidence.get("chain", [])]
     except (ValueError, KeyError, TypeError):
         return []
@@ -506,7 +506,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         try:
             payload, cp_signer = open_envelope(dict(checkpoint_env), keys)
             signer_ids.add(cp_signer)
-            cp = json.loads(payload)["predicate"]
+            cp = admitted_loads(payload)["predicate"]
             if cp["count"] != len(lines):
                 failures.append(f"checkpoint_count_{cp['count']}_journal_has_{len(lines)}")
                 checkpoint = "mismatch"

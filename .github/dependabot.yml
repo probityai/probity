@@ -3,6 +3,12 @@
 # the same change that imports the first crate (an empty Cargo workspace has no
 # lock to update). Each Python member groups its updates into one pull request per
 # week, so a release wave of small bumps arrives as a handful of reviews, not thirteen.
+# Retained evidence is not listed below on purpose. The interop experiments under
+# packages/agent-evidence-observer/interop/ keep their manifests and locks byte for byte
+# against recorded digests, so no entry here proposes a bump for them. Dependabot still
+# raises security alerts on those files, and no setting in this file silences an alert, so
+# .github/retained-evidence.toml names the paths and scripts/retained_alerts.py dismisses
+# their alerts with the reason. Every other manifest is live and is bumped.
 version: 2
 updates:
   - package-ecosystem: uv
