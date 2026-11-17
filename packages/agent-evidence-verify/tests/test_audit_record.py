@@ -19,8 +19,8 @@ from typing import Any
 
 import pytest
 from agent_evidence_verify import adjudicate
-from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.adapters import audit_record
+from agent_evidence_verify.common import CaseError
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 DATA = Path(__file__).parent / "data" / "audit-record"
@@ -212,6 +212,8 @@ def test_the_shape_is_the_consumers_and_is_required(tmp_path: Path) -> None:
     (b'{"a":' * 5000 + b"1" + b"}" * 5000, "nesting-too-deep"),
     (b'{"a":' * 500000 + b"1" + b"}" * 500000, "nesting-too-deep"),
     (b'{"n":1' + b"0" * 4300 + b"}", "unsafe-integer"),
+    (b'{"a":NaN}', "not-parseable"),
+    (b'{"a":[-Infinity]}', "not-parseable"),
 ])
 def test_a_hostile_unsigned_payload_is_judged_not_raised(payload: bytes, code: str, tmp_path: Path) -> None:
     found = _decide_bytes(json.dumps(_unsigned(payload)).encode(), "envelope", tmp_path)

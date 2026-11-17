@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError
+from ..ijson import IJSONError, describe, parse_ijson
 from . import _audit_record_reader as reader
 from .bound_records import assessment_for, bound, decision
 
@@ -51,9 +52,9 @@ def _trust(raw: bytes | None) -> tuple[dict[str, Any], reader.AnchorTrust]:
     if raw is None:
         raise CaseError("assessment.trust: the trust document is not available")
     try:
-        trust = json.loads(raw)
-    except (UnicodeDecodeError, ValueError, RecursionError) as error:
-        raise CaseError(f"assessment.trust: not JSON: {error}") from error
+        trust = parse_ijson(raw)
+    except IJSONError as error:
+        raise CaseError(f"assessment.trust: {describe(error)}") from error
     if not isinstance(trust, dict):
         raise CaseError("assessment.trust: expected a JSON object")
     keys = trust.get("keys")
@@ -74,7 +75,7 @@ SHAPES = ("envelope", "retained", "set")
 
 def _within_limit(envelope: bytes) -> bool | None:
     try:
-        predicate = json.loads(reader._envelope_payload(envelope)[1])["predicate"]
+        predicate = reader.parse_statement(reader._envelope_payload(envelope)[1])["predicate"]
         return reader.within_limit(predicate)
     except (reader.Malformed, KeyError, TypeError, ValueError, RecursionError):
         return None
@@ -83,8 +84,8 @@ def _within_limit(envelope: bytes) -> bool | None:
 def _retained_envelope(raw: bytes) -> bytes:
     """The envelope a retained record carries, re-serialized; empty when it cannot be read."""
     try:
-        return json.dumps(json.loads(raw)["envelope"]).encode()
-    except (UnicodeDecodeError, ValueError, KeyError, TypeError, RecursionError):
+        return json.dumps(parse_ijson(raw)["envelope"]).encode()
+    except (IJSONError, KeyError, TypeError):
         return b""
 
 
