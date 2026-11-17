@@ -52,3 +52,18 @@ updates:
     directory: /packages/agent-evidence-mcp
     schedule:
       interval: weekly
+  # The Keycloak listener's Maven build. keycloak.version moves all four Keycloak artifacts; the
+  # end-to-end image in e2e/docker-compose.yml follows it by hand, and jboss-logging and
+  # jakarta.ws.rs-api follow the Quarkus BOM of that Keycloak release, so neither is bumped on its
+  # own. build.sh fails on any drift between the three. Every bump changes maven.lock: the failed
+  # CI run's keycloak-evidence-hook-e2e artifact carries the resolved lock as resolved.lock.
+  - package-ecosystem: maven
+    directory: /integrations/keycloak-evidence-hook
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: "org.jboss.logging:jboss-logging"
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+    groups:
+      maven:
+        patterns: ["*"]

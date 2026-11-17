@@ -1,10 +1,11 @@
 # Keycloak with the evidence hook mounted, for the end-to-end run in run.sh.
 # Host networking keeps the issuer identical for Keycloak and the driver
 # (http://127.0.0.1:8080/realms/agents) and lets Keycloak reach the CIBA
-# authentication-device stub on 127.0.0.1:8099.
+# authentication-device stub on 127.0.0.1:8099. The image tag is the pom's keycloak.version;
+# build.sh fails when they differ.
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:26.4.7@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
+    image: quay.io/keycloak/keycloak:26.6.3@sha256:9b0330756022422149aa6502eb2def8cd47c6e1b000c7c65cdb13e7c0133e992
     network_mode: host
     command:
       - start-dev
