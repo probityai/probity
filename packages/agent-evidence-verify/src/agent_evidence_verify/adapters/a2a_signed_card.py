@@ -15,8 +15,8 @@ Checks, in order; the first refusal is the decision:
 1. The card is I-JSON (duplicate members refused, no lone surrogates, integers within 2**53 - 1,
    finite numbers) and a JSON object (``card_invalid``); such a value always has RFC 8785 bytes.
 2. ``signatures`` is a non-empty list of objects with exactly the members ``protected``,
-   ``signature`` and an optional ``header`` object (``signatures_malformed``; a card with no
-   ``signatures`` member, or an empty list, is ``card_unsigned``).
+   ``signature`` and an optional ``header`` object (``signatures_malformed``, ``null`` included; a
+   card with no ``signatures`` member, or an empty list, is ``card_unsigned``).
 3. Each protected header is strict unpadded base64url of an I-JSON object (``header_malformed``)
    naming ``alg`` and ``kid`` as strings (``kid_missing``, ``alg_unsupported`` for anything but
    ES256 and EdDSA, ``none`` included). It carries no ``crit`` (``jws_crit_unsupported``) and no
@@ -29,19 +29,29 @@ Checks, in order; the first refusal is the decision:
    owner holds.
 5. The key: the JWK whose ``kid`` equals the header's in the key set the case supplies (the bytes
    the reader fetched from ``jku`` or a key store), or, with no key set and a ``did-web``
-   authority, the verification method of that id in the authority's pinned DID document. No key
-   is ``not_established`` (``key_unavailable``); a key set that is not a JWK Set is ``jwks_malformed``,
-   and two JWKs with one ``kid`` is ``jwks_kid_ambiguous``;
-   a key of another type than ``alg`` is ``alg_key_mismatch``. A key in the JWS header itself
-   (``jwk``, ``x5c``) is never used.
+   authority, the verification method of that id in the authority's pinned DID document. A key
+   set that is not a JWK Set is ``jwks_malformed``, and two JWKs with one ``kid`` is
+   ``jwks_kid_ambiguous``. The key is a public JWK (a private member such as ``d``, a coordinate of
+   the wrong length, or an Ed25519 key that is a non-canonical or small-order point, under which one
+   signature verifies every message, is ``key_malformed``), marked for signing (a ``use`` other
+   than ``sig``, or ``key_ops`` without ``verify``, is ``key_not_for_signing``), of the type ``alg``
+   names, with no JWK ``alg`` member naming another algorithm (``alg_key_mismatch``). A key in the
+   JWS header itself (``jwk``, ``x5c``) is never used.
 6. Each signature verifies over ``ASCII(protected) || "." || BASE64URL(JCS(card - signatures))``
-   (``signature_invalid``; ES256 as raw ``r || s``, RFC 7518 section 3.4).
+   (``signature_invalid``; ES256 as raw ``r || s``, RFC 7518 section 3.4). A signature whose key
+   is missing does not stop the others: every signature with a key is checked first, so a forged
+   signature is ``contradicted`` even beside one whose key was withheld; only then is a missing key
+   ``not_established`` (``key_unavailable``).
 7. A card that lists the conformance extension
    (``https://w3id.org/agent-evidence/vocab/v1/conformance_extension``) in
    ``capabilities.extensions`` names its corpus and verifier with exact versions: ``params`` holds
    exactly ``corpus``, ``corpus_version``, ``verifier`` and ``verifier_version``, each a non-empty
-   string, the versions exact (digits and dots, an optional pre-release), never a range
-   (``conformance_extension_malformed``). The extension is read only here, inside a card whose
+   string, each version one exact release in one spelling, never a range
+   (``conformance_extension_malformed``). A version is a normalized PEP 440 public version
+   (``0.7.0``, ``1.0rc1``, ``0.7.0.post1``, ``2.0.dev3``) or a SemVer 2.0.0 version without build
+   metadata (``1.0.0-rc.1``); leading zeros, separators PEP 440 normalizes away (``1.0-rc1``,
+   ``1.0.0alpha``), an epoch, a local label and any operator or wildcard are refused, so the pin
+   names one release, never a set of them. The extension is read only here, inside a card whose
    signatures verify, so stripping it breaks the card's signature.
 
 Then key authority, once per signature, with the card's DID as the subject and the ``kid`` as the
@@ -66,7 +76,14 @@ from typing import Any
 
 from ..common import CaseError, _string
 from ..ijson import IJSONError, parse_ijson
-from ..jose import b64url, b64url_decode, public_key, verify_signature
+from ..jose import (
+    b64url,
+    b64url_decode,
+    ed25519_weak_key,
+    jwk_signs,
+    public_key,
+    verify_signature,
+)
 from . import jcs_canonical
 from .bound_records import assessment_for, bound, decision
 
@@ -81,11 +98,16 @@ REASONS = (
     "card_invalid", "card_unsigned", "signatures_malformed",
     "header_malformed", "kid_missing", "alg_unsupported", "jws_crit_unsupported",
     "jws_b64_unsupported", "header_names_not_disjoint", "kid_not_under_card_did",
-    "jwks_malformed", "jwks_kid_ambiguous", "alg_key_mismatch", "signature_invalid",
-    "conformance_extension_malformed",
+    "jwks_malformed", "jwks_kid_ambiguous", "key_malformed", "key_not_for_signing",
+    "alg_key_mismatch", "signature_invalid", "conformance_extension_malformed",
 )
 _DID = re.compile(r"did:[a-z0-9]+:[A-Za-z0-9._:%-]+")
-_EXACT_VERSION = re.compile(r"[0-9]+(?:\.[0-9]+)*(?:[-.]?(?:a|b|rc|alpha|beta|dev)[0-9]*)?")
+_N = r"(?:0|[1-9][0-9]*)"
+_SEMVER_ID = r"(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
+#: One exact release: a normalized PEP 440 public version, or SemVer 2.0.0 without build metadata.
+_EXACT_VERSION = re.compile(
+    rf"{_N}(?:\.{_N})*(?:(?:a|b|rc){_N})?(?:\.post{_N})?(?:\.dev{_N})?"
+    rf"|{_N}\.{_N}\.{_N}-{_SEMVER_ID}(?:\.{_SEMVER_ID})*")
 _SIGNATURE_MEMBERS = {"protected", "signature"}
 _SEVERITY = {"unauthorized": 2, "unknown": 1, "authorized": 0}
 _REQUIRED = {"card", "card_did"}
@@ -173,9 +195,14 @@ def _document_key(document: bytes | None, card_did: str, kid: str) -> dict[str, 
         return None
     if not isinstance(parsed, dict):
         return None
-    candidates = list(parsed.get("verificationMethod", []) or [])
+
+    def listed(member: str) -> list:  # any other shape names no method; the authority refuses it
+        value = parsed.get(member)
+        return [m for m in value if isinstance(m, dict)] if isinstance(value, list) else []
+
+    candidates = listed("verificationMethod")
     for relationship in ("assertionMethod", "authentication"):
-        candidates += [m for m in parsed.get(relationship, []) or [] if isinstance(m, dict)]
+        candidates += listed(relationship)
     for method in candidates:
         if not isinstance(method, dict) or not isinstance(method.get("id"), str):
             continue
@@ -203,37 +230,56 @@ def _extension(card: dict[str, Any]) -> dict[str, str] | None:
     return {name: params[name] for name in EXTENSION_PARAMS}
 
 
-def judge(card_bytes: bytes, card_did: str, key_set: Any, document: bytes | None,
-          ) -> tuple[list[tuple[str, dict[str, Any]]], dict[str, str] | None]:
-    """The (kid, jwk) of every signature that verifies, and the conformance extension's params.
+def _signing_key(jwk: dict[str, Any], header_alg: str) -> tuple[Any, bytes]:
+    """The key object and raw key bytes of a JWK that may verify a ``header_alg`` signature."""
+    from ..key_authority import jwk_key_bytes
+    try:
+        raw = jwk_key_bytes(jwk, "key")
+    except CaseError as exc:
+        raise Refused("key_malformed") from exc
+    if not jwk_signs(jwk):
+        raise Refused("key_not_for_signing")
+    alg, key = public_key({"publicKeyJwk": jwk})
+    if alg != header_alg or jwk.get("alg", header_alg) != header_alg:
+        raise Refused("alg_key_mismatch")
+    if alg == "EdDSA" and ed25519_weak_key(raw):
+        raise Refused("key_malformed")
+    return key, raw
 
-    Raises :class:`Refused` with the first failing check's code, or :class:`Unavailable`.
+
+def judge(card_bytes: bytes, card_did: str, key_set: Any, document: bytes | None,
+          ) -> tuple[list[tuple[str, bytes]], dict[str, str] | None]:
+    """The (kid, raw key) of every signature that verifies, and the conformance extension's params.
+
+    Raises :class:`Refused` with the first failing check's code, or :class:`Unavailable` once
+    every signature whose key is available has verified.
     """
     card = _strict(card_bytes, "card_invalid")
     if not isinstance(card, dict):
         raise Refused("card_invalid")
-    entries = card.get("signatures")
-    if entries is None or entries == []:
+    if "signatures" not in card or card["signatures"] == []:
         raise Refused("card_unsigned")
+    entries = card["signatures"]
     if not isinstance(entries, list):
         raise Refused("signatures_malformed")
     parsed = [_headers(entry) for entry in entries]
     for _, header, _ in parsed:
         if not _under(header["kid"], card_did):
             raise Refused("kid_not_under_card_did")
-    signers = []
+    signers, missing = [], False
     for protected, header, signature in parsed:
         kid = header["kid"]
         jwk = _jwks_key(key_set, kid) if key_set is not None else _document_key(document, card_did,
                                                                                 kid)
         if jwk is None:
-            raise Unavailable("key_unavailable")
-        alg, key = public_key({"publicKeyJwk": jwk})
-        if alg != header["alg"]:
-            raise Refused("alg_key_mismatch")
-        if not verify_signature(alg, key, signing_input(card, protected), signature):
+            missing = True  # judged after every signature that has a key
+            continue
+        key, raw = _signing_key(jwk, header["alg"])
+        if not verify_signature(header["alg"], key, signing_input(card, protected), signature):
             raise Refused("signature_invalid")
-        signers.append((kid, jwk))
+        signers.append((kid, raw))
+    if missing:
+        raise Unavailable("key_unavailable")
     return signers, _extension(card)
 
 
@@ -246,13 +292,7 @@ def _context(assessment: dict) -> str:
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     """Judge the bound card, then ask the consumer's key authority about every signing key."""
-    from ..key_authority import (
-        AUTHORIZED,
-        UNAUTHORIZED,
-        authority_evidence,
-        authorize,
-        jwk_key_bytes,
-    )
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authority_evidence, authorize
     case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, _REQUIRED, _OPTIONAL)
     card_did = _context(assessment)
     scope: dict[str, Any] = {"card_did": card_did, "limit": LIMIT}
@@ -282,14 +322,8 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
                  signers=[kid for kid, _ in signers])
     if extension is not None:
         check["conformance_extension"] = extension
-    answers = []
-    for kid, jwk in signers:
-        try:
-            key = jwk_key_bytes(jwk, f"key {kid}")
-        except CaseError:
-            return decision(case_id, CLAIM_TYPE, scope, "contradicted", "alg_key_mismatch", [check])
-        answers.append(authorize(config, key, kid=kid, subject=card_did, at=assessment.get("at"),
-                                 did_document=document, inclusion_proof=proof))
+    answers = [authorize(config, key, kid=kid, subject=card_did, at=assessment.get("at"),
+                         did_document=document, inclusion_proof=proof) for kid, key in signers]
     authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
     checks = [check, authority.check()]
     if authority.outcome == AUTHORIZED:

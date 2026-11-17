@@ -222,6 +222,91 @@
       }
     },
     {
+      "id": "agent-key-for-encryption",
+      "description": "the agent's key is marked use enc",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_not_for_signing"
+      }
+    },
+    {
+      "id": "agent-key-small-order",
+      "description": "the identity point as the agent's key, pinned: its signature verifies every receipt",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "01d0fabd251fcbbe2b93b4b927b26ad2a1a99077152e45ded1e678afa45dbec5"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_malformed"
+      }
+    },
+    {
+      "id": "forged-agent-signature-caller-key-withheld",
+      "description": "the agent's signature is forged and the caller's key withheld: the forgery decides",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature-invalid",
+        "evidence_attribution": "unattributed_evidence"
+      }
+    },
+    {
       "id": "broken-01-uppercase-hash",
       "description": "an uppercase taskHash under two valid signatures",
       "assessment": {

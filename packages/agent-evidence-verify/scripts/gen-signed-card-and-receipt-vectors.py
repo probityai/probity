@@ -105,6 +105,24 @@ CALLER = Ed("receipt caller ed25519")
 FORGER = Ed("receipt forger ed25519")
 
 
+class SmallOrder:
+    """The identity point as an Ed25519 public key: under it, R = identity and S = 0 verify every
+    message in OpenSSL, so this "signature" needs no private key."""
+
+    raw = b"\x01" + b"\x00" * 31
+    alg = "EdDSA"
+
+    def jwk(self, kid: str | None = None) -> dict[str, Any]:
+        jwk = {"kty": "OKP", "crv": "Ed25519", "x": b64url(self.raw)}
+        return dict(jwk, kid=kid) if kid else jwk
+
+    def sign(self, message: bytes) -> bytes:
+        return self.raw + b"\x00" * 32
+
+
+WEAK = SmallOrder()
+
+
 def digest(key: Any) -> str:
     return hashlib.sha256(key.raw).hexdigest()
 
@@ -179,6 +197,11 @@ def card_cases() -> list[dict[str, Any]]:
                    "verifier": "agent-evidence-verify", "verifier_version": "0.7.0"}}]
     ranged = copy.deepcopy(with_extension)
     ranged["capabilities"]["extensions"][0]["params"]["corpus_version"] = ">=0.37"
+    leading_zero = copy.deepcopy(with_extension)
+    leading_zero["capabilities"]["extensions"][0]["params"]["corpus_version"] = "0.037.0"
+    prerelease = copy.deepcopy(with_extension)
+    prerelease["capabilities"]["extensions"][0]["params"].update(
+        corpus_version="1.0.0-rc.1", verifier_version="0.7.0.post1")
 
     def by(key: Any, k: str | None = kid, **options: Any):
         return lambda c: jws(c, key, k, **options)
@@ -193,6 +216,15 @@ def card_cases() -> list[dict[str, Any]]:
         '"name": "Invoice Reader",', '"name": "Invoice Reader",\n  "name": "Invoice Payer",', 1)
     stranger_jwks = {"keys": [STRANGER.jwk(kid)]}
     padded = signed(card, by(OWNER))
+    withheld_then_forged = signed(card, by(STRANGER, f"{CARD_DID}#withheld"), by(OWNER))
+    withheld_then_forged["signatures"][1]["signature"] = withheld_then_forged["signatures"][0][
+        "signature"]
+
+    def owner_jwk(**members: Any) -> dict[str, Any]:
+        return {"keys": [dict(OWNER.jwk(kid), **members)]}
+
+    methods_not_a_list = did_document(("ed25519", OWNER))
+    methods_not_a_list["verificationMethod"] = True
     padded["signatures"][0]["protected"] += "=" * (-len(padded["signatures"][0]["protected"]) % 4 or 4)
     cases = [
         ("valid-eddsa-pinned", signed(card, by(OWNER)), owner_jwks, None,
@@ -275,6 +307,41 @@ def card_cases() -> list[dict[str, Any]]:
         ("second-signature-invalid", two_one_bad, owner_jwks, None,
          {"key_authority": pin((OWNER, kid), (OWNER_P256, kid_p))}, "contradicted",
          "signature_invalid", "one of two signatures does not verify"),
+        ("withheld-key-beside-forged-signature", withheld_then_forged, owner_jwks, None,
+         {"key_authority": owner_pin}, "contradicted", "signature_invalid",
+         "the first signature's key is withheld and the second is forged: the forgery decides"),
+        ("withheld-key-beside-valid-signature", signed(card, by(STRANGER, f"{CARD_DID}#withheld"),
+                                                       by(OWNER)),
+         owner_jwks, None, {"key_authority": owner_pin}, "not_established", "key_unavailable",
+         "one signature verifies and the other's key is withheld: nothing refuses, nothing decides"),
+        ("signatures-null", dict(card, signatures=None), owner_jwks, None,
+         {"key_authority": owner_pin}, "contradicted", "signatures_malformed",
+         "signatures is null: present, so malformed, not unsigned"),
+        ("key-for-encryption", signed(card, by(OWNER)), owner_jwk(use="enc"), None,
+         {"key_authority": owner_pin}, "contradicted", "key_not_for_signing",
+         "the served key is marked use enc (RFC 7517 4.2)"),
+        ("key-ops-without-verify", signed(card, by(OWNER)), owner_jwk(key_ops=["encrypt"]), None,
+         {"key_authority": owner_pin}, "contradicted", "key_not_for_signing",
+         "the served key's key_ops omit verify (RFC 7517 4.3)"),
+        ("jwk-alg-names-another-algorithm", signed(card, by(OWNER)), owner_jwk(alg="ES256"), None,
+         {"key_authority": owner_pin}, "contradicted", "alg_key_mismatch",
+         "the served Ed25519 key says alg ES256"),
+        ("key-set-holds-private-key", signed(card, by(OWNER)),
+         owner_jwk(d=b64url(seed("card owner ed25519"))), None, {"key_authority": owner_pin},
+         "contradicted", "key_malformed", "the served key carries its private member d"),
+        ("small-order-key", signed(card, by(WEAK)), {"keys": [WEAK.jwk(kid)]}, None,
+         {"key_authority": pin((WEAK, kid))}, "contradicted", "key_malformed",
+         "the identity point as the key, pinned: R = identity, S = 0 verifies every card"),
+        ("did-document-methods-not-a-list", signed(card, by(OWNER)), None, methods_not_a_list,
+         {"key_authority": "did-web"}, "not_established", "key_unavailable",
+         "the DID document's verificationMethod is true: it names no key, and the reader does not "
+         "crash"),
+        ("extension-version-leading-zero", signed(leading_zero, by(OWNER)), owner_jwks, None,
+         {"key_authority": owner_pin}, "contradicted", "conformance_extension_malformed",
+         "corpus_version 0.037.0 is not one spelling of a release"),
+        ("extension-version-prerelease", signed(prerelease, by(OWNER)), owner_jwks, None,
+         {"key_authority": owner_pin}, "supported", "card_signature_authorized",
+         "a SemVer pre-release corpus and a PEP 440 post-release verifier are exact releases"),
         ("retired-key-signature-kept", signed(card, by(OWNER), by(NEXT, f"{CARD_DID}#next")),
          {"keys": [OWNER.jwk(kid), NEXT.jwk(f"{CARD_DID}#next")]}, None,
          {"key_authority": pin((NEXT, f"{CARD_DID}#next"))}, "contradicted", "key_not_pinned",
@@ -327,6 +394,10 @@ def receipt_cases() -> list[dict[str, Any]]:
     p256_agent = dict(keys, **{base["agentDid"]: OWNER_P256.jwk()})
     wrong_signature = sign(base)
     wrong_signature["signature"] = AGENT.sign(message(dict(base, latencyMs=143))).hex()
+    encryption_key = dict(keys, **{base["agentDid"]: dict(AGENT.jwk(), use="enc")})
+    weak_keys = dict(keys, **{base["agentDid"]: WEAK.jwk()})
+    weak_authority = dict(authority, key_authority=pin((WEAK, None)))
+    caller_withheld = {base["agentDid"]: AGENT.jwk()}
     return [
         ("valid-co-signed", sign(base), keys, authority, "supported",
          "receipt_signers_authorized", "co_signed", "both parties sign, both keys pinned"),
@@ -349,6 +420,14 @@ def receipt_cases() -> list[dict[str, Any]]:
         ("agent-signature-does-not-verify", wrong_signature, keys, authority, "contradicted",
          "signature-invalid", "unattributed_evidence",
          "the agent's signature covers other bytes"),
+        ("agent-key-for-encryption", sign(base), encryption_key, authority, "contradicted",
+         "key_not_for_signing", None, "the agent's key is marked use enc"),
+        ("agent-key-small-order", sign(base, agent=WEAK), weak_keys, weak_authority, "contradicted",
+         "key_malformed", None,
+         "the identity point as the agent's key, pinned: its signature verifies every receipt"),
+        ("forged-agent-signature-caller-key-withheld", wrong_signature, caller_withheld, authority,
+         "contradicted", "signature-invalid", "unattributed_evidence",
+         "the agent's signature is forged and the caller's key withheld: the forgery decides"),
         ("broken-01-uppercase-hash", sign(dict(base, taskHash=base["taskHash"].upper())), keys,
          authority, "contradicted", "hash-not-lowercase-hex64", None,
          "an uppercase taskHash under two valid signatures"),

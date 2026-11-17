@@ -44,7 +44,7 @@ The first refusal decides, and its code is the reason.
 |---|---|
 | `card_invalid` | the card is not I-JSON (a duplicate member, a lone surrogate) or not an object |
 | `card_unsigned` | no `signatures`, or an empty list |
-| `signatures_malformed` | `signatures` is not a list of `protected`, `signature` and an optional `header` object |
+| `signatures_malformed` | `signatures` is not a list of `protected`, `signature` and an optional `header` object (`null` included) |
 | `header_malformed` | a protected header or signature is not strict unpadded base64url, or the header is not an I-JSON object |
 | `header_names_not_disjoint` | the unprotected header repeats a protected name (RFC 7515 section 7.2.1) |
 | `kid_missing` | the protected header names no `kid` |
@@ -54,13 +54,21 @@ The first refusal decides, and its code is the reason.
 | `kid_not_under_card_did` | a `kid` is not `card_did#fragment`: a bare `key-1`, or a key of another DID |
 | `jwks_malformed` | the key set is not a JWK Set |
 | `jwks_kid_ambiguous` | two keys in the key set share the `kid` |
-| `alg_key_mismatch` | the key is not of the type `alg` names |
+| `key_malformed` | the key is not a public JWK: a private member such as `d`, a coordinate of the wrong length, or an Ed25519 point that is non-canonical or of small order |
+| `key_not_for_signing` | the key's `use` is not `sig`, or its `key_ops` omit `verify` (RFC 7517 sections 4.2 and 4.3) |
+| `alg_key_mismatch` | the key is not of the type `alg` names, or its JWK `alg` names another algorithm |
 | `signature_invalid` | a signature does not verify over the card minus `signatures` |
 | `conformance_extension_malformed` | the conformance extension's `params` are not exactly `corpus`, `corpus_version`, `verifier`, `verifier_version` with exact versions |
 
 A key the key set does not hold for the `kid`, with no `did-web` authority to supply one, is
-`not_established` with `key_unavailable`. A key in the JWS header itself (`jwk`, `x5c`) is never
-used.
+`not_established` with `key_unavailable`, decided only after every signature whose key is present
+has verified: a forged signature beside one whose key was withheld is `contradicted`. A key in the
+JWS header itself (`jwk`, `x5c`) is never used.
+
+An Ed25519 key of small order (the identity point, say) is refused, not trusted to the signature
+library: under the identity point the signature `R = identity, S = 0` verifies every message in
+OpenSSL, so a card "signed" under it binds no one. The vector `small-order-key` carries that
+signature under a key the consumer pins.
 
 ## The conformance extension
 
@@ -70,6 +78,11 @@ verifier that judges them, each at an exact version. The term is defined in
 agent-evidence-vocabulary (`evaluation_claim.conformance_extension`). The extension sits inside the
 card's signed bytes, so removing it breaks the card's signature; the vector `extension-stripped`
 shows it. The reader reports the parameters in its check on a supported card.
+
+A version is one exact release: a normalized PEP 440 public version (`0.7.0`, `1.0rc1`,
+`0.7.0.post1`, `2.0.dev3`) or a SemVer 2.0.0 version without build metadata (`1.0.0-rc.1`). Leading
+zeros, spellings PEP 440 normalizes away (`1.0-rc1`, `1.0.0alpha`), an epoch, a local label, build
+metadata and any operator or wildcard (`>=0.37`, `^1.2`, `1.2.*`) are refused.
 
 ```json
 {"uri": "https://w3id.org/agent-evidence/vocab/v1/conformance_extension",
@@ -88,7 +101,9 @@ under the retired key. The decision carries the key-set fingerprint the verdict 
 
 ## Vectors
 
-`tests/data/a2a-signed-card` holds 28 cases written by
+`tests/data/a2a-signed-card` holds 39 cases written by
 `scripts/gen-signed-card-and-receipt-vectors.py` from fixed test keys: valid EdDSA, ES256 and
 did:web cards, tampered, signatures-included, wrong-kid and stranger-key cards, and one case per
-refusal code. Regenerate with `--check` to confirm the bytes.
+refusal code, among them withheld keys beside forged and valid signatures, keys marked for
+encryption, a private key, a small-order key and a DID document whose methods are not a list.
+Regenerate with `--check` to confirm the bytes.

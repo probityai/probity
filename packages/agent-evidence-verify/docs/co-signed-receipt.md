@@ -46,8 +46,9 @@ an object is `receipt-shape-malformed`.
 
 | Code | Decision | When |
 |---|---|---|
-| `key_unavailable` | `not_established` | the key set holds no key for a party |
-| `key_malformed` | `contradicted` | a party's key is not an Ed25519 public JWK |
+| `key_unavailable` | `not_established` | the key set holds no key for a party, and every party whose key it holds signed (a forged signature beside a withheld key is `contradicted`) |
+| `key_malformed` | `contradicted` | a party's key is not an Ed25519 public JWK: a private member, a JWK `alg` other than `EdDSA`, or a non-canonical or small-order point, under which one signature verifies every message |
+| `key_not_for_signing` | `contradicted` | a party's key is marked `use` other than `sig`, or its `key_ops` omit `verify` |
 | `cosigner-is-signer` | `contradicted` | the same key for both parties |
 | `signature-invalid` | `contradicted` | the agent's signature does not verify |
 | `cosignature-invalid` | `contradicted` | a present `callerSignature` does not verify |
@@ -60,9 +61,11 @@ signature that is present does not verify.
 
 ## Vectors
 
-`tests/data/co-signed-receipt` holds 16 receipts written by
+`tests/data/co-signed-receipt` holds 19 receipts written by
 `scripts/gen-signed-card-and-receipt-vectors.py` from fixed test keys, among them eight broken
 receipts, each refused: an uppercase hash, an absent task hash (signed without it, and signed as
 `null`), an unknown format version, a co-signature that does not verify, a negative latency, a
 129-character signature that a lenient hex decoder truncates to a valid one, and an omitted
-`failureType`.
+`failureType`. Three more answer the adversary's reading: an agent key marked for encryption, the
+identity point as the agent's key (whose one signature verifies every receipt), and a forged agent
+signature beside a withheld caller key, which is `contradicted`, not `not_established`.

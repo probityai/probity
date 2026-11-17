@@ -100,3 +100,29 @@ def test_missing_card_is_not_established(tmp_path: Path) -> None:
         CASES["valid-eddsa-pinned"]["assessment"], claim_type=reader.CLAIM_TYPE)}}
     result = adjudicate(case, policy, tmp_path / "case")
     assert (result["decision"], result["reason"]) == ("not_established", "card_unavailable")
+
+
+#: (version, exact). PEP 440 normalized public versions and SemVer 2.0.0 without build metadata.
+VERSIONS = (
+    ("0.7.0", True), ("1", True), ("1.0rc1", True), ("1.0a0", True), ("0.7.0.post1", True),
+    ("2.0.dev3", True), ("1.0rc1.post2.dev3", True), ("1.0.0-rc.1", True),
+    ("1.0.0-alpha.beta-1", True), ("1.0.0-0", True),
+    ("01.0", False), ("0.037.0", False), ("1.0-rc1", False), ("1.0.0alpha", False),
+    ("1.0.0-01", False), ("1.0.0+build", False), ("1!1.0", False), ("1.0+local", False),
+    (">=0.37", False), ("^1.2", False), ("~1.2", False), ("1.2.*", False), ("1.x", False),
+    ("1.0.0 ", False), ("1.0.0\n", False), ("", False), ("1..0", False), ("v1.0.0", False),
+    ("1.0,2.0", False), ("1.0.0-", False), ("١.0", False),
+)
+
+
+@pytest.mark.parametrize(("version", "exact"), VERSIONS)
+def test_extension_version_is_one_exact_release(version: str, exact: bool) -> None:
+    assert bool(reader._EXACT_VERSION.fullmatch(version)) is exact
+
+
+@pytest.mark.parametrize("shape", [True, 7, "x", {"id": "#k"}, None, [1, "a", None]])
+def test_a_did_document_of_any_shape_names_a_key_or_none(shape: object) -> None:
+    """The document is case evidence, read before the authority checks its pin: never a crash."""
+    for member in ("verificationMethod", "assertionMethod", "authentication"):
+        document = json.dumps({"id": "did:web:a.test", member: shape}).encode()
+        assert reader._document_key(document, "did:web:a.test", "did:web:a.test#k") is None
