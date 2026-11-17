@@ -93,8 +93,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/_audit_record_reader.py",
-      "bytes": 103875,
-      "sha256": "67354288b9aa3ec46ff165035e9e62133954905ac8493e0723f125fec2e57b7b"
+      "bytes": 108785,
+      "sha256": "95b4a4c3ad6a100b20db07c02dd9430b4ca0025b44b6af2aba7ce66ec762a11d"
     },
     {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
@@ -113,8 +113,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/audit_record.py",
-      "bytes": 8128,
-      "sha256": "c360f0d3b5f3b8232a72ec411fab47bfb2b48ce95f49e0b70cf78d5d3a6b94c3"
+      "bytes": 8682,
+      "sha256": "19062d8cf7b278474bc29f8a24796ebd8495a41297a1a8d3bc2d8a513b3f47ce"
     },
     {
       "path": "src/agent_evidence_verify/adapters/authority_anchor.py",
@@ -1872,8 +1872,8 @@
         },
         {
           "path": "examples/corpus-routes/audit-record/policy.json",
-          "bytes": 194,
-          "sha256": "4098ea19a2f88a369d8f25199937ecc14e0e55988b230d51c2fd03f1e99d2cb1"
+          "bytes": 221,
+          "sha256": "81751a571b97ec46349b855547d5e95af29802694f3e12be81e537df186a10a0"
         },
         {
           "path": "examples/corpus-routes/audit-record/retained-record.json",
