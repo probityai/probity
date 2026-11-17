@@ -20,7 +20,8 @@ verified, for the record's zone, at the consumer's instant. The rules of the
   cannot bind two different values to one signature).
 - ``crit`` in the header is refused (RFC 7515 section 4.1.11: this reader understands no
   extension), and ``alg`` is ``ES256`` with a 64-byte signature.
-- ``port``, ``iat`` and ``exp`` are JSON integers: ``443.0`` is not ``443``.
+- ``port``, ``iat`` and ``exp`` are JSON integers: ``443.0`` is not ``443``. The record's ``port``
+  is a port, 0 to 65535, and a window whose ``exp`` is at or before its ``iat`` is refused.
 - The record is expired when ``exp`` is at or before the instant, and not yet valid when ``iat`` is
   more than 300 seconds after it.
 - The signed endpoint is the served one: ``fqdn`` and ``target`` compared as DNS names (case and a
@@ -31,12 +32,18 @@ verified, for the record's zone, at the consumer's instant. The rules of the
   value is a value and only an absent parameter is left out: a parameter the publisher never set
   cannot be injected as ``""``. A payload without ``svcb`` attests the endpoint only, and the
   verdict is ``not_established`` with ``signature_coverage`` ``endpoint_only``.
-- A JWKS URL in the record is ``https://dns-aid.<zone>/...`` or the zone apex, never another host.
+- A JWKS URL in the record is ``https://dns-aid.<zone>/...`` or the zone apex, never another host,
+  read so that every common client reads the same host (:func:`url_authority`): a backslash, a
+  userinfo part, a control character, a percent-encoded or otherwise non-hostname host and a port
+  outside 0 to 65535 are refused, because ``https://evil.example\\@dns-aid.example.com/`` names
+  ``dns-aid.example.com`` to Python's ``urlsplit`` and ``evil.example`` to urllib3 and browsers.
 
 Every malformed input that a record, its signature or its JWKS can carry yields a verdict, never an
 exception; only the consumer's own policy is refused as a case error. Every decision states the
 SHA-256 key-set fingerprint of the JWKS it read (``jwks_key_set_sha256``) and, when the authority
-was asked, the fingerprint of the keys the authority trusted.
+was asked, the fingerprint of the keys the authority trusted; a decision past the signature check
+names the ``fqdn`` and ``zone`` the record claimed, because the zone is the record's own word and
+the authority was asked about that zone alone.
 """
 
 from __future__ import annotations
@@ -45,6 +52,7 @@ import base64
 import binascii
 import datetime
 import hashlib
+import ipaddress
 import json
 import re
 from dataclasses import dataclass, field
@@ -70,6 +78,7 @@ COVERED_PARAMS = ("cap", "cap-sha256", "bap", "policy", "realm", "connect-class"
 _B64URL = re.compile(r"[A-Za-z0-9_-]*")
 _RECORD_MEMBERS = {"fqdn", "target", "port", "alpn", "zone", "params", "sig"}
 _RECORD_OPTIONAL = {"proto", "jwks_url"}
+_HOSTNAME = re.compile(r"[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.?")
 
 
 class _Refused(Exception):
@@ -93,6 +102,7 @@ class Binding:
     key_sha256: str | None = None
     endpoint: tuple[str, int] | None = None
     window: tuple[int, int] | None = None
+    claimed: tuple[str, str] | None = None  # (fqdn, zone) as the record names them
 
     def scope(self) -> dict:
         out = {"profile": PROFILE, "dns_aid_status": self.status,
@@ -104,6 +114,8 @@ class Binding:
             out["endpoint"] = {"target": self.endpoint[0], "port": self.endpoint[1]}
         if self.window is not None:
             out["window"] = {"iat": self.window[0], "exp": self.window[1]}
+        if self.claimed is not None:
+            out["fqdn"], out["zone"] = self.claimed
         return out
 
 
@@ -132,6 +144,33 @@ def within(name: Any, zone: Any) -> bool:
     return n is not None and z is not None and (n == z or n.endswith("." + z))
 
 
+def url_authority(text: Any, *, default_scheme: bool = False) -> tuple[str, str, int | None]:
+    """``(scheme, host, port)`` of a URL every common client reads alike, or :class:`ValueError`.
+
+    Python's ``urlsplit``, urllib3 and the WHATWG URL parser disagree on a backslash, on userinfo,
+    on tabs and newlines and on percent-encoded hosts, so a URL carrying any of them names one host
+    to this reader and another to the client that fetched or called it. Such a URL is refused, as is
+    a host that is neither a hostname nor an IP literal and a port outside 0 to 65535. With
+    ``default_scheme`` a bare ``host:port`` is read as an authority.
+    """
+    if not isinstance(text, str) or not text.isascii() or "\\" in text or any(
+            ord(char) <= 0x20 or ord(char) == 0x7F for char in text):
+        raise ValueError("URL carries a character clients read differently")
+    parts = urlsplit(text if "://" in text or not default_scheme else "//" + text)  # ValueError on [
+    if "@" in parts.netloc:
+        raise ValueError("URL carries userinfo")
+    host, port = parts.hostname, parts.port  # .port raises ValueError outside 0..65535
+    if not host:
+        raise ValueError("URL names no host")
+    if "%" in host:
+        raise ValueError("URL host carries a percent sign or an IPv6 zone")
+    if ":" in host:
+        ipaddress.IPv6Address(host.strip("[]"))
+    elif not _HOSTNAME.fullmatch(host):
+        raise ValueError("URL host is not a hostname")
+    return parts.scheme, host.rstrip(".").lower(), port
+
+
 def svcb1(params: dict[str, str | None]) -> str:
     """``svcb1:`` digest of the covered parameters: RFC 8785 of the present ones, base64url SHA-256.
 
@@ -157,7 +196,8 @@ def read_record(raw: Any) -> dict:
     ok = (isinstance(record, dict) and _RECORD_MEMBERS <= set(record)
           and set(record) <= _RECORD_MEMBERS | _RECORD_OPTIONAL
           and all(dns_name(record[m]) for m in ("fqdn", "target", "zone"))
-          and _json_int(record["port"]) and isinstance(record["alpn"], str)
+          and _json_int(record["port"]) and 0 <= record["port"] <= 0xFFFF
+          and isinstance(record["alpn"], str)
           and isinstance(record.get("proto", ""), str) and isinstance(record["sig"], str)
           and isinstance(record.get("jwks_url", ""), str) and isinstance(record["params"], dict)
           and set(record["params"]) <= set(COVERED_PARAMS)
@@ -278,6 +318,8 @@ def judge(record_raw: Any, jwks_raw: bytes | None, at: datetime.datetime, author
         if not all(_json_int(payload.get(m)) for m in ("port", "iat", "exp")):
             raise _Refused("contradicted", "payload_member_not_integer", "invalid")
         window = (payload["iat"], payload["exp"])
+        if payload["exp"] <= payload["iat"]:
+            raise _Refused("contradicted", "payload_window_inverted", "invalid")
         now = _posix(at)
         if payload["exp"] <= now:
             raise _Refused("contradicted", "binding_expired", "expired")
@@ -299,9 +341,12 @@ def judge(record_raw: Any, jwks_raw: bytes | None, at: datetime.datetime, author
             raise _Refused("not_established", "zone_does_not_contain_record", "no_key")
         url = record.get("jwks_url")
         if url is not None:
-            host = dns_name(urlsplit(url).hostname) if url.isascii() else None
+            try:
+                scheme, host, _ = url_authority(url)
+            except ValueError as exc:
+                raise _Refused("contradicted", "jwks_url_malformed", "invalid") from exc
             zone = dns_name(record["zone"])
-            if urlsplit(url).scheme != "https" or host not in (f"dns-aid.{zone}", zone):
+            if scheme != "https" or host not in (f"dns-aid.{zone}", zone):
                 raise _Refused("contradicted", "jwks_host_not_zone", "invalid")
         zone = dns_name(record["zone"])
         subject = f"did:web:{zone}" if subject_kind == "did-web" else zone
@@ -309,7 +354,8 @@ def judge(record_raw: Any, jwks_raw: bytes | None, at: datetime.datetime, author
                            **(authority_evidence or {}))
         checks.append(answer.check())
         base = Binding("", "", "", coverage, checks, fingerprint, key_sha256(verifying),
-                       (dns_name(record["target"]) or "", record["port"]), window)
+                       (dns_name(record["target"]) or "", record["port"]), window,
+                       (dns_name(record["fqdn"]) or "", zone))
         if answer.outcome == UNAUTHORIZED:
             base.decision, base.reason, base.status = "contradicted", answer.reason, "invalid"
             return base

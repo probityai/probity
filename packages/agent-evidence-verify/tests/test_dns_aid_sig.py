@@ -160,6 +160,55 @@ def test_a_revoked_dnskey_never_authorises_a_key(tmp_path):
     assert (result["decision"], result["reason"]) == ("contradicted", "dnssec_rrsig_key_not_trusted")
 
 
+@pytest.mark.parametrize("url,reason", [
+    ("https://[", "jwks_url_malformed"),  # urlsplit raised ValueError out of judge
+    ("https://evil.example.net\\@dns-aid.example.com/k", "jwks_url_malformed"),  # urllib3 fetches evil
+    ("https://user@dns-aid.example.com/k", "jwks_url_malformed"),
+    ("https://dns-aid.example.com:99999/k", "jwks_url_malformed"),
+    ("https://dns-aid.example%2Ecom/k", "jwks_url_malformed"),
+    ("https://evil.example.net/k", "jwks_host_not_zone"),
+    ("http://dns-aid.example.com/k", "jwks_host_not_zone"),
+])
+def test_a_jwks_url_is_read_as_every_client_reads_it(tmp_path, url, reason):
+    record, jwks = files(OWNER)
+    served = dict(json.loads(record), jwks_url=url)
+    at = next(r["at"] for r in CASES if r["case"] == OWNER)
+    pin = next(r["key_authority"] for r in CASES if r["case"] == OWNER)
+    result = run(tmp_path, json.dumps(served).encode(), jwks, at, pin)
+    assert (result["decision"], result["reason"]) == ("contradicted", reason)
+    ok = run(tmp_path, json.dumps(dict(served, jwks_url="https://dns-aid.example.com/k")).encode(), jwks, at, pin)
+    assert ok["decision"] == "supported"
+
+
+def _own_record(port=443, iat=1794775595, exp=1794862055, record_port=None):
+    from cryptography.hazmat.primitives.asymmetric import ec
+    key = ec.derive_private_key(11, ec.SECP256R1())
+    numbers = key.public_key().public_numbers()
+    point = b"\x04" + numbers.x.to_bytes(32, "big") + numbers.y.to_bytes(32, "big")
+    jwks = json.dumps({"keys": [{"kty": "EC", "crv": "P-256", "kid": "k", "x": _b64(point[1:33]),
+                                 "y": _b64(point[33:])}]}).encode()
+    params = {"cap": "https://a.example.com/cap.json"}
+    payload = {"fqdn": "a.example.com", "target": "a.example.com", "port": port, "alpn": "a2a",
+               "iat": iat, "exp": exp, "svcb": dns_aid_sig.svcb1(params)}
+    record = json.dumps({"fqdn": "a.example.com", "target": "a.example.com",
+                         "port": port if record_port is None else record_port, "alpn": "a2a",
+                         "zone": "example.com", "params": params,
+                         "sig": _signed({"alg": "ES256", "kid": "k"}, payload, key)}).encode()
+    return record, jwks, {"kind": "pin", "keys": [{"public_key_sha256": hashlib.sha256(point).hexdigest()}]}
+
+
+@pytest.mark.parametrize("changes,reason", [({"port": 70000}, "record_malformed"), ({"port": -1}, "record_malformed"),
+                                            ({"iat": 1794775595, "exp": 1794775595}, "payload_window_inverted"),
+                                            ({"iat": 1794775900, "exp": 1794775800}, "payload_window_inverted")])
+def test_a_signed_impossible_port_or_inverted_window_is_refused(tmp_path, changes, reason):
+    record, jwks, pin = _own_record(**changes)
+    result = run(tmp_path, record, jwks, "2026-11-15T21:00:00Z", pin)
+    assert (result["decision"], result["reason"]) == ("contradicted", reason)
+    control = run(tmp_path, *_own_record()[:2], "2026-11-15T21:00:00Z", _own_record()[2])
+    assert (control["decision"], control["scope"]["fqdn"], control["scope"]["zone"]) == \
+        ("supported", "a.example.com", "example.com")
+
+
 def test_the_reader_imports_no_dns_aid_or_dns_library():
     source = Path(dns_aid_sig.__file__).read_text(encoding="utf-8")
     for module in ("dns_aid", "dns."):
