@@ -12,6 +12,11 @@ A minor release: new claim types; the decisions for every existing claim type ar
   coverage boundary, ending at a retained signed head in the observer's ledger head format. Each of drop, swap,
   status flip, link rewrite, body edit and tail truncation fails with a named reason. Shares check order and reason
   codes with `cbor_receipt_chain/v1`.
+- `lifecycle_binding/v1`: groups decision, control and execution records by (decision, instruction) and reports
+  whether the authenticated execution names the action the authenticated control authorized, as one of five states
+  per group; a duplicate identity is `indeterminate` in any order, a revoked binding is `not_evaluated`, and absent
+  evidence is never `satisfied`. Pre-images use the six-tag `agent-evidence/lifecycle-binding/v1` registry. Doc:
+  `docs/lifecycle-binding.md`.
 
 ## Unreleased (0.6.0 at release)
 

@@ -123,3 +123,10 @@ authority. [`event_log_completeness/v1`](telemetry-evidence.md) checks that a se
 contiguous, linked sequence inside the consumer's coverage boundary, ending at a signed head the
 consumer retained outside the log. Both share check order and reason codes with
 `cbor_receipt_chain/v1`.
+
+## Lifecycle binding
+
+[`lifecycle_binding/v1`](lifecycle-binding.md) groups decision, control and execution records by decision and
+instruction and reports one of five states per group (`satisfied`, `failure`, `missing`, `not_evaluated`,
+`indeterminate`): a duplicate identity is never resolved by order, revocation is required, the signature suite
+comes from the producer's key binding, and absent evidence is never `satisfied`.

@@ -28,6 +28,7 @@ from .adapters import (
     execution_evidence,
     idp_log_witness,
     jcs_canonical,
+    lifecycle_binding,
     observed_effect,
     operand_lineage,
     probe_observed,
@@ -82,6 +83,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "evaluation_claim/v1": evaluation_claim.adjudicate,
     "evidence_digest/v1": telemetry_evidence.adjudicate_digest,
     "event_log_completeness/v1": telemetry_evidence.adjudicate_log,
+    "lifecycle_binding/v1": lifecycle_binding.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
