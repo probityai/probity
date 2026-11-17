@@ -22,6 +22,12 @@ A minor release: new claim types; the decisions for every existing claim type ar
   `not_evaluated`. The RSA block is compared whole, so four blocks ending in the right digest (garbage prefix, bytes
   after the legacy prefix, SHA-512 OID, short padding) are refused; signer and time-stamp keys are admitted only under
   the consumer's authorities. Doc: `docs/aep-package.md`.
+- `capability_credential/v1`: one verifier input for every agent capability credential format, under the consumer's
+  trusted issuers, cosigner authorities, pinned clock and revocation list. Refuses a case-variant member, an escaped,
+  non-ASCII or newline-terminated time, a non-canonical number such as `-0`, tamper after signing, expiry, revocation
+  by the consumer's list, an untrusted issuer, and the signer-distinctness classes (a named key that does not sign,
+  one key under two ids, the issuer's own key as cosigner, a threshold of one authority, a short count), each with its
+  own code. Doc: `docs/capability-credential.md`.
 
 ## Unreleased (0.6.0 at release)
 

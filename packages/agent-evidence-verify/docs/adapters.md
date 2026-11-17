@@ -136,3 +136,11 @@ comes from the producer's key binding, and absent evidence is never `satisfied`.
 [`aep_package/v1`](aep-package.md) checks a `.aep` package's hash, canonical form, full-block RSA DigestInfo,
 receipt, ML-DSA-65 signature and RFC 3161 time stamp in order, with each check after the first failure reported
 `not_evaluated`, and admits the signer and time-stamp keys only under the consumer's authorities.
+
+## Agent capability credentials
+
+[`capability_credential/v1`](capability-credential.md) reads any agent credential mapped into the
+`capability-credential/v1` profile and refuses, each with its own code, the parser-differential classes (a
+case-variant member, an escaped or non-ASCII or newline-terminated time, `-0` in either signing direction) and the
+distinct-authority classes (a named key that does not sign, one key under two ids, the issuer's own key as cosigner,
+a threshold met by one authority).

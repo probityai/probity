@@ -21,6 +21,7 @@ from .adapters import (
     audit_principal,
     authority_anchor,
     brokered_file_write,
+    capability_credential,
     cbor_receipt_chain,
     completion_claim,
     done_receipt,
@@ -86,6 +87,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "event_log_completeness/v1": telemetry_evidence.adjudicate_log,
     "lifecycle_binding/v1": lifecycle_binding.adjudicate,
     "aep_package/v1": aep_package.adjudicate,
+    "capability_credential/v1": capability_credential.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
