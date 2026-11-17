@@ -14,17 +14,23 @@ This claim type reads a set of decision, control and execution records under the
 absent evidence as a match:
 
 ``satisfied``     every artifact in the group, and the decision it cites, is admitted, unique by identity,
-                  authenticated under its producer's active key binding, and every authorized action digest
-                  equals every executed action digest;
-``failure``       the digests differ, two authorizing records disagree, or an artifact does not authenticate;
-``missing``       the group lacks an authorizing record, an execution record or the decision it cites;
+                  authenticated under its producer's active key binding, at least one issuer-side control
+                  authorizes under a key no execution in the group is signed by, and every authorized action
+                  digest equals every executed action digest;
+``failure``       the digests differ, two authorizing records disagree, an artifact does not authenticate, the
+                  executor's own key signs an issuer-side control (``self_authorized``: an executor that writes
+                  its own authorization proves nothing about what it was allowed to do), or published action
+                  bytes do not hash to their pointer;
+``missing``       the group lacks an issuer-side control, an execution record or the decision it cites, or the
+                  action bytes the consumer named for a record are unavailable;
 ``not_evaluated`` an artifact is signed under a binding the revocation snapshot does not list as active, or an
                   execution cites an instruction no authorization in the set covers;
 ``indeterminate`` two artifacts share one identity: no winner is chosen and nothing is compared.
 
 Records are grouped by (decision record id, instruction id). The rules run in one order per group:
-identity, an execution no control covers, a missing record, authentication, an inactive binding, then the
-digest comparison. Each record is one JSON object:
+identity, an execution no control covers, a missing record (a receiver-side control alone is the executor's
+side recording what it received, never an authorization), authentication, an inactive binding, an issuer-side
+control signed by an executing key, the published action bytes, then the digest comparison. Each record is one JSON object:
 
 ``lifecycle_version`` ``"v1"``; ``artifact_type`` ``decision``, ``control`` or ``execution``; ``record_id``;
 ``producer``; ``integrity`` ``{current: "sha256:<hex>", signature: {alg, value: <hex>}}``; a control and an
@@ -157,8 +163,14 @@ def _bindings(raw: bytes, label: str, members: set[str]) -> dict:
         value = parse_ijson(raw)
     except IJSONError as exc:
         raise CaseError(f"{label}: {describe(exc)}") from exc
-    if not isinstance(value, dict) or any(not isinstance(v, dict) or set(v) != members for v in value.values()):
-        raise CaseError(f"{label}: expected an object of producer to {sorted(members)}")
+    if not isinstance(value, dict) or any(not isinstance(v, dict) or set(v) != members
+                                          or any(not isinstance(v[m], str) for m in members)
+                                          for v in value.values()):
+        raise CaseError(f"{label}: expected an object of producer to {sorted(members)}, each a string")
+    for producer, entry in value.items():
+        key = entry.get("public_key_hex")
+        if key is not None and (len(key) != 64 or set(key) - _HEX):
+            raise CaseError(f"{label}.{producer}.public_key_hex: expected 64 lowercase hex characters")
     return value
 
 
@@ -196,6 +208,9 @@ def evaluate(records: list[Any], bindings: dict, revocation: dict,
     """(per-group states, counts) for one record set. Raises :class:`Refused` for an inadmissible set."""
     records = [_shape(a, i) for i, a in enumerate(records)]
     actions, conventions = actions or {}, conventions or {}
+    stray = sorted(set(actions) - {a["record_id"] for a in records})
+    if stray:
+        raise CaseError(f"assessment.actions names no record in the set: {stray}")
     counts: dict[str, int] = {}
     for artifact in records:
         counts[artifact["record_id"]] = counts.get(artifact["record_id"], 0) + 1
@@ -225,9 +240,10 @@ def evaluate(records: list[Any], bindings: dict, revocation: dict,
         if executions and not controls:
             out.append(state("not_evaluated", "an execution cites an instruction no authorization covers"))
             continue
-        if not controls or not executions or cited is None:
-            lacking = [n for n, have in (("control", controls), ("execution", executions), ("decision", cited))
-                       if not have]
+        issuers = [c for c in controls if c["boundary_side"] == "issuer"]
+        if not issuers or not executions or cited is None:
+            lacking = [n for n, have in (("issuer-side control", issuers), ("execution", executions),
+                                         ("decision", cited)) if not have]
             out.append(state("missing", f"the group lacks a {', '.join(lacking)} record"))
             continue
         everything = [cited, *controls, *executions]
@@ -240,16 +256,28 @@ def evaluate(records: list[Any], bindings: dict, revocation: dict,
         if inactive:
             out.append(state("not_evaluated", f"no active binding in the revocation snapshot for {inactive}"))
             continue
-        published = []
+        executing = {bindings[e["producer"]]["public_key_hex"] for e in executions}
+        self_issued = sorted(c["record_id"] for c in issuers if bindings[c["producer"]]["public_key_hex"] in executing)
+        if self_issued:
+            out.append(state("failure", f"self_authorized: issuer-side control {self_issued} is signed by a key "
+                             "that signs an execution in the group"))
+            continue
+        published, unavailable = [], []
         for artifact in [*controls, *executions]:
-            data = actions.get(artifact["record_id"])
+            if artifact["record_id"] not in actions:
+                continue
+            data = actions[artifact["record_id"]]
             pointer = "authorized_action_digest" if artifact["artifact_type"] == "control" else "executed_action_digest"
-            if data is not None:
-                got = _action_digest(data, conventions.get(pointer, "jcs"))
-                if got != artifact[pointer]:
-                    published.append(f"{artifact['record_id']}: the action bytes do not hash to {pointer}")
+            if data is None:
+                unavailable.append(artifact["record_id"])
+                continue
+            if _action_digest(data, conventions.get(pointer, "jcs")) != artifact[pointer]:
+                published.append(f"{artifact['record_id']}: the action bytes do not hash to {pointer}")
         if published:
             out.append(state("failure", published[0]))
+            continue
+        if unavailable:
+            out.append(state("missing", f"the action bytes named for {unavailable} are unavailable"))
             continue
         authorized = {c["authorized_action_digest"] for c in controls}
         executed = {e["executed_action_digest"] for e in executions}

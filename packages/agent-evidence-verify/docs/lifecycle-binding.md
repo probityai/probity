@@ -14,6 +14,9 @@ Most runtime evidence answers this by matching one authorization with one execut
 | Two executions share one record id, one reporting X and one Y | depends on array order | `indeterminate`, in either order |
 | A valid signature under an executor key whose binding is revoked | satisfied | `not_evaluated` |
 | An execution sealed by a key nobody bound, or unsigned with a valid self-hash | satisfied | `failure` |
+| Only a receiver-side control, written by the executor's side | satisfied | `missing` (no issuer-side control) |
+| An issuer-side control signed by the executor's key, under its own name or a second one | satisfied | `failure` (`self_authorized`) |
+| Action bytes the consumer named are unavailable | satisfied | `missing` |
 
 ## Assessment
 
@@ -31,7 +34,9 @@ Most runtime evidence answers this by matching one authorization with one execut
 `records` is a JSON array of decision, control and execution records. `bindings` maps each producer to
 `{public_key_hex, suite}`; `revocation` maps each producer to `{state: active|revoked}` and is required. `actions`
 optionally names the published action bytes of a record; each is hashed by the convention declared for its pointer
-(`jcs`, the default, or `raw`) and compared with the record's digest.
+(`jcs`, the default, or `raw`) and compared with the record's digest. A named record that is not in the set is a case
+error, and named bytes that are unavailable make the group `missing`. A binding's `public_key_hex` is 64 lowercase hex
+characters and its `suite` a string, or the case is refused before any verdict.
 
 ## Records and pre-images
 
@@ -50,10 +55,13 @@ matched to the nearest registered tag.
 ## States and order
 
 Records are grouped by (decision record id, instruction id). In each group, in this order: a shared identity
-anywhere in the set gives `indeterminate`; an execution with no control gives `not_evaluated`; a missing control,
-execution or cited decision gives `missing`; an artifact that does not authenticate gives `failure`; an inactive
-binding gives `not_evaluated`; then every authorized digest must equal every executed digest (`satisfied`) or the
-group is a `failure`. The set's decision is `contradicted` when any group fails, else `not_established` with the
+anywhere in the set gives `indeterminate`; an execution with no control gives `not_evaluated`; a missing issuer-side
+control, execution or cited decision gives `missing` (a receiver-side control alone records what the executor's side
+received, never what was allowed); an artifact that does not authenticate gives `failure`; an inactive binding gives
+`not_evaluated`; an issuer-side control signed by a key that signs an execution in the group gives `failure`
+(`self_authorized`); published action bytes that do not hash to their pointer give `failure`, and named bytes that are
+unavailable give `missing`; then every authorized digest must equal every executed digest (`satisfied`) or the group
+is a `failure`. The set's decision is `contradicted` when any group fails, else `not_established` with the
 first of `indeterminate`, `not_evaluated`, `missing`, else `supported` / `satisfied`. Absent evidence is never
 `satisfied`. The scope reports the count of each state and `does_not_establish`: the claim is about records and
 never says that the executed bytes were observed.

@@ -220,3 +220,66 @@ def test_registry_is_exactly_six_tags() -> None:
 def test_v2_names_the_disagreeing_authorizations(tmp_path: Path) -> None:
     records, revocation, _ = b.vectors()["V2-receiver-disagrees"]
     assert "authorizing records in the group disagree" in _judge(tmp_path, records, revocation)["checks"][0]["detail"]
+
+
+# --- authority that comes from the executor itself -----------------------------------------------------
+
+def test_receiver_side_control_alone_is_never_an_authorization(tmp_path: Path) -> None:
+    """The receiver side is the executor's side: its control records what it received, not what was allowed."""
+    result = _judge(tmp_path, [b.decision(), b.control("c-receiver", side="receiver"), b.execution("e-1")])
+    assert (result["decision"], result["reason"]) == ("not_established", "missing")
+    assert "issuer-side control" in result["checks"][0]["detail"]
+
+
+def test_issuer_control_signed_by_the_executor_is_self_authorized(tmp_path: Path) -> None:
+    result = _judge(tmp_path, [b.decision(), b.control("c-issuer", producer="executor"), b.execution("e-1")])
+    assert (result["decision"], result["reason"]) == ("contradicted", "failure")
+    assert result["checks"][0]["detail"].startswith("self_authorized")
+
+
+def test_executor_key_bound_under_a_second_producer_name_is_self_authorized(tmp_path: Path) -> None:
+    alias = {**b.BINDINGS, "governor-2": b.BINDINGS["executor"]}
+    control = b.seal(dict(b.control("c-issuer"), producer="governor-2"), signer="executor")
+    result = _judge(tmp_path, [b.decision(), control, b.execution("e-1")], revocation={**b.ACTIVE, "governor-2":
+                                                                                      {"state": "active"}},
+                    bindings=alias)
+    assert (result["decision"], result["reason"]) == ("contradicted", "failure")
+    assert result["checks"][0]["detail"].startswith("self_authorized")
+
+
+def test_issuer_control_with_an_executor_receiver_control_is_satisfied(tmp_path: Path) -> None:
+    assert _judge(tmp_path, b.complete())["reason"] == "satisfied"
+
+
+# --- action bytes the consumer names ---------------------------------------------------------------------
+
+def test_named_action_bytes_that_are_unavailable_are_missing(tmp_path: Path) -> None:
+    files = {"records.json": json.dumps(b.complete()).encode(), "bindings.json": json.dumps(b.BINDINGS).encode(),
+             "revocation.json": json.dumps(b.ACTIVE).encode()}
+    for name, blob in files.items():
+        (tmp_path / name).write_bytes(blob)
+    artifacts = {name: _bind(name, blob) for name, blob in files.items()}
+    artifacts["action.json"] = _bind("action.json", b"{}")
+    case = {"schema_version": "probity-case/v1", "case_id": "c", "artifacts": artifacts}
+    policy = {"schema_version": "probity-policy/v1", "assessments": {"c": {
+        "claim_type": "lifecycle_binding/v1", "records": "records.json", "bindings": "bindings.json",
+        "revocation": "revocation.json", "actions": {"e-1": "action.json"}}}}
+    result = adjudicate(case, policy, tmp_path)
+    assert (result["decision"], result["reason"]) == ("not_established", "missing")
+    assert "action bytes" in result["checks"][0]["detail"]
+
+
+def test_action_naming_no_record_is_a_case_error(tmp_path: Path) -> None:
+    from agent_evidence_verify import CaseError
+    with pytest.raises(CaseError, match="names no record"):
+        _judge(tmp_path, b.complete(), files={"action.json": b"{}"}, actions={"e-404": "action.json"})
+
+
+@pytest.mark.parametrize("entry", [{"public_key_hex": 5, "suite": "ed25519"},
+                                   {"public_key_hex": "AB" * 32, "suite": "ed25519"},
+                                   {"public_key_hex": "ab" * 31, "suite": "ed25519"},
+                                   {"public_key_hex": "ab" * 32, "suite": None}])
+def test_malformed_key_binding_is_a_case_error(tmp_path: Path, entry: dict) -> None:
+    from agent_evidence_verify import CaseError
+    with pytest.raises(CaseError, match="bindings"):
+        _judge(tmp_path, b.complete(), bindings={**b.BINDINGS, "governor": entry})
