@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# End-to-end run: build the listener, start Keycloak with it, drive three grants, check every
-# receipt offline. Needs docker, openssl, python3 and uv; run from anywhere in a checkout.
+# End-to-end run: test the alignment check, build the listener, start Keycloak with it, drive three
+# grants, check every receipt offline. Needs docker, openssl, python3 and uv; run from anywhere
+# in a checkout.
 # Writes the run's outputs to $EVIDENCE_OUT (default: e2e/recorded) and its logs beside them.
 set -uo pipefail
 cd "$(dirname "$0")" || exit 1
@@ -25,7 +26,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-"$HERE/../build.sh" > "$OUT/build.log" 2>&1
+python3 -I "$HERE/../test_check_alignment.py" > "$OUT/align-tests.log" 2>&1
+rc=$?; step align-tests "rc=$rc"; [ "$rc" = 0 ] || { cat "$OUT/align-tests.log"; exit 1; }
+
+LOCK_OUT="$OUT/resolved.lock" "$HERE/../build.sh" > "$OUT/build.log" 2>&1
 rc=$?; step build "rc=$rc"; [ "$rc" = 0 ] || { tail -40 "$OUT/build.log"; exit 1; }
 
 # A throwaway recorder key for this run only. A realm operator supplies their own key files.

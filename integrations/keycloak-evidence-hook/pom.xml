@@ -42,7 +42,7 @@
     <!-- Maven does not pass a provided dependency's own provided dependencies on, so the
          classes the listener names directly are declared here at the versions Keycloak ships:
          the ones the Quarkus BOM imported by keycloak-parent manages (Quarkus 3.33.2 for
-         Keycloak 26.6.3). -->
+         Keycloak 26.6.3). build.sh fails when one of them drifts from that BOM. -->
     <dependency>
       <groupId>org.keycloak</groupId>
       <artifactId>keycloak-core</artifactId>
