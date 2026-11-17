@@ -20,6 +20,8 @@ These examples use controlled local effects and selected framework runs:
 | An evaluation failed. Did its tool still update the target? | [Inspect scores, authority, and effects](INSPECT-AUTHORITY-EFFECT.md) |
 | An evaluation log was restamped or regraded. Is it the same run? | [Seal an Inspect log](INSPECT-SEALED-MANIFEST.md) |
 | Could the host rewrite its records, or show two readers different versions? | [Separately operated witness](WITNESS-SERVER.md) |
+| Did the agent's telemetry lose, reorder or edit an event after the session closed? | [Trajectory chain](TRAJECTORY.md) |
+| Did each call go where discovery (SVCB, JWKS, DNSSEC) said it should? | [Resolution and call records](RESOLUTION.md) |
 
 A verified record answers a specific question under selected inputs. Read each
 example's evidence boundary before applying the result elsewhere. Separate
