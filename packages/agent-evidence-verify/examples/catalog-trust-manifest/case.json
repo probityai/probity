@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "artifact.json": {
+      "length": 141,
+      "path": "artifact.json",
+      "sha256": "5346c3b356f1b2db025b97d464d73a62442ca39ad1480549e23daff147f35ef1"
+    },
+    "catalog.json": {
+      "length": 1344,
+      "path": "catalog.json",
+      "sha256": "fe7aaee6d11350c4c54fef665c8ea41bee65f5c56066ff7210b2082cb848262b"
+    },
+    "did-documents.json": {
+      "length": 2755,
+      "path": "did-documents.json",
+      "sha256": "8b49c5d7a3dad753d337a8879ad50ea41947883460bf47e3bf3353f41a28c3fe"
+    }
+  },
+  "case_id": "catalog-trust-manifest-ai-catalog-publisher",
+  "schema_version": "probity-case/v1"
+}
