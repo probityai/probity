@@ -243,8 +243,8 @@
       "sha256": "a3187ba3db9b2d0ea9a2cda1afba4d6d40dd406b80d62ac3e56eab9f2f30aadd"
     },
     "src/probity_observer/resolution.py": {
-      "git_blob_sha1": "06d338adbed13965c14c8987641cb8d32b209fb0",
-      "sha256": "8762e67d290774beb9eff08e004f4dbe8477b3d6d42f957ad9693f5052aebe38"
+      "git_blob_sha1": "b1ec4055a44273ef3967bf36bd1a45dc03ead0bb",
+      "sha256": "83b4217f01d377bcd0fd7e999673b570ec6ef76f69f841b3d81ccf057d9e06a3"
     },
     "src/probity_observer/run_selection.py": {
       "git_blob_sha1": "c0d24f29aa369bf473235353cd63afc861c00a5b",

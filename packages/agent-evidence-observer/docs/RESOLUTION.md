@@ -27,7 +27,9 @@ The raw JWKS and chain bytes stay with the caller; each event binds them by
 SHA-256, so a verifier handed the bytes can check them. `at` is the
 observer's clock and nothing more: no trusted time is claimed. It is written
 `YYYY-MM-DDTHH:MM:SS[.fraction]Z` with ASCII digits and must be a calendar
-time; anything else is refused before an event is written.
+time with seconds 00 to 59. RFC 3339 allows a leap second (`:60`), but a POSIX
+clock never reads one, so it is refused like anything else outside this form
+before an event is written. The fraction is kept as written, at any length.
 
 A joining verifier compares each recorded call with a verified binding: a
 call to the bound endpoint inside the key authority's window agrees; a call

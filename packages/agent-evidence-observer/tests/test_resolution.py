@@ -70,6 +70,7 @@ def test_call_without_discovery_is_recorded_as_such(tmp_path: Path) -> None:
     ({"at": "2026-11-15 20:00:00"}, "RFC 3339"),
     ({"at": "\u0662\u0660\u0662\u0666-11-15T20:00:00Z"}, "RFC 3339"),
     ({"at": "2026-13-45T25:61:61Z"}, "not a calendar time"),
+    ({"at": "2016-12-31T23:59:60Z"}, "not a calendar time"),
     ({"name": ""}, "non-empty ASCII"),
     ({"dnssec_chain": "text not bytes"}, "bytes as received"),
 ])

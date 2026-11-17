@@ -39,6 +39,7 @@ __all__ = ["CALL_KIND", "RESOLUTION_KIND", "ResolutionObserver"]
 
 
 def _instant(value: str) -> str:
+    """Return an observer clock reading, refusing a leap second as a POSIX clock never reads one."""
     if not isinstance(value, str) or not _RFC3339.fullmatch(value):
         raise VerificationError("observer time must be RFC 3339 UTC ending in Z")
     try:
