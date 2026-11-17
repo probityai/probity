@@ -37,6 +37,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import _digest
+from ..ijson import IJSONError, parse_ijson
 from . import jcs_canonical
 from .bound_records import assessment_for, bound, decision
 
@@ -108,28 +109,11 @@ def _ed25519_verify(public_key: bytes, message: bytes, signature: bytes) -> bool
     return True
 
 
-def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in out:
-            raise Malformed("duplicate-member")
-        out[key] = value
-    return out
-
-
-def _safe_int(text: str) -> int:
-    value = int(text)
-    if abs(value) >= IJSON_LIMIT:
-        raise Malformed("unsafe-integer")
-    return value
-
-
-def _refuse_float(text: str) -> float:
-    raise Malformed("value-not-representable")
-
-
-def _no_constant(token: str) -> Any:
-    raise Malformed("not-parseable")
+#: The shared reader's refusal codes in this profile's vocabulary; any other is ``not-parseable``,
+#: as the reference reader reports undecodable bytes, a lone surrogate and NaN.
+_IJSON_CODES = {"duplicate-member": "duplicate-member", "unsafe-integer": "unsafe-integer",
+                "value-not-representable": "value-not-representable",
+                "nesting-too-deep": "nesting-too-deep"}
 
 
 def _depth(node: Any) -> int:
@@ -143,14 +127,12 @@ def _depth(node: Any) -> int:
 def _parse(raw: bytes) -> tuple[dict[str, Any], bytes, dict[str, Any]]:
     """The envelope, the payload bytes and the statement, under the JSON profile."""
     try:
-        envelope = json.loads(raw, object_pairs_hook=_no_duplicates, parse_constant=_no_constant)
+        envelope = parse_ijson(raw, max_depth=MAX_DEPTH + 1)
         payload = base64.b64decode(envelope["payload"], validate=True)
-        statement = json.loads(
-            payload.decode("utf-8"), object_pairs_hook=_no_duplicates, parse_int=_safe_int,
-            parse_float=_refuse_float, parse_constant=_no_constant)
-    except Malformed:
-        raise
-    except (KeyError, TypeError, ValueError, binascii.Error, RecursionError) as error:
+        statement = parse_ijson(payload, integers_only=True, max_depth=MAX_DEPTH + 1)
+    except IJSONError as error:
+        raise Malformed(_IJSON_CODES.get(error.code, "not-parseable")) from error
+    except (KeyError, TypeError, ValueError, binascii.Error) as error:
         raise Malformed("not-parseable") from error
     if not isinstance(envelope, dict) or not isinstance(statement, dict):
         raise Malformed("not-parseable")

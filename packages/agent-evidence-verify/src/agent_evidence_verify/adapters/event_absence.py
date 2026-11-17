@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _artifact, _digest, _instant, _object, _string
+from ..ijson import IJSONError, describe, parse_ijson
 from ..vocabulary import ACCEPTED_WITNESS_SCOPES, witness_scope_error
 
 CLAIM_TYPE = "event_absence/v1"
@@ -15,22 +15,10 @@ CLAIM_TYPE = "event_absence/v1"
 
 def _record(data: bytes, label: str, fields: set[str],
             optional: set[str] = frozenset()) -> dict:
-    def unique(pairs: list[tuple[str, Any]]) -> dict:
-        result: dict = {}
-        for key, value in pairs:
-            if key in result:
-                raise CaseError(f"{label}: duplicate JSON key")
-            result[key] = value
-        return result
-
-    def invalid_number(value: str) -> None:
-        raise CaseError(f"{label}: non-JSON number {value}")
-
     try:
-        value = json.loads(data.decode("utf-8"), object_pairs_hook=unique,
-                           parse_constant=invalid_number)
-    except (UnicodeDecodeError, ValueError) as exc:
-        raise CaseError(f"{label}: invalid UTF-8 JSON") from exc
+        value = parse_ijson(data)
+    except IJSONError as exc:
+        raise CaseError(f"{label}: invalid UTF-8 JSON ({describe(exc)})") from exc
     return _object(value, label, fields, optional)
 
 

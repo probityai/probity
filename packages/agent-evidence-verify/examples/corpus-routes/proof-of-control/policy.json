@@ -2,7 +2,15 @@
   "assessments": {
     "poc-CHN-P-prefix-of-anchored": {
       "claim_type": "proof_of_control/v1",
-      "input": "artifact.json"
+      "input": "artifact.json",
+      "key_authority": {
+        "keys": [
+          {
+            "public_key_sha256": "21fe31dfa154a261626bf854046fd2271b7bed4b6abe45aa58877ef47f9721b9"
+          }
+        ],
+        "kind": "pin"
+      }
     }
   },
   "schema_version": "probity-policy/v1"

@@ -26,12 +26,12 @@ outcome earns ``PEER``, so a failed or missing co-signature never turns a
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _artifact, _object, _string
+from ..ijson import IJSONError, parse_ijson
 from ..vocabulary import EXTERNAL, PEER
 
 try:  # requirements-witness.txt; without it no record reaches EXTERNAL.
@@ -80,8 +80,8 @@ def _read(case: dict, root: Path, artifact_id: str) -> bytes | None:
 
 def _json(data: bytes) -> Any:
     try:
-        return json.loads(data.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError):
+        return parse_ijson(data)
+    except IJSONError:
         return None
 
 

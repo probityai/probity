@@ -11,7 +11,17 @@ is RFC 8032 in plain integers. Each check returns None to accept or a short code
 reject; codes follow the reference validator where it defines one.
 
 Decisions: an artifact that verifies is ``supported`` / ``artifact_verifies``; one that
-fails is ``contradicted`` with the check's code as the reason.
+fails is ``contradicted`` with the check's code as the reason. A signed artifact (``token``,
+``chain``) carries its own public key, which proves nothing alone: whoever re-signs an artifact
+embeds their own key. Its verdict therefore also needs the key authorised under the consumer's
+``key_authority`` (see :mod:`agent_evidence_verify.key_authority`): an unauthorised key is
+``contradicted`` with the authority's reason, a key no authority decides (no ``key_authority`` in
+the policy, or a token that carries no key at all) is ``not_established``. The authority is asked
+once per signed statement (the token, or every record of a chain) with that statement's ``iss`` as
+the subject and its ``iat`` as the instant, so a ``registry`` or ``kt-inclusion`` authority can
+decide. The evidence a ``did-web`` or ``kt-inclusion`` authority needs is a case artifact the policy
+names: ``document`` for the DID document, ``inclusion_proof`` for the log's inclusion proof. The
+least favourable answer across the statements decides.
 
 ``main`` is the stdin bridge for ``python -m poc_evidence_vectors.run_vectors
 --verifier agent-evidence-verify-poc``: one case on stdin, one JSON line out.
@@ -23,6 +33,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+
+from ..ijson import parse_ijson
 
 # ------------------------------------------------------------------ ed25519
 _P = 2**255 - 19
@@ -454,8 +466,16 @@ def _material_leaf(token) -> bytes:
 
 def check_chain(records, pubkey_hex, expected_measurement_hex, anchor):
     """Replay a list of evidence records. `anchor` is None or
-    {"index": n, "root": <hex chain head after n steps>}."""
+    {"index": n, "root": <hex chain head after n steps>}.
+
+    ``n`` is a JSON integer from 0 (the genesis head, before any step) to the number of records.
+    The reference twin reads ``records[n - 1]``, so an anchor at 0 or below names a head counted
+    from the end of the chain: ``{"index": 0, "root": <last head>}`` passed and ``{"index": 0,
+    "root": <genesis>}`` failed. Here the heads are counted from genesis, and any other index is
+    malformed.
+    """
     head = hashlib.sha256(b"poc-genesis").hexdigest()
+    heads = [head]
     pk = bytes.fromhex(pubkey_hex)
     for i, tok in enumerate(records):
         body = {k: v for k, v in tok.items() if k != "signature"}
@@ -477,11 +497,14 @@ def check_chain(records, pubkey_hex, expected_measurement_hex, anchor):
         if want != c["chain_head"].split(":", 1)[1]:
             return "chain-break"
         head = want
+        heads.append(head)
     if anchor is not None:
-        if anchor["index"] > len(records):
+        index = anchor["index"]
+        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
+            raise ValueError("anchor.index: expected a non-negative integer")
+        if index > len(records):
             return "truncation"
-        at = records[anchor["index"] - 1]["poc_claims"]["chain_head"].split(":", 1)[1]
-        if at != anchor["root"]:
+        if heads[index] != anchor["root"]:
             return "history-rewritten"
     return None
 
@@ -489,8 +512,66 @@ def check_chain(records, pubkey_hex, expected_measurement_hex, anchor):
 # ------------------------------------------------------------- claim type
 CLAIM_TYPE = "proof_of_control/v1"
 LIMIT = ("Checks the artifact's structure, canonical form, signatures and Merkle or chain "
-         "proofs against the keys and roots it is given. It says nothing about whether those "
-         "keys or roots are the ones a consumer should trust.")
+         "proofs. A signing key must be authorised under the consumer's key authority; the roots of "
+         "an inclusion or consistency proof are the artifact's own and carry no trust outside it.")
+#: Artifact kinds whose verdict rests on a signature under the key the artifact carries.
+SIGNED_KINDS = ("token", "chain")
+#: Which answer decides when statements of one artifact get different answers.
+_SEVERITY = {"unauthorized": 2, "unknown": 1, "authorized": 0}
+
+
+def _signed_statements(artifact: dict) -> list[tuple[str | None, object]]:
+    """``(iss, at)`` of every statement the artifact's key signed, in order, without repeats."""
+    if artifact["kind"] == "token":
+        bodies = [parse(artifact["text"])]
+    else:
+        bodies = list(artifact["records"])
+    seen: list[tuple[str | None, object]] = []
+    for body in bodies:
+        iss = body.get("iss") if isinstance(body, dict) else None
+        entry = (iss if isinstance(iss, str) else None,
+                 _issued_at(body.get("iat") if isinstance(body, dict) else None))
+        if entry not in seen:
+            seen.append(entry)
+    return seen
+
+
+def _issued_at(iat):
+    """A token's ``iat`` (POSIX seconds), or None when it is not a number.
+
+    It is passed on as the number it is: a ``datetime`` would round it to a microsecond, and a
+    rounded record time orders wrongly against a key's validity bound between the two.
+    """
+    if isinstance(iat, bool) or not isinstance(iat, (int, float)):
+        return None
+    return iat
+
+
+def _authority_evidence(authority, artifacts, artifact_root, scope):
+    """The DID document bytes and the inclusion proof the policy names as case artifacts."""
+    from ..common import CaseError
+    from ..ijson import IJSONError
+    from .bound_records import bound
+    document = proof = None
+    if not isinstance(authority, dict):
+        return document, proof
+    kind = authority.get("kind")
+    if kind == "did-web":
+        document, scope["key_authority_document"] = bound(
+            artifacts, artifact_root, authority.get("document"), "assessment.key_authority.document")
+    elif kind == "kt-inclusion":
+        if "inclusion_proof" in authority:
+            raw, scope["key_authority_inclusion_proof"] = bound(
+                artifacts, artifact_root, authority["inclusion_proof"],
+                "assessment.key_authority.inclusion_proof")
+            if raw is not None:
+                try:
+                    proof = parse_ijson(raw)
+                except IJSONError:
+                    proof = "malformed"  # authorize() answers inclusion_proof_malformed
+    elif "document" in authority or "inclusion_proof" in authority:
+        raise CaseError("assessment.key_authority: evidence named for a kind that reads none")
+    return document, proof
 
 
 def judge(case: dict) -> str | None:
@@ -519,30 +600,52 @@ def judge(case: dict) -> str | None:
 def adjudicate(case, policy, artifact_root):
     """Verify the bound Proof-of-Control artifact."""
     from ..common import CaseError
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authorize
     from .bound_records import assessment_for, bound, decision
-    case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, {"input"})
+    case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, {"input"},
+                                                    {"key_authority"})
     source, binding = bound(artifacts, artifact_root, assessment["input"], "assessment.input")
     scope = {"input": binding, "limit": LIMIT}
     if source is None:
         return decision(case_id, CLAIM_TYPE, scope, "not_established", "input_unavailable")
     try:
-        artifact = json.loads(source.decode("utf-8"))
+        artifact = parse_ijson(source)
         code = judge(artifact)
     except (ValueError, KeyError, TypeError) as exc:
         raise CaseError(f"assessment.input: not a Proof-of-Control artifact: {exc}") from exc
     check = {"id": "proof_of_control", "status": "pass" if code is None else "fail",
              "kind": artifact.get("kind")}
-    if code is None:
+    if code is not None:
+        check["code"] = code
+        return decision(case_id, CLAIM_TYPE, scope, "contradicted", code, [check])
+    if artifact.get("kind") not in SIGNED_KINDS:
         return decision(case_id, CLAIM_TYPE, scope, "supported", "artifact_verifies", [check])
-    check["code"] = code
-    return decision(case_id, CLAIM_TYPE, scope, "contradicted", code, [check])
+    key_hex = artifact.get("public_key")
+    if not isinstance(key_hex, str) or not key_hex:
+        return decision(case_id, CLAIM_TYPE, scope, "not_established", "signature_key_absent", [check])
+    try:
+        key = bytes.fromhex(key_hex)
+    except ValueError:
+        return decision(case_id, CLAIM_TYPE, scope, "contradicted", "signature_key_malformed", [check])
+    config = assessment.get("key_authority")
+    document, proof = _authority_evidence(config, artifacts, artifact_root, scope)
+    answers = [authorize(config, key, subject=subject, at=at, did_document=document,
+                         inclusion_proof=proof)
+               for subject, at in _signed_statements(artifact) or [(None, None)]]
+    authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
+    checks = [check, authority.check()]
+    if authority.outcome == AUTHORIZED:
+        return decision(case_id, CLAIM_TYPE, scope, "supported", "artifact_verifies", checks)
+    if authority.outcome == UNAUTHORIZED:
+        return decision(case_id, CLAIM_TYPE, scope, "contradicted", authority.reason, checks)
+    return decision(case_id, CLAIM_TYPE, scope, "not_established", authority.reason, checks)
 
 
 def main() -> int:
     """Read one artifact on stdin and print its verdict as one JSON line."""
     import sys
     try:
-        code = judge(json.loads(sys.stdin.read()))
+        code = judge(parse_ijson(sys.stdin.buffer.read()))
     except (ValueError, KeyError, TypeError) as exc:
         print(json.dumps({"result": "error", "code": str(exc)}))
         return 2

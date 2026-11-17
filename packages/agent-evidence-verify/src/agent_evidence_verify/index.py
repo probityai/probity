@@ -16,6 +16,7 @@ from typing import Any
 from .bundle import _BUNDLE_LIMIT, replay_bundle
 from .common import CaseError
 from .core import canonical_json
+from .ijson import parse_ijson
 
 _SCHEMA = "probity-index-event/v1"
 _DECISIONS = {"supported", "contradicted", "not_established"}
@@ -217,7 +218,7 @@ def _verify_reference(event: dict[str, Any], seen: dict[str, dict[str, Any]]) ->
 
 def _parse_event(event_id: str, payload: bytes) -> dict[str, Any]:
     try:
-        event = _validate_shape(json.loads(payload))
+        event = _validate_shape(parse_ijson(payload))
     except (ValueError, TypeError) as exc:
         raise CaseError("invalid index event JSON") from exc
     if payload != canonical_json(event) or event_id != _entry_id(event):

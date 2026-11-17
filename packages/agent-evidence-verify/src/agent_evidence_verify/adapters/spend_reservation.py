@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _artifact, _digest, _object, _string
+from ..ijson import IJSONError, describe, parse_ijson
 
 CLAIM_TYPE = "spend_reservation/v1"
 MAX_INTEGER = (1 << 53) - 1
@@ -33,22 +34,10 @@ def _hash(value: Any) -> str:
 
 
 def _json(data: bytes, label: str) -> Any:
-    def unique(pairs: list[tuple[str, Any]]) -> dict:
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise CaseError(f"{label}: duplicate JSON key")
-            result[key] = value
-        return result
-
-    def nonfinite(value: str) -> None:
-        raise CaseError(f"{label}: non-JSON number {value}")
-
     try:
-        return json.loads(data.decode("utf-8"), object_pairs_hook=unique,
-                          parse_constant=nonfinite)
-    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
-        raise CaseError(f"{label}: invalid UTF-8 JSON ({exc})") from exc
+        return parse_ijson(data)
+    except IJSONError as exc:
+        raise CaseError(f"{label}: {describe(exc)}") from exc
 
 
 def _integer(value: Any, label: str) -> int:

@@ -23,6 +23,7 @@ from .adapters import (
     cbor_receipt_chain,
     completion_claim,
     done_receipt,
+    evaluation_claim,
     event_absence,
     execution_evidence,
     idp_log_witness,
@@ -40,11 +41,13 @@ from .adapters import (
     uncertain_effect,
 )
 from .common import CaseError
+from .identity import verifier_reference
 from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
 
 #: Names this verifier in every decision it prints, as ``reference.verifier.id``. A
 #: conformance run that records the field carries this identifier in the bytes its
-#: own pipeline emits. The URI is the same in every release.
+#: own pipeline emits. The URI is the same in every release; ``reference.verifier`` also
+#: carries the installed ``version`` and ``package_sha256`` (see :mod:`.identity`).
 REFERENCE_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/agent-evidence-verify"
 # The identifier releases 0.1.0 to 0.4.1 carried, when the distribution was named probity-verify.
 # Bundles and decisions those releases wrote keep it; this release reads them and never writes it.
@@ -75,6 +78,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "token_grant_receipt/v1": token_grant_receipt.adjudicate,
     "idp_log_witness/v1": idp_log_witness.adjudicate,
     "cbor_receipt_chain/v1": cbor_receipt_chain.adjudicate,
+    "evaluation_claim/v1": evaluation_claim.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
@@ -192,7 +196,7 @@ def adjudicate(
             not isinstance(result.get("unwitnessed_scope_claims", []), list)):
         raise CaseError("adapter returned an invalid decision envelope")
     result["policy_sha256"] = policy_sha256
-    result["reference"] = {"verifier": {"id": REFERENCE_VERIFIER_ID}}
+    result["reference"] = {"verifier": dict(verifier_reference(REFERENCE_VERIFIER_ID))}
     if require_witness_scope == EXTERNAL:
         _require_external(result)
     return result
@@ -235,6 +239,8 @@ def render_packet(result: dict) -> str:
         f"Reason: {result['reason']}",
         f"Policy SHA-256: {result['policy_sha256']}",
         f"Reference verifier: {result['reference']['verifier']['id']}",
+        f"Verifier release: {result['reference']['verifier'].get('version', 'not an installed release')}",
+        f"Verifier package SHA-256: {result['reference']['verifier']['package_sha256']}",
         "Scope and evidence:",
         json.dumps(result["scope"], indent=2, sort_keys=True, ensure_ascii=True),
         "Checks:",

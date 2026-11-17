@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 
 from .common import CaseError
+from .ijson import IJSONError, describe, parse_ijson
 
 
 def parse_json(raw: bytes, *, max_bytes: int, max_depth: int, max_nodes: int,
-               parse_float: Callable = float, ascii_only: bool = False):
+               parse_float: Callable | None = None, ascii_only: bool = False):
     if len(raw) > max_bytes:
         raise CaseError("JSON input exceeds byte budget")
     depth = nodes = 0
@@ -41,24 +41,11 @@ def parse_json(raw: bytes, *, max_bytes: int, max_depth: int, max_nodes: int,
         if depth > max_depth or nodes > max_nodes:
             raise CaseError("JSON input exceeds structure budget")
 
-    def unique(pairs):
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise CaseError(f"duplicate JSON key: {key}")
-            result[key] = value
-        return result
-
-    def invalid_constant(value):
-        raise CaseError(f"non-JSON number: {value}")
-
+    if ascii_only and not raw.isascii():
+        raise CaseError("invalid JSON input")
     try:
-        # JSON loads a decoded string so it cannot infer UTF-16/UTF-32.
-        # Native records restrict the same UTF-8 wire domain to ASCII bytes.
-        text = raw.decode("ascii" if ascii_only else "utf-8", errors="strict")
-        return json.loads(text, object_pairs_hook=unique, parse_constant=invalid_constant,
-                          parse_float=parse_float)
-    except (UnicodeError, ValueError, RecursionError) as exc:
-        if isinstance(exc, CaseError):
-            raise
-        raise CaseError("invalid JSON input") from exc
+        # The shared strict reader: UTF-8 only (so no UTF-16/UTF-32 inference), no repeated member,
+        # no lone surrogate, no integer outside +-(2**53 - 1), no NaN or Infinity.
+        return parse_ijson(raw, max_depth=max_depth, parse_float=parse_float)
+    except IJSONError as exc:
+        raise CaseError(f"invalid JSON input ({describe(exc)})") from exc

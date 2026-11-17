@@ -332,6 +332,15 @@
       "documentation": "docs/token-grant-receipt.md",
       "expected_decision": "supported",
       "scope": "Recorded Keycloak client-credentials grant from the hook's end-to-end run; the recorder key signs only that run and carries no trust outside it."
+    },
+    {
+      "task": "Check that an evaluation claim record is admitted under my acceptance rule",
+      "claim_type": "evaluation_claim/v1",
+      "case": "examples/evaluation-claim/case.json",
+      "policy": "examples/evaluation-claim/policy.json",
+      "documentation": "docs/evaluation-claim.md",
+      "expected_decision": "supported",
+      "scope": "Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes."
     }
   ]
 }

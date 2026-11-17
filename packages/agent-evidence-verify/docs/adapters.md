@@ -105,3 +105,10 @@ records never saw used.
 `supported` means the two accounts agree for every pinned record. It does not establish that the
 export is complete or unaltered; the consumer pins its bytes and declares its window. A malformed
 export exits 2 without a verdict.
+
+## Evaluation claims
+
+[`evaluation_claim/v1`](evaluation-claim.md) judges one evaluation claim record (how an
+implementation fared against a pinned case set) under an acceptance rule the consumer writes
+inline in the assessment. It is a port of the reference reader in agent-evidence-vectors, with the
+same rules, order and refusal codes, and a parity test over that reader's corpus.

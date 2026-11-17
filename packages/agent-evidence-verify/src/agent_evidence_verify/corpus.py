@@ -29,6 +29,7 @@ from typing import Any
 
 from . import execution_evidence as aee
 from .adapters import approval_binding, uncertain_effect
+from .ijson import parse_ijson
 from .json_input import parse_json
 
 SCHEMA_ID = "https://probityai.github.io/agent-evidence-vectors/schema/verdict-line/v1"
@@ -73,7 +74,7 @@ def _answer(suite: str, root: Path, entry: dict[str, Any]) -> tuple[str, str | N
 
 def lines(root: Path) -> list[dict[str, Any]]:
     """The verdict line of every member of the corpus at ``root``."""
-    manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
+    manifest = parse_ijson((root / "MANIFEST.json").read_bytes())
     suite, digest, entries = manifest.get("suite"), manifest.get("corpusDigest"), manifest.get("vectors")
     if not isinstance(suite, str) or not isinstance(digest, str) or not isinstance(entries, list):
         raise TypeError(f"{root}/MANIFEST.json names no suite, corpusDigest or vectors list")
