@@ -134,12 +134,44 @@
     "zone": "."
    },
    "type": "SVCB"
+  },
+  {
+   "at": "2026-11-15T12:00:00Z",
+   "case": "tenant-txt-validated",
+   "chain": "tenant-delegated.chain",
+   "expected": "supported",
+   "name": "dns-aid.tenant.example.com.",
+   "reason": "rrset_validated",
+   "trust_anchor": {
+    "ds": [
+     "49111 15 2 61434cb62d209f8ee6b3a3418974a7db7b7748ad96563960f75c4ccc6bdf46cc"
+    ],
+    "zone": "."
+   },
+   "type": "TXT"
+  },
+  {
+   "at": "2026-11-15T12:00:00Z",
+   "case": "txt-signed-by-revoked-key",
+   "chain": "revoked-key.chain",
+   "expected": "contradicted",
+   "name": "dns-aid.example.com.",
+   "reason": "rrsig_key_not_trusted",
+   "trust_anchor": {
+    "ds": [
+     "49111 15 2 61434cb62d209f8ee6b3a3418974a7db7b7748ad96563960f75c4ccc6bdf46cc"
+    ],
+    "zone": "."
+   },
+   "type": "TXT"
   }
  ],
  "chains": {
   "missing-ds.chain": "7d4cceeaaf5893ac5bd0ac8024dcbf05ee91bead660f9a25626d66aef4ff0317",
   "missing-rrsig.chain": "06f577b458d3569eacac9adac549dc6f6e1946f7a06412f8dfcb1acbe13bd7ff",
+  "revoked-key.chain": "67444cd95854673e92f2a27e8b22d58d4ef95a44593490081164767f4326741e",
   "svcb-rrsig-bitflip.chain": "b660018bf9584569ac0c6cd1a3356f8c623b0f77f350f660fecb447e35f89eb6",
+  "tenant-delegated.chain": "f43e1c2a594bead63f77fbfbfc6513da6474bc46d49ab8e9e57129c0d3de2f15",
   "valid.chain": "b0a96b915aa0a78797138dde516bddbb5ad80feca0fe295b92615bbfd0a12595"
  },
  "generator": "scripts/gen-dnssec-fixtures.py (dnspython 2.8.0)"

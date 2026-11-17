@@ -24,14 +24,16 @@ The rules, written from RFC 4034 and RFC 4035, so that a second reader of the sa
 - A zone's keys are trusted when its DNSKEY RRset holds a zone key (flag bit 7, protocol 3) whose
   digest is in the DS set that vouches for the zone (the consumer's anchor, or a DS RRset the
   parent signed) and that key signed the DNSKEY RRset. Every zone key of a validated DNSKEY RRset
-  may then sign the zone's data.
+  may then sign the zone's data, except a key with the REVOKE bit (flag bit 8): RFC 5011 section 2.1
+  says a revoked key validates nothing but its own signature over the DNSKEY RRset, so a zone that
+  revoked a compromised key is not spoken for by whoever still holds it.
 - An RRSIG whose label count is below the owner's label count says the answer was expanded from a
   wildcard; checking it needs a proof that no closer name exists, which this reader does not read,
   so such an RRset is not validated.
 - Names in the RDATA of the types read here are not lowercased, because none of them is in the
   list of RFC 4034 section 6.2 (as RFC 6840 section 5.1 left it). Other types are not validated.
 
-Outcomes: ``secure`` (the RRset is validated), ``bogus`` with a reason (the chain is present and a
+Outcomes: ``secure`` (the RRset is validated, with the zone whose key signed it), ``bogus`` with a reason (the chain is present and a
 check fails: a signature that does not verify, a window that does not cover the instant, a DS that
 matches no key), and ``indeterminate`` with a reason (a record the chain needs is missing, or an
 algorithm is not read). An adapter maps them to ``supported``, ``contradicted`` and
@@ -89,6 +91,8 @@ class Result:
     reason: str
     records: list[bytes] = field(default_factory=list)
     signers: list[str] = field(default_factory=list)
+    #: The labels of the zone whose key validated the RRset (``secure`` only).
+    zone: tuple[bytes, ...] | None = None
 
     def check(self, name: str, rtype: int) -> dict:
         return {"id": "dnssec_chain", "status": {SECURE: "pass", BOGUS: "fail",
@@ -342,7 +346,8 @@ class Validator:
             self._keys[zone] = Result(INDETERMINATE, "ds_algorithm_unsupported")
             return self._keys[zone]
         keys = [(key_tag(r), r[3], r[4:]) for r in dnskeys
-                if len(r) > 4 and r[2] == 3 and int.from_bytes(r[:2], "big") & _ZONE_KEY]
+                if len(r) > 4 and r[2] == 3 and int.from_bytes(r[:2], "big") & _ZONE_KEY
+                and not int.from_bytes(r[:2], "big") & _REVOKE]
         entry = [(key_tag(r), r[3], r[4:]) for r in dnskeys
                  if len(r) > 4 and r[2] == 3 and int.from_bytes(r[:2], "big") & _ZONE_KEY
                  and not int.from_bytes(r[:2], "big") & _REVOKE
@@ -376,7 +381,7 @@ class Validator:
                 continue
             data = _signed_data(sig, owner, rtype, CLASS_IN, rdatas)
             if any(verify_signature(sig.algorithm, key, sig.signature, data) for _, _, key in matching):
-                return Result(SECURE, "rrset_validated", sorted(set(rdatas)), [name_text(signer)])
+                return Result(SECURE, "rrset_validated", sorted(set(rdatas)), [name_text(signer)], signer)
             failures.append("signature_invalid")
         if failures:
             return Result(BOGUS, min(failures, key=_RANK.__getitem__))
@@ -410,7 +415,7 @@ class Validator:
                 if isinstance(keys, Result):
                     results.append(keys)
                     continue
-                return Result(SECURE, "rrset_validated", sorted(set(rdatas)), [name_text(owner)])
+                return Result(SECURE, "rrset_validated", sorted(set(rdatas)), [name_text(owner)], owner)
             keys = self.zone_keys(signer, depth + 1)
             if isinstance(keys, Result):
                 results.append(keys)

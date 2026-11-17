@@ -128,6 +128,38 @@ def test_the_dnssec_chain_authority_reads_the_zone_owner_key(tmp_path):
         "key_record_outside_subject"
 
 
+def test_a_delegated_child_zone_never_vouches_for_its_parent(tmp_path):
+    # tenant.example.com. is a delegated zone with its own key; its TXT names the same ES256 key.
+    # Comparing names alone, the TXT owner is inside example.com, so the child's key spoke for a
+    # record of example.com and of com; the zone that signed the TXT must contain the record's zone.
+    from agent_evidence_verify.key_authority import authorize, jwk_key_bytes
+    chain = (DNSSEC / "tenant-delegated.chain").read_bytes()
+    anchor = json.loads((DNSSEC / "cases.json").read_text())["cases"][0]["trust_anchor"]
+    authority = {"kind": "dnssec-chain", "trust_anchor": anchor, "name": "dns-aid.tenant.example.com.",
+                 "chain": "dnssec.chain"}
+    at = next(r["at"] for r in CASES if r["case"] == OWNER)
+    parent = run(tmp_path, *files(OWNER), at, authority, {"dnssec.chain": chain})
+    assert (parent["decision"], parent["reason"]) == ("contradicted", "key_record_signed_by_another_zone")
+    assert parent["scope"]["zone"] == "example.com"
+    key = jwk_key_bytes(json.loads(files(OWNER)[1])["keys"][0], "jwks")
+    instant = dns_aid_sig.instant(at, "at")
+    config = {k: v for k, v in authority.items() if k != "chain"}
+    assert authorize(config, key, subject="tenant.example.com", at=instant, dnssec_chain=chain).outcome == "authorized"
+    for subject in ("example.com", "com"):
+        answer = authorize(config, key, subject=subject, at=instant, dnssec_chain=chain)
+        assert (answer.outcome, answer.reason) == ("unauthorized", "key_record_signed_by_another_zone")
+
+
+def test_a_revoked_dnskey_never_authorises_a_key(tmp_path):
+    chain = (DNSSEC / "revoked-key.chain").read_bytes()
+    anchor = json.loads((DNSSEC / "cases.json").read_text())["cases"][0]["trust_anchor"]
+    authority = {"kind": "dnssec-chain", "trust_anchor": anchor, "name": "dns-aid.example.com.",
+                 "chain": "dnssec.chain"}
+    at = next(r["at"] for r in CASES if r["case"] == OWNER)
+    result = run(tmp_path, *files(OWNER), at, authority, {"dnssec.chain": chain})
+    assert (result["decision"], result["reason"]) == ("contradicted", "dnssec_rrsig_key_not_trusted")
+
+
 def test_the_reader_imports_no_dns_aid_or_dns_library():
     source = Path(dns_aid_sig.__file__).read_text(encoding="utf-8")
     for module in ("dns_aid", "dns."):

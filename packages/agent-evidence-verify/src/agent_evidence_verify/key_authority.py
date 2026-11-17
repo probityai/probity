@@ -59,7 +59,9 @@ Authority kinds, each a JSON object in the consumer policy:
     (:mod:`agent_evidence_verify.dnssec`). The key is authorised when the TXT RRset validates from
     the anchor at the record's instant and one of its records reads ``key-sha256=<hex>`` with the
     SHA-256 of the key bytes. A record whose subject is a DNS name is judged only under a TXT owner
-    inside that name, so the keys one zone publishes never vouch for another zone's records. A chain
+    inside that name, and only when the zone whose key signed the TXT RRset is that name or an
+    ancestor of it: a delegated child zone (``tenant.example.com.`` under ``example.com.``) signs its
+    own TXT, and its keys never vouch for the parent's records, nor one zone's for another's. A chain
     that fails validation is ``unauthorized``; a chain that is missing a record it needs is
     ``unknown``.
 
@@ -519,12 +521,13 @@ def _dnssec_chain(config: dict, key: bytes, subject: str | None, at: Instant | N
         owner = dnssec.name_labels(config.get("name"), "authority.name")
     except ValueError as exc:
         raise CaseError(str(exc)) from exc
+    subject_labels = None
     if subject is not None:
         try:
-            inside = dnssec.is_within(owner, dnssec.name_labels(subject))
+            subject_labels = dnssec.name_labels(subject)
         except ValueError:
-            inside = False
-        if not inside:
+            subject_labels = None
+        if subject_labels is None or not dnssec.is_within(owner, subject_labels):
             return UNAUTHORIZED, "key_record_outside_subject", []
     if at is None:
         return UNKNOWN, "record_time_unknown", []
@@ -535,6 +538,9 @@ def _dnssec_chain(config: dict, key: bytes, subject: str | None, at: Instant | N
         return UNAUTHORIZED, "dnssec_" + result.reason, []
     if result.outcome == dnssec.INDETERMINATE:
         return UNKNOWN, "dnssec_" + result.reason, []
+    if subject_labels is not None and (result.zone is None
+                                       or not dnssec.is_within(subject_labels, result.zone)):
+        return UNAUTHORIZED, "key_record_signed_by_another_zone", []
     trusted = sorted({m.group(1) for m in (_KEY_RECORD.fullmatch(dnssec.txt_strings(r))
                                            for r in result.records) if m})
     if key_sha256(key) in trusted:

@@ -13,6 +13,12 @@ signature windows are fixed, so the bytes are the same on every run. ``example.c
 SVCB RRset of the DNS-AID record and a TXT record ``key-sha256=<hex>`` at ``dns-aid.example.com.``
 naming the zone owner's ES256 key from the dns-aid-sig fixtures. Each chain file is the records in
 DNS wire format, uncompressed, one after another (RFC 9102 section 3).
+
+Two chains hold attacks. ``tenant-delegated``: ``tenant.example.com.`` is a delegated child zone with
+its own key, and its TXT at ``dns-aid.tenant.example.com.`` names the same ES256 key, so a check that
+compares names alone would let the child vouch for the parent's records. ``revoked-key``: the
+DNSKEY RRset of ``example.com.`` lists a second key with the REVOKE bit (RFC 5011), and the TXT is
+signed by that key alone, as whoever kept the revoked key's private half would sign it.
 """
 import base64
 import hashlib
@@ -91,6 +97,27 @@ root_ds = dns.dnssec.make_ds(".", keys["."][1], "SHA256").to_text()
 wrong_ds = root_ds[:-4] + ("0000" if not root_ds.endswith("0000") else "1111")
 
 chains = {"valid": base + data}
+tenant_priv = key("tenant.example.com.")
+tenant_rd = dns.dnssec.make_dnskey(tenant_priv.public_key(), dns.dnssec.Algorithm.ED25519, flags=257)
+keys["tenant.example.com."] = (tenant_priv, tenant_rd)
+tenant_dnskey = dns.rrset.from_rdata("tenant.example.com.", TTL, tenant_rd)
+tenant_ds = dns.rrset.from_rdata("tenant.example.com.", TTL,
+                                 dns.dnssec.make_ds("tenant.example.com.", tenant_rd, "SHA256"))
+tenant_txt = rr("dns-aid.tenant.example.com.", "TXT", f'"key-sha256={owner_key_sha256()}"')
+chains["tenant-delegated"] = base + data + [tenant_ds, sign(tenant_ds, "example.com."), tenant_dnskey,
+                                            sign(tenant_dnskey, "tenant.example.com."), tenant_txt,
+                                            sign(tenant_txt, "tenant.example.com.")]
+revoked_priv = key("example.com./revoked")
+revoked_rd = dns.dnssec.make_dnskey(revoked_priv.public_key(), dns.dnssec.Algorithm.ED25519,
+                                    flags=257 | 0x80)
+two_keys = dns.rrset.from_rdata("example.com.", TTL, keys["example.com."][1], revoked_rd)
+revoked_sig = dns.rrset.from_rdata(txt.name, txt.ttl, dns.dnssec.sign(
+    txt, revoked_priv, dns.name.from_text("example.com."), revoked_rd, inception=INCEPTION,
+    expiration=EXPIRATION, lifetime=None))
+chains["revoked-key"] = [r for r in base if r.name != dns.name.from_text("example.com.")
+                         or r.rdtype not in (dns.rdatatype.DNSKEY, dns.rdatatype.RRSIG)
+                         or (r.rdtype == dns.rdatatype.RRSIG and r[0].type_covered != dns.rdatatype.DNSKEY)] + [
+    two_keys, sign(two_keys, "example.com."), txt, revoked_sig]
 flipped = bytearray(wire([sign(svcb, "example.com.")]))
 flipped[-3] ^= 0x01
 chains["svcb-rrsig-bitflip"] = None  # written from bytes below
@@ -119,6 +146,10 @@ cases = [
     ("svcb-missing-rrsig", "missing-rrsig", S, "SVCB", anchor, INSIDE, "not_established", "rrsig_missing"),
     ("svcb-not-in-chain", "valid", "_mcp._mcp._agents.example.com.", "SVCB", anchor, INSIDE, "not_established",
      "rrset_missing"),
+    ("tenant-txt-validated", "tenant-delegated", "dns-aid.tenant.example.com.", "TXT", anchor, INSIDE,
+     "supported", "rrset_validated"),
+    ("txt-signed-by-revoked-key", "revoked-key", T, "TXT", anchor, INSIDE, "contradicted",
+     "rrsig_key_not_trusted"),
 ]
 rows = [{"case": c, "chain": f + ".chain", "name": n, "type": t, "trust_anchor": a, "at": at,
          "expected": e, "reason": r} for c, f, n, t, a, at, e, r in cases]
