@@ -300,7 +300,14 @@ def test_a_missing_artifact_never_masks_a_refusal(tmp_path: Path, vector: dict) 
         pytest.skip("the binder refuses the attestation path before any read")
     result = adjudicate(case, policy, root)
     reason = vector["expected"]["reason"]
-    if reason in _READS_THE_ARTIFACT:
+    context = json.loads((root / name / "context.json").read_text(encoding="utf-8"))
+    catalog = json.loads((root / name / "catalog.json").read_text(encoding="utf-8"))
+    entries = catalog.get("entries") if isinstance(catalog, dict) else None
+    index = context.get("entry", 0)
+    entry = entries[index] if isinstance(entries, list) and isinstance(index, int) \
+        and 0 <= index < len(entries) else {}
+    # An entry delivered as inline data never reads the artifact file.
+    if reason in _READS_THE_ARTIFACT and isinstance(entry, dict) and "url" in entry:
         assert (result["decision"], result["reason"]) == ("not_established",
                                                           "artifact_unavailable")
     else:
