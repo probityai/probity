@@ -141,3 +141,34 @@ def test_svcb1_is_the_publisher_digest_over_rfc8785():
         b'svcb1:{"cap":"u","realm":"t"}').digest()).rstrip(b"=").decode()
     assert dns_aid_sig.svcb1(params) == expected
     assert dns_aid_sig.svcb1({"cap": "u\nrealm=t"}) != expected
+
+
+def _signed(header: dict, payload: dict, key) -> str:
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+    signing_input = f"{_b64(json.dumps(header).encode())}.{_b64(json.dumps(payload).encode())}"
+    r, s = decode_dss_signature(key.sign(signing_input.encode(), ec.ECDSA(hashes.SHA256())))
+    return f"{signing_input}.{_b64(r.to_bytes(32, 'big') + s.to_bytes(32, 'big'))}"
+
+
+@pytest.mark.parametrize("alg,expected", [("ES256", "supported"), ("ES512", "contradicted"),
+                                          ("HS256", "contradicted")])
+def test_only_es256_is_read_even_when_an_es256_signature_verifies(tmp_path, alg, expected):
+    from cryptography.hazmat.primitives.asymmetric import ec
+    key = ec.derive_private_key(7, ec.SECP256R1())
+    numbers = key.public_key().public_numbers()
+    point = b"\x04" + numbers.x.to_bytes(32, "big") + numbers.y.to_bytes(32, "big")
+    jwks = json.dumps({"keys": [{"kty": "EC", "crv": "P-256", "kid": "k", "x": _b64(point[1:33]),
+                                 "y": _b64(point[33:])}]}).encode()
+    params = {"cap": "https://a.example.com/cap.json"}
+    payload = {"fqdn": "a.example.com", "target": "a.example.com", "port": 443, "alpn": "a2a",
+               "iat": 1794775595, "exp": 1794862055, "svcb": dns_aid_sig.svcb1(params)}
+    record = json.dumps({"fqdn": "a.example.com", "target": "a.example.com", "port": 443, "alpn": "a2a",
+                         "zone": "example.com", "params": params,
+                         "sig": _signed({"alg": alg, "kid": "k"}, payload, key)}).encode()
+    pin = {"kind": "pin", "keys": [{"public_key_sha256": hashlib.sha256(point).hexdigest()}]}
+    result = run(tmp_path, record, jwks, "2026-11-15T21:00:00Z", pin)
+    assert result["decision"] == expected
+    if expected == "contradicted":
+        assert result["reason"] == "jws_alg_not_es256"
