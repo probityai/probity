@@ -10,5 +10,5 @@
   "bin": {"probity-records-verify": "./src/cli.ts"},
   "engines": {"node": ">=22.18"},
   "scripts": {"test": "node --test test/"},
-  "dependencies": {"@bufbuild/cel": "0.6.0"}
+  "dependencies": {"@bufbuild/cel": "0.6.0", "jcs-admit": "0.1.0"}
 }

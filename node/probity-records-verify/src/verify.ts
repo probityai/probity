@@ -14,6 +14,7 @@
 
 import { createHash, createPublicKey, verify as edVerify, type KeyObject } from "node:crypto";
 import { run, isCelError } from "@bufbuild/cel";
+import { admit, JcsError } from "jcs-admit";
 
 export const TOOL_CALL_RECORD = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/tool-call-record";
 const IN_TOTO = "application/vnd.in-toto+json";
@@ -25,38 +26,110 @@ const GENESIS = "0".repeat(64);
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 // ---------- canonical bytes (RFC 8785) and digests ----------
+//
+// Both twins canonicalize through one native core, jcs-admit (this package through its npm build,
+// the Python verifier through its PyPI build), so a value has canonical bytes in one twin exactly
+// when it has them in the other. Before the bytes reach the core, an integer JCS cannot print
+// exactly is refused: 2**53 and 2**53 + 1 print the same bytes, so a signature over one would hold
+// for the other. Every refusal is a typed code both twins report, never a lossy rewrite: a lone
+// surrogate, a duplicate member or invalid UTF-8 has no canonical form (jcs_refused:<variant>).
 
-export function canonical(v: J): string {
-  if (v === null || typeof v === "boolean") return JSON.stringify(v);
+/** The integer bound JCS prints exactly; the Python twin's MAX_EXACT_INT. */
+const MAX_EXACT_INT = Number.MAX_SAFE_INTEGER;
+/** Per holder object, the source text of each integer the parse read beyond MAX_EXACT_INT. */
+const INEXACT_SOURCE = new WeakMap<object, Map<string, string>>();
+
+/** A jcs-admit refusal as the code both twins report: `jcs_refused:<native variant>`. */
+function jcsRefusal(e: unknown): Error {
+  return e instanceof JcsError ? new Error(`jcs_refused:${e.variant}`) : (e as Error);
+}
+
+/** Refuse what JCS cannot print exactly: a non-finite number, or an integer beyond MAX_EXACT_INT. */
+function refuseUnprintable(v: J, holder: J, key: string, depth: number): void {
+  if (depth > 256) throw new Error("value_too_deep");
   if (typeof v === "number") {
     if (!Number.isFinite(v)) throw new Error("jcs_number");
-    return JSON.stringify(v);
-  }
-  if (typeof v === "string") return JSON.stringify(v);
-  if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
-  const keys = Object.keys(v).sort();
-  return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonical(v[k])).join(",") + "}";
+    if (Number.isInteger(v) && !isFloat(holder, key, v) && Math.abs(v) > MAX_EXACT_INT) {
+      const source = holder !== null && typeof holder === "object" ? INEXACT_SOURCE.get(holder)?.get(key) : undefined;
+      throw new Error(`integer_beyond_exact_json_range:${source ?? BigInt(v).toString()}`);
+    }
+  } else if (Array.isArray(v)) v.forEach((x, i) => refuseUnprintable(x, v, String(i), depth + 1));
+  else if (v !== null && typeof v === "object") for (const k of Object.keys(v)) refuseUnprintable(v[k], v, k, depth + 1);
+}
+
+/** The RFC 8785 bytes of a parsed JSON value, through jcs-admit; refused when there are none. */
+export function canonicalBytes(v: J): Buffer {
+  refuseUnprintable(v, null, "", 0);
+  const text = JSON.stringify(v);
+  if (text === undefined) throw new Error("jcs_not_json");
+  try { return Buffer.from(admit(Buffer.from(text, "utf8"))); } catch (e) { throw jcsRefusal(e); }
+}
+
+/** canonicalBytes as text. */
+export function canonical(v: J): string {
+  return canonicalBytes(v).toString("utf8");
+}
+
+/** jcs-admit over raw bytes, before anything decodes or parses them. */
+function admitGate(raw: Uint8Array): void {
+  try { admit(raw); } catch (e) { throw jcsRefusal(e); }
 }
 
 export const sha256Hex = (data: string | Buffer): string => createHash("sha256").update(data).digest("hex");
-const digestOf = (v: J): string => sha256Hex(Buffer.from(canonical(v), "utf8"));
-const same = (a: J, b: J): boolean => canonical(a) === canonical(b);
+const digestOf = (v: J): string => sha256Hex(canonicalBytes(v));
+// Equality for constraint checks: the Python twin compares with ==, which never refuses, so this is a
+// structural comparison (sorted keys, JSON.stringify leaves), not canonical bytes.
+function structural(v: J): string {
+  if (Array.isArray(v)) return "[" + v.map(structural).join(",") + "]";
+  if (v !== null && typeof v === "object") {
+    const keys = Object.keys(v).sort();
+    return "{" + keys.map((k) => JSON.stringify(k) + ":" + structural(v[k])).join(",") + "}";
+  }
+  return String(JSON.stringify(v));
+}
+const same = (a: J, b: J): boolean => structural(a) === structural(b);
 const isObj = (v: J): boolean => v !== null && typeof v === "object" && !Array.isArray(v);
 
 // Python's json.loads keeps `3.0` a float, `3` an int and `1e2` a float, and the constraint checks
 // (`type(v) is type(c["value"])`) tell them apart; JSON.parse folds all of them into one number.
-// The parse below records, per holder object, which keys held an integral value written as a float.
+// The parse below records, per holder object, which keys held an integral value written as a float,
+// and the source text of any integer beyond MAX_EXACT_INT (Python keeps it exact; JSON.parse rounds).
 const FLOAT_KEYS = new WeakMap<object, Set<string>>();
 export function parsePy(text: string): J {
   return JSON.parse(text, function (this: J, key: string, value: J, context?: { source?: string }) {
-    if (typeof value === "number" && Number.isInteger(value) && context?.source !== undefined && /[.eE]/.test(context.source)) {
-      let keys = FLOAT_KEYS.get(this);
-      if (!keys) FLOAT_KEYS.set(this, (keys = new Set()));
-      keys.add(key);
+    if (typeof value === "number" && Number.isInteger(value) && context?.source !== undefined) {
+      if (/[.eE]/.test(context.source)) {
+        let keys = FLOAT_KEYS.get(this);
+        if (!keys) FLOAT_KEYS.set(this, (keys = new Set()));
+        keys.add(key);
+      } else if (Math.abs(value) > MAX_EXACT_INT) {
+        let sources = INEXACT_SOURCE.get(this);
+        if (!sources) INEXACT_SOURCE.set(this, (sources = new Map()));
+        sources.set(key, context.source);
+      }
     }
     return value;
   });
 }
+
+const UTF8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+
+/**
+ * Parse RECEIVED bytes. jcs-admit reads them first and refuses a duplicate member, invalid UTF-8,
+ * a lone surrogate (raw or escaped) and every other input with no canonical form, so a record is
+ * never read as something other than the bytes that were signed. The Python twin's
+ * probity_records.core.admitted_loads does the same.
+ */
+export function parseReceived(raw: Uint8Array): J {
+  admitGate(raw);
+  return parsePy(UTF8.decode(raw));
+}
+
+/** The RFC 8785 bytes of received bytes: admitted, parsed, then canonicalized (probity_records.canonical_of_received). */
+export function canonicalOfReceived(raw: Uint8Array): Buffer {
+  return canonicalBytes(parseReceived(raw));
+}
+
 /** Whether `value`, read from `holder[key]`, is a Python float: a fractional number, or an integral one written as a float. */
 function isFloat(holder: J, key: string | number, value: J): boolean {
   return typeof value === "number" && (!Number.isInteger(value) || (holder !== null && typeof holder === "object" && (FLOAT_KEYS.get(holder)?.has(String(key)) ?? false)));
@@ -81,7 +154,7 @@ function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
   try { return edVerify(null, data, key, sig); } catch { return false; }
 }
 const sigOk = (rawB64: J, domain: string, body: J, sig: J): boolean => {
-  try { return edOk(rawKey(unb64(rawB64)), Buffer.concat([Buffer.from(domain, "latin1"), Buffer.from(canonical(body))]), unb64(sig)); }
+  try { return edOk(rawKey(unb64(rawB64)), Buffer.concat([Buffer.from(domain, "latin1"), canonicalBytes(body)]), unb64(sig)); }
   catch { return false; }
 };
 
@@ -632,7 +705,7 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
   if (reason === "quorum") { const o = quorumOutcome(ev); if (o !== "ok") problems.push(`${where}:${o}`); return true; }
   const raw = Buffer.from(ev.argsB64 ?? "", "base64");
   if (sha256Hex(raw) !== pred.argsSha256) problems.push(`${where}:authority_args_are_not_the_call_arguments`);
-  const args = raw.length ? parsePy(raw.toString("utf8")) : null;
+  const args = raw.length ? parseReceived(raw) : null;
   const v = verifyGrantAllow(ev.chain ?? [], String(pred.tool), args, at, new Set(trust.grantRootKeyIds ?? []), ev.ctx ?? {});
   if (v.decision === "needs_approval" && isObj(ev.quorum)) {
     const o = quorumOutcome(ev.quorum, ev.chain[ev.chain.length - 1].body.tools[String(pred.tool)].quorum);
@@ -962,7 +1035,7 @@ function pyRepr(v: J, asFloat = false): string {
 function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null): [J | null, string[]] {
   const where = `line_${i}`, problems: string[] = [];
   let body: J;
-  try { const [payload] = openEnvelope(JSON.parse(line), keys); body = parsePy(payload.toString("utf8")); }
+  try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
   catch (e) { return [null, [`${where}:${(e as Error).message}`]]; }
   const pred = body.predicate ?? {};
   if (pred.seq !== i) problems.push(`${where}:seq_${pred.seq ?? "None"}_not_${i}`);
@@ -1000,7 +1073,7 @@ function crossChecks(bodies: [number, J][]): string[] {
     if (!isObj(ev) || ev.kind !== "grant") continue;
     let charges: [string, J, J][];
     try {
-      const args = ev.argsB64 ? parsePy(Buffer.from(ev.argsB64, "base64").toString("utf8")) : null;
+      const args = ev.argsB64 ? parseReceived(Buffer.from(ev.argsB64, "base64")) : null;
       charges = (ev.chain ?? []).map((g: J) => [digestOf(g.body), g.body.budget, args]);
     } catch { continue; }
     if (charges.length) charged.add(pred.permitId);
@@ -1056,7 +1129,7 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   let checkpoint = "not_supplied";
   if (checkpointEnv !== null) {
     try {
-      const cp = JSON.parse(openEnvelope(checkpointEnv, keys)[0].toString("utf8")).predicate;
+      const cp = parseReceived(openEnvelope(checkpointEnv, keys)[0]).predicate;
       if (cp.count !== lines.length) { failures.push(`checkpoint_count_${cp.count}_journal_has_${lines.length}`); checkpoint = "mismatch"; }
       else if (cp.head !== prev) { failures.push("checkpoint_head_mismatch"); checkpoint = "mismatch"; }
       else checkpoint = "matches";

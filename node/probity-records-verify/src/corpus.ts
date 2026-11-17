@@ -4,7 +4,7 @@
 // any other suite is answered not-applicable, so the output always covers the whole manifest.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { judgeApprovalBinding, judgeUncertainEffect, parsePy } from "./verify.ts";
+import { judgeApprovalBinding, judgeUncertainEffect, parseReceived } from "./verify.ts";
 
 const SCHEMA_ID = "https://probityai.github.io/agent-evidence-vectors/schema/verdict-line/v1";
 const APPROVAL_SUITE = "approval-binding/v1";
@@ -17,14 +17,14 @@ type Answer = { verdict: string; reason: string | null };
 function answer(suite: string, root: string, entry: { path: string }): Answer {
   if (suite === APPROVAL_SUITE) {
     const dir = join(root, entry.path);
-    const record = parsePy(readFileSync(join(dir, "record.json"), "utf8"));
+    const record = parseReceived(readFileSync(join(dir, "record.json")));
     const name = String((record.use ?? {}).payloadFile ?? "payload.bin");
     const payload = name.includes("/") || ["", ".", ".."].includes(name) ? Buffer.alloc(0) : readFileSync(join(dir, name));
     const d = judgeApprovalBinding(record, payload);
     return { verdict: d.decision === "allow" ? "accept" : "reject", reason: d.reason };
   }
   if (suite === UNCERTAIN_SUITE) {
-    const d = judgeUncertainEffect(parsePy(readFileSync(join(root, entry.path, "record.json"), "utf8")));
+    const d = judgeUncertainEffect(parseReceived(readFileSync(join(root, entry.path, "record.json"))));
     return d.decision === "supported" ? { verdict: "accept", reason: ACCEPTED_EFFECT } : { verdict: "reject", reason: d.reason };
   }
   return { verdict: "not-applicable", reason: "suite-not-implemented" };
