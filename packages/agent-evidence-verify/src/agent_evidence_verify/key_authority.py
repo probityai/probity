@@ -239,7 +239,7 @@ def record_instant(at: Any, label: str = "at") -> Instant:
     if isinstance(at, datetime.datetime):
         if at.utcoffset() is None:
             raise CaseError(f"{label}: expected an aware datetime")
-        utc = at.astimezone(datetime.timezone.utc)
+        utc = at.astimezone(datetime.UTC)
         second_of_day = utc.hour * 3600 + utc.minute * 60 + utc.second
         return _instant(utc.toordinal(), second_of_day + Fraction(utc.microsecond, 10**6))
     if isinstance(at, (int, float)) and not isinstance(at, bool) and math.isfinite(at):
@@ -473,7 +473,7 @@ def _kt_inclusion(config: dict, key: bytes, subject: str | None, proof: Any,
 
 
 def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: str | None = None,
-              at: datetime.datetime | int | float | None = None, did_document: bytes | None = None,
+              at: datetime.datetime | float | None = None, did_document: bytes | None = None,
               inclusion_proof: Any = None) -> Authority:
     """Decide whether ``key`` may speak for a record, under the consumer's ``authority``.
 

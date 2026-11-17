@@ -9,7 +9,6 @@ Run with --check to compare the committed bytes.
 import argparse
 import base64
 import json
-import sys
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -92,7 +91,10 @@ def expected(name, run, key, status):
     if importlib.util.find_spec("agent_evidence_verify") is None:
         raise SystemExit("agent_evidence_verify is not installed; install it (pip install -e .) first")
     from agent_evidence_verify.cli import main
-    from agent_evidence_verify.identity import placeholder_release_detail, running_release
+    from agent_evidence_verify.identity import (
+        placeholder_release_detail,
+        running_release,
+    )
 
     if running_release() is None:
         raise SystemExit("the running agent_evidence_verify is not an installed release's files, so "

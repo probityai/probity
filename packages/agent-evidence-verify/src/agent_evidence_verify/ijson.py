@@ -27,8 +27,8 @@ from __future__ import annotations
 
 import json
 import math
-from decimal import Decimal
 from collections.abc import Callable
+from decimal import Decimal
 from typing import Any
 
 #: Exact integers in an I-JSON number: RFC 7493 section 2.2.
