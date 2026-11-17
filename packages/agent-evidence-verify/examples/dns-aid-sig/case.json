@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "dnssec.chain": {
+      "length": 1235,
+      "path": "dnssec.chain",
+      "sha256": "b0a96b915aa0a78797138dde516bddbb5ad80feca0fe295b92615bbfd0a12595"
+    },
+    "jwks.json": {
+      "length": 222,
+      "path": "jwks.json",
+      "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+    },
+    "record.json": {
+      "length": 880,
+      "path": "record.json",
+      "sha256": "d149d3a91bcca454e7230517a7d909423242d1fcdb6c28bbd6286391b78a6713"
+    }
+  },
+  "case_id": "dns-aid-sig-dnssec-key",
+  "schema_version": "probity-case/v1"
+}

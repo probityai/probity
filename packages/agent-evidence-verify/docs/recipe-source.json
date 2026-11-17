@@ -343,6 +343,15 @@
       "scope": "Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes."
     },
     {
+      "task": "Check that a DNS-AID record's sig binds it to a key the zone owner published under DNSSEC",
+      "claim_type": "dns_aid_sig/v1",
+      "case": "examples/dns-aid-sig/case.json",
+      "policy": "examples/dns-aid-sig/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "Record and JWKS signed by the dns-aid-core signer at 825ccea; the DNSSEC chain is a test root signed by dnspython, whose DS the policy pins."
+    },
+    {
       "task": "Check that a DNS answer I hold offline validates under DNSSEC from the root",
       "claim_type": "dnssec_rrset/v1",
       "case": "examples/dnssec-rrset/case.json",

@@ -268,8 +268,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11621,
-      "sha256": "8496306cce6f041ac7a04e6dc848c805080b44aea51386a051478b0c5a39a14f"
+      "bytes": 11684,
+      "sha256": "edbc5dace90ca4ce07df5c2b1439b79d9f75d18ebac1cc13fa948f1b6df6f8e3"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -2063,6 +2063,52 @@
           "path": "examples/evaluation-claim/record.json",
           "bytes": 1718,
           "sha256": "7df39e924a8ee42cd33d448fd077435875377eb7fb7eb56f569b491bd0c2b819"
+        }
+      ]
+    },
+    {
+      "task": "Check that a DNS-AID record's sig binds it to a key the zone owner published under DNSSEC",
+      "claim_type": "dns_aid_sig/v1",
+      "case": "examples/dns-aid-sig/case.json",
+      "policy": "examples/dns-aid-sig/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "Record and JWKS signed by the dns-aid-core signer at 825ccea; the DNSSEC chain is a test root signed by dnspython, whose DS the policy pins.",
+      "case_id": "dns-aid-sig-dnssec-key",
+      "expected_reason": "binding_verified",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/dns-aid-sig/case.json",
+        "--policy",
+        "examples/dns-aid-sig/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/dns-aid-sig/case.json",
+          "bytes": 584,
+          "sha256": "16f04c702d3c778d3026f9043d8b109cd0f1ba304dd529e6846a6432047f2ac8"
+        },
+        {
+          "path": "examples/dns-aid-sig/policy.json",
+          "bytes": 555,
+          "sha256": "939a88daa5a18830657f82133d9387aaeb7cadfcb00862cefe116007c525ac56"
+        },
+        {
+          "path": "examples/dns-aid-sig/dnssec.chain",
+          "bytes": 1235,
+          "sha256": "b0a96b915aa0a78797138dde516bddbb5ad80feca0fe295b92615bbfd0a12595"
+        },
+        {
+          "path": "examples/dns-aid-sig/jwks.json",
+          "bytes": 222,
+          "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+        },
+        {
+          "path": "examples/dns-aid-sig/record.json",
+          "bytes": 880,
+          "sha256": "d149d3a91bcca454e7230517a7d909423242d1fcdb6c28bbd6286391b78a6713"
         }
       ]
     },
