@@ -93,8 +93,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/_audit_record_reader.py",
-      "bytes": 108785,
-      "sha256": "95b4a4c3ad6a100b20db07c02dd9430b4ca0025b44b6af2aba7ce66ec762a11d"
+      "bytes": 109012,
+      "sha256": "13ef71a7fdba5a78cc691b68205e9afe647de5ee34b86b9b29c5bf2162c6f071"
     },
     {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
