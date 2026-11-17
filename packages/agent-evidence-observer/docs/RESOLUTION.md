@@ -15,7 +15,7 @@ from probity_observer import TrajectoryWitness
 from probity_observer.resolution import ResolutionObserver
 
 observer = ResolutionObserver(Path("observed.jsonl"), trajectory_id="run-42",
-                              witness=TrajectoryWitness(witness_key))
+                              witness=TrajectoryWitness(witness_key, Path("witness-registry")))
 seq = observer.resolved(name="_a2a._agents.example.com", svcb=rrset, sig=sig,
                         jwks_url=jwks_url, jwks_bytes=jwks, dnssec_chain=chain,
                         at="2026-11-15T20:00:00Z")

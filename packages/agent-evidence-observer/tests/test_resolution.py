@@ -20,6 +20,11 @@ JWKS = b'{"keys":[{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPa
 CHAIN = b"\x00\x01dnssec-chain-wire-bytes"
 
 
+def _witness(tmp_path: Path) -> TrajectoryWitness:
+    """A witness under an ephemeral key with its registry in the test directory."""
+    return TrajectoryWitness(SigningKey.generate(), tmp_path / "registry")
+
+
 def _three_calls(path: Path, witness: TrajectoryWitness) -> ResolutionObserver:
     observer = ResolutionObserver(path, trajectory_id="run-1", witness=witness)
     seq = observer.resolved(name="_a2a._agents.example.com", svcb=SVCB, sig="eyJhbGciOiJFZERTQSJ9..sig",
@@ -33,7 +38,7 @@ def _three_calls(path: Path, witness: TrajectoryWitness) -> ResolutionObserver:
 
 def test_three_call_trajectory_verifies_and_binds_bytes(tmp_path: Path) -> None:
     path = tmp_path / "observed.jsonl"
-    witness = TrajectoryWitness(SigningKey.generate())
+    witness = _witness(tmp_path)
     observer = _three_calls(path, witness)
     head = observer.trajectory.close()
     assert verify_trajectory(path, head, witness.public_hex, trajectory_id="run-1")["count"] == 4
@@ -46,14 +51,14 @@ def test_three_call_trajectory_verifies_and_binds_bytes(tmp_path: Path) -> None:
 
 
 def test_unchained_resolution_records_null(tmp_path: Path) -> None:
-    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=TrajectoryWitness(SigningKey.generate()))
+    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=_witness(tmp_path))
     observer.resolved(name="a.example", svcb=["a.example. 60 IN SVCB 1 ."], at="2026-11-15T20:00:00Z")
     event = json.loads((tmp_path / "o.jsonl").read_bytes().splitlines()[0])["event"]
     assert event["dnssec_chain_sha256"] is None and event["jwks"] is None and event["sig"] is None
 
 
 def test_call_without_discovery_is_recorded_as_such(tmp_path: Path) -> None:
-    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=TrajectoryWitness(SigningKey.generate()))
+    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=_witness(tmp_path))
     observer.called(endpoint="https://direct.example", at="2026-11-15T20:00:00Z", resolution=None)
     event = json.loads((tmp_path / "o.jsonl").read_bytes().splitlines()[0])["event"]
     assert event["resolution"] is None
@@ -69,7 +74,7 @@ def test_call_without_discovery_is_recorded_as_such(tmp_path: Path) -> None:
     ({"dnssec_chain": "text not bytes"}, "bytes as received"),
 ])
 def test_resolution_refusals(tmp_path: Path, kwargs: dict, message: str) -> None:
-    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=TrajectoryWitness(SigningKey.generate()))
+    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=_witness(tmp_path))
     arguments = {"name": "a.example", "svcb": ["a.example. 60 IN SVCB 1 ."], "at": "2026-11-15T20:00:00Z", **kwargs}
     with pytest.raises(VerificationError, match=message):
         observer.resolved(**arguments)
@@ -77,7 +82,7 @@ def test_resolution_refusals(tmp_path: Path, kwargs: dict, message: str) -> None
 
 
 def test_call_cannot_name_an_unrecorded_resolution(tmp_path: Path) -> None:
-    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=TrajectoryWitness(SigningKey.generate()))
+    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=_witness(tmp_path))
     with pytest.raises(VerificationError, match="recorded earlier"):
         observer.called(endpoint="https://x.example", at="2026-11-15T20:00:00Z", resolution=1)
 
@@ -85,7 +90,7 @@ def test_call_cannot_name_an_unrecorded_resolution(tmp_path: Path) -> None:
 @pytest.mark.parametrize("resolution", [True, 1.0, "1"])
 def test_call_names_its_resolution_by_integer_seq(tmp_path: Path, resolution: object) -> None:
     """Counter-example: True == 1 in Python, so a membership test alone wrote "resolution": true."""
-    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=TrajectoryWitness(SigningKey.generate()))
+    observer = ResolutionObserver(tmp_path / "o.jsonl", trajectory_id="run-1", witness=_witness(tmp_path))
     observer.resolved(name="a.example", svcb=["a.example. 60 IN SVCB 1 ."], at="2026-11-15T20:00:00Z")
     with pytest.raises(VerificationError, match="integer seq"):
         observer.called(endpoint="https://x.example", at="2026-11-15T20:00:01Z", resolution=resolution)  # type: ignore[arg-type]

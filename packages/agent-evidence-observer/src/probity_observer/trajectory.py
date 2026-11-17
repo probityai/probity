@@ -19,7 +19,9 @@ once at open, receives every entry as it is written, checks each link itself,
 and at close signs only its own count and last digest, refusing a close whose
 claim differs. A producer that drops, swaps or rewrites entries after the
 witness saw them, or reopens an identifier to start again, cannot get a head
-for that. The head has its own signing domain, so a witness that also signs
+for that. The record of opened identifiers is a directory on disk, not process
+memory, so a restarted witness, or a second witness instance under the same key
+and directory, refuses an identifier the first one opened. The head has its own signing domain, so a witness that also signs
 ledger heads cannot have one read as the other, and it names the identifier, so
 the head of one trajectory never verifies another. A witness in the producer's
 own process fixes the end only against a third party who edits storage; it
@@ -57,6 +59,7 @@ ENTRY_FIELDS = frozenset({"seq", "prev", "event"})
 GENESIS_FORMAT = "probity-trajectory-genesis-v1"
 HEAD_FORMAT = "probity-trajectory-head-v1"
 HEAD_FIELDS = frozenset({"format", "trajectory", "count", "head", "keyid", "signature"})
+REGISTRY_KEY_FILE = "witness-key"
 
 __all__ = [
     "CANONICALIZATIONS",
@@ -113,6 +116,25 @@ def genesis(trajectory_id: str) -> str:
         {"format": GENESIS_FORMAT, "trajectory": check_trajectory_id(trajectory_id)})).hexdigest()
 
 
+def _create_exclusive(path: Path, data: bytes) -> bool:
+    """Create ``path`` holding ``data`` durably, or return False when it exists."""
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return False
+    try:
+        os.write(descriptor, data)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    directory = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+    return True
+
+
 def _check_entry(entry: Any, label: str) -> dict[str, Any]:
     """Return an entry with exactly the entry fields, an integer ``seq`` and an object event."""
     if not isinstance(entry, dict) or set(entry) != ENTRY_FIELDS:
@@ -127,7 +149,11 @@ def _check_entry(entry: Any, label: str) -> dict[str, Any]:
 class TrajectoryWitness:
     """Count trajectories as their entries arrive and sign only what was counted.
 
-    The witness holds the signing key. ``open`` registers an identifier once,
+    The witness holds the signing key and a registry directory. ``open``
+    registers an identifier once by creating its file in the registry with an
+    exclusive create, so the refusal survives a restart and holds across every
+    witness instance that shares the directory; a registry records the public
+    key it belongs to and refuses a witness under another key. ``open`` registers an identifier once,
     ``observe`` takes each entry as it is written and checks ``seq`` and
     ``prev`` against the witness's own count and last digest, and ``close``
     signs the witness's own head payload. A producer's claim is compared, never
@@ -137,10 +163,27 @@ class TrajectoryWitness:
     bind the producer; in the same process it binds only storage edits.
     """
 
-    def __init__(self, key: SigningKey) -> None:
+    def __init__(self, key: SigningKey, registry: Path) -> None:
+        """Bind the witness key to a registry of opened identifiers.
+
+        Args:
+            key: The witness signing key.
+            registry: The directory that records every identifier this key has
+                opened. Every instance and restart of the witness under this key
+                must use the same directory; a second directory under the same
+                key would let an identifier open twice.
+
+        Raises:
+            VerificationError: The registry belongs to another witness key.
+        """
         self._key = key
+        self._registry = registry
         self._open: dict[str, tuple[int, str]] = {}
-        self._used: set[str] = set()
+        registry.mkdir(parents=True, exist_ok=True)
+        owner = registry / REGISTRY_KEY_FILE
+        public = key.public_hex.encode("ascii")
+        if not _create_exclusive(owner, public) and owner.read_bytes() != public:
+            raise VerificationError("trajectory witness registry belongs to another witness key")
 
     @property
     def public_hex(self) -> str:
@@ -154,9 +197,9 @@ class TrajectoryWitness:
             VerificationError: The identifier is invalid or was opened before.
         """
         check_trajectory_id(trajectory_id)
-        if trajectory_id in self._used:
+        name = hashlib.sha256(trajectory_id.encode("ascii")).hexdigest() + ".opened"
+        if not _create_exclusive(self._registry / name, canonical({"trajectory": trajectory_id})):
             raise VerificationError(f"trajectory {trajectory_id!r} was already opened at this witness")
-        self._used.add(trajectory_id)
         self._open[trajectory_id] = (0, genesis(trajectory_id))
         return trajectory_id
 
@@ -216,8 +259,11 @@ class TrajectoryRecorder:
     """Append hash-linked entries to a JSONL file and close it with a witnessed head.
 
     The recorder never holds the witness key. It hands each entry to the
-    witness as it writes it, so the witness counts the trajectory itself, and
-    ``close`` asks the witness to sign the head it counted.
+    witness before writing it, so the witness counts the trajectory itself and
+    an entry the witness refuses never reaches the file; ``close`` asks the
+    witness to sign the head it counted. A write that fails after the witness
+    counted the entry leaves the recorder broken: it refuses further events and
+    the witness refuses its close, because the file can no longer match.
     """
 
     def __init__(self, path: Path, *, trajectory_id: str, witness: TrajectoryWitness,
@@ -232,6 +278,7 @@ class TrajectoryRecorder:
         self._count = 0
         self._last = genesis(trajectory_id)
         self._closed = False
+        self._broken: str | None = None
 
     @property
     def count(self) -> int:
@@ -255,15 +302,22 @@ class TrajectoryRecorder:
         """
         if self._closed:
             raise VerificationError("trajectory is closed")
+        if self._broken is not None:
+            raise VerificationError(f"trajectory is broken: {self._broken}")
         if not isinstance(event, dict):
             raise VerificationError("a trajectory event must be a JSON object")
         entry = {"seq": self._count + 1, "prev": self._last, "event": event}
         line = canonical(entry) + b"\n"
-        with self.path.open("ab") as handle:
-            handle.write(line)
-            handle.flush()
-            os.fsync(handle.fileno())
-        self._last = self.witness.observe(self.trajectory_id, entry)
+        digest = self.witness.observe(self.trajectory_id, entry)
+        try:
+            with self.path.open("ab") as handle:
+                handle.write(line)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except OSError as exc:
+            self._broken = f"entry {entry['seq']} was counted by the witness and not stored ({exc})"
+            raise VerificationError(f"trajectory is broken: {self._broken}") from exc
+        self._last = digest
         self._count += 1
         return entry
 
@@ -295,7 +349,8 @@ def _read_entries(path: Path, trajectory_id: str) -> list[dict[str, Any]]:
         raise VerificationError("trajectory ends with an incomplete line")
     entries: list[dict[str, Any]] = []
     previous = genesis(trajectory_id)
-    for number, line in enumerate(raw.splitlines(), start=1):
+    lines = raw[:-1].split(b"\n") if raw else []
+    for number, line in enumerate(lines, start=1):
         entry = _check_entry(strict_loads(line), f"trajectory entry {number}")
         if entry["seq"] != number:
             raise VerificationError(f"trajectory entry {number}: seq is not contiguous from 1")

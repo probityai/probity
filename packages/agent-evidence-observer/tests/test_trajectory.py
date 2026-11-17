@@ -35,16 +35,17 @@ EVENTS = [
 ]
 
 
-def _witness() -> TrajectoryWitness:
-    """A witness under an ephemeral key; tests never commit a secret."""
-    return TrajectoryWitness(SigningKey.generate())
+def _witness(tmp_path: Path, key: SigningKey | None = None) -> TrajectoryWitness:
+    """A witness under an ephemeral key and its own registry; tests never commit a secret."""
+    key = key or SigningKey.generate()
+    return TrajectoryWitness(key, tmp_path / f"registry-{key.public_hex}")
 
 
 def _closed(tmp_path: Path) -> tuple[Path, dict[str, Any], SigningKey]:
     """Write the five-event session and close it under an ephemeral witness key."""
     witness = SigningKey.generate()
     path = tmp_path / "trajectory.jsonl"
-    recorder = TrajectoryRecorder(path, trajectory_id=TID, witness=TrajectoryWitness(witness))
+    recorder = TrajectoryRecorder(path, trajectory_id=TID, witness=_witness(tmp_path, witness))
     for event in EVENTS:
         recorder.emit(event)
     return path, recorder.close(), witness
@@ -191,19 +192,19 @@ def test_canonicalization_declarations(tmp_path: Path) -> None:
         with pytest.raises(VerificationError, match="canonicalization"):
             verify_trajectory(path, head, witness.public_hex, trajectory_id=TID, canonicalization=value)
     with pytest.raises(VerificationError, match="canonicalization"):
-        TrajectoryRecorder(tmp_path / "other.jsonl", trajectory_id=TID, witness=_witness(), canonicalization="raw")
+        TrajectoryRecorder(tmp_path / "other.jsonl", trajectory_id=TID, witness=_witness(tmp_path), canonicalization="raw")
 
 
 def test_empty_trajectory_has_genesis_head(tmp_path: Path) -> None:
     witness = SigningKey.generate()
     path = tmp_path / "empty.jsonl"
-    head = TrajectoryRecorder(path, trajectory_id=TID, witness=TrajectoryWitness(witness)).close()
+    head = TrajectoryRecorder(path, trajectory_id=TID, witness=_witness(tmp_path, witness)).close()
     assert head["count"] == 0 and head["head"] == genesis(TID)
     assert verify_trajectory(path, head, witness.public_hex, trajectory_id=TID)["count"] == 0
 
 
 def test_closed_recorder_refuses_events(tmp_path: Path) -> None:
-    recorder = TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=TID, witness=_witness())
+    recorder = TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=TID, witness=_witness(tmp_path))
     recorder.emit({"type": "a"})
     recorder.close()
     with pytest.raises(VerificationError, match="closed"):
@@ -211,7 +212,7 @@ def test_closed_recorder_refuses_events(tmp_path: Path) -> None:
 
 
 def test_profile_refusals(tmp_path: Path) -> None:
-    recorder = TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=TID, witness=_witness())
+    recorder = TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=TID, witness=_witness(tmp_path))
     with pytest.raises(VerificationError):
         recorder.emit({"value": 1.5})
     with pytest.raises(VerificationError):
@@ -234,13 +235,13 @@ def test_existing_file_refused(tmp_path: Path) -> None:
     path = tmp_path / "t.jsonl"
     path.write_bytes(b"{}\n")
     with pytest.raises(VerificationError, match="already holds entries"):
-        TrajectoryRecorder(path, trajectory_id=TID, witness=_witness())
+        TrajectoryRecorder(path, trajectory_id=TID, witness=_witness(tmp_path))
 
 
 def test_head_of_another_trajectory_refused(tmp_path: Path) -> None:
     """Counter-example: the producer hands over a quiet session's file and head in place of the session asked about."""
     witness = SigningKey.generate()
-    counter = TrajectoryWitness(witness)
+    counter = _witness(tmp_path, witness)
     quiet = TrajectoryRecorder(tmp_path / "quiet.jsonl", trajectory_id="run-quiet", witness=counter)
     quiet.emit({"type": "tool.call", "status": "ok"})
     quiet_head = quiet.close()
@@ -262,7 +263,7 @@ def test_entries_of_another_trajectory_do_not_link(tmp_path: Path) -> None:
         verify_trajectory(path, {**head, "trajectory": "run-other"}, witness.public_hex, trajectory_id="run-other")
     other = tmp_path / "other.jsonl"
     other.write_bytes(path.read_bytes())
-    recorder = TrajectoryRecorder(tmp_path / "empty.jsonl", trajectory_id="run-other", witness=_witness())
+    recorder = TrajectoryRecorder(tmp_path / "empty.jsonl", trajectory_id="run-other", witness=_witness(tmp_path))
     other_head = {**recorder.head_payload(), "count": 5, "head": head["head"]}
     signed = {**other_head, "keyid": witness.public_hex, "signature": witness.sign(HEAD_FORMAT, other_head)}
     with pytest.raises(VerificationError, match="entry 1: prev does not link"):
@@ -290,7 +291,7 @@ def test_ledger_head_is_not_a_trajectory_head(tmp_path: Path) -> None:
 @pytest.mark.parametrize("value", ["", None, 7, "run\u00e9"])
 def test_trajectory_id_refusals(tmp_path: Path, value: object) -> None:
     with pytest.raises(VerificationError, match="trajectory id"):
-        TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=value, witness=_witness())  # type: ignore[arg-type]
+        TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=value, witness=_witness(tmp_path))  # type: ignore[arg-type]
 
 
 def _five(tmp_path: Path, witness: TrajectoryWitness) -> TrajectoryRecorder:
@@ -302,7 +303,7 @@ def _five(tmp_path: Path, witness: TrajectoryWitness) -> TrajectoryRecorder:
 
 def test_witness_refuses_a_shortened_claim(tmp_path: Path) -> None:
     """Counter-example: the producer asks the witness to sign a head that stops before the last event."""
-    witness = _witness()
+    witness = _witness(tmp_path)
     recorder = _five(tmp_path, witness)
     entries = _entries(recorder.path)
     short = {"format": HEAD_FORMAT, "trajectory": TID, "count": 4, "head": entry_digest(entries[3])}
@@ -315,7 +316,7 @@ def test_witness_refuses_a_shortened_claim(tmp_path: Path) -> None:
 
 def test_witness_refuses_a_producer_that_rewinds_its_own_state(tmp_path: Path) -> None:
     """Counter-example: the recorder's own count and head are rewound, as a producer that holds them would."""
-    witness = _witness()
+    witness = _witness(tmp_path)
     recorder = _five(tmp_path, witness)
     entries = _entries(recorder.path)
     recorder._count, recorder._last = 4, entry_digest(entries[3])
@@ -326,7 +327,7 @@ def test_witness_refuses_a_producer_that_rewinds_its_own_state(tmp_path: Path) -
 
 def test_witness_never_reopens_an_identifier(tmp_path: Path) -> None:
     """Counter-example: start the trajectory again under the same id to drop what the witness already counted."""
-    witness = _witness()
+    witness = _witness(tmp_path)
     _five(tmp_path, witness)
     with pytest.raises(VerificationError, match="already opened"):
         TrajectoryRecorder(tmp_path / "again.jsonl", trajectory_id=TID, witness=witness)
@@ -336,7 +337,7 @@ def test_witness_never_reopens_an_identifier(tmp_path: Path) -> None:
 
 
 def test_witness_refuses_entries_that_do_not_follow(tmp_path: Path) -> None:
-    witness = _witness()
+    witness = _witness(tmp_path)
     witness.open(TID)
     first = {"seq": 1, "prev": genesis(TID), "event": {"type": "a"}}
     witness.observe(TID, first)
@@ -354,10 +355,71 @@ def test_witness_refuses_entries_that_do_not_follow(tmp_path: Path) -> None:
 
 
 def test_witness_refuses_an_unopened_or_closed_trajectory(tmp_path: Path) -> None:
-    witness = _witness()
+    witness = _witness(tmp_path)
     with pytest.raises(VerificationError, match="not open"):
         witness.observe(TID, {"seq": 1, "prev": genesis(TID), "event": {}})
     witness.open(TID)
     witness.close(TID, witness.head_payload(TID))
     with pytest.raises(VerificationError, match="not open"):
         witness.close(TID, {"format": HEAD_FORMAT, "trajectory": TID, "count": 0, "head": genesis(TID)})
+
+
+def test_restarted_witness_never_reopens_an_identifier(tmp_path: Path) -> None:
+    """Counter-example: a second witness instance under the same key (a restart, a second worker) opens the id again
+    and signs a second, different head for it; both heads verified before the registry moved to disk."""
+    key = SigningKey.generate()
+    first = TrajectoryRecorder(tmp_path / "a.jsonl", trajectory_id=TID, witness=_witness(tmp_path, key))
+    first.emit({"type": "tool.call", "status": "denied"})
+    first.close()
+    with pytest.raises(VerificationError, match="already opened"):
+        TrajectoryRecorder(tmp_path / "b.jsonl", trajectory_id=TID, witness=_witness(tmp_path, key))
+    assert not (tmp_path / "b.jsonl").exists()
+
+
+def test_registry_belongs_to_one_witness_key(tmp_path: Path) -> None:
+    registry = tmp_path / "registry"
+    TrajectoryWitness(SigningKey.generate(), registry)
+    with pytest.raises(VerificationError, match="another witness key"):
+        TrajectoryWitness(SigningKey.generate(), registry)
+
+
+@pytest.mark.parametrize("separator", [b"\r", b"\r\n"])
+def test_only_lf_separates_entries(tmp_path: Path, separator: bytes) -> None:
+    """Counter-example: entries separated by CR or CRLF verified, while a reader that splits on LF refuses them."""
+    path, head, witness = _closed(tmp_path)
+    raw = path.read_bytes()
+    path.write_bytes(raw[:-1].replace(b"\n", separator) + b"\n")
+    with pytest.raises(VerificationError):
+        verify_trajectory(path, head, witness.public_hex, trajectory_id=TID)
+
+
+def test_blank_line_refused(tmp_path: Path) -> None:
+    path, head, witness = _closed(tmp_path)
+    path.write_bytes(path.read_bytes() + b"\n")
+    with pytest.raises(VerificationError):
+        verify_trajectory(path, head, witness.public_hex, trajectory_id=TID)
+
+
+def test_entry_the_witness_refuses_never_reaches_the_file(tmp_path: Path) -> None:
+    """Counter-example: emit raised because the witness refused, and the line was on disk anyway."""
+    witness = _witness(tmp_path)
+    recorder = TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=TID, witness=witness)
+    recorder.emit({"type": "a"})
+    witness.close(TID, witness.head_payload(TID))
+    with pytest.raises(VerificationError, match="not open"):
+        recorder.emit({"type": "b"})
+    assert recorder.path.read_bytes().count(b"\n") == 1 and recorder.count == 1
+
+
+def test_failed_write_breaks_the_recorder(tmp_path: Path) -> None:
+    """An entry the witness counted and the file did not store leaves no way to close or continue."""
+    witness = _witness(tmp_path)
+    recorder = TrajectoryRecorder(tmp_path / "t.jsonl", trajectory_id=TID, witness=witness)
+    recorder.emit({"type": "a"})
+    recorder.path = tmp_path / "missing-dir" / "t.jsonl"
+    with pytest.raises(VerificationError, match="counted by the witness and not stored"):
+        recorder.emit({"type": "b"})
+    with pytest.raises(VerificationError, match="broken"):
+        recorder.emit({"type": "c"})
+    with pytest.raises(VerificationError, match="close refused"):
+        recorder.close()

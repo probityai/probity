@@ -182,8 +182,8 @@
       "sha256": "7cb54dd34d07281bca398638b92d290719ee91cf2936b5db105302d726fbe87d"
     },
     "src/probity_observer/trajectory.py": {
-      "git_blob_sha1": "4c53f8ac845c1a91f615327f0b9abb3b8883cc6e",
-      "sha256": "a47f1cde2265947bde56746b0762d49398bc4f20089c04f2bb3d852ce75b82e8"
+      "git_blob_sha1": "01329629e08e46584911cf1ff14269a51fc492cb",
+      "sha256": "89b9d8ca8b7c69f80d4e9984efd6c175b4092947f7d607f0506dc3e52bc25a1a"
     },
     "src/probity_observer/verify.py": {
       "git_blob_sha1": "b422d51c443e1b15894a782609464b52d7e15a37",
