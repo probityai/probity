@@ -1,0 +1,36 @@
+{
+ "captured_at": "2026-11-17T11:04:32Z",
+ "cases": [
+  {
+   "at": "2026-11-17T11:04:32Z",
+   "case": "cloudflare-https-validated",
+   "chain": "cloudflare.com-HTTPS.chain",
+   "expected": "supported",
+   "name": "cloudflare.com.",
+   "reason": "rrset_validated",
+   "type": "HTTPS"
+  },
+  {
+   "at": "2026-12-17T11:04:32Z",
+   "case": "cloudflare-https-after-expiry",
+   "chain": "cloudflare.com-HTTPS.chain",
+   "expected": "contradicted",
+   "name": "cloudflare.com.",
+   "reason": "rrsig_expired",
+   "type": "HTTPS"
+  }
+ ],
+ "chains": {
+  "cloudflare.com-HTTPS.chain": "dd06a10c520fc81075a8d9c2047b2344c5568d99f750f1b2343d726fcf17c21a"
+ },
+ "cross_check": "delv @1.1.1.1 cloudflare.com HTTPS reported 'fully validated' at capture time",
+ "source": "captured with dnspython over TCP from the public resolver 1.1.1.1: DNSKEY and DS of each zone from the root down, then the HTTPS RRset, every RRset with its RRSIG, each record uncompressed in DNS wire format",
+ "trust_anchor": {
+  "ds": [
+   "20326 8 2 E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D",
+   "38696 8 2 683D2D0ACB8C9B712A1948B27F741219298D0A450D612C483AF444A4C0FB2B16"
+  ],
+  "zone": "."
+ },
+ "trust_anchor_source": "https://data.iana.org/root-anchors/root-anchors.xml (sha256 3ccaab38830025ee0a0f6c1f25769427544f81ea2865aa860468f3ef5278b908 on 2026-11-17)"
+}

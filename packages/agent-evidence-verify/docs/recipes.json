@@ -132,6 +132,21 @@
       "sha256": "b5f8f00f0de83f82ee079beef20084aaccba2a9dc759002f13c994913f28d963"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/declared_versus_acted.py",
+      "bytes": 18925,
+      "sha256": "9a0563df9d1fff279d0d08b4361b25f36454820b64c2c16882cb9736d523c12f"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/dns_aid_sig.py",
+      "bytes": 18647,
+      "sha256": "4163875c7431386af36ac51d5530a363c945ecbd561b53ac2a48a24310949cb1"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/dnssec_rrset.py",
+      "bytes": 2820,
+      "sha256": "a834ef5299942dda5a5b5dbdef9ec2b2e0226e04174ca24c3f9e2d713e6d837b"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/done_argv.py",
       "bytes": 7461,
       "sha256": "a0696bd433d3310c259424c39f0e3c37baaf1ceba6706a27d147f8191ade93c5"
@@ -188,8 +203,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/proof_of_control.py",
-      "bytes": 23329,
-      "sha256": "87cf266073ba64b4804d2c77d6ee75e367f778653b1f06745fc0c4c368105e01"
+      "bytes": 21987,
+      "sha256": "9779033e2cbead8185cfa9e0be87d3c0df7b0e737c3740ac4791857b6984d501"
     },
     {
       "path": "src/agent_evidence_verify/adapters/protected_paths.py",
@@ -253,13 +268,18 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11555,
-      "sha256": "c0a4a377ee1b23e170afd46fc3ace1bc6635625690612fab51716e146f4eb78b"
+      "bytes": 11621,
+      "sha256": "8496306cce6f041ac7a04e6dc848c805080b44aea51386a051478b0c5a39a14f"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
       "bytes": 5020,
       "sha256": "c3043ac01f34657707dd673fef3faae54f795c5c98dc5288681c7859fa0ea468"
+    },
+    {
+      "path": "src/agent_evidence_verify/dnssec.py",
+      "bytes": 22061,
+      "sha256": "c898d5d78a9cb84bf18957e773f908296ba645199647a4afdc6eb04c71b6b0e3"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
@@ -293,8 +313,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 25833,
-      "sha256": "d1a389fbdba1edcae502b0aa929dedf5c84d93bf548ac51c30363c3681a93a8a"
+      "bytes": 31634,
+      "sha256": "c60542aad7dedc61a521f53601e30c78c18e88ac1d0b51242fab476bf167b28c"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
@@ -2043,6 +2063,42 @@
           "path": "examples/evaluation-claim/record.json",
           "bytes": 1718,
           "sha256": "7df39e924a8ee42cd33d448fd077435875377eb7fb7eb56f569b491bd0c2b819"
+        }
+      ]
+    },
+    {
+      "task": "Check that a DNS answer I hold offline validates under DNSSEC from the root",
+      "claim_type": "dnssec_rrset/v1",
+      "case": "examples/dnssec-rrset/case.json",
+      "policy": "examples/dnssec-rrset/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant.",
+      "case_id": "dnssec-rrset-https",
+      "expected_reason": "rrset_validated",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/dnssec-rrset/case.json",
+        "--policy",
+        "examples/dnssec-rrset/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/dnssec-rrset/case.json",
+          "bytes": 256,
+          "sha256": "d89745eebe13681c6614939bdf0086515b47de7c4ee5e2695f8db7ced567d035"
+        },
+        {
+          "path": "examples/dnssec-rrset/policy.json",
+          "bytes": 515,
+          "sha256": "7e7b15d8a10642d82224bc5f0233ca66e5bc586d05b034fbe2bc9915e754bd38"
+        },
+        {
+          "path": "examples/dnssec-rrset/chain.bin",
+          "bytes": 2418,
+          "sha256": "dd06a10c520fc81075a8d9c2047b2344c5568d99f750f1b2343d726fcf17c21a"
         }
       ]
     }
