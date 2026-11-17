@@ -18,6 +18,9 @@ from agent_evidence_verify import adjudicate
 from agent_evidence_verify.adapters import catalog_trust_manifest as reader
 from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.key_authority import jwk_key_bytes
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
 DATA = Path(__file__).parent / "data" / "catalog-trust-manifest"
 MANIFEST = json.loads((DATA / "MANIFEST.json").read_text(encoding="utf-8"))
@@ -282,10 +285,20 @@ def test_an_unbound_vendored_attestation_is_not_established(tmp_path: Path) -> N
 _READS_THE_ARTIFACT = {"artifact_digest_mismatch", "url_origin_unbound"}
 
 
-@pytest.mark.parametrize("vector", [v for v in VECTORS if v["expected"]["decision"] == "reject"
-                                    and "artifact.json" in v["files"]
-                                    and v["expected"]["reason"] not in reader.GATES[:2]],
-                         ids=lambda v: v["id"])
+def _vendored_paths_normal(name: str) -> bool:
+    context = json.loads((DATA / "cases" / name / "context.json").read_text(encoding="utf-8"))
+    return all(_normal(f) for f in context.get("attestationFiles") or [] if f)
+
+
+#: Every refused vector that carries an artifact, except the two consumer-input gates (case
+#: errors) and the vendored-path case the artifact binder refuses before any read.
+_REFUSED_WITH_ARTIFACT = [v for v in VECTORS if v["expected"]["decision"] == "reject"
+                          and "artifact.json" in v["files"]
+                          and v["expected"]["reason"] not in reader.GATES[:2]
+                          and _vendored_paths_normal(v["id"])]
+
+
+@pytest.mark.parametrize("vector", _REFUSED_WITH_ARTIFACT, ids=lambda v: v["id"])
 def test_a_missing_artifact_never_masks_a_refusal(tmp_path: Path, vector: dict) -> None:
     """An unbound artifact leaves every refusal the artifact bytes cannot change in place: a
     manifest that is expired, from the future, or signed by someone other than the publisher is
@@ -294,10 +307,6 @@ def test_a_missing_artifact_never_masks_a_refusal(tmp_path: Path, vector: dict) 
     root = _copy(tmp_path, name)
     (root / name / "artifact.json").unlink()
     case, policy = _inputs(root, name)
-    if not all(_normal(f) for f in json.loads(
-            (root / name / "context.json").read_text(encoding="utf-8")).get("attestationFiles")
-            or [] if f):
-        pytest.skip("the binder refuses the attestation path before any read")
     result = adjudicate(case, policy, root)
     reason = vector["expected"]["reason"]
     context = json.loads((root / name / "context.json").read_text(encoding="utf-8"))
@@ -336,6 +345,73 @@ def test_the_first_missing_evidence_names_the_reason(tmp_path: Path) -> None:
     case, policy = _inputs(root, name)
     result = adjudicate(case, policy, root)
     assert (result["decision"], result["reason"]) == ("not_established", "artifact_unavailable")
+
+
+# --------------------------------------------------------------------------- long fractions
+
+#: The corpus's ES256 publisher key: TEST KEYS ONLY, derived from the SHA-256 of a public label
+#: exactly as the corpus generator derives it (gen_vectors.py ``scalar``).
+_PUBLISHER_LABEL = "catalog-trust-manifest publisher es256"
+
+
+def _publisher_key() -> ec.EllipticCurvePrivateKey:
+    order = int("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16)
+    scalar = int.from_bytes(hashlib.sha256(_PUBLISHER_LABEL.encode()).digest(), "big") % (order - 1)
+    return ec.derive_private_key(scalar + 1, ec.SECP256R1())
+
+
+def _resign_draft(catalog: dict) -> None:
+    """Sign entry 0's trust manifest under ard-draft-bu-00 with the corpus publisher key."""
+    manifest = catalog["entries"][0]["trustManifest"]
+    header = reader.b64url(b'{"alg":"ES256","kid":"did:web:publisher.example#es256"}')
+    body = reader.canonical(reader.payload(reader.DRAFT, catalog, 0, 0))
+    der = _publisher_key().sign(header.encode() + b"." + reader.b64url(body).encode(),
+                                ec.ECDSA(hashes.SHA256()))
+    r, s = decode_dss_signature(der)
+    manifest["signature"] = f"{header}..{reader.b64url(r.to_bytes(32, 'big') + s.to_bytes(32, 'big'))}"
+
+
+def test_the_test_key_is_the_corpus_publisher_key() -> None:
+    documents = json.loads((DATA / "cases" / "accept-draft-es256" / "did-documents.json")
+                           .read_text(encoding="utf-8"))
+    method = documents["did:web:publisher.example"]["verificationMethod"]
+    jwk = next(m["publicKeyJwk"] for m in method if m["id"].endswith("#es256"))
+    numbers = _publisher_key().public_key().public_numbers()
+    assert reader.b64url_decode(jwk["x"]) == numbers.x.to_bytes(32, "big")
+
+
+_LONG = "1" * 5000  # past CPython's 4300-digit int() limit
+
+
+@pytest.mark.parametrize("issued,at,expected", [
+    (f"2026-11-01T00:00:00.{_LONG}Z", "2026-11-16T00:00:00Z", ("supported", reader.PASS_REASON[reader.DRAFT])),
+    (f"2026-11-16T00:00:00.{_LONG}2Z", f"2026-11-16T00:00:00.{_LONG}1Z", ("contradicted", "issued_in_future")),
+    (f"2026-11-16T00:00:00.{_LONG}1000Z", f"2026-11-16T00:00:00.{_LONG}1Z",
+     ("supported", reader.PASS_REASON[reader.DRAFT])),
+])
+def test_a_fraction_of_any_length_is_read_exactly(tmp_path: Path, issued: str, at: str,
+                                                  expected: tuple) -> None:
+    """RFC 3339 bounds no time-secfrac: a signed issuedAt or a check time past 4300 fraction
+    digits is an instant, ordered on its last digit, never a crash of the reader."""
+    name = "accept-draft-es256"
+    root = _copy(tmp_path, name)
+    path = root / name / "catalog.json"
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    catalog["entries"][0]["trustManifest"]["issuedAt"] = issued
+    _resign_draft(catalog)
+    path.write_text(json.dumps(catalog), encoding="utf-8")
+    case, policy = _inputs(root, name, at=at)
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == expected
+
+
+def test_instants_order_on_their_last_fraction_digit() -> None:
+    base = "2026-11-16T00:00:00."
+    assert reader.instant(base + "5Z") > reader.instant(base + "49999Z")
+    assert reader.instant(base + "5Z") < reader.instant(base + "51Z")
+    assert reader.instant(base + "50Z") == reader.instant(base + "5Z")
+    assert reader.instant(base + _LONG + "Z") < reader.instant(base + _LONG + "1Z")
+    assert reader.instant("2026-11-16T00:00:00Z") == reader.instant("2026-11-16T01:00:00.000+01:00")
 
 
 def test_a_check_time_that_is_not_rfc3339_is_a_case_error() -> None:

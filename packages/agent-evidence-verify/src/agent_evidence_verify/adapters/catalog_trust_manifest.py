@@ -51,9 +51,7 @@ from __future__ import annotations
 import base64
 import copy
 import hashlib
-import math
 import re
-from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -466,8 +464,16 @@ def _leap_second(before: int) -> bool:
     return of_day == 86399 and day in _LEAP_DAYS
 
 
-def instant(text: Any) -> Fraction | None:
-    """An RFC 3339 date-time as exact seconds since 1970, or None when it is not one."""
+#: An instant's exact order key: whole seconds since 1970 (a second of 60 reads as the next
+#: second, profile check 33), then the fraction's digits without trailing zeros. Two keys order as
+#: the instants do (``"5" > "49"``, ``"5" < "51"``), and the fraction is never converted to an
+#: integer, so a ``time-secfrac`` of any length (RFC 3339 bounds none) is read exactly in linear
+#: time; ``int()`` of a digit string stops at 4300 digits.
+Instant = tuple[int, str]
+
+
+def instant(text: Any) -> Instant | None:
+    """An RFC 3339 date-time as an exact :data:`Instant`, or None when it is not one."""
     match = _TIME.fullmatch(text) if isinstance(text, str) else None
     if match is None:
         return None
@@ -475,19 +481,17 @@ def instant(text: Any) -> Fraction | None:
     if month < 1 or month > 12 or day < 1 or day > _days_in_month(year, month) or \
             hour > 23 or minute > 59 or second > 60:
         return None
-    seconds = Fraction(_days_from_civil(year, month, day) * 86400 + hour * 3600 + minute * 60
-                       + second)
-    if match[7]:
-        seconds += Fraction(match[7][1:]) / 10 ** (len(match[7]) - 1)
+    seconds = _days_from_civil(year, month, day) * 86400 + hour * 3600 + minute * 60 + second
+    fraction = (match[7] or ".")[1:].rstrip("0")
     if not match[8]:
         offset_hours, offset_minutes = int(match[10]), int(match[11])
         if offset_hours > 23 or offset_minutes > 59:
             return None
         offset = (offset_hours * 60 + offset_minutes) * 60
         seconds -= offset if match[9] == "+" else -offset
-    if second == 60 and not _leap_second(math.floor(seconds) - 1):
+    if second == 60 and not _leap_second(seconds - 1):
         return None
-    return seconds
+    return seconds, fraction
 
 
 # --------------------------------------------------------------------------- binding helpers
@@ -567,7 +571,7 @@ class _Read:
     def __init__(self, inputs: dict[str, Any]) -> None:
         self.construction: str = inputs["construction"]
         self.role: str = inputs["role"]
-        self.at: Fraction = inputs["at"]
+        self.at: Instant = inputs["at"]
         self.entry_index = index_of(inputs["entry"])
         self.manifest_index = index_of(inputs["manifest"])
         self.raw_catalog: bytes = inputs["catalog"]
@@ -845,7 +849,7 @@ _OPTIONAL = {"entry", "manifest", "artifact", "attestations", "key_authority"}
 _SEVERITY = {"unauthorized": 2, "unknown": 1, "authorized": 0}
 
 
-def _context(assessment: dict) -> tuple[str, str, Fraction]:
+def _context(assessment: dict) -> tuple[str, str, Instant]:
     construction = assessment["construction"]
     if not isinstance(construction, str) or construction not in CONSTRUCTIONS:
         raise CaseError(f"assessment.construction: construction_unknown; expected one of "
