@@ -882,7 +882,7 @@ jobs:
     needs: [changes]
     if: ${{ fromJSON(needs.changes.outputs.members)['probity-records'] }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: packages/probity-records
@@ -893,6 +893,17 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: '3.12'
+      # tests/test_otel.py runs a real collector with the stock contrib verifyprocessor and fails, never skips,
+      # without one; build it from the pinned builder config (collector v0.165.0 needs go 1.26).
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: packages/probity-records/scripts/otelcol/builder-config.yaml
+      - name: build otelcol-audit
+        run: |
+          bin=$(bash scripts/otelcol/build.sh "$RUNNER_TEMP/otelcol")
+          test -x "$bin"
+          echo "PROBITY_OTELCOL=$bin" >> "$GITHUB_ENV"
       # The package keeps its own lock beside it, outside the root workspace; scripts/test.sh is its one test entry.
       - run: sh scripts/test.sh
 
