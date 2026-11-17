@@ -112,3 +112,11 @@ export exits 2 without a verdict.
 implementation fared against a pinned case set) under an acceptance rule the consumer writes
 inline in the assessment. It is a port of the reference reader in agent-evidence-vectors, with the
 same rules, order and refusal codes, and a parity test over that reader's corpus.
+
+## DNS-AID discovery and the calls that followed it
+
+[`dns_aid_sig/v1`, `dnssec_rrset/v1` and `declared_versus_acted/v1`](dns-aid.md) check a DNS-AID
+record's signed binding under a key authority the consumer names, validate any RRset offline under
+DNSSEC from a pinned trust anchor, and join an observer's witnessed trajectory of discovery answers
+and calls, so a call to an undeclared endpoint, after a binding's `exp`, or under an unauthorised key
+is `contradicted`.

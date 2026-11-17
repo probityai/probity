@@ -45,6 +45,7 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check that an evaluation claim record is admitted under my acceptance rule](evaluation-claim.md) | `evaluation_claim/v1` | `supported` | Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes. |
 | [Check that a DNS-AID record's sig binds it to a key the zone owner published under DNSSEC](dns-aid.md) | `dns_aid_sig/v1` | `supported` | Record and JWKS signed by the dns-aid-core signer at 825ccea; the DNSSEC chain is a test root signed by dnspython, whose DS the policy pins. |
 | [Check that a DNS answer I hold offline validates under DNSSEC from the root](dns-aid.md) | `dnssec_rrset/v1` | `supported` | The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant. |
+| [Check that every call an agent made went to an endpoint a verified discovery record declared](dns-aid.md) | `declared_versus_acted/v1` | `contradicted` | A trajectory written by agent-evidence-observer's recorder with one declared call and one planted call to an undeclared host; witness key from a fixed test seed. |
 
 ## Retrieve a command
 

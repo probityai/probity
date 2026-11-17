@@ -1,0 +1,8 @@
+{
+ "count": 3,
+ "format": "probity-trajectory-head-v1",
+ "head": "302161d85be80928f8cde1c12485361461c0e7a24b66718ea5f344eeee9154d2",
+ "keyid": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+ "signature": "Fent9yJO1cvvmqA4miRysucXRgNs+5J3xJauI9gfaepwIj1qP8oeBG90Tl696ABx149QGGAqFHKTSBOGivueBQ==",
+ "trajectory": "dva-planted-undeclared-call"
+}
