@@ -3,7 +3,9 @@
 Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint", "keys": [pem],
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
-principal-level vectors of ``identity_vectors``. Run from the package: ``uv run python
+principal-level vectors of ``identity_vectors``. ``canonical.json`` holds bytes and the canonical
+bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
+signed bytes have no canonical form. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
 """
 
@@ -37,7 +39,14 @@ from probity_records import (
     verify_journal,
 )
 from probity_records import canonical as jcs
-from probity_records.core import _b64, canonical
+from probity_records.core import (
+    IN_TOTO_PAYLOAD_TYPE,
+    STATEMENT_TYPE,
+    _b64,
+    canonical,
+    canonical_of_received,
+    pae,
+)
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.quorum import (
@@ -380,6 +389,86 @@ def effect_rows() -> list[tuple[str, str, object]]:
     ]
 
 
+#: (id, description, path, input bytes). "received" admits the bytes raw, then canonicalizes
+#: (canonical_of_received); "value" parses them with json.loads and canonicalizes the value. The
+#: first five are agent-evidence-vectors vectors-a2a-jcs-v01 A3-REJECT-011/012 and
+#: A4-REJECT-013/014/015, which the TypeScript twin canonicalized until both twins went through
+#: jcs-admit.
+CANONICAL_ROWS: list[tuple[str, str, str, bytes]] = [
+    ("CV1", "A3-REJECT-011: lone high surrogate escape in a key", "received", b'{"b\\ud800key": 1, "a": 2}'),
+    ("CV2", "A3-REJECT-012: lone low surrogate escape in a key", "received", b'{"b\\udc00key": 1, "a": 2}'),
+    ("CV3", "A4-REJECT-013: lone low surrogate escape in a value", "received", b'{"name": "broken \\udc00 value"}'),
+    ("CV4", "A4-REJECT-014: lone low surrogate escape mid-value", "received", b'{"name": "before\\udc00after"}'),
+    ("CV5", "A4-REJECT-015: high surrogate escape then a plain letter", "received", b'{"name": "\\ud800x"}'),
+    ("CV6", "A3-REJECT-011 parsed first, then canonicalized", "value", b'{"b\\ud800key": 1, "a": 2}'),
+    ("CV7", "A3-REJECT-012 parsed first, then canonicalized", "value", b'{"b\\udc00key": 1, "a": 2}'),
+    ("CV8", "A4-REJECT-013 parsed first, then canonicalized", "value", b'{"name": "broken \\udc00 value"}'),
+    ("CV9", "A4-REJECT-014 parsed first, then canonicalized", "value", b'{"name": "before\\udc00after"}'),
+    ("CV10", "A4-REJECT-015 parsed first, then canonicalized", "value", b'{"name": "\\ud800x"}'),
+    ("CV11", "a duplicate member", "received", b'{"a":1,"a":2}'),
+    ("CV12", "a duplicate member a first-wins reader would read differently", "received",
+     b'{"name":"Good","name":"Evil"}'),
+    ("CV13", "a surrogate encoded as UTF-8 bytes", "received", b'{"a":"\xed\xa0\x80"}'),
+    ("CV14", "a byte that is never UTF-8", "received", b'{"a":"\xff"}'),
+    ("CV15", "an integer past 2**53 that rounds onto 2**53", "received", b'{"n":9007199254740993}'),
+    ("CV16", "2**53 itself, parsed first", "value", b'{"n":9007199254740992}'),
+    ("CV17", "minus 2**53", "received", b'{"n":-9007199254740992}'),
+    ("CV18", "the largest exact integer", "received", b'{"n":9007199254740991}'),
+    ("CV19", "an integral float past 2**53 stays a float", "received", b'{"n":1e21}'),
+    ("CV20", "a surrogate pair", "received", b'{"a":"\\ud83d\\ude00"}'),
+    ("CV21", "keys sorted, escapes and raw UTF-8 normalized", "received", b'{"b":1,"a":"\xc3\xa9\\u00e9","c":[1.0,1.5e-7,-0]}'),
+]
+
+
+def canonical_rows() -> list[dict]:
+    rows = []
+    for vid, description, path, raw in CANONICAL_ROWS:
+        try:
+            out = canonical_of_received(raw) if path == "received" else canonical(json.loads(raw))
+            expected: dict[str, str] = {"canonicalHex": out.hex()}
+        except ValueError as exc:
+            expected = {"refused": str(exc)}
+        rows.append({"id": vid, "description": description, "path": path, "inputB64": _b64(raw),
+                     "expected": expected})
+    return rows
+
+
+def received_line(payload: bytes) -> str:
+    """One journal line: the gate's DSSE envelope over exactly ``payload``."""
+    sig = GATE.sign(pae(IN_TOTO_PAYLOAD_TYPE, payload))
+    return json.dumps({"payload": _b64(payload), "payloadType": IN_TOTO_PAYLOAD_TYPE,
+                       "signatures": [{"keyid": GATE.key_id, "sig": _b64(sig)}]}, sort_keys=True,
+                      separators=(",", ":"))
+
+
+def received_rows() -> list[dict]:
+    """Journals whose signed bytes have no canonical form: both twins refuse them at the parse."""
+    head = b'{"_type":"' + STATEMENT_TYPE.encode() + b'","predicateType":"' + TOOL_CALL_RECORD.encode() + b'",'
+    pred = b'"predicate":{"prev":"' + b"0" * 64 + b'","seq":1'
+    good, other = head + pred + b"}}", head + pred + b',"tool":"other"}}'
+    swapped = json.loads(received_line(other))
+    rows = [
+        ("RV1", "the signed payload repeats its predicate member",
+         [received_line(head + pred + b'},' + pred + b',"tool":"shadow"}}')]),
+        ("RV2", "the signed payload carries a byte that is never UTF-8", [received_line(head + pred + b',"tool":"\xff"}}')]),
+        ("RV3", "the signed payload carries a lone surrogate escape", [received_line(head + pred + b',"tool":"\\ud800"}}')]),
+        ("RV4", "the envelope line repeats its payload member; the last one is signed",
+         ['{"payload":"' + _b64(good) + '","payload":"' + swapped["payload"] + '","payloadType":"'
+          + IN_TOTO_PAYLOAD_TYPE + '","signatures":' + json.dumps(swapped["signatures"], separators=(",", ":"))
+          + "}"]),
+        ("RV5", "control: the same record with one predicate member", [received_line(good)]),
+    ]
+    out = []
+    for vid, description, lines in rows:
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "journal.jsonl").write_text("".join(line + "\n" for line in lines))
+            report = verify_journal(tmp, [GATE.public_pem()], None)
+        out.append({"id": vid, "description": description, "journal": lines, "checkpoint": None,
+                    "keys": [GATE.public_pem().decode()], "trust": None,
+                    "expected": {k: report[k] for k in ("verdict", "records", "verified", "failures", "checkpoint")}})
+    return out
+
+
 def trust_doc() -> dict:
     return {"grantRootKeyIds": [ROOT.key_id], "quorumPolicies": {"pay": POLICY, **APOL}}
 
@@ -437,6 +526,8 @@ def main(out: Path) -> None:
                                                                  "checkpoint")}})
         (out / f"{family}.json").write_text(json.dumps(out_rows, indent=2, sort_keys=True) + "\n")
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
+    (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")
+    (out / "received.json").write_text(json.dumps(received_rows(), indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":
