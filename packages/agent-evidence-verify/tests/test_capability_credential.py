@@ -70,18 +70,47 @@ def _reason(tmp_path: Path, raw: bytes | dict, **state: Any) -> str:
 
 
 POSITIVES = {
-    "issuer-only": build(),
-    "two-cosigners-two-authorities": build({**BASE, "cosigners_required": 2}, ("issuer-a", "cos-1", "cos-2")),
-    "with-revocation-ref-and-use-limit": build({**BASE, "revocation_ref": "list-1", "max_uses": 5}),
-    "one-cosigner-required": build({**BASE, "cosigners_required": 1}, ("issuer-a", "cos-2")),
-    "zero-use-limit": build({**BASE, "max_uses": 0}),
+    "issuer-only": (build(), {}),
+    "two-cosigners-two-authorities": (build({**BASE, "cosigners_required": 2}, ("issuer-a", "cos-1", "cos-2")), {}),
+    "with-revocation-ref-and-use-limit": (build({**BASE, "revocation_ref": "list-1", "max_uses": 5}),
+                                          {"revocation_sources": ["list-1"], "uses_recorded": 4}),
+    "one-cosigner-required": (build({**BASE, "cosigners_required": 1}, ("issuer-a", "cos-2")), {}),
+    "unused-single-use": (build({**BASE, "max_uses": 1}), {"uses_recorded": 0}),
 }
 
 
 @pytest.mark.parametrize("name", sorted(POSITIVES))
 def test_positive_passes(tmp_path: Path, name: str) -> None:
-    result = _judge(tmp_path, POSITIVES[name])
+    credential, state = POSITIVES[name]
+    result = _judge(tmp_path, credential, **state)
     assert (result["decision"], result["reason"]) == ("supported", "credential_valid")
+
+
+# --- state the credential names that the consumer never consulted ---------------------------------------
+
+@pytest.mark.parametrize(("body", "state", "verdict"), [
+    ({"revocation_ref": "list-1"}, {}, ("not_established", "revocation_not_checked")),
+    ({"revocation_ref": "list-1"}, {"revocation_sources": ["list-2"]}, ("not_established", "revocation_not_checked")),
+    ({"max_uses": 5}, {}, ("not_established", "use_count_unknown")),
+    ({"max_uses": 0}, {}, ("not_established", "use_count_unknown")),
+    ({"max_uses": 0}, {"uses_recorded": 0}, ("contradicted", "uses_exhausted")),
+    ({"max_uses": 5}, {"uses_recorded": 5}, ("contradicted", "uses_exhausted")),
+    ({"max_uses": 5, "revocation_ref": "list-1"}, {"uses_recorded": 9}, ("contradicted", "uses_exhausted")),
+])
+def test_unconsulted_revocation_list_or_use_count_is_never_valid(tmp_path: Path, body: dict, state: dict,
+                                                                 verdict: tuple[str, str]) -> None:
+    result = _judge(tmp_path, build({**BASE, **body}), **state)
+    assert (result["decision"], result["reason"]) == verdict
+
+
+@pytest.mark.parametrize("state", [{"trusted_issuers": {"issuer-a": "zz" * 32}}, {"at": "2026-13-45T00:00:00Z"},
+                                   {"at": "2026-02-30T00:00:00Z"}, {"uses_recorded": -1}, {"uses_recorded": True},
+                                   {"revocation_sources": "list-1"},
+                                   {"cosigners": {"cos-1": {"public_key": _hex("cos-1"), "authority": ""}}}])
+def test_malformed_consumer_state_is_a_case_error_not_a_verdict(tmp_path: Path, state: dict) -> None:
+    from agent_evidence_verify import CaseError
+    with pytest.raises(CaseError):
+        _judge(tmp_path, build(), **state)
 
 
 def _text(credential: dict) -> str:

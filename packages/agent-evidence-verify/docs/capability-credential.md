@@ -13,8 +13,10 @@ format-specific reader maps its record into; `capability_credential/v1` then app
 
 Each signature is Ed25519 over `capability-credential/v1 || 0x00 || RFC 8785 (the credential without
 signatures)`. The verifier state is the consumer's: `trusted_issuers` (`{issuer: hex key}`), `cosigners`
-(`{kid: {public_key, authority}}`), a pinned clock `at` and a `revoked` list of credential ids. Nothing the
-credential says about itself (a `revoked` flag, its own key) is an input.
+(`{kid: {public_key, authority}}`), a pinned clock `at`, a `revoked` list of credential ids, the
+`revocation_sources` that list was read from and, for a credential with a use limit, `uses_recorded`. Nothing the
+credential says about itself (a `revoked` flag, its own key) is an input. A malformed state (a key that is not 64 hex
+characters, a clock that is not a calendar time, an empty authority) is a case error, never a verdict.
 
 | Code | Refused when |
 |---|---|
@@ -32,5 +34,11 @@ credential says about itself (a `revoked` flag, its own key) is an input.
 | `cosigner_untrusted` | the consumer knows no cosigner key by that id |
 | `not_yet_valid`, `expired` | the pinned clock is outside `[issued_at, not_after)` |
 | `revoked` | the credential id is on the consumer's revocation list |
+| `uses_exhausted` | `uses_recorded` has reached `max_uses` |
+
+Two states leave the credential `not_established`, never valid: `revocation_not_checked` when it names a
+`revocation_ref` that is not among `revocation_sources` (the list it names was never consulted), and
+`use_count_unknown` when it carries `max_uses` and the consumer records no `uses_recorded` (a spent single-use
+credential reads like a fresh one).
 
 Otherwise `supported` / `credential_valid`. The verdict does not show that a capability was used as granted.

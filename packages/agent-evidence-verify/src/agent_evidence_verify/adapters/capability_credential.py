@@ -26,9 +26,14 @@ Checks, in order; each failure has its own code and the first one is the reason:
    only by keys of one authority (``one_authority_threshold``), and fewer distinct keys than required
    (``below_threshold``); a cosigner key the consumer does not know is ``cosigner_untrusted``;
 5. ``not_yet_valid`` and ``expired`` against the consumer's pinned clock;
-6. ``revoked``: the credential id is on the consumer's revocation list.
+6. ``revoked``: the credential id is on the consumer's revocation list;
+7. ``uses_exhausted``: the credential carries ``max_uses`` and the consumer's ``uses_recorded`` count has reached it;
+8. ``revocation_not_checked`` (``not_established``): the credential names a ``revocation_ref`` that is not one of
+   the ``revocation_sources`` the consumer's list was read from, so the list it names was never consulted;
+9. ``use_count_unknown`` (``not_established``): the credential carries ``max_uses`` and the consumer records no
+   ``uses_recorded`` count, so a spent credential cannot be told from a fresh one.
 
-Otherwise ``supported`` / ``credential_valid``. Every refusal is ``contradicted``.
+Otherwise ``supported`` / ``credential_valid``. Every refusal in 1 to 7 is ``contradicted``.
 """
 
 from __future__ import annotations
@@ -64,6 +69,14 @@ LIMIT = ("Checks one credential against the consumer's trusted issuers, cosigner
 
 class Refused(ValueError):
     """The credential is refused: (code, detail)."""
+
+    def __init__(self, code: str, detail: str) -> None:
+        super().__init__(detail)
+        self.code, self.detail = code, detail
+
+
+class Pending(ValueError):
+    """The credential cannot be judged valid from the consumer's state: (code, detail)."""
 
     def __init__(self, code: str, detail: str) -> None:
         super().__init__(detail)
@@ -240,36 +253,62 @@ def check(credential_raw: bytes, state: dict) -> tuple[str, list[dict]]:
     checks.append({"id": "validity", "status": "pass", "detail": "in force at the pinned clock"})
     if credential["id"] in state["revoked"]:
         raise Refused("revoked", "the credential id is on the consumer's revocation list")
-    checks.append({"id": "revocation", "status": "pass", "detail": "not on the consumer's revocation list"})
+    limit, used = credential.get("max_uses"), state["uses"]
+    if limit is not None and used is not None and used >= limit:
+        raise Refused("uses_exhausted", f"{used} recorded uses of {limit} allowed")
+    ref = credential.get("revocation_ref")
+    if ref is not None and ref not in state["sources"]:
+        raise Pending("revocation_not_checked", f"the credential names revocation list {ref!r}; the consumer's list "
+                      f"was read from {sorted(state['sources'])}")
+    checks.append({"id": "revocation", "status": "pass", "detail": "not on the consumer's revocation list"
+                   + (f", read from {ref!r}" if ref is not None else "")})
+    if limit is not None and used is None:
+        raise Pending("use_count_unknown", f"the credential allows {limit} uses and the consumer records no count")
+    if limit is not None:
+        checks.append({"id": "use_limit", "status": "pass", "detail": f"{used} recorded uses of {limit} allowed"})
     return "credential_valid", checks
 
 
 def _state(assessment: dict) -> dict:
     issuers = assessment["trusted_issuers"]
-    if not isinstance(issuers, dict) or any(not isinstance(v, str) or len(v) != 64 for v in issuers.values()):
+    if not isinstance(issuers, dict) or any(not _key_hex(v) for v in issuers.values()):
         raise CaseError("assessment.trusted_issuers: expected {issuer: hex Ed25519 key}")
     cosigners = assessment.get("cosigners", {})
     if not isinstance(cosigners, dict) or any(
-            not isinstance(v, dict) or set(v) != {"public_key", "authority"} or not isinstance(v["public_key"], str)
-            or len(v["public_key"]) != 64 or not isinstance(v["authority"], str) for v in cosigners.values()):
+            not isinstance(v, dict) or set(v) != {"public_key", "authority"} or not _key_hex(v["public_key"])
+            or not isinstance(v["authority"], str) or not v["authority"] for v in cosigners.values()):
         raise CaseError("assessment.cosigners: expected {kid: {public_key, authority}}")
     at = _string(assessment["at"], "assessment.at")
-    if not TIME.fullmatch(at):
-        raise CaseError("assessment.at: expected YYYY-MM-DDTHH:MM:SSZ")
+    try:
+        if not TIME.fullmatch(at):
+            raise ValueError(at)
+        clock = datetime.datetime.strptime(at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.UTC)
+    except ValueError as exc:
+        raise CaseError("assessment.at: expected a calendar time YYYY-MM-DDTHH:MM:SSZ") from exc
     revoked = assessment["revoked"]
     if not isinstance(revoked, list) or any(not isinstance(r, str) for r in revoked):
         raise CaseError("assessment.revoked: expected a list of credential ids")
+    sources = assessment.get("revocation_sources", [])
+    if not isinstance(sources, list) or any(not isinstance(r, str) or not r for r in sources):
+        raise CaseError("assessment.revocation_sources: expected a list of revocation list ids")
+    uses = assessment.get("uses_recorded")
+    if uses is not None and (isinstance(uses, bool) or not isinstance(uses, int) or uses < 0):
+        raise CaseError("assessment.uses_recorded: expected a non-negative integer")
     return {"issuers": {k: v.lower() for k, v in issuers.items()},
             "cosigners": {k: {"public_key": v["public_key"].lower(), "authority": v["authority"]}
                           for k, v in cosigners.items()},
-            "at": datetime.datetime.strptime(at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.UTC),
-            "revoked": set(revoked)}
+            "at": clock, "revoked": set(revoked), "sources": set(sources), "uses": uses}
+
+
+def _key_hex(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 64 and not set(value.lower()) - set("0123456789abcdef")
 
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     """Consumer claim adapter: one credential and the consumer's verifier state."""
     case_id, artifacts, assessment = assessment_for(
-        case, policy, CLAIM_TYPE, {"credential", "trusted_issuers", "at", "revoked"}, {"cosigners"})
+        case, policy, CLAIM_TYPE, {"credential", "trusted_issuers", "at", "revoked"},
+        {"cosigners", "revocation_sources", "uses_recorded"})
     state = _state(assessment)
     data, binding = bound(artifacts, artifact_root, assessment["credential"], "assessment.credential")
     scope = {"credential": binding, "at": assessment["at"], "trusted_issuers": len(state["issuers"]),
@@ -281,5 +320,9 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     except Refused as refused:
         return {**decision(case_id, CLAIM_TYPE, scope, "contradicted", refused.code,
                            [{"id": refused.code, "status": "fail", "detail": refused.detail}]),
+                "vantage": "independent"}
+    except Pending as pending:
+        return {**decision(case_id, CLAIM_TYPE, scope, "not_established", pending.code,
+                           [{"id": pending.code, "status": "unavailable", "detail": pending.detail}]),
                 "vantage": "independent"}
     return {**decision(case_id, CLAIM_TYPE, scope, "supported", reason, checks), "vantage": "independent"}
