@@ -78,6 +78,13 @@ The checks run in this order and the first that fails is the reason:
 | no key authority, or one that lacks its evidence | `not_established` | the key authority's reason |
 | the catalog, DID documents, a url entry's artifact or a vendored attestation is not bound | `not_established` | `catalog_unavailable`, `did_documents_unavailable`, `artifact_unavailable`, `attestation_unavailable` |
 
+Missing evidence never masks a refusal. An unbound artifact skips only `artifact_digest_mismatch`,
+and `url_origin_unbound` where the url is off the publisher's origin; an unbound attestation skips
+only its own three checks. Every later check still runs, so a manifest that is expired, issued in
+the future or signed by someone other than the publisher is `contradicted` whether or not the
+consumer fetched the artifact. The first missing piece names the `not_established` reason only
+when no check fails.
+
 Every key the verdict relied on goes through [the key authority](key-authority.md): the manifest
 signer's, and each attestation signer's, at the check time. A key found in the supplied DID
 documents proves only that whoever supplied them listed it.

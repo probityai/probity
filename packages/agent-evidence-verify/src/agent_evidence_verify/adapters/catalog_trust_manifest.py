@@ -39,7 +39,9 @@ relied on, the manifest signer's and each attestation signer's, is authorised un
 ``key_authority`` (:mod:`agent_evidence_verify.key_authority`); an unauthorised key is
 ``contradicted`` with the authority's reason, and no authority, or bytes it needs that are missing,
 is ``not_established``. Missing evidence is never read as a refusal: an unbound catalog, DID
-document set, artifact or vendored attestation is ``not_established``. A construction or role
+document set, artifact or vendored attestation is ``not_established``. Nor does it mask one: an
+unbound artifact or attestation skips only the checks that read those bytes, and a later check
+that fails (the publisher rule, a time, another attestation) still contradicts. A construction or role
 outside the closed sets, or a check time that is not an RFC 3339 instant, is the consumer's own
 input and a case error.
 """
@@ -589,9 +591,22 @@ class _Read:
         self.publisher_domain: str | None = None
         #: Each signature the verdict relied on: (role, kid, DID, method).
         self.signers: list[tuple[str, Any, Any, dict[str, Any]]] = []
+        #: The first not_established reason met: evidence a check needed was not supplied. The
+        #: read goes on past it, so a later check the missing bytes cannot affect still refuses.
+        self.missing: str | None = None
+
+    def defer(self, reason: str) -> None:
+        """Record missing evidence without ending the read."""
+        if self.missing is None:
+            self.missing = reason
 
     def judge(self) -> str:
-        """The ordered check list of the profile; the first check that fails is the reason."""
+        """The ordered check list of the profile; the first check that fails is the reason.
+
+        Missing evidence never masks a refusal: an unbound artifact or attestation skips only the
+        checks that read those bytes, every later check still runs, and the read is
+        :class:`Unavailable` only when none of them fails.
+        """
         self.load()
         self.signature_object()
         self.read_header()
@@ -608,6 +623,8 @@ class _Read:
         self.attestations()
         self.publisher_rule()
         self.times(self.obj)
+        if self.missing is not None:
+            raise Unavailable(self.missing)
         return PASS_REASON[self.construction]
 
     def load(self) -> None:
@@ -744,7 +761,8 @@ class _Read:
                 self.artifact_bytes = None
         else:
             if self.supplied_artifact is None:
-                raise Unavailable("artifact_unavailable")
+                self.defer("artifact_unavailable")  # the digest cannot be checked; read on
+                return
             self.artifact_bytes = self.supplied_artifact
         if self.artifact_bytes is None or \
                 entry.get("digest") != "sha256:" + sha256_hex(self.artifact_bytes):
@@ -757,6 +775,10 @@ class _Read:
         if self.construction not in ARD_SHAPED or "url" not in entry:
             return
         if publisher is not None and origin(entry.get("url")) == f"https://{publisher.lower()}":
+            return
+        if self.artifact_bytes is None:
+            # Off the publisher's origin only the artifact can bind the url, and it is missing.
+            self.defer("artifact_unavailable")
             return
         try:
             descriptor = load(self.artifact_bytes) if self.artifact_bytes else {}
@@ -775,7 +797,8 @@ class _Read:
             if not named:
                 continue
             if data is None:
-                raise Unavailable("attestation_unavailable")
+                self.defer("attestation_unavailable")  # the next attestation is still read
+                continue
             digest = item.get("digest") if isinstance(item, dict) else None
             if digest != "sha256:" + sha256_hex(data):
                 raise Refused("attestation_digest_mismatch")

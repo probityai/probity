@@ -276,6 +276,61 @@ def test_an_unbound_vendored_attestation_is_not_established(tmp_path: Path) -> N
                                                       "attestation_unavailable")
 
 
+#: The checks that read the artifact bytes: with the artifact unbound they cannot be decided, so
+#: only these may turn into ``artifact_unavailable``. ``url_origin_unbound`` reads the artifact only
+#: off the publisher's origin, where the artifact alone can bind the url.
+_READS_THE_ARTIFACT = {"artifact_digest_mismatch", "url_origin_unbound"}
+
+
+@pytest.mark.parametrize("vector", [v for v in VECTORS if v["expected"]["decision"] == "reject"
+                                    and "artifact.json" in v["files"]
+                                    and v["expected"]["reason"] not in reader.GATES[:2]],
+                         ids=lambda v: v["id"])
+def test_a_missing_artifact_never_masks_a_refusal(tmp_path: Path, vector: dict) -> None:
+    """An unbound artifact leaves every refusal the artifact bytes cannot change in place: a
+    manifest that is expired, from the future, or signed by someone other than the publisher is
+    contradicted whether or not the consumer fetched the artifact."""
+    name = vector["id"]
+    root = _copy(tmp_path, name)
+    (root / name / "artifact.json").unlink()
+    case, policy = _inputs(root, name)
+    if not all(_normal(f) for f in json.loads(
+            (root / name / "context.json").read_text(encoding="utf-8")).get("attestationFiles")
+            or [] if f):
+        pytest.skip("the binder refuses the attestation path before any read")
+    result = adjudicate(case, policy, root)
+    reason = vector["expected"]["reason"]
+    if reason in _READS_THE_ARTIFACT:
+        assert (result["decision"], result["reason"]) == ("not_established",
+                                                          "artifact_unavailable")
+    else:
+        assert (result["decision"], result["reason"]) == ("contradicted", reason)
+
+
+def test_a_missing_attestation_never_masks_a_later_refusal(tmp_path: Path) -> None:
+    """With one vendored attestation unbound, the other is still read and the time checks still
+    run: an expired manifest is contradicted, not reported as missing evidence."""
+    name = "accept-attestations-dsse-bound"
+    root = _copy(tmp_path, name)
+    (root / name / "attestation-0.dsse.json").unlink()
+    case, policy = _inputs(root, name, at="2028-01-01T00:00:00Z")
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("contradicted", "manifest_expired")
+    (root / name / "artifact.json").unlink()
+    case, policy = _inputs(root, name, at="2028-01-01T00:00:00Z")
+    assert adjudicate(case, policy, root)["reason"] == "manifest_expired"
+
+
+def test_the_first_missing_evidence_names_the_reason(tmp_path: Path) -> None:
+    name = "accept-attestations-dsse-bound"
+    root = _copy(tmp_path, name)
+    (root / name / "attestation-1.dsse.json").unlink()
+    (root / name / "artifact.json").unlink()
+    case, policy = _inputs(root, name)
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("not_established", "artifact_unavailable")
+
+
 def test_a_check_time_that_is_not_rfc3339_is_a_case_error() -> None:
     root = DATA / "cases"
     case, policy = _inputs(root, "accept-draft-es256", at="2026-11-16 00:00:00Z")
