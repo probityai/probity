@@ -18,6 +18,7 @@ from typing import Any
 from .adapters import (
     acceptance_observed,
     audit_principal,
+    audit_record,
     authority_anchor,
     brokered_file_write,
     cbor_receipt_chain,
@@ -75,6 +76,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "proof_of_control/v1": proof_of_control.adjudicate,
     "observed_effect/v1": observed_effect.adjudicate,
     "audit_principal/v1": audit_principal.adjudicate,
+    "agent_audit_record/v1": audit_record.adjudicate,
     "token_grant_receipt/v1": token_grant_receipt.adjudicate,
     "idp_log_witness/v1": idp_log_witness.adjudicate,
     "cbor_receipt_chain/v1": cbor_receipt_chain.adjudicate,

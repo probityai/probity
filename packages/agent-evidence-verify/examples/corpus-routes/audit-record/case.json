@@ -1,0 +1,16 @@
+{
+  "schema_version": "probity-case/v1",
+  "case_id": "audit-record-r17",
+  "artifacts": {
+    "record": {
+      "path": "retained-record.json",
+      "length": 6133,
+      "sha256": "ee8be250abf867cd978dda0f3a1f1443842b9cbe5daa0aa4858a77a183a6c618"
+    },
+    "trust": {
+      "path": "trust.json",
+      "length": 4921,
+      "sha256": "512fa833e874c75301f5837e706e88ba85b43df3cae72d6c3ad7ca912628f398"
+    }
+  }
+}

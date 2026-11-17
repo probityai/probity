@@ -109,6 +109,29 @@ as the reason, and the check keeps the corpus's verdict (`valid`, `invalid` or `
 does not establish that the identity provider issued the token: the token and the issuer's key set are
 not carried.
 
+### `agent_audit_record/v1` (`vectors-agent-audit-record`, every member)
+
+The assessment names a `record` artifact and a `trust` artifact, and may name a `predicate_type`. The
+record is a DSSE envelope holding an agent audit record, a retained record (`envelope` beside the
+retention entry a retaining party keeps for it), or a set (`records`, judged one by one and then
+together under one consumption ledger). The trust document is the consumer's: any JSON object carrying
+`keys.observer.publicKey`, `predicateType` and, for a retained record, `anchorTrust` (the tree heads
+and Bitcoin block headers it already holds). The corpus `MANIFEST.json` is one. Nothing the record
+carries chooses its own key or its own trusted heads.
+
+The check carries everything a corpus member declares: the verdict and the first refusal code, the
+recomputed tier, `withinLimit`, the dating result of Section 4.7.1 for a retained record, and the joint
+result and missing permits of a set. Each time comparison keeps its own bound: the future side takes the
+300 second skew tolerance only, the past side the entry's `maxAge`, the late anchor bound `anchorWithin`
+plus the tolerance, and an OpenTimestamps time the 7200 second allowance on both the `receivedAt` and
+the late bound. Every integer is read inside the I-JSON range before any arithmetic, so `maxAge` of
+2^53 or more is `unsafe-integer` and 2^53-1 is read.
+
+A valid record, with a well-formed retention entry where it has one and a valid joint result where it
+is a set, is `supported` / `record_conforms`. Anything else is `contradicted` with the first refusal
+code as the reason. The Action's reference stage routes every member of the corpus here, so it reads
+`reference-checked conformance M of M` on that corpus.
+
 ### `proof_of_control/v1` (`poc-evidence-vectors`, 171 cases)
 
 The assessment names one `input` artifact: a Proof-of-Control artifact as the `poc-evidence-vectors` corpus writes

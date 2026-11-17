@@ -16,6 +16,12 @@ unchanged.
   consumer-pinned keys, through a format profile the case pins. Refuses a repeated receipt, a re-issued authorization,
   swapped receipts and an unpinned signer, and reports a restart, an unpinned head, a missing effect or a missing
   revocation commitment as `not_established`. Doc: `docs/cbor-receipt-chain.md`, example: `examples/cbor-receipt-chain/`.
+- `agent_audit_record/v1`: judges an agent audit record, a retained record with its dating check, or a set of records,
+  under the consumer's trust document, and carries every field a member of `vectors-agent-audit-record` declares
+  (verdict and first code, recomputed tier, `withinLimit`, dating, joint set result). Each time bound is kept apart
+  (skew only on the future side, `maxAge` on the past, the OpenTimestamps allowance on both anchor bounds) and every
+  integer is range-checked before arithmetic. All 235 corpus members agree, so the Action's reference stage can read
+  M of M on that corpus. Route and example: `docs/corpus-routes.md`, `examples/corpus-routes/audit-record/`.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.

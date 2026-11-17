@@ -1,0 +1,2473 @@
+"""The agent audit record reader that ``agent_audit_record/v1`` runs.
+
+A port of probityai/agent-evidence-vectors ``packaging/agent_evidence_vectors/auditrecord.py`` at
+commit 5928a5866 (the reader of ``corpora/vectors-agent-audit-record``), rule for rule and code for
+code, so the first refusal this reader names is the code a corpus member pins. The one change: the
+Ed25519 check runs through ``cryptography`` instead of the vectors rail. Its module text follows.
+
+
+The record format is defined by the Internet-Draft
+``draft-gilda-audit-agent-audit-record-00``, which replaces
+``draft-gilda-wimse-agent-audit-record-02``: one in-toto Statement in a DSSE
+envelope, seventeen required predicate members and one optional one carrying the
+seven minimum audit fields of Section 11 of ``draft-ietf-wimse-aims``, and the
+recomputes that make those fields checkable. Appendix B of the draft lists the
+conformance corpus, and ``corpora/vectors-agent-audit-record/`` publishes it member for
+member: each manifest entry carries the Appendix B identifier in ``draftId``.
+The members after the last row test sentences of Section 5.4 that Appendix B
+has no row for, and name the section in ``draftSection``. Members carrying
+``draftRevision`` are rows of revision 01, whose rules this reader applies where
+they differ: an entry for an input with several values takes its pair from one
+value (``aggregate_values``), and the coverage clause of Section 5.7 is
+``scopeComplete`` of true, a gap inside ``pathScope`` beside it being malformed
+at any tier. Members CS1 to CS49 bind consumption: a
+``consumption-state`` entry may carry the ``consumption`` member, and
+``decision.operationKey`` is the agent's identifier for one intended operation
+and the identity of a retry (``consumption_findings``, ``within_limit``,
+``verify_set``). ``consumption.supersedes`` names the limit document a record's
+``limitDigest`` replaced, ``consumption.payee`` and each held entry's ``payee``
+the account a payment goes to, and ``consumption.settled`` the terms a paid call
+settled on as read from the chain (CS41 to CS54). A set member (CS7, CS8, CS17,
+CS18 to CS22, CS25, CS48, CS49, CS53, CS54) is a file
+of several records judged one by one and then as a set, under one ledger: the
+``limitDigest`` values that ``supersedes`` links, so a permit held under a
+limit that was then replaced is still seen.
+
+The input set follows the predicate type URI the verifier is configured to
+accept: under the ``v2`` URI of revision 03 it also holds
+``principal-standing-source``, and under the ``v1`` URI it is unchanged (PS1,
+PS2). A manifest entry carrying ``predicateType`` is judged under that URI.
+
+``evaluation.inputs`` is required under both statuses, each entry's age runs
+from its ``lastResult`` to ``decision.reportedAt``, and the unavailable inputs
+are derived from the entries, so a record shaped for revision 02 is malformed.
+Rows R1 to R9 are retained records: the envelope beside the retention entry of
+Section 4.7, judged twice, once for the record's verdict and once by the dating
+check of Section 4.7.1, whose result is reported beside the verdict.
+
+``verify(raw, policy)`` judges one DSSE envelope and returns the verdict, the
+single first refusal code, and the tier it RECOMPUTED. Every rule is one
+function, registered in ``RULES`` in the order it runs. The order follows the
+draft's "Verifying a record" section: the signature, then the JSON profile, then
+membership, then the recomputes. Rule ORDER is load-bearing, because the
+manifest pins one code per reject member and that code is the FIRST refusal.
+``verify_retained`` adds the dating check and ``verify_set`` judges a set.
+The corpus judge of the vectors repository is not carried here.
+
+The draft states verdicts, not codes. A conforming verifier is scored on the
+verdict; the codes are this reader's names for its first refusal, published so
+two implementations can compare where they stopped.
+"""
+
+from __future__ import annotations
+
+import base64
+import dataclasses
+import datetime
+import functools
+import hashlib
+import json
+import re
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import Any
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+SUITE = "agent-audit-record-conformance"
+STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
+PAYLOAD_TYPE = "application/vnd.in-toto+json"
+IJSON_LIMIT = 2**53
+MAX_DEPTH = 128
+GLOB_METACHARACTERS = frozenset("*?[]{}")
+UNATTRIBUTED = "unattributed"
+
+#: The empty tree object name under each algorithm: the digest of ``tree 0\0``.
+#: sha1 is computed through ``usedforsecurity=False`` so this module imports where
+#: a FIPS build refuses sha1 for security use; it is a name here, not a MAC.
+EMPTY_TREE = {
+    "sha1": hashlib.sha1(b"tree 0\x00", usedforsecurity=False).hexdigest(),
+    "sha256": hashlib.sha256(b"tree 0\x00").hexdigest(),
+}
+
+#: The closed vocabularies of Section 5, keyed by the dotted member path a value
+#: sits at. ``[]`` marks every element of an array.
+VOCABULARIES: dict[str, frozenset[str]] = {
+    "tier": frozenset({"voluntary", "authoritative"}),
+    "hashAlgorithm": frozenset({"sha256"}),
+    "agent.authentication": frozenset(
+        {"wimse-wpt", "http-message-signature", "mtls", "oauth-access-token", "api-key", "none"}
+    ),
+    "delegation.subjectKind": frozenset({"user", "system", "none"}),
+    "resource.kind": frozenset({"path", "uri", "tool"}),
+    "resource.binding": frozenset({"digest-bound", "not-bindable"}),
+    "decision.reported": frozenset({"permit", "deny", "permit-with-conditions"}),
+    "effect.observed": frozenset({"occurred", "none", "unknown"}),
+    "effect.interval.baseResolution": frozenset({"supplied", "empty-tree"}),
+    "agreement": frozenset({"agree", "disagree", "not-exercised", "indeterminate", "one-sided"}),
+    "correlation.scope": frozenset({"producer", "cross-party"}),
+    "correlation.timeBasis": frozenset({"beacon-anchored", "asserted"}),
+    "correlation.externalAnchor.kind": frozenset({"rfc3161", "transparency-log", "opentimestamps"}),
+    "posture.reported": frozenset({"no_network", "allowlist", "sinkhole", "unsafe_bypass_egress"}),
+    "posture.observed": frozenset({"no_network", "allowlist", "sinkhole", "unsafe_bypass_egress"}),
+    "posture.agreement": frozenset({"agree", "disagree"}),
+    "remediation[].cause": frozenset(
+        {
+            "session-revoked",
+            "risk-elevated",
+            "subject-disabled",
+            "token-replay-suspected",
+            "policy-changed",
+            "operator-action",
+        }
+    ),
+    "remediation[].enforcement": frozenset(
+        {
+            "access-attenuated",
+            "session-terminated",
+            "tokens-discarded",
+            "privileges-reduced",
+            "reevaluated",
+            "not-enforced",
+        }
+    ),
+    "remediation[].postEnforcementEffect": frozenset({"occurred", "none", "unknown"}),
+    "observation.vantage": frozenset({"below-observed", "peer", "self"}),
+    "evaluation.status": frozenset({"evaluated", "not-evaluated"}),
+    "oversight.act": frozenset({"observation", "check", "decision", "release"}),
+}
+
+#: The inputs an evaluation entry names (Table 3 of the successor draft): the
+#: standing source, the key source, the consumption state and the policy source.
+EVALUATION_INPUTS = frozenset(
+    {"standing-source", "key-source", "consumption-state", "policy-source"}
+)
+#: What a decision that could not be evaluated names as missing, drawn from the
+#: same table. A separate name so a sweep can narrow one without the other.
+UNAVAILABLE_INPUTS = EVALUATION_INPUTS
+#: The predicate type URI the sets above belong to, and the second URI that
+#: revision 03 publishes for the extended set (Section 8). A closed set grows
+#: only under a new URI, so a verifier configured for the v1 URI never meets a
+#: value it is required to refuse there (rows PS1 and PS2).
+PREDICATE_TYPE_V1 = (
+    "https://probityai.github.io/agent-evidence-vectors/predicate/v1/agent-audit-record"
+)
+PREDICATE_TYPE_V2 = (
+    "https://probityai.github.io/agent-evidence-vectors/predicate/v2/agent-audit-record"
+)
+#: What the v2 URI adds to both input sets, and only under that URI: the source
+#: the principal's standing is established from, kept apart from
+#: ``standing-source``, which names the source of issuer standing.
+V2_INPUTS = frozenset({"principal-standing-source"})
+
+
+def evaluation_inputs(predicate_type: str) -> frozenset[str]:
+    """The inputs an evaluation entry may name under ``predicate_type``, the URI
+    the verifier was configured to accept. Read at call time, so a sweep that
+    narrows ``EVALUATION_INPUTS`` or ``V2_INPUTS`` narrows this too."""
+    if predicate_type == PREDICATE_TYPE_V2:
+        return EVALUATION_INPUTS | V2_INPUTS
+    return EVALUATION_INPUTS
+
+
+def unavailable_inputs(predicate_type: str) -> frozenset[str]:
+    """The inputs ``unavailableInput`` may name under ``predicate_type``."""
+    if predicate_type == PREDICATE_TYPE_V2:
+        return UNAVAILABLE_INPUTS | V2_INPUTS
+    return UNAVAILABLE_INPUTS
+
+
+#: The three members an evaluation entry carries, each required, and no other.
+ENTRY_MEMBERS = frozenset({"input", "lastResult", "maxAge"})
+#: The one member an entry may carry beside them, and only on a consumption-state
+#: entry (Section 5.4 of revision 01): the cumulative-limit state the decision
+#: point read.
+ENTRY_OPTIONAL = frozenset({"consumption"})
+CONSUMPTION_INPUT = "consumption-state"
+#: The members of ``consumption``, each required, and the optional ones below.
+CONSUMPTION_MEMBERS = (
+    "limitDigest",
+    "unit",
+    "limit",
+    "consumed",
+    "reserved",
+    "requested",
+    "held",
+    "stateRevision",
+)
+#: The members ``consumption`` may carry beside them: the digest of the limit
+#: document this record's ``limitDigest`` replaced (a raise or a cut), the exact
+#: asset, the payee digest of this request's payment, and the terms the call
+#: settled on (CS41 to CS54).
+CONSUMPTION_OPTIONAL = ("supersedes", "asset", "payee", "settled")
+#: The members of ``asset``, the optional exact asset a consumption counts in
+#: when no ISO 4217 code names it (a token on one chain): a CAIP-19 asset id and
+#: the decimals of its smallest subunit. A record carries ``unit`` or ``asset``,
+#: never both (CS34 to CS40).
+ASSET_MEMBERS = ("id", "decimals")
+#: The largest decimals an asset may declare (an ERC-20 decimals is a uint8).
+ASSET_DECIMALS_MAX = 255
+#: CAIP-19: chain_id "/" asset_namespace ":" asset_reference, optional token id.
+CAIP19 = re.compile(
+    r"[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}/[-a-z0-9]{3,8}:[-.%a-zA-Z0-9]{1,128}"
+    r"(/[-.%a-zA-Z0-9]{1,78})?"
+)
+#: The non-negative integers among them (smallest subunit of ``unit``).
+CONSUMPTION_COUNTS = ("limit", "consumed", "reserved", "requested", "stateRevision")
+#: The members of one ``held`` entry, an earlier permit that has not settled,
+#: and the one it may carry beside them: the payee digest of that permit's
+#: payment (CS41, CS42), and the deadline of that permit, an instant, which a
+#: zero settlement keeps (CS50 to CS54).
+HELD_MEMBERS = ("operationKey", "requestDigest", "amount")
+HELD_OPTIONAL = ("payee", "deadline")
+#: The members of ``settled``, each required: the amount, asset and payee the
+#: call settled on, where they were read, and the transaction read. The terms
+#: are read from the chain through the transaction the server returned; the
+#: signed payment shows only what was approved (CS47).
+SETTLED_MEMBERS = ("amount", "asset", "payee", "source", "transaction")
+SETTLED_SOURCES = frozenset({"chain"})
+#: Which amount a later record of the ledger must count for a call that carries
+#: ``settled``: the settled amount (CS48), never the held one. A test reads the
+#: held amount instead.
+SETTLED_READING = {"amount": "settled"}
+PERMITS = frozenset({"permit", "permit-with-conditions"})
+#: The sentences of the consumption rule, by name, so a sweep can weaken one at a
+#: time (check_vectors.py): where the member sits, that ``reserved`` is the held
+#: sum, that held keys are distinct, that the call carries its operation key,
+#: that counts are non-negative integers, that stateRevision is required, and
+#: that one key is one request, that ``supersedes`` is a digest, and that it
+#: names another limit document than the record's own.
+CONSUMPTION_CHECKS = frozenset(
+    {
+        "misplaced",
+        "reserved",
+        "distinct-keys",
+        "operation-key",
+        "counts",
+        "state-revision",
+        "key-reuse",
+        "supersedes-digest",
+        "supersedes-self",
+        "asset-id",
+        "asset-decimals",
+        "asset-exclusive",
+        "retry-payee",
+        "settled-amount",
+        "settled-terms",
+        "settled-source",
+        "zero-settled-transaction",
+        "empty-transaction-nonzero",
+        "zero-settled-deadline",
+    }
+)
+#: The lastResult of an input the decision point never held a value of.
+NEVER_HELD = "none"
+#: The tolerance for every comparison between times two parties wrote.
+SKEW_TOLERANCE = datetime.timedelta(seconds=300)
+#: The only members an evaluation object may carry (EV12).
+EVALUATION_MEMBERS = frozenset({"status", "inputs", "unavailableInput"})
+#: The only members an oversight object may carry.
+OVERSIGHT_MEMBERS = frozenset({"act", "recordDigest"})
+
+#: The seventeen required predicate members, and the members each object member
+#: requires.
+#: ``resource.argumentsDigest``, ``correlation.externalAnchor`` and
+#: ``observation.priorCommitment`` are conditional and checked where their rule
+#: is stated, never here.
+TOP_MEMBERS = (
+    "recordId",
+    "tier",
+    "hashAlgorithm",
+    "agent",
+    "delegation",
+    "resource",
+    "decision",
+    "effect",
+    "agreement",
+    "correlation",
+    "posture",
+    "remediation",
+    "observation",
+    "fieldEvidence",
+    "doesNotAssert",
+    "issuedAt",
+    "evaluation",
+)
+NESTED_MEMBERS: dict[str, tuple[str, ...]] = {
+    "agent": ("id", "credentialDigest", "authentication", "signers"),
+    "delegation": ("subject", "subjectKind", "authorityDigest"),
+    "resource": ("kind", "id", "binding"),
+    "decision": (
+        "action",
+        "requestDigest",
+        "reported",
+        "decisionPointId",
+        "policyDigest",
+        "reportedAt",
+    ),
+    "effect": ("observed", "interval", "pathScope", "writes"),
+    "effect.interval": ("beforeRoot", "afterRoot", "baseResolution", "openedAt", "sealedAt"),
+    "correlation": ("id", "scope", "timeBasis"),
+    "posture": (
+        "reported",
+        "reportedDigest",
+        "observed",
+        "observedDigest",
+        "assessedAt",
+        "agreement",
+    ),
+    "observation": ("vantage", "coverage"),
+    "observation.coverage": ("scopeComplete", "gaps"),
+    "evaluation": ("status", "inputs"),
+}
+WRITE_MEMBERS = ("path", "preStateDigest", "postStateDigest", "requestDigest", "inScope")
+REMEDIATION_MEMBERS = (
+    "cause",
+    "signalReceivedAt",
+    "enforcedAt",
+    "enforcement",
+    "postEnforcementEffect",
+    "postEnforcementRoot",
+)
+COMMITMENT_MEMBERS = ("committedAt", "witnessNonce", "commitmentDigest", "keyid", "sig")
+FIELD_EVIDENCE_KEYS = frozenset(
+    {"agent", "correlation", "decision", "delegation", "posture", "remediation", "resource"}
+)
+FIELD_EVIDENCE_VALUES = frozenset({"substrate-covered", "producer-asserted"})
+
+def _ed25519_verify(public_key: bytes, message: bytes, signature: bytes) -> bool:
+    """RFC 8032 Ed25519 through ``cryptography``; the vectors rail resolves its own."""
+    try:
+        Ed25519PublicKey.from_public_bytes(public_key).verify(signature, message)
+    except (InvalidSignature, ValueError):
+        return False
+    return True
+
+
+def pae(payload_type: str, payload: bytes) -> bytes:
+    """The DSSE pre-authentication encoding."""
+    kind = payload_type.encode("utf-8")
+    return b"DSSEv1 %d %s %d %s" % (len(kind), kind, len(payload), payload)
+
+
+class Malformed(Exception):
+    """A record the draft calls malformed. Every refusal it states is this one."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+@dataclass(frozen=True)
+class Policy:
+    """What a consumer brings: the predicate type it expects and the observer's key.
+
+    Neither is read from the record, because a record carrying its own expected
+    type or its own key would be grading its own homework.
+    """
+
+    predicate_type: str
+    observer_public_key: str
+
+
+@dataclass
+class Report:
+    """One verification: the verdict, the first refusal, the RECOMPUTED tier."""
+
+    verdict: str
+    codes: list[str]
+    derived_tier: str = ""
+
+
+# --------------------------------------------------------------------------
+# RFC 8785 and the JSON profile.
+# --------------------------------------------------------------------------
+
+
+def _encode(node: Any) -> str:
+    """RFC 8785 for the value space this format uses: no floats are admitted."""
+    if node is None:
+        return "null"
+    if node is True:
+        return "true"
+    if node is False:
+        return "false"
+    if isinstance(node, str):
+        return json.dumps(node, ensure_ascii=False, separators=(",", ":"))
+    if isinstance(node, int):
+        if abs(node) >= IJSON_LIMIT:
+            raise Malformed("unsafe-integer")
+        return str(node)
+    if isinstance(node, list):
+        return "[" + ",".join(_encode(item) for item in node) + "]"
+    if isinstance(node, dict):
+        members = sorted(node.items(), key=lambda kv: kv[0].encode("utf-16-be"))
+        return "{" + ",".join(f"{_encode(k)}:{_encode(v)}" for k, v in members) + "}"
+    raise Malformed("value-not-representable")
+
+
+def canonical_bytes(node: Any) -> bytes:
+    return _encode(node).encode("utf-8")
+
+
+def jcs_digest(node: Any) -> str:
+    return hashlib.sha256(canonical_bytes(node)).hexdigest()
+
+
+def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in out:
+            raise Malformed("duplicate-member")
+        out[key] = value
+    return out
+
+
+def _safe_int(text: str) -> int:
+    value = int(text)
+    if abs(value) >= IJSON_LIMIT:
+        raise Malformed("unsafe-integer")
+    return value
+
+
+def _refuse_float(text: str) -> float:
+    raise Malformed("value-not-representable")
+
+
+def _depth(node: Any) -> int:
+    """Container nesting, counting the top-level value as one."""
+    if isinstance(node, dict):
+        return 1 + max((_depth(v) for v in node.values()), default=0)
+    if isinstance(node, list):
+        return 1 + max((_depth(v) for v in node), default=0)
+    return 0
+
+
+def parse_statement(payload: bytes) -> Any:
+    """Parse under the JSON profile: no repeated name, no unsafe integer, no float,
+    no nesting past 128 levels."""
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise Malformed("not-parseable") from exc
+    try:
+        value = json.loads(
+            text,
+            object_pairs_hook=_no_duplicates,
+            parse_int=_safe_int,
+            parse_float=_refuse_float,
+        )
+    except Malformed:
+        raise
+    except (ValueError, RecursionError) as exc:
+        raise Malformed("not-parseable") from exc
+    if _depth(value) > MAX_DEPTH:
+        raise Malformed("nesting-too-deep")
+    return value
+
+
+# --------------------------------------------------------------------------
+# Shared readings.
+# --------------------------------------------------------------------------
+
+
+def _at(pred: dict[str, Any], dotted: str) -> Any:
+    node: Any = pred
+    for part in dotted.split("."):
+        node = node[part]
+    return node
+
+
+def _instant(value: Any) -> datetime.datetime:
+    if not isinstance(value, str):
+        raise Malformed("timestamp-malformed")
+    try:
+        parsed = datetime.datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise Malformed("timestamp-malformed") from exc
+    if parsed.tzinfo is None:
+        raise Malformed("timestamp-malformed")
+    return parsed
+
+
+def _under(path: str, scope: str) -> bool:
+    """Segment-boundary containment: ``/`` holds everything, ``/a/`` holds ``/a/x``."""
+    if scope == "/":
+        return path.startswith("/")
+    base = scope if scope.endswith("/") else scope + "/"
+    return path == scope.rstrip("/") or path.startswith(base)
+
+
+def request_digest(pred: dict[str, Any]) -> str:
+    """The RFC 8785 digest over action, argumentsDigest, resourceId, resourceKind.
+
+    Under ``not-bindable`` the hashed object holds the other three members and no
+    ``argumentsDigest`` member at all.
+    """
+    resource = pred["resource"]
+    body: dict[str, Any] = {
+        "action": pred["decision"]["action"],
+        "resourceId": resource["id"],
+        "resourceKind": resource["kind"],
+    }
+    if resource["binding"] == "digest-bound":
+        body["argumentsDigest"] = resource["argumentsDigest"]
+    return jcs_digest(body)
+
+
+def commitment_digest(pred: dict[str, Any], commitment: dict[str, Any]) -> str:
+    return jcs_digest(
+        {
+            "authorityDigest": pred["delegation"]["authorityDigest"],
+            "beforeRoot": pred["effect"]["interval"]["beforeRoot"],
+            "recordId": pred["recordId"],
+            "witnessNonce": commitment["witnessNonce"],
+        }
+    )
+
+
+def derive_observed(pred: dict[str, Any]) -> str:
+    """``occurred`` for a write attributed to this request; ``none`` for no such
+    write and no unattributed write inside pathScope; ``unknown`` otherwise."""
+    own = pred["decision"]["requestDigest"]
+    writes = pred["effect"]["writes"]
+    if any(w["requestDigest"] == own for w in writes):
+        return "occurred"
+    scope = pred["effect"]["pathScope"]
+    if any(
+        w["requestDigest"] == UNATTRIBUTED and any(_under(w["path"], s) for s in scope)
+        for w in writes
+    ):
+        return "unknown"
+    return "none"
+
+
+def derive_agreement(reported: str, observed: str) -> str:
+    if observed == "unknown":
+        return "indeterminate"
+    if reported == "deny":
+        return "agree" if observed == "none" else "disagree"
+    return "agree" if observed == "occurred" else "not-exercised"
+
+
+def _commitment(pred: dict[str, Any]) -> dict[str, Any] | None:
+    commitment = pred["observation"].get("priorCommitment")
+    return commitment if isinstance(commitment, dict) else None
+
+
+def _commitment_complete(pred: dict[str, Any]) -> bool:
+    commitment = _commitment(pred)
+    return commitment is not None and all(m in commitment for m in COMMITMENT_MEMBERS)
+
+
+def gaps_inside_scope(pred: dict[str, Any]) -> bool:
+    """A gap is inside pathScope when it lies under a member of it, as inScope is
+    derived for a write (Section 5.7)."""
+    scope = pred["effect"]["pathScope"]
+    gaps = pred["observation"]["coverage"]["gaps"]
+    return any(any(_under(g, s) for s in scope) for g in gaps)
+
+
+def coverage_clause_fails(pred: dict[str, Any]) -> bool:
+    """The coverage clause of the tier recompute under revision 01: it holds
+    exactly when scopeComplete is true (TI4, TI6). Revision 00's clause, true
+    when every gap lay outside pathScope, passed a record declaring incomplete
+    coverage while naming no gap inside it (TI6)."""
+    return pred["observation"]["coverage"]["scopeComplete"] is not True
+
+
+def tier_failures(pred: dict[str, Any]) -> list[str]:
+    """The tier clauses a record fails, in the draft's order."""
+    failed: list[str] = []
+    if pred["observation"]["vantage"] != "below-observed":
+        failed.append("tier-overclaim-vantage")
+    if not _commitment_complete(pred):
+        failed.append("tier-overclaim-commitment")
+    scope = pred["effect"]["pathScope"]
+    if not scope:
+        failed.append("tier-overclaim-scope")
+    if coverage_clause_fails(pred):
+        failed.append("tier-overclaim-coverage")
+    if pred["resource"]["binding"] != "digest-bound":
+        failed.append("tier-overclaim-binding")
+    return failed
+
+
+# --------------------------------------------------------------------------
+# The rules, in the order they run.
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class _State:
+    statement: dict[str, Any]
+    predicate: dict[str, Any]
+    policy: Policy
+    derived_tier: str = ""
+
+
+def _rule_statement(state: _State) -> None:
+    st = state.statement
+    if st.get("_type") != STATEMENT_TYPE:
+        raise Malformed("statement-type-unexpected")
+    if st.get("predicateType") != state.policy.predicate_type:
+        raise Malformed("predicate-type-mismatch")
+
+
+def _rule_subject_interval(state: _State) -> None:
+    """The second subject entry is present if and only if an interval is (S1, I1r)."""
+    effect = state.predicate.get("effect")
+    has_interval = isinstance(effect, dict) and "interval" in effect
+    subjects = state.statement["subject"]
+    if len(subjects) != (2 if has_interval else 1):
+        raise Malformed("subject-interval-mismatch")
+
+
+def _rule_required_members(state: _State) -> None:
+    """No member has a default and no verifier supplies one (F1)."""
+    pred = state.predicate
+    for name in TOP_MEMBERS:
+        if name not in pred:
+            raise Malformed("member-missing")
+    for dotted, names in NESTED_MEMBERS.items():
+        node = _at(pred, dotted)
+        if not isinstance(node, dict) or any(n not in node for n in names):
+            raise Malformed("member-missing")
+    rows: list[tuple[Any, tuple[str, ...]]] = [(w, WRITE_MEMBERS) for w in pred["effect"]["writes"]]
+    rows += [(r, REMEDIATION_MEMBERS) for r in pred["remediation"]]
+    for row, names in rows:
+        if not isinstance(row, dict) or any(n not in row for n in names):
+            raise Malformed("member-missing")
+
+
+def _vocabulary_values(pred: dict[str, Any], dotted: str) -> list[Any]:
+    if dotted.startswith("remediation[]."):
+        return [row[dotted.split(".", 1)[1]] for row in pred["remediation"]]
+    try:
+        return [_at(pred, dotted)]
+    except (KeyError, TypeError):
+        # correlation.externalAnchor and oversight are conditional; their
+        # rules run later.
+        return []
+
+
+def _rule_closed_vocabularies(state: _State) -> None:
+    """A value outside a closed set is refused, never ignored (V1)."""
+    pred = state.predicate
+    for dotted, allowed in VOCABULARIES.items():
+        for value in _vocabulary_values(pred, dotted):
+            if value not in allowed:
+                raise Malformed("value-outside-vocabulary")
+    for value in pred["fieldEvidence"].values():
+        if value not in FIELD_EVIDENCE_VALUES:
+            raise Malformed("value-outside-vocabulary")
+
+
+def _entry_unavailable(entry: dict[str, Any], reported_at: datetime.datetime) -> bool:
+    """Stale or never established at ``reported_at``; an age equal to maxAge is fresh."""
+    if entry["lastResult"] == NEVER_HELD:
+        return True
+    produced = _instant(entry["lastResult"])
+    if produced - reported_at > SKEW_TOLERANCE:
+        raise Malformed("evaluation-result-after-decision")
+    age = (reported_at - produced).total_seconds()
+    return bool(age > entry["maxAge"])
+
+
+def _entry_shape(entry: Any, inputs: frozenset[str] | None = None) -> None:
+    """Exactly input, lastResult and maxAge; an input from the closed set
+    (``inputs``, the v1 set when not given); a maxAge that is a non-negative
+    integer."""
+    if not isinstance(entry, dict):
+        raise Malformed("evaluation-entry-malformed")
+    if not ENTRY_MEMBERS <= set(entry):
+        raise Malformed("member-missing")
+    if set(entry) - ENTRY_MEMBERS - ENTRY_OPTIONAL:
+        raise Malformed("evaluation-entry-malformed")
+    if entry["input"] not in (EVALUATION_INPUTS if inputs is None else inputs):
+        raise Malformed("value-outside-vocabulary")
+    max_age = entry["maxAge"]
+    if isinstance(max_age, bool) or not isinstance(max_age, int) or max_age < 0:
+        raise Malformed("evaluation-entry-malformed")
+
+
+def aggregate_values(values: list[dict[str, Any]]) -> dict[str, Any]:
+    """The lastResult and maxAge one evaluation entry carries for an input the
+    decision depended on several values of (Section 5.4, revision 01).
+
+    Both come from the same value. If any value was never held, lastResult is
+    ``none`` and maxAge the smallest bound among the values never held.
+    Otherwise the pair is the one whose lastResult plus maxAge is earliest, and
+    of two such pairs the one with the earlier lastResult. At one reference time
+    every held value is fresh exactly when that time is at most the earliest
+    expiry, so the entry is fresh exactly when every value is. Taking the oldest
+    lastResult from one value and the smallest maxAge from another, as revision
+    00 did, can report two fresh values as one stale input (FR15).
+
+    This is the producer's side: a verifier holding only the record cannot
+    recover the values, so the corpus carries them in FR14's ``aggregation``
+    block and the judge checks this function against the entry FR14 carries.
+    """
+    if not values:
+        raise ValueError("an entry summarizes at least one value")
+    never = [v for v in values if v["lastResult"] == NEVER_HELD]
+    if never:
+        return {"lastResult": NEVER_HELD, "maxAge": min(v["maxAge"] for v in never)}
+
+    epoch = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+
+    def expiry(v: dict[str, Any]) -> tuple[int, int]:
+        # A valid maxAge may put expiry beyond datetime's calendar range.
+        # Subtract aware instants instead of normalizing to a UTC datetime;
+        # an offset at the calendar boundary can put that date out of range too.
+        elapsed = _instant(v["lastResult"]) - epoch
+        produced = (elapsed.days * 86400 + elapsed.seconds) * 1_000_000 + elapsed.microseconds
+        return produced + v["maxAge"] * 1_000_000, produced
+
+    chosen = min(values, key=expiry)
+    return {"lastResult": chosen["lastResult"], "maxAge": chosen["maxAge"]}
+
+
+def derive_unavailable(pred: dict[str, Any], predicate_type: str = PREDICATE_TYPE_V1) -> list[str]:
+    """The inputs a verifier derives as unavailable from ``evaluation.inputs``,
+    in entry order, after holding every entry to its shape (FR5, FR6, FR9 to FR13)
+    and its input to the set ``predicate_type`` names."""
+    allowed = evaluation_inputs(predicate_type)
+    entries = pred["evaluation"]["inputs"]
+    if not isinstance(entries, list):
+        raise Malformed("evaluation-entry-malformed")
+    reported_at = _instant(pred["decision"]["reportedAt"])
+    seen: set[str] = set()
+    unavailable: list[str] = []
+    for entry in entries:
+        _entry_shape(entry, allowed)
+        if entry["input"] in seen:
+            raise Malformed("evaluation-input-repeated")
+        seen.add(entry["input"])
+        if _entry_unavailable(entry, reported_at):
+            unavailable.append(entry["input"])
+    return unavailable
+
+
+def _rule_evaluation(state: _State) -> None:
+    """No member beside status, inputs and unavailableInput (EV12). The entries
+    derive the unavailable inputs. Evaluated derives none and names none;
+    not-evaluated names the derived set, once each and no other."""
+    evaluation = state.predicate["evaluation"]
+    if set(evaluation) - EVALUATION_MEMBERS:
+        raise Malformed("evaluation-malformed")
+    predicate_type = state.policy.predicate_type
+    derived = derive_unavailable(state.predicate, predicate_type)
+    if evaluation["status"] == "evaluated":
+        if "unavailableInput" in evaluation or derived:
+            raise Malformed("evaluation-inconsistent")
+        return
+    inputs = evaluation.get("unavailableInput")
+    if not isinstance(inputs, list) or not inputs:
+        raise Malformed("evaluation-inconsistent")
+    allowed = unavailable_inputs(predicate_type)
+    for value in inputs:
+        if value not in allowed:
+            raise Malformed("value-outside-vocabulary")
+    if len(set(inputs)) != len(inputs) or set(inputs) != set(derived):
+        raise Malformed("evaluation-inconsistent")
+
+
+def _is_digest(value: Any) -> bool:
+    hex_digits = "0123456789abcdef"
+    return isinstance(value, str) and len(value) == 64 and all(c in hex_digits for c in value)
+
+
+def _rule_oversight(state: _State) -> None:
+    """The optional oversight member: an act, and at most the overseer's record digest."""
+    if "oversight" not in state.predicate:
+        return
+    oversight = state.predicate["oversight"]
+    if not isinstance(oversight, dict):
+        raise Malformed("oversight-malformed")
+    if "act" not in oversight:
+        raise Malformed("member-missing")
+    if set(oversight) - OVERSIGHT_MEMBERS:
+        raise Malformed("oversight-malformed")
+    if "recordDigest" in oversight and not _is_digest(oversight["recordDigest"]):
+        raise Malformed("oversight-malformed")
+
+
+# --------------------------------------------------------------------------
+# Consumption binding (Section 5.4, revision 01): the operation key.
+# --------------------------------------------------------------------------
+
+
+#: The only members a sequence object carries, both required.
+SEQUENCE_MEMBERS = frozenset({"boundary", "seq"})
+
+
+def _rule_sequence(state: _State) -> None:
+    """The optional sequence member: exactly boundary, a string, and seq, a
+    positive integer (SQ1). Any other member (SQ2) or a seq below 1 (SQ3) is
+    refused."""
+    if "sequence" not in state.predicate:
+        return
+    sequence = state.predicate["sequence"]
+    if not isinstance(sequence, dict) or set(sequence) != SEQUENCE_MEMBERS:
+        raise Malformed("sequence-malformed")
+    seq = sequence["seq"]
+    if not isinstance(sequence["boundary"], str) or not sequence["boundary"]:
+        raise Malformed("sequence-malformed")
+    if isinstance(seq, bool) or not isinstance(seq, int) or seq < 1:
+        raise Malformed("sequence-malformed")
+
+
+def _is_count(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def consumption_of(pred: dict[str, Any]) -> dict[str, Any] | None:
+    """The ``consumption`` member of the consumption-state entry, if one carries it."""
+    for entry in pred["evaluation"]["inputs"]:
+        if isinstance(entry, dict) and entry.get("input") == CONSUMPTION_INPUT:
+            found = entry.get("consumption")
+            return found if isinstance(found, dict) else None
+    return None
+
+
+def held_for(consumption: dict[str, Any], decision: dict[str, Any]) -> dict[str, Any] | None:
+    """The held entry this call is a retry of: the one whose operationKey is the
+    call's own. Retry identity is the agent's operation key and nothing else; a
+    request digest is a content digest, so two intended payments with the same
+    action, arguments and resource share one (CS11, CS12)."""
+    for held in consumption["held"]:
+        if held["operationKey"] == decision.get("operationKey"):
+            return held if isinstance(held, dict) else None
+    return None
+
+
+def _payee_shape(container: dict[str, Any]) -> None:
+    """An optional payee: the SHA-256 digest of the payee's CAIP-10 account id."""
+    if "payee" in container and not _is_digest(container["payee"]):
+        raise Malformed("consumption-value-invalid")
+
+
+def within_limit(pred: dict[str, Any]) -> bool | None:
+    """The value a verifier derives for a record that carries consumption: the
+    amount already consumed, plus the amount held for earlier permits, plus this
+    call's amount unless it is a retry of a held permit, is at most the limit.
+    None for a record that carries no consumption."""
+    consumption = consumption_of(pred)
+    if consumption is None:
+        return None
+    counted = consumption["consumed"] + consumption["reserved"]
+    if held_for(consumption, pred["decision"]) is None:
+        counted += consumption["requested"]
+    return bool(counted <= consumption["limit"])
+
+
+def _held_shape(item: Any) -> None:
+    """One held entry: operationKey, requestDigest and amount, and an optional
+    payee."""
+    if not isinstance(item, dict):
+        raise Malformed("consumption-malformed")
+    if any(name not in item for name in HELD_MEMBERS):
+        raise Malformed("member-missing")
+    if set(item) - set(HELD_MEMBERS) - set(HELD_OPTIONAL):
+        raise Malformed("consumption-malformed")
+    _payee_shape(item)
+    key = item["operationKey"]
+    if not isinstance(key, str) or not key or not _is_digest(item["requestDigest"]):
+        raise Malformed("consumption-value-invalid")
+    if not _is_count(item["amount"]):
+        raise Malformed("consumption-value-invalid")
+    if "deadline" in item:
+        try:
+            _instant(item["deadline"])
+        except Malformed as exc:
+            raise Malformed("consumption-value-invalid") from exc
+
+
+def _supersedes_shape(consumption: dict[str, Any]) -> None:
+    """The optional supersedes: a digest (CS24) that is not the record's own
+    limitDigest (CS23)."""
+    if "supersedes" not in consumption:
+        return
+    replaced = consumption["supersedes"]
+    if "supersedes-digest" in CONSUMPTION_CHECKS and not _is_digest(replaced):
+        raise Malformed("consumption-value-invalid")
+    if "supersedes-self" in CONSUMPTION_CHECKS and replaced == consumption["limitDigest"]:
+        raise Malformed("consumption-supersedes-self")
+
+
+def _asset_shape(asset: Any) -> None:
+    """The optional asset: exactly id and decimals, the id a CAIP-19 asset id
+    (CS35) and decimals a count no larger than ASSET_DECIMALS_MAX (CS36)."""
+    if not isinstance(asset, dict):
+        raise Malformed("consumption-malformed")
+    if any(name not in asset for name in ASSET_MEMBERS):
+        raise Malformed("member-missing")
+    if set(asset) - set(ASSET_MEMBERS):
+        raise Malformed("consumption-malformed")
+    asset_id = asset["id"]
+    if "asset-id" in CONSUMPTION_CHECKS and not (
+        isinstance(asset_id, str) and CAIP19.fullmatch(asset_id)
+    ):
+        raise Malformed("consumption-value-invalid")
+    decimals = asset["decimals"]
+    if "asset-decimals" in CONSUMPTION_CHECKS and not (
+        _is_count(decimals) and decimals <= ASSET_DECIMALS_MAX
+    ):
+        raise Malformed("consumption-value-invalid")
+
+
+def _settled_shape(settled: Any) -> None:
+    """The optional settled terms: exactly amount, asset, payee, source and
+    transaction; the amount a count, the asset an asset, the payee a digest, the
+    source the chain (CS47) and the transaction a string, empty only when the
+    amount is 0 (CS50): an x402 EVM upto permit that settles 0 sends no
+    transaction, so the empty string is a zero settlement and nothing else
+    (CS51)."""
+    if not isinstance(settled, dict):
+        raise Malformed("consumption-malformed")
+    if any(name not in settled for name in SETTLED_MEMBERS):
+        raise Malformed("member-missing")
+    if set(settled) - set(SETTLED_MEMBERS):
+        raise Malformed("consumption-malformed")
+    _asset_shape(settled["asset"])
+    if not _is_count(settled["amount"]) or not _is_digest(settled["payee"]):
+        raise Malformed("consumption-value-invalid")
+    if "settled-source" in CONSUMPTION_CHECKS and settled["source"] not in SETTLED_SOURCES:
+        raise Malformed("consumption-value-invalid")
+    transaction = settled["transaction"]
+    if not isinstance(transaction, str):
+        raise Malformed("consumption-value-invalid")
+    if transaction:
+        return
+    zero = settled["amount"] == 0
+    if zero and "zero-settled-transaction" not in CONSUMPTION_CHECKS:
+        raise Malformed("consumption-value-invalid")
+    if not zero and "empty-transaction-nonzero" in CONSUMPTION_CHECKS:
+        raise Malformed("consumption-value-invalid")
+
+
+def _consumption_members(consumption: Any) -> None:
+    """Refuse a consumption object whose member set is wrong."""
+    if not isinstance(consumption, dict):
+        raise Malformed("consumption-malformed")
+    required = [
+        name
+        for name in CONSUMPTION_MEMBERS
+        if (name != "stateRevision" or "state-revision" in CONSUMPTION_CHECKS)
+        and (name != "unit" or "asset" not in consumption)
+    ]
+    if any(name not in consumption for name in required):
+        raise Malformed("member-missing")
+    if set(consumption) - set(CONSUMPTION_MEMBERS) - set(CONSUMPTION_OPTIONAL):
+        raise Malformed("consumption-malformed")
+    if "asset-exclusive" in CONSUMPTION_CHECKS and "asset" in consumption and "unit" in consumption:
+        raise Malformed("consumption-unit-ambiguous")
+
+
+def _consumption_shape(consumption: Any) -> dict[str, Any]:
+    _consumption_members(consumption)
+    unit = consumption.get("unit", "-")
+    if not _is_digest(consumption["limitDigest"]) or not isinstance(unit, str) or not unit:
+        raise Malformed("consumption-value-invalid")
+    if "asset" in consumption:
+        _asset_shape(consumption["asset"])
+    _payee_shape(consumption)
+    if "settled" in consumption:
+        _settled_shape(consumption["settled"])
+    _supersedes_shape(consumption)
+    counted = [name for name in CONSUMPTION_COUNTS if name in consumption]
+    if "counts" in CONSUMPTION_CHECKS and not all(_is_count(consumption[n]) for n in counted):
+        raise Malformed("consumption-value-invalid")
+    held = consumption["held"]
+    if not isinstance(held, list):
+        raise Malformed("consumption-malformed")
+    for item in held:
+        _held_shape(item)
+    shaped: dict[str, Any] = consumption
+    return shaped
+
+
+def _rule_consumption(state: _State) -> None:
+    """The consumption member and the operation key (CS3 to CS6, CS9 to CS14).
+
+    ``consumption`` sits only on a consumption-state entry. ``reserved`` is the
+    sum of the held amounts and the held operation keys are distinct. A record
+    that carries consumption carries ``decision.operationKey``. A call whose key
+    is held is a retry: its request digest and amount are the held entry's
+    (CS10), and it is not counted twice (CS4); a call whose key is not held is a
+    new operation even when its request digest is a held entry's (CS11, CS12)."""
+    pred = state.predicate
+    for entry in pred["evaluation"]["inputs"]:
+        if (
+            "misplaced" in CONSUMPTION_CHECKS
+            and "consumption" in entry
+            and entry["input"] != CONSUMPTION_INPUT
+        ):
+            raise Malformed("consumption-misplaced")
+    decision = pred["decision"]
+    key = decision.get("operationKey")
+    if "operationKey" in decision and (not isinstance(key, str) or not key):
+        raise Malformed("operation-key-invalid")
+    consumption = consumption_of(pred)
+    if consumption is None:
+        return
+    _consumption_shape(consumption)
+    keys = [held["operationKey"] for held in consumption["held"]]
+    if "distinct-keys" in CONSUMPTION_CHECKS and len(set(keys)) != len(keys):
+        raise Malformed("consumption-held-key-repeated")
+    held_sum = sum(held["amount"] for held in consumption["held"])
+    if "reserved" in CONSUMPTION_CHECKS and held_sum != consumption["reserved"]:
+        raise Malformed("consumption-reserved-mismatch")
+    if "operation-key" in CONSUMPTION_CHECKS and "operationKey" not in decision:
+        raise Malformed("member-missing")
+    retried = held_for(consumption, decision)
+    if (
+        "key-reuse" in CONSUMPTION_CHECKS
+        and retried is not None
+        and (
+            retried["requestDigest"] != decision["requestDigest"]
+            or retried["amount"] != consumption["requested"]
+        )
+    ):
+        raise Malformed("consumption-key-reused")
+    if (
+        "retry-payee" in CONSUMPTION_CHECKS
+        and retried is not None
+        and retried.get("payee") != consumption.get("payee")
+    ):
+        raise Malformed("consumption-key-reused")
+    _settled_against_approved(consumption)
+    _zero_settlement_held(consumption, decision)
+
+
+def _zero_settlement_held(consumption: dict[str, Any], decision: dict[str, Any]) -> None:
+    """A zero settlement keeps the operation in held with a deadline (CS52): the
+    permit's nonce is unspent, so the facilitator can still settle it up to its
+    maximum until the deadline."""
+    settled = consumption.get("settled")
+    if settled is None or settled["amount"] != 0:
+        return
+    if "zero-settled-deadline" not in CONSUMPTION_CHECKS:
+        return
+    held = held_for(consumption, decision)
+    if held is None or "deadline" not in held:
+        raise Malformed("consumption-value-invalid")
+
+
+def _settled_against_approved(consumption: dict[str, Any]) -> None:
+    """The settled terms beside the approved ones (CS43 to CS46): the amount at
+    most the authorized maximum, which is ``requested`` (an x402 upto permit may
+    settle lower, or at 0), and the asset and payee the approved ones."""
+    settled = consumption.get("settled")
+    if settled is None:
+        return
+    if "settled-amount" in CONSUMPTION_CHECKS and settled["amount"] > consumption["requested"]:
+        raise Malformed("consumption-settled-exceeds")
+    if "settled-terms" in CONSUMPTION_CHECKS and (
+        settled["asset"] != consumption.get("asset") or settled["payee"] != consumption.get("payee")
+    ):
+        raise Malformed("consumption-settled-differs")
+
+
+def _rule_delegation(state: _State) -> None:
+    """``subjectKind`` of none beside any other subject value (F2)."""
+    delegation = state.predicate["delegation"]
+    if delegation["subjectKind"] == "none" and delegation["subject"] != "none":
+        raise Malformed("delegation-subject-inconsistent")
+
+
+# --------------------------------------------------------------------------
+# The authenticated principal (revision 04, rows PR1 to PR11).
+# --------------------------------------------------------------------------
+
+#: The members ``principal`` carries, each required, and the one it may carry
+#: beside them. Any other member is refused, so a producer cannot add a claim a
+#: verifier would read past.
+PRINCIPAL_MEMBERS = (
+    "issuer",
+    "subject",
+    "clientId",
+    "audience",
+    "authMethod",
+    "source",
+    "tokenDigest",
+    "issuedAt",
+    "expiresAt",
+    "kid",
+    "key",
+    "keyThumbprint",
+    "jwksDigest",
+)
+PRINCIPAL_OPTIONAL = ("tenant",)
+#: How the client authenticated to the issuer: the IANA registry "OAuth Token
+#: Endpoint Authentication Methods" as RFC 7591 and RFC 8705 populate it.
+PRINCIPAL_AUTH_METHODS = frozenset(
+    {
+        "none",
+        "client_secret_post",
+        "client_secret_basic",
+        "client_secret_jwt",
+        "private_key_jwt",
+        "tls_client_auth",
+        "self_signed_tls_client_auth",
+    }
+)
+#: What the decision point validated to establish the principal: an RFC 9068
+#: access token, an OpenID Connect ID token, or an RFC 7523 assertion. Each is a
+#: JWS whose header ``kid`` names a key of the issuer's JWKS.
+PRINCIPAL_SOURCES = frozenset({"jwt-access-token", "id-token", "jwt-assertion"})
+#: The members RFC 7638 Section 3.2 hashes, by key type (RSA and EC from RFC
+#: 7638, OKP from RFC 8037 Section 2).
+THUMBPRINT_MEMBERS: dict[str, tuple[str, ...]] = {
+    "RSA": ("e", "kty", "n"),
+    "EC": ("crv", "kty", "x", "y"),
+    "OKP": ("crv", "kty", "x"),
+}
+#: Members that make a JWK a private key; ``key`` is the issuer's public key.
+JWK_PRIVATE_MEMBERS = frozenset({"d", "p", "q", "dp", "dq", "qi", "oth", "k"})
+
+
+def jwk_thumbprint(key: dict[str, Any]) -> str:
+    """The RFC 7638 SHA-256 thumbprint of a public JWK, base64url without padding:
+    the RFC 8785 bytes of the required members only."""
+    required = THUMBPRINT_MEMBERS[key["kty"]]
+    body = {name: key[name] for name in required}
+    digest_bytes = hashlib.sha256(canonical_bytes(body)).digest()
+    return base64.urlsafe_b64encode(digest_bytes).rstrip(b"=").decode("ascii")
+
+
+def _text(value: Any) -> bool:
+    return isinstance(value, str) and value != ""
+
+
+def _principal_key_shape(key: Any) -> None:
+    """A public JWK of a type RFC 7638 defines, every hashed member a string."""
+    if not isinstance(key, dict) or key.get("kty") not in THUMBPRINT_MEMBERS:
+        raise Malformed("principal-malformed")
+    if set(key) & JWK_PRIVATE_MEMBERS:
+        raise Malformed("principal-malformed")
+    if not all(_text(key.get(name)) for name in THUMBPRINT_MEMBERS[key["kty"]]):
+        raise Malformed("principal-malformed")
+
+
+def _principal_issuer_audience(principal: dict[str, Any]) -> None:
+    """An https issuer, and an audience of distinct non-empty strings."""
+    issuer = principal["issuer"]
+    if not isinstance(issuer, str) or not issuer.startswith("https://") or len(issuer) == 8:
+        raise Malformed("principal-malformed")
+    audience = principal["audience"]
+    if (
+        not isinstance(audience, list)
+        or not audience
+        or not all(_text(item) for item in audience)
+        or len(set(audience)) != len(audience)
+    ):
+        raise Malformed("principal-malformed")
+
+
+def _principal_shape(principal: Any) -> None:
+    if not isinstance(principal, dict):
+        raise Malformed("principal-malformed")
+    if any(name not in principal for name in PRINCIPAL_MEMBERS):
+        raise Malformed("principal-member-missing")
+    if set(principal) - set(PRINCIPAL_MEMBERS) - set(PRINCIPAL_OPTIONAL):
+        raise Malformed("principal-member-unknown")
+    texts = ("subject", "clientId", "kid", "keyThumbprint")
+    if not all(_text(principal[name]) for name in texts):
+        raise Malformed("principal-malformed")
+    _principal_issuer_audience(principal)
+    if principal["authMethod"] not in PRINCIPAL_AUTH_METHODS:
+        raise Malformed("principal-malformed")
+    if principal["source"] not in PRINCIPAL_SOURCES:
+        raise Malformed("principal-malformed")
+    if not _is_digest(principal["tokenDigest"]) or not _is_digest(principal["jwksDigest"]):
+        raise Malformed("principal-malformed")
+    if "tenant" in principal and not _text(principal["tenant"]):
+        raise Malformed("principal-malformed")
+    _principal_key_shape(principal["key"])
+
+
+def _principal_lifetime(principal: dict[str, Any], reported_at: Any) -> None:
+    """Issued no later than the decision and not expired at it, both within the
+    skew tolerance; a lifetime that ends before it starts is malformed."""
+    try:
+        issued = _instant(principal["issuedAt"])
+        expires = _instant(principal["expiresAt"])
+    except Malformed as exc:
+        raise Malformed("principal-malformed") from exc
+    if expires <= issued:
+        raise Malformed("principal-malformed")
+    decided = _instant(reported_at)
+    if issued - decided > SKEW_TOLERANCE:
+        raise Malformed("principal-not-yet-valid")
+    if decided - expires > SKEW_TOLERANCE:
+        raise Malformed("principal-expired")
+
+
+def _rule_principal(state: _State) -> None:
+    """The optional principal member: the IdP-authenticated principal the
+    decision point established, bound to the agent's credential by its digest
+    and to the issuer's key by its RFC 7638 thumbprint (PR1 to PR11)."""
+    pred = state.predicate
+    if "principal" not in pred:
+        return
+    principal = pred["principal"]
+    _principal_shape(principal)
+    delegation = pred["delegation"]
+    if delegation["subjectKind"] == "user" and principal["subject"] != delegation["subject"]:
+        raise Malformed("principal-subject-mismatch")
+    if principal["tokenDigest"] != pred["agent"]["credentialDigest"]:
+        raise Malformed("principal-credential-unbound")
+    _principal_lifetime(principal, pred["decision"]["reportedAt"])
+    if principal["key"].get("kid") != principal["kid"]:
+        raise Malformed("principal-kid-mismatch")
+    if principal["keyThumbprint"] != jwk_thumbprint(principal["key"]):
+        raise Malformed("principal-thumbprint-mismatch")
+
+
+# --------------------------------------------------------------------------
+# Whose data a call touched, and why (revision 04, rows DS1 to DS10).
+# --------------------------------------------------------------------------
+
+#: The members ``dataSubject`` carries, each required, and the one it may carry
+#: beside them. Any other member is refused, so a raw identifier cannot ride in
+#: a member a verifier would read past.
+DATA_SUBJECT_MEMBERS = (
+    "scheme",
+    "saltId",
+    "reference",
+    "relation",
+    "purpose",
+    "purposes",
+    "purposesDigest",
+)
+DATA_SUBJECT_OPTIONAL = ("delegateReference",)
+#: The keyed reference scheme: SHA-256, as hex, of the RFC 8785 bytes of
+#: ``{"salt": <base64url salt>, "subject": <identifier>}``.
+DATA_SUBJECT_SCHEME = "salted-sha256-jcs"
+#: ``delegate``: the data subject is the user the agent acts for. ``other``: it
+#: is another person, whose reference differs from the delegate's.
+DATA_SUBJECT_RELATIONS = frozenset({"delegate", "other"})
+
+
+def data_subject_reference(salt: str, subject_id: str) -> str:
+    """The keyed reference to a data subject: what the server recomputes from its
+    salt (base64url) and an identifier when it answers an access request."""
+    body = {"salt": salt, "subject": subject_id}
+    return hashlib.sha256(canonical_bytes(body)).hexdigest()
+
+
+def _data_subject_shape(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise Malformed("data-subject-malformed")
+    if any(name not in value for name in DATA_SUBJECT_MEMBERS):
+        raise Malformed("data-subject-member-missing")
+    if set(value) - set(DATA_SUBJECT_MEMBERS) - set(DATA_SUBJECT_OPTIONAL):
+        raise Malformed("data-subject-member-unknown")
+    purposes = value["purposes"]
+    digests = [value["reference"], value["purposesDigest"]]
+    digests += [value["delegateReference"]] if "delegateReference" in value else []
+    if (
+        value["scheme"] != DATA_SUBJECT_SCHEME
+        or value["relation"] not in DATA_SUBJECT_RELATIONS
+        or not _text(value["saltId"])
+        or not _text(value["purpose"])
+        or not all(_is_digest(item) for item in digests)
+        or not isinstance(purposes, list)
+        or not purposes
+        or not all(_text(item) for item in purposes)
+        or len(set(purposes)) != len(purposes)
+    ):
+        raise Malformed("data-subject-malformed")
+
+
+def _data_subject_relation(value: dict[str, Any], delegation: dict[str, Any]) -> None:
+    """A user caller names its own reference beside the data subject's unless the
+    two are one person; a system caller has no delegate to name."""
+    is_user = delegation["subjectKind"] == "user"
+    has_delegate = "delegateReference" in value
+    if value["relation"] == "delegate":
+        if not is_user or has_delegate:
+            raise Malformed("data-subject-relation-mismatch")
+    elif has_delegate != is_user:
+        raise Malformed("data-subject-relation-mismatch")
+    if has_delegate and value["delegateReference"] == value["reference"]:
+        raise Malformed("data-subject-merged")
+
+
+def _rule_data_subject(state: _State) -> None:
+    """The optional dataSubject member: a keyed reference to the person whose data
+    the call read, kept apart from the delegated subject, and a purpose taken
+    from the list the server declared (DS1 to DS10)."""
+    pred = state.predicate
+    if "dataSubject" not in pred:
+        return
+    value = pred["dataSubject"]
+    _data_subject_shape(value)
+    _data_subject_relation(value, pred["delegation"])
+    if value["purposesDigest"] != hashlib.sha256(canonical_bytes(value["purposes"])).hexdigest():
+        raise Malformed("data-subject-purposes-digest-mismatch")
+    if value["purpose"] not in value["purposes"]:
+        raise Malformed("data-subject-purpose-undeclared")
+
+
+def _rule_binding(state: _State) -> None:
+    """digest-bound carries argumentsDigest; not-bindable carries it in no
+    spelling, null and the empty string included (F3, F3b, F3c)."""
+    resource = state.predicate["resource"]
+    if resource["binding"] == "digest-bound" and "argumentsDigest" not in resource:
+        raise Malformed("arguments-digest-missing")
+    if resource["binding"] == "not-bindable" and "argumentsDigest" in resource:
+        raise Malformed("arguments-digest-forbidden")
+
+
+def _rule_request_digest(state: _State) -> None:
+    """The request digest recomputes and is the first subject's digest (F4, A6)."""
+    pred = state.predicate
+    recomputed = request_digest(pred)
+    if pred["decision"]["requestDigest"] != recomputed:
+        raise Malformed("request-digest-mismatch")
+    if state.statement["subject"][0].get("digest", {}).get("sha256") != recomputed:
+        raise Malformed("subject-request-mismatch")
+
+
+def _rule_subject_after_root(state: _State) -> None:
+    """The second subject's digest is the interval's after-state root (S2)."""
+    after = state.predicate["effect"]["interval"]["afterRoot"]
+    if state.statement["subject"][1].get("digest", {}).get("sha256") != after:
+        raise Malformed("subject-after-root-mismatch")
+
+
+def _rule_external_anchor(state: _State) -> None:
+    """beacon-anchored carries externalAnchor, asserted does not (F5)."""
+    correlation = state.predicate["correlation"]
+    anchored = correlation["timeBasis"] == "beacon-anchored"
+    if anchored != ("externalAnchor" in correlation):
+        raise Malformed("external-anchor-inconsistent")
+
+
+def _rule_remediation_order(state: _State) -> None:
+    """enforcedAt at or after signalReceivedAt in every event (F7)."""
+    for row in state.predicate["remediation"]:
+        if _instant(row["enforcedAt"]) < _instant(row["signalReceivedAt"]):
+            raise Malformed("remediation-order")
+
+
+def _rule_issued_after_sealed(state: _State) -> None:
+    """issuedAt parses as an instant and is not earlier than sealedAt (IS1, IS2)."""
+    pred = state.predicate
+    issued = _instant(pred["issuedAt"])
+    sealed = _instant(pred["effect"]["interval"]["sealedAt"])
+    if issued < sealed:
+        raise Malformed("issued-before-sealed")
+
+
+def _rule_empty_tree(state: _State) -> None:
+    """empty-tree carries the constant for the declared algorithm (E3)."""
+    pred = state.predicate
+    interval = pred["effect"]["interval"]
+    if interval["baseResolution"] != "empty-tree":
+        return
+    if interval["beforeRoot"] != EMPTY_TREE[pred["hashAlgorithm"]]:
+        raise Malformed("empty-tree-constant-mismatch")
+
+
+def _rule_commitment(state: _State) -> None:
+    """Order (C2), digest (C3), and key disjointness (C1) of the prior commitment."""
+    pred = state.predicate
+    if not _commitment_complete(pred):
+        return
+    commitment = _commitment(pred)
+    assert commitment is not None
+    opened = _instant(pred["effect"]["interval"]["openedAt"])
+    if not _instant(commitment["committedAt"]) < opened:
+        raise Malformed("commitment-order")
+    if commitment["commitmentDigest"] != commitment_digest(pred, commitment):
+        raise Malformed("commitment-digest-mismatch")
+    if commitment["keyid"] in pred["agent"]["signers"]:
+        raise Malformed("commitment-key-is-agent-signer")
+
+
+def _rule_write_chain(state: _State) -> None:
+    """The ordered writes reproduce afterRoot from beforeRoot (E2)."""
+    interval = state.predicate["effect"]["interval"]
+    current = interval["beforeRoot"]
+    for write in state.predicate["effect"]["writes"]:
+        if write["preStateDigest"] != current:
+            raise Malformed("write-chain-broken")
+        current = write["postStateDigest"]
+    if current != interval["afterRoot"]:
+        raise Malformed("write-chain-broken")
+
+
+def _rule_path_scope_literal(state: _State) -> None:
+    """No glob metacharacter in pathScope; the universal scope is ``/`` (V2)."""
+    for scope in state.predicate["effect"]["pathScope"]:
+        if not isinstance(scope, str) or GLOB_METACHARACTERS & set(scope):
+            raise Malformed("path-scope-glob")
+
+
+def _rule_coverage(state: _State) -> None:
+    """A gap inside pathScope contradicts scopeComplete of true, and the record
+    is malformed whatever tier it declares (V4, V5)."""
+    pred = state.predicate
+    if pred["observation"]["coverage"]["scopeComplete"] is True and gaps_inside_scope(pred):
+        raise Malformed("coverage-inconsistent")
+
+
+def _rule_tier(state: _State) -> None:
+    """The tier is recomputed; a declared authoritative that fails a clause is
+    malformed and is never downgraded (TI1 to TI5)."""
+    pred = state.predicate
+    failed = tier_failures(pred)
+    state.derived_tier = "voluntary" if failed else "authoritative"
+    if pred["tier"] == "authoritative" and failed:
+        raise Malformed(failed[0])
+
+
+def _rule_write_scope(state: _State) -> None:
+    """inScope is derived from the path, never a producer opinion (V3)."""
+    scope = state.predicate["effect"]["pathScope"]
+    for write in state.predicate["effect"]["writes"]:
+        derived = any(_under(write["path"], s) for s in scope)
+        if write["inScope"] is not derived:
+            raise Malformed("write-scope-mismatch")
+
+
+def _rule_observed(state: _State) -> None:
+    """effect.observed derives from the writes attributed to this request (T1, E1)."""
+    if state.predicate["effect"]["observed"] != derive_observed(state.predicate):
+        raise Malformed("effect-observed-underivable")
+
+
+def _rule_agreement(state: _State) -> None:
+    """agreement derives from the decision and the effect (D1, D2, D3)."""
+    pred = state.predicate
+    if pred["agreement"] == "one-sided":
+        raise Malformed("agreement-reserved-value")
+    derived = derive_agreement(pred["decision"]["reported"], pred["effect"]["observed"])
+    if pred["agreement"] != derived:
+        raise Malformed("agreement-underivable")
+
+
+def _rule_posture_agreement(state: _State) -> None:
+    """agree when the two postures are equal byte for byte (F6)."""
+    posture = state.predicate["posture"]
+    equal = canonical_bytes([posture["reported"], posture["reportedDigest"]]) == canonical_bytes(
+        [posture["observed"], posture["observedDigest"]]
+    )
+    if posture["agreement"] != ("agree" if equal else "disagree"):
+        raise Malformed("posture-agreement-underivable")
+
+
+def _rule_field_evidence(state: _State) -> None:
+    """Exactly the seven keys (FE1); no substrate-covered beside self (FE2)."""
+    pred = state.predicate
+    evidence = pred["fieldEvidence"]
+    if set(evidence) != FIELD_EVIDENCE_KEYS:
+        raise Malformed("field-evidence-keys")
+    if pred["observation"]["vantage"] == "self" and "substrate-covered" in evidence.values():
+        raise Malformed("field-evidence-self-substrate")
+
+
+RULES: list[tuple[str, Callable[[_State], None]]] = [
+    ("statement", _rule_statement),
+    ("subject-interval", _rule_subject_interval),
+    ("required-members", _rule_required_members),
+    ("closed-vocabularies", _rule_closed_vocabularies),
+    ("evaluation", _rule_evaluation),
+    ("oversight", _rule_oversight),
+    ("sequence", _rule_sequence),
+    ("consumption", _rule_consumption),
+    ("delegation", _rule_delegation),
+    ("principal", _rule_principal),
+    ("data-subject", _rule_data_subject),
+    ("binding", _rule_binding),
+    ("request-digest", _rule_request_digest),
+    ("subject-after-root", _rule_subject_after_root),
+    ("external-anchor", _rule_external_anchor),
+    ("remediation-order", _rule_remediation_order),
+    ("issued-after-sealed", _rule_issued_after_sealed),
+    ("empty-tree", _rule_empty_tree),
+    ("commitment", _rule_commitment),
+    ("write-chain", _rule_write_chain),
+    ("path-scope-literal", _rule_path_scope_literal),
+    ("coverage", _rule_coverage),
+    ("tier", _rule_tier),
+    ("write-scope", _rule_write_scope),
+    ("observed", _rule_observed),
+    ("agreement", _rule_agreement),
+    ("posture-agreement", _rule_posture_agreement),
+    ("field-evidence", _rule_field_evidence),
+]
+
+
+#: Rules no Appendix B row reaches. The draft states them and a reader must keep
+#: them, but the corpus carries no member for them, so a mutation sweep that
+#: disabled one would report it inert for a reason that is the draft's, not this
+#: reader's. Empty since X4 and X5 reach the statement rule. Kept as the named
+#: place for any future exemption, so it is visible rather than silent.
+UNREACHED_BY_CORPUS: frozenset[str] = frozenset()
+
+
+def rule_names() -> list[str]:
+    return [name for name, _ in RULES]
+
+
+def _envelope_payload(raw: bytes) -> tuple[dict[str, Any], bytes]:
+    try:
+        envelope = json.loads(raw, object_pairs_hook=_no_duplicates)
+        payload = base64.b64decode(envelope["payload"], validate=True)
+    except Malformed:
+        raise
+    except Exception as exc:
+        raise Malformed("envelope-unreadable") from exc
+    if not isinstance(envelope, dict) or envelope.get("payloadType") != PAYLOAD_TYPE:
+        raise Malformed("envelope-unreadable")
+    return envelope, payload
+
+
+def _signature_holds(envelope: dict[str, Any], canonical: bytes, policy: Policy) -> bool:
+    """The signature covers the RFC 8785 bytes of the Statement and no other
+    serialization, so the bytes checked are the ones this reader derives."""
+    try:
+        key = bytes.fromhex(policy.observer_public_key)
+        signatures = envelope["signatures"]
+    except (KeyError, ValueError):
+        return False
+    message = pae(PAYLOAD_TYPE, canonical)
+    for entry in signatures if isinstance(signatures, list) else []:
+        sig = _signature_bytes(entry)
+        if sig is not None and len(key) == 32 and _ed25519_verify(key, message, sig):
+            return True
+    return False
+
+
+def _signature_bytes(entry: Any) -> bytes | None:
+    """One signature entry's ``sig``, decoded; None when it is absent or not base64."""
+    try:
+        return base64.b64decode(entry["sig"], validate=True)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def verify(raw: bytes, policy: Policy, *, disabled: str | None = None) -> Report:
+    """Judge one DSSE envelope carrying an agent audit record.
+
+    ``disabled`` names one rule to skip, which is how a mutation sweep asks
+    whether that rule is load-bearing. Production verification never passes it.
+    """
+    try:
+        envelope, payload = _envelope_payload(raw)
+        statement = parse_statement(payload)
+        if not isinstance(statement, dict):
+            raise Malformed("statement-shape")
+        canonical = canonical_bytes(statement)
+    except Malformed as exc:
+        return Report("malformed", [exc.code])
+    if disabled != "signature" and not _signature_holds(envelope, canonical, policy):
+        return Report("malformed", ["signature-invalid"])
+    predicate = statement.get("predicate")
+    if not isinstance(predicate, dict) or not isinstance(statement.get("subject"), list):
+        return Report("malformed", ["statement-shape"])
+    state = _State(statement=statement, predicate=predicate, policy=policy)
+    try:
+        for name, rule in RULES:
+            if name != disabled:
+                rule(state)
+    except Malformed as exc:
+        return Report("malformed", [exc.code], state.derived_tier)
+    except (KeyError, TypeError, AttributeError, IndexError) as exc:
+        return Report("malformed", [f"unhandled-shape:{exc.__class__.__name__}"])
+    return Report("valid", [], state.derived_tier)
+
+
+# --------------------------------------------------------------------------
+# Retained records and the dating check (Section 4.7).
+# --------------------------------------------------------------------------
+
+ANCHOR_KINDS = frozenset({"rfc3161", "transparency-log", "opentimestamps"})
+#: A comparison using the time of an opentimestamps anchor allows this in place
+#: of the skew tolerance: the consensus bound on a header time (R10, R11).
+OTS_TOLERANCE = datetime.timedelta(seconds=7200)
+OTS_MAGIC = bytes.fromhex("004f70656e54696d657374616d7073000050726f6f6600bf89e2e884e89294")
+OTS_BITCOIN = bytes.fromhex("0588960d73d71901")
+OTS_PENDING = bytes.fromhex("83dfe30d2ef90c8e")
+OTS_SHA256, OTS_APPEND, OTS_PREPEND = 0x08, 0xF0, 0xF1
+OTS_MAX_BYTES = 4096
+OTS_MAX_DEPTH = 256
+#: The algorithm a delegation root's key set names, read off its JWK members.
+JWK_ALGORITHMS = {
+    ("OKP", "Ed25519"): "Ed25519",
+    ("OKP", "Ed448"): "Ed448",
+    ("EC", "P-256"): "P-256",
+    ("EC", "P-384"): "P-384",
+    ("EC", "P-521"): "P-521",
+}
+ANCHOR_ORIGINS = frozenset({"retainer", "received"})
+INCLUSION_PROOF_V2 = 0x0106
+
+
+@dataclass(frozen=True)
+class TreeHead:
+    """A transparency-log tree head a verifier holds by a means other than its
+    signature, such as a checkpoint it already witnessed (Section 4.7.2)."""
+
+    log_id: bytes
+    tree_size: int
+    root_hash: bytes
+    timestamp: str
+
+
+@dataclass(frozen=True)
+class BlockHeader:
+    """A Bitcoin block header a verifier holds independently, as a block of the
+    chain with the most work (Section 4.7.2): its height, the Merkle root it
+    carries in internal byte order, and its timestamp."""
+
+    height: int
+    merkle_root: bytes
+    timestamp: str
+
+
+#: What a verifier holds to validate anchors offline: tree heads and block headers.
+AnchorTrust = list[TreeHead | BlockHeader]
+
+NOT_ESTABLISHED: dict[str, Any] = {"result": "not-established"}
+
+
+@dataclass
+class Dating:
+    """The dating check's result, reported beside the record's verdict. The
+    delegation root's result sits beside both and changes neither (R13 to R15)."""
+
+    entry: str
+    codes: list[str]
+    dated_at: str | None = None
+    receipt: str | None = None
+    delegation_root: dict[str, Any] = field(default_factory=lambda: dict(NOT_ESTABLISHED))
+
+
+class _Reader:
+    """A cursor over TLS presentation-language bytes (RFC 8446 Section 3)."""
+
+    def __init__(self, data: bytes) -> None:
+        self.data = data
+        self.at = 0
+
+    def take(self, n: int) -> bytes:
+        if self.at + n > len(self.data):
+            raise ValueError("truncated")
+        out = self.data[self.at : self.at + n]
+        self.at += n
+        return out
+
+    def uint(self, n: int) -> int:
+        return int.from_bytes(self.take(n), "big")
+
+    def varuint(self) -> int:
+        """An OpenTimestamps unsigned LEB128 integer, at most 9 bytes."""
+        value, shift = 0, 0
+        while True:
+            byte = self.take(1)[0]
+            value |= (byte & 0x7F) << shift
+            if not byte & 0x80:
+                return value
+            shift += 7
+            if shift > 56:
+                raise ValueError("varuint too long")
+
+    def varbytes(self, limit: int = OTS_MAX_BYTES) -> bytes:
+        n = self.varuint()
+        if n > limit:
+            raise ValueError("varbytes too long")
+        return self.take(n)
+
+
+def _inclusion_proof(proof: bytes) -> tuple[bytes, int, int, list[bytes]]:
+    """Decode an RFC 9162 TransItem of type inclusion_proof_v2 (Section 4.12)."""
+    reader = _Reader(proof)
+    if reader.uint(2) != INCLUSION_PROOF_V2:
+        raise ValueError("not an inclusion_proof_v2")
+    log_id = reader.take(reader.uint(1))
+    if not 2 <= len(log_id) <= 127:
+        raise ValueError("log_id length")
+    tree_size, leaf_index = reader.uint(8), reader.uint(8)
+    nodes = _Reader(reader.take(reader.uint(2)))
+    path: list[bytes] = []
+    while nodes.at < len(nodes.data):
+        node = nodes.take(nodes.uint(1))
+        if len(node) < 32:
+            raise ValueError("node hash length")
+        path.append(node)
+    if reader.at != len(proof):
+        raise ValueError("trailing bytes")
+    return log_id, tree_size, leaf_index, path
+
+
+def inclusion_root(leaf: bytes, leaf_index: int, tree_size: int, path: list[bytes]) -> bytes | None:
+    """RFC 9162 Section 2.1.3.2, returning the root the path recomputes to."""
+    if leaf_index >= tree_size:
+        return None
+    fn, sn = leaf_index, tree_size - 1
+    r = hashlib.sha256(b"\x00" + leaf).digest()
+    for p in path:
+        if sn == 0:
+            return None
+        if fn & 1 or fn == sn:
+            r = hashlib.sha256(b"\x01" + p + r).digest()
+            if not fn & 1:
+                while fn and not fn & 1:
+                    fn >>= 1
+                    sn >>= 1
+        else:
+            r = hashlib.sha256(b"\x01" + r + p).digest()
+        fn >>= 1
+        sn >>= 1
+    return r if sn == 0 else None
+
+
+def _ots_timestamp(
+    reader: _Reader, message: bytes, out: list[tuple[bytes, bytes, bytes]], depth: int
+) -> None:
+    """One OpenTimestamps timestamp: items, each but the last preceded by 0xff."""
+    if depth > OTS_MAX_DEPTH:
+        raise ValueError("timestamp too deep")
+    while True:
+        tag = reader.take(1)[0]
+        more = tag == 0xFF
+        if more:
+            tag = reader.take(1)[0]
+        _ots_item(reader, tag, message, out, depth)
+        if not more:
+            return
+
+
+def _ots_item(
+    reader: _Reader, tag: int, message: bytes, out: list[tuple[bytes, bytes, bytes]], depth: int
+) -> None:
+    """An attestation (0x00, an 8-byte tag and its payload), or a commitment
+    operation applied to ``message`` followed by the timestamp of its result."""
+    if tag == 0x00:
+        kind = reader.take(8)
+        out.append((message, kind, reader.varbytes()))
+        return
+    if tag == OTS_SHA256:
+        result = hashlib.sha256(message).digest()
+    elif tag in (OTS_APPEND, OTS_PREPEND):
+        argument = reader.varbytes()
+        result = message + argument if tag == OTS_APPEND else argument + message
+    else:
+        raise ValueError("operation this reader does not define")
+    if len(result) > OTS_MAX_BYTES:
+        raise ValueError("message too long")
+    _ots_timestamp(reader, result, out, depth + 1)
+
+
+def ots_attestations(proof: bytes, envelope_digest: bytes) -> list[tuple[bytes, bytes, bytes]]:
+    """Decode a DetachedTimestampFile over ``envelope_digest``: every attestation
+    as (the message it attests, its tag, its payload)."""
+    reader = _Reader(proof)
+    if reader.take(len(OTS_MAGIC)) != OTS_MAGIC or reader.varuint() != 1:
+        raise ValueError("not an OpenTimestamps proof")
+    if reader.take(1)[0] != OTS_SHA256 or reader.take(32) != envelope_digest:
+        raise ValueError("the proof is over another digest")
+    out: list[tuple[bytes, bytes, bytes]] = []
+    _ots_timestamp(reader, envelope_digest, out, 0)
+    if reader.at != len(proof):
+        raise ValueError("trailing bytes")
+    return out
+
+
+def _ots_moment(proof: bytes, envelope_digest: bytes, trust: AnchorTrust) -> tuple[str, int] | None:
+    """The lowest held block a Bitcoin attestation's message is the Merkle root
+    of. A pending attestation validates nothing (R12)."""
+    found: list[tuple[int, str]] = []
+    for message, kind, payload in ots_attestations(proof, envelope_digest):
+        if kind != OTS_BITCOIN:
+            continue
+        payload_reader = _Reader(payload)
+        height = payload_reader.varuint()
+        if payload_reader.at != len(payload):
+            raise ValueError("trailing bytes in a Bitcoin attestation")
+        for held in trust:
+            if (
+                isinstance(held, BlockHeader)
+                and held.height == height
+                and held.merkle_root == message
+            ):
+                found.append((height, held.timestamp))
+    if not found:
+        return None
+    height, timestamp = min(found)
+    return timestamp, height
+
+
+def anchor_time(
+    anchor: dict[str, Any], envelope_digest: bytes, trust: AnchorTrust
+) -> tuple[str, int | None] | None:
+    """The time an anchor establishes over ``envelope_digest`` and, for an
+    opentimestamps anchor, the height of its block; None when it does not
+    validate. A transparency-log anchor validates when it recomputes to a held
+    tree head, an opentimestamps anchor when it recomputes to the Merkle root of
+    a held block header. This reader holds no time-stamping authority path, so
+    an rfc3161 anchor dates nothing."""
+    kind = anchor.get("kind")
+    try:
+        proof = base64.b64decode(anchor["proof"], validate=True)
+        if kind == "opentimestamps":
+            return _ots_moment(proof, envelope_digest, trust)
+        if kind != "transparency-log":
+            return None
+        log_id, tree_size, leaf_index, path = _inclusion_proof(proof)
+    except (KeyError, TypeError, ValueError):
+        return None
+    root = inclusion_root(envelope_digest, leaf_index, tree_size, path)
+    for head in trust:
+        if isinstance(head, TreeHead) and (head.log_id, head.tree_size, head.root_hash) == (
+            log_id,
+            tree_size,
+            root,
+        ):
+            return head.timestamp, None
+    return None
+
+
+def _retention_shape(entry: Any) -> None:
+    if not isinstance(entry, dict):
+        raise Malformed("entry-shape-malformed")
+    if not isinstance(entry.get("envelopeDigest"), str) or not isinstance(
+        entry.get("received"), bool
+    ):
+        raise Malformed("entry-shape-malformed")
+    within = entry.get("anchorWithin")
+    if isinstance(within, bool) or not isinstance(within, int) or within < 0:
+        raise Malformed("entry-shape-malformed")
+    anchors = entry.get("anchors")
+    if not isinstance(anchors, list):
+        raise Malformed("entry-shape-malformed")
+    for anchor in anchors:
+        if (
+            not isinstance(anchor, dict)
+            or anchor.get("kind") not in ANCHOR_KINDS
+            or anchor.get("origin") not in ANCHOR_ORIGINS
+            or not isinstance(anchor.get("proof"), str)
+        ):
+            raise Malformed("entry-shape-malformed")
+
+
+@dataclass
+class _Retained:
+    entry: dict[str, Any]
+    issued_at: datetime.datetime
+    computed_digest: str
+    heads: AnchorTrust
+    received_at: datetime.datetime | None = None
+    retention_time: datetime.datetime | None = None
+    retention_ots: bool = False
+    root_digest: str | None = None
+    delegation_root: dict[str, Any] = field(default_factory=lambda: dict(NOT_ESTABLISHED))
+
+    def tolerance(self) -> datetime.timedelta:
+        """The tolerance a comparison with the retention time allows."""
+        return OTS_TOLERANCE if self.retention_ots else SKEW_TOLERANCE
+
+
+def _dating_received_at(r: _Retained) -> None:
+    """receivedAt is present if and only if received is true (R9)."""
+    if r.entry["received"] != ("receivedAt" in r.entry):
+        raise Malformed("entry-received-at-inconsistent")
+    if r.entry["received"]:
+        r.received_at = _instant(r.entry["receivedAt"])
+
+
+def _dating_envelope_digest(r: _Retained) -> None:
+    """The entry names the envelope it sits beside."""
+    if r.entry["envelopeDigest"] != r.computed_digest:
+        raise Malformed("entry-envelope-digest-mismatch")
+
+
+def _dating_retainer_anchor(r: _Retained) -> None:
+    """A received record carries an anchor of origin retainer (R4)."""
+    if r.entry["received"] and not any(a["origin"] == "retainer" for a in r.entry["anchors"]):
+        raise Malformed("entry-retainer-anchor-missing")
+
+
+def _dating_received_before_issued(r: _Retained) -> None:
+    """receivedAt no earlier than issuedAt by more than the skew tolerance (R6)."""
+    if r.received_at is not None and r.received_at < r.issued_at - SKEW_TOLERANCE:
+        raise Malformed("entry-received-before-issued")
+
+
+def _dating_received_after_anchor(r: _Retained) -> None:
+    """receivedAt no later than the retention time by more than the skew tolerance (R3)."""
+    if r.received_at is None or r.retention_time is None:
+        return
+    if r.received_at > r.retention_time + r.tolerance():
+        raise Malformed("entry-received-after-anchor")
+
+
+def _dating_anchor_late(r: _Retained) -> None:
+    """The retention time within anchorWithin plus the skew tolerance of receipt,
+    or of issuance for a record the retaining party produced (R7)."""
+    if r.retention_time is None:
+        return
+    start = r.received_at if r.received_at is not None else r.issued_at
+    limit = datetime.timedelta(seconds=r.entry["anchorWithin"]) + r.tolerance()
+    if r.retention_time > start + limit:
+        raise Malformed("entry-anchor-late")
+
+
+def _jwk_algorithm(material: bytes) -> str:
+    keys = json.loads(material, object_pairs_hook=_no_duplicates)["keys"]
+    algorithms = {JWK_ALGORITHMS.get((k.get("kty"), k.get("crv"))) for k in keys}
+    if len(algorithms) != 1 or None in algorithms:
+        raise ValueError("no single algorithm")
+    return str(algorithms.pop())
+
+
+def _dating_delegation_root(r: _Retained) -> None:
+    """A delegation-root element whose digest equals delegation.rootDigest
+    establishes the root and names its algorithm (R13); none leaves it not
+    established, never a pass (R14); an unequal digest is malformed (R15)."""
+    elements = [
+        v
+        for v in r.entry.get("validationData") or []
+        if isinstance(v, dict) and v.get("for") == "delegation-root"
+    ]
+    if len(elements) > 1 or (elements and r.root_digest is None):
+        raise Malformed("entry-delegation-root-unexpected")
+    if not elements:
+        return
+    try:
+        material = base64.b64decode(elements[0]["value"], validate=True)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise Malformed("entry-delegation-root-unreadable") from exc
+    if hashlib.sha256(material).hexdigest() != r.root_digest:
+        raise Malformed("entry-delegation-root-mismatch")
+    try:
+        algorithm = _jwk_algorithm(material)
+    except (Malformed, KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise Malformed("entry-delegation-root-unreadable") from exc
+    r.delegation_root = {"result": "established", "algorithm": algorithm}
+
+
+DATING_RULES: list[tuple[str, Callable[[_Retained], None]]] = [
+    ("entry-received-at", _dating_received_at),
+    ("entry-envelope-digest", _dating_envelope_digest),
+    ("entry-retainer-anchor", _dating_retainer_anchor),
+    ("entry-received-before-issued", _dating_received_before_issued),
+    ("entry-received-after-anchor", _dating_received_after_anchor),
+    ("entry-anchor-late", _dating_anchor_late),
+    ("entry-delegation-root", _dating_delegation_root),
+]
+#: Dating rules no Appendix B row reaches: no member carries an entry naming
+#: another envelope.
+DATING_UNREACHED = frozenset({"entry-envelope-digest"})
+
+
+@dataclass(frozen=True)
+class _Moment:
+    origin: str
+    time: str
+    height: int | None
+
+
+def _earlier(a: _Moment, b: _Moment) -> int:
+    """Two opentimestamps anchors compare by block height, any other pair by time."""
+    if a.height is not None and b.height is not None and a.height != b.height:
+        return -1 if a.height < b.height else 1
+    ta, tb = _instant(a.time), _instant(b.time)
+    return (ta > tb) - (ta < tb)
+
+
+def _anchor_times(
+    entry: dict[str, Any], digest_bytes: bytes, heads: AnchorTrust, *, disabled: str | None
+) -> list[_Moment]:
+    """Every anchor that validates, earliest first."""
+    out: list[_Moment] = []
+    for anchor in entry["anchors"]:
+        moment: tuple[str, int | None] | None
+        if disabled == "anchor-validation":
+            moment = (heads[0].timestamp, None) if heads else None
+        else:
+            moment = anchor_time(anchor, digest_bytes, heads)
+        if moment is not None:
+            out.append(_Moment(anchor["origin"], moment[0], moment[1]))
+    return sorted(out, key=functools.cmp_to_key(_earlier))
+
+
+def date_retained(
+    envelope: dict[str, Any],
+    entry: Any,
+    issued_at: str,
+    heads: AnchorTrust,
+    *,
+    disabled: str | None = None,
+    root_digest: str | None = None,
+) -> Dating:
+    """The dating check of Section 4.7.1 over one envelope and its retention entry.
+
+    The record is dated by the earliest anchor of either origin that validates
+    over the envelope digest this reader derives; an anchor that does not
+    validate dates nothing and makes nothing malformed (R8). A well-formed entry
+    for a received record reports receivedAt as asserted and consistent with the
+    anchors, never as established (R5)."""
+    try:
+        _retention_shape(entry)
+        digest = hashlib.sha256(canonical_bytes(envelope)).hexdigest()
+        retained = _Retained(entry, _instant(issued_at), digest, heads, root_digest=root_digest)
+    except Malformed as exc:
+        return Dating("malformed", [exc.code])
+    times = _anchor_times(entry, bytes.fromhex(digest), heads, disabled=disabled)
+    moments = times
+    if disabled == "earliest-anchor":
+        moments = [t for t in moments if t.origin == "retainer"] or moments
+    dated_at = moments[0].time if moments else None
+    retainer = [m for m in times if m.origin == "retainer"]
+    if retainer:
+        retained.retention_time = _instant(retainer[0].time)
+        retained.retention_ots = (
+            retainer[0].height is not None and disabled != "opentimestamps-tolerance"
+        )
+    try:
+        for name, rule in DATING_RULES:
+            if name != disabled:
+                rule(retained)
+    except Malformed as exc:
+        return Dating("malformed", [exc.code], dated_at)
+    receipt = None
+    if entry["received"]:
+        receipt = "asserted-consistent" if retained.retention_time else "asserted-unchecked"
+    return Dating("well-formed", [], dated_at, receipt, retained.delegation_root)
+
+
+def tree_heads(manifest: dict[str, Any]) -> AnchorTrust:
+    """The tree heads, then the block headers, the manifest's anchorTrust holds."""
+    trust = manifest.get("anchorTrust") or {}
+    held: AnchorTrust = [
+        TreeHead(
+            bytes.fromhex(h["logId"]),
+            int(h["treeSize"]),
+            bytes.fromhex(h["rootHash"]),
+            h["timestamp"],
+        )
+        for h in trust.get("treeHeads") or []
+    ]
+    held += [
+        block_header(int(b["height"]), bytes.fromhex(b["header"]))
+        for b in trust.get("blockHeaders") or []
+    ]
+    return held
+
+
+def block_header(height: int, header: bytes) -> BlockHeader:
+    """Read the Merkle root field, in internal byte order, and the time field,
+    little-endian Unix seconds, off the bytes of a Bitcoin block header."""
+    if len(header) != 80:
+        raise ValueError("a block header is 80 bytes")
+    seconds = int.from_bytes(header[68:72], "little")
+    moment = datetime.datetime.fromtimestamp(seconds, datetime.UTC)
+    return BlockHeader(height, header[36:68], moment.strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+
+def verify_retained(
+    raw: bytes, policy: Policy, heads: AnchorTrust, *, disabled: str | None = None
+) -> tuple[Report, Dating]:
+    """Judge a retained record: the envelope's verdict, and the dating result."""
+    try:
+        bundle = json.loads(raw, object_pairs_hook=_no_duplicates)
+        envelope, entry = bundle["envelope"], bundle["retention"]
+    except (Malformed, ValueError, KeyError, TypeError):
+        unreadable = ["retained-unreadable"]
+        return Report("malformed", unreadable), Dating("malformed", unreadable)
+    report = verify(json.dumps(envelope).encode(), policy, disabled=disabled)
+    try:
+        _, payload = _envelope_payload(json.dumps(envelope).encode())
+        pred = parse_statement(payload)["predicate"]
+        issued_at = pred["issuedAt"]
+        root_digest = (pred.get("delegation") or {}).get("rootDigest")
+    except (Malformed, KeyError, TypeError, AttributeError):
+        return report, Dating("malformed", ["entry-record-unreadable"])
+    return report, date_retained(
+        envelope, entry, issued_at, heads, disabled=disabled, root_digest=root_digest
+    )
+
+
+def dating_rule_names() -> list[str]:
+    return [
+        "anchor-validation",
+        "earliest-anchor",
+        "opentimestamps-tolerance",
+        *(n for n, _ in DATING_RULES),
+    ]
+
+
+# --------------------------------------------------------------------------
+# Records retained together (Section 5.4, revision 01): the set checks.
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class SetReport:
+    """A set of records judged together under one ledger."""
+
+    verdict: str
+    codes: list[str]
+    missing: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+
+
+def _held_keys(pred: dict[str, Any]) -> set[str]:
+    consumption = consumption_of(pred)
+    assert consumption is not None
+    return {held["operationKey"] for held in consumption["held"]}
+
+
+def _revision(pred: dict[str, Any]) -> int:
+    consumption = consumption_of(pred)
+    assert consumption is not None
+    return int(consumption["stateRevision"])
+
+
+def _set_stale_revision(group: list[dict[str, Any]]) -> bool:
+    """A permit that read a stateRevision older than a record already holding an
+    unsettled permit, and omits that permit's operationKey from held, read a
+    state that had not counted it: one limit spent twice (CS7, CS17). The key is
+    the operation key; a request digest cannot tell two identical intended
+    payments apart (CS17)."""
+    for later in group:
+        for earlier in group:
+            if later is earlier or _revision(later) >= _revision(earlier):
+                continue
+            if later["decision"]["reported"] not in PERMITS:
+                continue
+            consumption = consumption_of(earlier)
+            assert consumption is not None
+            seen = _held_keys(later) | {later["decision"].get("operationKey")}
+            if any(held["operationKey"] not in seen for held in consumption["held"]):
+                return True
+    return False
+
+
+def _set_release_unshown(group: list[dict[str, Any]]) -> bool:
+    """A held permit absent from a record that read a later state must be
+    explained by the record of that operation: showing none (released) or
+    occurred (moved to consumed). A lost response leaves it held (CS8)."""
+    shown = {p["decision"].get("operationKey"): p["effect"]["observed"] for p in group}
+    for later in group:
+        for earlier in group:
+            if later is earlier or _revision(later) <= _revision(earlier):
+                continue
+            consumption = consumption_of(earlier)
+            assert consumption is not None
+            gone = _held_keys(earlier) - _held_keys(later)
+            if any(shown.get(key) not in ("none", "occurred") for key in gone):
+                return True
+    return False
+
+
+#: What one ledger counts in: a ledger counts one unit or one asset, and an asset
+#: is its CAIP-19 id with its decimals. A test drops the decimals (CS39).
+ASSET_MATCH = {"decimals": True}
+
+
+def _denomination(pred: dict[str, Any]) -> tuple[Any, ...]:
+    consumption = consumption_of(pred)
+    assert consumption is not None
+    asset = consumption.get("asset")
+    if asset is None:
+        return ("unit", consumption["unit"])
+    return ("asset", asset["id"], asset["decimals"] if ASSET_MATCH["decimals"] else None)
+
+
+def _set_asset_mismatch(group: list[dict[str, Any]]) -> bool:
+    """One ledger counts one denomination: every record names the same ISO 4217
+    unit, or the same CAIP-19 asset with the same decimals. USDC on Base and
+    USDC on Solana are two assets (CS38), and one asset id under two decimals
+    values counts one amount at two scales (CS39)."""
+    return len({_denomination(pred) for pred in group}) > 1
+
+
+def _set_settled_uncounted(group: list[dict[str, Any]]) -> bool:
+    """A call whose record carries ``settled`` moved its settled amount, not its
+    held one, into ``consumed`` (CS48). A record of the ledger that read a later
+    stateRevision and no longer holds that call counts at least the amount the
+    settling record read as consumed plus the settled amount (CS49). It may count
+    more, since other calls may settle between the two records."""
+    for settling in group:
+        consumption = consumption_of(settling)
+        assert consumption is not None
+        settled = consumption.get("settled")
+        if settled is None:
+            continue
+        key = settling["decision"].get("operationKey")
+        held = held_for(consumption, settling["decision"])
+        amount = settled["amount"]
+        if SETTLED_READING["amount"] == "held":
+            amount = held["amount"] if held is not None else consumption["requested"]
+        for later in group:
+            if later is settling or _revision(later) <= _revision(settling):
+                continue
+            if key in _held_keys(later):
+                continue
+            counted = consumption_of(later)
+            assert counted is not None
+            if counted["consumed"] < consumption["consumed"] + amount:
+                return True
+    return False
+
+
+#: Whether a record dated exactly at the deadline ends a zero settlement's hold
+#: (CS54): the hold ends at or after the deadline.
+DEADLINE_READING = {"inclusive": True}
+
+
+def _hold_ended(later: dict[str, Any], deadline: datetime.datetime) -> bool:
+    moment = _instant(later["decision"]["reportedAt"])
+    return moment >= deadline if DEADLINE_READING["inclusive"] else moment > deadline
+
+
+def _set_unexpired_hold(group: list[dict[str, Any]]) -> bool:
+    """The hold of an operation that settled 0 ends only when a later record of
+    the ledger is at or after the held entry's deadline, or a record of that
+    operation shows occurred. A record before the deadline that no longer holds
+    the key, whether or not the operation's own record shows none, released a
+    permit the facilitator can still settle (CS53); one at or after the
+    deadline is the control (CS54)."""
+    for settling in group:
+        consumption = consumption_of(settling)
+        assert consumption is not None
+        settled = consumption.get("settled")
+        held = held_for(consumption, settling["decision"])
+        if settled is None or settled["amount"] != 0 or held is None or "deadline" not in held:
+            continue
+        key, deadline = held["operationKey"], _instant(held["deadline"])
+        if any(
+            p["decision"].get("operationKey") == key and p["effect"]["observed"] == "occurred"
+            for p in group
+        ):
+            continue
+        for later in group:
+            if later is settling or _revision(later) <= _revision(settling):
+                continue
+            if key not in _held_keys(later) and not _hold_ended(later, deadline):
+                return True
+    return False
+
+
+SET_RULES: list[tuple[str, str, Callable[[list[dict[str, Any]]], bool]]] = [
+    ("stale-revision", "consumption-set-stale-revision", _set_stale_revision),
+    ("release-unshown", "consumption-set-release-unshown", _set_release_unshown),
+    ("asset-mismatch", "consumption-set-asset-mismatch", _set_asset_mismatch),
+    ("unexpired-hold", "consumption-set-release-unshown", _set_unexpired_hold),
+    ("settled-uncounted", "consumption-set-settled-uncounted", _set_settled_uncounted),
+]
+
+
+#: How the claim check reads a set: ``ledger`` confines it to the records of one
+#: ledger, so the claim would be keyed by the limit document (CS32); ``scope``
+#: reads the claim under the principal and the agent key (CS33); ``release``
+#: lets a record of the operation showing none end its claim (CS28).
+CLAIM_READING = {"check": True, "ledger": False, "scope": True, "release": True}
+
+
+def _claim_scope(pred: dict[str, Any]) -> tuple[Any, ...]:
+    """The scope of a claim: the principal (delegation.subject) and the agent
+    key (agent.signers). A rotated agent key is a new scope."""
+    if not CLAIM_READING["scope"]:
+        return ()
+    return (pred["delegation"].get("subject"), tuple(pred["agent"].get("signers") or []))
+
+
+def _set_retry_as_new(predicates: list[dict[str, Any]], ledger_of: dict[int, int]) -> bool:
+    """A held claim is keyed by the principal, the agent key and the operation
+    key, never by the limit document. A permit whose operation key a record of
+    the same scope holds, which does not itself hold that key, presents a retry
+    as a new operation (CS31, CS32), unless it is the original call (a lower
+    stateRevision of the same ledger) or a record of that operation shows none,
+    which leaves no claim (CS28). Replacing the limit neither drops the claim nor
+    makes its retry new, whether or not the new limit document names the old one
+    as supersedes (CS32)."""
+    carrying = [p for p in predicates if consumption_of(p) is not None]
+    for perm in carrying:
+        key = perm["decision"].get("operationKey")
+        if perm["decision"]["reported"] not in PERMITS or key in _held_keys(perm):
+            continue
+        for hold in carrying:
+            if hold is perm or _claim_scope(hold) != _claim_scope(perm):
+                continue
+            if key not in _held_keys(hold):
+                continue
+            same_ledger = ledger_of[id(hold)] == ledger_of[id(perm)]
+            if CLAIM_READING["ledger"] and not same_ledger:
+                continue
+            if same_ledger and _revision(perm) < _revision(hold):
+                continue
+            released = CLAIM_READING["release"] and any(
+                other is not perm
+                and other["decision"].get("operationKey") == key
+                and _claim_scope(other) == _claim_scope(perm)
+                and other["effect"]["observed"] == "none"
+                for other in carrying
+            )
+            if not released:
+                return True
+    return False
+
+
+#: The one way records are grouped: a replacement links two limit documents into
+#: one ledger. A test drops it to read the groups as one limitDigest each, or sets
+#: ``all`` to read every record as one ledger whatever its limit (CS25).
+SET_GROUPING = {"chain": True, "all": False}
+
+
+def consumption_groups(predicates: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """Group the records that carry consumption by ledger. Two limitDigest values
+    belong to one ledger when any record names one as the other's ``supersedes``,
+    transitively (CS18 to CS22): a permit held under a limit that was then
+    replaced is still held under the replacement, so its retry is the same
+    operation and its release has to be shown. Records whose limitDigest values
+    no ``supersedes`` links stay in separate groups (CS25). A retry is identified by its
+    operation key and never by the limit, and ``stateRevision`` orders the whole
+    ledger, so a replacement does not restart it."""
+    parent: dict[str, str] = {}
+
+    def find(digest: str) -> str:
+        parent.setdefault(digest, digest)
+        while parent[digest] != digest:
+            parent[digest] = parent[parent[digest]]
+            digest = parent[digest]
+        return digest
+
+    carrying: list[tuple[str, dict[str, Any]]] = []
+    for pred in predicates:
+        consumption = consumption_of(pred)
+        if consumption is None:
+            continue
+        digest = consumption["limitDigest"]
+        if SET_GROUPING["chain"] and "supersedes" in consumption:
+            parent[find(consumption["supersedes"])] = find(digest)
+        carrying.append((digest, pred))
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for digest, pred in carrying:
+        groups.setdefault("" if SET_GROUPING["all"] else find(digest), []).append(pred)
+    return list(groups.values())
+
+
+def consumption_set_findings(
+    predicates: list[dict[str, Any]], *, disabled: str | None = None
+) -> SetReport:
+    """Judge records that carry consumption, grouped by ledger
+    (``consumption_groups``). A set is malformed on the first check, in
+    SET_RULES order, that any group fails."""
+    groups = consumption_groups(predicates)
+    for name, code, check in SET_RULES:
+        if name != disabled and any(check(group) for group in groups):
+            return SetReport("malformed", [code])
+    ledger_of = {id(pred): index for index, group in enumerate(groups) for pred in group}
+    claim_on = CLAIM_READING["check"] and disabled != "retry-as-new"
+    if claim_on and _set_retry_as_new(predicates, ledger_of):
+        return SetReport("malformed", ["consumption-set-retry-as-new"])
+    return SetReport("valid", [])
+
+
+#: The two checks across the records of one sequence series; a test drops one.
+SEQUENCE_SET_CHECKS = {"duplicate": True, "gap": True}
+
+
+def sequence_set_findings(predicates: list[dict[str, Any]], payloads: list[bytes]) -> SetReport:
+    """Judge the records that carry sequence. Every record of a set verified
+    under the one observer key, so a series is the records with one boundary.
+    Two records at one seq with different payload digests fail the set
+    (SQ5); a seq below the highest held, which no record holds, is named as
+    issued and not received (SQ4)."""
+    series: dict[str, dict[int, set[str]]] = {}
+    for pred, payload in zip(predicates, payloads, strict=True):
+        sequence = pred.get("sequence")
+        if sequence is None:
+            continue
+        digest = hashlib.sha256(payload).hexdigest()
+        series.setdefault(sequence["boundary"], {}).setdefault(sequence["seq"], set()).add(digest)
+    if SEQUENCE_SET_CHECKS["duplicate"] and any(
+        len(digests) > 1 for held in series.values() for digests in held.values()
+    ):
+        return SetReport("malformed", ["sequence-duplicate"])
+    missing = []
+    if SEQUENCE_SET_CHECKS["gap"]:
+        for boundary in sorted(series):
+            held = series[boundary]
+            missing += [
+                {"boundary": boundary, "seq": n} for n in range(1, max(held)) if n not in held
+            ]
+    return SetReport("valid", [], missing)
+
+
+def set_records(raw: bytes) -> list[bytes]:
+    """The envelopes a set member carries, each as bytes a verifier is handed.
+
+    The bundle is read under the JSON profile (Section 4.1.1), is an object, and
+    carries a ``records`` array (Section 4.9)."""
+    bundle = parse_statement(raw)
+    if not isinstance(bundle, dict) or not isinstance(bundle.get("records"), list):
+        raise Malformed("set-unreadable")
+    return [json.dumps(env).encode() for env in bundle["records"]]
+
+
+def verify_set(
+    raw: bytes, policy: Policy, *, disabled: str | None = None
+) -> tuple[list[Report], SetReport]:
+    """Judge a set member: every record on its own, then the records together.
+    A record that is itself malformed leaves the set unjudged (malformed)."""
+    try:
+        envelopes = set_records(raw)
+    except (Malformed, ValueError, KeyError, TypeError):
+        return [], SetReport("malformed", ["set-unreadable"])
+    reports = [verify(env, policy, disabled=disabled) for env in envelopes]
+    if any(r.verdict != "valid" for r in reports):
+        return reports, SetReport("malformed", ["set-record-malformed"])
+    payloads = [_envelope_payload(env)[1] for env in envelopes]
+    predicates = [parse_statement(payload)["predicate"] for payload in payloads]
+    joint = consumption_set_findings(predicates, disabled=disabled)
+    if joint.verdict != "valid":
+        return reports, joint
+    return reports, sequence_set_findings(predicates, payloads)
+
+
+def set_rule_names() -> list[str]:
+    return [name for name, _, _ in SET_RULES] + ["retry-as-new"]
+
+
+def policy_for(manifest: dict[str, Any], entry: dict[str, Any] | None = None) -> Policy:
+    """The policy a member is judged under: the manifest's predicate type URI,
+    or the member's own ``predicateType`` where it carries one (PS1 is judged by
+    a verifier configured for the v2 URI)."""
+    key = str(manifest.get("keys", {}).get("observer", {}).get("publicKey", ""))
+    configured = (entry or {}).get("predicateType", manifest.get("predicateType", ""))
+    return Policy(str(configured), key)
+
+
+def conforming_verdicts(entry: dict[str, Any]) -> set[str]:
+    """Every verdict a conforming verifier may reach on one manifest entry.
+
+    An accept or reject member has one: ``expected.verdict``. An indeterminate
+    member is a row the draft leaves open, and it has every verdict its
+    ``readings`` list; it carries no ``expected.verdict``, because any single
+    value there would score a listed reading as wrong. Score a second
+    implementation with this, not with ``expected.verdict``.
+    """
+    if entry.get("kind") == "indeterminate":
+        return {str(reading.get("verdict")) for reading in entry.get("readings") or []}
+    return {str((entry.get("expected") or {}).get("verdict"))}
+
+
+def dating_dict(dated: Dating) -> dict[str, Any]:
+    """A dating result in the manifest's expected.dating shape."""
+    out: dict[str, Any] = {"entry": dated.entry, "codes": dated.codes}
+    if dated.dated_at is not None:
+        out["datedAt"] = dated.dated_at
+    if dated.receipt is not None:
+        out["receipt"] = dated.receipt
+    out["delegationRoot"] = dated.delegation_root
+    return out
