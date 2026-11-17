@@ -1,0 +1,22 @@
+{
+  "assessments": {
+    "dns-aid-sig-dnssec-key": {
+      "at": "2026-11-15T20:47:35Z",
+      "claim_type": "dns_aid_sig/v1",
+      "jwks": "jwks.json",
+      "key_authority": {
+        "chain": "dnssec.chain",
+        "kind": "dnssec-chain",
+        "name": "dns-aid.example.com.",
+        "trust_anchor": {
+          "ds": [
+            "49111 15 2 61434cb62d209f8ee6b3a3418974a7db7b7748ad96563960f75c4ccc6bdf46cc"
+          ],
+          "zone": "."
+        }
+      },
+      "record": "record.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
