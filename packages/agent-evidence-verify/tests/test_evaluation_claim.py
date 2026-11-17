@@ -196,3 +196,53 @@ def test_a_real_refusal_beside_a_missing_case_set_is_still_a_contradiction(tmp_p
     codes = result["checks"][0]["codes"]
     assert "CASE_SET_UNRESOLVED" in codes and "VANTAGE_NOT_ACCEPTED" in codes
     assert (result["decision"], result["reason"]) == ("contradicted", "VANTAGE_NOT_ACCEPTED")
+
+
+@pytest.mark.parametrize("coordinate", ["applicability", "population", "vantage", "bytes"])
+def test_a_profile_may_not_let_an_evaluation_coordinate_not_apply(tmp_path: Path, coordinate: str) -> None:
+    """Break-it counter-example: each of these let a bare ``pass`` through its pinned profile.
+
+    Population not applicable admitted a pass with no result, applicability a pass against a case
+    set the rule does not accept, vantage a pass from a vantage the rule refuses.
+    """
+    profile = json.loads((CORPUS / "profiles" / "conformance.json").read_text(encoding="utf-8"))
+    profile["not_applicable"][coordinate] = ["not_measured_here"]
+    with pytest.raises(evaluation_claim.MalformedInput, match="only"):
+        evaluation_claim.check_profile(profile)
+    pin = {"id": profile["id"], "digest": evaluation_claim.digest_of(profile)}
+    positive = next(c for c in CASES if c["kind"] == "positive" and c["rule"] == "conformance"
+                    and c["expected"]["verdict"] == "pass")
+    record = copy.deepcopy(positive["record"])
+    record["profile"] = pin
+    record["coordinates"][coordinate] = {"state": "not_applicable", "reason": "not_measured_here"}
+    rule = dict(RULES["conformance"], profile=pin)
+    outcome = evaluation_claim.verify(record, rule, evaluation_claim.index_by_digest([profile]),
+                                      evaluation_claim.index_by_digest(
+                                          json.loads(p.read_text(encoding="utf-8"))
+                                          for p in CASE_SET_FILES))
+    assert evaluation_claim.summary(outcome)["reasons"] == ["PROFILE_UNRESOLVED"]
+
+
+#: Break-it counter-examples: each raised TypeError out of the reader instead of a refusal.
+CRASHERS = [
+    ("related-reference-by-tag", ("coordinates", "bytes", "related"), 5),
+    ("execution-settled", ("coordinates", "settlement", "actions"), 5),
+    ("optional-case-excluded", ("coordinates", "applicability", "excluded", 0, "id"), []),
+    ("execution-settled", ("coordinates", "settlement", "actions", 0, "id"), []),
+    ("related-reference-by-tag", ("coordinates", "bytes", "related"), {"digest": "sha256:" + "0" * 64}),
+]
+
+
+@pytest.mark.parametrize("vector_id,path,value", CRASHERS)
+def test_a_wrong_shape_is_a_malformed_record_not_a_crash(tmp_path: Path, vector_id: str,
+                                                        path: tuple, value) -> None:
+    vector = {c["id"]: c for c in CASES}[vector_id]
+    record = copy.deepcopy(vector["record"])
+    node = record
+    for step in path[:-1]:
+        node = node[step]
+    node[path[-1]] = value
+    result = _judge(tmp_path, record, RULES[vector["rule"]])
+    assert result["checks"][0]["result"] == "REFUSED"
+    assert "MALFORMED_RECORD" in result["checks"][0]["codes"]
+

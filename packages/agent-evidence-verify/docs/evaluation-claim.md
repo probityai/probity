@@ -2,7 +2,9 @@
 
 `evaluation_claim/v1` answers one question: is this evaluation claim record admitted under my
 acceptance rule? A record says how an implementation fared against a case set. It carries six
-coordinates, each with a value or a reason the pinned profile allows for "not applicable":
+coordinates. Each carries a value; `epoch` and `settlement` may instead carry a reason the pinned
+profile allows for "not applicable", and a profile that lets any of the other four not apply is
+unusable (`PROFILE_UNRESOLVED`), because each of them holds a check the rule relies on:
 
 | Coordinate | What it binds |
 |---|---|

@@ -129,6 +129,8 @@ CODES = (
 
 _DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 _REF_KEYS = frozenset({"name", "alias", "uri", "digest"})
+#: The pattern :func:`_references` yields for a list of references that is not a list.
+_NOT_A_LIST = "not-a-list"
 
 
 def digest_of(value: Any) -> str:
@@ -184,10 +186,15 @@ def _references(values: dict[str, Any]) -> Iterable[tuple[str, str, Any]]:
         for key in ("implementation", "case_set", "verifier"):
             if key in byt:
                 yield f"bytes.{key}", f"bytes.{key}", byt[key]
-        for i, ref in enumerate(byt.get("related", [])):
-            yield "bytes.related[]", f"bytes.related[{i}]", ref
+        related = byt.get("related", [])
+        if not isinstance(related, list):
+            yield _NOT_A_LIST, "bytes.related", related
+        else:
+            for i, ref in enumerate(related):
+                yield "bytes.related[]", f"bytes.related[{i}]", ref
     sett = values.get("settlement")
-    if isinstance(sett, dict):
+    # A settlement whose actions are not a list is refused by its own check, which is guarded.
+    if isinstance(sett, dict) and isinstance(sett.get("actions", []), list):
         for i, action in enumerate(sett.get("actions", [])):
             if isinstance(action, dict) and "evidence" in action:
                 yield (
@@ -206,6 +213,10 @@ def check_references(ctx: _Ctx, profile: dict[str, Any], values: dict[str, Any])
     """
     required = set(profile["immutable_references"])
     for pattern, at, ref in _references(values):
+        if pattern == _NOT_A_LIST:
+            ctx.refuse("MALFORMED_RECORD", at, f"{at} is not a list of references")
+            ctx.broken.add(at)
+            continue
         try:
             _check_ref_shape(ref, at)
         except MalformedInput as exc:
@@ -225,6 +236,15 @@ def check_references(ctx: _Ctx, profile: dict[str, Any], values: dict[str, Any])
 # --- profile and rule ---------------------------------------------------------
 
 
+#: The coordinates a profile may let not apply: a run that exercised no authority has no epoch,
+#: and one that took no side-effecting action has nothing to settle. The other four always apply
+#: to an evaluation, and each carries a check the rule relies on: without applicability the case
+#: set goes unchecked against the rule's accepted digests, without a population a ``pass`` rests on
+#: no result at all, without a vantage the rule's accepted vantages are never consulted, and
+#: without bytes no implementation is bound.
+MAY_NOT_APPLY = ("epoch", "settlement")
+
+
 def check_profile(profile: Any) -> dict[str, Any]:
     """Refuse a profile that drops a coordinate or authorises an absence as not applicable."""
     if not isinstance(profile, dict) or profile.get("schema") != PROFILE_SCHEMA:
@@ -234,6 +254,9 @@ def check_profile(profile: Any) -> dict[str, Any]:
     na = profile.get("not_applicable")
     if not isinstance(na, dict) or not set(na) <= set(COORDINATES):
         raise MalformedInput("profile not_applicable must map coordinates to reason tokens")
+    always = sorted(set(na) - set(MAY_NOT_APPLY), key=COORDINATES.index)
+    if always:
+        raise MalformedInput(f"profile lets {always} not apply; only {list(MAY_NOT_APPLY)} may")
     for coord, tokens in na.items():
         if not isinstance(tokens, list) or not all(isinstance(t, str) and t for t in tokens):
             raise MalformedInput(f"profile not_applicable.{coord} is not a list of tokens")
@@ -403,9 +426,11 @@ def check_applicability(
     applicable = _id_list(app.get("applicable"), f"{at}.applicable")
     excluded = app.get("excluded", [])
     if not isinstance(excluded, list) or not all(
-        isinstance(e, dict) and set(e) == {"id", "reason"} for e in excluded
+        isinstance(e, dict) and set(e) == {"id", "reason"}
+        and all(isinstance(e[k], str) and e[k] for k in ("id", "reason"))
+        for e in excluded
     ):
-        raise MalformedInput(f"{at}.excluded entries carry exactly an id and a reason")
+        raise MalformedInput(f"{at}.excluded entries carry exactly an id and a reason, as strings")
     if "applicability.case_set" in ctx.broken:
         return None
     held = resolve_case_set(ctx, rule, case_sets, app["case_set"])
@@ -565,7 +590,7 @@ def _settlement_actions(sett: dict[str, Any]) -> list[dict[str, Any]]:
     ):
         raise MalformedInput("settlement actions carry id, epoch, outcome and optional evidence")
     ids = [a["id"] for a in actions]
-    if len(ids) != len(set(ids)) or not all(isinstance(i, str) and i for i in ids):
+    if not all(isinstance(i, str) and i for i in ids) or len(ids) != len(set(ids)):
         raise MalformedInput("settlement action ids are distinct non-empty strings")
     return actions
 
