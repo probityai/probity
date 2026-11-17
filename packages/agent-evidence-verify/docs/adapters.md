@@ -135,5 +135,6 @@ conformance extension names its corpus and verifier inside its signature.
 [`co_signed_receipt/v1`](co-signed-receipt.md) judges one tool-call receipt: the admission
 member rules first (a valid signature over a malformed receipt is refused), then the agent's
 signature and any co-signature, then each party's key under its own key authority. It reports the
-evidence attribution, `co_signed`, `single_signed` or `unattributed_evidence`.
+evidence attribution once key authority decides it, `co_signed`, `single_signed` or
+`unattributed_evidence`.
 

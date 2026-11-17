@@ -46,8 +46,8 @@ def test_vector(name: str) -> None:
     result = _run(DATA / name, case["assessment"])
     assert (result["decision"], result["reason"]) == (case["expect"]["decision"],
                                                        case["expect"]["reason"]), case["description"]
-    if "evidence_attribution" in case["expect"]:
-        assert result["checks"][0]["evidence_attribution"] == case["expect"]["evidence_attribution"]
+    assert result["checks"][0].get("evidence_attribution") == case["expect"].get(
+        "evidence_attribution"), case["description"]
 
 
 def test_all_eight_broken_receipts_are_refused() -> None:

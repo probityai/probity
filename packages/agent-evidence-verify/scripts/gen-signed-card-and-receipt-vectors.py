@@ -153,8 +153,12 @@ def base_card() -> dict[str, Any]:
 
 
 def payload(card: dict[str, Any], keep_signatures: bool = False) -> bytes:
-    body = card if keep_signatures else {k: v for k, v in card.items() if k != "signatures"}
-    return jcs(body)
+    """The bytes a signer covers. ``keep_signatures`` is the signer that canonicalized the card with
+    its ``signatures`` member still in it, as the empty list it holds before the first signature is
+    added; A2A section 8.4.1 removes the member, so the reader judges other bytes."""
+    if keep_signatures:
+        return jcs(dict(card, signatures=card.get("signatures", [])))
+    return jcs({k: v for k, v in card.items() if k != "signatures"})
 
 
 def jws(card: dict[str, Any], key: Any, kid: str | None, *, header: dict | None = None,
@@ -408,11 +412,11 @@ def receipt_cases() -> list[dict[str, Any]]:
          "receipt_signers_authorized", "co_signed",
          "both keys bound to their DIDs at the receipt's timestamp"),
         ("valid-no-authority", sign(base), keys, {}, "not_established",
-         "no_key_authority_in_policy", "co_signed",
-         "both signatures verify and nothing says whose keys they are"),
+         "no_key_authority_in_policy", None,
+         "both signatures verify and nothing says whose keys they are: no attribution yet"),
         ("foreign-agent-key", sign(base, agent=FORGER), forged_keys, authority, "contradicted",
-         "key_not_pinned", "co_signed",
-         "a forger signs as the agent and supplies a key for the agent's DID"),
+         "key_not_pinned", "unattributed_evidence",
+         "a forger signs as the agent and supplies a key for the agent's DID: it binds no party"),
         ("same-key-both-parties", sign(base, caller=AGENT), same_key, authority, "contradicted",
          "cosigner-is-signer", None, "one key signs as both parties: one party shown as two"),
         ("agent-key-not-ed25519", sign(base), p256_agent, authority, "contradicted",

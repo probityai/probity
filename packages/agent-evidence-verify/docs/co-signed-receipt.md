@@ -55,9 +55,11 @@ an object is `receipt-shape-malformed`.
 | `receipt_signers_authorized` | `supported` | every signature verifies and every key is authorised |
 
 A key an authority refuses is `contradicted` with the authority's reason; no authority is
-`not_established`. Every decision past the member rules reports `evidence_attribution`
-(agent-evidence-vocabulary): `co_signed`, `single_signed`, or `unattributed_evidence` when a
-signature that is present does not verify.
+`not_established`. The decision reports `evidence_attribution` (agent-evidence-vocabulary) once it
+is decided: `co_signed` or `single_signed` when every signature verifies and every key is
+authorised, `unattributed_evidence` when a present signature does not verify or an authority
+refuses a key (a signature under a key that may not speak for its party binds no party), and no
+value while key authority is undecided.
 
 ## Vectors
 

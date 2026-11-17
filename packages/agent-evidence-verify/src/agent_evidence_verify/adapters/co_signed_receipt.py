@@ -40,11 +40,15 @@ Both authorised is ``supported`` (``receipt_signers_authorized``); any key refus
 ``contradicted`` with the authority's reason; no authority, or missing evidence, is
 ``not_established``.
 
-Every decision reports the ``evidence_attribution`` value (agent-evidence-vocabulary): ``co_signed``
-when both signatures verify, ``single_signed`` when only the agent signed, ``unattributed_evidence``
-when a signature that is present does not verify. Two signatures bind two parties to one record.
-They do not show the record true, and they do not show the parties independent: one operator can
-hold both keys.
+The ``evidence_attribution`` value (agent-evidence-vocabulary) says which parties the receipt
+binds, so it is decided with key authority, not before it: a signature under a key that may not
+speak for its party binds no party. ``co_signed`` is both signatures verifying under two distinct
+keys that each party's authority lets speak for it, ``single_signed`` the agent's alone;
+``unattributed_evidence`` is a present signature that does not verify, or a key an authority
+refuses (a forger who signs as the agent and supplies a key for the agent's DID gets this, never
+``co_signed``). While authority is undecided (no authority, missing evidence) no value is reported.
+Two signatures bind two parties to one record. They do not show the record true, and they do not
+show the parties independent: one operator can hold both keys.
 """
 
 from __future__ import annotations
@@ -269,7 +273,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
         check.update(status="unavailable", reason=str(missing.args[0]))
         return decision(case_id, CLAIM_TYPE, scope, "not_established", str(missing.args[0]),
                         [check])
-    check.update(status="pass", reason="receipt_signatures_verify", evidence_attribution=attribution,
+    check.update(status="pass", reason="receipt_signatures_verify",
                  signers=[did for did, _ in signers])
     configs = [assessment.get("key_authority"), assessment.get("cosigner_key_authority")]
     answers = []
@@ -278,6 +282,10 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
         answers.append(authorize(config, key, subject=did, at=receipt["timestamp"],
                                  did_document=document, inclusion_proof=proof))
     authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
+    if authority.outcome == AUTHORIZED:
+        check["evidence_attribution"] = attribution
+    elif authority.outcome == UNAUTHORIZED:
+        check["evidence_attribution"] = UNATTRIBUTED
     checks = [check] + [answer.check() for answer in answers]
     if authority.outcome == AUTHORIZED:
         return decision(case_id, CLAIM_TYPE, scope, "supported", "receipt_signers_authorized",

@@ -126,3 +126,20 @@ def test_a_did_document_of_any_shape_names_a_key_or_none(shape: object) -> None:
     for member in ("verificationMethod", "assertionMethod", "authentication"):
         document = json.dumps({"id": "did:web:a.test", member: shape}).encode()
         assert reader._document_key(document, "did:web:a.test", "did:web:a.test#k") is None
+
+
+def _evidence(directory: Path) -> tuple:
+    return tuple(sorted((p.name, p.read_bytes()) for p in directory.iterdir()))
+
+
+@pytest.mark.parametrize("family", ["a2a-signed-card", "co-signed-receipt"])
+def test_cases_with_different_verdicts_hold_different_evidence(family: str) -> None:
+    """A mutation the generator failed to apply leaves a copy of a valid case pinned to a refusal;
+    the signatures-included card was once byte-identical to valid-eddsa-pinned."""
+    root = Path(__file__).parent / "data" / family
+    index = json.loads((root / "cases.json").read_text(encoding="utf-8"))["cases"]
+    seen: dict[tuple, tuple] = {}
+    for case in index:
+        key = (_evidence(root / case["id"]), json.dumps(case["assessment"], sort_keys=True))
+        verdict = (case["expect"]["decision"], case["expect"]["reason"])
+        assert seen.setdefault(key, verdict) == verdict, case["id"]

@@ -96,20 +96,19 @@
     },
     {
       "id": "valid-no-authority",
-      "description": "both signatures verify and nothing says whose keys they are",
+      "description": "both signatures verify and nothing says whose keys they are: no attribution yet",
       "assessment": {
         "receipt": "receipt.json",
         "keys": "keys.json"
       },
       "expect": {
         "decision": "not_established",
-        "reason": "no_key_authority_in_policy",
-        "evidence_attribution": "co_signed"
+        "reason": "no_key_authority_in_policy"
       }
     },
     {
       "id": "foreign-agent-key",
-      "description": "a forger signs as the agent and supplies a key for the agent's DID",
+      "description": "a forger signs as the agent and supplies a key for the agent's DID: it binds no party",
       "assessment": {
         "receipt": "receipt.json",
         "keys": "keys.json",
@@ -133,7 +132,7 @@
       "expect": {
         "decision": "contradicted",
         "reason": "key_not_pinned",
-        "evidence_attribution": "co_signed"
+        "evidence_attribution": "unattributed_evidence"
       }
     },
     {
