@@ -44,8 +44,8 @@ Rules a second reader of the same policy and evidence must apply the same way:
   it back.
 - Instants are RFC 3339 `date-time` exactly: `T` and `Z` in either case, `Z` or a numeric offset. ISO 8601 week
   and ordinal dates, the basic format, a comma fraction and a space separator are refused. A leap second (`:60`)
-  is read only at 23:59 UTC once the offset is applied (RFC 3339 section 5.7), as the last microsecond of that
-  minute. A fraction finer than a microsecond rounds up: a record time is on the microsecond grid, and against it
+  is read only when, with the offset applied, it falls in the last minute of a UTC day (RFC 3339 section 5.7),
+  and it is read as the last microsecond of that minute. A fraction finer than a microsecond rounds up: a record time is on the microsecond grid, and against it
   the rounded-up bound orders exactly where truncation would let a record 0.5 microseconds early through.
 - An inclusion proof's `index` and `tree_size` are JSON integers; `true` and `2.0` are malformed. Inclusion shows
   the binding was logged, not that no later entry revoked it.
