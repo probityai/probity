@@ -17,6 +17,7 @@ from typing import Any
 
 from .adapters import (
     acceptance_observed,
+    aep_package,
     audit_principal,
     authority_anchor,
     brokered_file_write,
@@ -84,6 +85,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "evidence_digest/v1": telemetry_evidence.adjudicate_digest,
     "event_log_completeness/v1": telemetry_evidence.adjudicate_log,
     "lifecycle_binding/v1": lifecycle_binding.adjudicate,
+    "aep_package/v1": aep_package.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

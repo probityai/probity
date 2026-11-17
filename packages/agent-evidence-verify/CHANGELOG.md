@@ -17,6 +17,11 @@ A minor release: new claim types; the decisions for every existing claim type ar
   per group; a duplicate identity is `indeterminate` in any order, a revoked binding is `not_evaluated`, and absent
   evidence is never `satisfied`. Pre-images use the six-tag `agent-evidence/lifecycle-binding/v1` registry. Doc:
   `docs/lifecycle-binding.md`.
+- `aep_package/v1`: checks an action evidence package layer by layer (hash, canonical form, full-block RSA
+  DigestInfo, receipt, ML-DSA-65, RFC 3161 time stamp), reporting every check after the first failure as
+  `not_evaluated`. The RSA block is compared whole, so four blocks ending in the right digest (garbage prefix, bytes
+  after the legacy prefix, SHA-512 OID, short padding) are refused; signer and time-stamp keys are admitted only under
+  the consumer's authorities. Doc: `docs/aep-package.md`.
 
 ## Unreleased (0.6.0 at release)
 

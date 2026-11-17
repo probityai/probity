@@ -130,3 +130,9 @@ consumer retained outside the log. Both share check order and reason codes with
 instruction and reports one of five states per group (`satisfied`, `failure`, `missing`, `not_evaluated`,
 `indeterminate`): a duplicate identity is never resolved by order, revocation is required, the signature suite
 comes from the producer's key binding, and absent evidence is never `satisfied`.
+
+## Action evidence packages
+
+[`aep_package/v1`](aep-package.md) checks a `.aep` package's hash, canonical form, full-block RSA DigestInfo,
+receipt, ML-DSA-65 signature and RFC 3161 time stamp in order, with each check after the first failure reported
+`not_evaluated`, and admits the signer and time-stamp keys only under the consumer's authorities.
