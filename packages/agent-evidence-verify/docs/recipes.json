@@ -268,8 +268,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11684,
-      "sha256": "edbc5dace90ca4ce07df5c2b1439b79d9f75d18ebac1cc13fa948f1b6df6f8e3"
+      "bytes": 11777,
+      "sha256": "49257f167efdb212daa041026e67cb08b6ba6a5b46e0f8ac4e2a0a06df24ebc3"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -2145,6 +2145,52 @@
           "path": "examples/dnssec-rrset/chain.bin",
           "bytes": 2418,
           "sha256": "dd06a10c520fc81075a8d9c2047b2344c5568d99f750f1b2343d726fcf17c21a"
+        }
+      ]
+    },
+    {
+      "task": "Check that every call an agent made went to an endpoint a verified discovery record declared",
+      "claim_type": "declared_versus_acted/v1",
+      "case": "examples/declared-versus-acted/case.json",
+      "policy": "examples/declared-versus-acted/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "contradicted",
+      "scope": "A trajectory written by agent-evidence-observer's recorder with one declared call and one planted call to an undeclared host; witness key from a fixed test seed.",
+      "case_id": "declared-versus-acted-undeclared-call",
+      "expected_reason": "call_not_declared",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/declared-versus-acted/case.json",
+        "--policy",
+        "examples/declared-versus-acted/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/declared-versus-acted/case.json",
+          "bytes": 603,
+          "sha256": "bfb4eddc719fcfebcd782d7d02703a80560188e7b40d0fb98fdb767912906545"
+        },
+        {
+          "path": "examples/declared-versus-acted/policy.json",
+          "bytes": 665,
+          "sha256": "013b2adf357781bca58ac0bf81e9533d7e2802111d0efc090f288727b1578939"
+        },
+        {
+          "path": "examples/declared-versus-acted/head.json",
+          "bytes": 364,
+          "sha256": "871b26d4226b1d22d8118f77ec0f26ce9f66f5c04fbe8c0da1da9a850ef6cfc8"
+        },
+        {
+          "path": "examples/declared-versus-acted/jwks.json",
+          "bytes": 222,
+          "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+        },
+        {
+          "path": "examples/declared-versus-acted/trajectory.jsonl",
+          "bytes": 1706,
+          "sha256": "5efb36e4c2187a8ac86c9ea22843186fdeb1af6034962e936d934d9929eee528"
         }
       ]
     }

@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "head.json": {
+      "length": 364,
+      "path": "head.json",
+      "sha256": "871b26d4226b1d22d8118f77ec0f26ce9f66f5c04fbe8c0da1da9a850ef6cfc8"
+    },
+    "jwks.json": {
+      "length": 222,
+      "path": "jwks.json",
+      "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+    },
+    "trajectory.jsonl": {
+      "length": 1706,
+      "path": "trajectory.jsonl",
+      "sha256": "5efb36e4c2187a8ac86c9ea22843186fdeb1af6034962e936d934d9929eee528"
+    }
+  },
+  "case_id": "declared-versus-acted-undeclared-call",
+  "schema_version": "probity-case/v1"
+}

@@ -359,6 +359,15 @@
       "documentation": "docs/dns-aid.md",
       "expected_decision": "supported",
       "scope": "The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant."
+    },
+    {
+      "task": "Check that every call an agent made went to an endpoint a verified discovery record declared",
+      "claim_type": "declared_versus_acted/v1",
+      "case": "examples/declared-versus-acted/case.json",
+      "policy": "examples/declared-versus-acted/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "contradicted",
+      "scope": "A trajectory written by agent-evidence-observer's recorder with one declared call and one planted call to an undeclared host; witness key from a fixed test seed."
     }
   ]
 }

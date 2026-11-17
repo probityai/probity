@@ -22,6 +22,7 @@ from .adapters import (
     brokered_file_write,
     cbor_receipt_chain,
     completion_claim,
+    declared_versus_acted,
     dns_aid_sig,
     dnssec_rrset,
     done_receipt,
@@ -83,6 +84,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "evaluation_claim/v1": evaluation_claim.adjudicate,
     "dns_aid_sig/v1": dns_aid_sig.adjudicate,
     "dnssec_rrset/v1": dnssec_rrset.adjudicate,
+    "declared_versus_acted/v1": declared_versus_acted.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
