@@ -52,7 +52,7 @@ The `token_grant_receipt/v1` claim type checks the signature under the key you p
 
 ## Status
 
-Version 0.1.0, tested against Keycloak 26.4.7. The claim type ships in the next agent-evidence-verify release.
+Version 0.1.0, tested against Keycloak 26.6.3. The claim type ships in the next agent-evidence-verify release.
 
 ## Documentation
 
