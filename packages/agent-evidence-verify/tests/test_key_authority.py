@@ -285,6 +285,19 @@ def test_rfc_3339_forms_python_alone_would_misread_are_read_exactly() -> None:
     assert parse_instant("2026-11-15T01:00:00+01:00") == parse_instant("2026-11-15T00:00:00Z")
 
 
+def test_a_record_time_written_as_rfc_3339_is_read_exactly() -> None:
+    """A catalog check time is an RFC 3339 string: read to its last digit, never through a double."""
+    authority = {"kind": "registry", "bindings": [
+        {"subject": "agent-a", "public_key_sha256": key_sha256(KEY), "not_before": "2026-01-01T00:00:00Z",
+         "revoked_at": "2026-03-01T00:00:00.0000001Z"}]}
+    inside = authorize(authority, KEY, subject="agent-a", at="2026-03-01T00:00:00Z")
+    revoked = authorize(authority, KEY, subject="agent-a", at="2026-03-01T00:00:00.0000001Z")
+    assert inside.outcome == AUTHORIZED
+    assert (revoked.outcome, revoked.reason) == (UNAUTHORIZED, "key_revoked")
+    with pytest.raises(CaseError, match="RFC 3339"):
+        authorize(authority, KEY, subject="agent-a", at="2026-03-01 00:00:00Z")
+
+
 def test_a_revoked_key_stays_revoked_under_a_second_binding() -> None:
     authority = {"kind": "registry", "bindings": [
         {"subject": "agent-a", "public_key_sha256": key_sha256(KEY), "not_before": "2026-01-01T00:00:00Z",

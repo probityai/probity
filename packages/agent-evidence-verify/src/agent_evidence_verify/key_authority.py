@@ -233,11 +233,15 @@ _EPOCH_ORDINAL = datetime.date(1970, 1, 1).toordinal()
 
 
 def record_instant(at: Any, label: str = "at") -> Instant:
-    """A record's own time as an exact :data:`Instant`: an aware ``datetime``, or POSIX seconds.
+    """A record's own time as an exact :data:`Instant`: an aware ``datetime``, POSIX seconds, or an
+    RFC 3339 ``date-time`` string.
 
     POSIX seconds (an ``int``, or a ``float`` read exactly as the double it is) are what a token's
-    ``iat`` carries; a ``datetime`` holds microseconds.
+    ``iat`` carries; a ``datetime`` holds microseconds; a string is read by :func:`parse_instant`
+    to its last fraction digit, leap second included, as a catalog check time is written.
     """
+    if isinstance(at, str):
+        return parse_instant(at, label)
     if isinstance(at, datetime.datetime):
         if at.utcoffset() is None:
             raise CaseError(f"{label}: expected an aware datetime")
@@ -248,7 +252,7 @@ def record_instant(at: Any, label: str = "at") -> Instant:
         seconds = Fraction(at)
         day = math.floor(seconds / _DAY)
         return _instant(_EPOCH_ORDINAL + day, seconds - day * _DAY)
-    raise CaseError(f"{label}: expected an aware datetime or POSIX seconds")
+    raise CaseError(f"{label}: expected an aware datetime, POSIX seconds or an RFC 3339 date-time")
 
 
 def _digest(value: Any, label: str) -> str:
