@@ -43,6 +43,7 @@ All examples are authored synthetic records. They do not establish independent o
 | [Reconcile the principal each signed agent audit record names with identity-provider log events](adapters.md) | `idp_log_witness/v1` | `supported` | Authored synthetic identity-provider export over two corpus members; signed with a published test key that carries no trust outside the corpus. |
 | [Check an identity provider's signed token grant receipt against the grant you expect](token-grant-receipt.md) | `token_grant_receipt/v1` | `supported` | Recorded Keycloak client-credentials grant from the hook's end-to-end run; the recorder key signs only that run and carries no trust outside it. |
 | [Check that an evaluation claim record is admitted under my acceptance rule](evaluation-claim.md) | `evaluation_claim/v1` | `supported` | Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes. |
+| [Check that a DNS answer I hold offline validates under DNSSEC from the root](dns-aid.md) | `dnssec_rrset/v1` | `supported` | The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant. |
 
 ## Retrieve a command
 

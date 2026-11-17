@@ -341,6 +341,15 @@
       "documentation": "docs/evaluation-claim.md",
       "expected_decision": "supported",
       "scope": "Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes."
+    },
+    {
+      "task": "Check that a DNS answer I hold offline validates under DNSSEC from the root",
+      "claim_type": "dnssec_rrset/v1",
+      "case": "examples/dnssec-rrset/case.json",
+      "policy": "examples/dnssec-rrset/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant."
     }
   ]
 }
