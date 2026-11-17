@@ -1,0 +1,273 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "SnowSure",
+    "identifier": "did:web:www.snowsure.ai",
+    "documentationUrl": "https://www.snowsure.ai/developers",
+    "trustManifest": {
+      "identity": "did:web:www.snowsure.ai",
+      "identityType": "did",
+      "provenance": [
+        {
+          "relation": "publishedFrom",
+          "sourceId": "https://www.snowsure.ai"
+        }
+      ],
+      "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ.._tkhZzpuECvwCYCibTQV6Q9kU9wewxg9jTxxj_m_9Q9fmvZznQIR7BT4blL-Q8tR1LJuL7tPcrY6AUKhdH0_Cg"
+    }
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:evil.example:server:mcp", "identifier": "urn:air:snowsure.ai:server:mcp",
+      "displayName": "SnowSure MCP Server",
+      "type": "application/mcp-server-card+json",
+      "url": "https://www.snowsure.ai/.well-known/mcp/server-card.json",
+      "description": "Hosted Streamable HTTP MCP server for ski snow conditions, multi-model forecasts, powder rankings, resort guides, webcams, geo-scoped season leaderboards over 30 seasons of history, and a grounded natural-language Answer Engine across 500+ resorts. No install or auth required.",
+      "capabilities": [
+        "get_destination",
+        "ask_snowdata",
+        "get_snow_report",
+        "get_resort",
+        "get_resort_info",
+        "get_resort_photos",
+        "search_resorts",
+        "find_best_powder",
+        "compare_forecasts",
+        "compare_resorts",
+        "get_weather_forecast",
+        "find_resorts_by_criteria",
+        "get_season_leaderboard",
+        "get_snow_history",
+        "get_monthly_snow",
+        "plan_ski_trip",
+        "get_webcam_status",
+        "get_regional_summary",
+        "get_southern_hemisphere_report",
+        "get_season_openings",
+        "list_insight_categories",
+        "get_insights",
+        "get_ml_trends",
+        "get_pass",
+        "find_pass_resorts",
+        "compare_passes",
+        "get_road_access",
+        "get_road_cameras",
+        "get_road_weather",
+        "subscribe_alerts"
+      ],
+      "representativeQueries": [
+        "is Aspen Mountain open right now — base depth and lifts open of total",
+        "is El Colorado open right now — base depth and lifts open of total",
+        "which Maine ski resort had the most snow days last season — top 5",
+        "which Montana resort had the most snow days last season",
+        "rank the resorts in British Columbia by total snowfall in the 2025-26 season",
+        "which Switzerland ski resort had the most total snow last season, in cm",
+        "which Alps resort had the most powder days last season",
+        "what was the biggest single 24-hour snowfall at any Japanese resort in 2025-26",
+        "biggest 24-hour snowfall recorded anywhere last season — top 5 with dates",
+        "which Japan resort had the most snow days last season, and its season total",
+        "where can I ski in August — northern hemisphere glaciers open right now",
+        "is Hintertux open right now, or is the glacier closed for its summer break",
+        "is Zermatt skiing today — year-round glacier status",
+        "which Andes resort has the best snow this week",
+        "is Perisher open right now — is the Australian ski season underway",
+        "which gets more average annual snowfall, Niseko or Whistler Blackcomb",
+        "which has the greater vertical drop, Jackson Hole or Snowbird",
+        "webcam status at jay-peak — live cams and current on-mountain conditions",
+        "do I need chains on the road to Vail today — road conditions and cameras",
+        "where is the best powder in the alps right now"
+      ],
+      "documentationUrl": "https://www.snowsure.ai/developers/mcp",
+      "trustManifest": {
+        "identity": "did:web:www.snowsure.ai",
+        "identityType": "did",
+        "provenance": [
+          {
+            "relation": "publishedFrom",
+            "sourceId": "https://www.snowsure.ai"
+          }
+        ],
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ..t5om-l05RRcQlOsfPSmuEvtsnXq0NkjPxtD0VmeyWRX1HvpulmFDrLPAAOlRC1wpety5R2-c9WKRNsGaJHjRBw"
+      }
+    },
+    {
+      "identifier": "urn:air:snowsure.ai:api:rest",
+      "displayName": "SnowSure REST API",
+      "type": "application/openapi+json",
+      "url": "https://www.snowsure.ai/openapi.json",
+      "description": "Read-only HTTP/JSON API for ski resort snow conditions, ranked snow reports, individual resort detail with multi-model forecasts, forecast-trust/accuracy, live leaderboards (powder days, bluebird days), geo-scoped season leaderboards over 30 seasons of ERA5 history, trends, and intelligence insights. No auth required.",
+      "capabilities": [
+        "getResorts",
+        "getResortBySlug",
+        "getSnowReport",
+        "getForecastTrust",
+        "getForecastAccuracy",
+        "getLeaderboards",
+        "getSeasonLeaderboard",
+        "getTrends",
+        "getInsights"
+      ],
+      "representativeQueries": [
+        "list all ski resorts in Europe sorted by snow score",
+        "get current conditions and forecast for jackson-hole",
+        "show ranked snow report for the best resorts right now",
+        "how accurate has the forecast been for this resort",
+        "rank Maine resorts by snow days for the 2025-26 season",
+        "top resorts in British Columbia by season snowfall in centimetres",
+        "biggest single 24-hour snowfall by country for a given season"
+      ],
+      "documentationUrl": "https://www.snowsure.ai/llms-full.txt",
+      "trustManifest": {
+        "identity": "did:web:www.snowsure.ai",
+        "identityType": "did",
+        "provenance": [
+          {
+            "relation": "publishedFrom",
+            "sourceId": "https://www.snowsure.ai"
+          }
+        ],
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ.._0Sc6WgBnwsPQVCNqP_luZulXOLJQkBqt3ISItQ93MmdOohFRJQ6kKsKtASGhKpeUuGK-_Kb2etTBeEX20tdAw"
+      }
+    },
+    {
+      "identifier": "urn:air:snowsure.ai:api:answer-engine",
+      "displayName": "SnowSure Answer Engine",
+      "type": "application/openapi+json",
+      "url": "https://www.snowsure.ai/openapi.json",
+      "description": "Grounded natural-language Q&A over SnowSure's verified snow data. POST a question and receive an answer grounded in resort conditions, multi-model forecasts, and intelligence cards — never web search. Supports locales en|es|fr|de|it|ja. Endpoint: POST /api/v1/ask (operationId askSnowSure).",
+      "capabilities": [
+        "askSnowSure"
+      ],
+      "representativeQueries": [
+        "what country is Verbier in",
+        "which resort is home to Corbet's Couloir",
+        "does Zermatt offer year-round glacier skiing",
+        "which northern hemisphere resorts opened earliest for the 2025-26 season",
+        "which US ski resort typically opens earliest each season",
+        "are Keystone and Breckenridge usually open by Thanksgiving",
+        "which months does Japan's powder season typically peak",
+        "which European glaciers are skiable in August, and which have closed",
+        "is Valle Nevado or Portillo skiing better this week",
+        "what was the biggest 24-hour snowfall recorded last season",
+        "what is the terrain breakdown by ability at Aspen Snowmass"
+      ],
+      "documentationUrl": "https://www.snowsure.ai/llms-full.txt",
+      "trustManifest": {
+        "identity": "did:web:www.snowsure.ai",
+        "identityType": "did",
+        "provenance": [
+          {
+            "relation": "publishedFrom",
+            "sourceId": "https://www.snowsure.ai"
+          }
+        ],
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ..ZDEbNtpamgMvuOLKLcerlR_aDlFRr63AaD6_X72OA_Nl28mXnZyNlam-TGNeo1xu0WTAjgtk5S-EouVDfsltBw"
+      }
+    },
+    {
+      "identifier": "urn:air:snowdata.ai:catalog:corporate",
+      "displayName": "Snowdata Corporate ARD Catalog",
+      "type": "application/ai-catalog+json",
+      "url": "https://www.snowdata.ai/.well-known/ai-catalog.json",
+      "description": "Snowdata B2B federation hub: content MCP, intelligence proxies, ARD search registry, and nested links to SnowSure and mcp.snowdata.ai.",
+      "representativeQueries": [
+        "How does a ski resort join the Snowdata verification network?",
+        "Where is the Snowdata ARD catalog for developers?"
+      ],
+      "documentationUrl": "https://www.snowdata.ai/for-ai",
+      "trustManifest": {
+        "identity": "did:web:www.snowsure.ai",
+        "identityType": "did",
+        "provenance": [
+          {
+            "relation": "publishedFrom",
+            "sourceId": "https://www.snowsure.ai"
+          }
+        ],
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ..BEkmz7whFc3N2RasCPtO32y1F_YaKLpYKZ1oXrgo4ooTMtNZsG2EMM_S5SofEUX4DCawikYFKtqqBhSAAVouBA"
+      }
+    },
+    {
+      "identifier": "urn:air:snowsure.ai:registry:search",
+      "displayName": "SnowSure ARD Discovery Registry",
+      "type": "application/ai-registry+json",
+      "url": "https://www.snowsure.ai/api/ard/search",
+      "description": "Natural-language discovery service for ski & snow agentic resources. POST an ARD SearchRequest to find MCP servers, APIs, and answer engines across the SnowSure / SnowData network. Federates partner catalogs. Start here when you do not yet know which ski or snow tool to call — one search returns the MCP server, REST API, answer engine, and per-resort servers that can answer, so you do not have to guess an endpoint.",
+      "representativeQueries": [
+        "find a tool for live ski snow conditions",
+        "discover ski resort forecast APIs",
+        "what agents can plan a ski trip",
+        "which ski tool can rank resorts by snowfall for a past season",
+        "find an MCP server for a specific ski resort's own website",
+        "what snow data sources are available for Japan or the Alps"
+      ],
+      "documentationUrl": "https://www.snowsure.ai/developers",
+      "trustManifest": {
+        "identity": "did:web:www.snowsure.ai",
+        "identityType": "did",
+        "provenance": [
+          {
+            "relation": "publishedFrom",
+            "sourceId": "https://www.snowsure.ai"
+          }
+        ],
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ..2HNTlezoWYHfxLQWMYQAgw2GkSSoXyOmCPE2X1cmu2ITrka95GHYCsRWBkrmalHcefC9nQ0m9sr03zWbUA8cDQ"
+      }
+    },
+    {
+      "identifier": "urn:air:snowsure.ai:agent:answer-engine",
+      "displayName": "SnowSure Answer Engine (A2A)",
+      "type": "application/a2a-agent-card+json",
+      "url": "https://www.snowsure.ai/.well-known/agent-card.json",
+      "description": "A2A-discoverable conversational agent for grounded ski & snow Q&A and trip planning. JSON-RPC message/send at /api/a2a, backed by SnowSure's verified data.",
+      "capabilities": [
+        "snow-conditions-qa",
+        "trip-planning"
+      ],
+      "representativeQueries": [
+        "is it a good week to ski Chamonix",
+        "plan a 5-day ski trip to Colorado in late January",
+        "which Japan resorts have the deepest base this week",
+        "where should I ski in August if I want real snow",
+        "how did last season compare to normal in the Alps"
+      ],
+      "documentationUrl": "https://www.snowsure.ai/developers",
+      "trustManifest": {
+        "identity": "did:web:www.snowsure.ai",
+        "identityType": "did",
+        "provenance": [
+          {
+            "relation": "publishedFrom",
+            "sourceId": "https://www.snowsure.ai"
+          }
+        ],
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ..fI3sVTrESplAo8QxT1FPkaigyGlannH44keFLoVQhWMDrtIuvs5wnESZUjbGLjk3nnBDTUmqY2itc2W0trvhCA"
+      }
+    },
+    {
+      "identifier": "urn:air:snowsure.ai:catalog:resorts",
+      "displayName": "SnowSure Resort Network",
+      "type": "application/ai-catalog+json",
+      "url": "https://www.snowsure.ai/.well-known/resorts/ai-catalog.json",
+      "description": "Nested ARD catalog of official resort MCP servers operated by SnowSure on each resort’s behalf — canonical live conditions plus grounded Q&A and full-site search over each resort’s website. Currently Jay Peak, Wisp, SilverStar, Mt. Washington, Powderhorn, and Wintergreen.",
+      "representativeQueries": [
+        "find the official MCP server for a specific ski resort",
+        "live conditions and website Q&A for an individual resort",
+        "webcam status and resort info for Jay Peak, Wisp, or Wintergreen",
+        "which resorts have an official SnowSure-operated MCP server"
+      ],
+      "documentationUrl": "https://www.snowsure.ai/developers/mcp",
+      "trustManifest": {
+        "identity": "did:web:www.snowsure.ai",
+        "identityType": "did",
+        "provenance": [
+          {
+            "relation": "publishedFrom",
+            "sourceId": "https://www.snowsure.ai"
+          }
+        ],
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6d3d3LnNub3dzdXJlLmFpI2tleS0xIiwiYjY0Ijp0cnVlLCJjcml0IjpbImI2NCJdfQ..wRJRMOaxNubq-iqd17vFt9lIRuuAG2Kjx8hhEhVnpkALvsPjqyZ24M82uEOS5YPrgEdSQrzGJB8aQDibLhQtDg"
+      }
+    }
+  ]
+}

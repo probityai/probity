@@ -20,6 +20,7 @@ from .adapters import (
     audit_principal,
     authority_anchor,
     brokered_file_write,
+    catalog_trust_manifest,
     cbor_receipt_chain,
     completion_claim,
     done_receipt,
@@ -79,6 +80,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "idp_log_witness/v1": idp_log_witness.adjudicate,
     "cbor_receipt_chain/v1": cbor_receipt_chain.adjudicate,
     "evaluation_claim/v1": evaluation_claim.adjudicate,
+    "catalog_trust_manifest/v1": catalog_trust_manifest.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

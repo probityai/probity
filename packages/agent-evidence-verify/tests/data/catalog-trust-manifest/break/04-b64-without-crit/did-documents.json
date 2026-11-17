@@ -1,0 +1,20 @@
+{
+  "did:web:victim.example": {
+    "id": "did:web:victim.example",
+    "verificationMethod": [
+      {
+        "id": "did:web:victim.example#k1",
+        "type": "JsonWebKey2020",
+        "controller": "did:web:victim.example",
+        "publicKeyJwk": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "sRbU1OJNMpiXUS5X05m322SRQSXgvnJicTiZwhmY7S8"
+        }
+      }
+    ],
+    "assertionMethod": [
+      "did:web:victim.example#k1"
+    ]
+  }
+}

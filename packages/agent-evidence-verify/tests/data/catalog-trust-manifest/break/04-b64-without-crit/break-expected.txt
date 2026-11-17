@@ -1,0 +1,1 @@
+REFUSE b64_without_crit (RFC 7797 section 6). A verifier that does not implement RFC 7797 ignores the non-critical b64 and verifies other bytes, so two conforming verifiers disagree.
