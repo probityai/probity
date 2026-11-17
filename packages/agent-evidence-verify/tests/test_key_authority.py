@@ -549,3 +549,13 @@ def test_a_float_iat_is_compared_as_the_number_it_is() -> None:
     assert authorize(registry(not_before="2026-01-01T00:00:00Z"), KEY, subject="s",
                      at=1767225600).outcome == AUTHORIZED
 
+
+def test_a_jwk_with_a_list_curve_is_a_key_that_does_not_sign_not_a_crash() -> None:
+    """Counter-example: ``"crv": []`` in a DID document's JWK raised TypeError out of authorize."""
+    from agent_evidence_verify.key_authority import jwk_key_bytes
+
+    with pytest.raises(CaseError):
+        jwk_key_bytes({"kty": "OKP", "crv": [], "x": "AA"})
+    with pytest.raises(CaseError):
+        jwk_key_bytes({"kty": ["OKP"], "crv": "Ed25519", "x": "AA"})
+

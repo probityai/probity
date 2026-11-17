@@ -293,8 +293,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 25679,
-      "sha256": "6f0a0520a33f61fde8fc5a9008cf1670194b2ced354bfcb79055f50283c3e31c"
+      "bytes": 25833,
+      "sha256": "d1a389fbdba1edcae502b0aa929dedf5c84d93bf548ac51c30363c3681a93a8a"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",

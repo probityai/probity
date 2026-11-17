@@ -140,6 +140,8 @@ def jwk_key_bytes(jwk: Any, label: str = "jwk") -> bytes:
     if not isinstance(jwk, dict) or "d" in jwk:
         raise CaseError(f"{label}: expected a public JWK")
     kty, crv = jwk.get("kty"), jwk.get("crv")
+    if not isinstance(kty, str) or not isinstance(crv, str):  # a list ``crv`` is unhashable
+        raise CaseError(f"{label}: kty and crv are strings")
     if kty == "OKP" and crv in _OKP_CURVES:
         x = _b64url(jwk.get("x"), f"{label}.x")
         if len(x) != _OKP_CURVES[crv]:
