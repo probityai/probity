@@ -9,9 +9,11 @@ about what a record says while both report a clean parse:
 * an integer outside +-(2**53 - 1) parses exactly in Python and rounds in every double-based reader,
   so ``9007199254740993`` names one number here and another in JavaScript;
 * ``1e400`` parses to ``inf`` and ``NaN``, ``Infinity`` and ``-Infinity`` parse at all;
-* ``1e-400`` parses to ``0.0``, so a nonzero number reads as zero (and as false), and
-  ``3.141592653589793238462643383279`` keeps 31 significant digits a double holds 17 of, so a
-  decimal reader and a double reader read two numbers (RFC 7493 section 2.2 names both kinds);
+* a non-integer token is read as the nearest double, so a decimal reader and a double reader read
+  two numbers whenever that double, written back at its shortest, is another number: ``1e-400``
+  reads as ``0.0`` (nonzero as zero, and so as false), ``3.141592653589793238462643383279`` loses
+  its last 14 digits (RFC 7493 section 2.2 names both kinds), and ``9007199254740993.0`` reads as
+  ``9007199254740992.0``, the same rounding the safe-integer rule refuses in ``9007199254740993``;
 * nesting has no bound below the interpreter's recursion limit.
 
 ``parse_ijson`` refuses each of these, plus input that is not UTF-8 (including a UTF-8 encoded
@@ -25,6 +27,7 @@ from __future__ import annotations
 
 import json
 import math
+from decimal import Decimal
 from collections.abc import Callable
 from typing import Any
 
@@ -75,21 +78,21 @@ def _safe_int(text: str) -> int:
     return value
 
 
-#: Significant decimal digits that round-trip every IEEE 754 double; more is precision a double drops.
-MAX_SIGNIFICANT_DIGITS = 17
-
-
 def _finite_float(text: str) -> float:
+    """The double ``text`` names, when every reader reads the same number from it.
+
+    ``repr`` writes a double at its shortest round-trip form, which is what a double-based reader
+    holds and writes back. The token is read only when that form is numerically the token itself
+    (``1.10`` and ``1.1`` agree; ``0.10000000000000001`` reads as ``0.1`` and is refused). A digit
+    count cannot draw this line: 17 significant digits identify a double but do not make every
+    17-digit decimal one, and ``9007199254740993.0`` has 16.
+    """
     value = float(text)
     if not math.isfinite(value):
         raise IJSONError("value-not-representable", f"{text} is not a finite double")
-    mantissa = text.lstrip("-").lower().split("e")[0].replace(".", "")
-    digits = mantissa.lstrip("0").rstrip("0")
-    if value == 0 and digits:
-        raise IJSONError("value-not-representable", f"{text} is nonzero and reads as a double zero")
-    if len(digits) > MAX_SIGNIFICANT_DIGITS:
+    if Decimal(text) != Decimal(repr(value)):
         raise IJSONError("value-not-representable",
-                         f"{text} has more significant digits than a double holds")
+                         f"{text} reads as the double {value!r}, another number")
     return value
 
 

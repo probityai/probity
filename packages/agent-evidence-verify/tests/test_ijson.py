@@ -221,6 +221,11 @@ DOUBLE_LOSSY = [
     b'{"a":-2e-324}',  # rounds to -0.0
     b'{"a":3.141592653589793238462643383279}',  # RFC 7493 section 2.2's own example
     b'{"a":123456789012345678.0}',  # 18 significant digits
+    # Round 3: within 17 digits, the double is still another number.
+    b'{"a":9007199254740993.0}',  # the unsafe integer 2**53 + 1, written as a float
+    b'{"a":9.007199254740993e15}',  # the same, in exponent form
+    b'{"a":9007199254740993.5}',  # 17 digits, reads as 9007199254740994.0
+    b'{"a":0.10000000000000001}',  # printf %.17g of 0.1; a decimal reader keeps the trailing 1
 ]
 
 
@@ -235,6 +240,8 @@ def test_a_number_a_double_cannot_hold_is_refused(raw: bytes) -> None:
 @pytest.mark.parametrize("raw,expected", [
     (b'{"a":5e-324}', 5e-324), (b'{"a":0.0e-999}', 0.0), (b'{"a":-0.0}', -0.0),
     (b'{"a":0.30000000000000004}', 0.30000000000000004), (b'{"a":1.10000000000000000000}', 1.1),
+    (b'{"a":9007199254740992.0}', 9007199254740992.0), (b'{"a":1.7976931348623157e308}', 1.7976931348623157e308),
+    (b'{"a":2.5E-3}', 0.0025), (b'{"a":-1e2}', -100.0),
 ])
 def test_a_number_a_double_holds_is_read(raw: bytes, expected: float) -> None:
     assert parse_ijson(raw)["a"] == expected
