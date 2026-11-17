@@ -30,7 +30,6 @@ least favourable answer across the statements decides.
 
 from __future__ import annotations
 
-import datetime
 import hashlib
 import json
 import re
@@ -538,13 +537,14 @@ def _signed_statements(artifact: dict) -> list[tuple[str | None, object]]:
 
 
 def _issued_at(iat):
-    """A token's ``iat`` (seconds since the epoch) as an aware instant, or None when unusable."""
+    """A token's ``iat`` (POSIX seconds), or None when it is not a number.
+
+    It is passed on as the number it is: a ``datetime`` would round it to a microsecond, and a
+    rounded record time orders wrongly against a key's validity bound between the two.
+    """
     if isinstance(iat, bool) or not isinstance(iat, (int, float)):
         return None
-    try:
-        return datetime.datetime.fromtimestamp(iat, datetime.UTC)
-    except (OverflowError, OSError, ValueError):
-        return None
+    return iat
 
 
 def _authority_evidence(authority, artifacts, artifact_root, scope):

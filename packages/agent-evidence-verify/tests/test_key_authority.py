@@ -277,8 +277,10 @@ def test_rfc_3339_forms_python_alone_would_misread_are_read_exactly() -> None:
     assert parse_instant("2026-12-31T23:59:60Z") < parse_instant("2027-01-01T00:00:00Z")
     assert parse_instant("2026-12-31T23:59:60Z") > parse_instant("2026-12-31T23:59:59.5Z")
     assert parse_instant("2026-11-15t00:00:00z") == parse_instant("2026-11-15T00:00:00+00:00")
-    assert parse_instant("2026-11-15T00:00:00.1234567Z").microsecond == 123457
-    assert parse_instant("2026-11-15T00:00:00.1234560Z").microsecond == 123456
+    assert parse_instant("2026-11-15T00:00:00.123456Z") < parse_instant("2026-11-15T00:00:00.1234567Z")
+    assert parse_instant("2026-11-15T00:00:00.1234567Z") < parse_instant("2026-11-15T00:00:00.123457Z")
+    assert parse_instant("2026-11-15T00:00:00.1234560Z") == parse_instant("2026-11-15T00:00:00.123456Z")
+    assert parse_instant("2026-12-31T23:59:60.999999999Z") < parse_instant("2027-01-01T00:00:00Z")
     assert parse_instant("1990-12-31T15:59:60-08:00") == parse_instant("1990-12-31T23:59:60Z")
     assert parse_instant("2026-11-15T01:00:00+01:00") == parse_instant("2026-11-15T00:00:00Z")
 
@@ -504,8 +506,8 @@ def test_a_key_id_or_subject_that_is_not_a_string_is_the_consumers_case_error(au
 def test_a_bound_finer_than_a_microsecond_orders_exactly() -> None:
     """Counter-example: a record 0.5 microseconds before not_before was authorised.
 
-    Truncating ``.0000005`` put the bound on the record's own microsecond. Rounding up keeps the
-    order exact against a record time, which is on the microsecond grid.
+    Truncating ``.0000005`` put the bound on the record's own microsecond; the comparison is now
+    exact on both sides.
     """
     def registry(**bounds: str) -> dict:
         return {"kind": "registry", "bindings": [{"subject": "s", "public_key_sha256": key_sha256(KEY),
@@ -520,3 +522,30 @@ def test_a_bound_finer_than_a_microsecond_orders_exactly() -> None:
     revoked = authorize(registry(not_before="2025-01-01T00:00:00Z",
                                  revoked_at="2026-01-01T00:00:00.0000005Z"), KEY, subject="s", at=start)
     assert revoked.outcome == AUTHORIZED
+
+
+def test_a_float_iat_is_compared_as_the_number_it_is() -> None:
+    """Counter-example: an ``iat`` 0.2 microseconds before not_before was authorised.
+
+    ``1767225600 + 3 * 2**-22`` is 0.715 microseconds past 2026-01-01T00:00:00Z. Read through
+    ``datetime.fromtimestamp`` it became 0.000001 and the bound 0.0000009 rounded up to the same
+    microsecond, so the key read as valid before its validity began.
+    """
+    def registry(**bounds: str) -> dict:
+        return {"kind": "registry", "bindings": [{"subject": "s", "public_key_sha256": key_sha256(KEY),
+                                                  **bounds}]}
+
+    iat = 1767225600 + 3 * 2**-22
+    early = authorize(registry(not_before="2026-01-01T00:00:00.0000009Z"), KEY, subject="s", at=iat)
+    assert (early.outcome, early.reason) == (UNAUTHORIZED, "key_outside_validity")
+    inside = authorize(registry(not_before="2026-01-01T00:00:00.0000007Z"), KEY, subject="s", at=iat)
+    assert inside.outcome == AUTHORIZED
+    ended = authorize(registry(not_before="2025-01-01T00:00:00Z",
+                               not_after="2026-01-01T00:00:00.0000008Z"), KEY, subject="s", at=iat)
+    assert ended.outcome == AUTHORIZED
+    revoked = authorize(registry(not_before="2025-01-01T00:00:00Z",
+                                 revoked_at="2026-01-01T00:00:00.0000007Z"), KEY, subject="s", at=iat)
+    assert (revoked.outcome, revoked.reason) == (UNAUTHORIZED, "key_revoked")
+    assert authorize(registry(not_before="2026-01-01T00:00:00Z"), KEY, subject="s",
+                     at=1767225600).outcome == AUTHORIZED
+

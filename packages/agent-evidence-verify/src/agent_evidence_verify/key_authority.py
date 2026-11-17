@@ -71,9 +71,11 @@ import binascii
 import datetime
 import hashlib
 import json
+import math
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Any
 
 from .adapters import jcs_canonical
@@ -178,42 +180,73 @@ _RFC3339 = re.compile(r"(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.(
                       r"(?:([Zz])|([+-])(\d{2}):(\d{2}))", re.ASCII)
 
 
-def parse_instant(value: Any, label: str = "instant") -> datetime.datetime:
-    """An RFC 3339 ``date-time`` as an aware datetime, or :class:`CaseError`.
+#: An instant's order key: ``day * 86401 + second of the UTC day + fraction``, exact. A UTC day has
+#: 86401 one-second slots so that a leap second (``23:59:60``) orders after every instant of
+#: ``23:59:59`` and before the next day, which no count of POSIX seconds can do.
+Instant = Fraction
+_DAY = 86_400
+
+
+def _instant(day: int, second_of_day: Fraction) -> Instant:
+    return day * (_DAY + 1) + second_of_day
+
+
+def parse_instant(value: Any, label: str = "instant") -> Instant:
+    """An RFC 3339 ``date-time`` as an exact :data:`Instant`, or :class:`CaseError`.
 
     ``datetime.fromisoformat`` is not this: from Python 3.11 it also reads ISO 8601 week dates
     (``2026-W46-1T00:00:00Z``), the basic format (``20261115T000000Z``), a comma fraction and a
     space separator, none of which RFC 3339 allows, and it refuses a leap second, which RFC 3339
-    allows. Two verifiers reading one policy would then bound a key's validity differently.
+    allows. Two verifiers reading one policy would then bound a key's validity differently. A
+    fraction is kept to its last digit, not to the microsecond a ``datetime`` holds: a rounded bound
+    orders wrongly against a record time between the two grid points it falls between.
     """
     match = _RFC3339.fullmatch(value) if isinstance(value, str) else None
     if match is None:
         raise CaseError(f"{label}: expected an RFC 3339 date-time with an offset")
     year, month, day, hour, minute, second = (int(match.group(n)) for n in range(1, 7))
     fraction, zulu, sign, off_hour, off_minute = match.group(7, 8, 9, 10, 11)
-    fraction = fraction or ""
-    micro = int(fraction[:6].ljust(6, "0"))
-    # Round a finer fraction up: a record time is on the microsecond grid, and against such a time
-    # the rounded-up bound gives the same order as the exact one (truncation would not).
-    finer = datetime.timedelta(microseconds=1 if fraction[6:].strip("0") else 0)
     try:
-        if zulu:
-            offset = datetime.timedelta(0)
-        else:
+        ordinal = datetime.date(year, month, day).toordinal()
+        if hour > 23 or minute > 59 or second > 60:
+            raise ValueError("time of day out of range")
+        offset = 0
+        if not zulu:
             if int(off_hour) > 23 or int(off_minute) > 59:
                 raise ValueError("offset out of range")
-            offset = datetime.timedelta(hours=int(off_hour), minutes=int(off_minute))
-            offset = -offset if sign == "-" else offset
+            offset = (int(off_hour) * 60 + int(off_minute)) * 60 * (-1 if sign == "-" else 1)
+        local = hour * 3600 + minute * 60 + min(second, 59) - offset
+        utc_day, second_of_day = ordinal + local // _DAY, local % _DAY
         if second == 60:  # RFC 3339 section 5.7: a leap second ends a UTC day, at 23:59:60
-            utc_minute = (hour * 60 + minute - offset // datetime.timedelta(minutes=1)) % 1440
-            if utc_minute != 23 * 60 + 59:
-                raise ValueError("a leap second falls only at 23:59:60 UTC")
-            second, micro, finer = 59, 999_999, datetime.timedelta(0)
-        return datetime.datetime(year, month, day, hour, minute, second, micro,
-                                 tzinfo=datetime.timezone(offset)) + finer
+            if second_of_day != _DAY - 1:
+                raise ValueError("a leap second falls only in the last minute of a UTC day")
+            second_of_day = _DAY
     except ValueError as exc:
         raise CaseError(f"{label}: expected an RFC 3339 date-time with an offset") from exc
+    exact = Fraction(int(fraction), 10 ** len(fraction)) if fraction else Fraction(0)
+    return _instant(utc_day, second_of_day + exact)
 
+
+_EPOCH_ORDINAL = datetime.date(1970, 1, 1).toordinal()
+
+
+def record_instant(at: Any, label: str = "at") -> Instant:
+    """A record's own time as an exact :data:`Instant`: an aware ``datetime``, or POSIX seconds.
+
+    POSIX seconds (an ``int``, or a ``float`` read exactly as the double it is) are what a token's
+    ``iat`` carries; a ``datetime`` holds microseconds.
+    """
+    if isinstance(at, datetime.datetime):
+        if at.utcoffset() is None:
+            raise CaseError(f"{label}: expected an aware datetime")
+        utc = at.astimezone(datetime.timezone.utc)
+        second_of_day = utc.hour * 3600 + utc.minute * 60 + utc.second
+        return _instant(utc.toordinal(), second_of_day + Fraction(utc.microsecond, 10**6))
+    if isinstance(at, (int, float)) and not isinstance(at, bool) and math.isfinite(at):
+        seconds = Fraction(at)
+        day = math.floor(seconds / _DAY)
+        return _instant(_EPOCH_ORDINAL + day, seconds - day * _DAY)
+    raise CaseError(f"{label}: expected an aware datetime or POSIX seconds")
 
 
 def _digest(value: Any, label: str) -> str:
@@ -362,7 +395,7 @@ def _did_web(config: dict, key: bytes, kid: str | None, subject: str | None,
     return AUTHORIZED, "key_in_assertion_method", trusted
 
 
-def _registry(config: dict, key: bytes, subject: str | None, at: datetime.datetime | None,
+def _registry(config: dict, key: bytes, subject: str | None, at: Instant | None,
               ) -> tuple[str, str, list[str]]:
     bindings = config.get("bindings")
     if not isinstance(bindings, list) or not bindings:
@@ -389,7 +422,7 @@ def _registry(config: dict, key: bytes, subject: str | None, at: datetime.dateti
         return UNKNOWN, "record_time_unknown", [d for _, d, *_ in parsed]
     mine = [b for b in parsed if b[0] == subject]
     # Revocation ends a key for the subject: the earliest revocation of any binding of that key.
-    ended: dict[str, datetime.datetime] = {}
+    ended: dict[str, Instant] = {}
     for _, digest, _, _, revoked in mine:
         if revoked is not None and (digest not in ended or revoked < ended[digest]):
             ended[digest] = revoked
@@ -440,7 +473,7 @@ def _kt_inclusion(config: dict, key: bytes, subject: str | None, proof: Any,
 
 
 def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: str | None = None,
-              at: datetime.datetime | None = None, did_document: bytes | None = None,
+              at: datetime.datetime | int | float | None = None, did_document: bytes | None = None,
               inclusion_proof: Any = None) -> Authority:
     """Decide whether ``key`` may speak for a record, under the consumer's ``authority``.
 
@@ -464,7 +497,8 @@ def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: st
     elif kind == "did-web":
         outcome, reason, trusted = _did_web(authority, key, kid, subject, did_document)
     elif kind == "registry":
-        outcome, reason, trusted = _registry(authority, key, subject, at)
+        outcome, reason, trusted = _registry(authority, key, subject,
+                                             None if at is None else record_instant(at))
     else:
         outcome, reason, trusted = _kt_inclusion(authority, key, subject, inclusion_proof)
     return Authority(outcome, reason, kind, key_set_fingerprint(trusted))
