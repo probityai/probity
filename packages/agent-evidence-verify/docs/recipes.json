@@ -122,6 +122,11 @@
       "sha256": "9a0b45b24fb366d4f207c09dd74cbb94d0b3ee0eb84ce6ba1bf572cd2323edad"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/catalog_trust_manifest.py",
+      "bytes": 43427,
+      "sha256": "963998159c384b7634f970b01a47c8be429ca6f93545312057018267f5719c93"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
       "bytes": 18903,
       "sha256": "c21cded71b6da06e7328baefd9351784f2c0169ed776f7cf56d9f63dc8826ae5"
@@ -168,8 +173,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/jcs_canonical.py",
-      "bytes": 6494,
-      "sha256": "425c5d072cefe672908f1e2fa38c60244078e06b6027f1531df8a2acaedc0d3a"
+      "bytes": 6677,
+      "sha256": "0e97863f9018960186957dde1a396824b8d47226d00d6325e373d80e0ff9cc6f"
     },
     {
       "path": "src/agent_evidence_verify/adapters/observed_effect.py",
@@ -188,8 +193,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/proof_of_control.py",
-      "bytes": 23329,
-      "sha256": "87cf266073ba64b4804d2c77d6ee75e367f778653b1f06745fc0c4c368105e01"
+      "bytes": 22073,
+      "sha256": "05e07044dfec6714dd28c84e5b932451635a1747a55a15be272cbc4daee2ff26"
     },
     {
       "path": "src/agent_evidence_verify/adapters/protected_paths.py",
@@ -253,8 +258,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11555,
-      "sha256": "c0a4a377ee1b23e170afd46fc3ace1bc6635625690612fab51716e146f4eb78b"
+      "bytes": 11651,
+      "sha256": "44685d743b49850109f126ee00d8bfc3e9085b83fe0a235499ea77a9826ad035"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -278,8 +283,8 @@
     },
     {
       "path": "src/agent_evidence_verify/ijson.py",
-      "bytes": 9373,
-      "sha256": "e7f496e9d09a7168bcb8fc7d5b14f02b7f6829e12c5dc173788e29506c9f2a13"
+      "bytes": 9787,
+      "sha256": "aabfde30fd9200821eacaef0910a31d43e51b011c24fbc0876e69e8f746e7bf6"
     },
     {
       "path": "src/agent_evidence_verify/index.py",
@@ -293,8 +298,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 25833,
-      "sha256": "d1a389fbdba1edcae502b0aa929dedf5c84d93bf548ac51c30363c3681a93a8a"
+      "bytes": 27482,
+      "sha256": "58fcb3773c694394d073b5f8c5227e2bcb6382a4853ecebafed364fe193b28a8"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
@@ -2043,6 +2048,52 @@
           "path": "examples/evaluation-claim/record.json",
           "bytes": 1718,
           "sha256": "7df39e924a8ee42cd33d448fd077435875377eb7fb7eb56f569b491bd0c2b819"
+        }
+      ]
+    },
+    {
+      "task": "Check who signed an AI Catalog trust manifest and that it binds its entry",
+      "claim_type": "catalog_trust_manifest/v1",
+      "case": "examples/catalog-trust-manifest/case.json",
+      "policy": "examples/catalog-trust-manifest/policy.json",
+      "documentation": "docs/catalog-trust-manifest.md",
+      "expected_decision": "supported",
+      "scope": "Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe.",
+      "case_id": "catalog-trust-manifest-ai-catalog-publisher",
+      "expected_reason": "signature_covers_release",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/catalog-trust-manifest/case.json",
+        "--policy",
+        "examples/catalog-trust-manifest/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/catalog-trust-manifest/case.json",
+          "bytes": 628,
+          "sha256": "efbdd02225534f054975ed28bb2c82e6066fad16393c674a9fefd694ce1fc8b5"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/policy.json",
+          "bytes": 697,
+          "sha256": "b34ce20d31509d5ea3ff51729be58b6de32ff9899866cf752932955202add516"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/artifact.json",
+          "bytes": 141,
+          "sha256": "5346c3b356f1b2db025b97d464d73a62442ca39ad1480549e23daff147f35ef1"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/catalog.json",
+          "bytes": 1344,
+          "sha256": "fe7aaee6d11350c4c54fef665c8ea41bee65f5c56066ff7210b2082cb848262b"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/did-documents.json",
+          "bytes": 2755,
+          "sha256": "8b49c5d7a3dad753d337a8879ad50ea41947883460bf47e3bf3353f41a28c3fe"
         }
       ]
     }
