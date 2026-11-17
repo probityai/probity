@@ -82,6 +82,7 @@ from .adapters import jcs_canonical
 from .adapters.proof_of_control import check_inclusion, leaf_hash
 from .common import CaseError
 from .ijson import IJSONError, parse_ijson
+from .jose import jwk_signs
 
 KINDS = ("pin", "did-web", "registry", "kt-inclusion")
 AUTHORIZED, UNAUTHORIZED, UNKNOWN = "authorized", "unauthorized", "unknown"
@@ -341,20 +342,12 @@ def _method_key(method: dict, label: str) -> tuple[bytes | None, bool]:
     try:
         if "publicKeyJwk" in method:
             jwk = method["publicKeyJwk"]
-            return jwk_key_bytes(jwk, label), _jwk_signs(jwk)
+            return jwk_key_bytes(jwk, label), jwk_signs(jwk)
         if "publicKeyMultibase" in method:
             return multibase_key_bytes(method["publicKeyMultibase"], label), True
     except CaseError:
         return None, False
     return None, False
-
-
-def _jwk_signs(jwk: dict) -> bool:
-    """RFC 7517 sections 4.2 and 4.3: a key marked for encryption, or not for verify, never signs."""
-    if "use" in jwk and jwk["use"] != "sig":
-        return False
-    ops = jwk.get("key_ops")
-    return ops is None or (isinstance(ops, list) and "verify" in ops)
 
 
 def _did_web(config: dict, key: bytes, kid: str | None, subject: str | None,

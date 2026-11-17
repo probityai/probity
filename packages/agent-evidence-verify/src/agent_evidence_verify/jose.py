@@ -5,6 +5,12 @@ base64url is unpadded and in its one canonical form (RFC 7515 section 2); a JWK 
 as an Ed25519 OKP key of 32 bytes or a P-256 EC point whose coordinates lie in the field (SEC 1
 section 2.3.4); a JWS signature is EdDSA over 64 bytes or ES256 as raw ``r || s`` (RFC 7518 section
 3.4); a DSSE signature also reads ES256 in strict DER, the form DSSE signers commonly write.
+
+An Ed25519 public key that is not the canonical encoding of a point, or that encodes a point of
+order dividing 8, verifies nothing here. OpenSSL accepts such a key, and under the identity point the
+signature ``R = identity, S = 0`` verifies every message (RFC 8032 section 5.1.7 does not exclude
+it), so a record "signed" under it binds no one: :func:`ed25519_weak_key` names those keys and
+:func:`verify_signature` refuses them.
 """
 
 from __future__ import annotations
@@ -34,6 +40,59 @@ def b64url_decode(text: Any) -> bytes:
     if base64.urlsafe_b64encode(raw).rstrip(b"=").decode() != text:
         raise ValueError("non-canonical base64url")
     return raw
+
+
+#: Ed25519's field prime, curve constant ``d`` and a square root of -1 (RFC 8032 section 5.1).
+_ED_P = 2**255 - 19
+_ED_D = -121665 * pow(121666, -1, _ED_P) % _ED_P
+_ED_SQRT_M1 = pow(2, (_ED_P - 1) // 4, _ED_P)
+
+
+def _ed_point(raw: bytes) -> tuple[int, int] | None:
+    """The affine point a 32-byte Ed25519 encoding names (RFC 8032 section 5.1.3), else None."""
+    y = int.from_bytes(raw, "little") & ((1 << 255) - 1)
+    sign = raw[31] >> 7
+    if y >= _ED_P:
+        return None  # a non-canonical encoding: a second spelling of a point, never a key
+    u, v = (y * y - 1) % _ED_P, (_ED_D * y * y + 1) % _ED_P
+    x2 = u * pow(v, -1, _ED_P) % _ED_P
+    if x2 == 0:
+        return None if sign else (0, y)
+    x = pow(x2, (_ED_P + 3) // 8, _ED_P)
+    if (x * x - x2) % _ED_P:
+        x = x * _ED_SQRT_M1 % _ED_P
+    if (x * x - x2) % _ED_P:
+        return None
+    return (_ED_P - x if x & 1 != sign else x), y
+
+
+def _ed_double(point: tuple[int, int]) -> tuple[int, int]:
+    """``2P`` on edwards25519 (a = -1), by the complete twisted Edwards addition law."""
+    x, y = point
+    t = _ED_D * x * x * y * y % _ED_P
+    return (2 * x * y * pow(1 + t, -1, _ED_P) % _ED_P,
+            (y * y + x * x) * pow(1 - t, -1, _ED_P) % _ED_P)
+
+
+def ed25519_weak_key(raw: Any) -> bool:
+    """Whether 32 key bytes name no Ed25519 key a signature can bind: not 32 bytes, a non-canonical
+    or off-curve encoding, or a point of order dividing 8 (``8P`` is the identity)."""
+    if not isinstance(raw, bytes) or len(raw) != 32:
+        return True
+    point = _ed_point(raw)
+    if point is None:
+        return True
+    for _ in range(3):
+        point = _ed_double(point)
+    return point == (0, 1)
+
+
+def jwk_signs(jwk: dict[str, Any]) -> bool:
+    """RFC 7517 sections 4.2 and 4.3: a key marked for encryption, or not for verify, never signs."""
+    if "use" in jwk and jwk["use"] != "sig":
+        return False
+    ops = jwk.get("key_ops")
+    return ops is None or (isinstance(ops, list) and "verify" in ops)
 
 
 def b64url(data: bytes) -> str:
@@ -67,10 +126,13 @@ def public_key(method: dict[str, Any]) -> tuple[str, Any]:
 
 
 def verify_signature(alg: str, key: Any, message: bytes, signature: bytes) -> bool:
-    """A JWS signature: EdDSA over 64 bytes, or ES256 as raw r || s (RFC 7518 section 3.4)."""
+    """A JWS signature: EdDSA over 64 bytes, or ES256 as raw r || s (RFC 7518 section 3.4).
+
+    An Ed25519 key :func:`ed25519_weak_key` names verifies nothing.
+    """
     try:
         if alg == "EdDSA":
-            if len(signature) != 64:
+            if len(signature) != 64 or ed25519_weak_key(key):
                 return False
             Ed25519PublicKey.from_public_bytes(key).verify(signature, message)
             return True
