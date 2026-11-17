@@ -19,8 +19,11 @@ bytes from ``jcs_canonical``.
 Decisions: an admitted record whose verdict is ``pass`` is ``supported`` / ``claim_admitted_pass``;
 an admitted ``fail`` or ``incomplete`` is ``not_established`` with ``claim_admitted_fail`` or
 ``claim_admitted_incomplete``; a refused record is ``contradicted`` with its first refusal code as
-the reason, and the check lists every code. A record that is not bound is ``not_established`` /
-``record_unavailable``. A malformed rule is a case error: it is the consumer's own input.
+the reason, and the check lists every code. A refusal only because the pinned profile or the case
+set has no supplied bytes (``PROFILE_UNRESOLVED``, ``CASE_SET_UNRESOLVED``) says nothing against
+the record, so it is ``not_established`` / ``profile_unresolved`` or ``case_set_unresolved``. A
+record that is not bound is ``not_established`` / ``record_unavailable``. A malformed rule is a case
+error: it is the consumer's own input.
 """
 
 from __future__ import annotations
@@ -773,6 +776,11 @@ def check_case_set(case_set: Any) -> dict[str, Any]:
 
 # --- consumer assessment ------------------------------------------------------
 
+#: Refusals that name an input the relying party did not supply, not a fault in the record: the
+#: reader cannot judge the record without those bytes, so the decision is ``not_established``.
+UNRESOLVED_INPUTS = {"PROFILE_UNRESOLVED": "profile_unresolved",
+                     "CASE_SET_UNRESOLVED": "case_set_unresolved"}
+
 
 def _documents(artifacts: dict, artifact_root: Path, names: Any, label: str) -> list[Any]:
     """Parse each named artifact; one that is absent or not strict JSON resolves nothing."""
@@ -829,7 +837,11 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     check = {"id": "evaluation_claim", "result": outcome["result"], "verdict": outcome["verdict"],
              "codes": codes, "reasons": outcome["reasons"]}
     if outcome["result"] == REFUSED:
-        return decision(case_id, CLAIM_TYPE, scope, "contradicted", codes[0], [check])
+        against = [code for code in codes if code not in UNRESOLVED_INPUTS]
+        if against:
+            return decision(case_id, CLAIM_TYPE, scope, "contradicted", against[0], [check])
+        return decision(case_id, CLAIM_TYPE, scope, "not_established",
+                        UNRESOLVED_INPUTS[codes[0]], [check])
     if outcome["verdict"] == "pass":
         return decision(case_id, CLAIM_TYPE, scope, "supported", "claim_admitted_pass", [check])
     return decision(case_id, CLAIM_TYPE, scope, "not_established",

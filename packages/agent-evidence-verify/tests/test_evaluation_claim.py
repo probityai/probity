@@ -62,6 +62,9 @@ def _judge(tmp_path: Path, record, rule: dict, case_sets=None) -> dict:
     return adjudicate(case, policy, tmp_path)
 
 
+UNRESOLVED = {"PROFILE_UNRESOLVED": "profile_unresolved", "CASE_SET_UNRESOLVED": "case_set_unresolved"}
+
+
 def _summary(result: dict) -> dict:
     check = result["checks"][0]
     order = list(evaluation_claim.CODES)
@@ -81,8 +84,12 @@ def test_parity_with_the_reference_reader(tmp_path: Path, vector: dict) -> None:
     result = _judge(tmp_path, vector["record"], RULES[vector["rule"]])
     assert _summary(result) == vector["expected"]
     expected = vector["expected"]
-    if expected["result"] == "REFUSED":
-        assert (result["decision"], result["reason"]) == ("contradicted", expected["reasons"][0])
+    against = [code for code in expected["reasons"] if code not in UNRESOLVED]
+    if expected["result"] == "REFUSED" and against:
+        assert (result["decision"], result["reason"]) == ("contradicted", against[0])
+    elif expected["result"] == "REFUSED":
+        assert (result["decision"], result["reason"]) == (
+            "not_established", UNRESOLVED[expected["reasons"][0]])
     elif expected["verdict"] == "pass":
         assert (result["decision"], result["reason"]) == ("supported", "claim_admitted_pass")
     else:
@@ -166,3 +173,26 @@ def test_every_registered_adapter_is_documented() -> None:
     docs = "".join(p.read_text(encoding="utf-8")
                    for p in (Path(__file__).parents[1] / "docs").glob("*.md"))
     assert [claim for claim in ADAPTERS if claim not in docs] == []
+
+
+#: Break-it counter-examples: the relying party's own missing input read as a contradicted record.
+def test_a_profile_or_case_set_with_no_bytes_is_not_a_contradiction(tmp_path: Path) -> None:
+    by_id = {c["id"]: c for c in CASES}
+    for vector_id, reason in (("profile-bytes-not-supplied", "profile_unresolved"),
+                              ("case-set-bytes-not-supplied", "case_set_unresolved")):
+        vector = by_id[vector_id]
+        result = _judge(tmp_path, vector["record"], RULES[vector["rule"]])
+        assert result["checks"][0]["result"] == "REFUSED"
+        assert (result["decision"], result["reason"]) == ("not_established", reason)
+
+
+def test_a_real_refusal_beside_a_missing_case_set_is_still_a_contradiction(tmp_path: Path) -> None:
+    vector = {c["id"]: c for c in CASES}["case-set-bytes-not-supplied"]
+    record = copy.deepcopy(vector["record"])
+    coords = record.get("predicate", record)["coordinates"]
+    coords["vantage"]["observation_vantage"] = "artifact"
+    rule = dict(RULES[vector["rule"]], accept_vantage=["substrate"])
+    result = _judge(tmp_path, record, rule)
+    codes = result["checks"][0]["codes"]
+    assert "CASE_SET_UNRESOLVED" in codes and "VANTAGE_NOT_ACCEPTED" in codes
+    assert (result["decision"], result["reason"]) == ("contradicted", "VANTAGE_NOT_ACCEPTED")

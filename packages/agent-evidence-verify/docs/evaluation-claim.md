@@ -48,8 +48,14 @@ the record is refused with `CASE_SET_NOT_ACCEPTED`.
 | admitted, verdict `pass` | `supported` | `claim_admitted_pass` |
 | admitted, verdict `fail` | `not_established` | `claim_admitted_fail` |
 | admitted, verdict `incomplete` | `not_established` | `claim_admitted_incomplete` |
-| refused | `contradicted` | the first refusal code |
+| refused | `contradicted` | the first refusal code other than the two below |
+| refused only because the pinned profile has no supplied bytes | `not_established` | `profile_unresolved` |
+| refused only because the record's case set has no supplied bytes | `not_established` | `case_set_unresolved` |
 | record not bound | `not_established` | `record_unavailable` |
+
+A missing profile or case set is the relying party's input, not a fault in the record, so on its
+own it never reads as `contradicted`. Beside any other refusal the record is still `contradicted`,
+with that refusal as the reason.
 
 The check `evaluation_claim` lists every refusal code with where it applies. The codes, in the
 order they are reported: `MALFORMED_RECORD`, `PROFILE_UNRESOLVED`, `PROFILE_MISMATCH`,
