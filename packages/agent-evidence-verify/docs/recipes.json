@@ -92,6 +92,11 @@
       "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/a2a_signed_card.py",
+      "bytes": 17714,
+      "sha256": "b6e0cbe099e656e80f078b06aa6ccb71e1653b4f4a604708c939288f6a434673"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
       "bytes": 11849,
       "sha256": "e35e29b6c8bc8ff8a6713132d4cf428e8c644eebc307d91edc7d202d9fcbd849"
@@ -123,13 +128,18 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/catalog_trust_manifest.py",
-      "bytes": 43427,
-      "sha256": "963998159c384b7634f970b01a47c8be429ca6f93545312057018267f5719c93"
+      "bytes": 39041,
+      "sha256": "3642c5943f524155e2877c4dc5c51609ab06dc2e2f556e836a9f9817491bc89f"
     },
     {
       "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
       "bytes": 18903,
       "sha256": "c21cded71b6da06e7328baefd9351784f2c0169ed776f7cf56d9f63dc8826ae5"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/co_signed_receipt.py",
+      "bytes": 15553,
+      "sha256": "1fa01bbf03b9d3a1f71f87a520396db90bac56cbe1215074314ba94b7565315d"
     },
     {
       "path": "src/agent_evidence_verify/adapters/completion_claim.py",
@@ -258,8 +268,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11651,
-      "sha256": "44685d743b49850109f126ee00d8bfc3e9085b83fe0a235499ea77a9826ad035"
+      "bytes": 11807,
+      "sha256": "6a6591993d0ebff12981d7cee259a4c6aa1cb7d6772074a7c5191c4cd6312198"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -292,14 +302,19 @@
       "sha256": "fe919df5ff1172805243e742b37c5df585eacef4566c06c199071113de1986dc"
     },
     {
+      "path": "src/agent_evidence_verify/jose.py",
+      "bytes": 7692,
+      "sha256": "6cc325ada39b288f026c0b789ce62126669cdfa6138d9c89a0a4145fdcda1935"
+    },
+    {
       "path": "src/agent_evidence_verify/json_input.py",
       "bytes": 1768,
       "sha256": "d886ddbd2aa554d8a57f4e181a13b5fcfd0353c4ae3eac743c98b7f352217b6f"
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 27482,
-      "sha256": "58fcb3773c694394d073b5f8c5227e2bcb6382a4853ecebafed364fe193b28a8"
+      "bytes": 27205,
+      "sha256": "0700cf9163d009077d68ecdd848ad1ce0e225b20fde46eea9deb3ff58022ef52"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
@@ -2094,6 +2109,88 @@
           "path": "examples/catalog-trust-manifest/did-documents.json",
           "bytes": 2755,
           "sha256": "8b49c5d7a3dad753d337a8879ad50ea41947883460bf47e3bf3353f41a28c3fe"
+        }
+      ]
+    },
+    {
+      "task": "Check that an A2A Agent Card was signed by a key of its own DID that the consumer trusts",
+      "claim_type": "a2a_signed_card/v1",
+      "case": "examples/a2a-signed-card/case.json",
+      "policy": "examples/a2a-signed-card/policy.json",
+      "documentation": "docs/a2a-signed-card.md",
+      "expected_decision": "supported",
+      "scope": "The valid-conformance-extension card of tests/data/a2a-signed-card; the consumer pins the owner's Ed25519 key under its kid, so the verdict says which key of the card's DID signed the card and that the card names its conformance corpus and verifier inside the signature, not that the agent behaves as the card says.",
+      "case_id": "a2a-signed-card-pinned-owner-key",
+      "expected_reason": "card_signature_authorized",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/a2a-signed-card/case.json",
+        "--policy",
+        "examples/a2a-signed-card/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/a2a-signed-card/case.json",
+          "bytes": 427,
+          "sha256": "ef038fe4c5eeefd1f190f8b08136d43933b8779533d0a2cabee8d4dda33e540c"
+        },
+        {
+          "path": "examples/a2a-signed-card/policy.json",
+          "bytes": 561,
+          "sha256": "1a508bf36c9533d570f7563820c7e98ebaf887ee7c62156cf474f966fdee744a"
+        },
+        {
+          "path": "examples/a2a-signed-card/card.json",
+          "bytes": 1294,
+          "sha256": "dfc3d96fbd32ac4ba418a8d4e9845ec3fe5a9590d2974ea0fca57fcb86266414"
+        },
+        {
+          "path": "examples/a2a-signed-card/jwks.json",
+          "bytes": 402,
+          "sha256": "393675ced92f85de65cbc7d4a39c45713b7fa25ea71acabcf437dbb7a3da7414"
+        }
+      ]
+    },
+    {
+      "task": "Check which parties a co-signed tool-call receipt binds and that both keys may speak for them",
+      "claim_type": "co_signed_receipt/v1",
+      "case": "examples/co-signed-receipt/case.json",
+      "policy": "examples/co-signed-receipt/policy.json",
+      "documentation": "docs/co-signed-receipt.md",
+      "expected_decision": "supported",
+      "scope": "The valid-co-signed receipt of tests/data/co-signed-receipt; the consumer pins the agent's and the caller's Ed25519 keys, so the verdict says both parties signed the same bytes, not that the receipt is true or that the parties are independent.",
+      "case_id": "co-signed-receipt-both-keys-pinned",
+      "expected_reason": "receipt_signers_authorized",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/co-signed-receipt/case.json",
+        "--policy",
+        "examples/co-signed-receipt/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/co-signed-receipt/case.json",
+          "bytes": 434,
+          "sha256": "1d7c2081d7ae6f4f24b91842328fe6d28461cc1553c1e353dfc195ddf8181626"
+        },
+        {
+          "path": "examples/co-signed-receipt/policy.json",
+          "bytes": 648,
+          "sha256": "b7846fa4653f2b4b8e8dd39aca2031a05dccb2d8af28d2e7cd77e29eb534cd1a"
+        },
+        {
+          "path": "examples/co-signed-receipt/keys.json",
+          "bytes": 272,
+          "sha256": "f724d2aee5adc09b1600335e5c9de52dda5d2ed6814b71a35468cd31fd78e483"
+        },
+        {
+          "path": "examples/co-signed-receipt/receipt.json",
+          "bytes": 713,
+          "sha256": "626fe4eef435a91c2e1b445c1ee8ebb9ab81d978f387c02f8205fc42969f227f"
         }
       ]
     }
