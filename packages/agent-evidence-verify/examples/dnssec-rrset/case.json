@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "chain.bin": {
+      "length": 2418,
+      "path": "chain.bin",
+      "sha256": "dd06a10c520fc81075a8d9c2047b2344c5568d99f750f1b2343d726fcf17c21a"
+    }
+  },
+  "case_id": "dnssec-rrset-https",
+  "schema_version": "probity-case/v1"
+}

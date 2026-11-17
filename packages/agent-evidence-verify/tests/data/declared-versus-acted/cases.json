@@ -1,0 +1,248 @@
+[
+ {
+  "case": "all-calls-bound",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "supported",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "every_call_declared_and_bound",
+  "trajectory_id": "dva-all-calls-bound",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "planted-undeclared-call",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "call_not_declared",
+  "trajectory_id": "dva-planted-undeclared-call",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "call-to-another-port",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "call_not_declared",
+  "trajectory_id": "dva-call-to-another-port",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "call-after-exp",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "binding_expired",
+  "trajectory_id": "dva-call-after-exp",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "no-calls",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "not_established",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "no_calls_recorded",
+  "trajectory_id": "dva-no-calls",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "endpoint-only-binding",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "not_established",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "endpoint_only",
+  "trajectory_id": "dva-endpoint-only-binding",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "no-key-authority",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "not_established",
+  "key_authority": null,
+  "reason": "no_key_authority_in_policy",
+  "trajectory_id": "dva-no-key-authority",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "tail-dropped",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "trajectory_tail_missing",
+  "trajectory_id": "dva-tail-dropped",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "dnssec-key-authority",
+  "evidence": [
+   "jwks.json",
+   "dnssec.chain"
+  ],
+  "expected": "supported",
+  "key_authority": {
+   "kind": "dnssec-chain",
+   "name": "dns-aid.example.com.",
+   "trust_anchor": {
+    "ds": [
+     "49111 15 2 61434cb62d209f8ee6b3a3418974a7db7b7748ad96563960f75c4ccc6bdf46cc"
+    ],
+    "zone": "."
+   }
+  },
+  "reason": "every_call_declared_and_bound",
+  "trajectory_id": "dva-dnssec-key-authority",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "foreign-key-dnssec-authority",
+  "evidence": [
+   "jwks.json",
+   "dnssec.chain"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "kind": "dnssec-chain",
+   "name": "dns-aid.example.com.",
+   "trust_anchor": {
+    "ds": [
+     "49111 15 2 61434cb62d209f8ee6b3a3418974a7db7b7748ad96563960f75c4ccc6bdf46cc"
+    ],
+    "zone": "."
+   }
+  },
+  "reason": "key_not_in_dnssec_record",
+  "trajectory_id": "dva-foreign-key-dnssec-authority",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "call-before-resolution",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "call_before_resolution",
+  "trajectory_id": "dva-call-before-resolution",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "unnamed-call-before-any-resolution",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "call_not_declared",
+  "trajectory_id": "dva-unnamed-call-before-any-resolution",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ },
+ {
+  "case": "endpoint-backslash-userinfo",
+  "evidence": [
+   "jwks.json"
+  ],
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "reason": "call_endpoint_malformed",
+  "trajectory_id": "dva-endpoint-backslash-userinfo",
+  "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+  "zone": "example.com"
+ }
+]

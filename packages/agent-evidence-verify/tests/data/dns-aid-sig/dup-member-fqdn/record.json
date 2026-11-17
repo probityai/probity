@@ -1,0 +1,20 @@
+{
+ "alpn": "a2a",
+ "fqdn": "_chat._a2a._agents.example.com",
+ "jwks_url": "https://dns-aid.example.com/.well-known/dns-aid-jwks.json",
+ "params": {
+  "bap": null,
+  "cap": "https://chat.example.com/.well-known/agent-cap.json",
+  "cap-sha256": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+  "connect-class": null,
+  "connect-meta": null,
+  "enroll-uri": null,
+  "policy": "https://example.com/agent-policy",
+  "realm": "prod",
+  "well-known": null
+ },
+ "port": 443,
+ "sig": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImsxIn0.eyJmcWRuIjoiX3guX2EyYS5fYWdlbnRzLmV2aWwuZXhhbXBsZSIsImFscG4iOiJhMmEiLCJleHAiOjE3OTQ4NjAzMjMsImZxZG4iOiJfY2hhdC5fYTJhLl9hZ2VudHMuZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQ3NzM4NjMsInBvcnQiOjQ0Mywic3ZjYiI6Im5hY0Q4Q1ZmNF95dHRCZlo3T0VPYV9iaTRIeWZBM0hXdjc2VTc0SWJYTXciLCJ0YXJnZXQiOiJjaGF0LmV4YW1wbGUuY29tIn0.ClFuwry-KGa-JnqJXrLEy8SMSTI0AV8qBg2ozIC0UC2aZOB6d6MW210BAR3FVf5Pg_uTecSnvaalzCGRNUdC6w",
+ "target": "chat.example.com",
+ "zone": "example.com"
+}

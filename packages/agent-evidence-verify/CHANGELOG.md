@@ -16,6 +16,25 @@ unchanged.
   consumer-pinned keys, through a format profile the case pins. Refuses a repeated receipt, a re-issued authorization,
   swapped receipts and an unpinned signer, and reports a restart, an unpinned head, a missing effect or a missing
   revocation commitment as `not_established`. Doc: `docs/cbor-receipt-chain.md`, example: `examples/cbor-receipt-chain/`.
+- `dns_aid_sig/v1`: checks a DNS-AID discovery record's `sig` (compact JWS, ES256) against the served record
+  under the `dns-aid-sig-binding/v1` profile (strict canonical base64url, I-JSON header and payload, `crit`
+  refused, integer `port`/`iat`/`exp`, protocol bound from `proto` then `alpn`, `svcb1` over RFC 8785 with
+  empty distinct from absent) and agrees only when the consumer's key authority authorises the key for the
+  zone. A `jwks_url` is read as every common client reads it (a backslash, userinfo, control character or
+  non-hostname host is refused), a `port` is 0 to 65535, and an inverted window is refused. Every verdict names
+  the key-set fingerprint it read and the `fqdn` and `zone` the record claimed; malformed record input is a
+  verdict, never an exception. Page: `docs/dns-aid.md`, example: `examples/dns-aid-sig/`.
+- `dnssec_rrset/v1` and the `dnssec-chain` key-authority kind: offline DNSSEC validation (RFC 4034, RFC 4035;
+  RSA, ECDSA, EdDSA; SHA-256 and SHA-384 DS) of an RRset from a pinned trust anchor, from a chain in DNS wire
+  format. A missing record reads `not_established`, never validated; a key with the REVOKE bit validates no
+  zone data, and the authority holds only when the zone that signed the key record contains the record's zone,
+  so a delegated child zone never vouches for its parent. Example: `examples/dnssec-rrset/` (a real chain from
+  the IANA root).
+- `declared_versus_acted/v1`: joins an agent-evidence-observer trajectory of resolution and call events,
+  verified against its witnessed head, with the bindings it relied on; a call to an undeclared endpoint, to an
+  endpoint clients read differently, before the resolution it names, after `exp` or under an unauthorised key is
+  `contradicted`, and the scope carries the call denominator. Lines end at `\n` only and the head signature is
+  canonical base64. Example: `examples/declared-versus-acted/`.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.

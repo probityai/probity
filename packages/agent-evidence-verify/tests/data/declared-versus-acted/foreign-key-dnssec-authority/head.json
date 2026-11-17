@@ -1,0 +1,8 @@
+{
+ "count": 2,
+ "format": "probity-trajectory-head-v1",
+ "head": "a6bc3325ebae6f8e14c98c3632df4fe184edb21c34a5b60cf34b7e07d0c418a1",
+ "keyid": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+ "signature": "HmdlXEAPBFBytbfr91FtM8HtVfdIO7k1kfyM/0BKq1RlDE6fTs/f9RkvA9IWe1tI0KXSCAb3BVnVRguyrFQbCQ==",
+ "trajectory": "dva-foreign-key-dnssec-authority"
+}

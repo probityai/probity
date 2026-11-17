@@ -132,6 +132,21 @@
       "sha256": "b5f8f00f0de83f82ee079beef20084aaccba2a9dc759002f13c994913f28d963"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/declared_versus_acted.py",
+      "bytes": 20134,
+      "sha256": "fa0fa52efcffc04a349aed4dd988db70550633845604ca4fc78332527e265fae"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/dns_aid_sig.py",
+      "bytes": 21456,
+      "sha256": "7f475d4c79f6f23586766f63a0107135a83727d2caca2110a59debb4187f833d"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/dnssec_rrset.py",
+      "bytes": 2820,
+      "sha256": "a834ef5299942dda5a5b5dbdef9ec2b2e0226e04174ca24c3f9e2d713e6d837b"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/done_argv.py",
       "bytes": 7461,
       "sha256": "a0696bd433d3310c259424c39f0e3c37baaf1ceba6706a27d147f8191ade93c5"
@@ -188,8 +203,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/proof_of_control.py",
-      "bytes": 23329,
-      "sha256": "87cf266073ba64b4804d2c77d6ee75e367f778653b1f06745fc0c4c368105e01"
+      "bytes": 21987,
+      "sha256": "9779033e2cbead8185cfa9e0be87d3c0df7b0e737c3740ac4791857b6984d501"
     },
     {
       "path": "src/agent_evidence_verify/adapters/protected_paths.py",
@@ -253,13 +268,18 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11555,
-      "sha256": "c0a4a377ee1b23e170afd46fc3ace1bc6635625690612fab51716e146f4eb78b"
+      "bytes": 11777,
+      "sha256": "49257f167efdb212daa041026e67cb08b6ba6a5b46e0f8ac4e2a0a06df24ebc3"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
       "bytes": 5020,
       "sha256": "c3043ac01f34657707dd673fef3faae54f795c5c98dc5288681c7859fa0ea468"
+    },
+    {
+      "path": "src/agent_evidence_verify/dnssec.py",
+      "bytes": 22535,
+      "sha256": "1d6c440132dd4e0018ac6722ac2f0b529b3557296ff0f23b98475c830879a839"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
@@ -293,8 +313,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 25833,
-      "sha256": "d1a389fbdba1edcae502b0aa929dedf5c84d93bf548ac51c30363c3681a93a8a"
+      "bytes": 32129,
+      "sha256": "d3d1fd64c9413c42b9102c65e48a551296a4b3a0b9fcffda8f24a19d96e11d6e"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
@@ -2043,6 +2063,134 @@
           "path": "examples/evaluation-claim/record.json",
           "bytes": 1718,
           "sha256": "7df39e924a8ee42cd33d448fd077435875377eb7fb7eb56f569b491bd0c2b819"
+        }
+      ]
+    },
+    {
+      "task": "Check that a DNS-AID record's sig binds it to a key the zone owner published under DNSSEC",
+      "claim_type": "dns_aid_sig/v1",
+      "case": "examples/dns-aid-sig/case.json",
+      "policy": "examples/dns-aid-sig/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "Record and JWKS signed by the dns-aid-core signer at 825ccea; the DNSSEC chain is a test root signed by dnspython, whose DS the policy pins.",
+      "case_id": "dns-aid-sig-dnssec-key",
+      "expected_reason": "binding_verified",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/dns-aid-sig/case.json",
+        "--policy",
+        "examples/dns-aid-sig/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/dns-aid-sig/case.json",
+          "bytes": 584,
+          "sha256": "16f04c702d3c778d3026f9043d8b109cd0f1ba304dd529e6846a6432047f2ac8"
+        },
+        {
+          "path": "examples/dns-aid-sig/policy.json",
+          "bytes": 555,
+          "sha256": "939a88daa5a18830657f82133d9387aaeb7cadfcb00862cefe116007c525ac56"
+        },
+        {
+          "path": "examples/dns-aid-sig/dnssec.chain",
+          "bytes": 1235,
+          "sha256": "b0a96b915aa0a78797138dde516bddbb5ad80feca0fe295b92615bbfd0a12595"
+        },
+        {
+          "path": "examples/dns-aid-sig/jwks.json",
+          "bytes": 222,
+          "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+        },
+        {
+          "path": "examples/dns-aid-sig/record.json",
+          "bytes": 880,
+          "sha256": "d149d3a91bcca454e7230517a7d909423242d1fcdb6c28bbd6286391b78a6713"
+        }
+      ]
+    },
+    {
+      "task": "Check that a DNS answer I hold offline validates under DNSSEC from the root",
+      "claim_type": "dnssec_rrset/v1",
+      "case": "examples/dnssec-rrset/case.json",
+      "policy": "examples/dnssec-rrset/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant.",
+      "case_id": "dnssec-rrset-https",
+      "expected_reason": "rrset_validated",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/dnssec-rrset/case.json",
+        "--policy",
+        "examples/dnssec-rrset/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/dnssec-rrset/case.json",
+          "bytes": 256,
+          "sha256": "d89745eebe13681c6614939bdf0086515b47de7c4ee5e2695f8db7ced567d035"
+        },
+        {
+          "path": "examples/dnssec-rrset/policy.json",
+          "bytes": 515,
+          "sha256": "7e7b15d8a10642d82224bc5f0233ca66e5bc586d05b034fbe2bc9915e754bd38"
+        },
+        {
+          "path": "examples/dnssec-rrset/chain.bin",
+          "bytes": 2418,
+          "sha256": "dd06a10c520fc81075a8d9c2047b2344c5568d99f750f1b2343d726fcf17c21a"
+        }
+      ]
+    },
+    {
+      "task": "Check that every call an agent made went to an endpoint a verified discovery record declared",
+      "claim_type": "declared_versus_acted/v1",
+      "case": "examples/declared-versus-acted/case.json",
+      "policy": "examples/declared-versus-acted/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "contradicted",
+      "scope": "A trajectory written by agent-evidence-observer's recorder with one declared call and one planted call to an undeclared host; witness key from a fixed test seed.",
+      "case_id": "declared-versus-acted-undeclared-call",
+      "expected_reason": "call_not_declared",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/declared-versus-acted/case.json",
+        "--policy",
+        "examples/declared-versus-acted/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/declared-versus-acted/case.json",
+          "bytes": 603,
+          "sha256": "bfb4eddc719fcfebcd782d7d02703a80560188e7b40d0fb98fdb767912906545"
+        },
+        {
+          "path": "examples/declared-versus-acted/policy.json",
+          "bytes": 665,
+          "sha256": "013b2adf357781bca58ac0bf81e9533d7e2802111d0efc090f288727b1578939"
+        },
+        {
+          "path": "examples/declared-versus-acted/head.json",
+          "bytes": 364,
+          "sha256": "871b26d4226b1d22d8118f77ec0f26ce9f66f5c04fbe8c0da1da9a850ef6cfc8"
+        },
+        {
+          "path": "examples/declared-versus-acted/jwks.json",
+          "bytes": 222,
+          "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+        },
+        {
+          "path": "examples/declared-versus-acted/trajectory.jsonl",
+          "bytes": 1706,
+          "sha256": "5efb36e4c2187a8ac86c9ea22843186fdeb1af6034962e936d934d9929eee528"
         }
       ]
     }
