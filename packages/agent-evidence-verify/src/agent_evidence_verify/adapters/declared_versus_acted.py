@@ -9,15 +9,23 @@ as received) and a ``call`` event per request (endpoint, the resolution it relie
 This adapter joins them.
 
 It first verifies the trajectory against the consumer's pins, sharing no code with the observer:
-each line is the RFC 8785 form of ``{"seq", "prev", "event"}``, ``seq`` counts from 1 without gaps,
+each line, ended by ``\n`` and nothing else, is the RFC 8785 form of ``{"seq", "prev", "event"}``
+(a ``\r`` ends no line, so a reader splitting on ``\n`` reads the same entries), ``seq`` counts from 1 without gaps,
 ``prev`` is the SHA-256 of the previous line (the first names the genesis digest of the trajectory
 id), and the head, signed with Ed25519 in the ``probity-trajectory-head-v1`` domain by the witness
-key the consumer pins, fixes the count and the last digest. A dropped tail, an entry past the head,
+key the consumer pins, fixes the count and the last digest; the signature is canonical base64
+(RFC 4648 section 4, padded, zero trailing bits), so one head has one spelling. A dropped tail, an entry past the head,
 a broken link or a head of another trajectory or key is ``contradicted``: a call the observer did
 not record is missing, never clean.
 
 Then every call is judged at its own instant against the records it could have relied on (the
-resolution it names, or every earlier resolution when it names none):
+resolution it names, or every earlier resolution when it names none; a call timed before the
+resolution it names is ``contradicted``, ``call_before_resolution``, and a resolution timed after
+the call is not one it could rely on). The call's endpoint is read so that every common HTTP client
+reads the same host (:func:`dns_aid_sig.url_authority`): an endpoint with a backslash, userinfo, a
+control character or a non-hostname host is ``contradicted`` (``call_endpoint_malformed``), because
+``https://collector.example.net\\@chat.example.com/`` names ``chat.example.com`` to Python's
+``urlsplit`` and ``collector.example.net`` to urllib3, the client under ``requests``:
 
 - ``contradicted`` when no record declares the call's host and port (``call_not_declared``), or
   every declaring record's binding is contradicted at the call's instant (expired, a foreign key,
@@ -41,7 +49,6 @@ import hashlib
 import json
 import re
 from typing import Any
-from urllib.parse import urlsplit
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -97,6 +104,8 @@ def verify_trajectory(raw: bytes, head_raw: bytes, trajectory_id: str, witness_k
     payload = {m: head[m] for m in ("format", "trajectory", "count", "head")}
     try:
         signature = base64.b64decode(head["signature"], validate=True)
+        if base64.b64encode(signature).decode("ascii") != head["signature"]:
+            raise ValueError("signature base64 not in canonical form")
         Ed25519PublicKey.from_public_bytes(bytes.fromhex(witness_key)).verify(
             signature, HEAD_FORMAT.encode("ascii") + b"\x00" + _canonical(payload))
     except (InvalidSignature, ValueError, binascii.Error, TypeError) as exc:
@@ -104,7 +113,7 @@ def verify_trajectory(raw: bytes, head_raw: bytes, trajectory_id: str, witness_k
     if raw and not raw.endswith(b"\n"):
         raise _Refused("trajectory_line_incomplete")
     events, previous = [], genesis(trajectory_id)
-    for number, line in enumerate(raw.splitlines(), start=1):
+    for number, line in enumerate(raw.split(b"\n")[:-1] if raw else [], start=1):
         try:
             entry = parse_ijson(line, integers_only=canonicalization == "jcs_integer_only_v1")
         except IJSONError as exc:
@@ -195,16 +204,20 @@ def _records(event: dict, zone: str) -> list[dict]:
 
 
 def _endpoint(text: Any) -> tuple[str, int]:
-    if not isinstance(text, str) or not text.isascii():
-        raise ValueError("endpoint")
-    parts = urlsplit(text if "://" in text else "//" + text)
-    port = parts.port
+    scheme, host, port = dns_aid_sig.url_authority(text, default_scheme=True)
     if port is None:
-        port = {"https": 443, "http": 80}.get(parts.scheme)
-    host = dns_aid_sig.dns_name(parts.hostname)
-    if port is None or host is None:
+        port = {"https": 443, "http": 80}.get(scheme)
+    if port is None:
         raise ValueError("endpoint")
     return host, port
+
+
+def _instant_or_none(value: Any):
+    from ..key_authority import parse_instant
+    try:
+        return parse_instant(value, "at")
+    except CaseError:
+        return None
 
 
 def _event_shape(event: dict) -> bool:
@@ -218,7 +231,7 @@ def _event_shape(event: dict) -> bool:
                                       and isinstance(jwks["sha256"], str)))
                 and (event.get("dnssec_chain_sha256") is None
                      or isinstance(event["dnssec_chain_sha256"], str))
-                and isinstance(event.get("at"), str))
+                and _instant_or_none(event.get("at")) is not None)
     if event.get("kind") == "call":
         resolution = event.get("resolution")
         return (isinstance(event.get("endpoint"), str) and isinstance(event.get("at"), str)
@@ -328,14 +341,17 @@ def _judge_call(seq: int, event: dict, resolutions: dict[int, dict], zone: str,
         at = dns_aid_sig.instant(event["at"], f"call {seq}.at")
     except CaseError:
         return check | {"status": "fail", "reason": "call_time_malformed"}
+    exact = _instant_or_none(event["at"])
     try:
         host, port = _endpoint(event["endpoint"])
     except ValueError:
         return check | {"status": "fail", "reason": "call_endpoint_malformed"}
     if event["resolution"] is None:
-        candidates = list(resolutions.values())
+        candidates = [r for r in resolutions.values() if _instant_or_none(r["at"]) <= exact]
     elif event["resolution"] in resolutions:
         candidates = [resolutions[event["resolution"]]]
+        if _instant_or_none(candidates[0]["at"]) > exact:
+            return check | {"status": "fail", "reason": "call_before_resolution"}
     else:
         return check | {"status": "fail", "reason": "call_names_unknown_resolution"}
     declaring = [(record, source) for source in candidates for record in _records(source, zone)

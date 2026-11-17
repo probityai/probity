@@ -1,0 +1,8 @@
+{
+ "count": 2,
+ "format": "probity-trajectory-head-v1",
+ "head": "3606aa0b45fe2f70a90ac06a6181af803156d6c28a8adc55496704823688711b",
+ "keyid": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+ "signature": "hofJpxYsWeF7lswaQ3akl4g1V5gyLrpcQ5m6HZJ6ZJ8NB7XatDDIR3R360vgH6yFe+wACwOZWoW0Kw1QtkYoBQ==",
+ "trajectory": "dva-endpoint-backslash-userinfo"
+}

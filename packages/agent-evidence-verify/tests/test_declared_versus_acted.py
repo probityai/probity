@@ -81,3 +81,62 @@ def test_a_malformed_policy_is_a_case_error():
     for change in ({"witness_key": "xyz"}, {"zone": ""}, {"canonicalization": "c14n"}, {"evidence": "jwks.json"}):
         with pytest.raises(CaseError):
             run(DATA / row["case"], row, **change)
+
+
+def _copy(tmp_path: Path, row: dict, trajectory: bytes | None = None, head: bytes | None = None) -> Path:
+    for name in ["trajectory.jsonl", "head.json"] + row["evidence"]:
+        (tmp_path / name).write_bytes((DATA / row["case"] / name).read_bytes())
+    if trajectory is not None:
+        (tmp_path / "trajectory.jsonl").write_bytes(trajectory)
+    if head is not None:
+        (tmp_path / "head.json").write_bytes(head)
+    return tmp_path
+
+
+@pytest.mark.parametrize("old,new,reason", [(b"\n", b"\r", "trajectory_entry_malformed"),
+                                            (b"\n", b"\r\n", "trajectory_entry_not_canonical")])
+def test_a_line_ends_at_newline_and_nothing_else(tmp_path, old, new, reason):
+    # bytes.splitlines also splits on \r, so these bytes once verified as the observer's trajectory
+    # while a reader splitting on \n alone refused them: two readers, two verdicts.
+    row = next(r for r in CASES if r["case"] == "all-calls-bound")
+    raw = (DATA / row["case"] / "trajectory.jsonl").read_bytes()
+    mutated = raw.replace(old, new, 1) if new == b"\r" else raw.replace(old, new)
+    result = run(_copy(tmp_path, row, trajectory=mutated), row)
+    assert (result["decision"], result["reason"]) == ("contradicted", reason)
+
+
+def test_a_head_signature_has_one_base64_spelling(tmp_path):
+    row = next(r for r in CASES if r["case"] == "all-calls-bound")
+    head = json.loads((DATA / row["case"] / "head.json").read_text())
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    body = head["signature"].rstrip("=")
+    respelled = body[:-1] + alphabet[alphabet.index(body[-1]) ^ 1] + "=="  # same 64 bytes, other unused bits
+    import base64
+    assert base64.b64decode(respelled) == base64.b64decode(head["signature"])
+    result = run(_copy(tmp_path, row, head=json.dumps(dict(head, signature=respelled)).encode()), row)
+    assert (result["decision"], result["reason"]) == ("contradicted", "trajectory_head_signature_invalid")
+
+
+@pytest.mark.parametrize("endpoint", [
+    "https://collector.example.net\\@chat.example.com/a2a",  # urllib3 (requests) connects to collector
+    "https://chat.example.com:443@collector.example.net/a2a",
+    "https://chat.example.com%2F/a2a", "https://chat.example.com\t/a2a", "chat.example.com:99999"])
+def test_an_endpoint_clients_read_differently_is_never_declared(endpoint):
+    from agent_evidence_verify.adapters import declared_versus_acted
+    with pytest.raises(ValueError):
+        declared_versus_acted._endpoint(endpoint)
+
+
+def test_the_backslash_endpoint_scenario_is_counted_as_contradicted():
+    row = next(r for r in CASES if r["case"] == "endpoint-backslash-userinfo")
+    result = run(DATA / row["case"], row)
+    assert result["scope"]["denominator"]["calls_contradicted"] == 1
+    assert [c["reason"] for c in result["checks"] if c["id"] == "call"] == ["call_endpoint_malformed"]
+
+
+def test_a_resolution_with_a_malformed_time_is_a_malformed_event(tmp_path):
+    from agent_evidence_verify.adapters import declared_versus_acted
+    event = {"kind": "resolution", "name": "chat.example.com", "svcb": [], "sig": None, "jwks": None,
+             "dnssec_chain_sha256": None, "at": "yesterday"}
+    assert not declared_versus_acted._event_shape(event)
+    assert declared_versus_acted._event_shape(dict(event, at="2026-11-15T20:59:00Z"))
