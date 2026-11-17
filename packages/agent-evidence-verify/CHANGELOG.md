@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased (0.8.0 at release)
+
+A minor release: new claim types; the decisions for every existing claim type are unchanged.
+
+- `evidence_digest/v1`: checks that a manifest of digests binds the copies the consumer reads, N of N, under a
+  declared canonical form (`rfc8785`, `cbor-deterministic`, `raw`). Refuses a repeated member, a digest that binds
+  a copy the consumer does not read, a removed reference (`0 of N`) and a manifest signed by a key the consumer's
+  key authority does not admit; zero consumed items is `empty_denominator`. Doc: `docs/telemetry-evidence.md`.
+- `event_log_completeness/v1`: checks that a session log is one contiguous, linked sequence inside the consumer's
+  coverage boundary, ending at a retained signed head in the observer's ledger head format. Each of drop, swap,
+  status flip, link rewrite, body edit and tail truncation fails with a named reason. Shares check order and reason
+  codes with `cbor_receipt_chain/v1`.
+
 ## Unreleased (0.6.0 at release)
 
 A minor release: two new claim types and one new console script; the decisions for every existing claim type are

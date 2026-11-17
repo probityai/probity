@@ -112,3 +112,14 @@ export exits 2 without a verdict.
 implementation fared against a pinned case set) under an acceptance rule the consumer writes
 inline in the assessment. It is a port of the reference reader in agent-evidence-vectors, with the
 same rules, order and refusal codes, and a parity test over that reader's corpus.
+
+## Telemetry evidence: digests and event logs
+
+[`evidence_digest/v1`](telemetry-evidence.md) checks that a manifest of digests binds the copies the
+consumer actually reads: N of N consumed items carry one digest under a declared canonical form
+(`rfc8785`, `cbor-deterministic` or `raw`), a repeated member is refused, zero items is
+`empty_denominator` and never a pass, and a signed manifest agrees only under the consumer's key
+authority. [`event_log_completeness/v1`](telemetry-evidence.md) checks that a session log is one
+contiguous, linked sequence inside the consumer's coverage boundary, ending at a signed head the
+consumer retained outside the log. Both share check order and reason codes with
+`cbor_receipt_chain/v1`.
