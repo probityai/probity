@@ -1,0 +1,26 @@
+{
+  "assessments": {
+    "co-signed-receipt-both-keys-pinned": {
+      "claim_type": "co_signed_receipt/v1",
+      "cosigner_key_authority": {
+        "keys": [
+          {
+            "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+          }
+        ],
+        "kind": "pin"
+      },
+      "key_authority": {
+        "keys": [
+          {
+            "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+          }
+        ],
+        "kind": "pin"
+      },
+      "keys": "keys.json",
+      "receipt": "receipt.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

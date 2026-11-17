@@ -1,0 +1,637 @@
+{
+  "claim_type": "a2a_signed_card/v1",
+  "cases": [
+    {
+      "id": "valid-eddsa-pinned",
+      "description": "the owner's Ed25519 key signs; the consumer pins it",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "supported",
+        "reason": "card_signature_authorized"
+      }
+    },
+    {
+      "id": "valid-es256-pinned",
+      "description": "the owner's P-256 key signs (ES256, raw r || s)",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "381b03ff2b763230c5c0c0b3a7b64ea4aff0979305ec1b5fcb3722545abb47ca",
+              "kid": "did:web:agent.example.test#es256"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "supported",
+        "reason": "card_signature_authorized"
+      }
+    },
+    {
+      "id": "valid-did-web",
+      "description": "no key set: the key comes from the pinned DID document, listed for assertions",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "key_authority": {
+          "kind": "did-web",
+          "did": "did:web:agent.example.test",
+          "document": "did.json",
+          "document_sha256": "7322165e225e4d1c5f27de14ea9b503203d9e4a8bd8a94ab8440de59bf27915d"
+        }
+      },
+      "expect": {
+        "decision": "supported",
+        "reason": "card_signature_authorized"
+      }
+    },
+    {
+      "id": "valid-conformance-extension",
+      "description": "the card lists the conformance extension inside its signature",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "supported",
+        "reason": "card_signature_authorized"
+      }
+    },
+    {
+      "id": "extension-stripped",
+      "description": "the conformance extension is removed after signing: the card's own signature fails",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "extension-version-range",
+      "description": "a corpus version range, signed: the extension pins no version",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "conformance_extension_malformed"
+      }
+    },
+    {
+      "id": "tampered-description",
+      "description": "the description changes after signing",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "signatures-included",
+      "description": "the signer covered the signatures member; A2A 8.4.1 excludes it",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "wrong-kid-other-did",
+      "description": "the kid names a key of another DID",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "kid_not_under_card_did"
+      }
+    },
+    {
+      "id": "wrong-kid-bare",
+      "description": "the bare kid of the specification's example names no key of the card's DID",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "kid_not_under_card_did"
+      }
+    },
+    {
+      "id": "foreign-key-no-authority",
+      "description": "a stranger signs under the owner's kid and serves the key set; nothing says whose key",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json"
+      },
+      "expect": {
+        "decision": "not_established",
+        "reason": "no_key_authority_in_policy"
+      }
+    },
+    {
+      "id": "foreign-key-pinned-owner",
+      "description": "the same forgery under a pin of the owner's key",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_not_pinned"
+      }
+    },
+    {
+      "id": "foreign-key-did-web",
+      "description": "a stranger's key under a fragment of the owner's DID that the DID document never lists",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "did-web",
+          "did": "did:web:agent.example.test",
+          "document": "did.json",
+          "document_sha256": "7322165e225e4d1c5f27de14ea9b503203d9e4a8bd8a94ab8440de59bf27915d"
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_not_in_did_document"
+      }
+    },
+    {
+      "id": "alg-none",
+      "description": "alg none",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "alg_unsupported"
+      }
+    },
+    {
+      "id": "crit-header",
+      "description": "a critical header parameter this reader does not implement",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "jws_crit_unsupported"
+      }
+    },
+    {
+      "id": "b64-header",
+      "description": "b64 is outside the A2A construction",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "jws_b64_unsupported"
+      }
+    },
+    {
+      "id": "kid-unprotected",
+      "description": "the kid is only in the unprotected header, which the signature does not cover",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "kid_missing"
+      }
+    },
+    {
+      "id": "kid-in-both-headers",
+      "description": "the unprotected header repeats kid (RFC 7515 7.2.1)",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "header_names_not_disjoint"
+      }
+    },
+    {
+      "id": "alg-key-mismatch",
+      "description": "the header says ES256 over an Ed25519 key",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "alg_key_mismatch"
+      }
+    },
+    {
+      "id": "jwks-kid-ambiguous",
+      "description": "two keys in the key set share the kid",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "jwks_kid_ambiguous"
+      }
+    },
+    {
+      "id": "key-unavailable",
+      "description": "the key set has no key for the kid",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "not_established",
+        "reason": "key_unavailable"
+      }
+    },
+    {
+      "id": "duplicate-member",
+      "description": "the card names name twice",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "card_invalid"
+      }
+    },
+    {
+      "id": "unsigned",
+      "description": "no signatures member",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "card_unsigned"
+      }
+    },
+    {
+      "id": "signatures-not-a-list",
+      "description": "signatures is an object, not a list",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signatures_malformed"
+      }
+    },
+    {
+      "id": "protected-padded",
+      "description": "the protected header carries base64 padding",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "header_malformed"
+      }
+    },
+    {
+      "id": "jwks-not-a-key-set",
+      "description": "the key set is a bare list, not a JWK Set",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "jwks_malformed"
+      }
+    },
+    {
+      "id": "second-signature-invalid",
+      "description": "one of two signatures does not verify",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04",
+              "kid": "did:web:agent.example.test#ed25519"
+            },
+            {
+              "public_key_sha256": "381b03ff2b763230c5c0c0b3a7b64ea4aff0979305ec1b5fcb3722545abb47ca",
+              "kid": "did:web:agent.example.test#es256"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "retired-key-signature-kept",
+      "description": "both signatures verify, the consumer pins only the new key: the retired one is refused",
+      "assessment": {
+        "card": "card.json",
+        "card_did": "did:web:agent.example.test",
+        "at": "2026-11-17T12:00:00Z",
+        "keys": "jwks.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "9eb80ee9dc34b48935a13e0bfb5c0eb9bcfd23c514ecda148b1fb95ee669033f",
+              "kid": "did:web:agent.example.test#next"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_not_pinned"
+      }
+    }
+  ]
+}

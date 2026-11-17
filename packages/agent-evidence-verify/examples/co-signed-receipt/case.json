@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "keys.json": {
+      "length": 272,
+      "path": "keys.json",
+      "sha256": "f724d2aee5adc09b1600335e5c9de52dda5d2ed6814b71a35468cd31fd78e483"
+    },
+    "receipt.json": {
+      "length": 713,
+      "path": "receipt.json",
+      "sha256": "626fe4eef435a91c2e1b445c1ee8ebb9ab81d978f387c02f8205fc42969f227f"
+    }
+  },
+  "case_id": "co-signed-receipt-both-keys-pinned",
+  "schema_version": "probity-case/v1"
+}
