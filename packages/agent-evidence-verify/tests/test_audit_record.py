@@ -295,3 +295,18 @@ def test_an_unreadable_trust_document_is_the_consumers_error(change: Any, tmp_pa
     with pytest.raises(CaseError, match="assessment.trust"):
         _decide_bytes((DATA / MEMBERS["R1"]["file"]).read_bytes(), "retained", tmp_path,
                       json.dumps(trust).encode())
+
+
+@pytest.mark.parametrize("change, code", [
+    (lambda p: p["agent"].update(authentication=[]), "value-outside-vocabulary"),
+    (lambda p: p.update(tier={}), "value-outside-vocabulary"),
+    (lambda p: p["fieldEvidence"].update(agent=["producer-asserted"]), "value-outside-vocabulary"),
+    (lambda p: p["effect"].update(pathScope=None), "unhandled-shape"),
+])
+def test_a_wrongly_typed_member_takes_the_go_rails_code(change: Any, code: str, tmp_path: Path) -> None:
+    """Signed with the published test key: an array in a closed vocabulary is outside it, and the
+    catch-all code carries no Python exception name, as the Go rail reports both."""
+    statement = json.loads(base64.b64decode(json.loads((DATA / MEMBERS["A1"]["file"]).read_bytes())["payload"]))
+    change(statement["predicate"])
+    found = _decide_bytes(_signed(statement), "envelope", tmp_path)
+    assert (found["decision"], found["reason"]) == ("contradicted", code)
