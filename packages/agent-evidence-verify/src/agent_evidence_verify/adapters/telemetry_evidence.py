@@ -242,6 +242,8 @@ def check_manifest(manifest_raw: bytes, consumed: dict[str, bytes | None], autho
     checks.append({"id": "record_shape", "status": "pass", "detail": "the manifest is strict I-JSON"})
     pending = None
     signature = manifest.get("signature")
+    if "signature" in manifest and signature is None:
+        raise _Refused("record_shape", "manifest.signature: null is neither a signature nor its absence")
     if signature is None:
         checks.append({"id": "signature", "status": "unavailable", "detail": "the manifest is not signed"})
         if require_signature:

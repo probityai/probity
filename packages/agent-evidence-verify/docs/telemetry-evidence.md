@@ -36,7 +36,8 @@ strict I-JSON:
 strict I-JSON and hashed in RFC 8785 form), `cbor-deterministic` (the consumed copy must already be the RFC 8949
 section 4.2.1 core deterministic encoding; a non-shortest argument or unsorted map is refused) or `raw` (the bytes
 as read). A reference that declares no form is `not_established` / `undeclared_canonical_form`. The signature is
-Ed25519 over `evidence-digest-manifest/v1 || 0x00 || RFC 8785 (manifest without signature)`.
+Ed25519 over `evidence-digest-manifest/v1 || 0x00 || RFC 8785 (manifest without signature)`. A `signature` member
+whose value is `null` is refused (`record_shape`): it is neither a signature nor its absence.
 
 Checks, in order; the first failure is the reason: `record_shape` (a repeated member is `no_duplicate_member`),
 `signature`, `key_authority` and `signer_pinned`, `no_duplicate_reference`, `coverage`, `canonical_form`,

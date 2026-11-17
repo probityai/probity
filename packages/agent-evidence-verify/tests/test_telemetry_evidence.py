@@ -341,3 +341,11 @@ def test_check_order_matches_the_receipt_chain() -> None:
     te.check_log("".join(json.dumps(e) + "\n" for e in events).encode(), _head(events), FIRST,
                  {"session": "s1", "first_seq": 1}, PIN, checks)
     assert [c["id"] for c in checks] == order
+
+
+@pytest.mark.parametrize("require", [False, True])
+def test_null_manifest_signature_is_refused_not_read_as_unsigned(tmp_path: Path, require: bool) -> None:
+    consumed, refs = _clean()
+    manifest = json.dumps({"schema_version": te.MANIFEST_SCHEMA, "refs": refs, "signature": None}).encode()
+    assert _verdict(_digest_case(tmp_path, consumed, manifest, require_signature=require)) == \
+        ("contradicted", "record_shape")
