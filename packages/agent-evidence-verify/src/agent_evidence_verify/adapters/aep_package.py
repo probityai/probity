@@ -10,23 +10,30 @@ an RFC 3161 time-stamp response (``timestamp.tsr``, base64).
 Each layer is one check, run in this order; the first failure is the reason, and every check after it is
 reported ``not_evaluated``, never skipped silently and never passed:
 
-``package_shape``  the archive opens, names no entry twice, holds the required entries, and ``metadata.json``
-                   is strict I-JSON;
+``package_shape``  the archive opens, its entries and central directory tile the file from byte 0 to the end
+                   with nothing before, between or after them, no two entry names are equal or equal after case
+                   folding, no name is a path, it holds the required entries, and ``metadata.json`` is strict
+                   I-JSON;
 ``hash``           SHA-256 of ``canonical.bin`` equals ``hash.sha256`` (one trailing LF accepted);
-``canonical_form`` ``canonical.bin`` is the current form, or the legacy response-only form (reported);
+``canonical_form`` ``canonical.bin`` is the current form; the legacy response-only form leaves ``metadata.json``
+                   outside every signature, so it is ``not_established`` / ``metadata_unbound``;
 ``rsa_signature``  the recovered RSA block is exactly the RFC 8017 encoding (SHA-256 DigestInfo with NULL
                    parameters), or exactly the legacy encoding with absent parameters (reported): the whole
                    block is compared, so bytes between the padding and the digest, another hash OID, or a short
-                   padding string are refused;
+                   padding string are refused, and so is a modulus shorter than 2048 bits;
 ``signer_pinned``  the RSA key (its DER SubjectPublicKeyInfo) is admitted by the consumer's key authority: the key
                    the package carries proves nothing alone;
-``receipt``        when present, the receipt's ``content_hash`` is ``sha256:`` + the package hash, the fields it
-                   shares with ``metadata.json`` agree, and a named receipt signature verifies;
+``receipt``        when present, the receipt's ``content_hash`` is ``sha256:`` + the package hash, every field it
+                   shares with ``metadata.json`` is equal (a value of another type disagrees), and a receipt
+                   signature verifies whenever ``overt_receipt.sig`` is present or ``metadata.json`` names it;
 ``pqc_signature``  when present, ML-DSA-65 over ``canonical.bin`` (RFC 9881 SPKI or a raw 1952-byte key, empty
                    context), and the key is admitted by the consumer's authority;
-``timestamp``      the token is granted, its SHA-256 imprint equals the package hash, its ``messageDigest``
-                   attribute equals SHA-256 of the TSTInfo, and the CMS signature verifies under the certificate
-                   it embeds; the certificate key must be admitted by the consumer's ``tsa_authority``.
+``timestamp``      the token is granted, it is SignedData whose encapsulated content type and signed
+                   ``contentType`` attribute are both id-ct-TSTInfo, its SHA-256 imprint equals the package hash,
+                   its ``messageDigest`` attribute equals SHA-256 of the TSTInfo, and the CMS signature (the
+                   element after the signature algorithm, whatever unsigned attributes follow) verifies under the
+                   certificate it embeds; the certificate key must be admitted by the consumer's
+                   ``tsa_authority``.
 
 A key with no authority to judge it is ``not_established`` (``signer_not_established`` or
 ``tsa_not_established``), never ``supported``.
@@ -63,6 +70,10 @@ SHA256_DIGEST_INFO = bytes.fromhex("3031300d060960864801650304020105000420")
 SHA256_DIGEST_INFO_ABSENT_PARAMS = bytes.fromhex("302f300b0609608648016503040201" "0420")
 SHA256_OID = "2.16.840.1.101.3.4.2.1"
 MESSAGE_DIGEST_OID = "1.2.840.113549.1.9.4"
+CONTENT_TYPE_OID = "1.2.840.113549.1.9.3"
+SIGNED_DATA_OID = "1.2.840.113549.1.7.2"
+TST_INFO_OID = "1.2.840.113549.1.9.16.1.4"
+MIN_RSA_BITS = 2048
 RECEIPT_FIELDS = ((("created_at",), ("event", "timestamp")), (("agent_id",), ("subject", "agent_id")),
                   (("tenant_id_hash",), ("subject", "tenant_hash")), (("action_type",), ("event", "action_type")),
                   (("policy_version",), ("policy", "version")), (("policy_decision",), ("policy", "decision")))
@@ -169,8 +180,12 @@ def check_timestamp(raw: bytes, package_hash: str) -> tuple[bytes, str]:
         if len(top) < 2:
             raise ValueError("no token")
         content_info = _kids(der, top[1][2], top[1][3])
+        if _oid(der, content_info[0]) != SIGNED_DATA_OID:
+            raise Fail("timestamp", "the token is not CMS SignedData")
         signed_data = _kids(der, *_tlv(der, content_info[1][2])[2:])
         encap = _kids(der, signed_data[2][2], signed_data[2][3])
+        if _oid(der, encap[0]) != TST_INFO_OID:
+            raise Fail("timestamp", "the signed content is not a TSTInfo: the key signed something else")
         octet = _kids(der, encap[1][2], encap[1][3])[0]
         tst = der[octet[2]:octet[3]]
         tst_fields = _kids(tst, *_tlv(tst, 0)[2:])
@@ -185,17 +200,26 @@ def check_timestamp(raw: bytes, package_hash: str) -> tuple[bytes, str]:
         if len(signer_infos) != 1 or not certs:
             raise ValueError("expected one signer and an embedded certificate")
         info = _kids(der, signer_infos[0][2], signer_infos[0][3])
-        attrs = next(x for x in info if x[0] == 0xA0)
-        signature = der[info[-1][2]:info[-1][3]]
+        at = next(i for i, x in enumerate(info) if x[0] == 0xA0)
+        attrs = info[at]
+        if info[at + 2][0] != 0x04:
+            raise ValueError("the signature does not follow the signature algorithm")
+        signature = der[info[at + 2][2]:info[at + 2][3]]
         signed_input = b"\x31" + der[attrs[1] + 1:attrs[3]]
-        digest = None
+        found: dict[str, bytes] = {}
         for attribute in _kids(der, attrs[2], attrs[3]):
             kids = _kids(der, attribute[2], attribute[3])
-            if _oid(der, kids[0]) == MESSAGE_DIGEST_OID:
+            name = _oid(der, kids[0])
+            if name in (MESSAGE_DIGEST_OID, CONTENT_TYPE_OID):
                 values = _kids(der, kids[1][2], kids[1][3])
-                if digest is not None or len(values) != 1:
-                    raise Fail("timestamp", "messageDigest appears more than once")
-                digest = der[values[0][2]:values[0][3]]
+                if name in found or len(values) != 1:
+                    raise Fail("timestamp", f"signed attribute {name} appears more than once")
+                found[name] = der[values[0][1]:values[0][3]] if name == CONTENT_TYPE_OID \
+                    else der[values[0][2]:values[0][3]]
+        if CONTENT_TYPE_OID not in found or _oid(found[CONTENT_TYPE_OID], _tlv(found[CONTENT_TYPE_OID], 0)) \
+                != TST_INFO_OID:
+            raise Fail("timestamp", "the signed contentType attribute is not id-ct-TSTInfo")
+        digest = found.get(MESSAGE_DIGEST_OID)
         if digest != hashlib.sha256(tst).digest():
             raise Fail("timestamp", "messageDigest is not SHA-256 of the TSTInfo")
         for cert_element in _kids(der, certs[0][2], certs[0][3]):
@@ -221,6 +245,33 @@ def check_timestamp(raw: bytes, package_hash: str) -> tuple[bytes, str]:
 
 # --- the package -------------------------------------------------------------------------------------
 
+def _tiles(data: bytes, infos: list[zipfile.ZipInfo]) -> None:
+    """Refuse any byte outside the entries, the central directory and an empty-comment end record.
+
+    A reader that walks local headers from byte 0 and a reader that starts from the end record read the same
+    entries only when nothing sits before, between or after them: a second archive prepended or hidden in a
+    gap is read by one and not the other.
+    """
+    if len(data) < 22 or data[-22:-18] != b"PK\x05\x06" or data[-2:] != b"\x00\x00":
+        raise Fail("package_shape", "the end record is not the last 22 bytes: bytes follow the archive")
+    size_cd = int.from_bytes(data[-10:-6], "little")
+    offset_cd = int.from_bytes(data[-6:-2], "little")
+    if offset_cd + size_cd != len(data) - 22:
+        raise Fail("package_shape", "bytes sit between the central directory and the end record")
+    pos = 0
+    for info in sorted(infos, key=lambda i: i.header_offset):
+        if info.header_offset != pos or data[pos:pos + 4] != b"PK\x03\x04":
+            raise Fail("package_shape", f"bytes sit before {info.filename!r}: the entries do not start at byte 0 "
+                       "and follow one another")
+        name_len = int.from_bytes(data[pos + 26:pos + 28], "little")
+        extra_len = int.from_bytes(data[pos + 28:pos + 30], "little")
+        pos += 30 + name_len + extra_len + info.compress_size
+        if info.flag_bits & 0x08:
+            pos += 16 if data[pos:pos + 4] == b"PK\x07\x08" else 12
+    if pos != offset_cd:
+        raise Fail("package_shape", "bytes sit between the last entry and the central directory")
+
+
 def _entries(data: bytes) -> dict[str, bytes]:
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
@@ -228,8 +279,13 @@ def _entries(data: bytes) -> dict[str, bytes]:
             names = [i.filename for i in infos]
             if len(names) != len(set(names)):
                 raise Fail("package_shape", "the archive names an entry twice: two readers would read different bytes")
+            if len({n.casefold() for n in names}) != len(names):
+                raise Fail("package_shape", "two entry names differ only in case: a case-folding reader reads one")
+            if any("/" in n or "\\" in n for n in names):
+                raise Fail("package_shape", "an entry name is a path: a package is one flat directory")
             if len(infos) > MAX_ENTRIES or any(i.file_size > MAX_ENTRY_BYTES for i in infos):
                 raise Fail("package_shape", "the archive is larger than a package")
+            _tiles(data, infos)
             return {i.filename: archive.read(i) for i in infos}
     except (zipfile.BadZipFile, OSError, ValueError, NotImplementedError) as exc:
         raise Fail("package_shape", f"the archive does not open ({type(exc).__name__})") from exc
@@ -293,7 +349,9 @@ def check_package(data: bytes, authority: Any, tsa_authority: Any) -> tuple[list
         if e["canonical.bin"] == e["response.txt"] + b"\n" + jcs_canonical._value(state["meta"]).encode("utf-8"):
             return "response.txt, LF, RFC 8785 of metadata.json"
         if e["canonical.bin"] == e["response.txt"]:
-            return "legacy response-only form"
+            raise Unknown("canonical_form", "metadata_unbound",
+                          "legacy response-only form: metadata.json is outside every signature, so its action, "
+                          "agent and policy decision can be rewritten without breaking any layer")
         raise Fail("canonical_form", "canonical.bin is neither the current nor the legacy form")
 
     def rsa_layer() -> str:
@@ -304,6 +362,8 @@ def check_package(data: bytes, authority: Any, tsa_authority: Any) -> tuple[list
             raise Fail("rsa_signature", "public_key.pem is not a public key") from exc
         if not isinstance(key, rsa.RSAPublicKey):
             raise Fail("rsa_signature", "public_key.pem is not an RSA key")
+        if key.key_size < MIN_RSA_BITS:
+            raise Fail("rsa_signature", f"the RSA modulus is {key.key_size} bits, under {MIN_RSA_BITS}")
         how = rsa_encoding(key, _b64(e["signature.sig"], "signature.sig", "rsa_signature"), e["canonical.bin"])
         if how is None:
             raise Fail("rsa_signature", "the recovered block is not an exact SHA-256 PKCS#1 v1.5 encoding")
@@ -329,9 +389,9 @@ def check_package(data: bytes, authority: Any, tsa_authority: Any) -> tuple[list
             raise Fail("receipt", "the receipt's content_hash is not the package hash")
         for meta_path, receipt_path in RECEIPT_FIELDS:
             mine, theirs = _dig(meta, meta_path), _dig(body, receipt_path)
-            if isinstance(mine, str) and isinstance(theirs, str) and mine != theirs:
+            if mine is not None and theirs is not None and mine != theirs:
                 raise Fail("receipt", f"{'.'.join(receipt_path)} disagrees with metadata.{meta_path[0]}")
-        if meta.get("overt_receipt_signature") == "overt_receipt.sig":
+        if meta.get("overt_receipt_signature") == "overt_receipt.sig" or "overt_receipt.sig" in e:
             if "overt_receipt.sig" not in e:
                 raise Fail("receipt", "metadata names a receipt signature the package lacks")
             sig = _b64(e["overt_receipt.sig"], "overt_receipt.sig", "receipt")
