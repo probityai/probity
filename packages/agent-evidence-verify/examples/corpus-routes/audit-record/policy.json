@@ -1,0 +1,11 @@
+{
+  "schema_version": "probity-policy/v1",
+  "assessments": {
+    "audit-record-r17": {
+      "claim_type": "agent_audit_record/v1",
+      "record": "record",
+      "shape": "retained",
+      "trust": "trust"
+    }
+  }
+}
