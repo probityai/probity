@@ -338,8 +338,7 @@ def card_cases() -> list[dict[str, Any]]:
          "the identity point as the key, pinned: R = identity, S = 0 verifies every card"),
         ("did-document-methods-not-a-list", signed(card, by(OWNER)), None, methods_not_a_list,
          {"key_authority": "did-web"}, "not_established", "key_unavailable",
-         "the DID document's verificationMethod is true: it names no key, and the reader does not "
-         "crash"),
+         "the DID document's verificationMethod is true: it names no key, and nothing raises"),
         ("extension-version-leading-zero", signed(leading_zero, by(OWNER)), owner_jwks, None,
          {"key_authority": owner_pin}, "contradicted", "conformance_extension_malformed",
          "corpus_version 0.037.0 is not one spelling of a release"),

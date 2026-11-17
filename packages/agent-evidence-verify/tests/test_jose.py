@@ -9,7 +9,10 @@ and the refusal that answers it.
 import pytest
 from agent_evidence_verify.jose import ed25519_weak_key, jwk_signs, verify_signature
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 
 P = 2**255 - 19
 IDENTITY = b"\x01" + b"\x00" * 31
