@@ -39,7 +39,14 @@ from probity_records import (
     verify_journal,
 )
 from probity_records import canonical as jcs
-from probity_records.core import IN_TOTO_PAYLOAD_TYPE, STATEMENT_TYPE, _b64, canonical, canonical_of_received, pae
+from probity_records.core import (
+    IN_TOTO_PAYLOAD_TYPE,
+    STATEMENT_TYPE,
+    _b64,
+    canonical,
+    canonical_of_received,
+    pae,
+)
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.quorum import (
@@ -436,7 +443,7 @@ def received_line(payload: bytes) -> str:
 
 def received_rows() -> list[dict]:
     """Journals whose signed bytes have no canonical form: both twins refuse them at the parse."""
-    head = ('{"_type":"%s","predicateType":"%s",' % (STATEMENT_TYPE, TOOL_CALL_RECORD)).encode()
+    head = b'{"_type":"' + STATEMENT_TYPE.encode() + b'","predicateType":"' + TOOL_CALL_RECORD.encode() + b'",'
     pred = b'"predicate":{"prev":"' + b"0" * 64 + b'","seq":1'
     good, other = head + pred + b"}}", head + pred + b',"tool":"other"}}'
     swapped = json.loads(received_line(other))
@@ -446,9 +453,9 @@ def received_rows() -> list[dict]:
         ("RV2", "the signed payload carries a byte that is never UTF-8", [received_line(head + pred + b',"tool":"\xff"}}')]),
         ("RV3", "the signed payload carries a lone surrogate escape", [received_line(head + pred + b',"tool":"\\ud800"}}')]),
         ("RV4", "the envelope line repeats its payload member; the last one is signed",
-         ['{"payload":"%s","payload":"%s","payloadType":"%s","signatures":%s}' % (
-             _b64(good), swapped["payload"], IN_TOTO_PAYLOAD_TYPE,
-             json.dumps(swapped["signatures"], separators=(",", ":")))]),
+         ['{"payload":"' + _b64(good) + '","payload":"' + swapped["payload"] + '","payloadType":"'
+          + IN_TOTO_PAYLOAD_TYPE + '","signatures":' + json.dumps(swapped["signatures"], separators=(",", ":"))
+          + "}"]),
         ("RV5", "control: the same record with one predicate member", [received_line(good)]),
     ]
     out = []

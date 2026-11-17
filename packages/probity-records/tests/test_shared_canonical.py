@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from probity_records import admitted_loads, canonical, canonical_of_received
 
 ROOT = Path(__file__).resolve().parents[1]
