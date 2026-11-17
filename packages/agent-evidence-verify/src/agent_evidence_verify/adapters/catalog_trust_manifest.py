@@ -39,7 +39,9 @@ relied on, the manifest signer's and each attestation signer's, is authorised un
 ``key_authority`` (:mod:`agent_evidence_verify.key_authority`); an unauthorised key is
 ``contradicted`` with the authority's reason, and no authority, or bytes it needs that are missing,
 is ``not_established``. Missing evidence is never read as a refusal: an unbound catalog, DID
-document set, artifact or vendored attestation is ``not_established``. A construction or role
+document set, artifact or vendored attestation is ``not_established``. Nor does it mask one: an
+unbound artifact or attestation skips only the checks that read those bytes, and a later check
+that fails (the publisher rule, a time, another attestation) still contradicts. A construction or role
 outside the closed sets, or a check time that is not an RFC 3339 instant, is the consumer's own
 input and a case error.
 """
@@ -51,7 +53,6 @@ import copy
 import hashlib
 import math
 import re
-from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -170,14 +171,24 @@ class Unavailable(Exception):
 
 # --------------------------------------------------------------------------- reading
 
+def _integer(token: str) -> int | float:
+    """An integer token, kept exact; one too long for ``int()`` (4300 digits) is far past 2**53 - 1,
+    so it reads as the signed infinity, which the signed-bytes rule refuses the same way."""
+    try:
+        return int(token)
+    except ValueError:
+        return -math.inf if token.startswith("-") else math.inf
+
+
 def load(data: bytes) -> Any:
     """Strict JSON under the profile: duplicates refused, nesting bounded at :data:`MAX_NESTING`.
 
-    Integers past 2**53 - 1, non-finite doubles and lone surrogates are kept, because the profile
-    refuses them only in the signed bytes (``number_not_interoperable``, ``no_canonical_form``).
-    Raises :class:`IJSONError`, or ``ValueError`` for an integer token too long to convert.
+    Integers past 2**53 - 1 (of any length), non-finite doubles and lone surrogates are kept,
+    because the profile refuses them only in the signed bytes (``number_not_interoperable``,
+    ``no_canonical_form``): a long integer in an unsigned member is valid JSON, not
+    ``json_invalid``. Raises :class:`IJSONError`.
     """
-    return parse_ijson(data, max_depth=MAX_NESTING, parse_int=int, parse_float=float,
+    return parse_ijson(data, max_depth=MAX_NESTING, parse_int=_integer, parse_float=float,
                        lone_surrogates=True)
 
 
@@ -464,8 +475,16 @@ def _leap_second(before: int) -> bool:
     return of_day == 86399 and day in _LEAP_DAYS
 
 
-def instant(text: Any) -> Fraction | None:
-    """An RFC 3339 date-time as exact seconds since 1970, or None when it is not one."""
+#: An instant's exact order key: whole seconds since 1970 (a second of 60 reads as the next
+#: second, profile check 33), then the fraction's digits without trailing zeros. Two keys order as
+#: the instants do (``"5" > "49"``, ``"5" < "51"``), and the fraction is never converted to an
+#: integer, so a ``time-secfrac`` of any length (RFC 3339 bounds none) is read exactly in linear
+#: time; ``int()`` of a digit string stops at 4300 digits.
+Instant = tuple[int, str]
+
+
+def instant(text: Any) -> Instant | None:
+    """An RFC 3339 date-time as an exact :data:`Instant`, or None when it is not one."""
     match = _TIME.fullmatch(text) if isinstance(text, str) else None
     if match is None:
         return None
@@ -473,19 +492,17 @@ def instant(text: Any) -> Fraction | None:
     if month < 1 or month > 12 or day < 1 or day > _days_in_month(year, month) or \
             hour > 23 or minute > 59 or second > 60:
         return None
-    seconds = Fraction(_days_from_civil(year, month, day) * 86400 + hour * 3600 + minute * 60
-                       + second)
-    if match[7]:
-        seconds += Fraction(match[7][1:]) / 10 ** (len(match[7]) - 1)
+    seconds = _days_from_civil(year, month, day) * 86400 + hour * 3600 + minute * 60 + second
+    fraction = (match[7] or ".")[1:].rstrip("0")
     if not match[8]:
         offset_hours, offset_minutes = int(match[10]), int(match[11])
         if offset_hours > 23 or offset_minutes > 59:
             return None
         offset = (offset_hours * 60 + offset_minutes) * 60
         seconds -= offset if match[9] == "+" else -offset
-    if second == 60 and not _leap_second(math.floor(seconds) - 1):
+    if second == 60 and not _leap_second(seconds - 1):
         return None
-    return seconds
+    return seconds, fraction
 
 
 # --------------------------------------------------------------------------- binding helpers
@@ -565,7 +582,7 @@ class _Read:
     def __init__(self, inputs: dict[str, Any]) -> None:
         self.construction: str = inputs["construction"]
         self.role: str = inputs["role"]
-        self.at: Fraction = inputs["at"]
+        self.at: Instant = inputs["at"]
         self.entry_index = index_of(inputs["entry"])
         self.manifest_index = index_of(inputs["manifest"])
         self.raw_catalog: bytes = inputs["catalog"]
@@ -589,9 +606,22 @@ class _Read:
         self.publisher_domain: str | None = None
         #: Each signature the verdict relied on: (role, kid, DID, method).
         self.signers: list[tuple[str, Any, Any, dict[str, Any]]] = []
+        #: The first not_established reason met: evidence a check needed was not supplied. The
+        #: read goes on past it, so a later check the missing bytes cannot affect still refuses.
+        self.missing: str | None = None
+
+    def defer(self, reason: str) -> None:
+        """Record missing evidence without ending the read."""
+        if self.missing is None:
+            self.missing = reason
 
     def judge(self) -> str:
-        """The ordered check list of the profile; the first check that fails is the reason."""
+        """The ordered check list of the profile; the first check that fails is the reason.
+
+        Missing evidence never masks a refusal: an unbound artifact or attestation skips only the
+        checks that read those bytes, every later check still runs, and the read is
+        :class:`Unavailable` only when none of them fails.
+        """
         self.load()
         self.signature_object()
         self.read_header()
@@ -608,6 +638,8 @@ class _Read:
         self.attestations()
         self.publisher_rule()
         self.times(self.obj)
+        if self.missing is not None:
+            raise Unavailable(self.missing)
         return PASS_REASON[self.construction]
 
     def load(self) -> None:
@@ -744,7 +776,8 @@ class _Read:
                 self.artifact_bytes = None
         else:
             if self.supplied_artifact is None:
-                raise Unavailable("artifact_unavailable")
+                self.defer("artifact_unavailable")  # the digest cannot be checked; read on
+                return
             self.artifact_bytes = self.supplied_artifact
         if self.artifact_bytes is None or \
                 entry.get("digest") != "sha256:" + sha256_hex(self.artifact_bytes):
@@ -757,6 +790,10 @@ class _Read:
         if self.construction not in ARD_SHAPED or "url" not in entry:
             return
         if publisher is not None and origin(entry.get("url")) == f"https://{publisher.lower()}":
+            return
+        if self.artifact_bytes is None:
+            # Off the publisher's origin only the artifact can bind the url, and it is missing.
+            self.defer("artifact_unavailable")
             return
         try:
             descriptor = load(self.artifact_bytes) if self.artifact_bytes else {}
@@ -775,7 +812,8 @@ class _Read:
             if not named:
                 continue
             if data is None:
-                raise Unavailable("attestation_unavailable")
+                self.defer("attestation_unavailable")  # the next attestation is still read
+                continue
             digest = item.get("digest") if isinstance(item, dict) else None
             if digest != "sha256:" + sha256_hex(data):
                 raise Refused("attestation_digest_mismatch")
@@ -822,7 +860,7 @@ _OPTIONAL = {"entry", "manifest", "artifact", "attestations", "key_authority"}
 _SEVERITY = {"unauthorized": 2, "unknown": 1, "authorized": 0}
 
 
-def _context(assessment: dict) -> tuple[str, str, Fraction]:
+def _context(assessment: dict) -> tuple[str, str, Instant]:
     construction = assessment["construction"]
     if not isinstance(construction, str) or construction not in CONSTRUCTIONS:
         raise CaseError(f"assessment.construction: construction_unknown; expected one of "
