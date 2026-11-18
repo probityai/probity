@@ -61,7 +61,7 @@ jobs:
         run: python3 scripts/refresh-badges.py || true
         env:
           PEPY_API_KEY: ${{ secrets.PEPY_API_KEY }}
-      - uses: probityai/.github/actions/pin-refresh@449849e49f23d5c9a3e2422bb8366aac738dd076 # main
+      - uses: probityai/.github/actions/pin-refresh@2fac7683ee7a3328ef06fc2f5bef645942f24e70 # main
         with:
           configs: |
             version-pins.toml
