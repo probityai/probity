@@ -6,7 +6,7 @@ It's for teams that broker agent and service identity through Keycloak and need 
 
 ## Install
 
-Build the provider jar (needs Docker and Python 3; Maven runs in an image pinned by digest, every fetched artifact is checked against `maven.lock`, and `check_alignment.py` holds the pom, the end-to-end Keycloak image and the provided dependencies to one Keycloak release):
+Build the provider jar (needs Docker and Python 3; Maven runs in an image pinned by digest, every fetched artifact is checked against `maven.lock`, and `check_alignment.py` holds the pom, the end-to-end Keycloak image and every runtime dependency to one Keycloak release; the end-to-end run also checks the jars the pinned image actually ships):
 
 ```sh
 integrations/keycloak-evidence-hook/build.sh

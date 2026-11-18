@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# End-to-end run: test the alignment check, build the listener, start Keycloak with it, drive three
-# grants, check every receipt offline. Needs docker, openssl, python3 and uv; run from anywhere
+# End-to-end run: test the alignment check, build the listener, check that the pinned Keycloak image
+# ships every runtime dependency at the pom's version, start Keycloak with it, drive three grants,
+# check every receipt offline. Needs docker, openssl, python3 and uv; run from anywhere
 # in a checkout.
 # Writes the run's outputs to $EVIDENCE_OUT (default: e2e/recorded) and its logs beside them.
 set -uo pipefail
@@ -11,8 +12,8 @@ OUT=${EVIDENCE_OUT:-$HERE/recorded}
 export EVIDENCE_WORK
 EVIDENCE_WORK=$(mktemp -d)
 mkdir -p "$OUT"
-# The Keycloak image is named once, in docker-compose.yml.
-KEYCLOAK_IMAGE=$(sed -n 's/^ *image: *//p' "$HERE/docker-compose.yml")
+# The Keycloak image is named once, in docker-compose.yml; check_alignment.py holds it to one line.
+KEYCLOAK_IMAGE=$(sed -n 's/^ *image: *\(quay\.io\/keycloak\/keycloak:[^ ]*\) *$/\1/p' "$HERE/docker-compose.yml")
 
 step() { printf 'STEP %s %s\n' "$1" "$2"; }
 
@@ -31,6 +32,13 @@ rc=$?; step align-tests "rc=$rc"; [ "$rc" = 0 ] || { cat "$OUT/align-tests.log";
 
 LOCK_OUT="$OUT/resolved.lock" "$HERE/../build.sh" > "$OUT/build.log" 2>&1
 rc=$?; step build "rc=$rc"; [ "$rc" = 0 ] || { tail -40 "$OUT/build.log"; exit 1; }
+
+# A tag does not bind the digest beside it, so read the jars the pinned image actually holds.
+docker run --rm --entrypoint /bin/ls "$KEYCLOAK_IMAGE" -1 /opt/keycloak/lib/lib/boot /opt/keycloak/lib/lib/main \
+  > "$OUT/image-jars.txt" 2> "$OUT/image-jars.err"
+rc=$?; step image-jars "rc=$rc"; [ "$rc" = 0 ] || { cat "$OUT/image-jars.err"; exit 1; }
+python3 -I "$HERE/../check_alignment.py" --image "$HERE/.." "$OUT/image-jars.txt" > "$OUT/align-image.log" 2>&1
+rc=$?; step align-image "rc=$rc"; [ "$rc" = 0 ] || { cat "$OUT/align-image.log"; exit 1; }
 
 # A throwaway recorder key for this run only. A realm operator supplies their own key files.
 mkdir -p "$EVIDENCE_WORK/keys" "$EVIDENCE_WORK/sink"
