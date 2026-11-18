@@ -30,7 +30,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Every cited draft is pinned
-        uses: probityai/.github/actions/draft-watch@8238ef5184e690a09c3f2ba261823e9b64e01b31 # main
+        uses: probityai/.github/actions/draft-watch@4becda298a5eebc856209ea74ffb3bd757c4fd6a # main
         with:
           command: check
           require-pinned: packages/agent-evidence-observer/tests/fixtures/aae-enforce/*.json
@@ -47,7 +47,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Datatracker state of every pin
-        uses: probityai/.github/actions/draft-watch@8238ef5184e690a09c3f2ba261823e9b64e01b31 # main
+        uses: probityai/.github/actions/draft-watch@4becda298a5eebc856209ea74ffb3bd757c4fd6a # main
         with:
           command: watch
           token: ${{ github.token }}
