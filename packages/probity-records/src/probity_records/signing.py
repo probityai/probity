@@ -84,12 +84,31 @@ class _PinnedKey:
     def public_pem(self) -> bytes:
         return self._public.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
 
-    def _checked(self, data: bytes, sig: bytes) -> bytes:
+    def _checked(self, data: bytes, read: Callable[[], bytes]) -> bytes:
+        """The signature ``read`` takes from the service's answer, once the pinned key accepts it.
+
+        An answer with no signature where the service puts one (a missing member, a null, a string
+        where bytes belong, a Vault value without its version prefix) raises ``SigningError`` like
+        a signature from another key, so a caller handles every bad answer in one place.
+        """
+        try:
+            sig = read()
+        except SigningError:
+            raise
+        except (KeyError, IndexError, TypeError, AttributeError, ValueError) as exc:
+            raise SigningError(f"{type(self).__name__} answered without a readable signature: {exc!r}") from exc
         try:
             self._public.verify(sig, data)
         except InvalidSignature as exc:
             raise SigningError(f"{type(self).__name__} returned a signature its pinned key does not accept") from exc
         return sig
+
+
+def _octets(value: Any) -> bytes:
+    """Bytes a service returned, refusing text, numbers and null (``bytes(5)`` is five zeros)."""
+    if not isinstance(value, (bytes, bytearray, memoryview)):
+        raise TypeError(f"signature is {type(value).__name__}, not bytes")
+    return bytes(value)
 
 
 def _raw_public(raw: bytes) -> Ed25519PublicKey:
@@ -146,11 +165,19 @@ class VaultTransitKey(_PinnedKey):
 
     def sign(self, data: bytes) -> bytes:
         out = self._call("POST", f"sign/{self.name}", {"input": _b64(data), "key_version": self.version})
-        text = str(out["data"]["signature"])
-        prefix = f"vault:v{self.version}:"
-        if not text.startswith(prefix):
-            raise SigningError(f"Vault signed with another key version: {text.split(':')[1]!r}")
-        return self._checked(data, base64.b64decode(text[len(prefix):]))
+
+        def read() -> bytes:
+            text = out["data"]["signature"]
+            if not isinstance(text, str):
+                raise TypeError(f"signature is {type(text).__name__}, not text")
+            prefix = f"vault:v{self.version}:"
+            if not text.startswith(prefix):
+                parts = text.split(":")
+                named = parts[1] if len(parts) > 2 and parts[0] == "vault" else "no version"
+                raise SigningError(f"Vault signed with another key version: {named!r}")
+            return base64.b64decode(text[len(prefix):], validate=True)
+
+        return self._checked(data, read)
 
 
 @dataclass
@@ -188,7 +215,7 @@ class AwsKmsKey(_PinnedKey):
             raise SigningError(f"AWS KMS signs at most {AWS_RAW_LIMIT} raw bytes; this message is {len(data)}"
                                " (sign through delegate(AwsKmsKey(...)))")
         out = self.client.sign(KeyId=self.key, Message=data, MessageType="RAW", SigningAlgorithm="ED25519_SHA_512")
-        return self._checked(data, bytes(out["Signature"]))
+        return self._checked(data, lambda: _octets(out["Signature"]))
 
 
 @dataclass
@@ -216,7 +243,7 @@ class GcpKmsKey(_PinnedKey):
 
     def sign(self, data: bytes) -> bytes:
         out = self.client.asymmetric_sign(request={"name": self.name, "data": data})
-        return self._checked(data, bytes(out.signature))
+        return self._checked(data, lambda: _octets(out.signature))
 
 
 def _ts(moment: datetime) -> str:

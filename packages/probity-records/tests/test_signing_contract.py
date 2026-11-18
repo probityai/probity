@@ -9,8 +9,11 @@ key, and the fake can be told to answer with a key the backend never pinned.
 
 from __future__ import annotations
 
+import io
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -144,6 +147,73 @@ def test_a_signature_from_a_key_never_pinned_never_leaves_sign(service: str) -> 
     key, misroute = SERVICES[service]()
     key.public.verify(key.sign(b"m"), b"m")
     misroute()
+    with pytest.raises(SigningError):
+        key.sign(b"m")
+
+
+class _GarbledVault(FakeVault):
+    """Transit answering each sign request with ``answer`` as the response body."""
+
+    def __init__(self, answer: object) -> None:
+        super().__init__()
+        self.answer = answer
+
+    def __call__(self, req, timeout=None):
+        if req.get_method() == "GET":
+            return super().__call__(req, timeout)
+        return io.BytesIO(json.dumps(self.answer).encode())
+
+
+class _GarbledAws(FakeAwsKms):
+    def __init__(self, answer: object) -> None:
+        super().__init__()
+        self.answer = answer
+
+    def sign(self, **kw):
+        return self.answer
+
+
+class _GarbledGcp(FakeGcpKms):
+    def __init__(self, answer: object) -> None:
+        super().__init__()
+        self.answer = answer
+
+    def asymmetric_sign(self, request):
+        return self.answer
+
+
+def _garbled(service: str, answer: object) -> SigningKey:
+    if service == "vault-transit":
+        opener = _GarbledVault(answer)
+        return VaultTransitKey("http://vault:8200", "authority", token="t", opener=opener)
+    if service == "aws-kms":
+        return AwsKmsKey("k1", client=_GarbledAws(answer))
+    name = "projects/p/locations/global/keyRings/r/cryptoKeys/a/cryptoKeyVersions/1"
+    return GcpKmsKey(name, client=_GarbledGcp(answer))
+
+
+GARBLED = [
+    ("vault-transit", {"data": {"signature": "garbage"}}),
+    ("vault-transit", {"data": {"signature": None}}),
+    ("vault-transit", {"data": {}}),
+    ("vault-transit", {"errors": ["permission denied"]}),
+    ("vault-transit", {"data": {"signature": "vault:v1:not base64!"}}),
+    ("aws-kms", {}),
+    ("aws-kms", {"Signature": None}),
+    ("aws-kms", {"Signature": "c2lnbmF0dXJl"}),
+    ("aws-kms", {"Signature": 64}),
+    ("gcp-kms", object()),
+    ("gcp-kms", SimpleNamespace(signature=None)),
+    ("gcp-kms", SimpleNamespace(signature="c2lnbmF0dXJl")),
+]
+
+
+@pytest.mark.parametrize(("service", "answer"), GARBLED, ids=[f"{s}-{i}" for i, (s, _) in enumerate(GARBLED)])
+def test_an_answer_with_no_readable_signature_raises_signing_error(service: str, answer: object) -> None:
+    # The break: these answers escaped sign() as IndexError, KeyError, TypeError and
+    # AttributeError, so a caller handling SigningError crashed instead of refusing; and
+    # ``bytes(64)`` turned a number into 64 zero bytes before the check.
+    key = _garbled(service, answer)
     with pytest.raises(SigningError):
         key.sign(b"m")
 
