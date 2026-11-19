@@ -1652,13 +1652,13 @@ def _unread(out: dict, why: str) -> dict:
 def verdict(report: dict, profile: str = "baseline") -> tuple[str, str | None]:
     """What one profile accepts: ``("accept", None)`` or ``("reject", "<dimension>:<status>")``.
 
-    ``baseline`` refuses a report whose structure or any binding dimension failed. ``strict`` also
-    requires the issuer signature and every strict dimension to be verified. Neither changes what
-    the report says about any dimension.
+    ``baseline`` refuses a report whose structure, any binding dimension or the issuer signature
+    failed. ``strict`` also requires every binding and strict dimension to be verified. Neither
+    changes what the report says about any dimension.
     """
     if profile not in PROFILES:
         raise ValueError(f"profile {profile!r} is not one of {PROFILES}")
-    names = ("structural_validity",) + BINDING_DIMENSIONS
+    names = ("structural_validity",) + BINDING_DIMENSIONS + ("issuer_signature",)
     for name in names:
         if report[name]["status"] == FAILED:
             return "reject", f"{name}:{FAILED}"

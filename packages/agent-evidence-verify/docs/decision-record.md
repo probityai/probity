@@ -32,7 +32,8 @@ Each dimension has a `status` of `verified`, `failed`, `not_checked`, `unavailab
 
 ## Two profiles
 
-`baseline` refuses a report whose structure or any binding dimension failed, and otherwise accepts
+`baseline` refuses a report whose structure, any binding dimension or the issuer signature failed,
+and otherwise accepts
 it with every `not_checked` and `unavailable` left as reported. This is the format's own reading.
 
 `strict` adds seven dimensions under `strict`, and accepts only when the issuer signature, every

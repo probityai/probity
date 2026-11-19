@@ -263,8 +263,8 @@
     },
     {
       "path": "src/agent_evidence_verify/decision_record.py",
-      "bytes": 89494,
-      "sha256": "accf30ddfb0e93759bdb00ebf875548450c4db4660841f267e2d65c487228695"
+      "bytes": 89527,
+      "sha256": "79e00d43e7748dcbb983a942e091d47777934649f67a7bec79a8b4dd4223b6df"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",

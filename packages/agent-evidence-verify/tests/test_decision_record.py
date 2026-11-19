@@ -68,7 +68,9 @@ def test_a_signed_attachment_verifies_on_its_stated_time_and_a_changed_byte_fail
     assert signature["attests"] == "issuer_recorded_claims_only"
     changed = data.replace(b'"observed":"succeeded"', b'"observed":"indeterminate"')
     assert changed != data
-    assert dr.read(changed, trust_policy=POLICY)["issuer_signature"]["status"] == dr.FAILED
+    report = dr.read(changed, trust_policy=POLICY)
+    assert report["issuer_signature"]["status"] == dr.FAILED
+    assert dr.verdict(report, "baseline") == ("reject", "issuer_signature:failed")
 
 
 def test_a_signature_needs_a_policy_and_never_reads_a_key_from_the_attachment():
