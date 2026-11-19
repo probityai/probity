@@ -243,8 +243,8 @@
     },
     {
       "path": "src/agent_evidence_verify/cli.py",
-      "bytes": 4918,
-      "sha256": "ad6e646eab30bd5361698dcfedb480da895f0bc3bb0f9731beb82413ba58c09f"
+      "bytes": 5149,
+      "sha256": "c0ba34bffff7b6bdde6d7305facf032505e2b09001f7aeb8d380f37779e894fd"
     },
     {
       "path": "src/agent_evidence_verify/common.py",
@@ -258,8 +258,13 @@
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
-      "bytes": 5020,
-      "sha256": "c3043ac01f34657707dd673fef3faae54f795c5c98dc5288681c7859fa0ea468"
+      "bytes": 5350,
+      "sha256": "b10417e6cbfd148680969bbfb7a10f9e065926a269a10516ca73d479a932a7b9"
+    },
+    {
+      "path": "src/agent_evidence_verify/decision_record.py",
+      "bytes": 89494,
+      "sha256": "accf30ddfb0e93759bdb00ebf875548450c4db4660841f267e2d65c487228695"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
