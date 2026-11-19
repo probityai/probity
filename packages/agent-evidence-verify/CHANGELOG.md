@@ -16,6 +16,12 @@ unchanged.
   consumer-pinned keys, through a format profile the case pins. Refuses a repeated receipt, a re-issued authorization,
   swapped receipts and an unpinned signer, and reports a restart, an unpinned head, a missing effect or a missing
   revocation commitment as `not_established`. Doc: `docs/cbor-receipt-chain.md`, example: `examples/cbor-receipt-chain/`.
+- `agent-evidence-verify decision-record`: reads an action-binding attachment (`dps-action-binding` 0.3.0) beside its
+  decision record and reports each check as its own dimension, with `not_checked`, `unavailable` and `not_supported`
+  explicit and no merged pass. Every published binding case of the format reads as its expected values. A `strict`
+  profile adds approver independence, one effect per request, independent identity, authority and time, the latest
+  attachment and a required signature. Corpus mode answers the `decision-record/v1` suite. Page:
+  `docs/decision-record.md`.
 - `agent-evidence-verify-poc`: reads one artifact on stdin and prints the corpus runner's verdict line, so
   `python3 -m poc_evidence_vectors.run_vectors --verifier agent-evidence-verify-poc` runs the corpus against this
   verifier.
