@@ -147,10 +147,10 @@ def _read_bounds(data: bytes) -> Any:
 
 def _same(left: Any, right: Any) -> bool:
     """JSON value equality with types kept apart: 1, 1.0 and true are three values."""
-    if type(left) is not type(right):
-        if not (isinstance(left, int) and isinstance(right, int)
-                and not isinstance(left, bool) and not isinstance(right, bool)):
-            return False
+    numbers = (isinstance(left, int) and isinstance(right, int)
+               and not isinstance(left, bool) and not isinstance(right, bool))
+    if type(left) is not type(right) and not numbers:
+        return False
     if isinstance(left, dict):
         return left.keys() == right.keys() and all(_same(left[k], right[k]) for k in left)
     if isinstance(left, list):
@@ -360,14 +360,15 @@ def _check_values(stage: dict, where: str, tally: Tally) -> None:
 
 
 def _check_content(content: Any, where: str, tally: Tally) -> None:
+    reasons = ("withheld", "retention_disposition", "redaction_event", "other")
     if isinstance(content, dict) and content.get("availability") == "available":
-        if _check_members(content, {"availability", "bytes_b64"}, set(), where, tally):
-            if _b64(content["bytes_b64"]) is None:
-                tally.fail(f"{where}: bytes_b64 is not padded base64")
+        if (_check_members(content, {"availability", "bytes_b64"}, set(), where, tally)
+                and _b64(content["bytes_b64"]) is None):
+            tally.fail(f"{where}: bytes_b64 is not padded base64")
     elif isinstance(content, dict) and content.get("availability") == "unavailable":
-        if _check_members(content, {"availability", "reason"}, {"reason_ref"}, where, tally):
-            if content["reason"] not in ("withheld", "retention_disposition", "redaction_event", "other"):
-                tally.fail(f"{where}: reason {content['reason']!r} is not one the format names")
+        if (_check_members(content, {"availability", "reason"}, {"reason_ref"}, where, tally)
+                and content["reason"] not in reasons):
+            tally.fail(f"{where}: reason {content['reason']!r} is not one the format names")
     else:
         tally.fail(f"{where}: content is neither available nor unavailable")
 
@@ -1483,7 +1484,7 @@ def _named_actors(att: Attachment) -> list[tuple[str, Any]]:
     out = []
     for stage in att.stages:
         for key in ("reviewer_ref", "actor_ref"):
-            if key in stage and not (stage.get("kind") == "proposal"):
+            if key in stage and stage.get("kind") != "proposal":
                 out.append((stage.get("stage_id"), stage[key]))
     return out
 
@@ -1663,9 +1664,7 @@ def verdict(report: dict, profile: str = "baseline") -> tuple[str, str | None]:
             return "reject", f"{name}:{FAILED}"
     if profile == "baseline":
         return "accept", None
-    if report["issuer_signature"]["status"] != VERIFIED:
-        return "reject", f"issuer_signature:{report['issuer_signature']['status']}"
-    for name in STRICT_DIMENSIONS:
+    for name in STRICT_DIMENSIONS:  # signature_required carries the issuer signature's verdict
         status = report["strict"][name]["status"]
         if status != VERIFIED:
             return "reject", f"{name}:{status}"
@@ -1673,3 +1672,138 @@ def verdict(report: dict, profile: str = "baseline") -> tuple[str, str | None]:
         if report[name]["status"] != VERIFIED:
             return "reject", f"{name}:{report[name]['status']}"
     return "accept", None
+
+
+# --- the published test cases' form --------------------------------------------------------------
+
+def compact(value: Any) -> bytes:
+    """A document's bytes as the published cases write them: JSON with no whitespace, in UTF-8."""
+    import json
+
+    return json.dumps(value, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def _pointer(doc: Any, pointer: str) -> tuple[Any, str]:
+    parts = [p.replace("~1", "/").replace("~0", "~") for p in pointer.split("/")[1:]]
+    node = doc
+    for part in parts[:-1]:
+        node = node[int(part)] if isinstance(node, list) else node[part]
+    return node, parts[-1]
+
+
+def apply_patch(doc: Any, patch: list[dict]) -> Any:
+    """Apply a published case's patch (``set``, ``insert``, ``remove``, ``move``) to ``doc`` in place."""
+    for op in patch:
+        if "set" in op or "insert" in op:
+            node, key = _pointer(doc, op.get("set", op.get("insert")))
+            if isinstance(node, list) and "insert" in op:
+                node.insert(len(node) if key == "-" else int(key), op["value"])
+            elif isinstance(node, list):
+                node[int(key)] = op["value"]
+            else:
+                node[key] = op["value"]
+        elif "remove" in op:
+            node, key = _pointer(doc, op["remove"])
+            del node[int(key) if isinstance(node, list) else key]
+        elif "move" in op:
+            node, key = _pointer(doc, op["move"])
+            value = node.pop(int(key) if isinstance(node, list) else key)
+            target, where = _pointer(doc, op["to"])
+            if isinstance(target, list):
+                target.insert(int(where), value)
+            else:
+                target[where] = value
+        else:
+            raise ValueError(f"a patch operation this reader does not apply: {sorted(op)}")
+    return doc
+
+
+def binding_summary(report: dict) -> dict:
+    """A report in the published binding cases' terms, for comparing with their expected values."""
+    return {
+        **{name: report[name]["status"] for name in BINDING_DIMENSIONS},
+        "execution_state": report["observed_results"].get("execution_state"),
+        "observed": [[a["attempt_stage_id"], a["observed"], a["basis"]]
+                     for a in report["observed_results"].get("attempts", [])],
+        "executed": [[e["spec_index"], e["reached_by"]] for e in report["executed_specifications"]],
+        "reviews": [[r["review_stage_id"], r["shown"], r.get("edited_by")] for r in report["reviews"]],
+        "standing": [[s["standing_stage_id"], s["status"], s["requests_recorded"], s["max_requests"],
+                      s["revocation"]] for s in report["standing_approvals"]],
+    }
+
+
+def expected_differences(case: dict, report: dict) -> list[str]:
+    """Where a report differs from one published binding case's expected values (empty: agrees).
+
+    The cases expect every binding dimension ``verified`` and ``execution_state`` ``attempted``
+    unless they say otherwise, and compare the carried lists only where they name them.
+    """
+    got, want = binding_summary(report), case.get("expected", {})
+    diffs = [f"{name}: expected {want.get(name, VERIFIED)}, read {got[name]}"
+             for name in BINDING_DIMENSIONS if got[name] != want.get(name, VERIFIED)]
+    if got["execution_state"] != want.get("execution_state", "attempted"):
+        diffs.append(f"execution_state: expected {want.get('execution_state', 'attempted')}, read "
+                     f"{got['execution_state']}")
+    diffs += [f"{name}: expected {want[name]}, read {got[name]}"
+              for name in ("observed", "executed", "reviews", "standing")
+              if name in want and want[name] != got[name]]
+    return diffs
+
+
+# --- corpus members and the command line ---------------------------------------------------------
+
+def read_member(member: dict) -> tuple[dict, str, str | None]:
+    """Read one corpus member: the report, and the verdict of the profile the member names.
+
+    A member carries ``attachment`` (the exact text), and optionally ``record`` (text),
+    ``trust_policy``, ``relying_party``, ``timestamps_beside`` and ``profile``.
+    """
+    record = member.get("record")
+    report = read(member["attachment"].encode("utf-8"),
+                  record=record.encode("utf-8") if isinstance(record, str) else None,
+                  trust_policy=member.get("trust_policy"),
+                  timestamps_beside=bool(member.get("timestamps_beside", False)),
+                  relying_party=member.get("relying_party"))
+    decision, reason = verdict(report, member.get("profile", "baseline"))
+    return report, decision, reason
+
+
+def main(argv: list[str] | None = None) -> int:
+    """``agent-evidence-verify decision-record``: print one attachment's report and a profile's verdict."""
+    import argparse
+    import json
+    import sys
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(
+        prog="agent-evidence-verify decision-record",
+        description="report every dimension of one action-binding attachment (dps-action-binding 0.3.0)")
+    parser.add_argument("attachment", type=Path, help="the attachment's exact bytes")
+    parser.add_argument("--record", type=Path, help="the decision record it sits beside")
+    parser.add_argument("--trust-policy", type=Path, help="the relying party's own trust policy")
+    parser.add_argument("--relying-party", type=Path,
+                        help="the relying party's independent sources, for the strict profile")
+    parser.add_argument("--timestamps-beside", action="store_true",
+                        help="timestamps travel beside the attachment (reported not_supported)")
+    parser.add_argument("--profile", choices=PROFILES, default="baseline")
+    args = parser.parse_args(argv)
+    try:
+        data = args.attachment.read_bytes()
+        record = args.record.read_bytes() if args.record else None
+        policy = read_document(args.trust_policy.read_bytes()) if args.trust_policy else None
+        party = read_document(args.relying_party.read_bytes()) if args.relying_party else None
+    except (OSError, NotRead) as exc:
+        print(f"agent-evidence-verify decision-record: {exc}", file=sys.stderr)
+        return 2
+    report = read(data, record=record, trust_policy=policy, timestamps_beside=args.timestamps_beside,
+                  relying_party=party if isinstance(party, dict) else None)
+    out: dict[str, Any] = {"report": report, "profile": args.profile}
+    try:
+        read_document(data)
+    except NotRead:
+        sys.stdout.write(json.dumps(out, indent=2, sort_keys=True) + "\n")
+        print("agent-evidence-verify decision-record: the attachment is not read", file=sys.stderr)
+        return 2
+    out["verdict"], out["reason"] = verdict(report, args.profile)
+    sys.stdout.write(json.dumps(out, indent=2, sort_keys=True) + "\n")
+    return 0

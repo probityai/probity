@@ -85,6 +85,11 @@ def main(argv: list[str] | None = None) -> int:
         from .corpus import main as corpus_main
 
         return corpus_main(args[1:])
+    if args[:1] == ["decision-record"]:
+        # One action-binding attachment, every dimension reported on its own.
+        from .decision_record import main as decision_record_main
+
+        return decision_record_main(args[1:])
     parser = argparse.ArgumentParser(prog="agent-evidence-verify", description=SUMMARY)
     add_arguments(parser)
     return run(parser.parse_args(args), "agent-evidence-verify")
