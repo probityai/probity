@@ -16,6 +16,13 @@ unchanged.
   consumer-pinned keys, through a format profile the case pins. Refuses a repeated receipt, a re-issued authorization,
   swapped receipts and an unpinned signer, and reports a restart, an unpinned head, a missing effect or a missing
   revocation commitment as `not_established`. Doc: `docs/cbor-receipt-chain.md`, example: `examples/cbor-receipt-chain/`.
+- `agent-evidence-verify ocsf-decision`: reads a stream of OCSF API Activity decision records (AID-EMIT-1, the
+  Praxis Policy Engine `ocsf-audit` sink) and reports structure, ruling consistency, fingerprint, signature and key
+  binding per record, and uniqueness, chain links, gaps and opening, stream sequence and opening, and the tail over the
+  stream. A member named twice is not read; the unsigned key id never chooses a key; the tail is verified only against
+  an independent head. Both published signed sample records verify. A `strict` profile requires signatures, a key
+  named by the signed bytes, an anchored tail, the opening and interoperable numbers. Corpus mode answers the
+  `ocsf-decision/v1` suite. Page: `docs/ocsf-decision.md`.
 - `agent-evidence-verify decision-record`: reads an action-binding attachment (`dps-action-binding` 0.3.0) beside its
   decision record and reports each check as its own dimension, with `not_checked`, `unavailable` and `not_supported`
   explicit and no merged pass. Every published binding case of the format reads as its expected values. A `strict`
