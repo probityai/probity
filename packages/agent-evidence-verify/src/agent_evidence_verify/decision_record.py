@@ -1593,20 +1593,40 @@ def _named_actors(att: Attachment) -> list[tuple[str, Any]]:
     return out
 
 
+def _identity_problem(identities: dict, actor: Any) -> str:
+    """Why the relying party's identity source does not confirm ``actor``, or the empty string.
+
+    An entry confirms a person only when its status is ``verified`` and it names the ``source`` the
+    binding rests on: a verified status with no source is an assertion, not an identity.
+    """
+    entry = identities.get(actor)
+    if not isinstance(entry, dict):
+        return f"{actor!r} is not in the relying party's identity source"
+    if entry.get("status") != VERIFIED:
+        return f"the identity source gives {actor!r} as {entry.get('status')!r}"
+    if not _is_ref(entry.get("source")):
+        return f"the identity source gives {actor!r} as verified and names no source it rests on"
+    return ""
+
+
 def _identity_independent(att: Attachment, identities: dict | None) -> dict:
     if identities is None:
         return dim(NOT_CHECKED, "the relying party supplied no identity source", basis="issuer_assertion")
     tally = Tally()
     for sid, actor in _named_actors(att):
-        entry = identities.get(actor)
-        if not isinstance(entry, dict):
-            tally.fail(f"{sid}: {actor!r} is not in the relying party's identity source")
-        elif entry.get("status") != VERIFIED:
-            tally.fail(f"{sid}: the identity source gives {actor!r} as {entry.get('status')!r}")
+        problem = _identity_problem(identities, actor)
+        if problem:
+            tally.fail(f"{sid}: {problem}")
     return tally.result(basis="independent_source")
 
 
-def _authority_independent(att: Attachment, grants: list | None) -> dict:
+def _authority_independent(att: Attachment, grants: list | None, identities: dict | None) -> dict:
+    """Each approval's and change's authority, granted by the relying party's own source.
+
+    A grant is held by a person: when the relying party's identity source does not confirm the
+    person acting, their grant does not verify the act. Without an identity source the grant stands
+    as the authority source gives it, and ``identity_independent`` reports the identity unchecked.
+    """
     if grants is None:
         return dim(NOT_CHECKED, "the relying party supplied no authority source", basis="issuer_assertion")
     held = {(g.get("actor_ref"), g.get("authority_ref")) for g in grants if isinstance(g, dict)}
@@ -1616,6 +1636,9 @@ def _authority_independent(att: Attachment, grants: list | None) -> dict:
         if pair not in held:
             tally.fail(f"{stage.get('stage_id')}: the relying party's authority source grants "
                        f"{pair[0]!r} no {pair[1]!r}")
+        elif identities is not None and _identity_problem(identities, pair[0]):
+            tally.fail(f"{stage.get('stage_id')}: {pair[0]!r} holds {pair[1]!r}, but "
+                       f"{_identity_problem(identities, pair[0])}")
     if not att.approvals():
         tally.skip("no approval is recorded")
     return tally.result(basis="independent_source")
@@ -1665,7 +1688,8 @@ def strict_dimensions(att: Attachment, digest: str, signature: dict, relying: di
         "approver_independence": _approver_independence(att),
         "single_effect_per_request": _single_effect(att, relying.get("target_effects") or {}),
         "identity_independent": _identity_independent(att, relying.get("identities")),
-        "authority_independent": _authority_independent(att, relying.get("authority_grants")),
+        "authority_independent": _authority_independent(att, relying.get("authority_grants"),
+                                                        relying.get("identities")),
         "time_independent": _time_independent(att, relying.get("independent_times")),
         "latest_attachment": _latest(str(att.doc.get("decision_id")), digest, relying.get("latest")),
         "signature_required": dim(VERIFIED) if signature["status"] == VERIFIED else dim(

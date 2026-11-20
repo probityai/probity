@@ -379,3 +379,33 @@ def test_carried_bytes_in_a_second_spelling_are_not_read():
     assert dr.read(dr.compact(doc))["structural_validity"]["status"] == dr.VERIFIED
     content["bytes_b64"] = _respell(content["bytes_b64"])[0]
     assert dr.read(dr.compact(doc))["structural_validity"]["status"] == dr.FAILED
+
+
+def test_a_verified_identity_that_names_no_source_is_not_an_identity():
+    doc = VECTORS["attachments"]["A0"]
+    data = dr.compact(doc)
+    party = _relying_party(doc, dr.sha256_hex(data))
+    party["identities"]["owner-example-1"] = {"status": "verified"}
+    report = dr.read(data, record=_record("R0"), trust_policy=POLICY, relying_party=party)
+    assert report["strict"]["identity_independent"]["status"] == dr.FAILED
+    assert dr.verdict(report, "strict") == ("reject", "identity_independent:failed")
+
+
+@pytest.mark.parametrize("entry", [{"status": "failed", "source": "urn:example:directory"},
+                                   {"status": "verified"}, None])
+def test_authority_held_by_a_person_whose_identity_failed_is_not_verified(entry):
+    doc = VECTORS["attachments"]["A0"]
+    data = dr.compact(doc)
+    party = _relying_party(doc, dr.sha256_hex(data))
+    if entry is None:
+        del party["identities"]["owner-example-1"]
+    else:
+        party["identities"]["owner-example-1"] = entry
+    strict = dr.read(data, record=_record("R0"), trust_policy=POLICY, relying_party=party)["strict"]
+    assert strict["identity_independent"]["status"] == dr.FAILED
+    assert strict["authority_independent"]["status"] == dr.FAILED
+    # Without an identity source the authority stands as its own source gives it.
+    del party["identities"]
+    strict = dr.read(data, record=_record("R0"), trust_policy=POLICY, relying_party=party)["strict"]
+    assert strict["identity_independent"]["status"] == dr.NOT_CHECKED
+    assert strict["authority_independent"]["status"] == dr.VERIFIED
