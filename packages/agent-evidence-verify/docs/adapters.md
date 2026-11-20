@@ -112,3 +112,35 @@ export exits 2 without a verdict.
 implementation fared against a pinned case set) under an acceptance rule the consumer writes
 inline in the assessment. It is a port of the reference reader in agent-evidence-vectors, with the
 same rules, order and refusal codes, and a parity test over that reader's corpus.
+
+## Telemetry evidence: digests and event logs
+
+[`evidence_digest/v1`](telemetry-evidence.md) checks that a manifest of digests binds the copies the
+consumer actually reads: N of N consumed items carry one digest under a declared canonical form
+(`rfc8785`, `cbor-deterministic` or `raw`), a repeated member is refused, zero items is
+`empty_denominator` and never a pass, and a signed manifest agrees only under the consumer's key
+authority. [`event_log_completeness/v1`](telemetry-evidence.md) checks that a session log is one
+contiguous, linked sequence inside the consumer's coverage boundary, ending at a signed head the
+consumer retained outside the log. Both share check order and reason codes with
+`cbor_receipt_chain/v1`.
+
+## Lifecycle binding
+
+[`lifecycle_binding/v1`](lifecycle-binding.md) groups decision, control and execution records by decision and
+instruction and reports one of five states per group (`satisfied`, `failure`, `missing`, `not_evaluated`,
+`indeterminate`): a duplicate identity is never resolved by order, revocation is required, the signature suite
+comes from the producer's key binding, and absent evidence is never `satisfied`.
+
+## Action evidence packages
+
+[`aep_package/v1`](aep-package.md) checks a `.aep` package's hash, canonical form, full-block RSA DigestInfo,
+receipt, ML-DSA-65 signature and RFC 3161 time stamp in order, with each check after the first failure reported
+`not_evaluated`, and admits the signer and time-stamp keys only under the consumer's authorities.
+
+## Agent capability credentials
+
+[`capability_credential/v1`](capability-credential.md) reads any agent credential mapped into the
+`capability-credential/v1` profile and refuses, each with its own code, the parser-differential classes (a
+case-variant member, an escaped or non-ASCII or newline-terminated time, `-0` in either signing direction) and the
+distinct-authority classes (a named key that does not sign, one key under two ids, the issuer's own key as cosigner,
+a threshold met by one authority).
