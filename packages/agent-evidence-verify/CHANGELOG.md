@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased (0.7.0 at release)
+
+A minor release: `agent-evidence-verify decision-record` refuses or holds four records 0.6.0 accepted. A consumer that
+reads these dimensions can turn red.
+
+- Carried base64 (specification and bounds bytes, the seal's signature, a pinned certificate) is read only in its
+  canonical spelling, through one shared `strictb64` module that is the corpus readers' definition byte for byte. A
+  second spelling of a seal value (sixteen texts decode to one Ed25519 signature) fails `structural_validity`.
+- `independent_timestamp` in the relying party's sources carries its own reading of a timestamp token (the SHA-256 it
+  covers and its time). `time_assurance` reads the issuer's times against it as an upper bound only: `failed` when the
+  issuer dates the attachment after it (and `baseline` refuses), `verified` within a day before it, `not_checked`
+  further before it, so a backdated record anchored months later never reads as verified.
+- A seal key superseded (or compromised) before it is read, signing at a stated time before its retirement, reads
+  `unavailable` instead of `verified`: whoever holds a retired key can state any earlier time. An independent
+  timestamp earlier than the retirement verifies it on the timestamp's time; a stated time at or after the retirement
+  fails for either reason; a timestamp before the key's validity fails the key state.
+- An identity source entry confirms a person only when it names the `source` it rests on, and a grant held by a person
+  whose identity the source does not confirm no longer verifies `authority_independent`.
+
 ## 0.6.0 (2026-11-20)
 
 A minor release: two new claim types and one new console script; the decisions for every existing claim type are
