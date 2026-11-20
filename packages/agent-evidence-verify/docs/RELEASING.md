@@ -84,6 +84,13 @@ uv pip compile --python-version 3.12 --generate-hashes --no-header --no-annotate
   requirements-release.in --output-file requirements-release.lock
 ```
 
+The bump pull request bumps the version, the lockfile, the recipe and release manifests, the root
+install pins and the dependents' ceilings, and leaves the changelog heading as `## X.Y.Z (unreleased)`.
+`docs/release.json` still names the previous published release until PyPI carries the new one, and
+`tests/test_release_pins.py` requires the newest dated changelog section to equal it, so a dated heading
+in the bump pull request fails the merge group. The post-publish pull request dates the heading and moves
+`docs/release.json`, this guide's latest-release sentence, the install pages and the recipes together.
+
 Keep existing package versions and tags immutable. Publish changed artifact
 contents as a new version. Update current install instructions after the actual
 registry release; preserve historical tested source pins and input digests.
