@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 (unreleased)
+## 0.6.0 (2026-11-20)
 
 A minor release: two new claim types and one new console script; the decisions for every existing claim type are
 unchanged.
