@@ -63,6 +63,32 @@ STRICT_DIMENSIONS = (
     "approver_independence", "single_effect_per_request", "identity_independent",
     "authority_independent", "time_independent", "latest_attachment", "signature_required")
 PROFILES = ("baseline", "strict")
+#: The members the published trust-policy schema defines (dps-anchoring-trust-policy 0.2.0,
+#: ``extensions/anchoring/schemas/trust-policy.schema.json``). Every object it describes is closed, so
+#: a member outside these sets makes the policy invalid: a relying party who writes ``revokedAt`` for
+#: ``revoked_at`` asked for a revocation, and a reader that drops the member would verify the key.
+POLICY_MEMBERS = frozenset({"profile", "profile_version", "policy_ref", "tsas", "bitcoin_header_sources",
+                            "keys", "checkpoint_sources"})
+POLICY_ENTRY_MEMBERS = {
+    "keys": frozenset({"key_ref", "holder", "role", "algorithm", "public_key_hex", "not_before",
+                       "not_after", "revoked_at", "revocation_reason", "identity_source_ref",
+                       "webauthn", "certificate_b64"}),
+    "tsas": frozenset({"tsa_ref", "holder", "certificate_b64", "not_before", "not_after", "revoked_at",
+                       "revocation_reason"}),
+    "bitcoin_header_sources": frozenset({"source_ref", "network", "kind", "holder"}),
+    "checkpoint_sources": frozenset({"source_ref", "kind", "holder", "chain_ids", "key_refs", "format",
+                                     "service_key_refs"}),
+}
+REVOCATION_REASONS = ("superseded", "compromised")
+#: The relying party's sources the strict profile reads; a source under another name is not dropped.
+RELYING_PARTY_MEMBERS = frozenset({"identities", "authority_grants", "independent_times", "latest",
+                                   "target_effects"})
+#: The strict dimensions that read a relying-party source.
+RELYING_PARTY_DIMENSIONS = ("single_effect_per_request", "identity_independent", "authority_independent",
+                            "time_independent", "latest_attachment")
+#: The members of one corpus member (``decision-record/v1``).
+MEMBER_MEMBERS = frozenset({"attachment", "record", "trust_policy", "relying_party", "timestamps_beside",
+                            "profile"})
 
 MAX_SAFE_INTEGER = 2**53 - 1
 #: How far before an independent timestamp an issuer's time may lie and still be read as shown by it.
@@ -1318,6 +1344,9 @@ class TrustPolicy:
         ref = policy.get("policy_ref")
         if policy.get("profile") != POLICY_PROFILE or policy.get("profile_version") != POLICY_VERSION:
             return cls(ref, {}, f"the trust policy is not {POLICY_PROFILE} {POLICY_VERSION}")
+        problem = _policy_members_problem(policy)
+        if problem:
+            return cls(ref, {}, problem)
         keys: dict[str, dict] = {}
         seen_keys: dict[str, str] = {}
         refs: set[str] = set()
@@ -1346,6 +1375,26 @@ class TrustPolicy:
         if self.refused:
             return dim(FAILED, self.refused)
         return dim(VERIFIED)
+
+
+def _policy_members_problem(policy: dict) -> str:
+    """Why the policy's members fall outside the published schema, or ``""`` when they do not."""
+    extra = sorted(set(policy) - POLICY_MEMBERS)
+    if extra:
+        return f"the trust policy names members its schema does not define: {extra}"
+    for name, allowed in POLICY_ENTRY_MEMBERS.items():
+        for entry in policy.get(name) or []:
+            if not isinstance(entry, dict):
+                continue
+            extra = sorted(set(entry) - allowed)
+            if extra:
+                return f"an entry of {name} names members its schema does not define: {extra}"
+            if ("revoked_at" in entry) != ("revocation_reason" in entry):
+                return f"an entry of {name} gives revoked_at and revocation_reason only together"
+            if "revocation_reason" in entry and entry["revocation_reason"] not in REVOCATION_REASONS:
+                return (f"an entry of {name} gives revocation_reason {entry['revocation_reason']!r}, "
+                        f"not one of {list(REVOCATION_REASONS)}")
+    return ""
 
 
 def issuer_signature(data: bytes, doc: dict, policy: TrustPolicy | None,
@@ -1644,7 +1693,7 @@ def _authority_independent(att: Attachment, grants: list | None, identities: dic
     return tally.result(basis="independent_source")
 
 
-def _time_independent(att: Attachment, clock: dict | None) -> dict:
+def _time_independent(att: Attachment, clock: dict | None, sealed_at: Any = None) -> dict:
     if clock is None:
         return dim(NOT_CHECKED, "the relying party supplied no independent observation of the stages' "
                                 "times", basis="issuer_assertion")
@@ -1671,6 +1720,15 @@ def _time_independent(att: Attachment, clock: dict | None) -> dict:
         approved, ran = instant(seen.get(basis.get("stage_id"))), instant(seen.get(attempt.get("stage_id")))
         if approved.ok and ran.ok and approved.seconds > ran.seconds:
             tally.fail(f"{attempt.get('stage_id')}: observed before the approval it rests on")
+    # The seal covers every stage, so it was made after each stage the relying party saw happen. A seal
+    # dated earlier states a time it cannot have been made at, and the key's state was judged on that time.
+    sealed = instant(sealed_at)
+    if sealed.ok:
+        for stage in targets:
+            mark = instant(seen.get(stage.get("stage_id")))
+            if mark.ok and sealed.seconds < mark.seconds:
+                tally.fail(f"the seal is dated {sealed.text}, before {stage.get('stage_id')}, which the "
+                           f"relying party observed at {mark.text}")
     return tally.result(basis="independent_source")
 
 
@@ -1683,18 +1741,30 @@ def _latest(decision_id: str, digest: str, latest: dict | None) -> dict:
 
 
 def strict_dimensions(att: Attachment, digest: str, signature: dict, relying: dict) -> dict:
-    """The checks the strict profile adds, each a dimension of its own."""
-    return {
+    """The checks the strict profile adds, each a dimension of its own.
+
+    A relying-party source under a name the reader does not know fails every dimension that reads a
+    source: the relying party asked for a check this reader would otherwise not apply.
+    """
+    unknown = sorted(set(relying) - RELYING_PARTY_MEMBERS)
+    sig = att.doc.get("issuer_signature")
+    sealed_at = sig.get("sealed_at") if isinstance(sig, dict) else None
+    dimensions = {
         "approver_independence": _approver_independence(att),
         "single_effect_per_request": _single_effect(att, relying.get("target_effects") or {}),
         "identity_independent": _identity_independent(att, relying.get("identities")),
         "authority_independent": _authority_independent(att, relying.get("authority_grants"),
                                                         relying.get("identities")),
-        "time_independent": _time_independent(att, relying.get("independent_times")),
+        "time_independent": _time_independent(att, relying.get("independent_times"), sealed_at),
         "latest_attachment": _latest(str(att.doc.get("decision_id")), digest, relying.get("latest")),
         "signature_required": dim(VERIFIED) if signature["status"] == VERIFIED else dim(
             FAILED, "the relying party requires a verified issuer signature"),
     }
+    if unknown:
+        for name in RELYING_PARTY_DIMENSIONS:
+            dimensions[name] = dim(FAILED, f"the relying party's sources name members this reader does not "
+                                           f"define: {unknown}; none is dropped")
+    return dimensions
 
 
 # --- the report ----------------------------------------------------------------------------------
@@ -1887,6 +1957,9 @@ def read_member(member: dict) -> tuple[dict, str, str | None]:
     A member carries ``attachment`` (the exact text), and optionally ``record`` (text),
     ``trust_policy``, ``relying_party``, ``timestamps_beside`` and ``profile``.
     """
+    extra = sorted(set(member) - MEMBER_MEMBERS)
+    if extra:
+        raise ValueError(f"the member names members {SUITE} does not define: {extra}")
     record = member.get("record")
     report = read(member["attachment"].encode("utf-8"),
                   record=record.encode("utf-8") if isinstance(record, str) else None,
