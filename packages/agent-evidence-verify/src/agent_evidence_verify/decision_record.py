@@ -28,7 +28,6 @@ one is supplied, ``time_assurance`` is ``not_supported`` and never ``verified``.
 
 from __future__ import annotations
 
-import base64
 import binascii
 import hashlib
 import re
@@ -37,6 +36,7 @@ from datetime import date
 from fractions import Fraction
 from typing import Any
 
+from . import strictb64
 from .ijson import IJSONError, parse_ijson
 
 PROFILE = "dps-action-binding"
@@ -71,7 +71,6 @@ _DIGEST = re.compile(r"^[0-9a-f]{64}$")
 _STAGE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _DECISION_ID = re.compile(r"^DR-[0-9]{4}-[0-9]{3,}$")
 _SEALED_AT = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
-_B64 = re.compile(r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
 
 
 class NotRead(ValueError):
@@ -164,11 +163,17 @@ def _json_integer(value: Any) -> bool:
 
 
 def _b64(text: Any) -> bytes | None:
-    if not isinstance(text, str) or len(text) < 4 or not _B64.match(text):
+    """Padded standard base64 in the one spelling an encoder writes, or None.
+
+    Every carried value (specification and bounds bytes, the seal's signature, a pinned certificate)
+    is read through :mod:`strictb64`: a text whose unused trailing bits are set is another spelling of
+    the same bytes, so the attachment's digest would change while its signature still verified.
+    """
+    if not isinstance(text, str) or len(text) < 4:
         return None
     try:
-        return base64.b64decode(text, validate=True)
-    except (binascii.Error, ValueError):
+        return strictb64.std(text)
+    except (binascii.Error, ValueError, TypeError):
         return None
 
 
@@ -364,7 +369,7 @@ def _check_content(content: Any, where: str, tally: Tally) -> None:
     if isinstance(content, dict) and content.get("availability") == "available":
         if (_check_members(content, {"availability", "bytes_b64"}, set(), where, tally)
                 and _b64(content["bytes_b64"]) is None):
-            tally.fail(f"{where}: bytes_b64 is not padded base64")
+            tally.fail(f"{where}: bytes_b64 is not padded base64 in its canonical spelling")
     elif isinstance(content, dict) and content.get("availability") == "unavailable":
         if (_check_members(content, {"availability", "reason"}, {"reason_ref"}, where, tally)
                 and content["reason"] not in reasons):
@@ -409,7 +414,7 @@ def _check_signature_shape(sig: Any, tally: Tally) -> None:
     if not (isinstance(sig["sealed_at"], str) and _SEALED_AT.match(sig["sealed_at"])):
         tally.fail("issuer_signature: sealed_at is not written YYYY-MM-DDTHH:MM:SSZ")
     if _b64(sig["value_b64"]) is None:
-        tally.fail("issuer_signature: value_b64 is not padded base64")
+        tally.fail("issuer_signature: value_b64 is not padded base64 in its canonical spelling")
 
 
 def structural_validity(doc: Any) -> dict[str, Any]:
@@ -1408,9 +1413,9 @@ def _certificate(entry: dict, findings: list[str]) -> str:
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
     try:
-        cert = x509.load_der_x509_certificate(base64.b64decode(pinned, validate=True))
+        cert = x509.load_der_x509_certificate(strictb64.std(pinned))
         held = cert.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
-    except (ValueError, TypeError, binascii.Error):
+    except (ValueError, TypeError, binascii.Error, UnicodeEncodeError):
         findings.append("the pinned certificate cannot be read")
         return FAILED
     if held.hex() != str(entry.get("public_key_hex", "")).lower():

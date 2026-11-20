@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -253,3 +254,43 @@ def test_corpus_mode_answers_each_member_under_its_profile(tmp_path):
     got = {line["vector"]: (line["verdict"], line["reason"]) for line in corpus.lines(tmp_path)}
     assert got == {"baseline-self-approval": ("accept", None),
                    "strict-self-approval": ("reject", "approver_independence:failed")}
+
+
+# --- the four checks 0.7.0 adds -------------------------------------------------------------------
+
+
+def _respell(text: str) -> list[str]:
+    """Every other base64 text whose decoded bytes are ``text``'s: the unused low bits set."""
+    pad = len(text) - len(text.rstrip("="))
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    last = len(text) - pad - 1
+    unused = {2: 4, 1: 2}.get(pad, 0)  # "==" leaves four bits unused, "=" two
+    base = alphabet.index(text[last])
+    out = [text[:last] + alphabet[base | low] + text[last + 1:] for low in range(1, 2 ** unused)]
+    assert all(base64.b64decode(t) == base64.b64decode(text) for t in out)
+    return out
+
+
+def test_a_signature_in_any_spelling_but_its_canonical_one_is_not_read():
+    doc = copy.deepcopy(VECTORS["attachments"]["A0"])
+    canonical = doc["issuer_signature"]["value_b64"]
+    spellings = _respell(canonical)
+    assert len(spellings) == 15  # sixteen texts of one signature, one of them canonical
+    for spelling in spellings:
+        doc["issuer_signature"]["value_b64"] = spelling
+        report = dr.read(dr.compact(doc), trust_policy=POLICY)
+        assert report["structural_validity"]["status"] == dr.FAILED, spelling
+        assert dr.verdict(report, "baseline") == ("reject", "structural_validity:failed")
+    doc["issuer_signature"]["value_b64"] = canonical
+    assert dr.read(dr.compact(doc), trust_policy=POLICY)["issuer_signature"]["status"] == dr.VERIFIED
+
+
+def test_carried_bytes_in_a_second_spelling_are_not_read():
+    doc = _attachment("A0")
+    doc.pop("issuer_signature")
+    content = doc["action_specifications"][0]["content"]
+    raw = base64.b64decode(content["bytes_b64"]) + b" "  # one byte more: the last group carries padding
+    content["bytes_b64"] = base64.b64encode(raw).decode("ascii")
+    assert dr.read(dr.compact(doc))["structural_validity"]["status"] == dr.VERIFIED
+    content["bytes_b64"] = _respell(content["bytes_b64"])[0]
+    assert dr.read(dr.compact(doc))["structural_validity"]["status"] == dr.FAILED
