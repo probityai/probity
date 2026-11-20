@@ -18,6 +18,12 @@ reads these dimensions can turn red.
   fails for either reason; a timestamp before the key's validity fails the key state.
 - An identity source entry confirms a person only when it names the `source` it rests on, and a grant held by a person
   whose identity the source does not confirm no longer verifies `authority_independent`.
+- A record whose `time` is OCSF's millisecond integer was read on the wrong axis: the integer was taken as
+  seconds from 1970 while a key's RFC 3339 window is counted from 0001-01-01, so every such record fell before
+  every key window. It is now read as milliseconds from 1970-01-01T00:00:00Z, the same instant as its RFC 3339
+  spelling.
+- An `action_id`, `action`, `disposition_id` or `disposition` that is a list or an object raised `TypeError`.
+  It is now refused as `decision_consistency:failed`.
 
 ## 0.6.0 (2026-11-20)
 
