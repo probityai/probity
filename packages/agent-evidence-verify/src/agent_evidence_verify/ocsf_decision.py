@@ -41,6 +41,7 @@ import itertools
 import json
 import re
 from dataclasses import dataclass
+from datetime import date
 from fractions import Fraction
 from typing import Any
 
@@ -85,6 +86,10 @@ STRICT_DIMENSIONS = ("signature_required", "key_named_by_signed_bytes", "tail_an
 BASELINE_REFUSES = RECORD_DIMENSIONS + STREAM_DIMENSIONS
 
 MAX_SAFE_INTEGER = 2**53 - 1
+#: ``instant()`` counts seconds from 0001-01-01 (the proleptic ordinal), not from 1970. OCSF's ``time``
+#: counts milliseconds from 1970-01-01T00:00:00Z (schema.ocsf.io, timestamp_t), so a millisecond time
+#: is moved onto the same axis before it is compared with a key's RFC 3339 window.
+UNIX_EPOCH_SECONDS = date(1970, 1, 1).toordinal() * 86400
 _INT_MIN, _INT_MAX = -(2**63), 2**64 - 1
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _B64 = re.compile(r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
@@ -239,7 +244,7 @@ def _b64url(text: Any) -> bytes | None:
 def _time(value: Any) -> Instant:
     """The record's ``time``: an RFC 3339 string as emitted, or OCSF's millisecond integer."""
     if _int(value):
-        return Instant(str(value), Fraction(int(value), 1000))
+        return Instant(str(value), UNIX_EPOCH_SECONDS + Fraction(int(value), 1000))
     return instant(value)
 
 
@@ -458,7 +463,10 @@ def decision_consistency(doc: dict) -> dict:
     """The ruling read every way the record states it: ids, captions, verdict, steps, status."""
     tally = Tally()
     key = (doc.get("action_id"), doc.get("action"), doc.get("disposition_id"), doc.get("disposition"))
-    ruling = RULINGS.get(key)
+    try:
+        ruling = RULINGS.get(key)
+    except TypeError:  # a list or object in a ruling member: no ruling, refused below
+        ruling = None
     if ruling is None:
         tally.fail(f"action and disposition {list(key)} are not one of the format's four rulings")
     decision = _get(doc, "unmapped", "aid.decision")
