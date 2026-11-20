@@ -341,6 +341,33 @@
       "documentation": "docs/evaluation-claim.md",
       "expected_decision": "supported",
       "scope": "Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes."
+    },
+    {
+      "task": "Check who signed an AI Catalog trust manifest and that it binds its entry",
+      "claim_type": "catalog_trust_manifest/v1",
+      "case": "examples/catalog-trust-manifest/case.json",
+      "policy": "examples/catalog-trust-manifest/policy.json",
+      "documentation": "docs/catalog-trust-manifest.md",
+      "expected_decision": "supported",
+      "scope": "Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe."
+    },
+    {
+      "task": "Check that an A2A Agent Card was signed by a key of its own DID that the consumer trusts",
+      "claim_type": "a2a_signed_card/v1",
+      "case": "examples/a2a-signed-card/case.json",
+      "policy": "examples/a2a-signed-card/policy.json",
+      "documentation": "docs/a2a-signed-card.md",
+      "expected_decision": "supported",
+      "scope": "The valid-conformance-extension card of tests/data/a2a-signed-card; the consumer pins the owner's Ed25519 key under its kid, so the verdict says which key of the card's DID signed the card and that the card names its conformance corpus and verifier inside the signature, not that the agent behaves as the card says."
+    },
+    {
+      "task": "Check which parties a co-signed tool-call receipt binds and that both keys may speak for them",
+      "claim_type": "co_signed_receipt/v1",
+      "case": "examples/co-signed-receipt/case.json",
+      "policy": "examples/co-signed-receipt/policy.json",
+      "documentation": "docs/co-signed-receipt.md",
+      "expected_decision": "supported",
+      "scope": "The valid-co-signed receipt of tests/data/co-signed-receipt; the consumer pins the agent's and the caller's Ed25519 keys, so the verdict says both parties signed the same bytes, not that the receipt is true or that the parties are independent."
     }
   ]
 }

@@ -1,0 +1,1 @@
+REFUSE no_canonical_form (the record says 9007199254740993; the signature covers 9007199254740992; AI Catalog: large integers SHOULD be strings). The agent-evidence-verify jcs_canonical port rounds and would accept: one signature, two different records.

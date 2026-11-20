@@ -1,0 +1,1 @@
+REFUSE key_not_assertion_method (ADR 0027: merely listing a key under verificationMethod or keyAgreement is insufficient).

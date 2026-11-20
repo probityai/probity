@@ -1,0 +1,534 @@
+{
+  "claim_type": "co_signed_receipt/v1",
+  "cases": [
+    {
+      "id": "valid-co-signed",
+      "description": "both parties sign, both keys pinned",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "supported",
+        "reason": "receipt_signers_authorized",
+        "evidence_attribution": "co_signed"
+      }
+    },
+    {
+      "id": "valid-single-signed",
+      "description": "the agent alone signs",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "supported",
+        "reason": "receipt_signers_authorized",
+        "evidence_attribution": "single_signed"
+      }
+    },
+    {
+      "id": "valid-co-signed-registry",
+      "description": "both keys bound to their DIDs at the receipt's timestamp",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "registry",
+          "bindings": [
+            {
+              "subject": "did:web:agent.example.test",
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060",
+              "not_before": "2026-01-01T00:00:00Z"
+            },
+            {
+              "subject": "did:web:caller.example.test",
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464",
+              "not_before": "2026-01-01T00:00:00Z"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "registry",
+          "bindings": [
+            {
+              "subject": "did:web:agent.example.test",
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060",
+              "not_before": "2026-01-01T00:00:00Z"
+            },
+            {
+              "subject": "did:web:caller.example.test",
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464",
+              "not_before": "2026-01-01T00:00:00Z"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "supported",
+        "reason": "receipt_signers_authorized",
+        "evidence_attribution": "co_signed"
+      }
+    },
+    {
+      "id": "valid-no-authority",
+      "description": "both signatures verify and nothing says whose keys they are: no attribution yet",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json"
+      },
+      "expect": {
+        "decision": "not_established",
+        "reason": "no_key_authority_in_policy"
+      }
+    },
+    {
+      "id": "foreign-agent-key",
+      "description": "a forger signs as the agent and supplies a key for the agent's DID: it binds no party",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_not_pinned",
+        "evidence_attribution": "unattributed_evidence"
+      }
+    },
+    {
+      "id": "same-key-both-parties",
+      "description": "one key signs as both parties: one party shown as two",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "cosigner-is-signer"
+      }
+    },
+    {
+      "id": "agent-key-not-ed25519",
+      "description": "the key set gives the agent a P-256 key",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_malformed"
+      }
+    },
+    {
+      "id": "agent-signature-does-not-verify",
+      "description": "the agent's signature covers other bytes",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature-invalid",
+        "evidence_attribution": "unattributed_evidence"
+      }
+    },
+    {
+      "id": "agent-key-for-encryption",
+      "description": "the agent's key is marked use enc",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_not_for_signing"
+      }
+    },
+    {
+      "id": "agent-key-small-order",
+      "description": "the identity point as the agent's key, pinned: its signature verifies every receipt",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "01d0fabd251fcbbe2b93b4b927b26ad2a1a99077152e45ded1e678afa45dbec5"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "key_malformed"
+      }
+    },
+    {
+      "id": "forged-agent-signature-caller-key-withheld",
+      "description": "the agent's signature is forged and the caller's key withheld: the forgery decides",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature-invalid",
+        "evidence_attribution": "unattributed_evidence"
+      }
+    },
+    {
+      "id": "broken-01-uppercase-hash",
+      "description": "an uppercase taskHash under two valid signatures",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "hash-not-lowercase-hex64"
+      }
+    },
+    {
+      "id": "broken-02-absent-task-hash",
+      "description": "no taskHash, signed over a payload without it",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "member-missing"
+      }
+    },
+    {
+      "id": "broken-03-absent-task-hash-signed-as-null",
+      "description": "no taskHash, signed over a payload that carried taskHash null",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "member-missing"
+      }
+    },
+    {
+      "id": "broken-04-unknown-format-version",
+      "description": "format version 2, both signatures valid",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "version-unknown"
+      }
+    },
+    {
+      "id": "broken-05-cosignature-does-not-verify",
+      "description": "the agent's signature verifies; the present co-signature does not",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "cosignature-invalid",
+        "evidence_attribution": "unattributed_evidence"
+      }
+    },
+    {
+      "id": "broken-06-negative-latency",
+      "description": "latencyMs -1, both signatures valid",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "latency-out-of-range"
+      }
+    },
+    {
+      "id": "broken-07-signature-129-hex",
+      "description": "a valid signature with one more hex digit, which a lenient decoder truncates",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "signature-not-lowercase-hex128"
+      }
+    },
+    {
+      "id": "broken-08-failure-type-omitted",
+      "description": "success true and no failureType member",
+      "assessment": {
+        "receipt": "receipt.json",
+        "keys": "keys.json",
+        "key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "c5d3f633ccd40c8f1e7d63d2e9b618223dfb66ae32146214ad0796d6764a3060"
+            }
+          ]
+        },
+        "cosigner_key_authority": {
+          "kind": "pin",
+          "keys": [
+            {
+              "public_key_sha256": "907486efda455b712d942a1449e3d2b183c26f3431089d72beb5679a06469464"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "decision": "contradicted",
+        "reason": "member-missing"
+      }
+    }
+  ]
+}

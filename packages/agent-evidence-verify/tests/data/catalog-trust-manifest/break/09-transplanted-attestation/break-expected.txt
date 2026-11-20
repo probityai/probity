@@ -1,0 +1,1 @@
+REFUSE entry_digest_missing_for_url and attestation_unsigned (draft-bu-00 3.5.2 item 1, 6.4). A digest-pin-only check (row 11 cell 1, DESIGN B4) agrees again on the moved record.

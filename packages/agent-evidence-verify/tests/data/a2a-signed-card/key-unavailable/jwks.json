@@ -1,0 +1,11 @@
+{
+  "keys": [
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "tw8rBDCZvJYVkJ0i3X3JZJceuIyinNvq839yq9Z902c",
+      "y": "TQw4alAB6ltj8KQFZjyBfeQ5mp_Q2wVH3NzDXP5CHfc",
+      "kid": "did:web:agent.example.test#es256"
+    }
+  ]
+}

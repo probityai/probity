@@ -1,0 +1,25 @@
+{
+  "assessments": {
+    "catalog-trust-manifest-ai-catalog-publisher": {
+      "artifact": "artifact.json",
+      "at": "2026-11-16T00:00:00Z",
+      "catalog": "catalog.json",
+      "claim_type": "catalog_trust_manifest/v1",
+      "construction": "ai-catalog-2026-11",
+      "did_documents": "did-documents.json",
+      "entry": 0,
+      "key_authority": {
+        "keys": [
+          {
+            "kid": "did:web:publisher.example#es256",
+            "public_key_sha256": "bc6c9311b9a3177616dfe655feca30778c1371a8f767876296e98b0aca692b3b"
+          }
+        ],
+        "kind": "pin"
+      },
+      "manifest": 0,
+      "role": "publisher"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
