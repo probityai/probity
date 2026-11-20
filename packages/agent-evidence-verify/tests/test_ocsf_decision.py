@@ -20,11 +20,10 @@ import sys
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
-
 from agent_evidence_verify import corpus
 from agent_evidence_verify import ocsf_decision as o
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 
 DATA = Path(__file__).parent / "data" / "ocsf-decision"
 AUTHORITY = "org-f3576cf6"
@@ -41,8 +40,8 @@ def published(name: str) -> list[dict]:
     raw = (DATA / name).read_bytes()
     assert hashlib.sha256(raw).hexdigest() == pins[name]["sha256"]
     out = []
-    for block in re.findall(r"```(?:jsonc|text)\n(.*?)```", raw.decode("utf-8"), re.S):
-        for part in re.split(r"^// =====.*$", block, flags=re.M):
+    for block in re.findall(r"```(?:jsonc|text)\n(.*?)```", raw.decode("utf-8"), re.DOTALL):
+        for part in re.split(r"^// =====.*$", block, flags=re.MULTILINE):
             body = "\n".join(line for line in part.splitlines() if not line.startswith("//")).strip()
             if body.startswith("{"):
                 out.append(json.loads(body))

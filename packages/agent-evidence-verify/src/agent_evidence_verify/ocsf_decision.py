@@ -37,6 +37,7 @@ import base64
 import binascii
 import copy
 import hashlib
+import itertools
 import json
 import re
 from dataclasses import dataclass
@@ -819,7 +820,7 @@ def streams(records: list[Record]) -> tuple[dict, dict, dict]:
                 continue
             by_seq[n] = rec
         order = sorted(by_seq)
-        for a, b in zip(order, order[1:]):
+        for a, b in itertools.pairwise(order):
             if b != a + 1:
                 seq.fail(f"{name}: stream_seq {a + 1}" + (f" to {b - 1}" if b - 1 > a + 1 else "")
                          + " not supplied, between records that are: lost records")
@@ -945,8 +946,8 @@ def read(data: bytes, *, trust_policy: Any = None, relying_party: dict | None = 
     out["tail"] = tail(segments, groups, (relying_party or {}).get("heads"))
     absent = sorted({b for r in read_ok for b in r.report["absent_blocks"]})
     out["evidence_scope"] = dim(NOT_CHECKED, *(
-        [f"absent from at least one record: {', '.join(absent)}; the format does not say whether the "
-         "sink lacked the read capability or there was nothing to record"] if absent else []),
+        [(f"absent from at least one record: {', '.join(absent)}; the format does not say whether the "
+          "sink lacked the read capability or there was nothing to record")] if absent else []),
         basis="the format does not state which read capabilities the sink held")
     out["content_digests"] = (dim(NOT_SUPPORTED, "aid.content digests are not recomputed by this reader")
                               if any(_get(r.doc, "unmapped", "aid.content") is not None for r in read_ok)
