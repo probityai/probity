@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0 (unreleased)
+## 0.7.0 (2026-11-20)
 
 A minor release: `agent-evidence-verify decision-record` refuses or holds four records 0.6.0 accepted. A consumer that
 reads these dimensions can turn red.
