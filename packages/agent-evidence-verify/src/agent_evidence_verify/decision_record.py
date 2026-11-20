@@ -1349,7 +1349,7 @@ class TrustPolicy:
 
 
 def issuer_signature(data: bytes, doc: dict, policy: TrustPolicy | None,
-                     latest_stage: Instant | None) -> dict:
+                     latest_stage: Instant | None, stamp: Stamp | None = None) -> dict:
     """The attachment's seal copy, checked with the relying party's own key for its reference."""
     sig = doc.get("issuer_signature")
     if sig is None:
@@ -1375,7 +1375,7 @@ def issuer_signature(data: bytes, doc: dict, policy: TrustPolicy | None,
     findings: list[str] = []
     signature_ok = _signature_verifies(data, doc, sig, entry, findings)
     base["certificate"] = _certificate(entry, findings)
-    base["key_state"] = _key_state(entry, sig.get("sealed_at"), findings)
+    base["key_state"] = _key_state(entry, sig.get("sealed_at"), stamp)
     sealed = instant(sig.get("sealed_at"))
     if latest_stage is not None and sealed.ok and latest_stage.ok and sealed.seconds < latest_stage.seconds:
         findings.append("sealed_at is earlier than the latest stage the attachment records; both are "
@@ -1430,7 +1430,13 @@ def _certificate(entry: dict, findings: list[str]) -> str:
     return VERIFIED
 
 
-def _key_state(entry: dict, sealed_at: Any, findings: list[str]) -> dict:
+def _key_state(entry: dict, sealed_at: Any, stamp: Stamp | None) -> dict:
+    """The seal key's state when it signed, by the stated time or by an independent timestamp.
+
+    A key's validity and retirement are read against ``sealed_at``. Once a key is retired, superseded
+    or compromised, whoever holds it can state any earlier time, so a stated time before the
+    retirement establishes nothing: only an independent timestamp earlier than the retirement does.
+    """
     stated = instant(sealed_at)
     base = {"key_ref": entry.get("key_ref"), "time_basis": "stated_time", "time": sealed_at}
     if not stated.ok:
@@ -1440,17 +1446,27 @@ def _key_state(entry: dict, sealed_at: Any, findings: list[str]) -> dict:
         return dim(FAILED, "the policy's validity for the key names no instant", **base)
     if not (start.seconds <= stated.seconds <= end.seconds):
         return dim(FAILED, "signed outside the key's validity", **base)
-    if "revoked_at" in entry:
-        revoked = instant(entry.get("revoked_at"))
-        if not revoked.ok:
-            return dim(FAILED, "the policy's revocation time names no instant", **base)
-        if entry.get("revocation_reason") == "compromised":
-            return dim(UNAVAILABLE, "the key was compromised: only an independent timestamp earlier "
-                                    "than its revocation can establish when it signed, and none is "
-                                    "read", **base)
-        if stated.seconds >= revoked.seconds:
-            return dim(FAILED, "signed after the key was superseded", **base)
-    return dim(VERIFIED, **base)
+    upper = stamp.upper if stamp is not None and stamp.covers else None
+    stamped = {**base, "time_basis": "independent_timestamp", "time": upper.text if upper else None}
+    if upper is not None and upper.seconds < start.seconds:
+        return dim(FAILED, f"the independent timestamp shows the seal existed ({upper.text}) before the "
+                           "key's validity began", **stamped)
+    if "revoked_at" not in entry:
+        return dim(VERIFIED, **base)
+    revoked = instant(entry.get("revoked_at"))
+    if not revoked.ok:
+        return dim(FAILED, "the policy's revocation time names no instant", **base)
+    how = ("revoked as compromised" if entry.get("revocation_reason") == "compromised"
+           else "superseded" if entry.get("revocation_reason") == "superseded" else "revoked")
+    if stated.seconds >= revoked.seconds:
+        return dim(FAILED, f"signed after the key was {how}, by its stated time", **base)
+    if upper is not None and upper.seconds < revoked.seconds:
+        return dim(VERIFIED, **stamped)
+    held = ("the one the relying party holds is not earlier" if upper is not None
+            else "the relying party holds none")
+    return dim(UNAVAILABLE, f"the key was {how} at {entry.get('revoked_at')}: whoever holds a retired key "
+                            "can state any earlier time, so only an independent timestamp earlier than "
+                            f"the retirement establishes when it signed, and {held}", **base)
 
 
 # --- independent time ----------------------------------------------------------------------------
@@ -1713,7 +1729,7 @@ def read(data: bytes, *, record: bytes | None = None, trust_policy: Any = None,
     out["trust_policy"] = policy.report() if policy is not None else dim(
         NOT_CHECKED, "no trust policy is configured")
     stamp = read_stamp(party.get("independent_timestamp"), digest, doc)
-    out["issuer_signature"] = issuer_signature(data, doc, policy, latest)
+    out["issuer_signature"] = issuer_signature(data, doc, policy, latest, stamp)
     out["time_assurance"] = time_assurance(att, stamp, timestamps_beside)
     out["legal_signature"] = _legal(att)
     out["strict"] = strict_dimensions(att, digest, out["issuer_signature"], party)
