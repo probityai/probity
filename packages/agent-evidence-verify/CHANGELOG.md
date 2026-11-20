@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Two fixes to `ocsf-decision`; the decision for every other claim type is unchanged.
+
+- A record whose `time` is OCSF's millisecond integer was read on the wrong axis: the integer was taken as
+  seconds from 1970 while a key's RFC 3339 window is counted from 0001-01-01, so every such record fell before
+  every key window. It is now read as milliseconds from 1970-01-01T00:00:00Z, the same instant as its RFC 3339
+  spelling.
+- An `action_id`, `action`, `disposition_id` or `disposition` that is a list or an object raised `TypeError`.
+  It is now refused as `decision_consistency:failed`.
+
 ## 0.6.0 (2026-11-20)
 
 A minor release: two new claim types and one new console script; the decisions for every existing claim type are
