@@ -17,6 +17,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -202,6 +203,50 @@ def test_record_resigned_under_a_retired_key_is_refused():
     report, decision = judge(chain)
     assert report["records"][-1]["signature"]["key"] == "test-key-0"
     assert decision == ("reject", "key_binding:failed")
+
+
+def epoch_ms(stamp: str) -> int:
+    """OCSF's ``time``: milliseconds since 1970-01-01T00:00:00Z (schema.ocsf.io timestamp_t)."""
+    return round(datetime.fromisoformat(stamp).timestamp() * 1000)
+
+
+def in_epoch_ms(bodies: list[dict], stamp: str | None = None) -> list[dict]:
+    """The same records with ``time`` as the integer OCSF defines, optionally moved to ``stamp``."""
+    out = copy.deepcopy(bodies)
+    for body in out:
+        body["time"] = epoch_ms(stamp or body["time"])
+    return out
+
+
+def test_millisecond_time_is_the_same_instant_as_its_rfc3339_spelling():
+    for stamp in ("1970-01-01T00:00:00Z", "2025-06-01T12:30:45.250Z", "2026-08-21T03:20:00.000Z"):
+        assert o._time(epoch_ms(stamp)).seconds == o._time(stamp).seconds
+
+
+def test_record_with_a_millisecond_time_is_read_inside_its_key_window():
+    chain = emit(in_epoch_ms(DECISIONS))  # 2026-08-21: the test key's window opened 2026-01-01
+    report, decision = judge(chain)
+    assert decision == ("accept", None) and report["key_binding"]["status"] == o.VERIFIED
+
+
+def test_millisecond_time_outside_the_key_window_is_refused_on_the_right_side():
+    before = emit(in_epoch_ms(DECISIONS, "2025-06-01T00:00:00Z"))  # before the test key's window
+    assert judge(before)[1] == ("reject", "key_binding:failed")
+    late = emit(in_epoch_ms(DECISIONS), key=RETIRED, kid="test-key-0")  # after the retired key's window
+    assert judge(late)[1] == ("reject", "key_binding:failed")
+    inside = emit(in_epoch_ms(DECISIONS, "2025-06-01T00:00:00Z"), key=RETIRED, kid="test-key-0")
+    report, decision = judge(inside)
+    assert decision == ("accept", None) and report["key_binding"]["status"] == o.VERIFIED
+
+
+@pytest.mark.parametrize("field", ["action_id", "action", "disposition_id", "disposition"])
+@pytest.mark.parametrize("value", [[1], {"id": 1}])
+def test_ruling_member_that_is_not_a_scalar_is_refused_not_a_crash(field, value):
+    bodies = copy.deepcopy(DECISIONS)
+    bodies[0][field] = value
+    report, decision = judge(bodies)
+    assert decision == ("reject", "decision_consistency:failed")
+    assert report["decision_consistency"]["status"] == o.FAILED
 
 
 def test_two_live_keys_leave_the_binding_to_the_unsigned_key_id():
