@@ -1,9 +1,23 @@
 # Changelog
 
-## Unreleased
+## Unreleased (0.7.0 at release)
 
-Two fixes to `ocsf-decision`; the decision for every other claim type is unchanged.
+A minor release: `agent-evidence-verify decision-record` refuses or holds four records 0.6.0 accepted. A consumer that
+reads these dimensions can turn red.
 
+- Carried base64 (specification and bounds bytes, the seal's signature, a pinned certificate) is read only in its
+  canonical spelling, through one shared `strictb64` module that is the corpus readers' definition byte for byte. A
+  second spelling of a seal value (sixteen texts decode to one Ed25519 signature) fails `structural_validity`.
+- `independent_timestamp` in the relying party's sources carries its own reading of a timestamp token (the SHA-256 it
+  covers and its time). `time_assurance` reads the issuer's times against it as an upper bound only: `failed` when the
+  issuer dates the attachment after it (and `baseline` refuses), `verified` within a day before it, `not_checked`
+  further before it, so a backdated record anchored months later never reads as verified.
+- A seal key superseded (or compromised) before it is read, signing at a stated time before its retirement, reads
+  `unavailable` instead of `verified`: whoever holds a retired key can state any earlier time. An independent
+  timestamp earlier than the retirement verifies it on the timestamp's time; a stated time at or after the retirement
+  fails for either reason; a timestamp before the key's validity fails the key state.
+- An identity source entry confirms a person only when it names the `source` it rests on, and a grant held by a person
+  whose identity the source does not confirm no longer verifies `authority_independent`.
 - A record whose `time` is OCSF's millisecond integer was read on the wrong axis: the integer was taken as
   seconds from 1970 while a key's RFC 3339 window is counted from 0001-01-01, so every such record fell before
   every key window. It is now read as milliseconds from 1970-01-01T00:00:00Z, the same instant as its RFC 3339
