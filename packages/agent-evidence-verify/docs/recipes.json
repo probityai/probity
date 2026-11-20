@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "agent-evidence-verify",
-      "project.version": "0.6.0",
+      "project.version": "0.7.0",
       "project.requires-python": ">=3.11",
       "project.dependencies": [
         "cryptography>=50.0.0",
@@ -63,7 +63,7 @@
         }
       }
     },
-    "sha256": "74fecdba7bed346df6cb8851dc752524a40420e4bdade2e5a474bf8af8c8a613"
+    "sha256": "e95729a73b6231cbf0305568b34e3d3cf3b46e019542063aa5f8808dd08e6c3a"
   },
   "implementation": [
     {

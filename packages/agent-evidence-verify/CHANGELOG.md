@@ -1,9 +1,20 @@
 # Changelog
 
-## Unreleased (0.7.0 at release)
+## 0.7.0 (2026-11-20)
 
 A minor release: `agent-evidence-verify decision-record` refuses or holds four records 0.6.0 accepted. A consumer that
 reads these dimensions can turn red.
+
+- The decision-record reader holds the trust policy to its published closed schema (members, the `revoked_at` and
+  `revocation_reason` pair, the two reasons). A member it does not know was skipped, so a misspelled revocation
+  verified a key; it now refuses. An unknown relying-party source fails every strict dimension that reads a source, a
+  corpus member naming an unknown member is not read, and the OCSF reader's corpus member follows the same rule.
+- The `strict` profile refuses a seal dated before a stage the relying party observed, because the key's state was
+  judged on a time the seal cannot have been made at.
+- `jcs_canonical/v1` refuses number tokens no double holds: an integer a double does not hold exactly
+  (9007199254740993) and a non-integer token whose double is another number (1e-400) have no canonical form, as
+  RFC 8785 and RFC 7493 section 2.2 require, so a signature over rewritten bytes no longer reads as a signature over
+  the original value. Exact large values such as 1E21 keep their form.
 
 - Carried base64 (specification and bounds bytes, the seal's signature, a pinned certificate) is read only in its
   canonical spelling, through one shared `strictb64` module that is the corpus readers' definition byte for byte. A
