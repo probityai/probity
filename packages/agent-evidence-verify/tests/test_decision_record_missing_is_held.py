@@ -139,10 +139,9 @@ def test_a_seal_dated_after_every_observed_stage_is_accepted_by_strict():
 
 
 def test_a_seal_dated_before_an_observed_stage_is_refused_by_strict():
-    # The key was superseded at 09:15:30. The seal states 09:15, before the revocation, but it covers
-    # an attempt the relying party itself observed at 09:16:05: the stated time cannot be when it was made.
-    report = _strict("2026-10-01T09:15:00Z", revoked_at="2026-10-01T09:15:30Z",
-                     revocation_reason="superseded")
+    # The seal states 09:15, but it covers an attempt the relying party itself observed at 09:16:05:
+    # the stated time cannot be when it was made. The key is not retired, so the signature verifies.
+    report = _strict("2026-10-01T09:15:00Z")
     assert report["issuer_signature"]["status"] == dr.VERIFIED  # on the issuer's own stated time
     assert report["strict"]["time_independent"]["status"] == dr.FAILED
     assert dr.verdict(report, "strict") == ("reject", "time_independent:failed")

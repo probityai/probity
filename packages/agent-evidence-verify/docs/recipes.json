@@ -263,8 +263,8 @@
     },
     {
       "path": "src/agent_evidence_verify/decision_record.py",
-      "bytes": 94126,
-      "sha256": "482c412cf4f18bc90b735298cff0883e1671eef9a516645d4976176a6135034d"
+      "bytes": 101188,
+      "sha256": "7254a0f6fb805f972527051c9a9b593afaace04dc9f08121457caaa81f83d427"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
@@ -305,6 +305,11 @@
       "path": "src/agent_evidence_verify/ocsf_decision.py",
       "bytes": 50377,
       "sha256": "a2a4aa71df9ca93a20fea91ef732764c1e0dc0aacf95ba59a505af78506de466"
+    },
+    {
+      "path": "src/agent_evidence_verify/strictb64.py",
+      "bytes": 1797,
+      "sha256": "3dddcb39ca28d92a0fa969f75490791e244cec44b3049764ef11d02ec254e533"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
