@@ -22,8 +22,12 @@ accepts (:func:`verdict`):
   whether this attachment is the latest the relying party knows for the decision; and whether it
   is signed. Under ``strict`` every one of them, and the issuer signature, must be ``verified``.
 
-The reader does not read RFC 3161 tokens or other timestamps carried beside an attachment: where
-one is supplied, ``time_assurance`` is ``not_supported`` and never ``verified``.
+The reader does not parse RFC 3161 tokens. A relying party that has verified one supplies its reading
+(``independent_timestamp``: the SHA-256 the token covers and its time); ``time_assurance`` then reads
+the issuer's times against it. A timestamp shows only that the bytes existed no later than its time:
+an issuer time after it fails, one within a day before it is verified, and one further before it is
+``not_checked``, never ``verified``. Timestamps that travel beside an attachment with no such reading
+are ``not_supported``.
 """
 
 from __future__ import annotations
@@ -61,6 +65,8 @@ STRICT_DIMENSIONS = (
 PROFILES = ("baseline", "strict")
 
 MAX_SAFE_INTEGER = 2**53 - 1
+#: How far before an independent timestamp an issuer's time may lie and still be read as shown by it.
+STATED_TIME_SLACK_SECONDS = 24 * 3600
 OUTCOME_WORDS = ("approved", "rejected", "escalated")
 BOUNDS_MEMBERS = ("operation", "target", "policy_version", "input_version_refs", "parameters",
                   "max_requests", "valid_from", "valid_until")
@@ -1447,6 +1453,83 @@ def _key_state(entry: dict, sealed_at: Any, findings: list[str]) -> dict:
     return dim(VERIFIED, **base)
 
 
+# --- independent time ----------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Stamp:
+    """The relying party's reading of one timestamp token: what it covers and its time."""
+
+    upper: Instant
+    subject: str  # "attachment", "issuer_signature", or "" when it covers neither
+    source_ref: Any
+    problem: str = ""
+
+    @property
+    def covers(self) -> bool:
+        return not self.problem
+
+
+def read_stamp(given: Any, digest: str, doc: dict) -> Stamp | None:
+    """The relying party's ``independent_timestamp``, matched to the attachment's bytes or its seal.
+
+    ``subject_sha256`` is the digest the token's message imprint names; it covers this attachment
+    when it is the attachment's SHA-256 or the SHA-256 of its seal's signature bytes.
+    """
+    if given is None:
+        return None
+    if not isinstance(given, dict):
+        return Stamp(Instant(repr(given), None), "", None, "the independent timestamp is not an object")
+    upper = instant(given.get("existed_no_later_than"))
+    source = given.get("source_ref")
+    if not upper.ok:
+        return Stamp(upper, "", source, f"the independent timestamp's time names no instant ({upper.why})")
+    subject = given.get("subject_sha256")
+    sig = doc.get("issuer_signature")
+    raw = _b64(sig.get("value_b64")) if isinstance(sig, dict) else None
+    if subject == digest:
+        return Stamp(upper, "attachment", source)
+    if raw is not None and subject == sha256_hex(raw):
+        return Stamp(upper, "issuer_signature", source)
+    return Stamp(upper, "", source, "the independent timestamp covers neither this attachment's bytes nor "
+                                    "its seal's signature")
+
+
+def _issuer_times(att: Attachment) -> list[Instant]:
+    times = [att.at(s) for s in att.stages]
+    sig = att.doc.get("issuer_signature")
+    if isinstance(sig, dict):
+        times.append(instant(sig.get("sealed_at")))
+    return [t for t in times if t.ok]
+
+
+def time_assurance(att: Attachment, stamp: Stamp | None, timestamps_beside: bool) -> dict:
+    """The issuer's times against an independent timestamp, which bounds them only from above."""
+    if stamp is None:
+        if timestamps_beside:
+            return dim(NOT_SUPPORTED, "timestamps beside the attachment are not read by this reader; a "
+                                      "relying party that verified one supplies its reading as "
+                                      "independent_timestamp", basis="issuer_assertion")
+        return dim(NOT_CHECKED, basis="issuer_assertion")
+    base = {"basis": "independent_timestamp", "source_ref": stamp.source_ref,
+            "existed_no_later_than": stamp.upper.text, "covers": stamp.subject or None}
+    if not stamp.covers:
+        return dim(UNAVAILABLE, stamp.problem, **base)
+    times = _issuer_times(att)
+    if not times:
+        return dim(NOT_CHECKED, "no issuer time names an instant", **base)
+    latest = max(times, key=lambda t: t.seconds)
+    base["stated"] = latest.text
+    upper = stamp.upper.seconds
+    if latest.seconds > upper:
+        return dim(FAILED, f"the issuer dates the attachment {latest.text}, after the timestamp shows it "
+                           f"existed ({stamp.upper.text})", consistency="inconsistent", **base)
+    if upper - latest.seconds > STATED_TIME_SLACK_SECONDS:
+        return dim(NOT_CHECKED, f"the issuer's latest time {latest.text} is more than a day before the "
+                                f"timestamp ({stamp.upper.text}); the timestamp shows only that the bytes "
+                                "existed no later than that, not when they were made", **base)
+    return dim(VERIFIED, consistency="consistent", **base)
+
+
 # --- the strict profile --------------------------------------------------------------------------
 
 def _approver_independence(att: Attachment) -> dict:
@@ -1586,6 +1669,7 @@ def read(data: bytes, *, record: bytes | None = None, trust_policy: Any = None,
     """Read one attachment's exact bytes and report every dimension separately."""
     digest = sha256_hex(data)
     policy = TrustPolicy.read(trust_policy) if trust_policy is not None else None
+    party = relying_party or {}
     out: dict[str, Any] = {"profile": PROFILE, "profile_version": PROFILE_VERSION,
                            "attachment_digest": digest}
     try:
@@ -1628,12 +1712,11 @@ def read(data: bytes, *, record: bytes | None = None, trust_policy: Any = None,
     latest = max(times, key=lambda t: t.seconds) if times else None
     out["trust_policy"] = policy.report() if policy is not None else dim(
         NOT_CHECKED, "no trust policy is configured")
+    stamp = read_stamp(party.get("independent_timestamp"), digest, doc)
     out["issuer_signature"] = issuer_signature(data, doc, policy, latest)
-    out["time_assurance"] = (dim(NOT_SUPPORTED, "timestamps beside the attachment are not read by this "
-                                                "reader", basis="issuer_assertion")
-                             if timestamps_beside else dim(NOT_CHECKED, basis="issuer_assertion"))
+    out["time_assurance"] = time_assurance(att, stamp, timestamps_beside)
     out["legal_signature"] = _legal(att)
-    out["strict"] = strict_dimensions(att, digest, out["issuer_signature"], relying_party or {})
+    out["strict"] = strict_dimensions(att, digest, out["issuer_signature"], party)
     out["scope_of_conclusion"] = SCOPE
     return out
 
@@ -1657,13 +1740,14 @@ def _unread(out: dict, why: str) -> dict:
 def verdict(report: dict, profile: str = "baseline") -> tuple[str, str | None]:
     """What one profile accepts: ``("accept", None)`` or ``("reject", "<dimension>:<status>")``.
 
-    ``baseline`` refuses a report whose structure, any binding dimension or the issuer signature
-    failed. ``strict`` also requires every binding and strict dimension to be verified. Neither
-    changes what the report says about any dimension.
+    ``baseline`` refuses a report whose structure, any binding dimension, the issuer signature or
+    the issuer's times against an independent timestamp failed. ``strict`` also requires every
+    binding and strict dimension to be verified. Neither changes what the report says about any
+    dimension.
     """
     if profile not in PROFILES:
         raise ValueError(f"profile {profile!r} is not one of {PROFILES}")
-    names = ("structural_validity",) + BINDING_DIMENSIONS + ("issuer_signature",)
+    names = ("structural_validity",) + BINDING_DIMENSIONS + ("issuer_signature", "time_assurance")
     for name in names:
         if report[name]["status"] == FAILED:
             return "reject", f"{name}:{FAILED}"
