@@ -17,8 +17,7 @@ from agent_evidence_verify import decision_record as dr
 from agent_evidence_verify import ocsf_decision
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-
-from tests.test_decision_record import POLICY, VECTORS, _record, _relying_party
+from test_decision_record import POLICY, VECTORS, _record, _relying_party
 
 SIGNED = dr.compact(VECTORS["attachments"]["A0"])
 
