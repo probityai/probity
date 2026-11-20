@@ -1,0 +1,19 @@
+{
+ "entries": [
+  {
+   "identifier": "urn:air:victim.example:server:mcp",
+   "type": "application/mcp-server-card+json",
+   "url": "https://example.test/mcp.json",
+   "displayName": "x",
+   "trustManifest": {
+    "identity": "did:web:victim.example",
+    "identityType": "did",
+    "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6dmljdGltLmV4YW1wbGUjazEifQ..t60Xo0IG-H1Bw2QE7xgsY7gf3quZsMoX7SxNDO-Uui1QE3Wute6GzVvMt1Bep3X1p6SebVTKZreG0sDkzruBCA"
+   },
+   "x-labels": {
+    "": "private-use",
+    "😀": "emoji"
+   }
+  }
+ ]
+}

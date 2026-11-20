@@ -156,7 +156,8 @@ def decode_utf8(data: bytes | str) -> str:
 
 def parse_ijson(data: bytes | str, *, integers_only: bool = False, max_depth: int = MAX_DEPTH,
                 parse_float: Callable[[str], Any] | None = None,
-                parse_int: Callable[[str], Any] | None = None) -> Any:
+                parse_int: Callable[[str], Any] | None = None,
+                lone_surrogates: bool = False) -> Any:
     """Parse ``data`` under I-JSON, or raise :class:`IJSONError`.
 
     ``integers_only`` refuses every non-integer number (the integer-only profile of the receipt and
@@ -164,7 +165,11 @@ def parse_ijson(data: bytes | str, *, integers_only: bool = False, max_depth: in
     ``decimal.Decimal`` where an adapter compares decimal text exactly; a replacement still meets
     the finite check only if it enforces one itself. ``parse_int`` replaces the safe-integer check
     only for an adapter whose own later rule refuses an out-of-range number under a code its corpus
-    pins (``observed_effect/v1``); every other check still runs.
+    pins (``observed_effect/v1``, ``catalog_trust_manifest/v1``); every other check still runs.
+    ``lone_surrogates`` keeps an escaped lone surrogate in a string for the same reason: only
+    ``catalog_trust_manifest/v1`` sets it, because its profile refuses a lone surrogate in the
+    signed bytes as ``no_canonical_form``, at that step of its check order, and reads no other
+    member for one.
     """
     text = decode_utf8(data)
     _depth_ok(text, max_depth)
@@ -181,7 +186,8 @@ def parse_ijson(data: bytes | str, *, integers_only: bool = False, max_depth: in
         raise IJSONError("nesting-too-deep", "nesting exceeds the interpreter's limit") from exc
     except json.JSONDecodeError as exc:  # a caller's own hook raises through unchanged
         raise IJSONError("not-parseable", str(exc)) from exc
-    _surrogate_free(value)
+    if not lone_surrogates:
+        _surrogate_free(value)
     return value
 
 

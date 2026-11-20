@@ -233,11 +233,15 @@ _EPOCH_ORDINAL = datetime.date(1970, 1, 1).toordinal()
 
 
 def record_instant(at: Any, label: str = "at") -> Instant:
-    """A record's own time as an exact :data:`Instant`: an aware ``datetime``, or POSIX seconds.
+    """A record's own time as an exact :data:`Instant`: an aware ``datetime``, POSIX seconds, or an
+    RFC 3339 ``date-time`` string.
 
     POSIX seconds (an ``int``, or a ``float`` read exactly as the double it is) are what a token's
-    ``iat`` carries; a ``datetime`` holds microseconds.
+    ``iat`` carries; a ``datetime`` holds microseconds; a string is read by :func:`parse_instant`
+    to its last fraction digit, leap second included, as a catalog check time is written.
     """
+    if isinstance(at, str):
+        return parse_instant(at, label)
     if isinstance(at, datetime.datetime):
         if at.utcoffset() is None:
             raise CaseError(f"{label}: expected an aware datetime")
@@ -248,7 +252,7 @@ def record_instant(at: Any, label: str = "at") -> Instant:
         seconds = Fraction(at)
         day = math.floor(seconds / _DAY)
         return _instant(_EPOCH_ORDINAL + day, seconds - day * _DAY)
-    raise CaseError(f"{label}: expected an aware datetime or POSIX seconds")
+    raise CaseError(f"{label}: expected an aware datetime, POSIX seconds or an RFC 3339 date-time")
 
 
 def _digest(value: Any, label: str) -> str:
@@ -504,3 +508,30 @@ def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: st
     else:
         outcome, reason, trusted = _kt_inclusion(authority, key, subject, inclusion_proof)
     return Authority(outcome, reason, kind, key_set_fingerprint(trusted))
+
+
+def authority_evidence(authority: Any, artifacts: dict, artifact_root: Any,
+                       scope: dict) -> tuple[bytes | None, Any]:
+    """The DID document bytes and the inclusion proof the consumer's authority names as case
+    artifacts, each bound and recorded in ``scope``; ``(None, None)`` when the kind reads neither."""
+    from .adapters.bound_records import bound
+    document = proof = None
+    if not isinstance(authority, dict):
+        return document, proof
+    kind = authority.get("kind")
+    if kind == "did-web":
+        document, scope["key_authority_document"] = bound(
+            artifacts, artifact_root, authority.get("document"), "assessment.key_authority.document")
+    elif kind == "kt-inclusion":
+        if "inclusion_proof" in authority:
+            raw, scope["key_authority_inclusion_proof"] = bound(
+                artifacts, artifact_root, authority["inclusion_proof"],
+                "assessment.key_authority.inclusion_proof")
+            if raw is not None:
+                try:
+                    proof = parse_ijson(raw)
+                except IJSONError:
+                    proof = "malformed"  # authorize() answers inclusion_proof_malformed
+    elif "document" in authority or "inclusion_proof" in authority:
+        raise CaseError("assessment.key_authority: evidence named for a kind that reads none")
+    return document, proof

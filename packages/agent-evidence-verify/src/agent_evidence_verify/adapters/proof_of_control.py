@@ -547,33 +547,6 @@ def _issued_at(iat):
     return iat
 
 
-def _authority_evidence(authority, artifacts, artifact_root, scope):
-    """The DID document bytes and the inclusion proof the policy names as case artifacts."""
-    from ..common import CaseError
-    from ..ijson import IJSONError
-    from .bound_records import bound
-    document = proof = None
-    if not isinstance(authority, dict):
-        return document, proof
-    kind = authority.get("kind")
-    if kind == "did-web":
-        document, scope["key_authority_document"] = bound(
-            artifacts, artifact_root, authority.get("document"), "assessment.key_authority.document")
-    elif kind == "kt-inclusion":
-        if "inclusion_proof" in authority:
-            raw, scope["key_authority_inclusion_proof"] = bound(
-                artifacts, artifact_root, authority["inclusion_proof"],
-                "assessment.key_authority.inclusion_proof")
-            if raw is not None:
-                try:
-                    proof = parse_ijson(raw)
-                except IJSONError:
-                    proof = "malformed"  # authorize() answers inclusion_proof_malformed
-    elif "document" in authority or "inclusion_proof" in authority:
-        raise CaseError("assessment.key_authority: evidence named for a kind that reads none")
-    return document, proof
-
-
 def judge(case: dict) -> str | None:
     """Return None when the artifact verifies, or the reject code."""
     kind = case.get("kind")
@@ -600,7 +573,7 @@ def judge(case: dict) -> str | None:
 def adjudicate(case, policy, artifact_root):
     """Verify the bound Proof-of-Control artifact."""
     from ..common import CaseError
-    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authorize
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authority_evidence, authorize
     from .bound_records import assessment_for, bound, decision
     case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, {"input"},
                                                     {"key_authority"})
@@ -628,7 +601,7 @@ def adjudicate(case, policy, artifact_root):
     except ValueError:
         return decision(case_id, CLAIM_TYPE, scope, "contradicted", "signature_key_malformed", [check])
     config = assessment.get("key_authority")
-    document, proof = _authority_evidence(config, artifacts, artifact_root, scope)
+    document, proof = authority_evidence(config, artifacts, artifact_root, scope)
     answers = [authorize(config, key, subject=subject, at=at, did_document=document,
                          inclusion_proof=proof)
                for subject, at in _signed_statements(artifact) or [(None, None)]]

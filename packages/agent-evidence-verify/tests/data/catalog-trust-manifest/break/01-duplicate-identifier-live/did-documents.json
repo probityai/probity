@@ -1,0 +1,36 @@
+{
+  "did:web:www.snowsure.ai": {
+    "@context": [
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/suites/jws-2020/v1"
+    ],
+    "id": "did:web:www.snowsure.ai",
+    "verificationMethod": [
+      {
+        "id": "did:web:www.snowsure.ai#key-1",
+        "type": "JsonWebKey2020",
+        "controller": "did:web:www.snowsure.ai",
+        "publicKeyJwk": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "1aLg-pORopf5FXPjiY3vZ83aPV88x5s3AWEtgyIpNDw",
+          "kid": "did:web:www.snowsure.ai#key-1",
+          "alg": "EdDSA"
+        }
+      }
+    ],
+    "assertionMethod": [
+      "did:web:www.snowsure.ai#key-1"
+    ],
+    "authentication": [
+      "did:web:www.snowsure.ai#key-1"
+    ],
+    "service": [
+      {
+        "id": "did:web:www.snowsure.ai#website",
+        "type": "LinkedDomains",
+        "serviceEndpoint": "https://www.snowsure.ai"
+      }
+    ]
+  }
+}

@@ -43,6 +43,7 @@ All examples are authored synthetic records. They do not establish independent o
 | [Reconcile the principal each signed agent audit record names with identity-provider log events](adapters.md) | `idp_log_witness/v1` | `supported` | Authored synthetic identity-provider export over two corpus members; signed with a published test key that carries no trust outside the corpus. |
 | [Check an identity provider's signed token grant receipt against the grant you expect](token-grant-receipt.md) | `token_grant_receipt/v1` | `supported` | Recorded Keycloak client-credentials grant from the hook's end-to-end run; the recorder key signs only that run and carries no trust outside it. |
 | [Check that an evaluation claim record is admitted under my acceptance rule](evaluation-claim.md) | `evaluation_claim/v1` | `supported` | Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes. |
+| [Check who signed an AI Catalog trust manifest and that it binds its entry](catalog-trust-manifest.md) | `catalog_trust_manifest/v1` | `supported` | Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe. |
 
 ## Retrieve a command
 

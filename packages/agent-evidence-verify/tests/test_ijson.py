@@ -245,3 +245,16 @@ def test_a_number_a_double_cannot_hold_is_refused(raw: bytes) -> None:
 ])
 def test_a_number_a_double_holds_is_read(raw: bytes, expected: float) -> None:
     assert parse_ijson(raw)["a"] == expected
+
+
+def test_a_lone_surrogate_is_kept_only_when_the_caller_refuses_it_later() -> None:
+    """``lone_surrogates`` keeps the string for an adapter whose profile refuses it at a later step
+    (catalog_trust_manifest/v1, in the signed bytes only); every other rule still runs."""
+    raw = b'{"a":"\\ud800"}'
+    assert parse_ijson(raw, lone_surrogates=True) == {"a": "\ud800"}
+    with pytest.raises(IJSONError) as caught:
+        parse_ijson(b'{"a":"\\ud800","a":1}', lone_surrogates=True)
+    assert caught.value.code == "duplicate-member"
+    with pytest.raises(IJSONError) as caught:
+        parse_ijson(raw)
+    assert caught.value.code == "lone-surrogate"

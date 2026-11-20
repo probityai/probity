@@ -112,3 +112,12 @@ export exits 2 without a verdict.
 implementation fared against a pinned case set) under an acceptance rule the consumer writes
 inline in the assessment. It is a port of the reference reader in agent-evidence-vectors, with the
 same rules, order and refusal codes, and a parity test over that reader's corpus.
+
+## Catalog trust manifests
+
+[`catalog_trust_manifest/v1`](catalog-trust-manifest.md) judges one signed object of an ARD catalog
+or an AI Catalog: which key signed which bytes under which of four closed constructions, and whether
+the signed subject binds the entry, its artifact and its vendored DSSE attestations. Every signing
+key goes through the consumer's key authority. It is a port of the reference reader in
+agent-evidence-vectors, with the same checks, order and codes, and a parity test over that reader's
+corpus and the matrix row 11 break vectors.

@@ -1,0 +1,1 @@
+REFUSE alg_key_mismatch (RFC 7515/7518: the alg names the algorithm; an ES256 header over an Ed25519 signature is not a valid ES256 JWS).

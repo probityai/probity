@@ -1,0 +1,20 @@
+{
+  "did:web:evil.example": {
+    "id": "did:web:evil.example",
+    "verificationMethod": [
+      {
+        "id": "did:web:evil.example#k1",
+        "type": "JsonWebKey2020",
+        "controller": "did:web:evil.example",
+        "publicKeyJwk": {
+          "kty": "OKP",
+          "crv": "Ed25519",
+          "x": "0N61MJ_SBtzisQnBwbPtUuywQQ9B12evmr_qXNY06vg"
+        }
+      }
+    ],
+    "assertionMethod": [
+      "did:web:evil.example#k1"
+    ]
+  }
+}

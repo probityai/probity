@@ -1,0 +1,1 @@
+REFUSE kid_not_under_identity (draft-bu-00 3.5.1 (b); AI Catalog did:web Signer Profile: kid MUST be the exact signer DID plus fragment). Old probes print VALID and report signer victim.example.
