@@ -17,9 +17,11 @@ from typing import Any
 
 from .adapters import (
     acceptance_observed,
+    aep_package,
     audit_principal,
     authority_anchor,
     brokered_file_write,
+    capability_credential,
     cbor_receipt_chain,
     completion_claim,
     done_receipt,
@@ -28,6 +30,7 @@ from .adapters import (
     execution_evidence,
     idp_log_witness,
     jcs_canonical,
+    lifecycle_binding,
     observed_effect,
     operand_lineage,
     probe_observed,
@@ -36,6 +39,7 @@ from .adapters import (
     restoration,
     source_coverage,
     spend_reservation,
+    telemetry_evidence,
     token_grant_receipt,
     tool_claim_match,
     uncertain_effect,
@@ -79,6 +83,11 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "idp_log_witness/v1": idp_log_witness.adjudicate,
     "cbor_receipt_chain/v1": cbor_receipt_chain.adjudicate,
     "evaluation_claim/v1": evaluation_claim.adjudicate,
+    "evidence_digest/v1": telemetry_evidence.adjudicate_digest,
+    "event_log_completeness/v1": telemetry_evidence.adjudicate_log,
+    "lifecycle_binding/v1": lifecycle_binding.adjudicate,
+    "aep_package/v1": aep_package.adjudicate,
+    "capability_credential/v1": capability_credential.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

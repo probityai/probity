@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased (0.8.0 at release)
+
+A minor release: new claim types; the decisions for every existing claim type are unchanged.
+
+- `evidence_digest/v1`: checks that a manifest of digests binds the copies the consumer reads, N of N, under a
+  declared canonical form (`rfc8785`, `cbor-deterministic`, `raw`). Refuses a repeated member, a digest that binds
+  a copy the consumer does not read, a removed reference (`0 of N`) and a manifest signed by a key the consumer's
+  key authority does not admit; zero consumed items is `empty_denominator`. Doc: `docs/telemetry-evidence.md`.
+- `event_log_completeness/v1`: checks that a session log is one contiguous, linked sequence inside the consumer's
+  coverage boundary, ending at a retained signed head in the observer's ledger head format. Each of drop, swap,
+  status flip, link rewrite, body edit and tail truncation fails with a named reason. Shares check order and reason
+  codes with `cbor_receipt_chain/v1`.
+- `lifecycle_binding/v1`: groups decision, control and execution records by (decision, instruction) and reports
+  whether the authenticated execution names the action the authenticated control authorized, as one of five states
+  per group; a duplicate identity is `indeterminate` in any order, a revoked binding is `not_evaluated`, and absent
+  evidence is never `satisfied`. Pre-images use the six-tag `agent-evidence/lifecycle-binding/v1` registry. Doc:
+  `docs/lifecycle-binding.md`.
+- `aep_package/v1`: checks an action evidence package layer by layer (hash, canonical form, full-block RSA
+  DigestInfo, receipt, ML-DSA-65, RFC 3161 time stamp), reporting every check after the first failure as
+  `not_evaluated`. The RSA block is compared whole, so four blocks ending in the right digest (garbage prefix, bytes
+  after the legacy prefix, SHA-512 OID, short padding) are refused; signer and time-stamp keys are admitted only under
+  the consumer's authorities. Doc: `docs/aep-package.md`.
+- `capability_credential/v1`: one verifier input for every agent capability credential format, under the consumer's
+  trusted issuers, cosigner authorities, pinned clock and revocation list. Refuses a case-variant member, an escaped,
+  non-ASCII or newline-terminated time, a non-canonical number such as `-0`, tamper after signing, expiry, revocation
+  by the consumer's list, an untrusted issuer, and the signer-distinctness classes (a named key that does not sign,
+  one key under two ids, the issuer's own key as cosigner, a threshold of one authority, a short count), each with its
+  own code. Doc: `docs/capability-credential.md`.
+
 ## Unreleased (0.6.0 at release)
 
 A minor release: two new claim types and one new console script; the decisions for every existing claim type are
