@@ -243,8 +243,8 @@
     },
     {
       "path": "src/agent_evidence_verify/cli.py",
-      "bytes": 5149,
-      "sha256": "c0ba34bffff7b6bdde6d7305facf032505e2b09001f7aeb8d380f37779e894fd"
+      "bytes": 5376,
+      "sha256": "c66037cd0d0f5625f2180da73557668ed8086ecd41366de8e3160f3ad85a893a"
     },
     {
       "path": "src/agent_evidence_verify/common.py",
@@ -258,8 +258,8 @@
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
-      "bytes": 5350,
-      "sha256": "b10417e6cbfd148680969bbfb7a10f9e065926a269a10516ca73d479a932a7b9"
+      "bytes": 5654,
+      "sha256": "fa516c26e804a7652ba9d66100ff6fb6885995ec15e41c3d4ce87510418d5ce5"
     },
     {
       "path": "src/agent_evidence_verify/decision_record.py",
@@ -300,6 +300,11 @@
       "path": "src/agent_evidence_verify/key_authority.py",
       "bytes": 25833,
       "sha256": "d1a389fbdba1edcae502b0aa929dedf5c84d93bf548ac51c30363c3681a93a8a"
+    },
+    {
+      "path": "src/agent_evidence_verify/ocsf_decision.py",
+      "bytes": 49324,
+      "sha256": "4607b3f1fa272163734c8a77b47312205b5a904701b8e1b0942e69ddcdcc071c"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",

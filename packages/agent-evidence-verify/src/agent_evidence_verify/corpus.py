@@ -6,14 +6,15 @@ agent-evidence-vectors publishes as ``vectors/verdict-line.schema.json``
 (schema identifier below). Several verifiers' lines over the same corpora are
 compared member by member by that package's checker.
 
-Three suites are answered here by this package's own implementations:
+Suites answered here by this package's own implementations:
 
 * ``adversarial-execution-evidence-conformance``, by ``execution_evidence.verify``
   with no consumer key policy (validity, the result token, and the first code);
 * ``uncertain-effect/v1``, by the uncertain-effect adapter's domain checks and
   ordered checks;
 * ``approval-binding/v1``, by the approval-binding adapter's ordered checks;
-* ``decision-record/v1``, by the decision-record reader under the profile each member names.
+* ``decision-record/v1``, by the decision-record reader under the profile each member names;
+* ``ocsf-decision/v1``, by the OCSF decision-record reader under the profile each member names.
 
 Every member of any other suite is answered ``not-applicable``, member by member,
 so the output always covers the whole manifest and never reads as a pass.
@@ -28,7 +29,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
-from . import decision_record
+from . import decision_record, ocsf_decision
 from . import execution_evidence as aee
 from .adapters import approval_binding, uncertain_effect
 from .ijson import parse_ijson
@@ -74,6 +75,10 @@ def _answer(suite: str, root: Path, entry: dict[str, Any]) -> tuple[str, str | N
     if suite == decision_record.SUITE:
         member = parse_ijson((root / entry["path"]).read_bytes())
         _, verdict, reason = decision_record.read_member(member)
+        return verdict, reason, None
+    if suite == ocsf_decision.SUITE:
+        member = parse_ijson((root / entry["path"]).read_bytes())
+        _, verdict, reason = ocsf_decision.read_member(member)
         return verdict, reason, None
     return "not-applicable", "suite-not-implemented", None
 
