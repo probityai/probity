@@ -1,7 +1,7 @@
 # Read OCSF decision records
 
 `agent-evidence-verify ocsf-decision` reads a stream of OCSF API Activity decision records (`class_uid`
-6003) of the kind the Praxis Policy Engine's `ocsf-audit` sink writes: the ruling on the base event,
+6003) of the kind the Praxis Policy Engine's `ocsf-audit` sink writes: the outcome on the base event,
 the engine's decision facts under `unmapped."aid.*"`, and, with chaining on, `attestation_list[0]`
 carrying a SHA-256 `fingerprint` over the record's RFC 8785 bytes, a `prev_event` link and an ECDSA
 P-256 DSSE signature at `unmapped.signature_b64`. The format is specified as AID-EMIT-1. The reader was
@@ -24,7 +24,7 @@ with findings. Record dimensions are reported per record under `records` and rol
 | Dimension | What it checks |
 |---|---|
 | `structural_validity` | strict JSON; a member named twice at any depth, including one spelled with an escape, is not read, because a last-wins verifier and a first-wins consumer read two records from one seal |
-| `decision_consistency` | `action_id`, `action`, `disposition_id` and `disposition` are one of the four rulings, and the verdict, steps, `deny_ignored` flag and `status_code` agree with it |
+| `decision_consistency` | `action_id`, `action`, `disposition_id` and `disposition` are one of the four outcomes, and the verdict, steps, `deny_ignored` flag and `status_code` agree with it |
 | `fingerprint` | SHA-256 of the bytes the published rule covers, integers written exactly |
 | `signature` | the DSSE signature, tried against every key of the relying party's own JWKS; the record's key id never chooses the key |
 | `key_binding` | the key that verified belongs to the signed `authority_uid`, was valid at the record's `time`, matches the unsigned key id if one is present, and is the only key of that authority valid then; with two live keys it is `unavailable`, because the key id rides outside the signed bytes |
