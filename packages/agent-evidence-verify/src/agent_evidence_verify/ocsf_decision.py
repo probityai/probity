@@ -1001,7 +1001,17 @@ def verdict(report: dict, profile: str = "baseline") -> tuple[str, str | None]:
 # --- corpus members and the command line ----------------------------------------------------------
 
 def read_member(member: dict) -> tuple[dict, str, str | None]:
-    """Read one corpus member: ``records`` (the exact text), ``trust_policy``, ``relying_party``, ``profile``."""
+    """Read one corpus member: ``records`` (the exact text), ``trust_policy``, ``relying_party``, ``profile``.
+
+    A member, or a relying party, naming a member this reader does not define is not read: a misspelled
+    ``profile`` would otherwise be read under ``baseline`` and a misspelled ``heads`` as no head held.
+    """
+    extra = sorted(set(member) - {"records", "trust_policy", "relying_party", "profile"})
+    party = member.get("relying_party")
+    if not extra and isinstance(party, dict):
+        extra = sorted(set(party) - {"heads"})
+    if extra:
+        raise ValueError(f"the member names members {SUITE} does not define: {extra}")
     report = read(member["records"].encode("utf-8"), trust_policy=member.get("trust_policy"),
                   relying_party=member.get("relying_party"))
     decision, reason = verdict(report, member.get("profile", "baseline"))
