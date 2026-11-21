@@ -9,6 +9,7 @@ that, so authority can only shrink down a chain.
 Grant body::
 
     {"grantId": str, "issuerKey": b64 raw Ed25519, "holderKey": b64 raw Ed25519,
+     "cnf": {"jkt": RFC 7638 thumbprint} | {"x5t#S256": certificate thumbprint},   # RFC 7800 confirmation
      "parent": sha256 hex of the parent body or None, "notBefore": iso, "expiresAt": iso,
      "maxDepth": int,                       # further delegations allowed below this grant
      "context": {key: constraint},          # the call context the permit names (workflowId, runId, agent...)
@@ -16,6 +17,11 @@ Grant body::
      "tools": {tool: {"args": {name: constraint}, "approval": "none" | "required",
                       "when": [CEL expression over args, tool, ctx],
                       "quorum": approval policy (see quorum.py)}}}
+
+``holderKey`` signs the child grants its holder delegates. ``cnf`` names the key that presents the grant on a
+request (a DPoP key or a TLS client certificate, possibly the same key as ``holderKey``); the verifier accepts
+a presentation only with proof of possession of that key (``possession.verify_held_grant``). A grant without
+``cnf`` would be a bearer token, so none can be issued or verified.
 
 Every axis narrows down a chain: tools, arguments, constraints, window, depth, context, budget,
 ``when`` conditions (a child keeps every parent condition and may add more) and the approval
@@ -106,6 +112,11 @@ def _validate_tools(tools: Any) -> None:
 
 def validate_body(body: Mapping[str, Any]) -> None:
     """Shape of a grant body on every axis; ValueError naming the first defect."""
+    from .possession import cnf_problem
+
+    problem = cnf_problem(body.get("cnf"))
+    if problem:
+        raise ValueError(f"grant_{problem}")
     _validate_tools(body.get("tools"))
     if not _int(body.get("maxDepth")):
         raise ValueError("grant_max_depth")
@@ -117,14 +128,16 @@ def validate_body(body: Mapping[str, Any]) -> None:
     _validate_budget(body.get("budget"))
 
 
-def issue_grant(issuer: Signer, *, grant_id: str, holder_key: str, tools: Mapping[str, Any],
+def issue_grant(issuer: Signer, *, grant_id: str, holder_key: str, cnf: Mapping[str, str], tools: Mapping[str, Any],
                 not_before: str, expires_at: str, parent: Mapping[str, Any] | None = None,
                 max_depth: int | None = None, context: Mapping[str, Any] | None = None,
                 budget: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """Sign a grant. With ``parent`` (a signed grant), ``issuer`` must be the parent's holder and the
+    """Sign a grant held by ``holder_key`` and presented by the key ``cnf`` confirms (see
+    ``possession.cnf_for_jwk``, ``cnf_for_certificate``, ``cnf_for_signer``). With ``parent`` (a signed grant),
+    ``issuer`` must be the parent's holder and the
     new grant must narrow it; both are checked here and again by every verifier. ``max_depth``
     defaults to 0 (no further delegation) for a child, and to 0 for a root unless given."""
-    body = {"context": dict(context or {}), "expiresAt": expires_at, "grantId": grant_id,
+    body = {"cnf": dict(cnf), "context": dict(context or {}), "expiresAt": expires_at, "grantId": grant_id,
             "holderKey": holder_key, "issuerKey": raw_public(issuer),
             "maxDepth": 0 if max_depth is None else max_depth, "notBefore": not_before,
             "parent": grant_digest(parent["body"]) if parent else None, "tools": dict(tools)}

@@ -20,6 +20,7 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.possession import cnf_for_signer
 
 AT = "2026-06-01T00:00:00Z"
 TOOLS = {"refund_payment": {"approval": "none", "args": {
@@ -30,7 +31,7 @@ CALL = {"amount_cents": 4000, "customer_id": "cust-alice", "payee_account": "acc
 
 
 def _root(issuer: Signer, holder: Signer, tools=TOOLS) -> dict:
-    return issue_grant(issuer, grant_id="g-root", holder_key=raw_public(holder), tools=tools, max_depth=2,
+    return issue_grant(issuer, grant_id="g-root", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=tools, max_depth=2,
                        not_before="2026-01-01T00:00:00Z", expires_at="2099-12-31T00:00:00Z")
 
 
@@ -95,14 +96,14 @@ def test_child_narrows_and_widening_child_is_refused() -> None:
     parent = _root(root, agent)
     narrow = {"refund_payment": {"approval": "none", "args": {
         **TOOLS["refund_payment"]["args"], "amount_cents": {"type": "range", "min": 1, "max": 500}}}}
-    child = issue_grant(agent, grant_id="g-child", holder_key=raw_public(sub), tools=narrow, parent=parent,
+    child = issue_grant(agent, grant_id="g-child", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), tools=narrow, parent=parent,
                         not_before="2026-02-01T00:00:00Z", expires_at="2026-11-30T00:00:00Z")
     verdict = verify_grant_allow([parent, child], "refund_payment", {**CALL, "amount_cents": 501}, AT, {root.key_id})
     assert verdict["reason"] == "constraint_violation:amount_cents"
     wide = {"refund_payment": {"approval": "none", "args": {
         **TOOLS["refund_payment"]["args"], "amount_cents": {"type": "range", "min": 1, "max": 400000}}}}
     with pytest.raises(ValueError, match="child_widens_constraint"):
-        issue_grant(agent, grant_id="g-wide", holder_key=raw_public(sub), tools=wide, parent=parent,
+        issue_grant(agent, grant_id="g-wide", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), tools=wide, parent=parent,
                     not_before="2026-02-01T00:00:00Z", expires_at="2026-11-30T00:00:00Z")
     # A forged widening child, signed by the parent holder without the issue-time check, is still refused.
     forged = dict(child)
@@ -113,12 +114,12 @@ def test_child_narrows_and_widening_child_is_refused() -> None:
     refused = verify_grant_allow([parent, forged], "refund_payment", CALL, AT, {root.key_id})
     assert refused["reason"].startswith("child_widens_constraint")
     with pytest.raises(ValueError, match="child_adds_argument"):
-        issue_grant(agent, grant_id="g-x", holder_key=raw_public(sub), parent=parent,
+        issue_grant(agent, grant_id="g-x", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), parent=parent,
                     tools={"refund_payment": {"args": {"memo": {"type": "wildcard"}}}},
                     not_before="2026-02-01T00:00:00Z", expires_at="2026-11-30T00:00:00Z")
     stranger = Signer.generate()
     with pytest.raises(ValueError, match="child_not_issued_by_parent_holder"):
-        issue_grant(stranger, grant_id="g-y", holder_key=raw_public(sub), tools=narrow, parent=parent,
+        issue_grant(stranger, grant_id="g-y", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), tools=narrow, parent=parent,
                     not_before="2026-02-01T00:00:00Z", expires_at="2026-11-30T00:00:00Z")
 
 

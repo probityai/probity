@@ -49,6 +49,7 @@ from probity_records.core import (
 )
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import vectors as identity_vectors
+from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
     approval_policy,
     count,
@@ -75,10 +76,10 @@ GATE, ROOT, AGENT, SUB = key("gate"), key("root"), key("agent"), key("sub")
 
 def chain(**root_kw) -> list[dict]:
     root_kw.setdefault("context", WF)
-    parent = issue_grant(ROOT, grant_id="g-root", holder_key=raw_public(AGENT), tools=TOOLS, max_depth=1,
+    parent = issue_grant(ROOT, grant_id="g-root", holder_key=raw_public(AGENT), cnf=cnf_for_signer(AGENT), tools=TOOLS, max_depth=1,
                          not_before=NB, expires_at=EXP, **root_kw)
     budget = root_kw.get("budget")
-    child = issue_grant(AGENT, grant_id="g-child", holder_key=raw_public(SUB), tools=TOOLS, parent=parent,
+    child = issue_grant(AGENT, grant_id="g-child", holder_key=raw_public(SUB), cnf=cnf_for_signer(SUB), tools=TOOLS, parent=parent,
                         not_before=NB, expires_at=EXP, context=root_kw["context"], budget=budget)
     return [parent, child]
 
@@ -105,6 +106,12 @@ def forged_wide() -> list[dict]:
     wide = {**child["body"], "tools": {"refund": {**TOOLS["refund"], "args": {
         **TOOLS["refund"]["args"], "amount_cents": {"type": "range", "min": 1, "max": 400000}}}}}
     return [parent, {"body": wide, "sig": _b64(AGENT.sign(GRANT_DOMAIN + canonical(wide)))}]
+
+
+def bearer_grant() -> list[dict]:
+    """A root grant with no ``cnf``, signed by the trusted root: a bearer token, refused by every verifier."""
+    body = {k: v for k, v in chain()[0]["body"].items() if k != "cnf"}
+    return [{"body": body, "sig": _b64(ROOT.sign(GRANT_DOMAIN + canonical(body)))}]
 
 
 QNAMES = ("alice", "bob", "carol", "dave")
@@ -137,7 +144,7 @@ def quorum_case(directory: Path, votes: list[dict], proposer: str = "dave") -> J
 # ---- constraint edge cases: IPv6 CIDR, shell quoting, int vs float ----
 
 def solo_chain(tools: dict) -> list[dict]:
-    return [issue_grant(ROOT, grant_id="g-solo", holder_key=raw_public(AGENT), tools=tools, not_before=NB,
+    return [issue_grant(ROOT, grant_id="g-solo", holder_key=raw_public(AGENT), cnf=cnf_for_signer(AGENT), tools=tools, not_before=NB,
                         expires_at=EXP)]
 
 
@@ -495,6 +502,8 @@ def main(out: Path) -> None:
              lambda d: grant_case(d, chain(), [{"amount_cents": 3500, "currency": "EUR", "note": None}])),
             ("GV6", "recorded allow from a workflow outside the grant's context",
              lambda d: grant_case(d, chain(), [usd], ctx={"workflowId": "payroll-1", "runId": "r1"})),
+            ("GV7", "a grant that names no holder confirmation key (cnf): a bearer grant",
+             lambda d: grant_case(d, bearer_grant(), [usd])),
         ],
         "quorum": [
             ("QV1", "two approvers fill the two roles; the proposer does not vote",
