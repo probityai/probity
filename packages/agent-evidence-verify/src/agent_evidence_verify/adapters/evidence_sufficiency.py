@@ -32,11 +32,11 @@ reader sees what the verdict rests on.
 from __future__ import annotations
 
 import base64
-import json
 from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _digest, _string
+from ..ijson import parse_ijson
 from . import observed_effect
 from .bound_records import assessment_for, bound, decision
 
@@ -162,7 +162,8 @@ def _admit(raw: bytes, key: str) -> dict[str, Any]:
             "neither pass nor fail")}
     if report.verdict != "valid":
         raise CaseError(f"unexpected admission verdict {report.verdict!r}")
-    return {"predicate": json.loads(base64.b64decode(json.loads(raw)["payload"]))["predicate"]}
+    # The reference verifier admitted these bytes; read them with the package's strict JSON reader.
+    return {"predicate": parse_ijson(base64.b64decode(parse_ijson(raw)["payload"]))["predicate"]}
 
 
 def _independence_verdict(raw: bytes, key: str, claim_ref: str, producer: str,
