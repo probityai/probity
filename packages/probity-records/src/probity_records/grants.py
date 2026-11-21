@@ -20,8 +20,9 @@ Grant body::
 
 ``holderKey`` signs the child grants its holder delegates. ``cnf`` names the key that presents the grant on a
 request (a DPoP key or a TLS client certificate, possibly the same key as ``holderKey``); the verifier accepts
-a presentation only with proof of possession of that key (``possession.verify_held_grant``). A grant without
-``cnf`` would be a bearer token, so none can be issued or verified.
+a presentation only with proof of possession of that key (``possession.check_possession``), and an allow record
+carries the proof it rested on (``grant_evidence(..., possession=...)``). A grant without ``cnf`` would be a
+bearer token, so none can be issued or verified.
 
 Every axis narrows down a chain: tools, arguments, constraints, window, depth, context, budget,
 ``when`` conditions (a child keeps every parent condition and may add more) and the approval
@@ -347,10 +348,16 @@ def verify_grant_allow(chain: list[Mapping[str, Any]], tool: str, args: Any, at:
             "chain": [grant_digest(g["body"]) for g in chain]}
 
 
-def grant_evidence(chain: list[Mapping[str, Any]], args: Any, ctx: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """What a tool-call record carries so an outsider re-runs the grant check offline."""
-    return {"argsB64": _b64(canonical(args)), "chain": [dict(g) for g in chain], "kind": "grant",
-            "ctx": dict(ctx or {}), "grantDigest": grant_digest(chain[-1]["body"])}
+def grant_evidence(chain: list[Mapping[str, Any]], args: Any, ctx: Mapping[str, Any] | None = None,
+                   possession: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """What a tool-call record carries so an outsider re-runs the grant check offline. ``possession`` is the
+    record of the proof the presenter gave (``possession.possession_record``): the verifier checks it names the
+    leaf grant's ``cnf`` and that no other permit spent the same DPoP proof inside its lifetime."""
+    evidence = {"argsB64": _b64(canonical(args)), "chain": [dict(g) for g in chain], "kind": "grant",
+                "ctx": dict(ctx or {}), "grantDigest": grant_digest(chain[-1]["body"])}
+    if possession is not None:
+        evidence["possession"] = dict(possession)
+    return evidence
 
 
 def spend_of(budget: Mapping[str, Any] | None, args: Any) -> float:

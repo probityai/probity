@@ -1,4 +1,4 @@
-"""Proof of possession: a grant is usable only by the party that holds the key its ``cnf`` names.
+"""Proof of possession: verify that the party presenting a grant holds the key its ``cnf`` names.
 
 Every grant names a confirmation key (RFC 7800 section 3.1) in ``cnf``, by exactly one method:
 
@@ -7,17 +7,18 @@ Every grant names a confirmation key (RFC 7800 section 3.1) in ``cnf``, by exact
 - ``x5t#S256``: the SHA-256 thumbprint of the holder's client certificate (RFC 8705 section 3.1). The holder
   proves possession by completing mutual TLS with that certificate at the endpoint that checks the grant.
 
-``verify_held_grant`` joins three things before it lets a call through: the grant chain is valid, the agent's
-own access token is valid and is bound to the same ``cnf`` (so the grant's holder is the authenticated agent),
-and the request carries a fresh proof by that key. Without all three a grant is a bearer token, so this module
-refuses rather than degrades.
+Everything here is a stateless check: ``check_dpop`` and ``check_client_certificate`` verify one proof against
+an issuer-signed ``cnf``, and ``check_possession`` picks the check the ``cnf`` method names. None of them
+remembers a proof. A DPoP proof is single-use, and the record of each use is what lets anyone check that offline:
+``possession_record`` is the form a tool-call record carries, ``possession_record_problem`` verifies it against
+the grant's ``cnf``, and ``duplicate_proofs`` finds a proof a journal shows spent twice inside its lifetime.
+``proof_key`` is the single-use key, so a live store and the offline check count the same thing.
 
 The DPoP checks follow RFC 9449 section 4.3 and the ANS SDK ``pop`` verifier (ans-sdk-go ``pop/``, Apache-2.0,
 commit a36e0195b2dc): strict header, pinned algorithms, the content digest claim ``ans_content_digest`` so a hop
-that terminates TLS cannot rewrite the body, ``ath`` if and only if a token is presented, and the ``jti``
-recorded last so that only fully verified proofs spend replay-cache capacity. Two choices differ from ANS: the
-accepted key is the one the issuer-signed ``cnf`` names (the header's ``jwk`` is trusted only after its
-thumbprint matches), and both ES256 and EdDSA (Ed25519) are accepted.
+that terminates TLS cannot rewrite the body, and ``ath`` if and only if a token is presented. Two choices differ
+from ANS: the accepted key is the one the issuer-signed ``cnf`` names (the header's ``jwk`` is trusted only after
+its thumbprint matches), and both ES256 and EdDSA (Ed25519) are accepted.
 """
 
 from __future__ import annotations
@@ -26,8 +27,7 @@ import base64
 import hashlib
 import hmac
 import json
-import threading
-from collections.abc import Callable, Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
@@ -47,8 +47,8 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .core import Signer
-from .grants import ts, verify_call_under_grant, verify_chain
-from .identity import b64url, check_principal, jwk_thumbprint, unb64url, verify_token
+from .grants import ts
+from .identity import b64url, jwk_thumbprint, unb64url
 
 CNF_METHODS = ("jkt", "x5t#S256")
 DPOP_TYP = "dpop+jwt"
@@ -114,47 +114,12 @@ def cnf_for_certificate(der: bytes) -> dict[str, str]:
     return {"x5t#S256": b64url(hashlib.sha256(der).digest())}
 
 
-# ---------- replay ----------
-
-class ReplayCacheFull(Exception):
-    """The cache holds only live entries and cannot record another; the proof is refused."""
-
-
-class ReplayCache:
-    """Single-use record of DPoP proof ids, bounded, with the clock passed in.
-
-    ``check_and_store`` is atomic. Entries live until their proof could no longer pass the freshness check.
-    The clock is an argument so an offline walker replays a journal with the records' own times.
-    In-process only: several verifier instances need one shared store with the same contract.
-    """
-
-    def __init__(self, max_entries: int = 100_000) -> None:
-        self._max = max_entries
-        self._seen: dict[str, int] = {}
-        self._lock = threading.Lock()
-
-    def __len__(self) -> int:
-        return len(self._seen)
-
-    def check_and_store(self, key: str, *, exp: int, now: int) -> bool:
-        """True when ``key`` is already recorded and live (a replay); otherwise record it until ``exp``."""
-        with self._lock:
-            held = self._seen.get(key)
-            if held is not None and held >= now:
-                return True
-            if len(self._seen) >= self._max:
-                self._seen = {k: e for k, e in self._seen.items() if e >= now}
-                if len(self._seen) >= self._max:
-                    raise ReplayCacheFull
-            self._seen[key] = exp
-            return False
-
-
 # ---------- DPoP ----------
 
 @dataclass(frozen=True)
 class DpopProof:
-    """A DPoP proof that passed every check except the single-use commit."""
+    """A DPoP proof that passed every RFC 9449 section 4.3 check. It stays single-use: ``proof_key`` names it,
+    and ``replay_exp`` is the last second at which it could still pass the freshness check."""
 
     jkt: str
     jti: str
@@ -313,7 +278,7 @@ def _claims_problem(p: Any, method: str, url: str, now: int, skew: int, access_t
 def check_dpop(proof: str, method: str, url: str, at: str, *, expected_jkt: str, access_token: str | None,
                content: bytes = b"", skew: int = DEFAULT_SKEW,
                require_content_binding: bool = True) -> tuple[DpopProof | None, str]:
-    """Every RFC 9449 section 4.3 check of one proof except the single-use commit.
+    """Every RFC 9449 section 4.3 check of one proof that needs no memory of earlier proofs.
 
     ``url`` is the verifier's own external URL for the request, never one built from the client's Host
     header. ``expected_jkt`` comes from issuer-signed content (the grant's ``cnf``, the token's ``cnf``),
@@ -343,29 +308,6 @@ def check_dpop(proof: str, method: str, url: str, at: str, *, expected_jkt: str,
         return None, problem
     return DpopProof(jkt=expected_jkt, jti=claims["jti"], iat=claims["iat"],
                      replay_exp=claims["iat"] + skew + REPLAY_GRACE), "ok"
-
-
-def commit_dpop(proof: DpopProof, replay: ReplayCache, at: str) -> str:
-    """Spend the proof's ``jti``: ``ok``, ``dpop_replayed`` or ``replay_cache_full``. Keyed by SHA-256 of the
-    ``jti`` so the cache's size is bounded in bytes whatever the proof carried."""
-    key = b64url(hashlib.sha256(proof.jti.encode("utf-8")).digest())
-    try:
-        seen = replay.check_and_store(key, exp=proof.replay_exp, now=int(ts(at).timestamp()))
-    except ReplayCacheFull:
-        return "replay_cache_full"
-    return "dpop_replayed" if seen else "ok"
-
-
-def verify_dpop(proof: str, method: str, url: str, at: str, replay: ReplayCache, *, expected_jkt: str,
-                access_token: str | None, content: bytes = b"", skew: int = DEFAULT_SKEW,
-                require_content_binding: bool = True) -> tuple[DpopProof | None, str]:
-    """``check_dpop`` then the single-use commit."""
-    result, reason = check_dpop(proof, method, url, at, expected_jkt=expected_jkt, access_token=access_token,
-                                content=content, skew=skew, require_content_binding=require_content_binding)
-    if result is None:
-        return None, reason
-    spent = commit_dpop(result, replay, at)
-    return (result, "ok") if spent == "ok" else (None, spent)
 
 
 def sign_dpop(key: Any, method: str, url: str, *, iat: int, jti: str, access_token: str | None = None,
@@ -413,81 +355,113 @@ def check_client_certificate(der: bytes | None, expected: str, at: str) -> str:
     return "ok"
 
 
-# ---------- a grant presented on a request ----------
+# ---------- one cnf, one presentation ----------
 
 @dataclass(frozen=True)
-class Presentation:
-    """One request presenting a grant. ``url`` is the verifier's own external URL for it; ``access_token`` is
-    the agent's credential from ``Authorization``; ``dpop`` the DPoP header; ``client_certificate`` the DER
-    certificate the TLS endpoint authenticated; ``content`` the request body as received."""
+class CertificateProof:
+    """A client certificate the TLS endpoint authenticated that has the confirmed thumbprint and is valid."""
 
-    method: str
-    url: str
-    access_token: str
-    dpop: str | None = None
-    client_certificate: bytes | None = None
-    content: bytes = b""
+    x5t: str
 
 
-def _possession(cnf: Mapping[str, str], p: Presentation, at: str, skew: int,
-                require_content_binding: bool) -> tuple[DpopProof | dict[str, str] | None, str]:
+def check_possession(cnf: Mapping[str, str], *, method: str, url: str, at: str, access_token: str | None,
+                     dpop: str | None = None, client_certificate: bytes | None = None, content: bytes = b"",
+                     skew: int = DEFAULT_SKEW,
+                     require_content_binding: bool = True) -> tuple[DpopProof | CertificateProof | None, str]:
+    """Verify that one request proves possession of the key ``cnf`` names, by the method ``cnf`` names.
+
+    ``cnf`` comes from issuer-signed content (the leaf grant, the agent token), never from the request. A ``jkt``
+    needs a DPoP proof and ignores any client certificate; an ``x5t#S256`` needs the certificate and ignores any
+    DPoP header, so a proof by the other method never stands in. Returns the proof or the refusal code."""
+    problem = cnf_problem(cnf)
+    if problem:
+        return None, problem
     if "jkt" in cnf:
-        if p.dpop is None:
+        if dpop is None:
             return None, "dpop_proof_missing"
-        return check_dpop(p.dpop, p.method, p.url, at, expected_jkt=cnf["jkt"], access_token=p.access_token,
-                          content=p.content, skew=skew, require_content_binding=require_content_binding)
-    reason = check_client_certificate(p.client_certificate, cnf["x5t#S256"], at)
-    return ({"method": "mtls", "x5t#S256": cnf["x5t#S256"]}, "ok") if reason == "ok" else (None, reason)
+        return check_dpop(dpop, method, url, at, expected_jkt=cnf["jkt"], access_token=access_token,
+                          content=content, skew=skew, require_content_binding=require_content_binding)
+    reason = check_client_certificate(client_certificate, cnf["x5t#S256"], at)
+    return (CertificateProof(cnf["x5t#S256"]), "ok") if reason == "ok" else (None, reason)
 
 
-def _deny(reason: str, chain: list[Mapping[str, Any]] | None = None, digest: str | None = None) -> dict[str, Any]:
-    from .grants import grant_digest
+# ---------- the record of a use, and replay found offline ----------
 
-    return {"decision": "deny", "reason": reason, "grantDigest": digest,
-            "chain": [grant_digest(g["body"]) for g in chain] if chain else [], "possession": None}
+def proof_key(jkt: str, jti: str) -> str:
+    """The single-use key of a DPoP proof: SHA-256 over the confirmed key's thumbprint and the proof's ``jti``,
+    so a store's entries are bounded in bytes whatever the proof carried. A thumbprint never contains ``.``."""
+    return b64url(hashlib.sha256(f"{jkt}.{jti}".encode()).digest())
 
 
-def verify_held_grant(chain: list[Mapping[str, Any]], tool: str, args: Any, at: str, root_key_ids: set[str], *,
-                      presentation: Presentation, agent: Mapping[str, Any], jwks: Mapping[str, Any],
-                      pins: Mapping[str, Any], audience: str, replay: ReplayCache,
-                      revoked_grants: set[str] | None = None, key_revoked: Callable[[str, str], bool] | None = None,
-                      ctx: Mapping[str, Any] | None = None, skew: int = DEFAULT_SKEW,
-                      require_content_binding: bool = True) -> dict[str, Any]:
-    """Decide one call presented under a grant chain: ``{"decision", "reason", "grantDigest", "chain",
-    "possession"}``, ``decision`` one of ``allow``, ``needs_approval`` and ``deny``.
+def possession_record(proof: DpopProof | CertificateProof) -> dict[str, Any]:
+    """What a tool-call record's grant evidence carries as ``possession`` for a verified proof."""
+    if isinstance(proof, DpopProof):
+        return {"iat": proof.iat, "jkt": proof.jkt, "jti": proof.jti, "method": "dpop"}
+    return {"method": "mtls", "x5t#S256": proof.x5t}
 
-    The call is let through only when the chain verifies, ``agent`` is a pinned principal whose access token is
-    the presented one and names ``audience``, the agent's token and the leaf grant confirm the same key, and the
-    request proves possession of that key. The proof's ``jti`` is spent only for a call that is let through."""
-    from .grants import grant_digest
 
-    leaf, reason = verify_chain(list(chain), root_key_ids, at, revoked_grants, key_revoked)
-    if leaf is None:
-        return _deny(reason)
-    digest = grant_digest(leaf)
-    problem = check_principal(agent, at, pins)
-    if problem:
-        return _deny(f"agent_principal:{problem}", chain, digest)
-    problem = verify_token(agent, presentation.access_token, jwks)
-    if problem:
-        return _deny(f"agent_token:{problem}", chain, digest)
-    if audience not in agent["audience"]:
-        return _deny("agent_token_wrong_audience", chain, digest)
-    if "cnf" not in agent:
-        return _deny("agent_credential_is_bearer", chain, digest)
-    if agent["cnf"] != leaf["cnf"]:
-        return _deny("grant_holder_is_not_the_agent", chain, digest)
-    held, reason = _possession(leaf["cnf"], presentation, at, skew, require_content_binding)
-    if held is None:
-        return _deny(reason, chain, digest)
-    verdict = verify_call_under_grant(leaf, tool, args, ctx)
-    decision = {"ok": "allow", "approval_required": "needs_approval"}.get(verdict, "deny")
-    if decision == "deny":
-        return _deny(verdict, chain, digest)
-    if isinstance(held, DpopProof):
-        spent = commit_dpop(held, replay, at)
-        if spent != "ok":
-            return _deny(spent, chain, digest)
-        held = {"method": "dpop", "jkt": held.jkt, "jti": held.jti}
-    return {"decision": decision, "reason": verdict, "grantDigest": digest,
-            "chain": [grant_digest(g["body"]) for g in chain], "possession": held}
+_RECORD_MEMBERS = {"dpop": {"iat", "jkt", "jti", "method"}, "mtls": {"method", "x5t#S256"}}
+
+
+def possession_record_problem(record: Any, cnf: Any) -> str | None:
+    """None when ``record`` is a well-formed possession record for the key the grant's ``cnf`` confirms."""
+    if not isinstance(record, dict) or record.get("method") not in _RECORD_MEMBERS:
+        return "possession_record_malformed"
+    method = record["method"]
+    if set(record) != _RECORD_MEMBERS[method]:
+        return "possession_record_malformed"
+    if method == "dpop" and (not _int_claim(record["iat"]) or not isinstance(record["jti"], str)
+                             or not record["jti"] or len(record["jti"].encode("utf-8")) > MAX_JTI_BYTES):
+        return "possession_record_malformed"
+    member, value = ("jkt", record["jkt"]) if method == "dpop" else ("x5t#S256", record["x5t#S256"])
+    if not isinstance(cnf, dict) or member not in cnf or not isinstance(value, str) \
+            or not hmac.compare_digest(value, str(cnf[member])):
+        return "possession_not_the_grant_key"
+    return None
+
+
+def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, str] | None:
+    """(proof key, iat, use time) for an ``authorize`` record whose grant evidence carries a DPoP use."""
+    pred = body.get("predicate")
+    if not isinstance(pred, Mapping) or pred.get("phase") != "authorize":
+        return None
+    evidence = pred.get("authority")
+    record = evidence.get("possession") if isinstance(evidence, Mapping) else None
+    if not isinstance(record, Mapping) or record.get("method") != "dpop":
+        return None
+    jkt, jti, iat = record.get("jkt"), record.get("jti"), record.get("iat")
+    if not isinstance(jkt, str) or not isinstance(jti, str) or not isinstance(iat, int) or isinstance(iat, bool):
+        return None
+    return proof_key(jkt, jti), iat, str(pred.get("at"))
+
+
+def duplicate_proofs(records: Iterable[tuple[int, Mapping[str, Any]]], *,
+                     skew: int = DEFAULT_SKEW) -> list[tuple[int, str]]:
+    """Each record that spends a DPoP proof an earlier record already spent inside the proof's lifetime.
+
+    ``records`` are numbered verified statement bodies in journal order (``verify_journal`` passes its lines).
+    An ``authorize`` record whose grant evidence carries a ``dpop`` possession record spends that proof; one
+    permit's records spend it once, however often a retry re-records the permit. The proof stays live until
+    ``iat + skew + REPLAY_GRACE``, the last second it could pass the freshness check, with ``skew`` the one the
+    auditor pins. Returns ``(n, "dpop_proof_replayed:<m>")`` for record ``n`` spending what record ``m`` spent,
+    and ``(n, "dpop_proof_use_time_invalid")`` when the record's own time cannot be read."""
+    first: dict[str, tuple[int, int, Any]] = {}  # proof key -> (record, iat, permit)
+    found: list[tuple[int, str]] = []
+    for n, body in records:
+        spent = _spent_proof(body)
+        if spent is None:
+            continue
+        key, iat, at = spent
+        permit = body["predicate"].get("permitId")
+        try:
+            used = ts(at).timestamp()
+        except (ValueError, TypeError):
+            found.append((n, "dpop_proof_use_time_invalid"))
+            continue
+        earlier = first.get(key)
+        if earlier is not None and earlier[2] != permit and used <= earlier[1] + skew + REPLAY_GRACE:
+            found.append((n, f"dpop_proof_replayed:{earlier[0]}"))
+            continue
+        if earlier is None or used > earlier[1] + skew + REPLAY_GRACE:
+            first[key] = (n, iat, permit)
+    return found

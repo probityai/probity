@@ -45,7 +45,7 @@ unless the journal carries the cosignature. An independent witness built only fr
 | Module | What it records and checks |
 |---|---|
 | `grants` | Signed capability grants: per-tool, closed-world argument constraints (17 types, from `range` and `subpath` to `url_safe` and `shlex`), delegation that can only narrow, the grant digest in the permit, and the holder confirmation key (`cnf`, RFC 7800) every grant must name |
-| `possession` | Proof that the presenter holds the grant's key: DPoP proofs (RFC 9449, ES256 or EdDSA) or a mutual TLS client certificate (RFC 8705), joined to the agent's own sender-constrained access token, with a bounded single-use replay cache; `verify_held_grant` refuses a bearer presentation |
+| `possession` | Proof that the presenter holds the grant's key, checked statelessly: DPoP proofs (RFC 9449, ES256 or EdDSA) or a mutual TLS client certificate (RFC 8705) against the issuer-signed `cnf`; the possession record an allow carries; and the offline check that no DPoP proof was spent by two permits inside its lifetime, so any verifier catches replay from the journal alone |
 | `quorum` | M-of-N approvals, one key per approver, bound to the request hash, fetched and retried while pending |
 | `revocation` | Signed, append-only revocation lists for keys, permits and grants; root rotation; a last-known-good cache that fails closed |
 | `governance` | Exceptions with owner, rationale and expiry under a quorum; intake, risk routing, approval, attestation and sign-off as signed steps |

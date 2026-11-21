@@ -1,7 +1,8 @@
-"""Proof of possession: a grant is usable only by the agent that holds the key its ``cnf`` names.
+"""Proof of possession: a presentation verifies only with proof of the key the grant's ``cnf`` names.
 
-The cases are the RFC 9449 and RFC 8037 examples, an accepted DPoP and mTLS presentation, and the adversarial
-set: replay, wrong method or target, stale proofs, swapped keys, downgrades and bearer presentation.
+The cases are the RFC 9449 and RFC 8037 examples, an accepted DPoP and mTLS presentation, the adversarial set
+(wrong method or target, stale proofs, swapped keys, algorithm and method downgrades, bearer presentation), the
+possession record a tool-call record carries, and replay found offline from the records alone.
 """
 
 from __future__ import annotations
@@ -29,16 +30,20 @@ from probity_records.identity import (
     verify_token,
 )
 from probity_records.possession import (
-    Presentation,
-    ReplayCache,
-    ReplayCacheFull,
+    REPLAY_GRACE,
+    CertificateProof,
+    DpopProof,
+    check_dpop,
+    check_possession,
     cnf_for_certificate,
     cnf_for_jwk,
     cnf_for_signer,
+    duplicate_proofs,
+    possession_record,
+    possession_record_problem,
+    proof_key,
     public_jwk,
     sign_dpop,
-    verify_dpop,
-    verify_held_grant,
 )
 
 AT = "2026-11-21T12:00:00Z"
@@ -63,7 +68,6 @@ def _idp_jwk() -> dict[str, str]:
 
 IDP_JWK = _idp_jwk()
 JWKS = {"keys": [IDP_JWK]}
-PINS = {ISSUER: frozenset({jwk_thumbprint(IDP_JWK)})}
 
 
 def _iso(seconds: int) -> str:
@@ -103,12 +107,10 @@ def proof(key=DPOP_KEY, *, method="POST", url=URL, iat=NOW, jti="j-1", token=TOK
     return sign_dpop(key, method, url, iat=iat, jti=jti, access_token=token, content=content, **kw)
 
 
-def held(chain=CHAIN, *, tool="refund", args=ARGS, dpop=None, cert=None, token=TOKEN, agent=AGENT,
-         method="POST", url=URL, content=CONTENT, replay=None, audience=GATEWAY) -> dict:
-    p = Presentation(method=method, url=url, access_token=token, dpop=dpop, client_certificate=cert,
-                     content=content)
-    return verify_held_grant(chain, tool, args, AT, {ROOT.key_id}, presentation=p, agent=agent, jwks=JWKS,
-                             pins=PINS, audience=audience, replay=replay if replay is not None else ReplayCache())
+def present(cnf=DPOP_CNF, *, dpop=None, cert=None, token=TOKEN, method="POST", url=URL, content=CONTENT):
+    """Verify one request's proof of possession of the key ``cnf`` confirms."""
+    return check_possession(cnf, method=method, url=url, at=AT, access_token=token, dpop=dpop,
+                            client_certificate=cert, content=content)
 
 
 # ---------- the standards' own examples ----------
@@ -130,34 +132,30 @@ RFC9449_FIGURE_13 = (
     ".2oW9RP35yRqzhrtNP86L-Ey71EOptxRimPPToA1plemAgR6pxHF8y6-yqyVnmcw6Fy1dqd-jfxSYoMxhAJpLjA")
 
 
-def test_the_rfc_9449_resource_request_example_verifies_once() -> None:
-    replay = ReplayCache()
+def test_the_rfc_9449_resource_request_example_verifies() -> None:
     kw = {"expected_jkt": "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I",
           "access_token": "Kz~8mXK1EalYznwH-LC-1fBAo.4Ljp~zsPE_NeO.gxU", "require_content_binding": False}
-    result, reason = verify_dpop(RFC9449_FIGURE_13, "GET", "https://resource.example.org/protectedresource",
-                                 _iso(1562262618), replay, **kw)
+    result, reason = check_dpop(RFC9449_FIGURE_13, "GET", "https://resource.example.org/protectedresource",
+                                _iso(1562262618), **kw)
     assert reason == "ok" and result is not None and result.jti == "e1j3V_bKic8-LAEB"
-    again = verify_dpop(RFC9449_FIGURE_13, "GET", "https://resource.example.org/protectedresource",
-                        _iso(1562262619), replay, **kw)
-    assert again == (None, "dpop_replayed")
+    assert result.replay_exp == 1562262618 + 120 + REPLAY_GRACE
     # Another access token: the proof's ath binds it to the RFC's token only.
-    assert verify_dpop(RFC9449_FIGURE_13, "GET", "https://resource.example.org/protectedresource",
-                       _iso(1562262618), ReplayCache(), **{**kw, "access_token": "other"})[1] == "dpop_ath_mismatch"
+    assert check_dpop(RFC9449_FIGURE_13, "GET", "https://resource.example.org/protectedresource",
+                      _iso(1562262618), **{**kw, "access_token": "other"})[1] == "dpop_ath_mismatch"
 
 
 # ---------- accepted presentations ----------
 
-def test_a_grant_held_by_the_authenticated_agent_is_allowed_with_dpop() -> None:
-    verdict = held(dpop=proof())
-    assert verdict["decision"] == "allow", verdict
-    assert verdict["possession"] == {"method": "dpop", "jkt": DPOP_CNF["jkt"], "jti": "j-1"}
+def test_a_dpop_proof_by_the_confirmed_key_verifies() -> None:
+    result, reason = present(dpop=proof())
+    assert reason == "ok" and isinstance(result, DpopProof), reason
+    assert possession_record(result) == {"iat": NOW, "jkt": DPOP_CNF["jkt"], "jti": "j-1", "method": "dpop"}
 
 
 def test_an_eddsa_dpop_key_and_one_key_for_delegation_and_presentation() -> None:
     cnf = cnf_for_signer(HOLDER)
-    token, agent = agent_credential(cnf)
-    verdict = held(grant(cnf), dpop=proof(HOLDER.key, token=token), token=token, agent=agent)
-    assert verdict["decision"] == "allow", verdict
+    token, _ = agent_credential(cnf)
+    assert present(cnf, dpop=proof(HOLDER.key, token=token), token=token)[1] == "ok"
 
 
 def _certificate(key, *, days=(-1, 30)) -> bytes:
@@ -171,21 +169,20 @@ def _certificate(key, *, days=(-1, 30)) -> bytes:
 
 CERT = _certificate(DPOP_KEY)
 MTLS_CNF = cnf_for_certificate(CERT)
-MTLS_TOKEN, MTLS_AGENT = agent_credential(MTLS_CNF)
+MTLS_TOKEN = agent_credential(MTLS_CNF)[0]
 EXPIRED = _certificate(DPOP_KEY, days=(-9, -1))
-EXPIRED_TOKEN, EXPIRED_AGENT = agent_credential(cnf_for_certificate(EXPIRED))
 
 
-def test_a_grant_bound_to_a_client_certificate_is_allowed_over_mtls() -> None:
-    verdict = held(grant(MTLS_CNF), cert=CERT, token=MTLS_TOKEN, agent=MTLS_AGENT)
-    assert verdict["decision"] == "allow", verdict
-    assert verdict["possession"] == {"method": "mtls", "x5t#S256": MTLS_CNF["x5t#S256"]}
+def test_a_client_certificate_with_the_confirmed_thumbprint_verifies_over_mtls() -> None:
+    result, reason = present(MTLS_CNF, cert=CERT, token=MTLS_TOKEN)
+    assert reason == "ok" and result == CertificateProof(MTLS_CNF["x5t#S256"])
+    assert possession_record(result) == {"method": "mtls", "x5t#S256": MTLS_CNF["x5t#S256"]}
     assert MTLS_CNF["x5t#S256"] == b64url(hashlib.sha256(CERT).digest())
 
 
 def test_an_ans_profile_proof_with_its_certificate_in_x5c_verifies() -> None:
     with_x5c = _resign(proof(), {**HEAD, "x5c": [base64.b64encode(CERT).decode()]})
-    assert held(dpop=with_x5c)["decision"] == "allow"
+    assert present(dpop=with_x5c)[1] == "ok"
 
 
 # ---------- the adversarial set: each one is refused ----------
@@ -210,100 +207,63 @@ def _parts(token: str) -> tuple[dict, dict]:
 HEAD, BODY = _parts(proof())
 
 ADVERSARIAL = {
-    "bearer presentation, no proof": (lambda: held(dpop=None), "dpop_proof_missing"),
-    "wrong htm": (lambda: held(dpop=proof(method="GET")), "dpop_htm_mismatch"),
-    "wrong htu host": (lambda: held(dpop=proof(url="https://evil.example.com/tools/refund")), "dpop_htu_mismatch"),
-    "wrong htu path": (lambda: held(dpop=proof(url=f"{GATEWAY}/tools/delete")), "dpop_htu_mismatch"),
-    "wrong htu port": (lambda: held(dpop=proof(url="https://gw.example.com:8443/tools/refund")), "dpop_htu_mismatch"),
-    "stale iat": (lambda: held(dpop=proof(iat=NOW - 121)), "dpop_iat_stale"),
-    "future iat": (lambda: held(dpop=proof(iat=NOW + 121)), "dpop_iat_future"),
-    "proof key is not the cnf key": (lambda: held(dpop=proof(OTHER_KEY)), "dpop_key_not_confirmed"),
-    "jwk swapped into a signed proof": (lambda: held(dpop=".".join(
+    "bearer presentation, no proof": (lambda: present(dpop=None), "dpop_proof_missing"),
+    "cnf names no method": (lambda: present({}, dpop=proof()), "cnf_invalid"),
+    "cnf absent": (lambda: present(None, dpop=proof()), "cnf_missing"),
+    "wrong htm": (lambda: present(dpop=proof(method="GET")), "dpop_htm_mismatch"),
+    "wrong htu host": (lambda: present(dpop=proof(url="https://evil.example.com/tools/refund")), "dpop_htu_mismatch"),
+    "wrong htu path": (lambda: present(dpop=proof(url=f"{GATEWAY}/tools/delete")), "dpop_htu_mismatch"),
+    "wrong htu port": (lambda: present(dpop=proof(url="https://gw.example.com:8443/tools/refund")),
+                       "dpop_htu_mismatch"),
+    "stale iat": (lambda: present(dpop=proof(iat=NOW - 121)), "dpop_iat_stale"),
+    "future iat": (lambda: present(dpop=proof(iat=NOW + 121)), "dpop_iat_future"),
+    "proof key is not the cnf key": (lambda: present(dpop=proof(OTHER_KEY)), "dpop_key_not_confirmed"),
+    "jwk swapped into a signed proof": (lambda: present(dpop=".".join(
         [b64url(json.dumps({**HEAD, "jwk": public_jwk(OTHER_KEY)}).encode())] + proof().split(".")[1:])),
         "dpop_key_not_confirmed"),
-    "signature by another key under the cnf jwk": (lambda: held(dpop=_resign(proof(), key=OTHER_KEY)),
+    "signature by another key under the cnf jwk": (lambda: present(dpop=_resign(proof(), key=OTHER_KEY)),
                                                    "dpop_signature_unverified"),
-    "alg none": (lambda: held(dpop=_resign(proof(), {**HEAD, "alg": "none"})), "dpop_alg_not_allowed"),
-    "alg HS256": (lambda: held(dpop=_resign(proof(), {**HEAD, "alg": "HS256"})), "dpop_alg_not_allowed"),
-    "alg RS256": (lambda: held(dpop=_resign(proof(), {**HEAD, "alg": "RS256"})), "dpop_alg_not_allowed"),
-    "alg EdDSA with an EC key": (lambda: held(dpop=_resign(proof(), {**HEAD, "alg": "EdDSA"})), "dpop_jwk_invalid"),
-    "typ JWT": (lambda: held(dpop=_resign(proof(), {**HEAD, "typ": "JWT"})), "dpop_typ_invalid"),
-    "private d in jwk": (lambda: held(dpop=_resign(proof(), {**HEAD, "jwk": {**HEAD["jwk"], "d": "AAAA"}})),
+    "alg none": (lambda: present(dpop=_resign(proof(), {**HEAD, "alg": "none"})), "dpop_alg_not_allowed"),
+    "alg HS256": (lambda: present(dpop=_resign(proof(), {**HEAD, "alg": "HS256"})), "dpop_alg_not_allowed"),
+    "alg RS256": (lambda: present(dpop=_resign(proof(), {**HEAD, "alg": "RS256"})), "dpop_alg_not_allowed"),
+    "alg EdDSA with an EC key": (lambda: present(dpop=_resign(proof(), {**HEAD, "alg": "EdDSA"})),
+                                 "dpop_jwk_invalid"),
+    "typ JWT": (lambda: present(dpop=_resign(proof(), {**HEAD, "typ": "JWT"})), "dpop_typ_invalid"),
+    "private d in jwk": (lambda: present(dpop=_resign(proof(), {**HEAD, "jwk": {**HEAD["jwk"], "d": "AAAA"}})),
                          "dpop_jwk_private"),
-    "unknown header member kid": (lambda: held(dpop=_resign(proof(), {**HEAD, "kid": "k"})),
+    "unknown header member kid": (lambda: present(dpop=_resign(proof(), {**HEAD, "kid": "k"})),
                                   "dpop_header_member_unknown"),
-    "duplicate alg member": (lambda: held(dpop=".".join(
+    "duplicate alg member": (lambda: present(dpop=".".join(
         [b64url(('{"alg":"ES256","typ":"dpop+jwt","alg":"none","jwk":' + json.dumps(HEAD["jwk"]) + "}").encode())]
         + proof().split(".")[1:])), "dpop_duplicate_member"),
-    "x5c with another key": (lambda: held(dpop=_resign(proof(), {**HEAD, "x5c": [base64.b64encode(
+    "x5c with another key": (lambda: present(dpop=_resign(proof(), {**HEAD, "x5c": [base64.b64encode(
         _certificate(OTHER_KEY)).decode()]})), "dpop_x5c_key_mismatch"),
-    "ath absent with a token": (lambda: held(dpop=_resign(proof(), payload={
+    "ath absent with a token": (lambda: present(dpop=_resign(proof(), payload={
         k: v for k, v in BODY.items() if k != "ath"})), "dpop_ath_missing"),
-    "ath for another token": (lambda: held(dpop=proof(token="another.token.value")), "dpop_ath_mismatch"),
-    "content rewritten after signing": (lambda: held(dpop=proof(), content=canonical({"amount_cents": 4999})),
+    "ath present without a token": (lambda: present(dpop=proof(), token=None), "dpop_ath_unexpected"),
+    "ath for another token": (lambda: present(dpop=proof(token="another.token.value")), "dpop_ath_mismatch"),
+    "content rewritten after signing": (lambda: present(dpop=proof(), content=canonical({"amount_cents": 4999})),
                                         "dpop_content_mismatch"),
-    "content digest absent": (lambda: held(dpop=_resign(proof(), payload={
+    "content digest absent": (lambda: present(dpop=_resign(proof(), payload={
         k: v for k, v in BODY.items() if k != "ans_content_digest"})), "dpop_content_unbound"),
-    "oversized jti": (lambda: held(dpop=proof(jti="j" * 129)), "dpop_jti_invalid"),
-    "not a compact JWS": (lambda: held(dpop="a.b"), "dpop_malformed"),
-    "agent token for another audience": (lambda: held(dpop=proof(token=agent_credential(
-        DPOP_CNF, aud="https://other.example.com")[0]), token=agent_credential(
-        DPOP_CNF, aud="https://other.example.com")[0], agent=agent_credential(
-        DPOP_CNF, aud="https://other.example.com")[1]), "agent_token_wrong_audience"),
-    "bearer agent credential": (lambda: held(dpop=proof(token=agent_credential(None)[0]),
-                                             token=agent_credential(None)[0], agent=agent_credential(None)[1]),
-                                "agent_credential_is_bearer"),
-    "grant holder is another key than the agent's": (lambda: held(
-        dpop=proof(OTHER_KEY, token=agent_credential(cnf_for_jwk(public_jwk(OTHER_KEY)))[0]),
-        token=agent_credential(cnf_for_jwk(public_jwk(OTHER_KEY)))[0],
-        agent=agent_credential(cnf_for_jwk(public_jwk(OTHER_KEY)))[1]), "grant_holder_is_not_the_agent"),
-    "presented token is not the principal's": (lambda: held(dpop=proof(token=agent_credential(DPOP_CNF)[0]),
-                                                            token=agent_credential(DPOP_CNF)[0] + "x"),
-                                               "agent_token:token_digest_mismatch"),
-    "principal claims a cnf its token lacks": (lambda: held(dpop=proof(token=agent_credential(None)[0]),
-                                                            token=agent_credential(None)[0],
-                                                            agent={**agent_credential(None)[1], "cnf": DPOP_CNF}),
-                                               "agent_token:token_claim_mismatch:cnf"),
-    "dpop for a certificate-bound grant": (lambda: held(grant(MTLS_CNF), dpop=proof(token=MTLS_TOKEN),
-                                                        token=MTLS_TOKEN, agent=MTLS_AGENT),
-                                           "mtls_certificate_missing"),
-    "certificate for a key-bound grant": (lambda: held(cert=CERT), "dpop_proof_missing"),
-    "another client certificate": (lambda: held(grant(MTLS_CNF), cert=_certificate(DPOP_KEY, days=(-2, 31)),
-                                                token=MTLS_TOKEN, agent=MTLS_AGENT), "mtls_certificate_not_confirmed"),
-    "expired client certificate": (lambda: held(grant(cnf_for_certificate(EXPIRED)), cert=EXPIRED,
-                                                token=EXPIRED_TOKEN, agent=EXPIRED_AGENT), "mtls_certificate_expired"),
-    "garbage client certificate": (lambda: held(grant(MTLS_CNF), cert=b"not a certificate", token=MTLS_TOKEN,
-                                                agent=MTLS_AGENT), "mtls_certificate_not_confirmed"),
+    "oversized jti": (lambda: present(dpop=proof(jti="j" * 129)), "dpop_jti_invalid"),
+    "not a compact JWS": (lambda: present(dpop="a.b"), "dpop_malformed"),
+    "dpop for a certificate-bound grant": (lambda: present(MTLS_CNF, dpop=proof(token=MTLS_TOKEN),
+                                                           token=MTLS_TOKEN), "mtls_certificate_missing"),
+    "certificate for a key-bound grant": (lambda: present(cert=CERT), "dpop_proof_missing"),
+    "another client certificate": (lambda: present(MTLS_CNF, cert=_certificate(DPOP_KEY, days=(-2, 31))),
+                                   "mtls_certificate_not_confirmed"),
+    "expired client certificate": (lambda: present(cnf_for_certificate(EXPIRED), cert=EXPIRED),
+                                   "mtls_certificate_expired"),
+    "garbage client certificate": (lambda: present(MTLS_CNF, cert=b"not a certificate"),
+                                   "mtls_certificate_not_confirmed"),
 }
 
 
 @pytest.mark.parametrize("case", sorted(ADVERSARIAL))
 def test_every_adversarial_presentation_is_refused(case: str) -> None:
     run, reason = ADVERSARIAL[case]
-    verdict = run()
-    assert verdict["decision"] == "deny" and verdict["reason"] == reason, verdict
-    assert verdict["possession"] is None
-
-
-def test_a_replayed_proof_is_refused_and_a_refused_call_spends_no_jti() -> None:
-    replay = ReplayCache()
-    assert held(dpop=proof(), tool="delete", replay=replay)["reason"] == "tool_not_granted"
-    assert len(replay) == 0
-    assert held(dpop=proof(), replay=replay)["decision"] == "allow"
-    assert held(dpop=proof(), replay=replay)["reason"] == "dpop_replayed"
-
-
-def test_a_delegated_grant_is_held_by_the_child_holder_not_the_parent() -> None:
-    sub_key = ec.generate_private_key(ec.SECP256R1())
-    sub_cnf = cnf_for_jwk(public_jwk(sub_key))
-    parent = issue_grant(ROOT, grant_id="g-p", holder_key=raw_public(HOLDER), cnf=DPOP_CNF, tools=TOOLS, max_depth=1,
-                         not_before="2026-11-01T00:00:00Z", expires_at="2026-12-01T00:00:00Z")
-    child = issue_grant(HOLDER, grant_id="g-c", holder_key=raw_public(Signer.generate()), cnf=sub_cnf, tools=TOOLS,
-                        parent=parent, not_before="2026-11-01T00:00:00Z", expires_at="2026-12-01T00:00:00Z")
-    # The parent's holder presents the child grant: refused, the child names another key.
-    assert held([parent, child], dpop=proof())["reason"] == "grant_holder_is_not_the_agent"
-    token, agent = agent_credential(sub_cnf)
-    assert held([parent, child], dpop=proof(sub_key, token=token), token=token, agent=agent)["decision"] == "allow"
+    assert run() == (None, reason)
 
 
 def test_a_bearer_grant_cannot_be_issued_or_verified() -> None:
@@ -323,19 +283,7 @@ def test_a_bearer_grant_cannot_be_issued_or_verified() -> None:
 def test_a_forged_grant_with_a_swapped_cnf_fails_its_signature() -> None:
     body = {**CHAIN[0]["body"], "cnf": cnf_for_jwk(public_jwk(OTHER_KEY))}
     forged = [{"body": body, "sig": CHAIN[0]["sig"]}]
-    assert held(forged, dpop=proof(OTHER_KEY))["reason"] == "grant_signature_unverified:0"
-
-
-def test_the_replay_cache_fails_closed_when_full_and_forgets_expired_proofs() -> None:
-    cache = ReplayCache(max_entries=2)
-    assert cache.check_and_store("a", exp=NOW + 10, now=NOW) is False
-    assert cache.check_and_store("b", exp=NOW + 10, now=NOW) is False
-    assert cache.check_and_store("a", exp=NOW + 10, now=NOW) is True
-    with pytest.raises(ReplayCacheFull):
-        cache.check_and_store("c", exp=NOW + 10, now=NOW)
-    assert cache.check_and_store("c", exp=NOW + 30, now=NOW + 11) is False
-    full = ReplayCache(max_entries=0)
-    assert held(dpop=proof(), replay=full)["reason"] == "replay_cache_full"
+    assert verify_chain(forged, {ROOT.key_id}, AT) == (None, "grant_signature_unverified:0")
 
 
 def test_the_principal_records_its_cnf_and_grades_possession() -> None:
@@ -344,3 +292,90 @@ def test_the_principal_records_its_cnf_and_grades_possession() -> None:
     assert possession_grade({"user": AGENT, "agent": AGENT}) == "sender-constrained"
     bare = {k: v for k, v in AGENT.items() if k != "cnf"}
     assert possession_grade({"user": bare, "agent": bare}) == "bearer"
+
+
+# ---------- the possession record, checked against the grant ----------
+
+DPOP_RECORD = {"iat": NOW, "jkt": DPOP_CNF["jkt"], "jti": "j-1", "method": "dpop"}
+MTLS_RECORD = {"method": "mtls", "x5t#S256": MTLS_CNF["x5t#S256"]}
+
+RECORD_CASES = {
+    "dpop record for its grant": (DPOP_RECORD, DPOP_CNF, None),
+    "mtls record for its grant": (MTLS_RECORD, MTLS_CNF, None),
+    "another key's thumbprint": ({**DPOP_RECORD, "jkt": cnf_for_jwk(public_jwk(OTHER_KEY))["jkt"]}, DPOP_CNF,
+                                 "possession_not_the_grant_key"),
+    "mtls record for a key-bound grant": (MTLS_RECORD, DPOP_CNF, "possession_not_the_grant_key"),
+    "dpop record for a certificate-bound grant": (DPOP_RECORD, MTLS_CNF, "possession_not_the_grant_key"),
+    "bearer method": ({"method": "bearer"}, DPOP_CNF, "possession_record_malformed"),
+    "dpop record without its jti": ({k: v for k, v in DPOP_RECORD.items() if k != "jti"}, DPOP_CNF,
+                                    "possession_record_malformed"),
+    "dpop record with an extra member": ({**DPOP_RECORD, "exp": NOW}, DPOP_CNF, "possession_record_malformed"),
+    "iat as text": ({**DPOP_RECORD, "iat": str(NOW)}, DPOP_CNF, "possession_record_malformed"),
+    "iat as a boolean": ({**DPOP_RECORD, "iat": True}, DPOP_CNF, "possession_record_malformed"),
+    "oversized jti": ({**DPOP_RECORD, "jti": "j" * 129}, DPOP_CNF, "possession_record_malformed"),
+    "not an object": ("dpop", DPOP_CNF, "possession_record_malformed"),
+    "grant cnf not an object": (DPOP_RECORD, None, "possession_not_the_grant_key"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(RECORD_CASES))
+def test_a_possession_record_names_the_grant_key(case: str) -> None:
+    record, cnf, expected = RECORD_CASES[case]
+    assert possession_record_problem(record, cnf) == expected
+
+
+# ---------- replay found from the records alone ----------
+
+def allow(permit: str, at: int, record: dict | None = DPOP_RECORD) -> dict:
+    """A tool-call authorize record whose grant evidence carries ``record``."""
+    evidence = {"kind": "grant", "chain": CHAIN} if record is None else {"kind": "grant", "chain": CHAIN,
+                                                                         "possession": record}
+    return {"predicateType": "tool-call", "predicate": {"phase": "authorize", "decision": "allow",
+                                                        "permitId": permit, "at": _iso(at), "authority": evidence}}
+
+
+def test_one_proof_spent_on_two_permits_inside_its_lifetime_is_found() -> None:
+    journal = [(1, allow("p1", NOW)), (2, allow("p2", NOW + 30))]
+    assert duplicate_proofs(journal) == [(2, "dpop_proof_replayed:1")]
+
+
+def test_the_last_second_of_the_lifetime_still_counts_and_the_next_does_not() -> None:
+    edge = NOW + 120 + REPLAY_GRACE
+    assert duplicate_proofs([(1, allow("p1", NOW)), (2, allow("p2", edge))]) == [(2, "dpop_proof_replayed:1")]
+    assert duplicate_proofs([(1, allow("p1", NOW)), (2, allow("p2", edge + 1))]) == []
+    assert duplicate_proofs([(1, allow("p1", NOW)), (2, allow("p2", NOW + 40))], skew=30) == []
+
+
+def test_one_permit_recorded_again_on_a_retry_spends_its_proof_once() -> None:
+    assert duplicate_proofs([(1, allow("p1", NOW)), (2, allow("p1", NOW + 5))]) == []
+
+
+def test_distinct_proofs_and_records_without_a_dpop_use_are_not_replays() -> None:
+    other_jti = {**DPOP_RECORD, "jti": "j-2"}
+    other_key = {**DPOP_RECORD, "jkt": cnf_for_jwk(public_jwk(OTHER_KEY))["jkt"]}
+    journal = [(1, allow("p1", NOW)), (2, allow("p2", NOW, other_jti)), (3, allow("p3", NOW, other_key)),
+               (4, allow("p4", NOW, MTLS_RECORD)), (5, allow("p5", NOW, MTLS_RECORD)), (6, allow("p6", NOW, None)),
+               (7, {"predicateType": "tool-call", "predicate": {"phase": "intent", "permitId": "p1"}})]
+    assert duplicate_proofs(journal) == []
+
+
+def test_every_later_spend_names_the_first_and_an_unreadable_time_is_reported() -> None:
+    journal = [(3, allow("p1", NOW)), (5, allow("p2", NOW + 1)), (8, allow("p3", NOW + 2))]
+    assert duplicate_proofs(journal) == [(5, "dpop_proof_replayed:3"), (8, "dpop_proof_replayed:3")]
+    broken = allow("p2", NOW)
+    broken["predicate"]["at"] = "yesterday"
+    assert duplicate_proofs([(1, allow("p1", NOW)), (2, broken)]) == [(2, "dpop_proof_use_time_invalid")]
+
+
+def test_a_proof_spent_again_after_its_lifetime_opens_a_new_window() -> None:
+    later = NOW + 1000
+    journal = [(1, allow("p1", NOW)), (2, allow("p2", later, {**DPOP_RECORD, "iat": later})),
+               (3, allow("p3", later + 10, {**DPOP_RECORD, "iat": later}))]
+    assert duplicate_proofs(journal) == [(3, "dpop_proof_replayed:2")]
+
+
+def test_the_single_use_key_binds_the_confirmed_key_and_the_jti() -> None:
+    other = cnf_for_jwk(public_jwk(OTHER_KEY))["jkt"]
+    assert proof_key(DPOP_CNF["jkt"], "j-1") != proof_key(other, "j-1")
+    assert proof_key(DPOP_CNF["jkt"], "j-1") != proof_key(DPOP_CNF["jkt"], "j-2")
+    assert len(proof_key(DPOP_CNF["jkt"], "j" * 128)) == 43
