@@ -138,7 +138,7 @@ reconstructs the retained native packet with a separate SDK-free reader and runs
 the installed host gate.
 
 Probity maintains this external plugin through
-[Observer issues](https://github.com/probityai/agent-evidence-observer/issues).
+[Observer issues](https://github.com/probityai/probity/issues).
 Compatibility changes require updated source selections, native runs and semantic
 refusal controls. The SDK primary source was refreshed at
 `20362069e0dc1b65b30c7775e0c0d01d364cb3d8`; upstream changes require Google CLA and

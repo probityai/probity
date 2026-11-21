@@ -78,6 +78,13 @@ jobs:
         run: |
           python3 scripts/public-voice-lint-test.py
           python3 scripts/public-voice-lint.py
+      - name: no live link to a repository the organisation archived
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/archived-repo-gate-test.py
+          python3 scripts/archived-repo-gate.py
+          python3 scripts/archived-repo-gate.py --live
       - name: every package in the README has its source here
         run: |
           python3 scripts/readme-package-owner-lint-test.py
@@ -2162,7 +2169,7 @@ jobs:
       - name: Check out the immutable existing Observer reader
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          repository: probityai/agent-evidence-observer
+          repository: probityai-archive/agent-evidence-observer
           ref: 62f5d0c6fbd785259db2d5c8076dd844b53a0593
           path: packages/agent-evidence-observer/existing-reader
           persist-credentials: false

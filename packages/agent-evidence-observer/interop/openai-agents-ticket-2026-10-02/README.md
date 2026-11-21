@@ -120,7 +120,7 @@ retained capsules and exact run IDs must be recorded separately.
 ## Ownership and outside use
 
 Probity maintains this reference through
-[Observer issues](https://github.com/probityai/agent-evidence-observer/issues).
+[Observer issues](https://github.com/probityai/probity/issues).
 Compatibility changes require source selections, native runs and semantic refusal
 checks. No outside acceptance, recurring host use or independent custody is
 established by this author-operated reference.

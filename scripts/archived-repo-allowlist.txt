@@ -1,0 +1,22 @@
+# Files that may still name an archived probityai repository, each with its reason.
+# A line is `<path or dir/**>  # <reason>`. See scripts/archived-repo-gate.py.
+packages/agent-evidence-verify/examples/brokered-file-write/retained/**  # a retained copy of the producer source as it was run; its tree is listed in producer-tree.txt, so its bytes stay
+packages/agent-evidence-verify/tests/data/dsse_cross_lang_signing.json  # the key label is hashed into the fixture's key seed; changing it changes the signed bytes
+tests/test_release_links.py  # test inputs: it names an archived repository on purpose to prove release_links refuses a link to one
+packages/agent-evidence-observer/interop/local-model-tool-arguments-2026-10-03/**  # a retained run: its protocol, selection and custody records name the repository the run read, and digests pin them
+packages/agent-evidence-observer/interop/eight-component-host-2026-10-02/retained/**  # a retained run: its source selection records the repositories the host read
+packages/agent-evidence-observer/interop/model-consumer-2026-10-02/boundary-fixture-provenance.json  # a provenance record of where a fixture was read from
+packages/agent-evidence-observer/interop/local-model-vocabulary-2026-10-02/retained/**  # a retained run record naming the repository it verified
+packages/agent-evidence-observer/interop/joint-recovery-2026-10-02/results/**  # a retained result record naming the repository it was built from
+packages/agent-evidence-observer/interop/execsurface-state-2026-10-02/vendor/**  # a vendored copy of a specification at a pinned revision, kept byte for byte
+packages/agent-evidence-observer/interop/crewai-job-fences-2026-10-04/attempts/**  # attempt records naming the repository each attempt read
+packages/agent-evidence-observer/interop/authority-unreachable-2026-10-03/implementation-records/**  # records of an implementation run naming the repository it read
+packages/agent-evidence-observer/interop/ag2-push-authority-2026-10-04/retained/**  # retained run records naming the repository they selected
+packages/agent-evidence-observer/interop/adk-user-responses-2026-10-04/retained/**  # a retained run record naming the repository it selected
+packages/agent-evidence-observer/interop/adk-nested-compaction-2026-10-04/retained/**  # retained run records naming the repository they selected
+packages/agent-evidence-observer/interop/adk-current-consumer-2026-10-03/upstream-sample/README.md  # its sha256 is recorded in full-tox-source-selection.json, so its bytes stay
+packages/agent-evidence-observer/interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-HOST-DRAFT-2026-10-02.yml  # its sha256 is recorded in the eight-component host's SOURCE-SELECTION.json
+packages/agent-evidence-observer/interop/inspect-current-host-2026-10-03/bootstrap.py  # its sha256 is recorded in installation-policy.json
+packages/agent-evidence-observer/interop/model-consumer-2026-10-02/HOST-WORKFLOW.yml  # its sha256 is recorded in the eight-component host's SOURCE-SELECTION.json
+scripts/archived-repo-gate.py  # the gate itself
+scripts/archived-repo-gate-test.py  # the gate's tests

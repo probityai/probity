@@ -40,4 +40,4 @@ Every valid decision exits 0, including `contradicted` and `not_established`; ex
 
 ## Status
 
-Version 0.1.0, alpha, Apache-2.0. Agent Evidence is the open standard; Probity checks and grades against it: [probityai/agent-evidence](https://github.com/probityai/agent-evidence).
+Version 0.1.0, alpha, Apache-2.0. Agent Evidence is the open standard; Probity checks and grades against it: [probityai/agent-evidence-vectors](https://github.com/probityai/agent-evidence-vectors).
