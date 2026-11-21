@@ -4,7 +4,8 @@ A tool-call record may carry ``principals``: ``user`` (who invoked), ``agent`` (
 ``sponsor`` (the accountable owner) and ``approver`` (who approved, when a human did). Each is the
 audit-record ``principal`` member (issuer, subject, clientId, audience, authMethod, source,
 tokenDigest, issuedAt, expiresAt, kid, key, keyThumbprint, jwksDigest; ``tenant`` optional) plus
-``act``, the token's delegation chain (RFC 8693 ``act``), when it had one. ``source`` adds
+``act``, the token's delegation chain (RFC 8693 ``act``), when it had one, and ``cnf``, the key the token is
+bound to (RFC 7800; RFC 9449 ``jkt`` or RFC 8705 ``x5t#S256``), when it is sender-constrained. ``source`` adds
 ``id-jag`` (an Identity Assertion JWT Authorization Grant, ``typ`` ``oauth-id-jag+jwt``).
 
 Refused: a missing or unknown member, a thumbprint that does not recompute from ``key``, a ``kid``
@@ -41,7 +42,7 @@ from .grants import ts
 ROLES = ("user", "agent", "sponsor", "approver")
 MEMBERS = ("issuer", "subject", "clientId", "audience", "authMethod", "source", "tokenDigest", "issuedAt",
            "expiresAt", "kid", "key", "keyThumbprint", "jwksDigest")
-OPTIONAL = ("tenant", "act")
+OPTIONAL = ("tenant", "act", "cnf")
 SOURCES = ("jwt-access-token", "id-token", "jwt-assertion", "id-jag")
 AUTH_METHODS = ("none", "client_secret_post", "client_secret_basic", "client_secret_jwt", "private_key_jwt",
                 "tls_client_auth", "self_signed_tls_client_auth")
@@ -90,6 +91,11 @@ def _shape(p: Any) -> str | None:
             return "principal_malformed"
     if not isinstance(p["key"], dict) or any(k in p["key"] for k in ("d", "p", "q", "dp", "dq", "qi", "k")):
         return "principal_key_invalid"
+    if "cnf" in p:
+        from .possession import cnf_problem
+
+        if cnf_problem(p["cnf"]):
+            return "principal_cnf_invalid"
     return None
 
 
@@ -221,4 +227,12 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> s
             return f"token_claim_mismatch:{member}"
     if claims.get("act") != p.get("act"):
         return "token_claim_mismatch:act"
+    if claims.get("cnf") != p.get("cnf"):
+        return "token_claim_mismatch:cnf"
     return None
+
+
+def possession_grade(block: Mapping[str, Any]) -> str:
+    """``sender-constrained`` when the agent's credential confirms a key (RFC 7800 ``cnf``), else ``bearer``:
+    a bearer credential is usable by whoever copies it."""
+    return "sender-constrained" if "cnf" in block.get("agent", {}) else "bearer"

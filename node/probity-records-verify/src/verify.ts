@@ -538,6 +538,18 @@ function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string,
 
 // ---------- grants ----------
 
+// RFC 7800 confirmation: exactly one method, jkt (RFC 9449) or x5t#S256 (RFC 8705), a SHA-256 thumbprint in
+// canonical base64url. A grant without one is a bearer token and is refused, as by the Python verifier.
+const CNF_METHODS = ["jkt", "x5t#S256"];
+function cnfProblem(cnf: J): string | null {
+  if (cnf === undefined || cnf === null) return "cnf_missing";
+  if (!isObj(cnf) || Object.keys(cnf).length !== 1) return "cnf_invalid";
+  const [[method, value]] = Object.entries(cnf) as [string, J][];
+  if (!CNF_METHODS.includes(method) || typeof value !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(value)) return "cnf_invalid";
+  const raw = Buffer.from(value, "base64url");
+  return raw.length === 32 && raw.toString("base64url") === value ? null : "cnf_invalid";
+}
+
 function narrowingProblem(ch: J, p: J): string | null {
   if (ch.issuerKey !== p.holderKey) return "child_not_issued_by_parent_holder";
   if (ts(ch.notBefore) < ts(p.notBefore) || ts(ch.expiresAt) > ts(p.expiresAt)) return "child_window_wider_than_parent";
@@ -587,6 +599,8 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
   for (let depth = 0; depth < chain.length; depth++) {
     const body = isObj(chain[depth]) ? chain[depth].body : null;
     if (!isObj(body)) { result = `grant_shape:${depth}`; break; }
+    const cnf = cnfProblem(body.cnf);
+    if (cnf) { result = `grant_invalid:${depth}:grant_${cnf}`; break; }
     let issuer: string;
     try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch (e) { result = `grant_invalid:${depth}:${(e as Error).message}`; break; }
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) { result = `grant_signature_unverified:${depth}`; break; }
@@ -629,7 +643,7 @@ export function verifyGrantAllow(chain: J[], tool: string, args: J, at: string, 
 // ---------- identity ----------
 
 const MEMBERS = ["issuer", "subject", "clientId", "audience", "authMethod", "source", "tokenDigest", "issuedAt", "expiresAt", "kid", "key", "keyThumbprint", "jwksDigest"];
-const OPTIONAL = ["tenant", "act"];
+const OPTIONAL = ["tenant", "act", "cnf"];
 const SOURCES = ["jwt-access-token", "id-token", "jwt-assertion", "id-jag"];
 const AUTH = ["none", "client_secret_post", "client_secret_basic", "client_secret_jwt", "private_key_jwt", "tls_client_auth", "self_signed_tls_client_auth"];
 const THUMB: Record<string, string[]> = { RSA: ["e", "kty", "n"], EC: ["crv", "kty", "x", "y"], OKP: ["crv", "kty", "x"] };
@@ -650,6 +664,7 @@ function principalShape(p: J): string | null {
   if (!SOURCES.includes(p.source) || !AUTH.includes(p.authMethod)) return "principal_malformed";
   if (["tokenDigest", "jwksDigest"].some((m) => typeof p[m] !== "string" || !/^[0-9a-f]{64}$/.test(p[m]))) return "principal_malformed";
   if (!isObj(p.key) || ["d", "p", "q", "dp", "dq", "qi", "k"].some((k) => k in p.key)) return "principal_key_invalid";
+  if ("cnf" in p && cnfProblem(p.cnf)) return "principal_cnf_invalid";
   return null;
 }
 function actSubjects(act: J): string[] | null {
@@ -689,7 +704,41 @@ export function checkPrincipals(block: J, at: string, pins: Record<string, strin
 
 // ---------- journal ----------
 
-export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string }
+export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; possessionSkewSeconds?: number }
+
+// The proof an allow rested on (possession.possession_record): it must name the key the leaf grant's cnf confirms.
+const POSSESSION_MEMBERS: Record<string, string[]> = { dpop: ["iat", "jkt", "jti", "method"], mtls: ["method", "x5t#S256"] };
+const MAX_JTI_BYTES = 128, DEFAULT_SKEW = 120, REPLAY_GRACE = 5;
+function possessionRecordProblem(record: J, cnf: J): string | null {
+  if (!isObj(record) || typeof record.method !== "string" || !Object.hasOwn(POSSESSION_MEMBERS, record.method)) return "possession_record_malformed";
+  const want = POSSESSION_MEMBERS[record.method], keys = Object.keys(record).sort();
+  if (keys.length !== want.length || keys.some((k, i) => k !== want[i])) return "possession_record_malformed";
+  if (record.method === "dpop" && (typeof record.iat !== "number" || !Number.isInteger(record.iat) || typeof record.jti !== "string"
+      || !record.jti || Buffer.byteLength(record.jti, "utf8") > MAX_JTI_BYTES)) return "possession_record_malformed";
+  const member = record.method === "dpop" ? "jkt" : "x5t#S256";
+  if (!isObj(cnf) || !Object.hasOwn(cnf, member) || typeof record[member] !== "string" || record[member] !== String(cnf[member])) return "possession_not_the_grant_key";
+  return null;
+}
+
+// A DPoP proof spent by two permits inside its lifetime (possession.duplicate_proofs): a replay.
+function duplicateProofs(bodies: [number, J][], skew: number): string[] {
+  const found: string[] = [], first = new Map<string, [number, number, J]>();
+  for (const [n, body] of bodies) {
+    const pred = body.predicate;
+    if (!isObj(pred) || pred.phase !== "authorize" || !isObj(pred.authority)) continue;
+    const rec = pred.authority.possession;
+    if (!isObj(rec) || rec.method !== "dpop" || typeof rec.jkt !== "string" || typeof rec.jti !== "string"
+        || typeof rec.iat !== "number" || !Number.isInteger(rec.iat)) continue;
+    const key = `${rec.jkt}.${rec.jti}`, permit = pred.permitId ?? null;
+    let used: number;
+    try { used = ts(pred.at) / 1e6; } catch { found.push(`line_${n}:dpop_proof_use_time_invalid`); continue; }
+    const earlier = first.get(key);
+    const live = earlier !== undefined && used <= earlier[1] + skew + REPLAY_GRACE;
+    if (live && earlier![2] !== permit) { found.push(`line_${n}:dpop_proof_replayed:${earlier![0]}`); continue; }
+    if (!live) first.set(key, [n, rec.iat, permit]);
+  }
+  return found;
+}
 
 function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], where: string): boolean {
   const reason = pred.reason;
@@ -712,6 +761,10 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
     if (o !== "ok") problems.push(`${where}:grant_approval_${o}`);
   } else if (v.decision !== "allow") problems.push(`${where}:grant_${v.decision}:${v.reason}`);
   if (v.grantDigest && v.grantDigest !== pred.grantDigest) problems.push(`${where}:grant_digest_differs_from_record`);
+  if ("possession" in ev && v.grantDigest) {
+    const p = possessionRecordProblem(ev.possession, ev.chain[ev.chain.length - 1].body.cnf);
+    if (p) problems.push(`${where}:${p}`);
+  }
   return true;
 }
 
@@ -1063,7 +1116,7 @@ function spendOf(budget: J, args: J): number {
   return typeof v === "number" ? v : Infinity;
 }
 
-function crossChecks(bodies: [number, J][]): string[] {
+function crossChecks(bodies: [number, J][], skew: number): string[] {
   const problems: string[] = [];
   const uses = new Map<string, number>(), spent = new Map<string, number>(), charged = new Set<J>();
   for (const [i, body] of bodies) {
@@ -1085,6 +1138,7 @@ function crossChecks(bodies: [number, J][]): string[] {
       if ("spend" in budget && spent.get(d)! > budget.spend.max) problems.push(`line_${i}:grant_spend_exceeded:${d.slice(0, 12)}`);
     }
   }
+  problems.push(...duplicateProofs(bodies.filter(([, b]) => b.predicateType === TOOL_CALL_RECORD), skew));
   const grantOf = new Map<J, J>(), allowed = new Set<J>(), effects = new Map<J, number>(), intents = new Map<J, number>();
   for (const [i, body] of bodies) {
     if (body.predicateType !== TOOL_CALL_RECORD) continue;
@@ -1125,7 +1179,7 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
     bodies.push([i, body]);
     if (!problems.length) verified++;
   });
-  failures.push(...crossChecks(bodies));
+  failures.push(...crossChecks(bodies, trust?.possessionSkewSeconds ?? DEFAULT_SKEW));
   let checkpoint = "not_supplied";
   if (checkpointEnv !== null) {
     try {
