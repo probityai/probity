@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0 (unreleased)
+
+A minor release: a new claim type, `credential_reachability/v1`.
+
+- `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
+  environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
+  cookie stores, environment tokens, cluster service-account tokens, git credentials, host keyrings). It applies the
+  26 rules of the Credential Reachability predicate under the consumer's pinned signer keys, agent keys, environment,
+  audience, challenge and time, and recomputes each class verdict and the result from the attempts. See
+  [reference routes](docs/corpus-routes.md).
+
 ## 0.8.0 (2026-11-21)
 
 A minor release: a new claim type, `evidence_sufficiency/v1`. It decides what one conforming Observed Effect
