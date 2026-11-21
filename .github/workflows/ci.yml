@@ -1267,7 +1267,10 @@ jobs:
         working-directory: packages/agent-evidence-observer/selected-adk
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/adk-tox/bin/uv" lock 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
+          # The selected ADK commit ships no lock and asks for daytona>=0.191 with no ceiling, so an
+          # unbounded lock follows PyPI: daytona 2.1.0 (2026-11-20 08:01Z) removed root exports its
+          # tests import. Bound the lock at the last green resolution (run 44677148481, 04:51Z).
+          "$RUNNER_TEMP/adk-tox/bin/uv" lock --exclude-newer 2026-11-20T04:00:00Z 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
       - name: Run unchanged tox on the recorded patched ADK source and sample
         working-directory: packages/agent-evidence-observer/selected-adk
         run: |
