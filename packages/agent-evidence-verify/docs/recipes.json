@@ -158,8 +158,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/evidence_sufficiency.py",
-      "bytes": 17987,
-      "sha256": "1ce2565d98d28a1c495d9fe2e1e19581ab545f5441613bd1f8d57d1bec2527dd"
+      "bytes": 18109,
+      "sha256": "22b42c007ca3506c9587c0ebfd4f275f4c7087b7bfe85c2ce66e8cbbc4658414"
     },
     {
       "path": "src/agent_evidence_verify/adapters/execution_evidence.py",
