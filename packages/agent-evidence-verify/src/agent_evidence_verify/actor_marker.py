@@ -34,10 +34,16 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from .adapters.jcs_canonical import Refusal, canonical
+from .common import CaseError
+from .json_input import parse_json
 
 SUITE = "actor-marker-survival/v1"
 CONTRACT_ID = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/actor-marker-survival"
 ACCEPTED = "marker_survives"
+MAX_RECORD_BYTES = 1 << 20
+MAX_DEPTH = 64
+MAX_NODES = 65536
+ROLES = ("origin", "agent", "relay")
 ACTOR_CLASSES = ("downgraded_to_user_alone", "chain_truncated", "marker_stripped",
                  "agent_replaced", "actor_order_changed", "actor_inserted")
 _TIME = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
@@ -229,11 +235,42 @@ def _rules(entries: list[dict[str, Any]], writers: dict[str, Any]) -> list[tuple
     return rules
 
 
-def judge(record_bytes: bytes, trust: dict[str, Any]) -> tuple[str, str]:
-    """(``accept`` or ``reject``, reason) for one record under one trust bundle."""
+def _strict(raw: bytes) -> Any:
+    return parse_json(raw, max_bytes=MAX_RECORD_BYTES, max_depth=MAX_DEPTH, max_nodes=MAX_NODES)
+
+
+def load_trust(raw: bytes) -> dict[str, Any]:
+    """The trust bundle the caller holds: each writer's base64url Ed25519 key and its role.
+
+    Raises ``ValueError`` for anything else, so a bundle that cannot say who may write never
+    reaches the checks. The record never supplies a key or a role.
+    """
     try:
-        record = json.loads(record_bytes)
-    except ValueError:
+        bundle = _strict(raw)
+    except CaseError as exc:
+        raise ValueError(f"trust bundle: {exc}") from exc
+    if not isinstance(bundle, dict) or bundle.get("contractId") != CONTRACT_ID:
+        raise ValueError("trust bundle: contractId is not actor-marker-survival/v1")
+    writers = bundle.get("writers")
+    if not isinstance(writers, dict) or not writers:
+        raise ValueError("trust bundle: writers is not a non-empty object")
+    for name, writer in writers.items():
+        if not (isinstance(writer, dict) and writer.get("role") in ROLES
+                and _raw(writer.get("key"), 32) is not None):
+            raise ValueError(f"trust bundle: writer {name!r} needs a 32-byte base64url key and a role")
+    return bundle
+
+
+def judge(record_bytes: bytes, trust: dict[str, Any]) -> tuple[str, str]:
+    """(``accept`` or ``reject``, reason) for one record under a bundle from ``load_trust``.
+
+    The record is read as strict JSON: a repeated member, NaN or a lone surrogate is
+    ``record_malformed``, because a parser that keeps one copy of a repeated ``writer`` or
+    ``act`` would judge a different chain than one that keeps the other.
+    """
+    try:
+        record = _strict(record_bytes)
+    except CaseError:
         return "reject", "record_malformed"
     if not isinstance(record, dict):
         return "reject", "record_malformed"
@@ -245,7 +282,7 @@ def judge(record_bytes: bytes, trust: dict[str, Any]) -> tuple[str, str]:
         entries = _check_shape(record)
     except (_Bad, Refusal, KeyError, TypeError, AttributeError):
         return "reject", "record_malformed"
-    for name, fails in _rules(entries, trust.get("writers", {})):
+    for name, fails in _rules(entries, trust["writers"]):
         if fails():
             return "reject", name
     return "accept", ACCEPTED

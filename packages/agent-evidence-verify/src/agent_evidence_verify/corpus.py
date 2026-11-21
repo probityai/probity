@@ -14,7 +14,9 @@ Suites answered here by this package's own implementations:
   ordered checks;
 * ``approval-binding/v1``, by the approval-binding adapter's ordered checks;
 * ``decision-record/v1``, by the decision-record reader under the profile each member names;
-* ``ocsf-decision/v1``, by the OCSF decision-record reader under the profile each member names.
+* ``ocsf-decision/v1``, by the OCSF decision-record reader under the profile each member names;
+* ``actor-marker-survival/v1``, by the actor-marker reader under the corpus's ``TRUST.json``,
+  read only when its SHA-256 is the manifest's ``trustSha256``.
 
 Every member of any other suite is answered ``not-applicable``, member by member,
 so the output always covers the whole manifest and never reads as a pass.
@@ -23,13 +25,14 @@ so the output always covers the whole manifest and never reads as a pass.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from importlib import metadata
 from pathlib import Path
 from typing import Any
 
-from . import decision_record, ocsf_decision
+from . import actor_marker, decision_record, ocsf_decision
 from . import execution_evidence as aee
 from .adapters import approval_binding, uncertain_effect
 from .ijson import parse_ijson
@@ -59,8 +62,18 @@ def _uncertain(record_path: Path) -> tuple[str, str]:
     return ("accept", uncertain_effect.ACCEPTED) if failure is None else ("reject", failure)
 
 
-def _answer(suite: str, root: Path, entry: dict[str, Any]) -> tuple[str, str | None, str | None]:
-    """(verdict, reason, result) for one member."""
+def _actor_trust(root: Path, manifest: dict[str, Any]) -> dict[str, Any]:
+    """The corpus's trust bundle, refused unless its bytes are the ones the manifest pins."""
+    raw = (root / "TRUST.json").read_bytes()
+    pinned = manifest.get("trustSha256")
+    if not isinstance(pinned, str) or hashlib.sha256(raw).hexdigest() != pinned:
+        raise ValueError(f"{root}/TRUST.json does not have the manifest's trustSha256")
+    return actor_marker.load_trust(raw)
+
+
+def _answer(suite: str, root: Path, entry: dict[str, Any],
+            trust: dict[str, Any] | None) -> tuple[str, str | None, str | None]:
+    """(verdict, reason, result) for one member; ``trust`` is set for the actor-marker suite."""
     if suite == AEE_SUITE:
         report = aee.verify((root / entry["file"]).read_bytes())
         if report.verdict == aee.VALID:
@@ -80,6 +93,9 @@ def _answer(suite: str, root: Path, entry: dict[str, Any]) -> tuple[str, str | N
         member = parse_ijson((root / entry["path"]).read_bytes())
         _, verdict, reason = ocsf_decision.read_member(member)
         return verdict, reason, None
+    if suite == actor_marker.SUITE and trust is not None:
+        verdict, reason = actor_marker.judge((root / entry["path"] / "record.json").read_bytes(), trust)
+        return verdict, reason, None
     return "not-applicable", "suite-not-implemented", None
 
 
@@ -90,10 +106,11 @@ def lines(root: Path) -> list[dict[str, Any]]:
     if not isinstance(suite, str) or not isinstance(digest, str) or not isinstance(entries, list):
         raise TypeError(f"{root}/MANIFEST.json names no suite, corpusDigest or vectors list")
     verifier = {"name": NAME, "version": version()}
+    trust = _actor_trust(root, manifest) if suite == actor_marker.SUITE else None
     out = []
     for entry in entries:
         try:
-            verdict, reason, result = _answer(suite, root, entry)
+            verdict, reason, result = _answer(suite, root, entry, trust)
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             verdict, reason, result = "error", f"{type(exc).__name__}: {exc}", None
         line: dict[str, Any] = {"schema": SCHEMA_ID, "suite": suite, "corpusDigest": digest,
