@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 (unreleased)
+
+A minor release: a new claim type, `evidence_sufficiency/v1`. It decides what one conforming Observed Effect
+record lets a verifier conclude (the question section 7.4 of the CoSAI WS4 containment paper asks), where
+`observed_effect/v1` only decides whether the record conforms.
+
+- `evidence_sufficiency/v1` judges three properties of one signed Observed Effect record under the consumer's own
+  pinned context: `no_write_in_scope` (`supported`, `contradicted` on an observed write, or `not_established` naming
+  the unmet obligation), `action_outcome` (`present`, `absent` or `pending`), and `observer_independence` (the
+  three-condition test). A record the admission step refuses as malformed and an unsupported property raise
+  `CaseError` with no verdict; a coherent record whose own rules refuse its claim is `not_established`.
+  The 36 candidate cases of the WS4 containment paper's section 7.4 are its test vectors
+  (`tests/data/evidence-sufficiency/cases`, byte for byte as published in cosai-oasis/ws4-secure-design-agentic-systems).
+
 ## 0.7.0 (2026-11-20)
 
 A minor release: `agent-evidence-verify decision-record` refuses or holds four records 0.6.0 accepted. A consumer that

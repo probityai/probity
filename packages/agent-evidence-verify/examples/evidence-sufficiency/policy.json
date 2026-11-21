@@ -1,0 +1,24 @@
+{
+  "assessments": {
+    "no-write-in-scope-pass": {
+      "anchored_commitment_digest": "aac59d4d47daa996b1d89dcd98002a628fbb46769512769302df44e083f97da6",
+      "claim_ref": "iv-0002",
+      "claim_type": "evidence_sufficiency/v1",
+      "envelope": "envelope.json",
+      "observer_public_key": "4f2a59edc8367deb40047ce83ee7f5ce711a57d93abbda9d1ce8588c56a3ce88",
+      "producer_capability": {
+        "claim_ref": "iv-0002",
+        "visible_write_paths": [
+          "/srv/app/"
+        ]
+      },
+      "property": {
+        "name": "no_write_in_scope",
+        "scope": [
+          "/srv/app/"
+        ]
+      }
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
