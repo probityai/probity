@@ -121,16 +121,18 @@ def _refused_documents() -> list[tuple[str, str, Any]]:
     swapped = {**doc, "user": ref("user", "mallory@example.com").document()}
     forged_ref = {**doc, "user": {**doc["user"], "subject": "mallory@example.com"}}
     unknown = {**doc, "tier": "gold"}
+    stale_ref_id = {**doc, "sponsor": {**doc["sponsor"], "id": ref("sponsor", "mallory@example.com").render()}}
     return [
         ("CD1", "the parts name mallory while the id names alice", swapped),
         ("CD2", "a ref whose id disagrees with its subject", forged_ref),
         ("CD3", "an unknown member", unknown),
         ("CD4", "version true is not version 1", {**doc, "version": True}),
+        ("CD5", "a ref's own id names mallory while its parts and the identity id name the owner", stale_ref_id),
     ]
 
 
 DOCUMENT_CODES = {"CD1": "identity_document_id_mismatch", "CD2": "identity_document_id_mismatch",
-                  "CD3": "identity_attribute_unknown", "CD4": "identity_version_unknown"}  # fmt: skip
+                  "CD3": "identity_attribute_unknown", "CD4": "identity_version_unknown", "CD5": "identity_document_id_mismatch"}  # fmt: skip
 
 
 def outcome(identity: CanonicalIdentity) -> dict[str, Any]:

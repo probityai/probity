@@ -120,3 +120,14 @@ def test_a_sub_agent_shows_its_parent_and_the_acting_agent_is_last() -> None:
 @pytest.mark.parametrize("vector", [v for v in vectors() if "refused" in v["expected"]], ids=lambda v: v["id"])
 def test_each_refusal_is_its_stated_code(vector: dict) -> None:
     assert judge(vector["direction"], vector["input"]) == vector["expected"]
+
+
+def test_the_spec_lists_exactly_the_refusal_codes_the_reader_raises() -> None:
+    import re
+
+    package = Path(__file__).resolve().parents[1]
+    source = (package / "src" / "probity_records" / "canonical_identity.py").read_text()
+    raised = set(re.findall(r'IdentityStringError\(\s*"(identity_[a-z_]+)"', source))
+    raised |= set(re.findall(r'"(identity_[a-z_]+)" if ', source))
+    spec = (package / "docs" / "canonical-identity.md").read_text().split("## Refusal codes", 1)[1]
+    assert raised == set(re.findall(r"`(identity_[a-z_]+)`", spec))

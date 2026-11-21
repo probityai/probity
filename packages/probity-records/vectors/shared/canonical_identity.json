@@ -1301,5 +1301,50 @@
       },
       "version": true
     }
+  },
+  {
+    "description": "a ref's own id names mallory while its parts and the identity id name the owner",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_document_id_mismatch"
+    },
+    "id": "CD5",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/mallory%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
   }
 ]
