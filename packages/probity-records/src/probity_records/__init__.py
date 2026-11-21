@@ -65,6 +65,17 @@ from .journal import (
                    Journal,
                    verify_journal,
 )
+from .possession import (
+                   Presentation,
+                   ReplayCache,
+                   ReplayCacheFull,
+                   cnf_for_certificate,
+                   cnf_for_jwk,
+                   cnf_for_signer,
+                   sign_dpop,
+                   verify_dpop,
+                   verify_held_grant,
+)
 from .quorum import APPROVAL_QUORUM, QuorumResult, request_hash, sign_vote
 from .quorum import count as count_votes
 from .records import (
@@ -132,7 +143,10 @@ __all__ = [
                    "FieldMap",
                    "GcpKmsKey",
                    "Journal",
+                   "Presentation",
                    "QuorumResult",
+                   "ReplayCache",
+                   "ReplayCacheFull",
                    "RevocationError",
                    "RevocationState",
                    "Signer",
@@ -149,6 +163,9 @@ __all__ = [
                    "canonical_of_received",
                    "check_constraint",
                    "check_exception_call",
+                   "cnf_for_certificate",
+                   "cnf_for_jwk",
+                   "cnf_for_signer",
                    "compare_seals",
                    "count_votes",
                    "delegate",
@@ -177,6 +194,7 @@ __all__ = [
                    "seal_export",
                    "sha256_hex",
                    "sign_approval",
+                   "sign_dpop",
                    "sign_envelope",
                    "sign_permit",
                    "sign_revocations",
@@ -190,8 +208,10 @@ __all__ = [
                    "verify_call_under_grant",
                    "verify_chain",
                    "verify_delegation",
+                   "verify_dpop",
                    "verify_export_seal",
                    "verify_grant_allow",
+                   "verify_held_grant",
                    "verify_journal",
                    "verify_permit",
 ]

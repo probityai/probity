@@ -538,6 +538,18 @@ function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string,
 
 // ---------- grants ----------
 
+// RFC 7800 confirmation: exactly one method, jkt (RFC 9449) or x5t#S256 (RFC 8705), a SHA-256 thumbprint in
+// canonical base64url. A grant without one is a bearer token and is refused, as by the Python verifier.
+const CNF_METHODS = ["jkt", "x5t#S256"];
+function cnfProblem(cnf: J): string | null {
+  if (cnf === undefined || cnf === null) return "cnf_missing";
+  if (!isObj(cnf) || Object.keys(cnf).length !== 1) return "cnf_invalid";
+  const [[method, value]] = Object.entries(cnf) as [string, J][];
+  if (!CNF_METHODS.includes(method) || typeof value !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(value)) return "cnf_invalid";
+  const raw = Buffer.from(value, "base64url");
+  return raw.length === 32 && raw.toString("base64url") === value ? null : "cnf_invalid";
+}
+
 function narrowingProblem(ch: J, p: J): string | null {
   if (ch.issuerKey !== p.holderKey) return "child_not_issued_by_parent_holder";
   if (ts(ch.notBefore) < ts(p.notBefore) || ts(ch.expiresAt) > ts(p.expiresAt)) return "child_window_wider_than_parent";
@@ -587,6 +599,8 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
   for (let depth = 0; depth < chain.length; depth++) {
     const body = isObj(chain[depth]) ? chain[depth].body : null;
     if (!isObj(body)) { result = `grant_shape:${depth}`; break; }
+    const cnf = cnfProblem(body.cnf);
+    if (cnf) { result = `grant_invalid:${depth}:grant_${cnf}`; break; }
     let issuer: string;
     try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch (e) { result = `grant_invalid:${depth}:${(e as Error).message}`; break; }
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) { result = `grant_signature_unverified:${depth}`; break; }
@@ -629,7 +643,7 @@ export function verifyGrantAllow(chain: J[], tool: string, args: J, at: string, 
 // ---------- identity ----------
 
 const MEMBERS = ["issuer", "subject", "clientId", "audience", "authMethod", "source", "tokenDigest", "issuedAt", "expiresAt", "kid", "key", "keyThumbprint", "jwksDigest"];
-const OPTIONAL = ["tenant", "act"];
+const OPTIONAL = ["tenant", "act", "cnf"];
 const SOURCES = ["jwt-access-token", "id-token", "jwt-assertion", "id-jag"];
 const AUTH = ["none", "client_secret_post", "client_secret_basic", "client_secret_jwt", "private_key_jwt", "tls_client_auth", "self_signed_tls_client_auth"];
 const THUMB: Record<string, string[]> = { RSA: ["e", "kty", "n"], EC: ["crv", "kty", "x", "y"], OKP: ["crv", "kty", "x"] };
@@ -650,6 +664,7 @@ function principalShape(p: J): string | null {
   if (!SOURCES.includes(p.source) || !AUTH.includes(p.authMethod)) return "principal_malformed";
   if (["tokenDigest", "jwksDigest"].some((m) => typeof p[m] !== "string" || !/^[0-9a-f]{64}$/.test(p[m]))) return "principal_malformed";
   if (!isObj(p.key) || ["d", "p", "q", "dp", "dq", "qi", "k"].some((k) => k in p.key)) return "principal_key_invalid";
+  if ("cnf" in p && cnfProblem(p.cnf)) return "principal_cnf_invalid";
   return null;
 }
 function actSubjects(act: J): string[] | null {
