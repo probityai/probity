@@ -79,7 +79,7 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-mcp"
-version = "0.2.6"
+version = "0.2.7"
 source = { editable = "packages/agent-evidence-mcp" }
 dependencies = [
     { name = "agent-evidence-admission" },
