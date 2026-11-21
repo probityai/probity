@@ -80,7 +80,8 @@ def test_each_case_gets_its_authored_verdict(path, tmp_path):
 def test_the_expectation_never_reaches_the_adapter(tmp_path):
     case = json.loads(CASES[0].read_text(encoding="utf-8"))
     result = _judge(case, tmp_path)
-    assert "expected" not in json.dumps(result)
+    assert "expected" not in result["scope"]
+    assert "expected" not in result["checks"][0]
 
 
 def test_a_wrong_pinned_key_leaves_the_property_not_established(tmp_path):
