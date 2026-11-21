@@ -51,6 +51,27 @@ An observation with `coverage: incomplete` must name its gaps as `start` and
 `end` intervals inside its scope. Use `coverage: unknown` when no gap can be
 located. A bare `incomplete` flag is malformed, not a property verdict.
 
+## Evidence sufficiency
+
+`evidence_sufficiency/v1` takes one signed Observed Effect record (a DSSE envelope), the pinned
+`observer_public_key`, the `claim_ref` of the invocation under evaluation and a `property`, and decides
+what the record lets a verifier conclude. The record is admitted through the same rules as
+`observed_effect/v1`; the claim-level rules then read only the admitted predicate and the consumer's context.
+
+| property | `supported` | `contradicted` | `not_established` |
+| --- | --- | --- | --- |
+| `no_write_in_scope` | pass | a write observed inside the scope | the unmet obligation: `observation_coverage`, `observation_vantage`, `invocation_binding` or `producer_capability_coverage` |
+| `action_outcome` | `absent` | `present` | `pending`, with the same obligations |
+| `observer_independence` | each of the three conditions names evidence the producer neither controls nor established | | the first unmet condition, or the vantage or interval it fails on |
+
+Optional assessment members carry what the consumer established outside the record: `anchored_commitment_digest`
+(the prior commitment expected for this invocation), `producer_capability` (the paths the producer could see
+writes on, for this `claim_ref`), and for independence the `producer` and `independence_evidence`. The check
+echoes them in `scope`. A record with a malformed coverage statement, and a property the adapter does not
+implement, raise `CaseError` with no verdict, as processing failures. The adapter does not open an
+`evidence_ref`, and `supported` holds given the context the consumer supplied. The 36 cases of section 7.4 of the
+CoSAI WS4 containment paper are the test vectors: `tests/data/evidence-sufficiency/cases`.
+
 ## Broker-recorded file completion
 
 [`brokered_file_write/v1`](brokered-file-write.md) checks a separately selected
