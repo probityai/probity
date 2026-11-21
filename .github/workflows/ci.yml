@@ -3492,8 +3492,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      # A change can fix the tree's windows, which the lint checks. It cannot change what PyPI
+      # serves, so the resolve of the published releases runs in family-resolves.yml (daily and
+      # on demand) and never gates a merge: a published break would otherwise block its own fix.
       - run: python3 scripts/family_resolves.py lint
-      - run: python3 scripts/family_resolves.py resolve
 
   pypi-upload-selftest:
     name: "pypi-upload-selftest"
