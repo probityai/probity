@@ -1,0 +1,822 @@
+{
+  "agentKeyid": "6b0c184dc9b6d3e033f0624fbde5112c1d75dfd99f1ceb21e89c06653d16144f",
+  "corpusDigest": "a155be9775d72adc7d44b537e48d5a690c66a43e52383ee5ae1a89faf8b66aab",
+  "counts": {
+    "contradicted": 26,
+    "no_verdict": 2,
+    "not_established": 24,
+    "supported": 6
+  },
+  "hostKeyid": "f49838752f4581ef7fcdadc8369e3fd9e72a6e388850aa5b8bb202e282a98a6f",
+  "predicateType": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/credential-reachability",
+  "suite": "credential-reachability/v1",
+  "vectors": [
+    {
+      "description": "every class tried and not reachable; two broker placeholders in the environment",
+      "expected": {
+        "decision": "supported",
+        "reason": "contained_verified"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "9e6fa57b0a0adab8320bfcc6dca86e806881e763e05e9cc24ee65340809ead12"
+      },
+      "id": "contained",
+      "path": "cases/contained"
+    },
+    {
+      "description": "a positive control: a key file, a cloud secret, stored git credentials and a cookie database are reachable",
+      "expected": {
+        "decision": "supported",
+        "reason": "exposed_verified"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "c5cb22c1955c193acecac3e69b28848c09c93583e2ac3d48746754c7fec0066f"
+      },
+      "id": "exposed",
+      "path": "cases/exposed"
+    },
+    {
+      "description": "one metadata attempt failed, so that class could not be tested and the result is incomplete",
+      "expected": {
+        "decision": "supported",
+        "reason": "incomplete_verified"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "31a433d13539e7da2d00d7afc9720223ac0fe6ae5ab1e0cb1c87aaba15c25f2d"
+      },
+      "id": "incomplete",
+      "path": "cases/incomplete"
+    },
+    {
+      "description": "an agent token that carries an agent marker is reachable, and nothing else",
+      "expected": {
+        "decision": "supported",
+        "reason": "contained_verified"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "d5a674c15485204f4536f8025decddc22a83488f1430348ee70c0431fde80740"
+      },
+      "id": "contained-marked",
+      "path": "cases/contained-marked"
+    },
+    {
+      "description": "a first signature by a key no policy names is ignored; the host's verifies",
+      "expected": {
+        "decision": "supported",
+        "reason": "contained_verified"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "2d3c3d5c7ea37d3efb5aaee459b9fe64ce6d1747aef40d2f618365b8dd96f36e"
+      },
+      "id": "contained-unpinned-cosigner",
+      "path": "cases/contained-unpinned-cosigner"
+    },
+    {
+      "description": "the verifier pins no probe digest",
+      "expected": {
+        "decision": "supported",
+        "reason": "contained_verified"
+      },
+      "files": {
+        "case.json": "f42481ad8112cb1adebbe9ad99e7ae2fc7c012ec881acbaa4653bf29b9dedf6e",
+        "envelope.json": "9e6fa57b0a0adab8320bfcc6dca86e806881e763e05e9cc24ee65340809ead12"
+      },
+      "id": "contained-no-probe-pin",
+      "path": "cases/contained-no-probe-pin"
+    },
+    {
+      "description": "the envelope bytes are not JSON",
+      "expected": {
+        "decision": "no_verdict",
+        "reason": "malformed_envelope"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "6c929b2d8f11bcc71ba080473377db524d77301b51de17e0f4fecdd1c0f8f65f"
+      },
+      "id": "malformed-envelope",
+      "path": "cases/malformed-envelope",
+      "twin": "contained"
+    },
+    {
+      "description": "a signature is not base64",
+      "expected": {
+        "decision": "no_verdict",
+        "reason": "malformed_envelope"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "bd26bfd73bfbf34744e4a3f675a666c5237102f2645e9ce43844359f666a5bb7"
+      },
+      "id": "malformed-signature",
+      "path": "cases/malformed-signature",
+      "twin": "contained"
+    },
+    {
+      "description": "signed under a payload type the policy does not pin",
+      "expected": {
+        "decision": "not_established",
+        "reason": "unsupported_payload_type"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "c18c81a4df8734399da2915dbcc027af23c275b01dd770c2b1df7f5d412ae2cf"
+      },
+      "id": "payload-type-other",
+      "path": "cases/payload-type-other",
+      "twin": "contained"
+    },
+    {
+      "description": "the agent signed its own result under its own keyid",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "signed_by_agent_key"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "43c049380f274bbbaad7de7a10cd828013bb140300e652f80fb11204c6290c9c"
+      },
+      "id": "signed-by-agent-key",
+      "path": "cases/signed-by-agent-key",
+      "twin": "contained"
+    },
+    {
+      "description": "the agent signed its own result and labelled it with the host's keyid",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "signed_by_agent_key"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "3d6da9ce04d86b5836f6893b5fda862fa64d7eb792c8553d42e68a226c1818c4"
+      },
+      "id": "agent-key-names-host-keyid",
+      "path": "cases/agent-key-names-host-keyid",
+      "twin": "contained"
+    },
+    {
+      "description": "the host signed and the agent added its own signature to the envelope",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "signed_by_agent_key"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "817f16d0c13b3dacb86baf34f0c62ef1b1e6829297d04a5e420ead686ecd69f2"
+      },
+      "id": "agent-cosigned",
+      "path": "cases/agent-cosigned",
+      "twin": "contained"
+    },
+    {
+      "description": "the found key file was rewritten as absent after signing",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "signature_invalid"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "51bf1607b8cb667fdaa47cd76716ae7619e824e63815219a19c2a9aca47e3d33"
+      },
+      "id": "forged-payload",
+      "path": "cases/forged-payload",
+      "twin": "exposed"
+    },
+    {
+      "description": "signed by a key the policy does not name, under its own keyid",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "untrusted_key"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "c479d6f53d687ca722d0a3bf502bf105e337c7e73ac30c3cdc8906919a6f6fe0"
+      },
+      "id": "untrusted-signer",
+      "path": "cases/untrusted-signer",
+      "twin": "contained"
+    },
+    {
+      "description": "signed by a key the policy does not name, labelled with the host's keyid",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "signature_invalid"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "647cd310290d20adf456f5a8807d5629ac781762345bd2de94428f7f4ed3b5be"
+      },
+      "id": "swapped-key-names-host-keyid",
+      "path": "cases/swapped-key-names-host-keyid",
+      "twin": "contained"
+    },
+    {
+      "description": "the signed payload repeats the result member",
+      "expected": {
+        "decision": "not_established",
+        "reason": "payload_not_json_object"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "3d350feb221bebe0f4e31b002c7e187d8fb4861a61c9d60fe061f3b1e36647b7"
+      },
+      "id": "payload-duplicate-member",
+      "path": "cases/payload-duplicate-member",
+      "twin": "contained"
+    },
+    {
+      "description": "the signed payload is a JSON array holding the statement",
+      "expected": {
+        "decision": "not_established",
+        "reason": "payload_not_json_object"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "2641ba530185bfc8cb8b79f7f25083a45a05ee31162b19d8632cd8c90a833be7"
+      },
+      "id": "payload-not-object",
+      "path": "cases/payload-not-object",
+      "twin": "contained"
+    },
+    {
+      "description": "the statement names a superseded type",
+      "expected": {
+        "decision": "not_established",
+        "reason": "unsupported_statement_type"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "c0b53002aea5da5d5d7988d5654ae38ebe82a0fc91ef12a1e53db914607fa38c"
+      },
+      "id": "statement-type-old",
+      "path": "cases/statement-type-old",
+      "twin": "contained"
+    },
+    {
+      "description": "the statement names another predicate type",
+      "expected": {
+        "decision": "not_established",
+        "reason": "unsupported_predicate"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "95dec3282942ce0abe0bdd627c762fb37a9e2fc97741395a4a4c75f2322cc5b4"
+      },
+      "id": "predicate-type-other",
+      "path": "cases/predicate-type-other",
+      "twin": "contained"
+    },
+    {
+      "description": "the statement names two environments",
+      "expected": {
+        "decision": "not_established",
+        "reason": "subject_malformed"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "ef6c760ab9e43629deceb90c1c91eaae8b509a3fb7609f6b89bf8ee6bc73197f"
+      },
+      "id": "subject-two-members",
+      "path": "cases/subject-two-members",
+      "twin": "contained"
+    },
+    {
+      "description": "the record is for another environment",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "environment_mismatch"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "04c72b52e0a448f92dd395d4e42d14c40b4bf1efe9c0fe2fd5af5fe020b90fb5"
+      },
+      "id": "another-environment-name",
+      "path": "cases/another-environment-name",
+      "twin": "contained"
+    },
+    {
+      "description": "the record is for the same environment name under another contract",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "environment_mismatch"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "de0ad8894e516ccd8a6f36336b55bf36671444bd9b4410abbb06cb64e351bb01"
+      },
+      "id": "another-environment-contract",
+      "path": "cases/another-environment-contract",
+      "twin": "contained"
+    },
+    {
+      "description": "the predicate is a string",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:predicate"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "0477ae1f14ce0f37934fce6c114d9baf7b7f8404599071d3e67d2a81512336f7"
+      },
+      "id": "predicate-not-object",
+      "path": "cases/predicate-not-object",
+      "twin": "contained"
+    },
+    {
+      "description": "the predicate carries a member outside its list",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:members"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "a3f3484df4c6eb82a28b868cd678c076dd20e1d1ff2751821a458ebfc60735e8"
+      },
+      "id": "predicate-extra-member",
+      "path": "cases/predicate-extra-member",
+      "twin": "contained"
+    },
+    {
+      "description": "markedCredentials is absent",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:members"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "d882d59de7f51172f0e1857bd961cab07c6d21169037ecb6ca88cebd88a7f290"
+      },
+      "id": "predicate-member-missing",
+      "path": "cases/predicate-member-missing",
+      "twin": "contained"
+    },
+    {
+      "description": "the record claims an older, shorter class list",
+      "expected": {
+        "decision": "not_established",
+        "reason": "class_set_unsupported"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "7f24952931760316614440fa5a79baef2d1afd11091f022f388997903599bd9a"
+      },
+      "id": "class-set-downgrade",
+      "path": "cases/class-set-downgrade",
+      "twin": "contained"
+    },
+    {
+      "description": "the audience is empty",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:audience"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "afc35c0c5d33b80a0dd3503e301b932c0cf2c5911167760e51b99cbfc5a44690"
+      },
+      "id": "audience-empty",
+      "path": "cases/audience-empty",
+      "twin": "contained"
+    },
+    {
+      "description": "the vantage is null",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:vantage"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "71574b1d4bfa25220fc44ab0da704c124a3112043129f2d306adf4722936529a"
+      },
+      "id": "vantage-not-text",
+      "path": "cases/vantage-not-text",
+      "twin": "contained"
+    },
+    {
+      "description": "a declared placeholder prefix is empty",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:placeholders"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "10217c3a444d126d32c7e50d79421d51e3a9f371854123f477447bf503f3628e"
+      },
+      "id": "placeholder-prefix-empty",
+      "path": "cases/placeholder-prefix-empty",
+      "twin": "contained"
+    },
+    {
+      "description": "a declared marked credential carries 13 hex digits",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:markedCredentials"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "b82bd0f91be6d883cb954103cbe2faea9c97293312b7efc8e1e69405e7f46cee"
+      },
+      "id": "marked-prefix-long",
+      "path": "cases/marked-prefix-long",
+      "twin": "contained-marked"
+    },
+    {
+      "description": "the challenge is not 64 hex",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:challenge"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "9dfb059728c1af93e6eeba2107cbf29e5cb9771c30045a6d247d0c8ddde969dd"
+      },
+      "id": "challenge-malformed",
+      "path": "cases/challenge-malformed",
+      "twin": "contained"
+    },
+    {
+      "description": "the probe time carries a zone offset, not Z",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:probedAt"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "a084e51943c9e678ed3141e7006d82368a1e61c51484e698ebafa25bff2a4923"
+      },
+      "id": "probed-at-offset",
+      "path": "cases/probed-at-offset",
+      "twin": "contained"
+    },
+    {
+      "description": "the probe names no digest",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:probe"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "d473aa323232bc48569d22d7e4cdacd6cce0f3192baefd41cbc71b5cc711716d"
+      },
+      "id": "probe-digest-missing",
+      "path": "cases/probe-digest-missing",
+      "twin": "contained"
+    },
+    {
+      "description": "a class term outside the list",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:classes"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "62507a7e6e11271930f8d28fe222ff0478b0c4f5a78280395f8c826a956a916b"
+      },
+      "id": "class-unknown",
+      "path": "cases/class-unknown",
+      "twin": "contained"
+    },
+    {
+      "description": "a class reported with no attempt: the probe did not run for it",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:classes"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "31e85e1303f1c1584b05d8394e370e5f1a5afc2fced4b5d022b4efedd05eb01a"
+      },
+      "id": "class-without-attempts",
+      "path": "cases/class-without-attempts",
+      "twin": "contained"
+    },
+    {
+      "description": "an attempt outcome outside the list",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:classes"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "5b32f26920a2310ac24c3ccbce7c95fbd62bc6da544121beb7313e954796c951"
+      },
+      "id": "outcome-unknown",
+      "path": "cases/outcome-unknown",
+      "twin": "contained"
+    },
+    {
+      "description": "a result outside the list",
+      "expected": {
+        "decision": "not_established",
+        "reason": "predicate_field_invalid:result"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "985fb8e6aabd1c46cb69e51fa43f85ccf367ba9c8c0f9eb2da2e5f058c5a5204"
+      },
+      "id": "result-unknown",
+      "path": "cases/result-unknown",
+      "twin": "contained"
+    },
+    {
+      "description": "a found attempt carries the credential's value",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "attempt_fields"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "446f581db07f7a499b5e397076d5b9dc28c6d9b6f075de5ce1b3dece3b7bc7bd"
+      },
+      "id": "attempt-carries-value",
+      "path": "cases/attempt-carries-value",
+      "twin": "exposed"
+    },
+    {
+      "description": "a found attempt carries a full digest, not a prefix",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "attempt_fields"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "c03a3acbff2e697d6ec4089cb5a0a70126d8c415d3844e1f62ea2bcbd5cf31d4"
+      },
+      "id": "attempt-full-digest",
+      "path": "cases/attempt-full-digest",
+      "twin": "exposed"
+    },
+    {
+      "description": "a found attempt carries no digest prefix",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "attempt_fields"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "3476b78ad5958e03a8465e3440b241430dc38de4d5e7f37969bd21b2d961fb09"
+      },
+      "id": "found-without-prefix",
+      "path": "cases/found-without-prefix",
+      "twin": "exposed"
+    },
+    {
+      "description": "an absent attempt carries a digest prefix",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "attempt_fields"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "73d54a1b2fe02b51fa9c111c481b8de4387172794097b30a3e06c5c52742a548"
+      },
+      "id": "absent-with-prefix",
+      "path": "cases/absent-with-prefix",
+      "twin": "contained"
+    },
+    {
+      "description": "the probe ran on the host, outside the agent's view",
+      "expected": {
+        "decision": "not_established",
+        "reason": "vantage_not_agent"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "6af52bdfd0ab79a321077e90f0f284e2de5485cca6f21898bbe89de0d5234e66"
+      },
+      "id": "vantage-host",
+      "path": "cases/vantage-host",
+      "twin": "contained"
+    },
+    {
+      "description": "the record was made for another verifier",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "audience_mismatch"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "836ef101c8610fd00b7280d794436cee89cd5116178c1bbcc128e26905a3a9d1"
+      },
+      "id": "audience-other",
+      "path": "cases/audience-other",
+      "twin": "contained"
+    },
+    {
+      "description": "a record made under an earlier challenge is replayed",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "challenge_mismatch"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "7b763a18d41b6021f34f2f0881f2ef8a84735c892389c0faf518abefb9b4eafe"
+      },
+      "id": "challenge-replayed",
+      "path": "cases/challenge-replayed",
+      "twin": "contained"
+    },
+    {
+      "description": "the probe time is after the time the verifier judges at",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "probed_in_future"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "8b554819ffc897ed71219e5ee390ef28971cbabce362507bc08188e7b384ad4d"
+      },
+      "id": "probed-in-future",
+      "path": "cases/probed-in-future",
+      "twin": "contained"
+    },
+    {
+      "description": "the record is one second older than the oldest the verifier accepts",
+      "expected": {
+        "decision": "not_established",
+        "reason": "result_stale"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "23b6294a7464e7d8ddf22da1537caf86dd599f65cf4d60288c17ebdffbe2b354"
+      },
+      "id": "result-stale",
+      "path": "cases/result-stale",
+      "twin": "contained"
+    },
+    {
+      "description": "the probe is not one the verifier pins",
+      "expected": {
+        "decision": "not_established",
+        "reason": "probe_not_pinned"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "7302a3101d7f87cb13fcbba5af9e15c961b523efb379097f2cfba513306a80ef"
+      },
+      "id": "probe-not-pinned",
+      "path": "cases/probe-not-pinned",
+      "twin": "contained"
+    },
+    {
+      "description": "one class is reported twice",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "class_duplicate:ssh-agent"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "0a79fd416b76dbfbe6e712d5af49dc16e99a3bb8f788a898a22cf310ec62bcbc"
+      },
+      "id": "class-duplicate",
+      "path": "cases/class-duplicate",
+      "twin": "contained"
+    },
+    {
+      "description": "the host keyring class is left out",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "class_missing:host-keyring"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "e330dc5eb84d1595e494a0a582eb3bcc1249560b12a2f631ff00855821c237f3"
+      },
+      "id": "class-omitted",
+      "path": "cases/class-omitted",
+      "twin": "contained"
+    },
+    {
+      "description": "a credential is called marked that the record does not declare",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "marked_undeclared"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "1c20f63295189b70460560c2904a2b97ac8ed29e79f90d8858b2f98276ebdd67"
+      },
+      "id": "marked-undeclared",
+      "path": "cases/marked-undeclared",
+      "twin": "contained-marked"
+    },
+    {
+      "description": "values are called placeholders while the record declares no placeholder prefix",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "placeholder_undeclared"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "61de3016d578e0e8b8236a979109d448ded370f20dfc01ef01f8155dcfee2bab"
+      },
+      "id": "placeholder-undeclared",
+      "path": "cases/placeholder-undeclared",
+      "twin": "contained"
+    },
+    {
+      "description": "a class with a found key file is reported not reachable",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "reachable_reported_clean:ssh-key-file"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "cd3578c646afbb14b7635a83c825a721c3f54f10e041df8db0d6142202518898"
+      },
+      "id": "found-reported-clean",
+      "path": "cases/found-reported-clean",
+      "twin": "exposed"
+    },
+    {
+      "description": "a metadata attempt did not run and the class is still reported not reachable",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "untested_reported_clean:cloud-metadata"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "43d06fd02653d1afa22c71add337d13c0383245714b938233403b14b8ef2ad3d"
+      },
+      "id": "not-run-reported-clean",
+      "path": "cases/not-run-reported-clean",
+      "twin": "contained"
+    },
+    {
+      "description": "a metadata attempt failed and the class is reported not reachable",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "untested_reported_clean:cloud-metadata"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "58f194131e139ce9eefd51193f3c9054dbdabcf2d950cf620471f33dbc388f2d"
+      },
+      "id": "error-reported-clean",
+      "path": "cases/error-reported-clean",
+      "twin": "incomplete"
+    },
+    {
+      "description": "a class is reported reachable that no attempt found",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "class_verdict_mismatch:ssh-agent"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "d7f2b6071742e7237e9c1f86d16fd2300b35acaf31e3f4ee848a7864928505de"
+      },
+      "id": "verdict-overcautious",
+      "path": "cases/verdict-overcautious",
+      "twin": "contained"
+    },
+    {
+      "description": "a class could not be tested and the result is reported contained",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "result_overstates"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "43b5baecd5698aefc325dd70b23aebc9fa423bf36c43d084d4a547ace0d1edc6"
+      },
+      "id": "result-overstates-incomplete",
+      "path": "cases/result-overstates-incomplete",
+      "twin": "incomplete"
+    },
+    {
+      "description": "classes are reachable and the result is reported incomplete",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "result_overstates"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "41fadefac88889b6469f3e20477d67b24efbfd54c860bcfc3184c765f7108b94"
+      },
+      "id": "result-overstates-exposed",
+      "path": "cases/result-overstates-exposed",
+      "twin": "exposed"
+    },
+    {
+      "description": "no class is reachable and the result is reported exposed",
+      "expected": {
+        "decision": "contradicted",
+        "reason": "result_mismatch"
+      },
+      "files": {
+        "case.json": "f40dc405f6450f975fbeb8359166892323bcda0a721d87e42a99676829d14958",
+        "envelope.json": "2c8163060ebfa08e4dcf0587eba6fe3bd8ac55b36342e19ba1d8f274e93966e8"
+      },
+      "id": "result-understates",
+      "path": "cases/result-understates",
+      "twin": "contained"
+    }
+  ],
+  "verifierContract": "verifier case.json --json"
+}
