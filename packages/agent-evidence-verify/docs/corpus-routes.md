@@ -29,14 +29,17 @@ A route agrees with a member only when the decision and the reason both match. A
 
 The assessment names one artifact, `record`. The claim: the trail is consistent with at most one
 effect for the operation, and the outcome the runtime reported is one the effect owner's answers
-support. The thirteen checks run in the corpus's order (`contract_id_missing` to
-`stop_straddle_reported_settled`). All pass: `supported` / `effect_held`. Otherwise `contradicted`
+support. The fifteen checks run in the corpus's order (`contract_id_missing` to
+`stop_straddle_reported_settled`), including `idempotency_key_follows_trigger` (a redelivery, replay or
+completion that runs the step under a key other than the operation's own) and `owner_effect_unaccounted`
+(the owner holds more effects than the trail has attempts that could have made one, as when the attempt was
+lost with a checkpoint or deleted with the history). All pass: `supported` / `effect_held`. Otherwise `contradicted`
 with the first failing check. Corpus `allow` maps to `supported`, `deny` to `contradicted`.
 
 The record is strict JSON (no repeated member, no NaN), and each carried field stays in the contract's
 domain: `ownerEffects` is a non-negative integer, `final`, `deduplicatesByKey` and `charged` are booleans,
 and `reply`, `result`, `reported.outcome`, `stop.reported` and each authority check's `result` are words
-from closed lists. Anything else raises `CaseError` before a check runs, because the checks branch on
+from closed lists; an attempt's `trigger`, when carried, is an object whose `kind` is a string. Anything else raises `CaseError` before a check runs, because the checks branch on
 truthiness and on those lists: `"final": "no"` would read as final, and a repeated `ownerEffects` would
 read as whichever copy the parser kept. A pass that rests on such a value is not a pass.
 

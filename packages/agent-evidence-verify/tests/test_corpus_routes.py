@@ -2,8 +2,10 @@
 
 ``tests/data/uncertain-effect``, ``tests/data/restart-records`` and ``tests/data/a2a-jcs-v01`` are
 copies of ``corpora/vectors-uncertain-effect``, ``corpora/vectors-restart-records`` and
-``corpora/vectors-a2a-jcs-v01`` of probityai/agent-evidence-vectors at commit
-317df600f9a1503f32bcc2742b9f111036bdee32 (MANIFEST.json and the member files). Every expectation
+``corpora/vectors-a2a-jcs-v01`` of probityai/agent-evidence-vectors (MANIFEST.json and the member
+files): the uncertain-effect copy at commit 7b8b97a7cee6f9c594faa41cf08066ac4318afef (v0.37.0, with
+the crash, redelivery and rewind cases), the other two at commit
+317df600f9a1503f32bcc2742b9f111036bdee32. Every expectation
 below is read from a MANIFEST.json or a vector file; none comes from the verifier. Each member is
 judged through the kernel (``agent_evidence_verify.adjudicate``) as the Action's reference stage judges it:
 an accepted member must be ``supported`` with the corpus's reason, a rejected one ``contradicted``
@@ -87,6 +89,30 @@ def _judge_uncertain(tmp_path: Path, text: str) -> dict:
     (tmp_path / "record.json").write_text(text, encoding="utf-8")
     return _judge("c", tmp_path, ["record.json"],
                   {"claim_type": "uncertain_effect/v1", "record": "record.json"})
+
+
+def test_an_effect_with_no_attempt_left_in_the_trail_is_not_held(tmp_path: Path) -> None:
+    """A history deleted after the effect leaves an owner effect and no attempt; the port read it as held."""
+    record = _uncertain_record("owner_effect_unaccounted")
+    record["attempts"] = []
+    record["ownerEffects"] = 1
+    result = _judge_uncertain(tmp_path, json.dumps(record))
+    assert (result["decision"], result["reason"]) == ("contradicted", "owner_effect_unaccounted")
+
+
+def test_a_redelivery_under_a_delivery_derived_key_is_refused(tmp_path: Path) -> None:
+    """A redelivered attempt must carry the operation's own key, never one derived from the delivery."""
+    record = _uncertain_record("idempotency_key_follows_trigger")
+    assert any((a.get("trigger") or {}).get("kind") for a in record["attempts"])
+    result = _judge_uncertain(tmp_path, json.dumps(record))
+    assert result["reason"] == "idempotency_key_follows_trigger"
+
+
+def test_a_trigger_that_is_not_an_object_is_outside_the_contract(tmp_path: Path) -> None:
+    record = _uncertain_record("idempotency_key_follows_trigger")
+    record["attempts"][-1]["trigger"] = "redelivery"
+    with pytest.raises(CaseError):
+        _judge_uncertain(tmp_path, json.dumps(record))
 
 
 @pytest.mark.parametrize("spelling", ['NaN', 'true', '-1', '1.5', '"2"', '[2]'])
