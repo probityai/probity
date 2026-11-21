@@ -1,10 +1,11 @@
 """``evidence_sufficiency/v1`` gives each of 39 candidate cases the verdict its author wrote.
 
 ``tests/data/evidence-sufficiency/cases`` holds the section 7.4 candidate cases of the CoSAI WS4
-containment paper, byte for byte as they sit in ``conformance/RFC-189/observed-effect/cases`` of
-cosai-oasis/ws4-secure-design-agentic-systems (``feat/containment``, section 7.4 pinned at
-``05bed163b211152fc1b969e3932847164c2efeb3``). Each case names one record of the Observed Effect
-corpus by vector id and SHA-256; the records are the ones in ``tests/data/observed-effect``. The
+containment paper: the 36 of ``conformance/RFC-189/observed-effect/cases`` of
+cosai-oasis/ws4-secure-design-agentic-systems (``feat/containment``) and OE-26 to OE-28 from the
+repin branch, with ``against.text_sha256`` set to the digest of the current section 7.4 text. Each
+case names one record of the Observed Effect corpus by vector id and SHA-256; the records are the
+ones in ``tests/data/observed-effect``. The The
 expectation is read from the case file and never reaches the adapter.
 """
 
