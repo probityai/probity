@@ -1,7 +1,7 @@
 """The one signed revocation list: seven subject kinds, a hash chain, cumulative entries, root rotation.
 
-Every reader of revocations (records audit, the runtime mesh and gateway, probity-temporal, matchlock's egress
-proxy, the TypeScript twin and the Go reader) applies this format and must agree with these refusals.
+Every reader of revocations (records audit, the TypeScript twin, the Go reader and any other) applies this format
+and must agree with these refusals.
 """
 
 from __future__ import annotations

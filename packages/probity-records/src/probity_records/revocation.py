@@ -3,9 +3,8 @@
 A revocation root signs a chain of lists. ``seq`` rises by one (it is the list's epoch), ``previous`` is the digest
 of the prior body, and the list is cumulative: an entry, once published, stays in every later list byte for byte,
 so nobody can quietly un-revoke. Every reader of revocations reads this format and only this format: the records
-audit (``Trust``), the runtime's mesh, gateway and deferred-work gates, matchlock's egress proxy, the TypeScript
-twin and the Go reader in agent-evidence-vectors; the shared vectors (``vectors/shared/revocation.json``) hold them
-to the same verdicts. A signed list is::
+audit (``Trust``), the TypeScript twin and the Go reader in agent-evidence-vectors; the shared vectors
+(``vectors/shared/revocation.json``) hold them, and any other reader, to the same verdicts. A signed list is::
 
     {"body": {"type": REVOCATION_LIST, "listId": id, "seq": n, "previous": "sha256:<hex>" | None,
               "issuedAt": "YYYY-MM-DDTHH:MM:SSZ", "issuerKey": b64 raw Ed25519,
