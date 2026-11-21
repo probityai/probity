@@ -1267,7 +1267,12 @@ jobs:
         working-directory: packages/agent-evidence-observer/selected-adk
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/adk-tox/bin/uv" lock 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
+          # The selected ADK commit ships no lock and asks for daytona>=0.191 with no ceiling, so an
+          # unbounded lock follows PyPI. The daytona 2.x SDK removed root exports the e94 tests import
+          # (2.1.0 reached this lock on 2026-11-20). Hold daytona at 0.233.0, the version in the last
+          # green run's retained lock (run 44677148481). A pin by -P is not a lock setting, so tox's
+          # `uv sync --locked` accepts the lock; a global --exclude-newer is, and was refused there.
+          "$RUNNER_TEMP/adk-tox/bin/uv" lock --upgrade-package 'daytona==0.233.0' 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
       - name: Run unchanged tox on the recorded patched ADK source and sample
         working-directory: packages/agent-evidence-observer/selected-adk
         run: |
@@ -3492,8 +3497,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      # A change can fix the tree's windows, which the lint checks. It cannot change what PyPI
+      # serves, so the resolve of the published releases runs in family-resolves.yml (daily and
+      # on demand) and never gates a merge: a published break would otherwise block its own fix.
       - run: python3 scripts/family_resolves.py lint
-      - run: python3 scripts/family_resolves.py resolve
 
   pypi-upload-selftest:
     name: "pypi-upload-selftest"
