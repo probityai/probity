@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "agent-evidence-verify",
-      "project.version": "0.7.0",
+      "project.version": "0.8.0",
       "project.requires-python": ">=3.11",
       "project.dependencies": [
         "cryptography>=50.0.0",
@@ -63,7 +63,7 @@
         }
       }
     },
-    "sha256": "e95729a73b6231cbf0305568b34e3d3cf3b46e019542063aa5f8808dd08e6c3a"
+    "sha256": "11afc8db035fb96a60f76284035785fc932f2b6e6a14dbb3773744237a1472c2"
   },
   "implementation": [
     {
@@ -155,6 +155,11 @@
       "path": "src/agent_evidence_verify/adapters/event_absence.py",
       "bytes": 13351,
       "sha256": "b7a1a566ae53d99637f3348fbef1dcec20d91c562863e2c3c195c859687d7a48"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/evidence_sufficiency.py",
+      "bytes": 17987,
+      "sha256": "1ce2565d98d28a1c495d9fe2e1e19581ab545f5441613bd1f8d57d1bec2527dd"
     },
     {
       "path": "src/agent_evidence_verify/adapters/execution_evidence.py",
@@ -253,8 +258,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11555,
-      "sha256": "c0a4a377ee1b23e170afd46fc3ace1bc6635625690612fab51716e146f4eb78b"
+      "bytes": 11645,
+      "sha256": "c7afdfcdfd08996a12bd86a9600cf60e6538b72e394b22a805432e6de23ffd7a"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -2058,6 +2063,42 @@
           "path": "examples/evaluation-claim/record.json",
           "bytes": 1718,
           "sha256": "7df39e924a8ee42cd33d448fd077435875377eb7fb7eb56f569b491bd0c2b819"
+        }
+      ]
+    },
+    {
+      "task": "Decide what a signed Observed Effect record lets a verifier conclude",
+      "claim_type": "evidence_sufficiency/v1",
+      "case": "examples/evidence-sufficiency/case.json",
+      "policy": "examples/evidence-sufficiency/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member and a stipulated consumer context; it does not establish who holds the observer key.",
+      "case_id": "no-write-in-scope-pass",
+      "expected_reason": "evidence_sufficient",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/evidence-sufficiency/case.json",
+        "--policy",
+        "examples/evidence-sufficiency/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/evidence-sufficiency/case.json",
+          "bytes": 268,
+          "sha256": "e4a80cf9f43ee9f5404e85f5d804bd2e26929dc933e548193eca44353c71ca4e"
+        },
+        {
+          "path": "examples/evidence-sufficiency/policy.json",
+          "bytes": 672,
+          "sha256": "32d21b38a36f3001280d119508c9979f4fdee9cd2db7fb4320eb9bac7f41eaff"
+        },
+        {
+          "path": "examples/evidence-sufficiency/envelope.json",
+          "bytes": 2847,
+          "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
         }
       ]
     }

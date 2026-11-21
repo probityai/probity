@@ -5,7 +5,7 @@ containment paper: the 36 of ``conformance/RFC-189/observed-effect/cases`` of
 cosai-oasis/ws4-secure-design-agentic-systems (``feat/containment``) and OE-26 to OE-28 from the
 repin branch, with ``against.text_sha256`` set to the digest of the current section 7.4 text. Each
 case names one record of the Observed Effect corpus by vector id and SHA-256; the records are the
-ones in ``tests/data/observed-effect``. The The
+ones in ``tests/data/observed-effect``. The
 expectation is read from the case file and never reaches the adapter.
 """
 
