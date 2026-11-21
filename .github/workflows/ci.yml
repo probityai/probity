@@ -1268,9 +1268,11 @@ jobs:
         run: |
           set -euo pipefail
           # The selected ADK commit ships no lock and asks for daytona>=0.191 with no ceiling, so an
-          # unbounded lock follows PyPI: daytona 2.1.0 (2026-11-20 08:01Z) removed root exports its
-          # tests import. Bound the lock at the last green resolution (run 44677148481, 04:51Z).
-          "$RUNNER_TEMP/adk-tox/bin/uv" lock --exclude-newer 2026-11-20T04:00:00Z 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
+          # unbounded lock follows PyPI. The daytona 2.x SDK removed root exports the e94 tests import
+          # (2.1.0 reached this lock on 2026-11-20). Hold daytona at 0.233.0, the version in the last
+          # green run's retained lock (run 44677148481). A pin by -P is not a lock setting, so tox's
+          # `uv sync --locked` accepts the lock; a global --exclude-newer is, and was refused there.
+          "$RUNNER_TEMP/adk-tox/bin/uv" lock --upgrade-package 'daytona==0.233.0' 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
       - name: Run unchanged tox on the recorded patched ADK source and sample
         working-directory: packages/agent-evidence-observer/selected-adk
         run: |
