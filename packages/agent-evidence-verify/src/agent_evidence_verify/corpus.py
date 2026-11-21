@@ -14,7 +14,9 @@ Suites answered here by this package's own implementations:
   ordered checks;
 * ``approval-binding/v1``, by the approval-binding adapter's ordered checks;
 * ``decision-record/v1``, by the decision-record reader under the profile each member names;
-* ``ocsf-decision/v1``, by the OCSF decision-record reader under the profile each member names.
+* ``ocsf-decision/v1``, by the OCSF decision-record reader under the profile each member names;
+* ``agent-payment-mandate/v1``, by the payment-mandate adapter (card-side and x402 records);
+* ``status-receipt-binding/v1``, by the status-receipt-binding adapter.
 
 Every member of any other suite is answered ``not-applicable``, member by member,
 so the output always covers the whole manifest and never reads as a pass.
@@ -31,7 +33,12 @@ from typing import Any
 
 from . import decision_record, ocsf_decision
 from . import execution_evidence as aee
-from .adapters import approval_binding, uncertain_effect
+from .adapters import (
+    approval_binding,
+    payment_mandate,
+    status_receipt_binding,
+    uncertain_effect,
+)
 from .ijson import parse_ijson
 from .json_input import parse_json
 
@@ -80,6 +87,12 @@ def _answer(suite: str, root: Path, entry: dict[str, Any]) -> tuple[str, str | N
         member = parse_ijson((root / entry["path"]).read_bytes())
         _, verdict, reason = ocsf_decision.read_member(member)
         return verdict, reason, None
+    if suite == payment_mandate.SUITE:
+        decision, reason = payment_mandate.judge(root / entry["path"] / "case.json")
+        return ("accept" if decision == payment_mandate.ACCEPTED else "reject"), reason, None
+    if suite == status_receipt_binding.SUITE:
+        decision, reason = status_receipt_binding.judge(root / entry["path"] / "case.json")
+        return ("accept" if decision == status_receipt_binding.ACCEPT else "reject"), reason, None
     return "not-applicable", "suite-not-implemented", None
 
 

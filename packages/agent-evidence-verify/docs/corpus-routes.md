@@ -128,6 +128,29 @@ an unauthorised key is `contradicted` with the authority's reason, and a key no 
 key-transparency authority can decide; a DID document or an inclusion proof is a case artifact the policy names. The roots of an inclusion or consistency proof are the artifact's own and carry no trust outside
 it.
 
+### Corpus mode only: `agent-payment-mandate/v1` and `status-receipt-binding/v1`
+
+`agent-evidence-verify corpus DIR` answers these two suites member by member, in the shared verdict-line format.
+The corpus's `accepted` and `accept` read as `accept`, `rejected` and `reject` as `reject`, and the reason is the
+corpus's refusal code.
+
+- `agent-payment-mandate/v1` (`vectors-agent-payment-mandate`, 36 members). A card-side record is held to its mandate
+  digest, the credential's binding, expiry, ceiling, currency, merchant, token, receipt and post-checkout actions. An
+  x402 record (`scheme: x402-exact-evm-eip3009`) carries the facilitator request in v2 field names. The reader
+  recomputes the EIP-712 digest of the EIP-3009 authorization under the requirement's token domain and recovers the
+  signer from the signature; `payload.signer` and any other field naming a signer are never read. It then holds the
+  authorization to the requirement and the mandate, and the settled transfer, the consumed nonce and the
+  facilitator's response to the authorization. The first failing rule is the reason, in the order of
+  `PROFILE_CHECKS` (18 codes). Permit2, ERC-7710, `upto` and smart-wallet signatures are outside the corpus.
+- `status-receipt-binding/v1` (`vectors-status-receipt-binding`, 24 members). The receipt's one signature is
+  verified under the authority key the case supplies, never a key the receipt or the credential names. The receipt
+  must name the credential by the SHA-256 of its payload, so a swapped capability set or key list is refused even
+  when the credential's own signature verifies. Ten checks run in order, `receipt_malformed` to
+  `credential_not_active`, and a case that passes all of them is `credential_bound`.
+
+A member whose bytes the strict reader refuses (a repeated member, an integer outside the double range) is an `error`
+line, never an accept.
+
 ## Why the rules are ported, not imported
 
 The rule code of each claim type is a port of the corpus's own reader, at the commit named in each
