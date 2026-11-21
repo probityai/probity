@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0 (unreleased)
+## 0.8.0 (2026-11-21)
 
 A minor release: a new claim type, `evidence_sufficiency/v1`. It decides what one conforming Observed Effect
 record lets a verifier conclude (the question section 7.4 of the CoSAI WS4 containment paper asks), where
