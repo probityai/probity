@@ -28,7 +28,7 @@ The command prints:
 
 `scripts/fixtures/broker-packet/` holds a signed packet, its history and the file tree. The
 operator's runtime wrote the packet, and this package checks it offline against the two keys pinned on the
-command line. The packet carries no keys of its own, and `verify` refuses to run without both. `noDetectedGap` means the broker's
+command line. The packet carries no keys of its own, and `verify` refuses to run without both. It exits 0 when the packet verifies, 1 when it is refused (with a JSON reason) and 3 when the verifier itself fails. `noDetectedGap` means the broker's
 file-tree snapshots found no change it did not make. It does not mean every agent effect was seen.
 See [Installation and profile selection](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/INSTALLATION.md) for the source-pinned recipes.
 
@@ -37,7 +37,6 @@ See [Installation and profile selection](https://github.com/probityai/probity/bl
 The root distribution is version 0.2.0. Every record says `witnessScope: PEER`: the witness key runs on the same
 host under the same operator, so the records show what this broker saw, not what an independent
 observer saw. The operator's runtime produces the signed records; this package verifies them offline.
-`launch-agent` runs an unmodified agent in docker or apptainer and records, from outside it, every program it ran and every file it changed.
 `agent-evidence-witness` runs a separately operated witness: a record it co-signs verifies as `EXTERNAL`
 when the reader pins a different operator for the witness key. It needs the `witness` extra, which is not yet
 in a released wheel.
@@ -49,7 +48,7 @@ then open its technical reference for commands and exact evidence.
 
 | page | read it for |
 | --- | --- |
-| [Start a project](https://github.com/new?template_name=evidence-starter&template_owner=probityai) | a template that records a write with this package and checks it with probity-verify, pinned and in CI |
+| [Start a project](https://github.com/new?template_name=evidence-starter&template_owner=probityai) | a template that checks a retained, signed write with this package and probity-verify, pinned and in CI |
 | [Component tour](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/OVERVIEW.md) | every part of the prototype in one paragraph each, with links: replay, evaluation history, A2A, AAE |
 | <a name="run-the-demo"></a>[Running the demo](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/RUNNING.md) | the full install with tests, and what each output field means |
 | <a name="claim-and-trust-boundary"></a><a name="tests-and-remaining-gaps"></a><a name="linux-boundary-gate"></a><a name="consumer-admission"></a><a name="roadmap"></a>[Design, trust boundary and roadmap](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/docs/DESIGN.md) | what each mechanism checks and does not establish, recovery, and the roadmap |

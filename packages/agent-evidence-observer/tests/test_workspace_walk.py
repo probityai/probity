@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from pathlib import Path
 
 import pytest
 
-from probity_observer.cli import main
+from probity_observer.cli import REFUSED, main
 from probity_observer.records import CoverageError, tree_manifest
 
 PACKET = Path(__file__).resolve().parents[1] / "scripts" / "fixtures" / "broker-packet"
@@ -42,8 +43,8 @@ def test_hidden_extra_files_never_print_verified(tmp_path: Path, capsys: pytest.
     (hidden / "exfil.sh").write_text("echo extra\n")
     hidden.chmod(0)
     try:
-        with pytest.raises(CoverageError):
-            main(["verify", str(root), *PINS])
-        assert "verified" not in capsys.readouterr().out
+        assert main(["verify", str(root), *PINS]) == REFUSED
+        answer = json.loads(capsys.readouterr().out)
+        assert answer["status"] == "refused" and answer["refusal"] == "CoverageError"
     finally:
         hidden.chmod(0o700)
