@@ -704,7 +704,41 @@ export function checkPrincipals(block: J, at: string, pins: Record<string, strin
 
 // ---------- journal ----------
 
-export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string }
+export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; possessionSkewSeconds?: number }
+
+// The proof an allow rested on (possession.possession_record): it must name the key the leaf grant's cnf confirms.
+const POSSESSION_MEMBERS: Record<string, string[]> = { dpop: ["iat", "jkt", "jti", "method"], mtls: ["method", "x5t#S256"] };
+const MAX_JTI_BYTES = 128, DEFAULT_SKEW = 120, REPLAY_GRACE = 5;
+function possessionRecordProblem(record: J, cnf: J): string | null {
+  if (!isObj(record) || typeof record.method !== "string" || !Object.hasOwn(POSSESSION_MEMBERS, record.method)) return "possession_record_malformed";
+  const want = POSSESSION_MEMBERS[record.method], keys = Object.keys(record).sort();
+  if (keys.length !== want.length || keys.some((k, i) => k !== want[i])) return "possession_record_malformed";
+  if (record.method === "dpop" && (typeof record.iat !== "number" || !Number.isInteger(record.iat) || typeof record.jti !== "string"
+      || !record.jti || Buffer.byteLength(record.jti, "utf8") > MAX_JTI_BYTES)) return "possession_record_malformed";
+  const member = record.method === "dpop" ? "jkt" : "x5t#S256";
+  if (!isObj(cnf) || !Object.hasOwn(cnf, member) || typeof record[member] !== "string" || record[member] !== String(cnf[member])) return "possession_not_the_grant_key";
+  return null;
+}
+
+// A DPoP proof spent by two permits inside its lifetime (possession.duplicate_proofs): a replay.
+function duplicateProofs(bodies: [number, J][], skew: number): string[] {
+  const found: string[] = [], first = new Map<string, [number, number, J]>();
+  for (const [n, body] of bodies) {
+    const pred = body.predicate;
+    if (!isObj(pred) || pred.phase !== "authorize" || !isObj(pred.authority)) continue;
+    const rec = pred.authority.possession;
+    if (!isObj(rec) || rec.method !== "dpop" || typeof rec.jkt !== "string" || typeof rec.jti !== "string"
+        || typeof rec.iat !== "number" || !Number.isInteger(rec.iat)) continue;
+    const key = `${rec.jkt}.${rec.jti}`, permit = pred.permitId ?? null;
+    let used: number;
+    try { used = ts(pred.at) / 1e6; } catch { found.push(`line_${n}:dpop_proof_use_time_invalid`); continue; }
+    const earlier = first.get(key);
+    const live = earlier !== undefined && used <= earlier[1] + skew + REPLAY_GRACE;
+    if (live && earlier![2] !== permit) { found.push(`line_${n}:dpop_proof_replayed:${earlier![0]}`); continue; }
+    if (!live) first.set(key, [n, rec.iat, permit]);
+  }
+  return found;
+}
 
 function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], where: string): boolean {
   const reason = pred.reason;
@@ -727,6 +761,10 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
     if (o !== "ok") problems.push(`${where}:grant_approval_${o}`);
   } else if (v.decision !== "allow") problems.push(`${where}:grant_${v.decision}:${v.reason}`);
   if (v.grantDigest && v.grantDigest !== pred.grantDigest) problems.push(`${where}:grant_digest_differs_from_record`);
+  if ("possession" in ev && v.grantDigest) {
+    const p = possessionRecordProblem(ev.possession, ev.chain[ev.chain.length - 1].body.cnf);
+    if (p) problems.push(`${where}:${p}`);
+  }
   return true;
 }
 
@@ -1078,7 +1116,7 @@ function spendOf(budget: J, args: J): number {
   return typeof v === "number" ? v : Infinity;
 }
 
-function crossChecks(bodies: [number, J][]): string[] {
+function crossChecks(bodies: [number, J][], skew: number): string[] {
   const problems: string[] = [];
   const uses = new Map<string, number>(), spent = new Map<string, number>(), charged = new Set<J>();
   for (const [i, body] of bodies) {
@@ -1100,6 +1138,7 @@ function crossChecks(bodies: [number, J][]): string[] {
       if ("spend" in budget && spent.get(d)! > budget.spend.max) problems.push(`line_${i}:grant_spend_exceeded:${d.slice(0, 12)}`);
     }
   }
+  problems.push(...duplicateProofs(bodies.filter(([, b]) => b.predicateType === TOOL_CALL_RECORD), skew));
   const grantOf = new Map<J, J>(), allowed = new Set<J>(), effects = new Map<J, number>(), intents = new Map<J, number>();
   for (const [i, body] of bodies) {
     if (body.predicateType !== TOOL_CALL_RECORD) continue;
@@ -1140,7 +1179,7 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
     bodies.push([i, body]);
     if (!problems.length) verified++;
   });
-  failures.push(...crossChecks(bodies));
+  failures.push(...crossChecks(bodies, trust?.possessionSkewSeconds ?? DEFAULT_SKEW));
   let checkpoint = "not_supplied";
   if (checkpointEnv !== null) {
     try {
