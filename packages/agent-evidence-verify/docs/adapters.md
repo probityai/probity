@@ -69,8 +69,8 @@ Optional assessment members carry what the consumer established outside the reco
 writes on, for this `claim_ref`), and for independence the `producer` and `independence_evidence`. The check
 echoes them in `scope`. A record with a malformed coverage statement, and a property the adapter does not
 implement, raise `CaseError` with no verdict, as processing failures. The adapter does not open an
-`evidence_ref`, and `supported` holds given the context the consumer supplied. The 36 cases of section 7.4 of the
-CoSAI WS4 containment paper are the test vectors: `tests/data/evidence-sufficiency/cases`.
+`evidence_ref`, and `supported` holds given the context the consumer supplied. The 39 cases of section 7.4 of the
+CoSAI WS4 containment paper (the 36 of the draft plus three on a gap inside the observed interval) are the test vectors: `tests/data/evidence-sufficiency/cases`.
 
 ## Broker-recorded file completion
 

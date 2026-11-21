@@ -1,6 +1,6 @@
 """``evidence_sufficiency/v1`` gives each of 39 candidate cases the verdict its author wrote.
 
-``tests/data/evidence-sufficiency/cases`` holds the 36 section 7.4 candidate cases of the CoSAI WS4
+``tests/data/evidence-sufficiency/cases`` holds the section 7.4 candidate cases of the CoSAI WS4
 containment paper, byte for byte as they sit in ``conformance/RFC-189/observed-effect/cases`` of
 cosai-oasis/ws4-secure-design-agentic-systems (``feat/containment``, section 7.4 pinned at
 ``05bed163b211152fc1b969e3932847164c2efeb3``). Each case names one record of the Observed Effect
