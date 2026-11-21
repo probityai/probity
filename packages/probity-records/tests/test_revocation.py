@@ -162,6 +162,19 @@ def test_root_rotation_hands_over_to_the_successor() -> None:
     assert _code(exc) == "revocation_list_signer_not_a_root"
 
 
+def test_a_revoked_successor_is_never_a_root_in_either_id_order() -> None:
+    other = Signer.generate()
+    seen = set()
+    for _ in range(64):
+        old, new = Signer.generate(), Signer.generate()
+        entries = [_entry("key", old.key_id, reason="rotation", successor=raw_public(new)),
+                   _entry("key", new.key_id, reason="compromised")]
+        state = RevocationState.from_lists([_list(old, 1, entries)], {old.key_id, other.key_id})
+        assert state.roots == frozenset({other.key_id})
+        seen.add(old.key_id < new.key_id)
+    assert seen == {True, False}
+
+
 # -- shape --------------------------------------------------------------------------------------------------------
 
 

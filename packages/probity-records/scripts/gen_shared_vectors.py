@@ -477,6 +477,9 @@ def received_rows() -> list[dict]:
 # -- revocation lists ------------------------------------------------------------------------------------------------
 
 RL_ROOT, RL_NEXT, RL_OUTSIDER = key("revocation-root"), key("revocation-successor"), key("revocation-outsider")
+#: A successor whose key id sorts after RL_ROOT's (RL_NEXT's sorts before it): a reader that walked the entries in
+#: order would give the two cases different roots.
+RL_NEXT_LATE = key("revocation-successor-1")
 T0, T1, T2, T3 = "2026-06-01T00:00:00Z", "2026-06-02T00:00:00Z", "2026-06-03T00:00:00Z", "2026-06-04T00:00:00Z"
 DIGEST_A = hashlib.sha256(b"grant-a").hexdigest()
 
@@ -518,6 +521,11 @@ def revocation_rows() -> list[dict]:
     rotate = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT))])
     by_next = rl(2, rotate["body"]["entries"], rotate, at=T1, signer=RL_NEXT)
     killed = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="compromised")])
+    both_early = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT)),
+                        rl_entry("key", RL_NEXT.key_id, reason="compromised")])
+    both_late = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT_LATE)),
+                       rl_entry("key", RL_NEXT_LATE.key_id, reason="compromised")])
+    assert RL_NEXT.key_id < RL_ROOT.key_id < RL_NEXT_LATE.key_id
     sig = base64.b64decode(one["sig"])
     loose_sig = one["sig"][:-3] + loosen(one["sig"][-3]) + "=="
     loose_key = one["body"]["issuerKey"][:-2] + loosen(one["body"]["issuerKey"][-2]) + "="
@@ -595,6 +603,12 @@ def revocation_rows() -> list[dict]:
          [rotate, rl(2, rotate["body"]["entries"], rotate, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
         ("RL37", "a root revoked without a successor ends the chain",
          [killed, rl(2, killed["body"]["entries"], killed, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
+        ("RL38", "a root revoked with a successor that the same list revokes ends the chain (successor id sorts before)",
+         [both_early, rl(2, both_early["body"]["entries"], both_early, at=T1, signer=RL_NEXT)], refuse,
+         "revocation_list_signer_not_a_root", 1),
+        ("RL39", "a root revoked with a successor that the same list revokes ends the chain (successor id sorts after)",
+         [both_late, rl(2, both_late["body"]["entries"], both_late, at=T1, signer=RL_NEXT_LATE)], refuse,
+         "revocation_list_signer_not_a_root", 1),
     ]
     rows = []
     for vid, description, lists, verdict, code, index in cases:

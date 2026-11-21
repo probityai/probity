@@ -158,13 +158,13 @@ export function applyRevocationList(state: RevocationState, signed: J): Revocati
       throw new Error(`revocation_list_drops_entry:${kind}:${id.slice(0, 12)}`);
     }
   }
+  // A revoked key is never a root, whatever the order of the entries: the successors of the roots this list revokes
+  // join, then every key id it revokes leaves, so a successor the same list revokes does not stay.
   const roots = new Set(state.roots);
   for (const e of entries.values()) {
-    if (e.kind === "key" && roots.has(e.id)) {
-      roots.delete(e.id);
-      if ("successor" in e) roots.add(sha256Hex(Buffer.from(e.successor, "base64")));
-    }
+    if (e.kind === "key" && state.roots.has(e.id) && "successor" in e) roots.add(sha256Hex(Buffer.from(e.successor, "base64")));
   }
+  for (const e of entries.values()) if (e.kind === "key") roots.delete(e.id);
   return { roots, listId: body.listId, seq, head: listDigest(body), issuedAt: body.issuedAt, entries };
 }
 

@@ -14,7 +14,9 @@ to the same verdicts. A signed list is::
      "sig": b64 Ed25519 over REVOCATION_DOMAIN || JCS(body)}
 
 The verifier pins root key ids and never reads one from a list: a list is checked under its presented key only
-once that key's id is a pinned root. Revoking a root with a ``successor`` rotates it. Revoking a grant revokes every
+once that key's id is a pinned root. Revoking a root with a ``successor`` rotates it: the roots after a list are
+the roots held plus the successors of the roots it revokes, minus every key id it revokes (a revoked key is never a
+root, in whatever order the entries come). Revoking a grant revokes every
 grant delegated under it (the chain check refuses any chain containing it); revoking an agent or a sponsor reaches
 every piece of work answering to it wherever the enforcement point derives that from a chain it verified.
 """
@@ -225,12 +227,12 @@ class RevocationState:
         for (kind, ident), held in self.entries.items():
             if entries.get((kind, ident)) != held:
                 raise RevocationError(f"revocation_list_drops_entry:{kind}:{ident[:12]}")
-        roots = set(self.roots)
-        for (kind, ident), e in entries.items():
-            if kind == "key" and ident in roots:
-                roots.discard(ident)
-                if "successor" in e:
-                    roots.add(key_id(load_public(_unb64(e["successor"]))))
+        # A revoked key is never a root, whatever the order of the entries: the successors of the roots this list
+        # revokes join, then every key id it revokes leaves, so a successor the same list revokes does not stay.
+        revoked_keys = {ident for kind, ident in entries if kind == "key"}
+        successors = {key_id(load_public(_unb64(e["successor"]))) for (kind, ident), e in entries.items()
+                      if kind == "key" and ident in self.roots and "successor" in e}
+        roots = (self.roots | successors) - revoked_keys
         return RevocationState(frozenset(roots), body["listId"], seq, list_digest(body), body["issuedAt"],
                                {k: dict(v) for k, v in entries.items()})
 
