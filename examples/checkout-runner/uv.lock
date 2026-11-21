@@ -16,18 +16,18 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "agent-evidence-vectors", specifier = "==0.36.3" }]
+requires-dist = [{ name = "agent-evidence-vectors", specifier = "==0.37.0" }]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = "==9.2.0" }]
 
 [[package]]
 name = "agent-evidence-vectors"
-version = "0.36.3"
+version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/fb/f4/7bcfb431b4beace86ee2bdbbb08835f5fca308f1b9480a0757f11c1b4255/agent_evidence_vectors-0.36.3.tar.gz", hash = "sha256:210e42172511495bca47a20c88903800cf405126d7f956bb4be839f354052764", size = 4405123, upload-time = "2026-11-07T09:04:27.201Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/12/8d8c1d8564d0d64563fc1d13e46b23ea3c9a3892eaf28366d0fe199e63d6/agent_evidence_vectors-0.37.0.tar.gz", hash = "sha256:245591b9b0e98f9d32d4eb80efadf492fd902399223f89b53c7023308db21f47", size = 4575747, upload-time = "2026-11-15T23:03:01.62Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/9c/a7460a5dbc490a9ee6dd9483104dcf7feb8ff9f39abf27a94c2ed3e65446/agent_evidence_vectors-0.36.3-py3-none-any.whl", hash = "sha256:c2a8c01e6e5f777405b6102511b2ce147a6fdae7a2a13ca80fbe9c6bdbac2a34", size = 12100855, upload-time = "2026-11-07T09:04:24.551Z" },
+    { url = "https://files.pythonhosted.org/packages/91/97/44bf8002166e343b23268a1c0fb9629a9e99841dddb209014f5834b418d6/agent_evidence_vectors-0.37.0-py3-none-any.whl", hash = "sha256:0cb4e7219db714a0035a7481396f3967a0c8fb79ad67a47b8727039819b3c00f", size = 12424052, upload-time = "2026-11-15T23:02:59.01Z" },
 ]
 
 [[package]]
