@@ -33,7 +33,12 @@ from typing import Any
 
 from . import decision_record, ocsf_decision
 from . import execution_evidence as aee
-from .adapters import approval_binding, payment_mandate, status_receipt_binding, uncertain_effect
+from .adapters import (
+    approval_binding,
+    payment_mandate,
+    status_receipt_binding,
+    uncertain_effect,
+)
 from .ijson import parse_ijson
 from .json_input import parse_json
 

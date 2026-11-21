@@ -151,7 +151,7 @@ def _whole(value: Any) -> int | None:
 
 def _unix(stamp: Any) -> int | None:
     try:
-        return int(datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp())
+        return int(datetime.fromisoformat(str(stamp)).timestamp())
     except ValueError:
         return None
 

@@ -64,7 +64,7 @@ def _sha(data: bytes) -> str:
 
 
 def _when(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return datetime.fromisoformat(value)
 
 
 @dataclass(frozen=True)
