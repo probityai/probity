@@ -16,6 +16,8 @@ import { createHash, createPublicKey, verify as edVerify, type KeyObject } from 
 import { run, isCelError } from "@bufbuild/cel";
 import { admit, JcsError } from "jcs-admit";
 
+export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } from "./identity.ts";
+
 export const TOOL_CALL_RECORD = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/tool-call-record";
 const IN_TOTO = "application/vnd.in-toto+json";
 const GRANT_DOMAIN = "probity-grant-v1\u0000";
