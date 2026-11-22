@@ -10,6 +10,13 @@ The tree: leaf ``i`` is the bytes of journal line ``i`` (no newline), hashed per
 (``SHA-256(0x00 || line)``). The checkpoint text is c2sp.org/tlog-checkpoint: origin, size, root.
 The log signs it as a c2sp.org/signed-note Ed25519 note (type 0x01) with any ``SigningKey`` backend.
 A witness adds a c2sp.org/tlog-cosignature ``cosignature/v1`` line (type 0x04).
+
+Post-quantum lines (c2sp.org/tlog-cosignature, type 0x06): a witness may cosign with ML-DSA-44 (FIPS
+204, empty context) over the ``subtree/v1`` CosignedSubtree structure, and a log may authenticate its own
+checkpoint the same way under a key named after its origin (c2sp.org/tlog-checkpoint). Such a line does not
+sign extension lines, and this module's ``Checkpoint`` carries none, so nothing a reader acts on is left
+outside a signature. ``tests/vectors/mldsa44-xcheck.json`` holds both directions of a cross-check against
+filippo.io/torchwood, an independent implementation on Go's crypto/mldsa.
 """
 
 from __future__ import annotations
@@ -33,12 +40,19 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
 )
+from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA44PrivateKey, MLDSA44PublicKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .clock import NS_PER_S, Clock
 
 SIG_ED25519 = 0x01
 SIG_COSIGNATURE_V1 = 0x04
+SIG_MLDSA44 = 0x06
+PUBLIC_LEN = {SIG_ED25519: 32, SIG_COSIGNATURE_V1: 32, SIG_MLDSA44: 1312}
+LOG_TYPES = (SIG_ED25519, SIG_MLDSA44)
+WITNESS_TYPES = (SIG_COSIGNATURE_V1, SIG_MLDSA44)
+MLDSA44_SIG_LEN = 2420
+SUBTREE_LABEL = b"subtree/v1\n\x00"  # 12 bytes (c2sp.org/tlog-cosignature, CosignedSubtree)
 EM_DASH = "—"
 MAX_SIGNATURES = 64
 MAX_PROOF_LINES = 63
@@ -173,18 +187,29 @@ class VerifierKey:
     def encode(self) -> str:
         return f"{self.name}+{self.id.hex()}+{base64.b64encode(bytes([self.sig_type]) + self.public).decode()}"
 
+    @property
+    def post_quantum(self) -> bool:
+        return self.sig_type == SIG_MLDSA44
+
     def verify(self, sig: bytes, message: bytes) -> bool:
         try:
-            Ed25519PublicKey.from_public_bytes(self.public).verify(sig, message)
-        except InvalidSignature:
+            if self.sig_type == SIG_MLDSA44:
+                MLDSA44PublicKey.from_public_bytes(self.public).verify(sig, message)
+            else:
+                Ed25519PublicKey.from_public_bytes(self.public).verify(sig, message)
+        except (InvalidSignature, ValueError):
             return False
         return True
 
 
-def vkey(name: str, sig_type: int, public: Ed25519PublicKey) -> VerifierKey:
+def vkey(name: str, sig_type: int, public: Ed25519PublicKey | MLDSA44PublicKey) -> VerifierKey:
+    """A vkey in one role: an ML-DSA-44 key only as type 0x06, an Ed25519 key never as 0x06."""
     if not valid_name(name):
         raise NoteError(f"invalid key name {name!r}")
-    return VerifierKey(name, sig_type, _raw(public))
+    if (sig_type == SIG_MLDSA44) != isinstance(public, MLDSA44PublicKey) or sig_type not in PUBLIC_LEN:
+        raise NoteError(f"signature type {sig_type:#04x} does not match the key's algorithm")
+    raw = public.public_bytes_raw() if isinstance(public, MLDSA44PublicKey) else _raw(public)
+    return VerifierKey(name, sig_type, raw)
 
 
 def parse_vkey(text: str) -> VerifierKey:
@@ -192,8 +217,9 @@ def parse_vkey(text: str) -> VerifierKey:
     if len(parts) != 3 or not valid_name(parts[0]):
         raise NoteError(f"not a vkey: {text!r}")
     blob = b64decode_canonical(parts[2])
-    if len(blob) != 33 or blob[0] not in (SIG_ED25519, SIG_COSIGNATURE_V1):
-        raise NoteError("a vkey is type 0x01 or 0x04 and a 32-byte Ed25519 key")
+    if not blob or blob[0] not in PUBLIC_LEN or len(blob) != 1 + PUBLIC_LEN[blob[0]]:
+        raise NoteError("a vkey is type 0x01 or 0x04 with a 32-byte Ed25519 key, or 0x06 with a 1312-byte"
+                        " ML-DSA-44 key")
     key = VerifierKey(parts[0], blob[0], blob[1:])
     if not re.fullmatch(r"[0-9a-f]{8}", parts[1]) or bytes.fromhex(parts[1]) != key.id:
         raise NoteError(f"vkey key id does not match its name and key: {text!r}")
@@ -288,7 +314,40 @@ def cosign(text: str, name: str, key: Ed25519PrivateKey, timestamp: int) -> SigL
                    timestamp.to_bytes(8, "big") + sig)
 
 
+def subtree_message(cosigner: str, timestamp: int, origin: str, size: int, root: bytes) -> bytes:
+    """The CosignedSubtree an ML-DSA-44 cosignature signs (start 0, end = tree size), in TLS presentation:
+    the 12-byte label, the cosigner name and the log origin each with a one-byte length, the timestamp and
+    the subtree bounds as big-endian uint64, the 32-byte root."""
+    name, log = cosigner.encode(), origin.encode()
+    if not (1 <= len(name) <= 255 and 1 <= len(log) <= 255):
+        raise NoteError("cosigner name and log origin are 1 to 255 bytes")
+    if not 0 <= timestamp <= MAX_TIMESTAMP or not 0 <= size <= MAX_TIMESTAMP or len(root) != 32:
+        raise NoteError("subtree timestamp, size or root out of range")
+    return b"".join([SUBTREE_LABEL, bytes([len(name)]), name, timestamp.to_bytes(8, "big"), bytes([len(log)]),
+                     log, (0).to_bytes(8, "big"), size.to_bytes(8, "big"), root])
+
+
+def cosign_mldsa(text: str, name: str, key: MLDSA44PrivateKey, timestamp: int) -> SigLine:
+    """An ML-DSA-44 checkpoint cosignature (type 0x06): timestamp || FIPS 204 signature, empty context.
+    It does not cover extension lines, so a checkpoint that carries any is refused rather than half-signed."""
+    if text.count("\n") != 3:
+        raise NoteError("an ML-DSA-44 cosignature does not cover extension lines; refusing to sign them")
+    cp = parse_checkpoint(text)
+    sig = key.sign(subtree_message(name, timestamp, cp.origin, cp.size, cp.root))
+    return SigLine(name, note_key_id(name, SIG_MLDSA44, key.public_key().public_bytes_raw()),
+                   timestamp.to_bytes(8, "big") + sig)
+
+
 def _verify_line(key: VerifierKey, text: str, line: SigLine) -> int | None:
+    if key.sig_type == SIG_MLDSA44:
+        if len(line.sig) != 8 + MLDSA44_SIG_LEN:
+            raise NoteError(f"ML-DSA-44 cosignature from {key.name} has the wrong length")
+        timestamp = int.from_bytes(line.sig[:8], "big")
+        cp = parse_checkpoint(text)
+        if timestamp > MAX_TIMESTAMP or not key.verify(
+                line.sig[8:], subtree_message(key.name, timestamp, cp.origin, cp.size, cp.root)):  # fmt: skip
+            raise NoteError(f"ML-DSA-44 cosignature from known key {key.name} does not verify")
+        return timestamp
     if key.sig_type == SIG_ED25519:
         if len(line.sig) != 64 or not key.verify(line.sig, text.encode()):
             raise NoteError(f"signature from known key {key.name} does not verify")
@@ -324,9 +383,9 @@ class Policy:
 def parse_policy(text: str) -> Policy:
     policy, keys = Policy(), set()
 
-    def key(t: str, sig_type: int) -> VerifierKey:
+    def key(t: str, sig_types: tuple[int, ...]) -> VerifierKey:
         k = parse_vkey(t)
-        if k.sig_type != sig_type or k.public in keys:
+        if k.sig_type not in sig_types or k.public in keys:
             raise NoteError(f"policy key {k.name} has the wrong type or repeats a key")
         keys.add(k.public)
         return k
@@ -342,9 +401,9 @@ def parse_policy(text: str) -> Policy:
             continue
         kind, args = words[0], words[1:]
         if kind == "log" and len(args) in (1, 2):
-            policy.logs.append(key(args[0], SIG_ED25519))
+            policy.logs.append(key(args[0], LOG_TYPES))
         elif kind == "witness" and len(args) in (2, 3):
-            policy.witnesses[fresh(args[0])] = key(args[1], SIG_COSIGNATURE_V1)
+            policy.witnesses[fresh(args[0])] = key(args[1], WITNESS_TYPES)
         elif kind == "group" and len(args) >= 3:
             members = tuple(args[2:])
             known = set(policy.witnesses) | set(policy.groups)
@@ -369,6 +428,12 @@ def parse_policy(text: str) -> Policy:
 class VerifiedCheckpoint:
     checkpoint: Checkpoint
     cosigned_at: dict[str, int]
+    #: the types of the log's own valid signatures: 0x01, and 0x06 when it also signs post-quantum
+    log_types: frozenset[int] = frozenset()
+
+    def post_quantum(self, policy: Policy) -> set[str]:
+        """The counted witnesses whose policy key is ML-DSA-44 (type 0x06)."""
+        return {w for w in self.cosigned_at if policy.witnesses[w].post_quantum}
 
 
 def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int | None = None,
@@ -376,7 +441,9 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
     """Accept a checkpoint only when a policy log signed it and the witness quorum cosigned it.
 
     Offline (``now`` None) every valid cosignature counts; with ``now`` and ``max_age`` only fresh
-    ones do. A known key whose signature fails rejects the note; unknown keys are ignored.
+    ones do. A known key whose signature fails rejects the note; unknown keys are ignored. A log's own
+    ML-DSA-44 line (a policy log key of type 0x06) authenticates the log like its Ed25519 line, is
+    reported in ``log_types``, and never counts as a witness.
     """
     parsed = parse_note(note)
     cp = parse_checkpoint(parsed.text)
@@ -386,24 +453,27 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
             known[(k.name, k.id)] = ("", k)
     for wname, k in policy.witnesses.items():
         known[(k.name, k.id)] = (wname, k)
-    logged, cosigned = False, {}
+    log_types: set[int] = set()
+    cosigned: dict[str, int] = {}
     for line in parsed.sigs:
         entry = known.get((line.name, line.key_id))
         if entry is None:
             continue
         wname, k = entry
         ts = _verify_line(k, parsed.text, line)
-        if ts is None:
-            logged = True
+        if not wname:
+            log_types.add(k.sig_type)
+        elif ts is None:  # unreachable: a policy witness key is a cosignature type
+            raise NoteError(f"witness {wname} key is not a cosignature key")
         elif now is not None and ts > now + max_skew:
             raise NoteError(f"cosignature from {wname} is dated in the future")
         elif now is None or max_age is None or now - ts <= max_age:
             cosigned[wname] = ts
-    if not logged:
+    if not log_types:
         raise NoteError("checkpoint_log_signature_missing")
     if not policy.satisfied(set(cosigned)):
         raise NoteError(f"witness_quorum_not_met:{policy.quorum}:cosigned_by_{sorted(cosigned) or 'none'}")
-    return VerifiedCheckpoint(cp, cosigned)
+    return VerifiedCheckpoint(cp, cosigned, frozenset(log_types))
 
 
 # ---- tlog-witness protocol ------------------------------------------------------------------------
