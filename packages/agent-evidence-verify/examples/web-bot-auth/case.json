@@ -13,7 +13,7 @@
     "request.json": {
       "length": 847,
       "path": "request.json",
-      "sha256": "dc10d772b9f65a1ece96e69638f00ac3ec88cc4afc67251909ad6d7f421e614c"
+      "sha256": "a7c5c403753b31c6a6e34210a1e9e0dfe9376898e6f4a497b434861a8df35fea"
     }
   },
   "case_id": "web-bot-auth-signed-deploy-request",

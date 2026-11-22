@@ -23,7 +23,7 @@ AGENT = "https://agent.example/.well-known/http-message-signatures-directory"
 AUTHORITY = "api.example"
 URL = "https://api.example/v1/deploy"
 BODY = b'{"service":"billing","revision":"7f3a9c1"}'
-CREATED = 1795348800  # 2026-11-21T12:00:00Z
+CREATED = 1795262400  # 2026-11-21T12:00:00Z
 EXPIRES = CREATED + 300
 AT = "2026-11-21T12:02:00Z"
 
