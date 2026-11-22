@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import json
-import re
 from importlib import resources
 from pathlib import Path
 
@@ -27,10 +26,6 @@ def test_every_check_of_this_package_reports_only_registered_codes() -> None:
     assert refusal_lint.lint_package() == []
 
 
-#: A location the verifiers put before a code: the journal line, the approval binding, the principal role.
-LOCATION = re.compile(r"(line|binding|entry)_\d+|principal_(user|agent|sponsor|approver)")
-
-
 def _failures(node: object) -> list[str]:
     if isinstance(node, dict):
         return [s for k, v in node.items() for s in (
@@ -44,12 +39,18 @@ def test_every_verdict_in_the_shared_vectors_names_a_registered_code() -> None:
     unregistered = set()
     for path in sorted(vectors.glob("*.json")):
         for failure in _failures(json.loads(path.read_text(encoding="utf-8"))):
-            segments = failure.split(":")
-            while segments and LOCATION.fullmatch(segments[0]):
-                segments.pop(0)
-            if not segments or segments[0] not in refusal_codes.CODES:
+            if not refusal_codes.is_registered(failure):
                 unregistered.add((path.name, failure))
     assert not unregistered
+
+
+def test_every_module_is_linted_or_excluded_with_a_reason() -> None:
+    """A new check under a new module name cannot escape the lint: every module is in one of the two lists."""
+    modules = {p.stem for p in Path(refusal_lint.__file__).parent.glob("*.py")}
+    linted, excluded = set(refusal_lint.PACKAGE_MODULES), set(refusal_lint.NOT_LINTED)
+    assert not linted & excluded
+    assert modules == linted | excluded
+    assert all(reason.strip() for reason in refusal_lint.NOT_LINTED.values())
 
 
 def test_the_registry_is_sorted_unique_snake_and_every_identifier_is_derived() -> None:
@@ -71,6 +72,9 @@ def test_the_registry_is_sorted_unique_snake_and_every_identifier_is_derived() -
     (lambda d: d.update(registry="https://example.com/r"), "this registry"),
     (lambda d: d.update(version=2), "this registry"),
     (lambda d: d.update(codes=[]), "non-empty"),
+    (lambda d: d["codes"][0].update(code="line_1", uri=refusal_codes.REGISTRY + "/line_1"), "form of a location"),
+    (lambda d: d["codes"][0].update(code="principal_agent", uri=refusal_codes.REGISTRY + "/principal_agent"),
+     "form of a location"),
 ])
 def test_a_registry_that_is_not_exactly_the_format_is_refused(edit, why: str) -> None:  # type: ignore[no-untyped-def]
     data = copy.deepcopy(REGISTRY)
@@ -85,6 +89,17 @@ def test_a_refusal_string_names_its_code_before_the_detail() -> None:
     assert not refusal_codes.is_registered("delegation-holder-unregistered")
     with pytest.raises(KeyError, match="unregistered refusal code 'no_such_code'"):
         refusal_codes.lookup("no_such_code:x")
+
+
+def test_a_located_refusal_names_the_code_after_its_locations() -> None:
+    """The verifiers' own output, ``line_3:principal_agent:principal_expired``, reads as its code."""
+    assert refusal_codes.code_of("line_3:principal_agent:principal_expired") == "principal_expired"
+    assert refusal_codes.code_of("keys_line_2:session_key_delegation_invalid:delegation_unverified") == (
+        "session_key_delegation_invalid")
+    assert refusal_codes.code_of("binding_0:approval_signature_unverified") == "approval_signature_unverified"
+    assert refusal_codes.lookup("line_7:grant_revoked:1").code == "grant_revoked"
+    assert not refusal_codes.is_registered("line_7")
+    assert refusal_codes.code_of("principal_sponsor_not_registered") == "principal_sponsor_not_registered"
 
 
 # ---- the lint: one passing and one refused case per position, so dropping any rule turns a test red ----------------
@@ -130,6 +145,35 @@ def test_a_refusal_string_names_its_code_before_the_detail() -> None:
      ["refusal code not in snake form"]),
     ('def f(problems, i):\n    problems.append(f"entry {i}: grant-x")\n', ["refusal code not in snake form"]),
     ('def f(problems, i, e):\n    problems.append(f"entry {i}: {e}")\n', []),
+    # a local the function returns is judged where it is bound
+    ('def f():\n    r = "grant-revoked"\n    return r\n', ["refusal code not in snake form"]),
+    ('def f():\n    r = "grant-revoked"\n    return None, r\n', ["refusal code not in snake form"]),
+    ('def f():\n    r = "not-returned"\n    return 1\n', []),
+    ('def f(b):\n    problems = [f"need_{n}" for n in b]\n    return problems\n', ["refusal code composed at run time"]),
+    ('def f(b):\n    problems = [c for c in b]\n    return problems\n', []),
+    ('def f(x):\n    return x or "grant-revoked"\n', ["refusal code not in snake form"]),
+    ('def f(x):\n    return [c for c in x] or ["grant-revoked"]\n', ["refusal code not in snake form"]),
+    ('def f(x):\n    return [f"need_{n}" for n in x]\n', ["refusal code composed at run time"]),
+    ('def f():\n    return (r := "grant-x")\n', ["refusal code not in snake form"]),
+    ('def f():\n    return (False, *("grant-x",))\n', ["refusal code not in snake form"]),
+    ('def f(x):\n    return "grant-%s" % x\n', ["refusal code composed at run time"]),
+    ('def f(x):\n    return "%d items" % x\n', []),
+    ('def f(x):\n    return "grant_{}".format(x)\n', ["refusal code composed at run time"]),
+    ('def f(x):\n    return "_".join(["grant", x])\n', ["refusal code composed at run time"]),
+    ('def f(x):\n    return "".join(x)\n', []),
+    ('def f(x):\n    raise Refused("%s" % x)\n', ["refusal code composed at run time"]),
+    ('def f():\n    yield "grant-revoked"\n', ["refusal code not in snake form"]),
+    ('f = lambda: "grant-revoked"\n', ["refusal code not in snake form"]),
+    # every way a problem joins a located list
+    ('def f(problems):\n    problems.extend(["grant-x"])\n', ["refusal code not in snake form"]),
+    ('def f(problems):\n    problems.extend(["grant_revoked"])\n', []),
+    ('def f(problems, c):\n    problems.append("grant-x" if c else "grant_revoked")\n', ["refusal code not in snake form"]),
+    ('def f():\n    problems = ["grant-x"]\n', ["refusal code not in snake form"]),
+    ('def f(problems):\n    problems += ["no_such_code"]\n', ["refusal code not registered"]),
+    # a literal location is not a code; the code after it is judged
+    ('def f(problems, why):\n    problems.append(f"principal_sponsor:{why}")\n', []),
+    ('def f(problems):\n    problems.append("line_3:grant_revoked")\n', []),
+    ('def f(problems):\n    problems.append("line_3:no_such_code")\n', ["refusal code not registered"]),
 ])
 def test_the_lint_reads_every_refusal_position(source: str, refused: list[str]) -> None:
     assert findings(source) == refused

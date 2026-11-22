@@ -35,6 +35,10 @@ CODE = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$")
 CANDIDATE = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)+(?::.*)?$", re.DOTALL)
 #: The literal start of a composed string that is building a code: a word and a separator.
 HEAD = re.compile(r"^[a-z][a-z0-9]*[-_]")
+#: A location a verifier puts before a code (``line_3:intent_without_permit``): the journal line, the session key
+#: certificate line, the approval binding, the revocation entry, the principal role. It is never a code itself:
+#: ``refusal_codes`` refuses a registry that holds a code of this form, and ``refusal_codes.code_of`` skips it.
+LOCATION = re.compile(r"(line|keys_line|binding|entry)_\d+|principal_(user|agent|sponsor|approver)")
 
 
 @dataclass(frozen=True)
@@ -112,6 +116,10 @@ class _Scan:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             if not shaped_only or CANDIDATE.match(node.value):
                 self.judge(node.lineno, node.value)
+        elif (literal := _formatted(node)) is not None and _builds_code(literal, shaped_only=shaped_only):
+            # "grant-%s" % x, "grant-{}".format(x), "-".join(...): a code built by formatting is a composed code
+            self.findings.append(Finding(self.path, getattr(node, "lineno", 0), ast.unparse(node),
+                                         "refusal code composed at run time"))
         elif isinstance(node, ast.BinOp) and _head(node) is None and not isinstance(node.left, ast.JoinedStr):
             self.strings(node.left, shaped_only=shaped_only)  # NAMES + OTHERS: each operand is judged where made
             self.strings(node.right, shaped_only=shaped_only)
@@ -123,6 +131,13 @@ class _Scan:
         elif isinstance(node, ast.IfExp):
             self.strings(node.body, shaped_only=shaped_only)
             self.strings(node.orelse, shaped_only=shaped_only)
+        elif isinstance(node, ast.BoolOp):
+            for value in node.values:
+                self.strings(value, shaped_only=shaped_only)
+        elif isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+            self.strings(node.elt, shaped_only=shaped_only)
+        elif isinstance(node, (ast.NamedExpr, ast.Starred)):
+            self.strings(node.value, shaped_only=shaped_only)
         elif isinstance(node, ast.Name):
             self.used_names[node.id] = self.used_names.get(node.id, False) or not shaped_only
         elif isinstance(node, ast.Call) and _name(node.func) in ("frozenset", "set", "tuple", "list"):
@@ -132,11 +147,19 @@ class _Scan:
     def located(self, node: ast.AST) -> None:
         """A problem string ``<where>:<code>[:<detail>]``: the code is the segment after the first ``:``."""
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            self.judge(node.lineno, node.value)
+            self.judge(node.lineno, unlocated(node.value))
         elif isinstance(node, ast.Tuple):
             for element in node.elts:
                 if isinstance(element, (ast.Constant, ast.JoinedStr)):
                     self.located(element)
+        elif isinstance(node, (ast.List, ast.Set)):
+            for element in node.elts:
+                self.located(element)
+        elif isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+            self.located(node.elt)
+        elif isinstance(node, ast.IfExp):
+            self.located(node.body)
+            self.located(node.orelse)
         elif isinstance(node, ast.JoinedStr):
             code = _located_code(node.values)
             if code is None:
@@ -195,7 +218,10 @@ def _located_code(values: list[ast.expr]) -> str | None:
     segments = _segments(values)
     for at, segment in enumerate(segments):
         if segment and all(isinstance(piece, str) for piece in segment):
-            return "".join(segment)  # type: ignore[arg-type]
+            text = "".join(segment)  # type: ignore[arg-type]
+            if LOCATION.fullmatch(text) and at < len(segments) - 1:
+                continue  # a literal location (principal_sponsor:{why}): the code comes after it
+            return text
         if at == len(segments) - 1:
             return None if any(isinstance(piece, str) for piece in segment) else ""
     return ""
@@ -214,6 +240,32 @@ def _head(node: ast.AST) -> str | None:
     return None
 
 
+def unlocated(refusal: str) -> str:
+    """``refusal`` without the location segments a verifier put before its code."""
+    segments = refusal.split(":")
+    at = 0
+    while at < len(segments) - 1 and LOCATION.fullmatch(segments[at]):
+        at += 1
+    return ":".join(segments[at:])
+
+
+def _formatted(node: ast.AST) -> str | None:
+    """The literal of a string built by ``%``, ``str.format`` or ``str.join`` on a literal, or None."""
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
+        left = node.left
+        return left.value if isinstance(left, ast.Constant) and isinstance(left.value, str) else None
+    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in ("format", "join")
+            and isinstance(node.func.value, ast.Constant) and isinstance(node.func.value.value, str)):
+        return node.func.value.value
+    return None
+
+
+def _builds_code(literal: str, *, shaped_only: bool) -> bool:
+    """Whether formatting on ``literal`` builds a code: always where only codes go, else when it starts like one
+    (``"grant-%s"``) or joins words with a code separator (``"_".join``)."""
+    return not shaped_only or bool(HEAD.match(literal)) or literal in ("-", "_")
+
+
 def _exempt_nodes(tree: ast.Module, names: frozenset[str]) -> set[int]:
     """The ids of every node inside a function the configuration exempts (it returns a label, not a refusal)."""
     out: set[int] = set()
@@ -223,19 +275,49 @@ def _exempt_nodes(tree: ast.Module, names: frozenset[str]) -> set[int]:
     return out
 
 
+def _returned_locals(scan: _Scan, function: ast.FunctionDef | ast.AsyncFunctionDef, exempt: set[int]) -> None:
+    """A local name a function returns in a refusal position (``r = "x"; return r``, ``return None, r``): every
+    string bound to it in the function is judged as if it were returned directly."""
+    bound: dict[str, list[ast.expr]] = {}
+    returned: set[str] = set()
+    for node in ast.walk(function):
+        if id(node) in exempt:  # a nested exempt function returns labels
+            continue
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    bound.setdefault(target.id, []).append(node.value)
+        elif isinstance(node, ast.AnnAssign) and node.value is not None and isinstance(node.target, ast.Name):
+            bound.setdefault(node.target.id, []).append(node.value)
+        elif isinstance(node, ast.Return) and node.value is not None:
+            value = node.value
+            for item in value.elts if isinstance(value, ast.Tuple) else [value]:
+                if isinstance(item, ast.Name):
+                    returned.add(item.id)
+    for name in sorted(returned & set(bound)):
+        located = scan.config.has(scan.config.located_lists, scan.path, name)
+        for value in bound[name]:
+            if located:
+                scan.located(value)
+            else:
+                scan.strings(value, shaped_only=True)  # as if returned directly
+
+
 def _visit(scan: _Scan, tree: ast.Module) -> None:
     cfg = scan.config
     exempt = _exempt_nodes(tree, cfg.exempt_functions)
     for node in ast.walk(tree):
         if id(node) in exempt:
             continue
-        if isinstance(node, ast.Return) and node.value is not None:
-            value = node.value
+        if isinstance(node, ast.Lambda) or (isinstance(node, (ast.Return, ast.Yield)) and node.value is not None):
+            value = node.body if isinstance(node, ast.Lambda) else node.value
+            if value is None:
+                continue
             if isinstance(value, ast.Dict):
                 for key, item in zip(value.keys, value.values, strict=True):
                     if isinstance(key, ast.Constant) and key.value in cfg.keywords:
                         scan.strings(item, shaped_only=False)
-            elif not isinstance(value, ast.Call):
+            elif not isinstance(value, ast.Call) or _formatted(value) is not None:
                 scan.strings(value, shaped_only=True)
         elif isinstance(node, ast.Call):
             called = _name(node.func)
@@ -246,7 +328,7 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
                 for index, arg in enumerate(node.args):
                     if index in at:
                         scan.strings(arg, shaped_only=False)
-            elif (called == "append" and isinstance(node.func, ast.Attribute)
+            elif (called in ("append", "extend", "add") and isinstance(node.func, ast.Attribute)
                   and cfg.has(cfg.located_lists, scan.path, _name(node.func.value)) and node.args):
                 scan.located(node.args[0])
             elif cfg.has(cfg.raisers, scan.path, called) and node.args:
@@ -261,6 +343,12 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
         elif isinstance(node, ast.Compare) and _name(node.left) in cfg.keywords:
             for comparator in node.comparators:
                 scan.strings(comparator, shaped_only=False)
+        if (isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and node.value is not None
+                and any(cfg.has(cfg.located_lists, scan.path, _name(t))
+                        for t in (node.targets if isinstance(node, ast.Assign) else [node.target]))):
+            scan.located(node.value)  # problems = [...], problems += [...]: each element is a located problem
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            _returned_locals(scan, node, exempt)
     for node in tree.body:
         if isinstance(node, ast.Assign):
             targets, value = node.targets, node.value
@@ -275,13 +363,39 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
 
 #: Where this package's own checks put refusal codes.
 PACKAGE_CONFIG = Config(
-    raisers=frozenset({"RevocationError", "IdentityStringError", "grants.py::ValueError"}),
+    raisers=frozenset({"RevocationError", "IdentityStringError", "IdentityDigestError@0", "_JwkRefused",
+                       "grants.py::ValueError"}),
     exempt_functions=frozenset({"act_grade", "possession_grade"}),  # they return grades, never refusals
-    located_lists=frozenset({"problems", "found", "ignored"}),
+    located_lists=frozenset({"problems", "found", "ignored", "failures"}),
     assigned=frozenset({"result", "problem", "verdict", "outcome"}))
 #: The modules whose refusals the registry holds: identity, possession, authority, approval, revocation, journal.
-PACKAGE_MODULES = ("authority", "canonical_identity", "celexpr", "constraints", "governance", "grants", "identity",
-                   "journal", "oidc_approval", "possession", "quorum", "revocation", "walk")
+PACKAGE_MODULES = ("authority", "canonical_identity", "celexpr", "constraints", "digests", "governance", "grants",
+                   "identity", "journal", "oidc_approval", "possession", "quorum", "revocation", "walk")
+#: Every other module of the package, with the reason it holds no identity or authority refusal. A module named in
+#: neither tuple fails ``test_every_module_is_linted_or_excluded_with_a_reason``, so a new check cannot escape the lint
+#: by being added under a new name.
+NOT_LINTED = {
+    "__init__": "re-exports only",
+    "__main__": "the command line; it prints what the checks return",
+    "canonical_identity_vectors": "generates vectors from the checks",
+    "clock": "the clock protocol; it refuses nothing",
+    "clock_lint": "a source lint with its own findings, not a record check",
+    "clock_tripwire": "a test tripwire, not a record check",
+    "core": "envelope and canonical JSON primitives; their errors reach a record check only as a detail",
+    "digests_vectors": "generates vectors from the checks",
+    "erasure": "record envelope v2, a record format check outside identity and authority",
+    "erasure_vectors": "generates vectors from the checks",
+    "exports": "the export seal, a record format check outside identity and authority",
+    "identity_vectors": "generates vectors from the checks",
+    "otel": "the audit-log stream, a record format check outside identity and authority",
+    "receipt_map": "the receipt map's proofs, a log check outside identity and authority",
+    "records": "record builders; the readers they call are linted where they live",
+    "refusal_codes": "the registry itself",
+    "refusal_lint": "this lint",
+    "signing": "signing backends; a session-key delegation refusal reaches a record only as the detail of "
+               "session_key_delegation_invalid",
+    "witness": "the witness note format, a log check outside identity and authority",
+}
 
 
 def lint_package() -> list[Finding]:

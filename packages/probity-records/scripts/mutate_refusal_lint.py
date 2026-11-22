@@ -46,6 +46,27 @@ MUTANTS = {
     "frozenset-values": (
         '        elif isinstance(node, ast.Call) and _name(node.func) in ("frozenset", "set", "tuple", "list"):',
         "        elif False:"),
+    "boolop": ("            for value in node.values:\n                self.strings(value", "            for value in []:\n                self.strings(value"),
+    "comprehension-strings": ("            self.strings(node.elt, shaped_only=shaped_only)", "            pass"),
+    "walrus-starred": ("        elif isinstance(node, (ast.NamedExpr, ast.Starred)):", "        elif False:"),
+    "formatted": ("        elif (literal := _formatted(node)) is not None and _builds_code(",
+                  "        elif False and (literal := _formatted(node)) is not None and _builds_code("),
+    "formatted-return": ("            elif not isinstance(value, ast.Call) or _formatted(value) is not None:",
+                         "            elif not isinstance(value, ast.Call):"),
+    "formatted-shape": ('    return not shaped_only or bool(HEAD.match(literal)) or literal in ("-", "_")', "    return True"),
+    "yield": ("isinstance(node, (ast.Return, ast.Yield))", "isinstance(node, (ast.Return,))"),
+    "lambda": ("        if isinstance(node, ast.Lambda) or (", "        if False or ("),
+    "located-collections": (("        elif isinstance(node, (ast.List, ast.Set)):\n            for element in node.elts:\n"
+                             "                self.located(element)"), "        elif False:\n            pass"),
+    "located-comprehension": ("            self.located(node.elt)", "            pass"),
+    "located-ifexp": ("            self.located(node.body)\n            self.located(node.orelse)", "            pass"),
+    "extend": ('        elif (called in ("append", "extend", "add")', '        elif (called in ("append",)'),
+    "located-assign": ("            scan.located(node.value)  # problems = [...]", "            pass  # problems = [...]"),
+    "returned-locals": ("            _returned_locals(scan, node, exempt)", "            pass"),
+    "returned-locals-located": ("            if located:\n                scan.located(value)",
+                                "            if False:\n                scan.located(value)"),
+    "literal-location": ("            if LOCATION.fullmatch(text) and at < len(segments) - 1:", "            if False:"),
+    "unlocated-constant": ("self.judge(node.lineno, unlocated(node.value))", "self.judge(node.lineno, node.value)"),
 }
 
 

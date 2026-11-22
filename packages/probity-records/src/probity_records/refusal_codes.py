@@ -19,6 +19,8 @@ from importlib import resources
 from types import MappingProxyType
 from typing import Any
 
+from .refusal_lint import LOCATION, unlocated
+
 REGISTRY = "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1"
 #: A code: lowercase words joined by single underscores, at least two words.
 CODE = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)+")
@@ -60,6 +62,8 @@ def parse(data: Any) -> Mapping[str, RefusalCode]:
         code = entry["code"]
         if not CODE.fullmatch(code):
             raise RegistryError(f"{code!r} is not a snake-case code of two or more words")
+        if LOCATION.fullmatch(code):
+            raise RegistryError(f"{code!r} has the form of a location, which a verifier puts before a code")
         if code <= previous:
             raise RegistryError(f"{code!r} is out of order or repeated")
         if entry["uri"] != f"{REGISTRY}/{code}":
@@ -84,8 +88,8 @@ CODES: Mapping[str, RefusalCode] = _load()
 
 
 def code_of(refusal: str) -> str:
-    """The code of a refusal string: the text before the first ``:``."""
-    return refusal.split(":", 1)[0]
+    """The code of a refusal string ``[<location>:...]<code>[:<detail>]``: the first segment after any locations."""
+    return unlocated(refusal).split(":", 1)[0]
 
 
 def is_registered(refusal: str) -> bool:
