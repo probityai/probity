@@ -263,24 +263,32 @@ class Tripwire:
         if sys.monitoring.get_tool(_TOOL_ID) is not None:
             raise RuntimeError(f"sys.monitoring tool id {_TOOL_ID} is held by {sys.monitoring.get_tool(_TOOL_ID)}")
         sys.monitoring.use_tool_id(_TOOL_ID, "probity-clock-tripwire")
-        sys.monitoring.register_callback(_TOOL_ID, sys.monitoring.events.CALL, self._on_call)
-        sys.monitoring.set_events(_TOOL_ID, sys.monitoring.events.CALL)
-        for module_name, names in FORBIDDEN.items():
-            module = _REAL_MODULES[module_name]
-            for attr in sorted(names):
-                if hasattr(module, attr):  # uuid6 and uuid7 exist from Python 3.14; an absent reader reads nothing
-                    self._wrap(module, attr, f"{module_name}.{attr}")
+        try:
+            sys.monitoring.register_callback(_TOOL_ID, sys.monitoring.events.CALL, self._on_call)
+            sys.monitoring.set_events(_TOOL_ID, sys.monitoring.events.CALL)
+            for module_name, names in FORBIDDEN.items():
+                module = _REAL_MODULES[module_name]
+                for attr in sorted(names):
+                    if hasattr(module, attr):  # uuid6 and uuid7 exist from Python 3.14; an absent reader reads nothing
+                        self._wrap(module, attr, f"{module_name}.{attr}")
+        except BaseException:
+            self._release()  # a half-installed tripwire would leave the clock wrapped for every later test
+            raise
         self._active = True
 
-    def uninstall(self) -> None:
-        if not self._active:
-            return
+    def _release(self) -> None:
+        """Put back every wrapped attribute and free the monitoring tool, whatever was installed so far."""
         for (module, attr), real in self._saved.items():
             setattr(module, attr, real)
         self._saved.clear()
         sys.monitoring.set_events(_TOOL_ID, sys.monitoring.events.NO_EVENTS)
         sys.monitoring.register_callback(_TOOL_ID, sys.monitoring.events.CALL, None)
         sys.monitoring.free_tool_id(_TOOL_ID)
+
+    def uninstall(self) -> None:
+        if not self._active:
+            return
+        self._release()
         self._active = False
 
     def take(self) -> list[Read]:

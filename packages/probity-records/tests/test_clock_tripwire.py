@@ -138,7 +138,10 @@ def test_a_stdlib_read_is_attributed_to_the_code_that_called_the_stdlib(tmp_path
             logging.getLogger("x").warning("hi")
     """, tmp_path)
     assert proc.returncode == 0, proc.stderr
-    assert ("time.time_ns", "logging", "pipeline_under_test") in _reads(proc.stdout)
+    # logging stamps a record with time.time_ns on Python 3.13 and with time.time on 3.12.
+    reads = _reads(proc.stdout)
+    assert ("time.time_ns", "logging", "pipeline_under_test") in reads or (
+        "time.time", "logging", "pipeline_under_test") in reads
 
 
 def test_an_exemption_by_reader_lets_only_that_read_through(tmp_path: Path) -> None:
@@ -146,7 +149,7 @@ def test_an_exemption_by_reader_lets_only_that_read_through(tmp_path: Path) -> N
     exempt.write_text(textwrap.dedent("""
         [[exempt]]
         reader = "logging"
-        functions = ["time.time_ns"]
+        functions = ["time.time_ns", "time.time"]
         reason = "log record timestamps; the pipeline never reads them back"
         tier = "none"
         row = "ID-TEST-ROW"
@@ -246,6 +249,44 @@ def test_install_skips_a_reader_this_python_does_not_have(tmp_path: Path) -> Non
         finally:
             wire.uninstall()
     """))
-    done = subprocess.run([sys.executable, str(driver)], capture_output=True, text=True, timeout=60)
+    done = subprocess.run([sys.executable, str(driver)], capture_output=True, text=True, timeout=60, check=False)
     assert done.returncode == 0, done.stderr
     assert done.stdout.strip() == "caught"
+
+
+def test_a_failed_install_rolls_back_every_wrapper(tmp_path: Path) -> None:
+    driver = tmp_path / "failed_install.py"
+    driver.write_text(textwrap.dedent("""
+        import sys, time, uuid
+        from probity_records import clock_tripwire
+        real_time, real_monotonic = time.time, time.monotonic
+        real_wrap = clock_tripwire.Tripwire._wrap
+        calls = []
+
+        def failing_wrap(self, module, attr, label):
+            if len(calls) == 2:
+                raise OSError("wrap failed")
+            calls.append(label)
+            real_wrap(self, module, attr, label)
+
+        clock_tripwire.Tripwire._wrap = failing_wrap
+        wire = clock_tripwire.Tripwire()
+        try:
+            wire.install()
+        except OSError:
+            pass
+        else:
+            raise SystemExit("install did not fail")
+        assert len(calls) == 2, calls
+        assert time.time is real_time and time.monotonic is real_monotonic
+        assert not getattr(time.time, clock_tripwire._MARK, False)
+        assert sys.monitoring.get_tool(clock_tripwire._TOOL_ID) is None
+        assert wire._active is False and not wire._saved
+        clock_tripwire.Tripwire._wrap = real_wrap
+        wire.install()
+        wire.uninstall()
+        print("rolled back")
+    """))
+    done = subprocess.run([sys.executable, str(driver)], capture_output=True, text=True, timeout=60, check=False)
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == "rolled back"
