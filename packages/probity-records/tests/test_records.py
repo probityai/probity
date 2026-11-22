@@ -136,7 +136,7 @@ def test_tamper_truncation_and_wrong_key_fail(tmp_path) -> None:
     journal.path.write_text("\n".join(lines[:2]) + "\n")
     report = verify_journal(tmp_path, [gate.public_pem()], checkpoint)
     assert report["verdict"] == "FAIL"
-    assert any(f.startswith("checkpoint_count") for f in report["failures"])
+    assert any(f.startswith("checkpoint_count_mismatch:") for f in report["failures"])
     assert any("open_intent_no_effect_record" in f for f in report["failures"])
     env = json.loads(lines[0])
     env["payload"] = env["payload"][:-8] + "AAAAAAA="

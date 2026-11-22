@@ -183,10 +183,34 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/chain_parent_link_broken"
   },
   {
+   "code": "checkpoint_count_mismatch",
+   "check": "journal.verify",
+   "meaning": "the checkpoint counts another number of records than the journal holds",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_count_mismatch"
+  },
+  {
+   "code": "checkpoint_head_mismatch",
+   "check": "journal.verify",
+   "meaning": "the checkpoint's head is not the digest of the journal's last record",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_head_mismatch"
+  },
+  {
+   "code": "checkpoint_invalid",
+   "check": "journal.verify",
+   "meaning": "the checkpoint envelope does not open under a trusted key or is malformed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_invalid"
+  },
+  {
    "code": "child_adds_argument",
    "check": "grants.chain",
    "meaning": "a delegated grant allows an argument its parent does not",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/child_adds_argument"
+  },
+  {
+   "code": "child_adds_sponsor",
+   "check": "grants.chain",
+   "meaning": "a delegated grant names a sponsor its parent does not",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/child_adds_sponsor"
   },
   {
    "code": "child_adds_tool",
@@ -199,6 +223,12 @@
    "check": "grants.chain",
    "meaning": "a delegated grant's use budget exceeds its parent's",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/child_budget_wider_than_parent"
+  },
+  {
+   "code": "child_changes_sponsor",
+   "check": "grants.chain",
+   "meaning": "a delegated grant names another sponsor than its parent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/child_changes_sponsor"
   },
   {
    "code": "child_depth_wider_than_parent",
@@ -265,6 +295,12 @@
    "check": "approval.quorum",
    "meaning": "a delegated grant's quorum removes an approver",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/child_removes_approver"
+  },
+  {
+   "code": "child_review_later_than_parent",
+   "check": "grants.chain",
+   "meaning": "a delegated grant's review date is later than its parent's",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/child_review_later_than_parent"
   },
   {
    "code": "child_spend_wider_than_parent",
@@ -615,6 +651,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dpop_jti_invalid"
   },
   {
+   "code": "dpop_jwk_invalid",
+   "check": "possession.proof",
+   "meaning": "the DPoP proof's header key is not a public key of the shape its algorithm takes",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dpop_jwk_invalid"
+  },
+  {
+   "code": "dpop_jwk_private",
+   "check": "possession.proof",
+   "meaning": "the DPoP proof's header key carries private key material",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dpop_jwk_private"
+  },
+  {
    "code": "dpop_key_not_confirmed",
    "check": "possession.proof",
    "meaning": "the DPoP proof's key is not the key the grant confirms",
@@ -897,6 +945,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_quorum_without_required_approval"
   },
   {
+   "code": "grant_review_invalid",
+   "check": "grants.chain",
+   "meaning": "a standing grant's review date is not after its start and at or before its expiry",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_review_invalid"
+  },
+  {
+   "code": "grant_review_overdue",
+   "check": "grants.chain",
+   "meaning": "the call is at or after a standing grant's review date",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_review_overdue"
+  },
+  {
    "code": "grant_revoked",
    "check": "grants.chain",
    "meaning": "a grant link is revoked",
@@ -933,6 +993,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_spend_exhausted"
   },
   {
+   "code": "grant_sponsor_invalid",
+   "check": "grants.chain",
+   "meaning": "a standing grant's sponsor is not exactly an issuer and a subject",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_sponsor_invalid"
+  },
+  {
+   "code": "grant_standing_incomplete",
+   "check": "grants.chain",
+   "meaning": "a grant names a sponsor without a review date, or a review date without a sponsor",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_standing_incomplete"
+  },
+  {
    "code": "grant_tool_shape",
    "check": "grants.chain",
    "meaning": "a grant's tool entry is not well formed",
@@ -967,6 +1039,18 @@
    "check": "grants.walk",
    "meaning": "the walk finds no intent or effect record for the permit",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/hop_record_missing"
+  },
+  {
+   "code": "identity_act_malformed",
+   "check": "identity.digest",
+   "meaning": "the act claim is not a chain of actors with a subject, at most 32 long",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_act_malformed"
+  },
+  {
+   "code": "identity_act_missing",
+   "check": "identity.digest",
+   "meaning": "the credential to digest carries no act claim",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_act_missing"
   },
   {
    "code": "identity_actor_unknown",
@@ -1059,6 +1143,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_evidence_malformed"
   },
   {
+   "code": "identity_grant_chain_empty",
+   "check": "identity.digest",
+   "meaning": "the grant chain to digest has no links",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_grant_chain_empty"
+  },
+  {
+   "code": "identity_grant_chain_malformed",
+   "check": "identity.digest",
+   "meaning": "the grant chain to digest is not a list of grant bodies",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_grant_chain_malformed"
+  },
+  {
    "code": "identity_kind_unknown",
    "check": "identity.string",
    "meaning": "an identity names a kind the grammar does not define",
@@ -1069,6 +1165,18 @@
    "check": "identity.string",
    "meaning": "only a human-attested identity may stand for the user alone",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_not_human_attested"
+  },
+  {
+   "code": "identity_out_of_domain",
+   "check": "identity.digest",
+   "meaning": "a value has no canonical form inside the identity domain",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_out_of_domain"
+  },
+  {
+   "code": "identity_principals_malformed",
+   "check": "identity.digest",
+   "meaning": "the principals block to digest is not a non-empty object of roles",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_principals_malformed"
   },
   {
    "code": "identity_profile_unknown",
@@ -1141,6 +1249,18 @@
    "check": "identity.principals",
    "meaning": "the key set fetched for an issuer is not the one pinned by digest",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jwks_digest_mismatch"
+  },
+  {
+   "code": "key_custody_checkpoint_missing",
+   "check": "journal.verify",
+   "meaning": "a key custody is pinned but no checkpoint states the signing key's custody",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_custody_checkpoint_missing"
+  },
+  {
+   "code": "key_custody_differs",
+   "check": "journal.verify",
+   "meaning": "the checkpoint states another custody for a signing key than the pinned one",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_custody_differs"
   },
   {
    "code": "key_not_in_jwks",
@@ -1407,6 +1527,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_approver_not_an_approval_signer"
   },
   {
+   "code": "principal_approver_without_approval",
+   "check": "identity.principals",
+   "meaning": "the block names an approver but no approval is pinned",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_approver_without_approval"
+  },
+  {
    "code": "principal_cnf_invalid",
    "check": "identity.principals",
    "meaning": "the principal's confirmation key member is not a valid cnf",
@@ -1491,10 +1617,28 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_role_not_configured"
   },
   {
+   "code": "principal_sponsor_not_registered",
+   "check": "identity.principals",
+   "meaning": "the sponsor is not registered for this agent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_sponsor_not_registered"
+  },
+  {
    "code": "principal_thumbprint_mismatch",
    "check": "identity.principals",
    "meaning": "the principal's key thumbprint does not recompute from its key",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_thumbprint_mismatch"
+  },
+  {
+   "code": "principals_agent_revoked",
+   "check": "journal.verify",
+   "meaning": "the record's agent was revoked at or before the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_agent_revoked"
+  },
+  {
+   "code": "principals_autonomous_has_user",
+   "check": "identity.principals",
+   "meaning": "an autonomous principals block also names a user",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_autonomous_has_user"
   },
   {
    "code": "principals_below_strict",
@@ -1521,10 +1665,130 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_missing"
   },
   {
+   "code": "principals_need_agent",
+   "check": "identity.principals",
+   "meaning": "an autonomous principals block lacks the agent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_agent"
+  },
+  {
+   "code": "principals_need_approver",
+   "check": "identity.principals",
+   "meaning": "approvals are pinned but the principals block names no approver",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_approver"
+  },
+  {
+   "code": "principals_need_session",
+   "check": "identity.principals",
+   "meaning": "an autonomous principals block lacks the session",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_session"
+  },
+  {
+   "code": "principals_need_sponsor",
+   "check": "identity.principals",
+   "meaning": "an autonomous principals block lacks the sponsor",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_sponsor"
+  },
+  {
+   "code": "principals_need_standing_grant",
+   "check": "identity.principals",
+   "meaning": "an autonomous principals block lacks the standing grant",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_standing_grant"
+  },
+  {
    "code": "principals_need_user_and_agent",
    "check": "identity.principals",
    "meaning": "the principals block lacks the user or the agent",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_user_and_agent"
+  },
+  {
+   "code": "principals_session_malformed",
+   "check": "identity.principals",
+   "meaning": "the session is not an id of printable ASCII and a start time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_session_malformed"
+  },
+  {
+   "code": "principals_session_not_started",
+   "check": "identity.principals",
+   "meaning": "the session starts after the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_session_not_started"
+  },
+  {
+   "code": "principals_sponsor_not_the_grant_sponsor",
+   "check": "identity.principals",
+   "meaning": "the block's sponsor is not the standing grant's sponsor",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_sponsor_not_the_grant_sponsor"
+  },
+  {
+   "code": "principals_sponsor_revoked",
+   "check": "journal.verify",
+   "meaning": "the record's sponsor was revoked at or before the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_sponsor_revoked"
+  },
+  {
+   "code": "principals_sponsors_not_pinned",
+   "check": "identity.principals",
+   "meaning": "an autonomous block is presented but the verifier pins no sponsor registry",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_sponsors_not_pinned"
+  },
+  {
+   "code": "principals_standing_context_not_the_block",
+   "check": "journal.verify",
+   "meaning": "the standing grant's context names another agent or session than the block",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_context_not_the_block"
+  },
+  {
+   "code": "principals_standing_grant_expired",
+   "check": "identity.principals",
+   "meaning": "the record's time is at or after the standing grant's expiry",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_expired"
+  },
+  {
+   "code": "principals_standing_grant_malformed",
+   "check": "identity.principals",
+   "meaning": "the standing grant is not named by a sha256 digest",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_malformed"
+  },
+  {
+   "code": "principals_standing_grant_not_held_by_agent",
+   "check": "identity.principals",
+   "meaning": "the standing grant is not confirmed to the agent's key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_not_held_by_agent"
+  },
+  {
+   "code": "principals_standing_grant_not_standing",
+   "check": "identity.principals",
+   "meaning": "the grant the block names has no sponsor and review date",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_not_standing"
+  },
+  {
+   "code": "principals_standing_grant_not_the_authority",
+   "check": "journal.verify",
+   "meaning": "an autonomous call does not rest on the standing grant its block names",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_not_the_authority"
+  },
+  {
+   "code": "principals_standing_grant_not_yet_valid",
+   "check": "identity.principals",
+   "meaning": "the record's time is before the standing grant's start",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_not_yet_valid"
+  },
+  {
+   "code": "principals_standing_grant_revoked",
+   "check": "journal.verify",
+   "meaning": "the record's standing grant was revoked at or before the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_revoked"
+  },
+  {
+   "code": "principals_standing_grant_unknown",
+   "check": "identity.principals",
+   "meaning": "the standing grant is not one the verifier holds under its pinned roots",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_unknown"
+  },
+  {
+   "code": "principals_standing_grant_unreviewed",
+   "check": "identity.principals",
+   "meaning": "the record's time is at or after the standing grant's review date",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_unreviewed"
   },
   {
    "code": "purpose_out_of_scope",
@@ -1777,6 +2041,12 @@
    "check": "journal.verify",
    "meaning": "a record's sequence number is not its position",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/seq_mismatch"
+  },
+  {
+   "code": "session_key_delegation_invalid",
+   "check": "journal.verify",
+   "meaning": "a session key certificate in the journal does not verify under a pinned root",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/session_key_delegation_invalid"
   },
   {
    "code": "session_key_used_outside_its_certified_window",
@@ -2113,6 +2383,30 @@
    "check": "approval.quorum",
    "meaning": "a vote's time is not a valid instant",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vote_time_invalid"
+  },
+  {
+   "code": "witnessed_checkpoint_beyond_journal",
+   "check": "journal.verify",
+   "meaning": "the witnessed checkpoint covers more records than the journal holds",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witnessed_checkpoint_beyond_journal"
+  },
+  {
+   "code": "witnessed_checkpoint_invalid",
+   "check": "journal.verify",
+   "meaning": "the witnessed checkpoint does not satisfy the pinned witness policy",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witnessed_checkpoint_invalid"
+  },
+  {
+   "code": "witnessed_checkpoint_missing",
+   "check": "journal.verify",
+   "meaning": "the pinned witness policy requires a witnessed checkpoint and none is given",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witnessed_checkpoint_missing"
+  },
+  {
+   "code": "witnessed_checkpoint_root_mismatch",
+   "check": "journal.verify",
+   "meaning": "the witnessed checkpoint's root is not the root of the journal's records",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witnessed_checkpoint_root_mismatch"
   }
  ]
 }

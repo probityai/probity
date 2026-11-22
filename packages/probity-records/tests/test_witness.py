@@ -91,7 +91,7 @@ def test_customer_witness_cosigns_and_the_offline_verifier_requires_it(tmp_path)
                          witnessed_checkpoint=bare)
     assert out["verdict"] == "FAIL" and any("witness_quorum_not_met" in f for f in out["failures"])
     out = verify_journal(journal.directory, [signer.public_pem()], journal.checkpoint(), trust=trust)
-    assert "witnessed_checkpoint_required_by_policy" in out["failures"]
+    assert "witnessed_checkpoint_missing" in out["failures"]
     for s in servers:
         s.shutdown()
 
@@ -114,10 +114,10 @@ def test_a_rewritten_or_truncated_journal_fails_and_a_new_tail_is_not_establishe
         forged.append("https://example.test/t", f"s{i}", "0" * 64, {"phase": "note", "i": 100 + i})
     out = verify_journal(forged.directory, [signer.public_pem()], forged.checkpoint(), trust=trust,
                          witnessed_checkpoint=note)
-    assert "witnessed_checkpoint_root_differs_from_the_journal" in out["failures"]
+    assert "witnessed_checkpoint_root_mismatch" in out["failures"]
     journal.path.write_text("\n".join(lines[:2]) + "\n")
     out = verify_journal(journal.directory, [signer.public_pem()], trust=trust, witnessed_checkpoint=note)
-    assert "witnessed_checkpoint_size_4_journal_has_2" in out["failures"]
+    assert "witnessed_checkpoint_beyond_journal:4:2" in out["failures"]
     for s in servers:
         s.shutdown()
 

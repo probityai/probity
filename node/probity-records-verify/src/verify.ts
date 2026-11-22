@@ -763,8 +763,8 @@ function grantProblems(block: J, at: string, grants: Record<string, J>): string[
 }
 function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust): [string[], string | null] {
   if ("user" in block) return [["principals_autonomous_has_user"], null];
-  let problems = ([["agent", "agent"], ["sponsor", "sponsor"], ["session", "session"], ["standing_grant", "standingGrant"]] as const)
-    .filter(([, m]) => !(m in block)).map(([n]) => `principals_need_${n}`);
+  let problems: string[] = ([["principals_need_agent", "agent"], ["principals_need_sponsor", "sponsor"], ["principals_need_session", "session"], ["principals_need_standing_grant", "standingGrant"]] as const)
+    .filter(([, m]) => !(m in block)).map(([code]) => code);
   if (problems.length) return [problems, null];
   const grants = auto.standingGrants ?? {};
   const grant = typeof block.standingGrant === "string" && Object.prototype.hasOwnProperty.call(grants, block.standingGrant) ? grants[block.standingGrant] : undefined;
@@ -1315,10 +1315,10 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   if (checkpointEnv !== null) {
     try {
       const cp = parseReceived(openEnvelope(checkpointEnv, keys)[0]).predicate;
-      if (cp.count !== lines.length) { failures.push(`checkpoint_count_${cp.count}_journal_has_${lines.length}`); checkpoint = "mismatch"; }
+      if (cp.count !== lines.length) { failures.push(`checkpoint_count_mismatch:${cp.count}:${lines.length}`); checkpoint = "mismatch"; }
       else if (cp.head !== prev) { failures.push("checkpoint_head_mismatch"); checkpoint = "mismatch"; }
       else checkpoint = "matches";
-    } catch (e) { failures.push(`checkpoint:${(e as Error).message}`); checkpoint = "invalid"; }
+    } catch (e) { failures.push(`checkpoint_invalid:${(e as Error).message}`); checkpoint = "invalid"; }
   }
   const verdict = failures.length ? "FAIL" : checkpoint !== "matches" ? "NOT_ESTABLISHED" : "PASS";
   return { verdict, records: lines.length, verified, failures, checkpoint };
