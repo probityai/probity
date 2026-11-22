@@ -40,7 +40,7 @@ Version 0.1.0, alpha. The verifier, the 57 `a2a-jcs-v01` vectors, the 43-card co
 | `score_card_verifier` | Scores any `served bytes -> accepted` function on the card corpus: the cards it must accept, the cards it must reject, and the probes whose verdict waits on the spec. |
 | `score_ssrf_judge` | Scores a webhook URL judge on 42 URLs with resolved ground truth. |
 | `judge_url` | A reference judge: refuses a URL whose host, by RFC 3986, is or resolves to a non-global address (obfuscated IPv4, IPv4-mapped IPv6, `localhost`, userinfo tricks). |
-| `probe` | Judges AUTH-TLS-001, AUTH-TLS-002 and AUTH-SERVER-001 for an endpoint: `agent-evidence-a2a tls https://agent.example/a2a`. |
+| `probe` | Judges an endpoint's transport: the scheme is `https`, the session reaches TLS 1.3, and the server's certificate chain verifies for its host name: `agent-evidence-a2a tls https://agent.example/a2a`. |
 
 Exit 0 means the card was accepted, the posture passed or the score is clean; 1 means it was not.
 
