@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { canonicalBytes, canonicalOfReceived, checkPrincipals, judgeIdentity, parsePy, verifyJournal } from "../src/verify.ts";
+import { canonicalBytes, canonicalOfReceived, checkPrincipals, judgeDigest, judgeIdentity, parsePy, verifyJournal } from "../src/verify.ts";
 
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
@@ -46,6 +46,13 @@ for (const v of load("canonical_identity.json")) {
   });
 }
 
+// The identity digests: the same digest, or the same refusal code and reason, for every input.
+for (const v of load("identity_digests.json")) {
+  test(`${v.id} ${v.description}`, () => {
+    assert.deepEqual(judgeDigest(v.function, v.input), v.expected);
+  });
+}
+
 test("every family is non-empty", () => {
-  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "canonical.json", "canonical_identity.json"]) assert.ok(load(f).length > 0, f);
+  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "canonical.json", "canonical_identity.json", "identity_digests.json"]) assert.ok(load(f).length > 0, f);
 });
