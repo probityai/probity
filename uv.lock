@@ -14,6 +14,7 @@ conflicts = [[
 
 [manifest]
 members = [
+    "agent-evidence-a2a",
     "agent-evidence-mcp",
     "agent-evidence-observer",
     "agent-evidence-replay",
@@ -67,6 +68,32 @@ sdist = { url = "https://files.pythonhosted.org/packages/9d/95/2c28ca34e545ce028
 wheels = [
     { url = "https://files.pythonhosted.org/packages/21/61/0a2186c8ca53cf464767d4c4fb7fd9e23f48ce4547c2fa0d1c83a4d52410/agent_client_protocol-0.12.1-py3-none-any.whl", hash = "sha256:aaf3cc301ed87d9e2c4ccb91adfe1cd58784355f6ce7e513f50e7ca2391862ef", size = 85929, upload-time = "2026-08-16T14:08:21.307Z" },
 ]
+
+[[package]]
+name = "agent-evidence-a2a"
+version = "0.1.0"
+source = { editable = "packages/agent-evidence-a2a" }
+dependencies = [
+    { name = "joserfc" },
+    { name = "rfc8785" },
+]
+
+[package.optional-dependencies]
+test = [
+    { name = "a2a-sdk" },
+    { name = "cryptography" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-sdk", marker = "extra == 'test'", specifier = ">=1.1.5,<2" },
+    { name = "cryptography", marker = "extra == 'test'", specifier = ">=46,<51" },
+    { name = "joserfc", specifier = ">=1.7.6,<2" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0,<10" },
+    { name = "rfc8785", specifier = ">=0.1.4,<1" },
+]
+provides-extras = ["test"]
 
 [[package]]
 name = "agent-evidence-admission"
@@ -2178,6 +2205,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d3/59/322338183ecda247fb5d1763a6cbe46eff7222eaeebafd9fa65d4bf5cb11/jmespath-1.1.0.tar.gz", hash = "sha256:472c87d80f36026ae83c6ddd0f1d05d4e510134ed462851fd5f754c8c3cbb88d", size = 27377, upload-time = "2026-01-22T16:35:26.279Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/14/2f/967ba146e6d58cf6a652da73885f52fc68001525b4197effc174321d70b4/jmespath-1.1.0-py3-none-any.whl", hash = "sha256:a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64", size = 20419, upload-time = "2026-01-22T16:35:24.919Z" },
+]
+
+[[package]]
+name = "joserfc"
+version = "1.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/74/31/5c3f27e82c92a7bbe1f028033ff19e0251540395c9be244c01a50de42bdb/joserfc-1.8.0.tar.gz", hash = "sha256:cbf03cb2c6db8cc5289f1ef8718842e53dba244b4c0de5fefa0c0eaee4bde8db", size = 241023, upload-time = "2026-11-03T10:45:57.948Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/7e/7ffaae13415e8f51c8e8d5d1845f2de7a27ebf2717e97a38d7e7446d6030/joserfc-1.8.0-py3-none-any.whl", hash = "sha256:176b836ac7ed9a46a88629e24076314b475f33a75d0bad7f26146e572eed7c79", size = 73147, upload-time = "2026-11-03T10:45:56.531Z" },
 ]
 
 [[package]]

@@ -1,0 +1,44 @@
+id	label	class	check	what
+k01f2b8e1	b_dup_alg_last_real	mutant	CARD-SIGN-003	protected header repeats alg (none then ES256), valid ES256 signature
+k05799864	b_nan	mutant	CARD-SIGN-001	params value is the NaN literal
+k061b899f	a_utf16_order	control	CARD-SIGN-001	astral vs BMP keys, JCS UTF-16 order
+k098a3946	b_attached_other	mutant	CARD-SIGN-002	signature carries an attached payload of a different card and signs that
+k09a7d858	b_overflow	mutant	CARD-SIGN-001	params value 1e400 (not finite as a double)
+k0a8a247a	b_sdk_canon	mutant	CARD-SIGN-001	signed over json.dumps(sort_keys) ASCII-escaped bytes, not JCS
+k16e117f8	a_depth40	control	CARD-SIGN-001	params nested 40 deep
+k2151ce69	b_dup_first_evil	mutant	CARD-SIGN-001	duplicate name key: first value forged, last value signed
+k25f09676	p_depth150	probe	CARD-SIGN-001	params nested 150 deep, signed over JCS
+k333b91a4	a_no_typ	control	CARD-SIGN-003	typ omitted (SHOULD), alg+kid present
+k33de82a6	b_alg_none	mutant	CARD-SIGN-003	alg none, empty signature
+k34f0b84b	b_kid_swap	mutant	CARD-SIGN-002	header kid kA, signed with key kB (also trusted)
+k350f8306	p_snake_case	probe	CARD-SIGN-001	served with proto field names; signed over the camelCase JCS
+k3b8b3d4e	b_default_included	mutant	CARD-SIGN-001	default-valued non-REQUIRED field required:false kept in signed bytes (rule 1)
+k404dc3ea	p_depth_bomb	probe	CARD-SIGN-001	params value is 20000 nested arrays
+k5060f72c	a_unprot_header	control	CARD-SIGN-003	valid signature plus a benign unprotected header
+k5132c8a2	b_expired_key	mutant	CARD-SIGN-004	kid kE is in the store but expired 2020-01-01
+k6ce42b7d	b_x5c_selfsigned	mutant	CARD-SIGN-004	unknown kid plus a self-signed x5c for the signing key
+k73b42ed0	b_required_dropped	mutant	CARD-SIGN-001	REQUIRED description '' omitted from signed bytes (rule 1)
+k78181c0a	a_non_ascii	control	CARD-SIGN-001	non-ASCII strings, JCS
+k7f95def5	a_numbers	control	CARD-SIGN-001	ES6 number forms in params (1e+21, 1e-7, -0 -> 0)
+k9f60c98e	a_spec_example	control	CARD-SIGN-001	spec 8.4.1 worked example: REQUIRED description '' and skills [] kept, explicit optional false kept
+k9fd3a9b9	b_hs256_confusion	mutant	CARD-SIGN-003	HS256 keyed with the public PEM of kid kA
+ka09856e4	b_sigs_in_payload	mutant	CARD-SIGN-002	signed bytes include an empty signatures member
+ka98727fe	b_lone_surrogate	mutant	CARD-SIGN-001	description carries an unpaired surrogate escape
+kae2248c3	a_rotation	control	CARD-SIGN-004	two signatures: retired kid first, valid kid second (8.4.3 rotation)
+kb34617e7	b_jku_canary	mutant	CARD-SIGN-004	unknown kid plus jku pointing at a loopback canary
+kb48e1fb1	b_dup_last_evil	mutant	CARD-SIGN-001	duplicate name key: first value signed, last value forged
+kb768e7c3	b_b64_padding	mutant	CARD-SIGN-003	signature value carries base64 padding
+kb9aceecd	b_tamper_desc	mutant	CARD-SIGN-002	description changed after signing
+kba53556b	b_tamper_params	mutant	CARD-SIGN-002	extension params value changed after signing
+kc3778e36	b_kid_unprotected	mutant	CARD-SIGN-003	kid only in the unprotected header
+kc3b6dd60	b_number_form	mutant	CARD-SIGN-001	1e21 serialised as 1000000000000000000000 in signed bytes
+kc51ce746	b_nfd_served	mutant	CARD-SIGN-001	signed NFC text, served NFD text
+kc61f6412	a_base_es256	control	CARD-SIGN-001..004	base card, ES256 over JCS
+kccd9e590	b_dup_kid	mutant	CARD-SIGN-003	protected header repeats kid (kB then kA), signed with kA
+kcd76c262	b_inject_unknown	mutant	CARD-SIGN-002	unknown member added after signing
+kd48bcb59	a_base_rs256	control	CARD-SIGN-001..004	base card, RS256 over JCS
+ke15a21f6	b_crit_unknown	mutant	CARD-SIGN-003	crit names an extension the verifier cannot understand
+ke353257a	p_int_2p53	probe	CARD-SIGN-001	integer 2^53+1 served; signed as its double 9007199254740992
+kf014791c	a_unknown_signed	control	CARD-SIGN-001	extra member present when signed and included in the signed bytes
+kf0751b32	b_codepoint_order	mutant	CARD-SIGN-001	keys ordered by code point, not UTF-16 units
+kfdc456bf	b_unknown_kid	mutant	CARD-SIGN-004	kid not in the trust store (key kD)
