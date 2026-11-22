@@ -97,9 +97,12 @@ from .records import (
                    verifier_case,
 )
 from .revocation import (
+                   REFUSAL_CODES,
+                   REVOCATION_KINDS,
                    REVOCATION_LIST,
                    RevocationError,
                    RevocationState,
+                   list_digest,
                    sign_revocations,
                    verify_approval_live,
 )
@@ -134,8 +137,10 @@ __all__ = [
                    "OUTCOMES",
                    "QUORUM_ALLOW",
                    "RECONCILED_RETRY",
+                   "REFUSAL_CODES",
                    "REPLIES",
                    "RETRY_REASONS",
+                   "REVOCATION_KINDS",
                    "REVOCATION_LIST",
                    "STEPS",
                    "TOOL_CALL_RECORD",
@@ -189,6 +194,7 @@ __all__ = [
                    "judge_approval_binding",
                    "judge_uncertain_effect",
                    "key_id",
+                   "list_digest",
                    "load_public",
                    "mint_grant_permit",
                    "narrows",

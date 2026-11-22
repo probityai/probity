@@ -192,6 +192,11 @@
       "sha256": "12eb97b528a89e6d855a96d583a850d5e23aca14b48f12464a5aa8df06410e31"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/payment_mandate.py",
+      "bytes": 13044,
+      "sha256": "faae5807616282c780e680fe887e7f1d82e7e1255a4975df54512c470ad14e60"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/probe_observed.py",
       "bytes": 8247,
       "sha256": "08902109d24c3ecc357290f74073ca7dc41852d2459ea24dbf7c6d702ef610b5"
@@ -220,6 +225,11 @@
       "path": "src/agent_evidence_verify/adapters/spend_reservation.py",
       "bytes": 16777,
       "sha256": "840f82f5a399e8aaead1aa722d608299af4ae76b6c6c15647251d78831b123fc"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/status_receipt_binding.py",
+      "bytes": 12297,
+      "sha256": "e5ad8e1196c8034e3192c7f9b271ecb8a8c39e0bdeaae9cce5faa865e1067099"
     },
     {
       "path": "src/agent_evidence_verify/adapters/token_grant_receipt.py",
@@ -268,8 +278,8 @@
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
-      "bytes": 6682,
-      "sha256": "5d19a250adeedae50a14afc6c6e14cfaf743d4f5495b6f0d0f6c9cf519a3f500"
+      "bytes": 7364,
+      "sha256": "a4fbf64cd01f87ee1fd778cfa7d9d82befed6f4561fee17de0e7f57eb9b433b2"
     },
     {
       "path": "src/agent_evidence_verify/decision_record.py",
@@ -280,6 +290,11 @@
       "path": "src/agent_evidence_verify/dsse.py",
       "bytes": 8199,
       "sha256": "21c377c84014b9155974c32ece782430096c7944f538313fe7038566da7f8f5d"
+    },
+    {
+      "path": "src/agent_evidence_verify/evmsig.py",
+      "bytes": 10089,
+      "sha256": "57436955dc0c33c64191c8dddb3661190080b31f3ba20e21ad44c69b8e61a558"
     },
     {
       "path": "src/agent_evidence_verify/execution_evidence.py",
