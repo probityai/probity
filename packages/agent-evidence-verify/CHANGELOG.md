@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (unreleased)
+
+A minor release: a new claim type, `credential_reachability/v1`, and three more suites in corpus mode.
+
+- `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
+  environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
+  cookie stores, environment tokens, cluster service-account tokens, git credentials, host keyrings). It applies the
+  26 rules of the Credential Reachability predicate under the consumer's pinned signer keys, agent keys, environment,
+  audience, challenge and time, and recomputes each class verdict and the result from the attempts. See
+  [reference routes](docs/corpus-routes.md).
 
 Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
 reason each corpus declares.
