@@ -155,6 +155,45 @@ The corpus is unreleased until agent-evidence-vectors v0.38.0, so `tests/data/cr
 copy of its 58 members with the MANIFEST's digest pinned in `tests/test_credential_reachability.py`; the
 adversarial tests there re-sign a member to try a forged payload byte, a swapped key naming the trusted keyid, an
 agent co-signature, a replayed challenge, an expired result, another audience and a class-set downgrade.
+## Corpus-mode routes
+
+These suites are judged by `agent-evidence-verify corpus DIR`, which prints one verdict line per member in the
+shared verdict-line format, and not yet by a claim type.
+
+### `agent-payment-mandate/v1` and `status-receipt-binding/v1`
+
+The corpus's `accepted` and `accept` read as `accept`, `rejected` and `reject` as `reject`, and the reason is the
+corpus's refusal code.
+
+- `agent-payment-mandate/v1` (`vectors-agent-payment-mandate`, 36 members). A card-side record is held to its mandate
+  digest, the credential's binding, expiry, ceiling, currency, merchant, token, receipt and post-checkout actions. An
+  x402 record (`scheme: x402-exact-evm-eip3009`) carries the facilitator request in v2 field names. The reader
+  recomputes the EIP-712 digest of the EIP-3009 authorization under the requirement's token domain and recovers the
+  signer from the signature; `payload.signer` and any other field naming a signer are never read. It then holds the
+  authorization to the requirement and the mandate, and the settled transfer, the consumed nonce and the
+  facilitator's response to the authorization. The first failing rule is the reason, in the order of
+  `PROFILE_CHECKS` (18 codes). Permit2, ERC-7710, `upto` and smart-wallet signatures are outside the corpus.
+- `status-receipt-binding/v1` (`vectors-status-receipt-binding`, 24 members). The receipt's one signature is
+  verified under the authority key the case supplies, never a key the receipt or the credential names. The receipt
+  must name the credential by the SHA-256 of its payload, so a swapped capability set or key list is refused even
+  when the credential's own signature verifies. Ten checks run in order, `receipt_malformed` to
+  `credential_not_active`, and a case that passes all of them is `credential_bound`.
+
+A member whose bytes the strict reader refuses (a repeated member, an integer outside the double range) is an `error`
+line, never an accept.
+
+### `actor-marker-survival/v1` (`vectors-actor-marker-survival`, 30 members)
+
+Each member is `cases/<id>/record.json`: a chain of signed statements in which an origin issuer states the token it
+sent and each hop states the token it received and the token it sent (RFC 8693 nested `act`, or the `actorChain`
+member proposed in a2aproject/A2A issue 2028). Before any member is read, the route loads the corpus's `TRUST.json`
+and refuses the whole corpus (exit 2, `NOT RUN`) unless its SHA-256 is the manifest's `trustSha256`. Each writer's
+Ed25519 key and its role (`origin`, `agent`, `relay`) come only from that bundle and never from the record. The
+record is strict JSON: a repeated member, NaN or a lone surrogate is `record_malformed`. The twenty checks then run
+in the corpus's order, and the first that fails is the reason. A chain that passes them all is `accept` /
+`marker_survives`. The reader (`actor_marker.py`) is written from the contract and shares no code with the corpus's
+Python or Go readers. The tests judge every member, copied under `tests/data/actor-marker-survival/`, and show that
+every reader check is the reason of some member.
 
 ## Why the rules are ported, not imported
 

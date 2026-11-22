@@ -87,6 +87,11 @@
       "sha256": "46c7eba22232d50b7060aec6d92145b9cd105bf4333f69ae6a8a0caffe9d6b85"
     },
     {
+      "path": "src/agent_evidence_verify/actor_marker.py",
+      "bytes": 12308,
+      "sha256": "d137a4ad4a89bb24837b3a956ea733a87b6388aca864cdb67bcf2d686123c223"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/__init__.py",
       "bytes": 75,
       "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
@@ -263,8 +268,8 @@
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
-      "bytes": 5654,
-      "sha256": "fa516c26e804a7652ba9d66100ff6fb6885995ec15e41c3d4ce87510418d5ce5"
+      "bytes": 6682,
+      "sha256": "5d19a250adeedae50a14afc6c6e14cfaf743d4f5495b6f0d0f6c9cf519a3f500"
     },
     {
       "path": "src/agent_evidence_verify/decision_record.py",

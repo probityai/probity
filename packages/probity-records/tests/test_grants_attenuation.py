@@ -23,6 +23,7 @@ from probity_records import (
 )
 from probity_records.core import _b64, canonical, verify_permit
 from probity_records.grants import GRANT_DOMAIN
+from probity_records.possession import cnf_for_signer
 from probity_records.walk import grant_walk, mint_grant_permit
 
 AT = "2026-06-01T00:00:00Z"
@@ -37,12 +38,12 @@ WF = {"workflowId": {"type": "pattern", "pattern": "refunds-*"}}
 
 def _root(root: Signer, holder: Signer, **kw) -> dict:
     kw.setdefault("max_depth", 2)
-    return issue_grant(root, grant_id="g-root", holder_key=raw_public(holder), tools=TOOLS,
+    return issue_grant(root, grant_id="g-root", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=TOOLS,
                        not_before=NB, expires_at=EXP, **kw)
 
 
 def _child(holder: Signer, sub: Signer, parent: dict, tools=TOOLS, **kw) -> dict:
-    return issue_grant(holder, grant_id="g-child", holder_key=raw_public(sub), tools=tools, parent=parent,
+    return issue_grant(holder, grant_id="g-child", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), tools=tools, parent=parent,
                        not_before=NB, expires_at=EXP, **kw)
 
 
@@ -105,7 +106,7 @@ def test_context_binds_the_grant_to_a_workflow() -> None:
 
 def test_use_after_expiry_and_before_start_are_refused() -> None:
     root, agent = Signer.generate(), Signer.generate()
-    g = issue_grant(root, grant_id="g", holder_key=raw_public(agent), tools=TOOLS,
+    g = issue_grant(root, grant_id="g", holder_key=raw_public(agent), cnf=cnf_for_signer(agent), tools=TOOLS,
                     not_before="2026-05-01T00:00:00Z", expires_at="2026-06-01T00:00:00Z")
     assert verify_grant_allow([g], "refund", CALL, "2026-06-01T00:00:01Z", {root.key_id})["reason"].startswith(
         "grant_outside_window")

@@ -31,6 +31,8 @@ EXPECTED = {
     "ID12": (["principal_agent:principal_key_invalid"], None),
     "ID13": ([f"principal_{r}:principal_not_yet_valid" for r in ALL], None),
     "ID14": (["principals_need_user_and_agent"], None),
+    "ID15": (["principal_agent:principal_cnf_invalid"], None),
+    "ID16": (["principal_agent:principal_cnf_invalid"], None),
 }
 
 
