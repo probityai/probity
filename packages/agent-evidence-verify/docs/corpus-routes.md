@@ -128,9 +128,13 @@ an unauthorised key is `contradicted` with the authority's reason, and a key no 
 key-transparency authority can decide; a DID document or an inclusion proof is a case artifact the policy names. The roots of an inclusion or consistency proof are the artifact's own and carry no trust outside
 it.
 
-### Corpus mode only: `agent-payment-mandate/v1` and `status-receipt-binding/v1`
+## Corpus-mode routes
 
-`agent-evidence-verify corpus DIR` answers these two suites member by member, in the shared verdict-line format.
+These suites are judged by `agent-evidence-verify corpus DIR`, which prints one verdict line per member in the
+shared verdict-line format, and not yet by a claim type.
+
+### `agent-payment-mandate/v1` and `status-receipt-binding/v1`
+
 The corpus's `accepted` and `accept` read as `accept`, `rejected` and `reject` as `reject`, and the reason is the
 corpus's refusal code.
 
@@ -150,6 +154,19 @@ corpus's refusal code.
 
 A member whose bytes the strict reader refuses (a repeated member, an integer outside the double range) is an `error`
 line, never an accept.
+
+### `actor-marker-survival/v1` (`vectors-actor-marker-survival`, 30 members)
+
+Each member is `cases/<id>/record.json`: a chain of signed statements in which an origin issuer states the token it
+sent and each hop states the token it received and the token it sent (RFC 8693 nested `act`, or the `actorChain`
+member proposed in a2aproject/A2A issue 2028). Before any member is read, the route loads the corpus's `TRUST.json`
+and refuses the whole corpus (exit 2, `NOT RUN`) unless its SHA-256 is the manifest's `trustSha256`. Each writer's
+Ed25519 key and its role (`origin`, `agent`, `relay`) come only from that bundle and never from the record. The
+record is strict JSON: a repeated member, NaN or a lone surrogate is `record_malformed`. The twenty checks then run
+in the corpus's order, and the first that fails is the reason. A chain that passes them all is `accept` /
+`marker_survives`. The reader (`actor_marker.py`) is written from the contract and shares no code with the corpus's
+Python or Go readers. The tests judge every member, copied under `tests/data/actor-marker-survival/`, and show that
+every reader check is the reason of some member.
 
 ## Why the rules are ported, not imported
 
