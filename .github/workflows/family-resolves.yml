@@ -1,11 +1,11 @@
 name: family-resolves
 
-# The published packages of the family must install together. Daily and on demand here; a pull request that touches a package manifest or this
-# check runs it as the family-resolves job of ci.yml: install the
-# latest release of every family package into one fresh environment, run
-# `uv pip check`, import each, and refuse an exact `==` pin of one family member
-# by another (scripts/family_resolves.py). The script's own tests run in ci.yml's
-# lint job with the rest of tests/.
+# The published packages of the family must install together, checked daily and on demand
+# here: install the latest release of every family package into one fresh environment, run
+# `uv pip check`, import each, and refuse an exact `==` pin of one family member by another
+# (scripts/family_resolves.py). The merge queue runs only the lint, as the family-resolves job
+# of ci.yml, because a change cannot alter what PyPI serves. The script's own tests run in
+# ci.yml's lint job with the rest of tests/.
 
 on:
   schedule:

@@ -290,7 +290,9 @@ def _verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[s
     result = count(trusted, request, evidence.get("votes") or [], at, key_revoked, evidence.get("proposer"))
     if result.ignored:
         return f"quorum_vote_invalid:{result.ignored[0]}"
-    return "ok" if result.status == APPROVED else f"quorum_{result.status}"
+    if result.status == APPROVED:
+        return "ok"
+    return "quorum_refused" if result.status == REFUSED else "quorum_pending"
 
 
 def approval_policy(policy_id: str, approver_pems: Mapping[str, bytes], threshold: int) -> dict[str, Any]:
