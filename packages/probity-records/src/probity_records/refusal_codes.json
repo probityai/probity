@@ -477,6 +477,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/delegation_chain_too_long"
   },
   {
+   "code": "delegation_cnf_not_the_holder",
+   "check": "delegation.hop",
+   "meaning": "a delegated grant's confirmation key is not the key of the holder it names",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/delegation_cnf_not_the_holder"
+  },
+  {
    "code": "delegation_delegator_key_missing",
    "check": "delegation.hop",
    "meaning": "the sender holds no key to delegate with",
@@ -2269,6 +2275,24 @@
    "check": "journal.verify",
    "meaning": "a record's signer chains to a revoked root key",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/signer_root_key_revoked"
+  },
+  {
+   "code": "single_use_store_failed",
+   "check": "singleuse.store",
+   "meaning": "the single-use store could not record the spend",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/single_use_store_failed"
+  },
+  {
+   "code": "single_use_store_full",
+   "check": "singleuse.store",
+   "meaning": "the single-use store holds only live spends and cannot record another",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/single_use_store_full"
+  },
+  {
+   "code": "single_use_store_rolled_back",
+   "check": "singleuse.store",
+   "meaning": "the single-use store is behind its anchor, so a spend cannot be trusted",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/single_use_store_rolled_back"
   },
   {
    "code": "stamp_agent_replaced",
