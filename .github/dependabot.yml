@@ -10,6 +10,11 @@
 # .github/retained-evidence.toml names the paths and scripts/retained_alerts.py dismisses
 # their alerts with the reason. Every other manifest is live and is bumped.
 version: 2
+# One pull request for every manifest that must move together (see the keycloak entries).
+multi-ecosystem-groups:
+  keycloak:
+    schedule:
+      interval: weekly
 updates:
   - package-ecosystem: uv
     directory: /
@@ -52,3 +57,21 @@ updates:
     directory: /packages/agent-evidence-mcp
     schedule:
       interval: weekly
+  # The Keycloak listener. keycloak.version moves all four Keycloak artifacts, and the end-to-end
+  # image in e2e/docker-compose.yml must name the same release, so the Maven and Docker Compose
+  # entries share one multi-ecosystem group: one pull request moves the pom and the image together.
+  # jboss-logging and jakarta.ws.rs-api follow what keycloak-parent of that release manages, so
+  # neither is bumped on its own. build.sh fails on any drift between the three, and e2e/run.sh when
+  # the pinned image ships other jars. Every bump changes maven.lock: the failed CI run's
+  # keycloak-evidence-hook-e2e artifact carries the resolved lock as resolved.lock.
+  - package-ecosystem: maven
+    directory: /integrations/keycloak-evidence-hook
+    patterns: ["*"]
+    multi-ecosystem-group: keycloak
+    ignore:
+      - dependency-name: "org.jboss.logging:jboss-logging"
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+  - package-ecosystem: docker-compose
+    directory: /integrations/keycloak-evidence-hook/e2e
+    patterns: ["*"]
+    multi-ecosystem-group: keycloak

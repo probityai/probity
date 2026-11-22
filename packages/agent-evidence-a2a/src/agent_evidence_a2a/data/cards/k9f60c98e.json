@@ -1,0 +1,33 @@
+{
+ "name": "Atlas",
+ "description": "",
+ "version": "1.0.0",
+ "supportedInterfaces": [
+  {
+   "url": "https://agent.example.com/a2a",
+   "protocolBinding": "JSONRPC",
+   "protocolVersion": "1.0"
+  }
+ ],
+ "provider": {
+  "organization": "Example Org",
+  "url": "https://example.com"
+ },
+ "capabilities": {
+  "streaming": false,
+  "pushNotifications": false
+ },
+ "defaultInputModes": [
+  "text/plain"
+ ],
+ "defaultOutputModes": [
+  "text/plain"
+ ],
+ "skills": [],
+ "signatures": [
+  {
+   "protected": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpPU0UiLCJraWQiOiJrQSJ9",
+   "signature": "1zIDgz1zq5S0cCYmx4Ew5JJ-yuMku_VeWDetyKFs1Fg9ZDwHf9KhyKfv6w_03ZUZrwNJJ0EMXq0Y3vtoXY2BOQ"
+  }
+ ]
+}

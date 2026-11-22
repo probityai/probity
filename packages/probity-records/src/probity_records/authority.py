@@ -15,6 +15,7 @@ from typing import Any
 
 from . import governance, grants, quorum
 from .core import admitted_loads
+from .possession import DEFAULT_SKEW, possession_record_problem
 from .revocation import RevocationState
 
 GRANT_ALLOW = "grant"
@@ -30,13 +31,23 @@ class Trust:
     revocations: RevocationState | None = None
     #: issuer URL -> the RFC 7638 thumbprints the auditor pins for that issuer's signing keys
     identity_issuers: Mapping[str, frozenset[str]] = field(default_factory=dict)
-    #: "basic" accepts a principals block without an act chain (graded); "strict" refuses it
+    #: "basic" accepts a principals block without an act chain (graded); "strict" refuses it (and accepts an
+    #: "autonomous" block, which is strict-equivalent)
     identity_profile: str = "basic"
+    #: agent client id -> the (issuer, subject) pairs registered as its sponsors: the registry an autonomous
+    #: block's sponsor must be in. Unset, no autonomous block verifies.
+    agent_sponsors: Mapping[str, frozenset[tuple[str, str]]] = field(default_factory=dict)
+    #: Grant chains (root to leaf) the auditor pins, beside the ones a record's own authority carries: the standing
+    #: grants an autonomous block may name. Each is verified against ``grant_root_key_ids`` before it counts.
+    standing_grants: tuple[tuple[Mapping[str, Any], ...], ...] = ()
     #: Signing key id -> the custody backend its checkpoint must name ("aws-kms", "vault-transit", ...).
     key_custody: Mapping[str, str] = field(default_factory=dict)
     #: A c2sp.org/tlog-policy (text): when set, a journal verifies only with a checkpoint its quorum
     #: of witnesses (keys the customer holds) cosigned.
     witness_policy: str | None = None
+    #: The DPoP freshness skew (seconds) the verifier at the call site applied: a proof stays single-use for
+    #: ``iat`` plus this plus ``possession.REPLAY_GRACE`` seconds, and the journal is checked for reuse inside it.
+    possession_skew_seconds: int = DEFAULT_SKEW
 
     def key_revoked(self, kid: str, at: str) -> bool:
         return self.revocations is not None and self.revocations.key_revoked(kid, at)
@@ -66,11 +77,17 @@ def _check_grant(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Tr
         carried = leaf["tools"][str(pred.get("tool"))].get("quorum")
         outcome = _quorum_outcome(pred, evidence["quorum"], trust, at, carried)
         if outcome != "ok":
-            problems.append(f"{where}:grant_approval_{outcome}")
+            problems.append(f"{where}:grant_approval_failed:{outcome}")
+    elif verdict["decision"] == "deny":
+        problems.append(f"{where}:grant_deny:{verdict['reason']}")
     elif verdict["decision"] != "allow":
-        problems.append(f"{where}:grant_{verdict['decision']}:{verdict['reason']}")
+        problems.append(f"{where}:grant_needs_approval:{verdict['reason']}")
     if verdict["grantDigest"] and verdict["grantDigest"] != pred.get("grantDigest"):
         problems.append(f"{where}:grant_digest_differs_from_record")
+    if "possession" in evidence and verdict["grantDigest"]:
+        problem = possession_record_problem(evidence["possession"], evidence["chain"][-1]["body"].get("cnf"))
+        if problem:
+            problems.append(f"{where}:{problem}")
 
 
 def _quorum_outcome(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Trust, at: str,
@@ -109,10 +126,10 @@ def check_authority(pred: Mapping[str, Any], trust: Trust | None, problems: list
         return False
     evidence = pred.get("authority")
     if not isinstance(evidence, Mapping) or evidence.get("kind") != reason:
-        problems.append(f"{where}:{reason}_allow_without_authority_evidence")
+        problems.append(f"{where}:authority_evidence_missing:{reason}")
         return True
     if trust is None:
-        problems.append(f"{where}:{reason}_allow_but_no_trust_pinned")
+        problems.append(f"{where}:authority_trust_not_pinned:{reason}")
         return True
     CHECKS[reason](pred, evidence, trust, str(pred.get("at")), problems, where)
     return True

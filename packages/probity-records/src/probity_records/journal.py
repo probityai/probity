@@ -2,7 +2,9 @@
 offline verifier an outsider runs over both.
 
 Each line is one envelope. Its statement's predicate carries ``seq`` (1, 2, ...), ``prev`` (SHA-256
-of the previous line's bytes, 64 zeros for the first) and ``at``. A checkpoint is a signed statement
+of the previous line's bytes, 64 zeros for the first) and ``at``, taken from the journal's ``Clock`` and never
+earlier than the ``at`` of any line already in the file, so a writer whose clock stepped back keeps the chain in
+order. A checkpoint is a signed statement
 of the line count and the last line's hash: pinned by an outsider, it exposes a truncated or
 rewritten journal.
 """
@@ -16,15 +18,17 @@ import json
 import os
 import threading
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .authority import Trust, check_authority
+from .authority import GRANT_ALLOW, Trust, check_authority
+from .clock import Clock, from_datetime, to_datetime
 from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
-from .grants import grant_digest, spend_of
-from .identity import act_grade, check_principals
+from .grants import chain_digests, grant_digest, spend_of
+from .identity import AUTONOMOUS, act_grade, check_principals, sponsor_id
+from .possession import DEFAULT_SKEW, duplicate_proofs
 from .quorum import count_bindings
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
 from .signing import Delegation, verify_delegation
@@ -36,8 +40,18 @@ JOURNAL_FILE = "journal.jsonl"
 KEYS_FILE = "keys.jsonl"
 
 
-def now() -> str:
-    return datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+def timestamp(ns: int) -> str:
+    """The journal's form of a wall time given in nanoseconds: RFC 3339, UTC, microseconds, ``Z``."""
+    return to_datetime(ns).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _at_ns(text: object) -> int | None:
+    if not isinstance(text, str):
+        return None
+    try:
+        return from_datetime(datetime.fromisoformat(text))
+    except ValueError:
+        return None
 
 
 def _line_hash(line: bytes) -> str:
@@ -58,12 +72,14 @@ class Journal:
     whose bytes an earlier fsync already covered does not fsync again.
     """
 
-    def __init__(self, directory: str | os.PathLike[str], signer: Any) -> None:
+    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock) -> None:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / JOURNAL_FILE
         self.signer = signer
+        self.clock = clock
         self._offset, self._seq, self._head = 0, 0, GENESIS
+        self._last_at = 0
         self._synced = 0
         self._sync_lock = threading.Lock()
         self._certify(signer)
@@ -96,7 +112,7 @@ class Journal:
         """Bring the cached head up to the file's current end, reading only the new bytes."""
         size = self.path.stat().st_size if self.path.exists() else 0
         if size < self._offset:  # the file was replaced or truncated under us: rescan from the start
-            self._offset, self._seq, self._head = 0, 0, GENESIS
+            self._offset, self._seq, self._head, self._last_at = 0, 0, GENESIS, 0
         if size > self._offset:
             with self.path.open("rb") as fh:
                 fh.seek(self._offset)
@@ -106,12 +122,20 @@ class Journal:
                     self._offset += len(line)
                     body = line.rstrip(b"\n")
                     if body.strip():
-                        self._seq = int(_payload(json.loads(body))["predicate"]["seq"])
+                        predicate = _payload(json.loads(body))["predicate"]
+                        self._seq = int(predicate["seq"])
                         self._head = _line_hash(body)
+                        at = _at_ns(predicate.get("at"))
+                        self._last_at = max(self._last_at, at if at is not None else 0)
         return self._seq, self._head
 
     def _tail(self) -> tuple[int, str]:
         return self._refresh()
+
+    def _stamp(self) -> str:
+        """Now, held at the latest ``at`` already in the file (call after a refresh)."""
+        self._last_at = max(self.clock.now(), self._last_at)
+        return timestamp(self._last_at)
 
     def _sync(self, fd: int, end: int) -> None:
         with self._sync_lock:
@@ -130,7 +154,7 @@ class Journal:
             fcntl.flock(guard, fcntl.LOCK_EX)
             seq, head = self._refresh()
             body = statement(subject_name, subject_digest, predicate_type,
-                             {**dict(predicate), "at": now(), "prev": head, "seq": seq + 1})
+                             {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
             envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
             line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
@@ -154,7 +178,7 @@ class Journal:
         """A signed statement of the line count and head, for an outsider to pin."""
         seq, head = self._refresh()
         body = statement("tool-call-journal", head, CHECKPOINT_TYPE,
-                         {"at": now(), "count": seq, "head": head,
+                         {"at": self._stamp(), "count": seq, "head": head,
                           "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))})
         return sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
 
@@ -178,7 +202,7 @@ def _delegations(directory: Path, roots: list[Any], failures: list[str]) -> dict
         try:
             d = verify_delegation(json.loads(line), roots)
         except (ValueError, TypeError) as exc:
-            failures.append(f"keys_line_{n}:{exc}")
+            failures.append(f"keys_line_{n}:session_key_delegation_invalid:{exc}")
             continue
         found[d.session_key_id] = d
     return found
@@ -215,26 +239,26 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
         if verdict["decision"] == "allow":
             reader_allowed.add(str(embedded["record"].get("approval", {}).get("approver")))
         elif pred.get("decision") == "deny" and verdict["reason"] != pred.get("reason") and len(bindings) == 1:
-            problems.append(f"{where}:deny_reason_{pred.get('reason')}_but_reader_says_{verdict['reason']}")
+            problems.append(f"{where}:deny_reason_mismatch:{pred.get('reason')}:{verdict['reason']}")
     if pred.get("decision") != "allow":
         return
     # The M of N is re-counted under the quorum policy the AUDITOR pinned: the approver keys and the
     # threshold come from Trust, never from the record the authority wrote.
     if trust is None:
-        problems.append(f"{where}:approval_allow_but_no_trust_pinned")
+        problems.append(f"{where}:authority_trust_not_pinned:approval")
         return
     policy = trust.quorum_policies.get(str(pred.get("approvalPolicyId")))
     if policy is None:
         problems.append(f"{where}:approval_policy_not_pinned")
         return
     if pred.get("threshold") != policy["threshold"]:
-        problems.append(f"{where}:threshold_{pred.get('threshold')}_is_not_the_pinned_{policy['threshold']}")
+        problems.append(f"{where}:threshold_not_pinned:{pred.get('threshold')}:{policy['threshold']}")
     signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked,
                                           oidc_pins=trust.identity_issuers)
     problems.extend(f"{where}:{p}" for p in sig_problems)
     counted = signed & reader_allowed
     if len(counted) < policy["threshold"]:
-        problems.append(f"{where}:recorded_allow_but_{len(counted)}_of_{policy['threshold']}_approvals_hold")
+        problems.append(f"{where}:approvals_below_threshold:{len(counted)}:{policy['threshold']}")
 
 
 def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str | None:
@@ -244,7 +268,7 @@ def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str 
         return None
     verdict = judge_uncertain_effect(record)
     if verdict["decision"] != "supported":
-        problems.append(f"{where}:uncertain_effect_{verdict['decision']}:{verdict['reason']}")
+        problems.append(f"{where}:uncertain_effect_not_supported:{verdict['decision']}:{verdict['reason']}")
     if record.get("operation", {}).get("argsDigest") != "sha256:" + str(pred.get("argsSha256")):
         problems.append(f"{where}:effect_args_differ_from_call")
     if pred.get("outcome") != verdict.get("reported_outcome"):
@@ -270,19 +294,104 @@ def _approval_signers(pred: dict[str, Any]) -> set[str] | None:
     return names or None
 
 
-def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str) -> None:
+def _authority_chain(pred: Mapping[str, Any]) -> list[Any] | None:
+    evidence = pred.get("authority")
+    if isinstance(evidence, Mapping) and isinstance(evidence.get("chain"), list):
+        return list(evidence["chain"])
+    return None
+
+
+def _standing_grants(pred: Mapping[str, Any], trust: Trust,
+                     seen: Mapping[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:  # fmt: skip
+    """Every grant body an autonomous block may name: from chains the auditor pins, the record's own authority chain
+    and the authority chains of earlier lines of this journal (``seen``), each verified against the pinned grant
+    roots first. Nothing the record says selects a key."""
+    chains = [list(c) for c in trust.standing_grants]
+    own = _authority_chain(pred)
+    if own is not None:
+        chains.append(own)
+    found: dict[str, dict[str, Any]] = dict(seen)
+    for chain in chains:
+        found.update(chain_digests(chain, set(trust.grant_root_key_ids)))
+    return found
+
+
+def _standing_problems(pred: Mapping[str, Any], block: Mapping[str, Any]) -> list[str]:
+    """An autonomous call runs on the standing grant its block names, and the record shows it: an allow rests on that
+    grant (a grant allow whose leaf it is, so the reader re-runs the call under it), judged in the block's own agent
+    and session; every intent and effect names that grant. A refusal may name any tool: the grant admitted nothing."""
+    named = block["standingGrant"]
+    phase = pred.get("phase")
+    if phase in ("intent", "effect"):
+        return [] if pred.get("grantDigest") == named else ["principals_standing_grant_not_the_authority"]
+    if phase != "authorize" or pred.get("decision") != "allow":
+        return []
+    evidence = pred.get("authority")
+    chain = _authority_chain(pred)
+    try:
+        leaf = grant_digest(chain[-1]["body"]) if chain else None
+    except (KeyError, TypeError, ValueError):
+        leaf = None
+    if (pred.get("reason") != GRANT_ALLOW or not isinstance(evidence, Mapping) or evidence.get("kind") != GRANT_ALLOW
+            or leaf != named or pred.get("grantDigest") != named):  # fmt: skip
+        return ["principals_standing_grant_not_the_authority"]
+    ctx = evidence.get("ctx") or {}
+    session = block["session"]
+    own = {"agent": block["agent"]["clientId"], "session": session["id"]}
+    if not isinstance(ctx, Mapping) or any(key in ctx and ctx[key] != value for key, value in own.items()):
+        return ["principals_standing_context_not_the_block"]
+    return []
+
+
+def _revocation_problems(block: Mapping[str, Any], grade: str, at: str, trust: Trust) -> list[str]:
+    """A record answering to a subject the auditor's revocation list revoked at or before the record's time: its
+    agent (kind ``agent``, its client id), and for an autonomous block its sponsor and standing grant."""
+    revocations = trust.revocations
+    if revocations is None:
+        return []
+    problems = []
+    if revocations.revoked_at("agent", str(block["agent"]["clientId"]), at):
+        problems.append("principals_agent_revoked")
+    if grade == "autonomous":
+        sponsor = block["sponsor"]
+        if revocations.revoked_at("sponsor", sponsor_id(sponsor["issuer"], sponsor["subject"]), at):
+            problems.append("principals_sponsor_revoked")
+        if revocations.revoked_at("grant", str(block["standingGrant"]), at):
+            problems.append("principals_standing_grant_revoked")
+    return problems
+
+
+def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str,
+                    seen: dict[str, dict[str, Any]]) -> None:  # fmt: skip
     if trust is None:
         problems.append(f"{where}:principals_but_no_trust_pinned")
         return
-    found, grade = check_principals(pred["principals"], str(pred.get("at")), trust.identity_issuers,
-                                    _approval_signers(pred))
+    block = pred["principals"]
+    at = str(pred.get("at"))
+    autonomous = isinstance(block, dict) and bool(set(block) & set(AUTONOMOUS))
+    grants = _standing_grants(pred, trust, seen) if autonomous else None
+    found, grade = check_principals(block, at, trust.identity_issuers, _approval_signers(pred),
+                                    sponsors=trust.agent_sponsors or None, standing_grants=grants)
     problems.extend(f"{where}:{p}" for p in found)
-    if grade is not None and trust.identity_profile == "strict" and grade != "strict":
-        problems.append(f"{where}:principals_below_strict:{act_grade(pred['principals'])}")
+    if grade == "autonomous":
+        problems.extend(f"{where}:{p}" for p in _standing_problems(pred, block))
+    if grade is not None:
+        problems.extend(f"{where}:{p}" for p in _revocation_problems(block, grade, at, trust))
+    if grade is not None and trust.identity_profile == "strict" and grade not in ("strict", "autonomous"):
+        problems.append(f"{where}:principals_below_strict:{act_grade(block)}")
+
+
+def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[str, dict[str, Any]]) -> None:
+    """Keep the verified bodies of an allow's authority chain, so later intent and effect lines of the same journal
+    resolve the standing grant they name without the auditor pinning it."""
+    chain = _authority_chain(pred)
+    if trust is not None and chain is not None and pred.get("phase") == "authorize" and pred.get("decision") == "allow":
+        seen.update(chain_digests(chain, set(trust.grant_root_key_ids)))
 
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | None,
-                delegations: Mapping[str, Delegation]) -> tuple[dict[str, Any] | None, list[str]]:
+                delegations: Mapping[str, Delegation],
+                seen: dict[str, dict[str, Any]]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
     problems: list[str] = []
     where = f"line_{i}"
     try:
@@ -299,11 +408,13 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         if delegation is not None and trust.key_revoked(delegation.root_key_id, str(pred.get("at"))):
             problems.append(f"{where}:signer_root_key_revoked")
     if pred.get("seq") != i:
-        problems.append(f"{where}:seq_{pred.get('seq')}_not_{i}")
+        problems.append(f"{where}:seq_mismatch:{pred.get('seq')}:{i}")
     if pred.get("prev") != prev:
         problems.append(f"{where}:chain_broken")
     if body.get("predicateType") == TOOL_CALL_RECORD and pred.get("principals") is not None:
-        _check_identity(pred, trust, problems, where)
+        _check_identity(pred, trust, problems, where, seen)
+    if body.get("predicateType") == TOOL_CALL_RECORD:
+        _remember_standing(pred, trust, seen)
     if body.get("predicateType") == TOOL_CALL_RECORD:
         if pred.get("phase") == "authorize":
             _check_approval(pred, problems, where, trust)
@@ -367,13 +478,16 @@ def _retry_problem(pred: dict[str, Any], since_allow: list[str], last_effect: st
     return "not_run_retry_but_an_effect_may_have_happened"
 
 
-def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
+def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[str]:
     """Run-level rules: an effect needs an earlier allow for its permit; a re-issued permit needs an
     earlier allow and the journal's own evidence that the earlier call did not take effect; a permit
     whose outcome settled (committed or unknown) gets no later effect record; an intent with no effect
     record is an open operation, reported, never read as success; an intent or effect names the same
-    grant as the allow its permit rests on; grant budgets hold."""
+    grant as the allow its permit rests on; grant budgets hold; no DPoP proof is spent by two permits inside its
+    lifetime."""
     problems: list[str] = _budget_problems(bodies)
+    tool_calls = [(i, b) for i, b in bodies if b.get("predicateType") == TOOL_CALL_RECORD]
+    problems.extend(f"line_{i}:{reason}" for i, reason in duplicate_proofs(tool_calls, skew=skew))
     grant_of: dict[str, Any] = {}
     allowed: set[str] = set()
     effects: dict[str, str | None] = {}  # pid -> outcome of its latest effect record
@@ -397,7 +511,7 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
             since_allow[pid] = []
             grant_of.setdefault(pid, pred.get("grantDigest"))
         elif phase in ("intent", "effect") and pid in grant_of and pred.get("grantDigest") != grant_of[pid]:
-            problems.append(f"line_{i}:{phase}_grant_differs_from_permit")
+            problems.append(f"line_{i}:grant_differs_from_permit:{phase}")
         if phase == "intent":
             if pid not in allowed:
                 problems.append(f"line_{i}:intent_without_permit")
@@ -421,23 +535,23 @@ def _check_witnessed(note: str | None, lines: list[str], trust: Trust, failures:
     from . import witness
 
     if note is None:
-        failures.append("witnessed_checkpoint_required_by_policy")
+        failures.append("witnessed_checkpoint_missing")
         return {"status": "missing"}
     try:
         verified = witness.verify_note(note, witness.parse_policy(str(trust.witness_policy)))
     except witness.NoteError as exc:
-        failures.append(f"witnessed_checkpoint:{exc}")
+        failures.append(f"witnessed_checkpoint_invalid:{exc}")
         return {"status": "refused"}
     cp = verified.checkpoint
     out = {"status": "verified", "size": cp.size, "of": len(lines), "cosigners": sorted(verified.cosigned_at),
            "origin": cp.origin}
     if cp.size > len(lines):
-        failures.append(f"witnessed_checkpoint_size_{cp.size}_journal_has_{len(lines)}")
+        failures.append(f"witnessed_checkpoint_beyond_journal:{cp.size}:{len(lines)}")
         out["status"] = "journal_truncated"
         return out
     leaves = [witness.leaf_hash(line.encode()) for line in lines[:cp.size]]
     if witness.root(leaves) != cp.root:
-        failures.append("witnessed_checkpoint_root_differs_from_the_journal")
+        failures.append("witnessed_checkpoint_root_mismatch")
         out["status"] = "root_mismatch"
     elif cp.size < len(lines):
         out["status"] = "tail_unwitnessed"
@@ -448,7 +562,7 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
                    delegations: Mapping[str, Delegation], trust: Trust, failures: list[str]) -> None:
     """Each signing key the auditor pinned a custody for must name that custody in the checkpoint."""
     if checkpoint_env is None:
-        failures.append("key_custody_pinned_but_no_checkpoint")
+        failures.append("key_custody_checkpoint_missing")
         return
     try:
         provenance = json.loads(base64.b64decode(checkpoint_env["payload"]))["predicate"].get("keyProvenance") or {}
@@ -459,7 +573,7 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
     for kid in sorted(roots):
         want = trust.key_custody.get(kid)
         if want is not None and stated.get("backend") != want:
-            failures.append(f"key_custody_{kid[:12]}_is_{stated.get('backend')}_pinned_{want}")
+            failures.append(f"key_custody_differs:{kid[:12]}:{stated.get('backend')}:{want}")
 
 
 def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
@@ -485,8 +599,9 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     signer_ids: set[str] = set()
     outcomes: dict[str, int] = {}
     policy_allows = 0
+    seen: dict[str, dict[str, Any]] = {}  # grant bodies of the authority chains verified so far, by digest
     for i, line in enumerate(lines, 1):
-        body, problems = _check_line(i, line, keys, prev, trust, delegations)
+        body, problems = _check_line(i, line, keys, prev, trust, delegations, seen)
         prev = _line_hash(line.encode())
         failures.extend(problems)
         if body is None:
@@ -500,7 +615,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
             policy_allows += 1
         if pred.get("phase") == "effect" and pred.get("outcome"):
             outcomes[pred["outcome"]] = outcomes.get(pred["outcome"], 0) + 1
-    failures.extend(_cross_checks(bodies))
+    failures.extend(_cross_checks(bodies, trust.possession_skew_seconds if trust is not None else DEFAULT_SKEW))
     checkpoint = "not_supplied"
     if checkpoint_env is not None:
         try:
@@ -508,7 +623,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
             signer_ids.add(cp_signer)
             cp = admitted_loads(payload)["predicate"]
             if cp["count"] != len(lines):
-                failures.append(f"checkpoint_count_{cp['count']}_journal_has_{len(lines)}")
+                failures.append(f"checkpoint_count_mismatch:{cp['count']}:{len(lines)}")
                 checkpoint = "mismatch"
             elif cp["head"] != prev:
                 failures.append("checkpoint_head_mismatch")
@@ -516,7 +631,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
             else:
                 checkpoint = "matches"
         except (ValueError, KeyError, TypeError) as exc:
-            failures.append(f"checkpoint:{exc}")
+            failures.append(f"checkpoint_invalid:{exc}")
             checkpoint = "invalid"
     witnessed = None
     if trust is not None and trust.witness_policy is not None:

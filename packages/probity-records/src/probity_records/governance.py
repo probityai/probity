@@ -94,7 +94,7 @@ def verify_exception_evidence(pred: Mapping[str, Any], evidence: Mapping[str, An
         problems.append("exception_approved_under_another_policy")
     outcome = quorum.verify_evidence(q, policies, digest, at, key_revoked)
     if outcome != "ok":
-        problems.append(f"exception_{outcome}")
+        problems.append(f"exception_quorum_failed:{outcome}")
     return problems
 
 
@@ -122,7 +122,7 @@ def step_predicate(*, kind: str, subject_digest: str, actor: str, decision: str 
 def check_step(pred: Mapping[str, Any], policies: Mapping[str, Mapping[str, Any]] | None, at: str,
                key_revoked: Any = None) -> list[str]:
     """Shape of a workflow step, and its quorum when it carries one."""
-    problems = [f"step_missing_{f}" for f in STEP_FIELDS if not pred.get(f)]
+    problems = [f"step_field_missing:{f}" for f in STEP_FIELDS if not pred.get(f)]
     if pred.get("kind") not in STEPS:
         problems.append("step_kind_unknown")
     if pred.get("kind") == "exception" and not (pred.get("owner") and pred.get("rationale") and pred.get("expiresAt")):
@@ -131,5 +131,5 @@ def check_step(pred: Mapping[str, Any], policies: Mapping[str, Mapping[str, Any]
         outcome = quorum.verify_evidence(pred["quorum"], policies or {}, str(pred.get("subjectDigest")), at,
                                          key_revoked)
         if outcome != "ok":
-            problems.append(f"step_{outcome}")
+            problems.append(f"step_quorum_failed:{outcome}")
     return problems

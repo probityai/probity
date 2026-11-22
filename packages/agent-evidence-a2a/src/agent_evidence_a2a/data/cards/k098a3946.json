@@ -1,0 +1,43 @@
+{
+ "name": "Atlas",
+ "description": "Answers questions about the catalogue.",
+ "version": "1.0.0",
+ "supportedInterfaces": [
+  {
+   "url": "https://agent.example.com/a2a",
+   "protocolBinding": "JSONRPC",
+   "protocolVersion": "1.0"
+  }
+ ],
+ "provider": {
+  "organization": "Example Org",
+  "url": "https://example.com"
+ },
+ "capabilities": {
+  "streaming": true,
+  "pushNotifications": false
+ },
+ "defaultInputModes": [
+  "text/plain"
+ ],
+ "defaultOutputModes": [
+  "text/plain"
+ ],
+ "skills": [
+  {
+   "id": "s1",
+   "name": "Ask",
+   "description": "Ask things",
+   "tags": [
+    "qa"
+   ]
+  }
+ ],
+ "signatures": [
+  {
+   "protected": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpPU0UiLCJraWQiOiJrQSJ9",
+   "signature": "0xD8bOUkO-LPwJcd3bl5CUboQj1FFZdmEZAg_vbyXBynEQJr1YaABZiMRGQc3XHS_hCEzxgg1QYaoqlENQO7WQ",
+   "payload": "eyJjYXBhYmlsaXRpZXMiOnsicHVzaE5vdGlmaWNhdGlvbnMiOmZhbHNlLCJzdHJlYW1pbmciOnRydWV9LCJkZWZhdWx0SW5wdXRNb2RlcyI6WyJ0ZXh0L3BsYWluIl0sImRlZmF1bHRPdXRwdXRNb2RlcyI6WyJ0ZXh0L3BsYWluIl0sImRlc2NyaXB0aW9uIjoiQW5zd2VycyBxdWVzdGlvbnMgYWJvdXQgdGhlIGNhdGFsb2d1ZS4iLCJuYW1lIjoiQXRsYXMiLCJwcm92aWRlciI6eyJvcmdhbml6YXRpb24iOiJFeGFtcGxlIE9yZyIsInVybCI6Imh0dHBzOi8vZXhhbXBsZS5jb20ifSwic2tpbGxzIjpbeyJkZXNjcmlwdGlvbiI6IkFzayB0aGluZ3MiLCJpZCI6InMxIiwibmFtZSI6IkFzayIsInRhZ3MiOlsicWEiXX1dLCJzdXBwb3J0ZWRJbnRlcmZhY2VzIjpbeyJwcm90b2NvbEJpbmRpbmciOiJKU09OUlBDIiwicHJvdG9jb2xWZXJzaW9uIjoiMS4wIiwidXJsIjoiaHR0cHM6Ly9hdHRhY2tlci5leGFtcGxlL2EyYSJ9XSwidmVyc2lvbiI6IjEuMC4wIn0"
+  }
+ ]
+}

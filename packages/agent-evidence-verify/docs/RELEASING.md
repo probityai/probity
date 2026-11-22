@@ -1,6 +1,6 @@
 # Release a checked Python distribution
 
-PyPI 0.5.1 is the latest published release and the source is 0.5.1. The
+PyPI 0.8.0 is the latest published release and the source is 0.8.0. The
 release carries the eight source-coverage inputs as package resources, added in
 source 0.1.1, and reads DSSE envelopes and completion receipts; the
 [changelog](../CHANGELOG.md) lists every change. The sample inputs remain authored
@@ -13,7 +13,7 @@ From the source root, install the checked artifact into a separate environment:
 
 ```sh
 uv venv verify-env --python 3.12
-uv pip install --python verify-env/bin/python dist/agent_evidence_verify-0.5.1-py3-none-any.whl
+uv pip install --python verify-env/bin/python dist/agent_evidence_verify-0.8.0-py3-none-any.whl
 ```
 
 Run Python from that environment. The data comes from the installed package:
@@ -83,6 +83,13 @@ The root release-tool lock is regenerated from the repository root with:
 uv pip compile --python-version 3.12 --generate-hashes --no-header --no-annotate \
   requirements-release.in --output-file requirements-release.lock
 ```
+
+The bump pull request bumps the version, the lockfile, the recipe and release manifests, the root
+install pins and the dependents' ceilings, and leaves the changelog heading as `## X.Y.Z (unreleased)`.
+`docs/release.json` still names the previous published release until PyPI carries the new one, and
+`tests/test_release_pins.py` requires the newest dated changelog section to equal it, so a dated heading
+in the bump pull request fails the merge group. The post-publish pull request dates the heading and moves
+`docs/release.json`, this guide's latest-release sentence, the install pages and the recipes together.
 
 Keep existing package versions and tags immutable. Publish changed artifact
 contents as a new version. Update current install instructions after the actual
