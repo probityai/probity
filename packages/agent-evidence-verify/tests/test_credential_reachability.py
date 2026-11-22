@@ -28,7 +28,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 ROOT = Path(__file__).resolve().parent / "data" / "credential-reachability"
-MANIFEST_SHA256 = "6ac4f48f1fbb1ef016b95cf297976cbd4fed1b20bfe834ae87ca661f5a3fb0c7"
+MANIFEST_SHA256 = "eef8b19b38b76912843f8c990980decb4ceb0c536b3ad7d784d1649b76e78366"
 MANIFEST = json.loads((ROOT / "MANIFEST.json").read_bytes())
 HOST = "credential-reachability/v1 test environment-host key"
 AGENT = "credential-reachability/v1 test key the agent holds"
