@@ -317,8 +317,10 @@ class TestReleaseDetail(TestBundle):
         decision = _decision_of(bundle)
         decision["reference"] = {"verifier": {"id": decision["reference"]["verifier"]["id"]}}
         _rewrite_bundle(bundle, {"decision.json": canonical_json(decision)})
-        assert replay_bundle(bundle)["decision"] == "contradicted"  # this tree's version is 0.5.1
-        monkeypatch.setattr(module, "_LAST_ID_ONLY_RELEASE", (0, 5, 0))
+        tree = tuple(int(part) for part in module._release().split("."))
+        monkeypatch.setattr(module, "_LAST_ID_ONLY_RELEASE", tree)
+        assert replay_bundle(bundle)["decision"] == "contradicted"  # the last release allowed to write id only
+        monkeypatch.setattr(module, "_LAST_ID_ONLY_RELEASE", (0, 0, 0))
         with pytest.raises(CaseError, match=r"^bundled decision differs from replay$"):
             replay_bundle(bundle)
 

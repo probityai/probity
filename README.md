@@ -14,7 +14,7 @@ Open tools that check claims about AI agents against evidence you pinned: an off
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `uv add agent-evidence-verify==0.5.1`, or `pip install agent-evidence-verify==0.5.1`.
+Install the released verifier: `uv add agent-evidence-verify==0.8.0`, or `pip install agent-evidence-verify==0.8.0`.
 
 Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai==0.1.1`, or `pip install probityai==0.1.1`.
 
@@ -23,8 +23,8 @@ Verified by Probity (github.com/probityai/probity). The `probityai` command line
 Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
-samples="$(uvx --from agent-evidence-verify==0.5.1 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
-uvx agent-evidence-verify==0.5.1 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from agent-evidence-verify==0.8.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
+uvx agent-evidence-verify==0.8.0 "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -58,12 +58,13 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | package | registry | version | downloads |
 | --- | --- | :---: | :---: |
 | [probityai](packages/probityai/README.md) | PyPI | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | PyPI | **0.5.1** | [![agent-evidence-verify downloads](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |
+| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | PyPI | **0.8.0** | [![agent-evidence-verify downloads](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |
 | [probity&#8209;verify](packages/probity-verify/README.md) | PyPI | **0.5.1** | [![probity-verify downloads](assets/badges/dl-pypi-probity-verify.svg)](https://pepy.tech/projects/probity-verify) |
 | [probity&#8209;ratchet](packages/probity-ratchet/README.md) | PyPI | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
 | [probity&#8209;ratchet&#8209;cases](packages/probity-ratchet-cases/README.md) | PyPI | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
 | [probity&#8209;effects](packages/probity-effects/README.md) | PyPI | **0.2.0** | - |
 | [agent&#8209;evidence&#8209;replay](packages/agent-evidence-replay/README.md) | PyPI | **0.1.0** | - |
+| [agent&#8209;evidence&#8209;a2a](packages/agent-evidence-a2a/README.md) | PyPI | **0.1.0** | - |
 
 - `probityai`: the `probityai` command; `probityai verify` today
 - `agent-evidence-verify`: offline verifier: supported, contradicted or not established
@@ -72,6 +73,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 - `probity-ratchet-cases`: agent task cases graded on final state: a simulated company, tool faults, exact graders
 - `probity-effects`: keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios
 - `agent-evidence-replay`: replays a lab's agent action record and flags a changed or missing step
+- `agent-evidence-a2a`: verifies A2A agent card signatures over the served bytes, with corpora that score any card verifier, canonicaliser or webhook SSRF judge
 
 Install any of them pinned to the version shown: `pip install <package>==<version>`.
 

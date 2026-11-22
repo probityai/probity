@@ -1,0 +1,508 @@
+"""Record envelope v2: a signed record whose committed bytes stay verifiable after its subject's key is destroyed.
+
+A v1 record signs its fields in clear and names its subject by a plain digest of the call; every witness leaf is
+`SHA-256(0x00 || line)` over that clear line. Nothing in it can be erased without breaking the chain and the witness
+proofs, so a verifier labels a v1 journal "not erasable".
+
+A v2 record splits every field of the record, by a declared schema, into one of three retention classes:
+
+- `kept`: the field stays in clear in the signed statement. Only structural metadata may be kept (sequence,
+  previous-line digest, record kind, times, verdict, tool name, policy and authority digests). A personal field, or
+  a digest computed over personal content, may never be kept (`lint_schema`, and `seal` refuses at write time).
+- `pseudonym`: the clear value is encrypted with the payload; the signed statement carries a per-leaf keyed tag
+  `HMAC(k, JCS(value))` with `k = HKDF(subject key, "pseudonym", leaf id, field path)`. While the subject key lives,
+  its holder recomputes the tag for a known value and joins the timeline (session, user subject, token digests);
+  after the key is destroyed no one can, and two leaves of one subject carry unrelated tags.
+- `payload`: the clear value is encrypted under the subject key; with `commit` the signed statement also carries a
+  per-leaf keyed commitment `HMAC(k_field, JCS(value))`, so one field can be disclosed by releasing `k_field` alone
+  (`disclose`) without revealing the subject key or any other field, and equal values do not link across leaves.
+
+Every non-kept field names the data subject whose key covers it (a role: user, agent, sponsor, approver, session).
+The payload is encrypted per subject and per class (AES-256-GCM, a key derived per leaf, the AAD binding the format,
+leaf id, schema, subject and class, the plaintext padded to a multiple of 256 bytes so lengths do not identify
+values). The signed statement carries only the SHA-256 of each ciphertext; the ciphertext lives in a separate
+payload store. So the witnessed leaf is a commitment over (structural metadata, ciphertext digests, keyed tags) and
+stays verifiable when the ciphertext is deleted or its key destroyed. The statement's in-toto subject is a salted
+commitment to the call under the subject key, not a plain digest of it.
+
+Nothing here holds or chooses a key: callers pass subject keys (the custodian, the one party that holds them,
+creates and destroys them). A schema travels as JSON (`Schema.to_json`, `Schema.from_json`), so another
+implementation seals and opens the same bytes; the shared vectors (`vectors/shared/erasure.json`, from
+`erasure_vectors`) fix keys, leaf ids and nonces. Spec: docs/erasure.md.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import os
+import re
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from typing import Any, Final
+
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+
+from .core import canonical
+
+FORMAT: Final = "probity-record-envelope/v2"
+KEPT: Final = "kept"
+PSEUDONYM: Final = "pseudonym"
+PAYLOAD: Final = "payload"
+CLASSES: Final = (KEPT, PSEUDONYM, PAYLOAD)
+ROLES: Final = ("user", "agent", "sponsor", "approver", "session")
+PAD: Final = 256
+NOT_ERASABLE: Final = "not erasable"
+ERASED: Final = "commitment only, content erased at {at}"
+LEAF_BYTES: Final = 16
+KEY_BYTES: Final = 32
+NONCE_BYTES: Final = 12
+_HEX64 = re.compile(r"[0-9a-f]{64}\Z")
+_HEX32 = re.compile(r"[0-9a-f]{32}\Z")
+#: Field names that look like digests; a kept one must be declared structural (`Schema.structural`).
+_DIGEST_NAME = re.compile(r"(sha256|digest|hash|thumbprint)", re.IGNORECASE)
+
+
+class EnvelopeError(ValueError):
+    """A schema, record or envelope that is refused; `code` names the reason."""
+
+    def __init__(self, code: str, detail: str = "") -> None:
+        super().__init__(f"{code}: {detail}" if detail else code)
+        self.code = code
+
+
+# ---- schema ---------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Rule:
+    """The retention class of one field path (dots separate the keys of nested objects)."""
+
+    path: str
+    cls: str
+    subject: str | None = None  # the role whose key covers a pseudonym or payload field
+    personal: bool = False  # the value can carry personal data
+    digest_of_personal: bool = False  # the value is a digest computed over personal content
+    commit: bool = False  # a payload field also gets a keyed commitment in the signed statement
+
+
+@dataclass(frozen=True)
+class Schema:
+    """Every field a record of this kind may carry, closed: a field no rule names is refused at seal time."""
+
+    name: str
+    rules: tuple[Rule, ...]
+    structural: frozenset[str] = frozenset()  # kept fields that are digests over payload-blind data
+
+    @property
+    def ident(self) -> str:
+        return self.name
+
+    def rule(self, path: str) -> Rule | None:
+        for r in self.rules:
+            if r.path == path:
+                return r
+        return None
+
+    def split(self) -> frozenset[str]:
+        """Paths that are objects split into declared children (the parent itself has no rule)."""
+        return frozenset(r.path.rsplit(".", 1)[0] for r in self.rules if "." in r.path)
+
+    def kept(self) -> tuple[str, ...]:
+        return tuple(r.path for r in self.rules if r.cls == KEPT)
+
+    def to_json(self) -> dict[str, Any]:
+        """The schema as JSON, the form the shared vectors and other implementations read."""
+        return {"name": self.name, "structural": sorted(self.structural),
+                "rules": [{"path": r.path, "class": r.cls, "subject": r.subject, "personal": r.personal,
+                           "digestOfPersonal": r.digest_of_personal, "commit": r.commit} for r in self.rules]}
+
+    @classmethod
+    def from_json(cls, doc: Mapping[str, Any]) -> Schema:
+        """A schema from its JSON form; EnvelopeError when a member is missing or of the wrong type."""
+        def text(value: Any) -> str:
+            if not isinstance(value, str):
+                raise EnvelopeError("schema_malformed", repr(value))
+            return value
+
+        def flag(value: Any) -> bool:
+            if not isinstance(value, bool):
+                raise EnvelopeError("schema_malformed", repr(value))
+            return value
+
+        try:
+            rules = tuple(Rule(text(r["path"]), text(r["class"]), None if r["subject"] is None else text(r["subject"]),
+                               flag(r["personal"]), flag(r["digestOfPersonal"]), flag(r["commit"]))
+                          for r in doc["rules"])  # fmt: skip
+            return cls(text(doc["name"]), rules, frozenset(text(p) for p in doc["structural"]))
+        except (KeyError, TypeError) as exc:
+            raise EnvelopeError("schema_malformed", str(exc)) from exc
+
+
+def lint_schema(schema: Schema) -> list[str]:
+    """Why `schema` may not seal records; [] when it may. A plain digest of personal content never enters
+    committed data: a personal field or a digest over personal content cannot be kept, and a kept field whose name
+    reads as a digest must be declared structural (a digest over payload-blind data)."""
+    problems: list[str] = []
+    seen: set[str] = set()
+    split = schema.split()
+    for r in schema.rules:
+        if r.path in seen:
+            problems.append(f"duplicate_rule:{r.path}")
+        seen.add(r.path)
+        if r.path in split:
+            problems.append(f"rule_on_split_object:{r.path}")
+        if r.cls not in CLASSES:
+            problems.append(f"unknown_class:{r.path}:{r.cls}")
+            continue
+        if r.cls == KEPT:
+            if r.personal:
+                problems.append(f"personal_field_kept:{r.path}")
+            if r.digest_of_personal:
+                problems.append(f"plain_digest_of_personal:{r.path}")
+            if _DIGEST_NAME.search(r.path.rsplit(".", 1)[-1]) and r.path not in schema.structural:
+                problems.append(f"undeclared_digest_kept:{r.path}")
+            if r.subject is not None or r.commit:
+                problems.append(f"kept_field_names_a_key:{r.path}")
+        else:
+            if r.subject not in ROLES:
+                problems.append(f"no_subject_role:{r.path}")
+            if r.cls == PSEUDONYM and r.commit:
+                problems.append(f"pseudonym_with_commitment:{r.path}")
+        if r.path in schema.structural and r.cls != KEPT:
+            problems.append(f"structural_not_kept:{r.path}")
+    for parent in split:
+        if "." in parent:
+            problems.append(f"split_deeper_than_two:{parent}")
+    return problems
+
+
+# ---- key derivation -------------------------------------------------------------------------------------------
+def derive(subject_key: bytes, label: str, leaf: bytes, path: str) -> bytes:
+    """HKDF-SHA256(subject key, salt = FORMAT, info = label 0x00 leaf-id 0x00 path), 32 bytes."""
+    if len(subject_key) != KEY_BYTES:
+        raise EnvelopeError("subject_key_length")
+    if len(leaf) != LEAF_BYTES:
+        raise EnvelopeError("leaf_id_length")
+    info = label.encode("ascii") + b"\x00" + leaf + b"\x00" + path.encode("utf-8")
+    kdf = HKDF(algorithm=hashes.SHA256(), length=KEY_BYTES, salt=FORMAT.encode("ascii"), info=info)
+    return kdf.derive(subject_key)
+
+
+def tag(key: bytes, value: Any) -> str:
+    return hmac.new(key, canonical(value), hashlib.sha256).hexdigest()
+
+
+def field_key(subject_key: bytes, leaf: bytes, path: str) -> bytes:
+    """`k_field` of one committed payload field; releasing it discloses that field and nothing else."""
+    return derive(subject_key, "field-commitment", leaf, path)
+
+
+def pseudonym(subject_key: bytes, leaf: bytes, path: str, value: Any) -> str:
+    return tag(derive(subject_key, "pseudonym", leaf, path), value)
+
+
+def subject_commitment(subject_key: bytes, leaf: bytes, value: Any) -> str:
+    """The in-toto subject digest of a v2 record: the call committed under the subject key (salted by the key and
+    the leaf), so a dictionary of calls does not find the record and two records of one call do not link."""
+    return tag(derive(subject_key, "subject-commitment", leaf, ""), value)
+
+
+def _aad(leaf: bytes, schema: str, subject: str, cls: str) -> bytes:
+    return canonical({"class": cls, "format": FORMAT, "leaf": leaf.hex(), "schema": schema, "subject": subject})
+
+
+def _pad(data: bytes) -> bytes:
+    # JSON ignores trailing whitespace, so padding with spaces keeps the plaintext one JCS object plus blanks.
+    return data + b" " * (-len(data) % PAD)
+
+
+# ---- sealing --------------------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Sealed:
+    """One record sealed: the `kept` fields and the `erasure` block go into the signed statement; `blobs`
+    (ciphertext digest -> nonce || ciphertext) go into the payload store; `subject_digest` is the statement's
+    in-toto subject digest."""
+
+    kept: dict[str, Any]
+    erasure: dict[str, Any]
+    blobs: dict[str, bytes]
+    subject_digest: str
+
+
+def _get(record: Mapping[str, Any], path: str) -> tuple[bool, Any]:
+    node: Any = record
+    for part in path.split("."):
+        if not isinstance(node, Mapping) or part not in node:
+            return False, None
+        node = node[part]
+    return True, node
+
+
+def _paths(record: Mapping[str, Any], schema: Schema) -> list[str]:
+    """Every leaf path of `record` under the schema's split objects; a split object must be an object or null."""
+    split = schema.split()
+    out: list[str] = []
+    for key, value in record.items():
+        if key in split:
+            if value is None:
+                continue
+            if not isinstance(value, Mapping):
+                raise EnvelopeError("split_field_not_an_object", key)
+            out.extend(f"{key}.{child}" for child in value)
+        else:
+            out.append(key)
+    return out
+
+
+def seal(
+    schema: Schema,
+    record: Mapping[str, Any],
+    keys: Mapping[str, bytes],
+    subject_value: Any,
+    subject_role: str | None,
+    *,
+    leaf: bytes | None = None,
+    nonce: Mapping[tuple[str, str], bytes] | None = None,
+) -> Sealed:
+    """Seal `record` under `keys` (role -> subject key). `subject_value` is what the v1 statement named by plain
+    digest (the call); it is committed under `keys[subject_role]`. With `subject_role` None the record has no data
+    subject, every field must be kept, and `subject_digest` is empty (the caller names a structural subject). A
+    null value of a non-kept field whose role has no key is kept as null: there is nothing in it to erase. `leaf`
+    and `nonce` are fixed only by vectors."""
+    problems = lint_schema(schema)
+    if problems:
+        raise EnvelopeError("schema_refused", "; ".join(problems))
+    leaf = os.urandom(LEAF_BYTES) if leaf is None else leaf
+    if len(leaf) != LEAF_BYTES:
+        raise EnvelopeError("leaf_id_length")
+    kept: dict[str, Any] = {}
+    classes: dict[str, str] = {}
+    roles: dict[str, str] = {}
+    commitments: dict[str, str] = {}
+    pseudonyms: dict[str, str] = {}
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
+    for path in _paths(record, schema):
+        rule = schema.rule(path)
+        if rule is None:
+            raise EnvelopeError("field_undeclared", path)
+        _, value = _get(record, path)
+        classes[path] = rule.cls
+        if rule.cls == KEPT:
+            if isinstance(value, str) and _HEX64.fullmatch(value.removeprefix("sha256:")) and path not in schema.structural:
+                raise EnvelopeError("plain_digest_in_kept_field", path)
+            kept[path] = value
+            continue
+        assert rule.subject is not None
+        key = keys.get(rule.subject)
+        if key is None and value is None:
+            classes[path] = KEPT
+            kept[path] = None
+            continue
+        if key is None:
+            raise EnvelopeError("subject_key_missing", f"{path} needs the {rule.subject} key")
+        roles[path] = rule.subject
+        groups.setdefault((rule.subject, rule.cls), {})[path] = value
+        if rule.cls == PSEUDONYM:
+            pseudonyms[path] = pseudonym(key, leaf, path, value)
+        elif rule.commit:
+            commitments[path] = tag(field_key(key, leaf, path), value)
+    if subject_role is not None and subject_role not in keys:
+        raise EnvelopeError("subject_key_missing", f"the statement subject needs the {subject_role} key")
+    if subject_role is None and groups:
+        raise EnvelopeError("subject_role_missing", "a record with personal fields names its data subject")
+    ciphertexts: list[dict[str, Any]] = []
+    blobs: dict[str, bytes] = {}
+    for (role, cls), fields in sorted(groups.items()):
+        pkey = derive(keys[role], "payload/" + cls, leaf, role)
+        iv = os.urandom(NONCE_BYTES) if nonce is None else nonce[(role, cls)]
+        blob = iv + AESGCM(pkey).encrypt(iv, _pad(canonical(fields)), _aad(leaf, schema.ident, role, cls))
+        digest = hashlib.sha256(blob).hexdigest()
+        blobs[digest] = blob
+        ciphertexts.append({"bytes": len(blob), "class": cls, "sha256": digest, "subject": role})
+    erasure = {
+        "format": FORMAT,
+        "leaf": leaf.hex(),
+        "schema": schema.ident,
+        "classes": dict(sorted(classes.items())),
+        "roles": dict(sorted(roles.items())),
+        "commitments": dict(sorted(commitments.items())),
+        "pseudonyms": dict(sorted(pseudonyms.items())),
+        "ciphertexts": ciphertexts,
+        "subjectRole": subject_role,
+    }
+    if subject_role is None:
+        del erasure["subjectRole"]
+    digest = "" if subject_role is None else subject_commitment(keys[subject_role], leaf, subject_value)
+    return Sealed(kept, erasure, blobs, digest)
+
+
+def _set(out: dict[str, Any], path: str, value: Any) -> None:
+    head, _, rest = path.partition(".")
+    if rest:
+        out.setdefault(head, {})[rest] = value
+    else:
+        out[head] = value
+
+
+@dataclass(frozen=True)
+class Opened:
+    """A v2 record read back: `fields` holds every field whose key was available; `erased` lists the paths of the
+    fields whose subject key is gone (each reads `ERASED`), `missing` those whose ciphertext is not in the store."""
+
+    fields: dict[str, Any]
+    erased: tuple[str, ...]
+    missing: tuple[str, ...]
+
+
+def open_sealed(
+    kept: Mapping[str, Any],
+    erasure: Mapping[str, Any],
+    blobs: Mapping[str, bytes],
+    keys: Mapping[str, bytes],
+) -> Opened:
+    """Decrypt what `keys` can open, checking every ciphertext digest, the AEAD binding and every keyed tag; an
+    EnvelopeError at the first mismatch (a swapped blob, a blob of another leaf, a tampered tag)."""
+    check_block(erasure)
+    leaf = bytes.fromhex(erasure["leaf"])
+    out: dict[str, Any] = {}
+    for path, value in kept.items():
+        _set(out, path, value)
+    erased: list[str] = []
+    missing: list[str] = []
+    classes: Mapping[str, str] = erasure["classes"]
+    for entry in erasure["ciphertexts"]:
+        role, cls, digest = entry["subject"], entry["class"], entry["sha256"]
+        paths = [p for p, c in classes.items() if c == cls and erasure["roles"][p] == role]
+        key = keys.get(role)
+        if key is None:
+            erased.extend(paths)
+            continue
+        blob = blobs.get(digest)
+        if blob is None:
+            missing.extend(paths)
+            continue
+        if hashlib.sha256(blob).hexdigest() != digest:
+            raise EnvelopeError("ciphertext_digest_mismatch", digest)
+        pkey = derive(key, "payload/" + cls, leaf, role)
+        try:
+            plain = AESGCM(pkey).decrypt(blob[:NONCE_BYTES], blob[NONCE_BYTES:], _aad(leaf, erasure["schema"], role, cls))
+        except InvalidTag as exc:
+            raise EnvelopeError("ciphertext_refused", f"{role}/{cls}") from exc
+        fields = json.loads(plain)
+        for path, value in fields.items():
+            if classes.get(path) != cls or erasure["roles"].get(path) != role:
+                raise EnvelopeError("ciphertext_field_undeclared", path)
+            if cls == PSEUDONYM and erasure["pseudonyms"].get(path) != pseudonym(key, leaf, path, value):
+                raise EnvelopeError("pseudonym_mismatch", path)
+            if path in erasure["commitments"] and erasure["commitments"][path] != tag(field_key(key, leaf, path), value):
+                raise EnvelopeError("commitment_mismatch", path)
+            _set(out, path, value)
+    return Opened(out, tuple(sorted(erased)), tuple(sorted(missing)))
+
+
+def check_block(erasure: Mapping[str, Any]) -> None:
+    """The erasure block is well formed and payload-blind: hex tags and digests only, every class known."""
+    if erasure.get("format") != FORMAT:
+        raise EnvelopeError("not_envelope_v2")
+    if not isinstance(erasure.get("leaf"), str) or not _HEX32.fullmatch(erasure["leaf"]):
+        raise EnvelopeError("leaf_id_malformed")
+    classes = erasure.get("classes")
+    if not isinstance(classes, Mapping) or any(c not in CLASSES for c in classes.values()):
+        raise EnvelopeError("classes_malformed")
+    roles = erasure.get("roles")
+    if (not isinstance(roles, Mapping) or set(roles) != {p for p, c in classes.items() if c != KEPT}
+            or any(r not in ROLES for r in roles.values())):
+        raise EnvelopeError("roles_malformed")
+    for name in ("commitments", "pseudonyms"):
+        block = erasure.get(name)
+        if not isinstance(block, Mapping) or not all(isinstance(v, str) and _HEX64.fullmatch(v) for v in block.values()):
+            raise EnvelopeError(f"{name}_malformed")
+        want = PAYLOAD if name == "commitments" else PSEUDONYM
+        if any(classes.get(p) != want for p in block):
+            raise EnvelopeError(f"{name}_class_mismatch")
+    if set(erasure["pseudonyms"]) != {p for p, c in classes.items() if c == PSEUDONYM}:
+        raise EnvelopeError("pseudonym_missing")
+    entries = erasure.get("ciphertexts")
+    if not isinstance(entries, list):
+        raise EnvelopeError("ciphertexts_malformed")
+    seen: set[tuple[str, str]] = set()
+    for e in entries:
+        if (not isinstance(e, Mapping) or e.get("class") not in (PSEUDONYM, PAYLOAD) or e.get("subject") not in ROLES
+                or not isinstance(e.get("sha256"), str) or not _HEX64.fullmatch(e["sha256"])):
+            raise EnvelopeError("ciphertexts_malformed")
+        if (e["subject"], e["class"]) in seen:
+            raise EnvelopeError("ciphertexts_duplicate")
+        seen.add((e["subject"], e["class"]))
+    if seen != {(roles[p], c) for p, c in classes.items() if c != KEPT}:
+        raise EnvelopeError("ciphertexts_do_not_cover_fields")
+
+
+# ---- disclosure -----------------------------------------------------------------------------------------------
+def disclose(subject_key: bytes, erasure: Mapping[str, Any], path: str, value: Any) -> dict[str, Any]:
+    """Release one committed field: its value and `k_field`, never the subject key."""
+    if path not in erasure["commitments"]:
+        raise EnvelopeError("field_not_committed", path)
+    leaf = bytes.fromhex(erasure["leaf"])
+    return {"leaf": erasure["leaf"], "path": path, "value": value, "fieldKey": field_key(subject_key, leaf, path).hex()}
+
+
+def verify_disclosure(erasure: Mapping[str, Any], disclosure: Mapping[str, Any]) -> bool:
+    if disclosure.get("leaf") != erasure.get("leaf"):
+        return False
+    want = erasure.get("commitments", {}).get(disclosure.get("path"))
+    if want is None:
+        return False
+    try:
+        got = tag(bytes.fromhex(disclosure["fieldKey"]), disclosure["value"])
+    except (KeyError, ValueError, TypeError):
+        return False
+    return hmac.compare_digest(got, want)
+
+
+# ---- what a verifier prints -----------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Erasability:
+    """A journal's erasure posture as a verifier prints it, from the signed statements alone."""
+
+    records: int
+    v1: int
+    v2: int
+    kept: tuple[str, ...]  # every field path kept in clear by any v2 record, sorted
+
+    @property
+    def label(self) -> str:
+        if self.records == 0:
+            return "empty"
+        return NOT_ERASABLE if self.v1 else "erasable"
+
+    def lines(self) -> list[str]:
+        out = [f"erasure: {self.label} ({self.v2} of {self.records} records in envelope v2, {self.v1} in v1)"]
+        if self.v1:
+            out.append("v1 records commit their fields and subject by plain digest over clear content: not erasable")
+        out.append("kept in clear (retention class kept): " + (", ".join(self.kept) if self.kept else "none"))
+        return out
+
+
+def erasability(predicates: Iterable[Mapping[str, Any]]) -> Erasability:
+    """Count v1 and v2 records and collect the kept class; each v2 erasure block is checked as it is counted."""
+    records = v1 = v2 = 0
+    kept: set[str] = set()
+    for predicate in predicates:
+        records += 1
+        block = predicate.get("erasure")
+        if block is None:
+            v1 += 1
+            continue
+        check_block(block)
+        v2 += 1
+        kept.update(p for p, c in block["classes"].items() if c == KEPT)
+    return Erasability(records, v1, v2, tuple(sorted(kept)))
+
+
+def erased_reading(at: str) -> str:
+    """How a verifier reads an assertion whose subject key was shredded at `at`: its grade stands on the
+    commitment, its content is gone."""
+    return ERASED.format(at=at)
