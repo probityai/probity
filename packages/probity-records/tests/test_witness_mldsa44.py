@@ -87,14 +87,14 @@ def _hybrid(now: int) -> tuple[str, str, str, MLDSA44PrivateKey]:
                        log_ed.sign(text.encode())),
              w.cosign_mldsa(text, ORIGIN, log_pq, now),
              w.cosign_mldsa(text, "w.example/pq", wit_pq, now),
-             w.cosign(text, "w.example/ed", wit_ed, now))  # fmt: skip
+             w.cosign(text, "w.example/ed", wit_ed, now))
     pq_vkey = w.vkey("w.example/pq", w.SIG_MLDSA44, wit_pq.public_key()).encode()
     policy = "\n".join([
         f"log {w.vkey(ORIGIN, w.SIG_ED25519, log_ed.public_key()).encode()}",
         f"log {w.vkey(ORIGIN, w.SIG_MLDSA44, log_pq.public_key()).encode()}",
         f"witness pq {pq_vkey}",
         f"witness ed {w.vkey('w.example/ed', w.SIG_COSIGNATURE_V1, wit_ed.public_key()).encode()}",
-        "group both all pq ed", "quorum both", ""])  # fmt: skip
+        "group both all pq ed", "quorum both", ""])
     return w.Note(text, lines).encode(), policy, pq_vkey, log_pq
 
 
