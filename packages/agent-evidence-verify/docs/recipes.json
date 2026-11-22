@@ -97,6 +97,11 @@
       "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/_sf.py",
+      "bytes": 11400,
+      "sha256": "3afa7eaa9a97cb786bb19e5d599096e7d6ad993a69a82b0c664771b4a253a645"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
       "bytes": 11849,
       "sha256": "e35e29b6c8bc8ff8a6713132d4cf428e8c644eebc307d91edc7d202d9fcbd849"
@@ -252,6 +257,11 @@
       "sha256": "5ca955a641049fff4ac3a1c36fb13cf868db02b357145cf2d70476b7438956b5"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/web_bot_auth.py",
+      "bytes": 34472,
+      "sha256": "f8f80fca181c81c315689a369c734022e3c059711b8d772fa6f9996ee15bbbb9"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/witnessed.py",
       "bytes": 6328,
       "sha256": "66f3139503a46af9a04cff5c030c842795535bf6ab40ef1fa35547c1fa8ec0eb"
@@ -278,8 +288,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11744,
-      "sha256": "5cab88d2ce0f7d0c10ff9389681bc1225d75e70d578d77e290808b2b1908e430"
+      "bytes": 11810,
+      "sha256": "4fbe2e8cff7ce85bd0c3ba2b0bff56765454ea37392ed06d544effd38bfa4da6"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -2124,6 +2134,52 @@
           "path": "examples/evidence-sufficiency/envelope.json",
           "bytes": 2847,
           "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
+        }
+      ]
+    },
+    {
+      "task": "Check that a request was signed by the agent you pinned, under Web Bot Auth",
+      "claim_type": "web_bot_auth/v1",
+      "case": "examples/web-bot-auth/case.json",
+      "policy": "examples/web-bot-auth/policy.json",
+      "documentation": "docs/web-bot-auth.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic signed request and fixture key; pinned directory; no live fetch, no replay state.",
+      "case_id": "web-bot-auth-signed-deploy-request",
+      "expected_reason": "request_signed_by_pinned_agent",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/web-bot-auth/case.json",
+        "--policy",
+        "examples/web-bot-auth/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/web-bot-auth/case.json",
+          "bytes": 598,
+          "sha256": "010e0b1331a269138d51cfe24d357becf4f080580dcb9b5495441c12b2b4fedb"
+        },
+        {
+          "path": "examples/web-bot-auth/policy.json",
+          "bytes": 678,
+          "sha256": "2a6d435159d24e8ed2c34fafc04380e34533ddcd648583738e5c9e7dc127ec29"
+        },
+        {
+          "path": "examples/web-bot-auth/body.bin",
+          "bytes": 42,
+          "sha256": "21ad3ea1e5cedd2d3e9e2948ea9220f483d0248be3a239eef271ef29505a956a"
+        },
+        {
+          "path": "examples/web-bot-auth/directory.json",
+          "bytes": 213,
+          "sha256": "403e72622e2f72b6e3804d53bde28b7076a4827312caa60e21f4c19f5e717dba"
+        },
+        {
+          "path": "examples/web-bot-auth/request.json",
+          "bytes": 847,
+          "sha256": "a7c5c403753b31c6a6e34210a1e9e0dfe9376898e6f4a497b434861a8df35fea"
         }
       ]
     },
