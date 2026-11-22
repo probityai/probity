@@ -1,0 +1,844 @@
+[
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      }
+    ],
+    "description": "standing grant inside its window and before review",
+    "expected": {
+      "decision": "allow",
+      "digests": [
+        "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42"
+      ],
+      "grantDigest": "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42",
+      "reason": "ok"
+    },
+    "id": "SG1",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T13:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      }
+    ],
+    "description": "standing grant at its review date",
+    "expected": {
+      "decision": "deny",
+      "digests": [
+        "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42"
+      ],
+      "grantDigest": null,
+      "reason": "grant_review_overdue:0"
+    },
+    "id": "SG2",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:30:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      },
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "child",
+          "holderKey": "icrY1sNjus7yLfgNI3X9qc1SiCh9mf9ktkH1ZsTlo4g=",
+          "issuerKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "maxDepth": 0,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42",
+          "reviewBy": "2026-11-08T12:30:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "ebxkA//WiUlX7/pz67GI7K9nTYpXSSKJVcpYgyzH44Lk5hAEss3m2P4eKVzZBx5xIzKwEuo9Px5wmrni7kdFBg=="
+      }
+    ],
+    "description": "child reviews earlier: refused from the child's review date",
+    "expected": {
+      "decision": "deny",
+      "digests": [
+        "1b3298df2abef4f3725db240bed33ab228520c1183af12aefd07a649da742469",
+        "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42"
+      ],
+      "grantDigest": null,
+      "reason": "grant_review_overdue:1"
+    },
+    "id": "SG3",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      },
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "child",
+          "holderKey": "icrY1sNjus7yLfgNI3X9qc1SiCh9mf9ktkH1ZsTlo4g=",
+          "issuerKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "maxDepth": 0,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42",
+          "reviewBy": "2026-11-08T12:30:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "ebxkA//WiUlX7/pz67GI7K9nTYpXSSKJVcpYgyzH44Lk5hAEss3m2P4eKVzZBx5xIzKwEuo9Px5wmrni7kdFBg=="
+      }
+    ],
+    "description": "child keeps sponsor, earlier review: allowed before it",
+    "expected": {
+      "decision": "allow",
+      "digests": [
+        "1b3298df2abef4f3725db240bed33ab228520c1183af12aefd07a649da742469",
+        "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42"
+      ],
+      "grantDigest": "1b3298df2abef4f3725db240bed33ab228520c1183af12aefd07a649da742469",
+      "reason": "ok"
+    },
+    "id": "SG4",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      },
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "child",
+          "holderKey": "icrY1sNjus7yLfgNI3X9qc1SiCh9mf9ktkH1ZsTlo4g=",
+          "issuerKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "maxDepth": 0,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42",
+          "reviewBy": "2026-11-08T12:30:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "mallory@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "p8hcAzn2yiZFaVQuPHpV3Uk/97kgRmyHdnenr7+vOKZrRCEEKu9naCARA9Pv1uZyBejkf6wq89wgAshhFzouDw=="
+      }
+    ],
+    "description": "forged child that swaps the sponsor",
+    "expected": {
+      "decision": "deny",
+      "digests": [],
+      "grantDigest": null,
+      "reason": "child_changes_sponsor:1"
+    },
+    "id": "SG5",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      },
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "child",
+          "holderKey": "icrY1sNjus7yLfgNI3X9qc1SiCh9mf9ktkH1ZsTlo4g=",
+          "issuerKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "maxDepth": 0,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42",
+          "reviewBy": "2026-11-08T14:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "7a7Rl35UWeC00ixmL4vB/Xi/jHKyD1Y/sio5EhTbOaVo/uokvpDqRSAltq9WA2WKwaufsShoSkYMc3APbO12Cw=="
+      }
+    ],
+    "description": "forged child that reviews later than its parent",
+    "expected": {
+      "decision": "deny",
+      "digests": [],
+      "grantDigest": null,
+      "reason": "child_review_later_than_parent:1"
+    },
+    "id": "SG6",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      },
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "child",
+          "holderKey": "icrY1sNjus7yLfgNI3X9qc1SiCh9mf9ktkH1ZsTlo4g=",
+          "issuerKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "maxDepth": 0,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42",
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "NlYO+IFutuWpv0Z5wMWgWAeIsTnBpYsbDMmi5RRsG9RXJ2uhKQbF8B6V+2G2obJTeAgs9CLrtuR9efXz4UPzAw=="
+      }
+    ],
+    "description": "forged child that drops the sponsor and review date",
+    "expected": {
+      "decision": "deny",
+      "digests": [],
+      "grantDigest": null,
+      "reason": "child_changes_sponsor:1"
+    },
+    "id": "SG7",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "nM/IbZkmqdMfw5MYq1vjarQGnZNKz3PqFrazxd6MUv1tHnvnRKYMGPilAgNDbTEZOcS7nzTVzoEua5hWCRVWCA=="
+      }
+    ],
+    "description": "a sponsor without a review date",
+    "expected": {
+      "decision": "deny",
+      "digests": [],
+      "grantDigest": null,
+      "reason": "grant_invalid:0:grant_standing_incomplete"
+    },
+    "id": "SG8",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-09T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "6eYjJPycLc3NQ2VDTMfKocwT3G1sScFKzS8SEhq0P66UxIp7w00R3C5ULEKbMQG4SDVzD1AYSnHqBF1a2PlrBQ=="
+      }
+    ],
+    "description": "a review date after the grant expires",
+    "expected": {
+      "decision": "deny",
+      "digests": [],
+      "grantDigest": null,
+      "reason": "grant_invalid:0:grant_review_invalid"
+    },
+    "id": "SG9",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40,
+      "note": "ticket-7"
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents#x",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "kbT0viHTVBi/O2arwj22Yn4XMzFLbfpCHH0fuP4VqzGliCLg+nVg7MMHn0KxZ1dQ0pPdMG5Fl2ca6lQcPo9jBA=="
+      }
+    ],
+    "description": "a sponsor whose issuer carries a fragment",
+    "expected": {
+      "decision": "deny",
+      "digests": [],
+      "grantDigest": null,
+      "reason": "grant_invalid:0:grant_sponsor_invalid"
+    },
+    "id": "SG10",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "amount_cents": 40
+    },
+    "at": "2026-11-08T12:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "standing",
+          "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+          "maxDepth": 1,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": null,
+          "reviewBy": "2026-11-08T13:00:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                },
+                "note": {
+                  "pattern": "ticket-*",
+                  "type": "pattern"
+                }
+              }
+            }
+          }
+        },
+        "sig": "WsU6NGTNLzFlTZScum8xuRmGBI5tCVoAG4RwfvCIn4C+d+9AZPJEHkKyX0yX4teLqmAkYEv+EQQXh3/XLqyYBQ=="
+      },
+      {
+        "body": {
+          "cnf": {
+            "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          },
+          "context": {},
+          "expiresAt": "2026-11-09T12:00:00Z",
+          "grantId": "child",
+          "holderKey": "icrY1sNjus7yLfgNI3X9qc1SiCh9mf9ktkH1ZsTlo4g=",
+          "issuerKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+          "maxDepth": 0,
+          "notBefore": "2026-11-08T11:30:00Z",
+          "parent": "5a92a8d977b8bbec99b048e67a14a23112ff9878b87ecba183df413bf44daf42",
+          "reviewBy": "2026-11-08T12:30:00Z",
+          "sponsor": {
+            "issuer": "https://idp.example.com/realms/agents",
+            "subject": "owner@example.com"
+          },
+          "tools": {
+            "refund": {
+              "args": {
+                "amount_cents": {
+                  "max": 5000,
+                  "min": 1,
+                  "type": "range"
+                }
+              }
+            }
+          }
+        },
+        "sig": "b7nTUIXumYOAt9sP31QnwnPuqIDlQkoWnkKghlyivOjHQWKMeZBxLv0Agp9ZxpDwrFWJz1kJo4K5lYQVFNjcAA=="
+      }
+    ],
+    "description": "forged child that drops an argument its parent constrains (a call without it is unbounded)",
+    "expected": {
+      "decision": "deny",
+      "digests": [],
+      "grantDigest": null,
+      "reason": "child_drops_argument:refund.note:1"
+    },
+    "id": "SG11",
+    "roots": [
+      "8bb990d0d81f310f984cccdb00291a79f9e5c0e4e2f5a03fb901e83e9bbee0fc"
+    ],
+    "tool": "refund"
+  }
+]
