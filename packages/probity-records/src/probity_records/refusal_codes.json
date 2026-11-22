@@ -1101,6 +1101,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/intent_without_permit"
   },
   {
+   "code": "jcs_refused",
+   "check": "journal.verify",
+   "meaning": "the record's bytes are not admitted as canonical JSON (the detail names the defect)",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jcs_refused"
+  },
+  {
    "code": "jwks_digest_mismatch",
    "check": "identity.principals",
    "meaning": "the key set fetched for an issuer is not the one pinned by digest",

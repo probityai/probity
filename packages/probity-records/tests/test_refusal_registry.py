@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from importlib import resources
+from pathlib import Path
 
 import pytest
 from probity_records import refusal_codes, refusal_lint
@@ -23,6 +25,31 @@ def findings(source: str, config: Config = CFG) -> list[str]:
 
 def test_every_check_of_this_package_reports_only_registered_codes() -> None:
     assert refusal_lint.lint_package() == []
+
+
+#: A location the verifiers put before a code: the journal line, the approval binding, the principal role.
+LOCATION = re.compile(r"(line|binding|entry)_\d+|principal_(user|agent|sponsor|approver)")
+
+
+def _failures(node: object) -> list[str]:
+    if isinstance(node, dict):
+        return [s for k, v in node.items() for s in (
+            [x for x in v if isinstance(x, str)] if k == "failures" and isinstance(v, list) else _failures(v))]
+    return [s for x in node for s in _failures(x)] if isinstance(node, list) else []
+
+
+def test_every_verdict_in_the_shared_vectors_names_a_registered_code() -> None:
+    """Both verifiers report these strings byte for byte, so this holds the TypeScript twin to the registry too."""
+    vectors = Path(__file__).resolve().parents[1] / "vectors" / "shared"
+    unregistered = set()
+    for path in sorted(vectors.glob("*.json")):
+        for failure in _failures(json.loads(path.read_text(encoding="utf-8"))):
+            segments = failure.split(":")
+            while segments and LOCATION.fullmatch(segments[0]):
+                segments.pop(0)
+            if not segments or segments[0] not in refusal_codes.CODES:
+                unregistered.add((path.name, failure))
+    assert not unregistered
 
 
 def test_the_registry_is_sorted_unique_snake_and_every_identifier_is_derived() -> None:
