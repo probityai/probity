@@ -268,7 +268,8 @@ class Tripwire:
         for module_name, names in FORBIDDEN.items():
             module = _REAL_MODULES[module_name]
             for attr in sorted(names):
-                self._wrap(module, attr, f"{module_name}.{attr}")
+                if hasattr(module, attr):  # uuid6 and uuid7 exist from Python 3.14; an absent reader reads nothing
+                    self._wrap(module, attr, f"{module_name}.{attr}")
         self._active = True
 
     def uninstall(self) -> None:

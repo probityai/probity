@@ -227,3 +227,25 @@ def test_wall_clock_use_names_the_caller() -> None:
     read = Read("time.time", "pkg.mod", "pkg.mod", "/x/pkg/mod.py:3")
     assert "pkg.mod" in str(WallClockUse(read)) and WallClockUse(read).read is read
     assert FixedClock(0).now() == 0
+
+
+
+def test_install_skips_a_reader_this_python_does_not_have(tmp_path: Path) -> None:
+    # uuid6 and uuid7 are readers only from Python 3.14; on an older Python the install must still succeed.
+    driver = tmp_path / "absent_reader.py"
+    driver.write_text(textwrap.dedent("""
+        import time
+        from probity_records import clock_tripwire
+        clock_tripwire.FORBIDDEN["time"] = clock_tripwire.FORBIDDEN["time"] | {"no_such_reader"}
+        wire = clock_tripwire.Tripwire()
+        wire.install()
+        try:
+            time.time()
+        except clock_tripwire.WallClockUse:
+            print("caught")
+        finally:
+            wire.uninstall()
+    """))
+    done = subprocess.run([sys.executable, str(driver)], capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == "caught"
