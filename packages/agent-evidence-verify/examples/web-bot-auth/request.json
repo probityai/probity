@@ -18,11 +18,11 @@
     ],
     [
       "Signature-Input",
-      "sig1=(\"@method\" \"@authority\" \"@path\" \"content-digest\" \"signature-agent\";key=\"agent1\");created=1795348800;expires=1795349100;keyid=\"LrIPZqYRSA5863xkOc63yvbwsV1-LgZg_NPDnQ-aMg8\";alg=\"ed25519\";nonce=\"deploy-0001\";tag=\"web-bot-auth\""
+      "sig1=(\"@method\" \"@authority\" \"@path\" \"content-digest\" \"signature-agent\";key=\"agent1\");created=1795262400;expires=1795262700;keyid=\"LrIPZqYRSA5863xkOc63yvbwsV1-LgZg_NPDnQ-aMg8\";alg=\"ed25519\";nonce=\"deploy-0001\";tag=\"web-bot-auth\""
     ],
     [
       "Signature",
-      "sig1=:1Ae/zq1JOFM+0vckgmstflRcozLCpaDgFMkTPrHJbFba2dn47Mtkm/Prl+3X7lCvNyJS81LDZFYtmFUZUuXBDg==:"
+      "sig1=:c0BuRRBt36m5gRyG9IXU4SbbF1GYpmeKmE/X7ukYk6WBJArKV0J1NxnETs1Ut9usVKZq5bmYLK4BTPPjzBvcDw==:"
     ]
   ],
   "method": "POST",
