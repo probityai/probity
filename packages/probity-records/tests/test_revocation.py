@@ -30,9 +30,12 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.core import canonical, sha256_hex
 from probity_records.possession import cnf_for_signer
 from test_records import _approval, _trust, _write_run
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 PAST = "2000-01-01T00:00:00Z"
 ROOT = Path(__file__).resolve().parents[1]
@@ -271,7 +274,7 @@ def test_revoked_approver_approval_is_refused() -> None:
 
 def test_records_signed_after_revocation_fail_offline(tmp_path) -> None:
     root, gate, approver = Signer.generate(), Signer.generate(), Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     _write_run(journal, approver, "committed", "confirmed")
     lists = [_list(root, 1, [_entry("key", gate.key_id, reason="compromised")])]
     trust = Trust(revocations=RevocationState.from_lists(lists, {root.key_id}))

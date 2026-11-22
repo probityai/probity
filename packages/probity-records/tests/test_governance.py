@@ -24,6 +24,9 @@ from probity_records import (
     tool_call_predicate,
     verify_journal,
 )
+from probity_records.clock import SystemClock
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 ARGS = {"amount_cents": 250000, "customer_id": "cust-alice"}
 
@@ -50,7 +53,7 @@ def _votes(keys, policy, digest, names=("risk", "cfo")):
 
 def _record(tmp_path, body, votes, policy, args=ARGS):
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     ev = exception_evidence(body, votes, policy, args)
     journal.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(args), tool_call_predicate(
         phase="authorize", decision="allow", reason=EXCEPTION_ALLOW, authority=ev,
@@ -95,7 +98,7 @@ def test_expired_or_underapproved_exception_fails_offline(tmp_path) -> None:
 def test_workflow_steps_are_signed_records_with_risk_routing(tmp_path) -> None:
     keys, policy = _policy()
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     intake = "ab" * 32
     route = route_by_risk("high", {"high": "exceptions-high", "low": "single-approver"})
     with pytest.raises(ValueError, match="no_route_for_risk_tier"):

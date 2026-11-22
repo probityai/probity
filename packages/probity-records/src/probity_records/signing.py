@@ -284,9 +284,9 @@ class DelegatedKey:
 
 
 def delegate(root: SigningKey, lifetime: timedelta = timedelta(hours=1), *,
-             now: datetime | None = None) -> DelegatedKey:
+             now: datetime) -> DelegatedKey:
     """A fresh session key and the root's signed certificate for it, valid from ``now`` for ``lifetime``."""
-    start = now or datetime.now(UTC)
+    start = now
     session = Ed25519PrivateKey.generate()
     body = {"format": DELEGATION_FORMAT, "notAfter": _ts(start + lifetime), "notBefore": _ts(start),
             "rootKeyId": root.key_id, "rootProvenance": dict(root.provenance),
