@@ -24,7 +24,7 @@ fn on_push(token: &str, config: &ReceiverConfig, resolver: &MapResolver) {
 
 ## What it does
 
-- **Evidence in the event.** A `risk-level-change` or `session-revoked` event carries the claim `https://w3id.org/agent-evidence/secevent/v1/evidence-ref`: the SHA-256 digest and URI of a DSSE envelope holding an in-toto Statement about the same subject. The receiver refuses the event when the URI serves nothing, the bytes hash to another digest, the envelope does not verify under a trusted key, or the statement is about someone else. The claim is defined in [docs/evidence-ref-claim.md](docs/evidence-ref-claim.md).
+- **Evidence in the event.** A `risk-level-change` or `session-revoked` event carries the claim `https://w3id.org/agent-evidence/secevent/v1/evidence-ref`: the SHA-256 digest and URI of a DSSE envelope holding an in-toto Statement about the same subject. The receiver refuses the event when the URI serves nothing, the bytes hash to another digest, the envelope does not verify under a trusted key, or the statement is about someone else. The claim is defined in [docs/evidence-ref-claim.md](https://github.com/probityai/probity/blob/main/crates/ssf-evidence/docs/evidence-ref-claim.md).
 - **Four parties in one subject.** `sub_id` is an SSF complex subject naming the user, the agent, the tenant and the session.
 - **Monitor mode first.** A transmitter starts in monitor mode: events are decided, signed and logged, and nothing is sent. Switching to live never sends what monitor mode logged.
 - **Revocation needs a grant.** `session-revoked` is sent only when the receiver granted the `session_revoke` capability and the stream delivers it; otherwise the same decision goes out as a `HIGH` risk level.
@@ -33,7 +33,7 @@ fn on_push(token: &str, config: &ReceiverConfig, resolver: &MapResolver) {
 
 ## Conformance vectors
 
-[`vectors/`](vectors/) holds 27 cases (5 accepted, 22 refused, each with its expected code) and the public keys they verify under. The test `tests/vectors.rs` regenerates them byte for byte and runs each one from the files alone.
+[`vectors/`](https://github.com/probityai/probity/tree/main/crates/ssf-evidence/vectors) holds 27 cases (5 accepted, 22 refused, each with its expected code) and the public keys they verify under. The test `tests/vectors.rs` regenerates them byte for byte and runs each one from the files alone.
 
 ## Status
 
@@ -41,6 +41,6 @@ Version 0.1.0. Built on the published [`dsse`](https://crates.io/crates/dsse) an
 
 | Document | What it covers |
 | --- | --- |
-| [docs/evidence-ref-claim.md](docs/evidence-ref-claim.md) | The claim, the subject binding and the receiver's checks |
-| [vectors/](vectors/) | Conformance cases |
-| [LICENSE](LICENSE) | Apache-2.0 |
+| [docs/evidence-ref-claim.md](https://github.com/probityai/probity/blob/main/crates/ssf-evidence/docs/evidence-ref-claim.md) | The claim, the subject binding and the receiver's checks |
+| [vectors/](https://github.com/probityai/probity/tree/main/crates/ssf-evidence/vectors) | Conformance cases |
+| [LICENSE](https://github.com/probityai/probity/blob/main/crates/ssf-evidence/LICENSE) | Apache-2.0 |
