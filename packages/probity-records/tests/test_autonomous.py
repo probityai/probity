@@ -5,6 +5,7 @@ code, and the accepted case verifies offline from the record plus what the audit
 
 from __future__ import annotations
 
+import base64
 import json
 import time
 from datetime import UTC, datetime, timedelta
@@ -26,10 +27,14 @@ from probity_records import (
     tool_call_predicate,
     verify_journal,
 )
+from probity_records.clock import SystemClock
+from probity_records.core import canonical
 from probity_records.grants import (
+    GRANT_DOMAIN,
     chain_digests,
     chain_problem,
     grant_digest,
+    grant_evidence,
     is_standing,
     verify_chain,
 )
@@ -51,6 +56,7 @@ def iso(moment: datetime) -> str:
     return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 NOW = datetime.now(UTC).replace(microsecond=0)
 
 
@@ -169,7 +175,7 @@ def autonomous(tmp_path, *, revoke_sponsor: bool = False, pin_grant: bool = True
              "session": {"id": "run-1", "startedAt": iso(NOW - timedelta(minutes=5))},
              "standingGrant": grant_digest(grant["body"])}  # fmt: skip
     args = {"cents": 40}
-    j = Journal(tmp_path, gate)
+    j = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     j.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(args), tool_call_predicate(
         phase="intent", run_id="r", tool_call_id="c1", tool="refund", args_sha256_hex=args_sha256(args),
         permit_id=permit_id("p", "c1", args_sha256(args)), principals=block))
@@ -219,3 +225,118 @@ def test_autonomous_grade_and_sponsor_check_time() -> None:
     malformed = {**block, "standingGrant": "Z" * 64}
     assert check_principals(malformed, iso(NOW), pins, None, **kw) == (["principals_standing_grant_malformed"], None)
     assert check_principals({**block, "extra": 1}, iso(NOW), pins, None, **kw) == (["principals_malformed"], None)
+
+
+# --- attacks: an autonomous record must rest on the standing grant it names --------------------------------------
+
+BROAD = {"refund": {"args": {"cents": {"type": "wildcard"}}}, "wire": {"args": {"to": {"type": "wildcard"}}}}
+
+
+def rests_on(tmp_path, *, authority: str = "standing", tool: str = "refund", args: dict | None = None,
+             intent_grant: str = "standing", ctx: dict | None = None, revoke: tuple[tuple[str, str], ...] = (),
+             context: dict | None = None) -> list[str]:
+    """One autonomous call (authorize allow, then intent) whose block names the standing grant; the allow rests
+    on ``authority`` ("standing", "plain": another grant the same agent key holds with no sponsor or review, or
+    "policy": no grant at all). Returns every failure except the lone intent's open-effect report."""
+    idp, gate, root, holder = Idp(), Signer.generate(), Signer.generate(), Signer.generate()
+    grant = standing(root, holder, **({"context": context} if context else {}))
+    plain = issue_grant(root, grant_id="broad", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=BROAD,
+                        not_before=iso(NOW - timedelta(hours=1)), expires_at=iso(NOW + timedelta(days=365)))
+    chains = {"standing": [grant], "plain": [plain]}
+    now = int(time.time())
+    block = {"agent": idp.principal("agent-nightly", "agent-nightly", iat=now - 60, exp=now + 3600,
+                                    cnf=cnf_for_signer(holder)),
+             "sponsor": idp.principal("owner@example.com", "console", iat=now - 7200, exp=now + 3600),
+             "session": {"id": "run-1", "startedAt": iso(NOW - timedelta(minutes=5))},
+             "standingGrant": grant_digest(grant["body"])}  # fmt: skip
+    args = {"cents": 40} if args is None else args
+    ctx = {"agent": "agent-nightly", "session": "run-1"} if ctx is None else ctx
+    digest = args_sha256(args)
+    pid = permit_id("p", "c1", digest)
+    common = {"run_id": "r", "tool_call_id": "c1", "tool": tool, "args_sha256_hex": digest, "permit_id": pid,
+              "principals": block}
+    j = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
+    if authority == "policy":
+        allow = tool_call_predicate(phase="authorize", decision="allow", reason="no_approval_required", **common)
+    else:
+        chain = chains[authority]
+        allow = tool_call_predicate(phase="authorize", decision="allow", reason="grant",
+                                    authority=grant_evidence(chain, args, ctx),
+                                    grant_digest=grant_digest(chain[-1]["body"]), **common)  # fmt: skip
+    j.append(TOOL_CALL_RECORD, "tool-call:c1", digest, allow)
+    intent_digest = None if authority == "policy" else grant_digest(chains[intent_grant][-1]["body"])
+    j.append(TOOL_CALL_RECORD, "tool-call:c1", digest,
+             tool_call_predicate(phase="intent", grant_digest=intent_digest, **common))
+    revocations = None
+    if revoke:
+        ids = {"grant": grant_digest(grant["body"]), "agent": "agent-nightly"}
+        signed = sign_revocations(root, list_id="acme", seq=1, issued_at=iso(NOW - timedelta(minutes=1)), entries=[
+            {"kind": kind, "id": ids[name], "revokedAt": iso(NOW - timedelta(minutes=1))} for kind, name in revoke])
+        revocations = RevocationState.from_lists([signed], [root.key_id])
+    trust = Trust(identity_issuers={ISSUER: frozenset({jwk_thumbprint(idp.jwk)})}, identity_profile="strict",
+                  grant_root_key_ids=frozenset({root.key_id}),
+                  agent_sponsors={"agent-nightly": frozenset({(ISSUER, "owner@example.com")})},
+                  revocations=revocations)  # fmt: skip
+    failures = verify_journal(tmp_path, [gate.public_pem()], j.checkpoint(), trust=trust)["failures"]
+    return [f for f in failures if "open_intent_no_effect" not in f]
+
+
+def test_an_autonomous_call_resting_on_its_standing_grant_verifies(tmp_path) -> None:
+    assert rests_on(tmp_path) == []
+
+
+def test_an_allow_resting_on_another_grant_is_not_autonomous(tmp_path) -> None:
+    # The agent key holds a broad grant with no sponsor and no review date; the block names the narrow standing
+    # grant. The call ran on the broad grant, so no sponsor answered for it and no review bounds it.
+    failures = rests_on(tmp_path, authority="plain", tool="wire", args={"to": "acct-9"}, intent_grant="plain")
+    assert "line_0:principals_standing_grant_not_the_authority" in failures
+    assert "line_1:principals_standing_grant_not_the_authority" in failures
+
+
+def test_an_allow_resting_on_no_grant_is_not_autonomous(tmp_path) -> None:
+    failures = rests_on(tmp_path, authority="policy", tool="wire", args={"to": "acct-9"})
+    assert "line_0:principals_standing_grant_not_the_authority" in failures
+    assert "line_1:principals_standing_grant_not_the_authority" in failures
+
+
+def test_an_intent_naming_another_grant_than_its_block_is_refused(tmp_path) -> None:
+    assert "line_1:principals_standing_grant_not_the_authority" in rests_on(tmp_path, intent_grant="plain")
+
+
+def test_a_call_outside_the_standing_grant_is_refused(tmp_path) -> None:
+    failures = rests_on(tmp_path, args={"cents": 900000})
+    assert any(f.startswith("line_0:grant_deny:constraint_violation:cents") for f in failures), failures
+
+
+def test_a_revoked_standing_grant_refuses_every_record_after_its_revocation(tmp_path) -> None:
+    failures = rests_on(tmp_path, revoke=(("grant", "grant"),))
+    assert "line_1:principals_standing_grant_revoked" in failures, failures
+
+
+def test_a_revoked_agent_refuses_its_records(tmp_path) -> None:
+    failures = rests_on(tmp_path, revoke=(("agent", "agent"),))
+    assert {"line_0:principals_agent_revoked", "line_1:principals_agent_revoked"} <= set(failures), failures
+
+
+def test_a_grant_context_is_judged_against_the_block_not_a_context_the_record_chooses(tmp_path) -> None:
+    pinned = {"session": {"type": "exact", "value": "run-1"}}
+    assert rests_on(tmp_path / "a", context=pinned) == []
+    # the block's session is run-1; the evidence claims another agent's identity for the grant's context
+    failures = rests_on(tmp_path / "b", context=pinned, ctx={"agent": "agent-other", "session": "run-1"})
+    assert "line_0:principals_standing_context_not_the_block" in failures, failures
+
+
+def test_a_child_may_not_add_a_sponsor_under_a_plain_parent() -> None:
+    # Who answers for a standing grant is named by the pinned root that issues it, never by a delegate: a holder
+    # of a plain delegable grant cannot make a person accountable for what it hands on.
+    root, holder, child_holder = Signer.generate(), Signer.generate(), Signer.generate()
+    plain = issue_grant(root, grant_id="p", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=TOOLS,
+                        not_before=iso(NOW - timedelta(hours=1)), expires_at=iso(NOW + timedelta(days=90)), max_depth=1)
+    common = {"grant_id": "c", "holder_key": raw_public(child_holder), "cnf": cnf_for_signer(child_holder),
+              "tools": TOOLS, "not_before": iso(NOW), "expires_at": iso(NOW + timedelta(days=60)), "parent": plain}
+    with pytest.raises(ValueError, match="child_adds_sponsor"):
+        issue_grant(holder, **common, sponsor=SPONSOR, review_by=iso(NOW + timedelta(days=1)))
+    forged = issue_grant(holder, **common)
+    forged["body"].update({"sponsor": SPONSOR, "reviewBy": iso(NOW + timedelta(days=1))})
+    forged["sig"] = base64.b64encode(holder.sign(GRANT_DOMAIN + canonical(forged["body"]))).decode()
+    assert chain_problem([plain, forged], {root.key_id}) == "child_adds_sponsor"
