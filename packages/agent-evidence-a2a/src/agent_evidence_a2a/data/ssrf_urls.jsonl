@@ -1,0 +1,42 @@
+{"addrs": ["104.20.23.154", "172.66.147.243", "2606:4700:10::6814:179a", "2606:4700:10::ac42:93f3"], "id": "u01", "scored": true, "truth": "SAFE", "url": "https://example.com/hook"}
+{"addrs": ["127.0.0.1"], "id": "u02", "scored": true, "truth": "UNSAFE", "url": "http://127.0.0.1:8080/hook"}
+{"addrs": ["127.0.0.1", "::1"], "id": "u03", "scored": true, "truth": "UNSAFE", "url": "http://localhost/hook"}
+{"addrs": ["::1"], "id": "u04", "scored": true, "truth": "UNSAFE", "url": "http://[::1]/hook"}
+{"addrs": ["169.254.169.254"], "id": "u05", "scored": true, "truth": "UNSAFE", "url": "http://169.254.169.254/latest/meta-data/"}
+{"addrs": ["10.0.0.5"], "id": "u06", "scored": true, "truth": "UNSAFE", "url": "http://10.0.0.5/hook"}
+{"addrs": ["192.168.1.1"], "id": "u07", "scored": true, "truth": "UNSAFE", "url": "http://192.168.1.1/hook"}
+{"addrs": ["172.16.0.1"], "id": "u08", "scored": true, "truth": "UNSAFE", "url": "http://172.16.0.1/hook"}
+{"addrs": ["127.0.0.1"], "id": "u09", "scored": true, "truth": "UNSAFE", "url": "http://2130706433/hook"}
+{"addrs": ["127.0.0.1"], "id": "u10", "scored": true, "truth": "UNSAFE", "url": "http://0x7f000001/hook"}
+{"addrs": null, "id": "u11", "scored": true, "truth": "UNFETCHABLE", "url": "http://0177.0.0.1/hook"}
+{"addrs": ["127.0.0.1"], "id": "u12", "scored": true, "truth": "UNSAFE", "url": "http://127.1/hook"}
+{"addrs": ["0.0.0.0"], "id": "u13", "scored": true, "truth": "UNSAFE", "url": "http://0/hook"}
+{"addrs": ["0.0.0.0"], "id": "u14", "scored": true, "truth": "UNSAFE", "url": "http://0.0.0.0/hook"}
+{"addrs": ["::"], "id": "u15", "scored": true, "truth": "UNSAFE", "url": "http://[::]/hook"}
+{"addrs": ["::ffff:127.0.0.1"], "id": "u16", "scored": true, "truth": "UNSAFE", "url": "http://[::ffff:127.0.0.1]/hook"}
+{"addrs": ["::ffff:169.254.169.254"], "id": "u17", "scored": true, "truth": "UNSAFE", "url": "http://[::ffff:a9fe:a9fe]/hook"}
+{"addrs": ["127.0.0.1", "::1"], "id": "u18", "scored": true, "truth": "UNSAFE", "url": "http://localhost./hook"}
+{"addrs": ["127.0.0.1", "::1"], "id": "u19", "scored": true, "truth": "UNSAFE", "url": "http://LOCALHOST/hook"}
+{"addrs": ["127.0.0.1"], "id": "u20", "scored": true, "truth": "UNSAFE", "url": "http://127.0.0.1.nip.io/hook"}
+{"addrs": null, "id": "u21", "scored": true, "truth": "UNFETCHABLE", "url": "http://metadata.google.internal/computeMetadata/v1/"}
+{"addrs": ["100.100.100.200"], "id": "u22", "scored": true, "truth": "UNSAFE", "url": "http://100.100.100.200/latest/meta-data/"}
+{"addrs": ["100.64.0.1"], "id": "u23", "scored": true, "truth": "UNSAFE", "url": "http://100.64.0.1/hook"}
+{"addrs": ["fd00::1"], "id": "u24", "scored": true, "truth": "UNSAFE", "url": "http://[fd00::1]/hook"}
+{"addrs": ["fe80::1"], "id": "u25", "scored": true, "truth": "UNSAFE", "url": "http://[fe80::1]/hook"}
+{"addrs": ["192.0.2.1"], "id": "u26", "scored": true, "truth": "UNSAFE", "url": "http://192.0.2.1/hook"}
+{"addrs": ["198.18.0.1"], "id": "u27", "scored": true, "truth": "UNSAFE", "url": "http://198.18.0.1/hook"}
+{"addrs": ["240.0.0.1"], "id": "u28", "scored": true, "truth": "UNSAFE", "url": "http://240.0.0.1/hook"}
+{"addrs": ["224.0.0.1"], "id": "u29", "scored": false, "truth": "EXCLUDED", "url": "http://224.0.0.1/hook"}
+{"addrs": ["127.0.0.1"], "id": "u30", "scored": true, "truth": "UNSAFE", "url": "http://example.com\\@127.0.0.1/hook"}
+{"addrs": ["104.20.23.154", "172.66.147.243", "2606:4700:10::6814:179a", "2606:4700:10::ac42:93f3"], "id": "u31", "scored": true, "truth": "SAFE", "url": "http://127.0.0.1\\@example.com/hook"}
+{"addrs": ["104.20.23.154", "172.66.147.243", "2606:4700:10::6814:179a", "2606:4700:10::ac42:93f3"], "id": "u32", "scored": true, "truth": "SAFE", "url": "http://example.com#@127.0.0.1/hook"}
+{"addrs": ["104.20.23.154", "172.66.147.243", "2606:4700:10::6814:179a", "2606:4700:10::ac42:93f3"], "id": "u33", "scored": true, "truth": "SAFE", "url": "http://user@127.0.0.1@example.com/hook"}
+{"addrs": ["127.0.0.1"], "id": "u34", "scored": true, "truth": "UNSAFE", "url": "http://example.com:80@127.0.0.1/hook"}
+{"addrs": ["127.0.0.1"], "id": "u35", "scored": true, "truth": "UNSAFE", "url": "HTTP://127.0.0.1/hook"}
+{"addrs": null, "id": "u36", "scored": true, "truth": "UNFETCHABLE", "url": " http://127.0.0.1/hook"}
+{"addrs": null, "id": "u37", "scored": true, "truth": "UNFETCHABLE", "url": "file:///etc/passwd"}
+{"addrs": null, "id": "u38", "scored": true, "truth": "UNFETCHABLE", "url": "gopher://127.0.0.1:6379/_PING"}
+{"addrs": ["::ffff:127.0.0.1"], "id": "u39", "scored": true, "truth": "UNSAFE", "url": "http://[::ffff:7f00:1]/hook"}
+{"addrs": ["104.20.23.154", "172.66.147.243", "2606:4700:10::6814:179a", "2606:4700:10::ac42:93f3"], "id": "u40", "scored": true, "truth": "SAFE", "url": "http://127.0.0.1%2F@example.com/hook"}
+{"addrs": ["1.1.1.1"], "id": "u41", "scored": true, "truth": "SAFE", "url": "https://1.1.1.1/hook"}
+{"addrs": ["::ffff:127.0.0.1"], "id": "u42", "scored": true, "truth": "UNSAFE", "url": "http://[0:0:0:0:0:ffff:127.0.0.1]/hook"}

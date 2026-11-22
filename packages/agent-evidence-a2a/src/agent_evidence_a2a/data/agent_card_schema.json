@@ -1,0 +1,301 @@
+{
+ "messages": {
+  "lf.a2a.v1.AgentCapabilities": [
+   {
+    "json_name": "streaming",
+    "message": null,
+    "name": "streaming",
+    "presence": true,
+    "required": false
+   },
+   {
+    "json_name": "pushNotifications",
+    "message": null,
+    "name": "push_notifications",
+    "presence": true,
+    "required": false
+   },
+   {
+    "json_name": "extensions",
+    "message": "lf.a2a.v1.AgentExtension",
+    "name": "extensions",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "extendedAgentCard",
+    "message": null,
+    "name": "extended_agent_card",
+    "presence": true,
+    "required": false
+   }
+  ],
+  "lf.a2a.v1.AgentCard": [
+   {
+    "json_name": "name",
+    "message": null,
+    "name": "name",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "description",
+    "message": null,
+    "name": "description",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "supportedInterfaces",
+    "message": "lf.a2a.v1.AgentInterface",
+    "name": "supported_interfaces",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "provider",
+    "message": "lf.a2a.v1.AgentProvider",
+    "name": "provider",
+    "presence": true,
+    "required": false
+   },
+   {
+    "json_name": "version",
+    "message": null,
+    "name": "version",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "documentationUrl",
+    "message": null,
+    "name": "documentation_url",
+    "presence": true,
+    "required": false
+   },
+   {
+    "json_name": "capabilities",
+    "message": "lf.a2a.v1.AgentCapabilities",
+    "name": "capabilities",
+    "presence": true,
+    "required": true
+   },
+   {
+    "json_name": "securitySchemes",
+    "message": null,
+    "name": "security_schemes",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "securityRequirements",
+    "message": "lf.a2a.v1.SecurityRequirement",
+    "name": "security_requirements",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "defaultInputModes",
+    "message": null,
+    "name": "default_input_modes",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "defaultOutputModes",
+    "message": null,
+    "name": "default_output_modes",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "skills",
+    "message": "lf.a2a.v1.AgentSkill",
+    "name": "skills",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "signatures",
+    "message": "lf.a2a.v1.AgentCardSignature",
+    "name": "signatures",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "iconUrl",
+    "message": null,
+    "name": "icon_url",
+    "presence": true,
+    "required": false
+   }
+  ],
+  "lf.a2a.v1.AgentCardSignature": [
+   {
+    "json_name": "protected",
+    "message": null,
+    "name": "protected",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "signature",
+    "message": null,
+    "name": "signature",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "header",
+    "message": null,
+    "name": "header",
+    "presence": true,
+    "required": false
+   }
+  ],
+  "lf.a2a.v1.AgentExtension": [
+   {
+    "json_name": "uri",
+    "message": null,
+    "name": "uri",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "description",
+    "message": null,
+    "name": "description",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "required",
+    "message": null,
+    "name": "required",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "params",
+    "message": null,
+    "name": "params",
+    "presence": true,
+    "required": false
+   }
+  ],
+  "lf.a2a.v1.AgentInterface": [
+   {
+    "json_name": "url",
+    "message": null,
+    "name": "url",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "protocolBinding",
+    "message": null,
+    "name": "protocol_binding",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "tenant",
+    "message": null,
+    "name": "tenant",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "protocolVersion",
+    "message": null,
+    "name": "protocol_version",
+    "presence": false,
+    "required": true
+   }
+  ],
+  "lf.a2a.v1.AgentProvider": [
+   {
+    "json_name": "url",
+    "message": null,
+    "name": "url",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "organization",
+    "message": null,
+    "name": "organization",
+    "presence": false,
+    "required": true
+   }
+  ],
+  "lf.a2a.v1.AgentSkill": [
+   {
+    "json_name": "id",
+    "message": null,
+    "name": "id",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "name",
+    "message": null,
+    "name": "name",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "description",
+    "message": null,
+    "name": "description",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "tags",
+    "message": null,
+    "name": "tags",
+    "presence": false,
+    "required": true
+   },
+   {
+    "json_name": "examples",
+    "message": null,
+    "name": "examples",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "inputModes",
+    "message": null,
+    "name": "input_modes",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "outputModes",
+    "message": null,
+    "name": "output_modes",
+    "presence": false,
+    "required": false
+   },
+   {
+    "json_name": "securityRequirements",
+    "message": "lf.a2a.v1.SecurityRequirement",
+    "name": "security_requirements",
+    "presence": false,
+    "required": false
+   }
+  ],
+  "lf.a2a.v1.SecurityRequirement": [
+   {
+    "json_name": "schemes",
+    "message": null,
+    "name": "schemes",
+    "presence": false,
+    "required": false
+   }
+  ]
+ },
+ "root": "lf.a2a.v1.AgentCard"
+}
