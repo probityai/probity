@@ -42,7 +42,10 @@ MUTANTS = {
     "sentinels": ("        if text in self.config.sentinels:", "        if True:"),
     "per-file-names": ('            if spec in (name, f"{Path(file).name}::{name}"):',
                        '            if spec == name or spec.endswith("::" + name):'),
-    "exempt-functions": ("        if id(node) in exempt:", "        if False:"),
+    "exempt-functions": ("    for node in ast.walk(tree):\n        if id(node) in exempt:\n            continue\n        if isinstance(node, ast.Lambda)",
+                         "    for node in ast.walk(tree):\n        if False:\n            continue\n        if isinstance(node, ast.Lambda)"),
+    "exempt-nested": ("        if id(node) in exempt:  # a nested exempt function returns labels",
+                      "        if False:  # a nested exempt function returns labels"),
     "frozenset-values": (
         '        elif isinstance(node, ast.Call) and _name(node.func) in ("frozenset", "set", "tuple", "list"):',
         "        elif False:"),

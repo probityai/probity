@@ -232,3 +232,12 @@ def test_a_verifier_reason_outside_the_registry_is_refused() -> None:
     assert [f.problem for f in found] == ["refusal code not registered"]
     assert not lint_source("key_authority.py", 'def f():\n    return "authorized", "key_pinned"\n',
                            refusal_codes.CODES, refusal_lint.VERIFIER_CONFIG)
+
+
+def test_an_exempt_function_nested_in_a_checked_one_leaves_its_labels_alone() -> None:
+    source = ("def check():\n"
+              "    def grade():\n"
+              "        label = 'not_a_registered_code'\n"
+              "        return label\n"
+              "    return grade\n")
+    assert findings(source) == []
