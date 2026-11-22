@@ -218,3 +218,17 @@ def test_the_cli_exits_one_on_a_finding(tmp_path) -> None:  # type: ignore[no-un
     assert refusal_lint.main(["--config", str(config), str(source)]) == 1
     source.write_text('def f():\n    return "edge_absent"\n', encoding="utf-8")
     assert refusal_lint.main(["--config", str(config), str(source)]) == 0
+
+
+def test_the_verifier_packages_identity_and_authority_checks_report_only_registered_codes() -> None:
+    """The key authority and actor marker checks of agent-evidence-verify, read from this repository's tree."""
+    source = Path(__file__).resolve().parents[2] / "agent-evidence-verify" / "src" / "agent_evidence_verify"
+    assert refusal_lint.lint_verifier(source) == []
+
+
+def test_a_verifier_reason_outside_the_registry_is_refused() -> None:
+    source = 'def f():\n    return "unauthorized", "key_somehow_odd"\n'
+    found = lint_source("key_authority.py", source, refusal_codes.CODES, refusal_lint.VERIFIER_CONFIG)
+    assert [f.problem for f in found] == ["refusal code not registered"]
+    assert not lint_source("key_authority.py", 'def f():\n    return "authorized", "key_pinned"\n',
+                           refusal_codes.CODES, refusal_lint.VERIFIER_CONFIG)

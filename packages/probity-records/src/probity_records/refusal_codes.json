@@ -3,6 +3,18 @@
  "version": 1,
  "codes": [
   {
+   "code": "actor_inserted",
+   "check": "marker.survival",
+   "meaning": "the chain sent names an actor the owed chain does not",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/actor_inserted"
+  },
+  {
+   "code": "actor_order_changed",
+   "check": "marker.survival",
+   "meaning": "the chain sent names the owed actors in another order",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/actor_order_changed"
+  },
+  {
    "code": "agent_identity_missing",
    "check": "mesh.permit",
    "meaning": "the request carries no agent identity",
@@ -13,6 +25,12 @@
    "check": "mesh.permit",
    "meaning": "the agent is isolated and may not act",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/agent_isolated"
+  },
+  {
+   "code": "agent_replaced",
+   "check": "marker.survival",
+   "meaning": "the chain sent names another agent in place of an owed one",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/agent_replaced"
   },
   {
    "code": "agent_unknown",
@@ -141,6 +159,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/arguments_not_an_object"
   },
   {
+   "code": "audience_mismatch",
+   "check": "marker.chain",
+   "meaning": "a hop's writer is not the party the previous hop sent to",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/audience_mismatch"
+  },
+  {
    "code": "authority_args_are_not_the_call_arguments",
    "check": "governance.exception",
    "meaning": "the authority evidence's arguments are not the call's",
@@ -181,6 +205,12 @@
    "check": "grants.walk",
    "meaning": "a link of the walked chain does not name the link before it",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/chain_parent_link_broken"
+  },
+  {
+   "code": "chain_truncated",
+   "check": "marker.survival",
+   "meaning": "the chain sent lacks the first actors of the owed chain",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/chain_truncated"
   },
   {
    "code": "checkpoint_count_mismatch",
@@ -369,10 +399,28 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/context_violation"
   },
   {
+   "code": "contract_id_missing",
+   "check": "marker.record",
+   "meaning": "the record names no contract",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/contract_id_missing"
+  },
+  {
+   "code": "contract_id_unknown",
+   "check": "marker.record",
+   "meaning": "the record names a contract this verifier does not judge",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/contract_id_unknown"
+  },
+  {
    "code": "credential_names_only_user",
    "check": "gateway.stamp",
    "meaning": "a credential names only the user and so cannot carry the agent",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/credential_names_only_user"
+  },
+  {
+   "code": "deferred_dispatch_without_stored_principals",
+   "check": "marker.chain",
+   "meaning": "a deferred dispatch ran under principals other than the ones stored when it was queued",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/deferred_dispatch_without_stored_principals"
   },
   {
    "code": "delegation_agent_revoked",
@@ -571,6 +619,36 @@
    "check": "approval.quorum",
    "meaning": "a deputy votes with no delegation",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/deputy_without_delegation"
+  },
+  {
+   "code": "did_document_id_mismatch",
+   "check": "key.did",
+   "meaning": "the DID document names another identifier than the one the consumer pinned",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/did_document_id_mismatch"
+  },
+  {
+   "code": "did_document_malformed",
+   "check": "key.did",
+   "meaning": "the DID document, or its verification methods, are not the shape the check reads",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/did_document_malformed"
+  },
+  {
+   "code": "did_document_not_pinned",
+   "check": "key.did",
+   "meaning": "the supplied DID document is not the one whose digest the consumer pinned",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/did_document_not_pinned"
+  },
+  {
+   "code": "did_document_unavailable",
+   "check": "key.did",
+   "meaning": "the DID document the consumer pinned was not supplied, so the key cannot be judged",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/did_document_unavailable"
+  },
+  {
+   "code": "downgraded_to_user_alone",
+   "check": "marker.survival",
+   "meaning": "the chain sent downstream names the user alone where the origin owed a chain of actors",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/downgraded_to_user_alone"
   },
   {
    "code": "dpop_alg_not_allowed",
@@ -1029,6 +1107,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/hop_arguments_differ"
   },
   {
+   "code": "hop_link_broken",
+   "check": "marker.chain",
+   "meaning": "a hop does not carry the digest of the statement before it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/hop_link_broken"
+  },
+  {
    "code": "hop_names_another_grant",
    "check": "grants.walk",
    "meaning": "an intent or effect record names another grant than its allow",
@@ -1233,6 +1317,24 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_version_unknown"
   },
   {
+   "code": "inclusion_proof_for_another_tree_head",
+   "check": "key.log",
+   "meaning": "the inclusion proof is for another tree size than the pinned tree head",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/inclusion_proof_for_another_tree_head"
+  },
+  {
+   "code": "inclusion_proof_malformed",
+   "check": "key.log",
+   "meaning": "the inclusion proof is not an index, a tree size and a list of hashes",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/inclusion_proof_malformed"
+  },
+  {
+   "code": "inclusion_proof_unavailable",
+   "check": "key.log",
+   "meaning": "no inclusion proof was supplied for the key's entry in the key transparency log",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/inclusion_proof_unavailable"
+  },
+  {
    "code": "intent_without_permit",
    "check": "journal.verify",
    "meaning": "an intent is recorded without a permit",
@@ -1263,10 +1365,76 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_custody_differs"
   },
   {
+   "code": "key_id_mismatch",
+   "check": "key.pin",
+   "meaning": "the signing key is pinned or published, but under another key id than the record names",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_id_mismatch"
+  },
+  {
+   "code": "key_not_bound_to_subject",
+   "check": "key.binding",
+   "meaning": "no binding ties the signing key to the record's subject",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_bound_to_subject"
+  },
+  {
+   "code": "key_not_for_signing",
+   "check": "key.did",
+   "meaning": "the signing key's verification method does not allow signing",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_for_signing"
+  },
+  {
+   "code": "key_not_in_assertion_method",
+   "check": "key.did",
+   "meaning": "the signing key is in the DID document but not listed as an assertion method",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_in_assertion_method"
+  },
+  {
+   "code": "key_not_in_did_document",
+   "check": "key.did",
+   "meaning": "no verification method of the DID document holds the signing key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_in_did_document"
+  },
+  {
    "code": "key_not_in_jwks",
    "check": "identity.principals",
    "meaning": "the token's key id names no key of the issuer's pinned set",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_in_jwks"
+  },
+  {
+   "code": "key_not_in_log",
+   "check": "key.log",
+   "meaning": "the inclusion proof does not place the key and subject under the pinned tree head",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_in_log"
+  },
+  {
+   "code": "key_not_pinned",
+   "check": "key.pin",
+   "meaning": "the signing key is not among the keys the consumer pinned",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_pinned"
+  },
+  {
+   "code": "key_outside_validity",
+   "check": "key.binding",
+   "meaning": "the record's time is outside the validity window of the key's binding",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_outside_validity"
+  },
+  {
+   "code": "key_revoked",
+   "check": "key.binding",
+   "meaning": "the key's binding was revoked at or before the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_revoked"
+  },
+  {
+   "code": "marker_stripped",
+   "check": "marker.survival",
+   "meaning": "the chain sent lacks actors from the middle or end of the owed chain",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/marker_stripped"
+  },
+  {
+   "code": "marker_unsigned",
+   "check": "marker.chain",
+   "meaning": "a hop forwarded the marker without a signature over it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/marker_unsigned"
   },
   {
    "code": "mtls_certificate_expired",
@@ -1653,6 +1821,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_but_no_trust_pinned"
   },
   {
+   "code": "principals_expired_at_use",
+   "check": "marker.chain",
+   "meaning": "the principals a hop used had expired at the time of use",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_expired_at_use"
+  },
+  {
    "code": "principals_malformed",
    "check": "identity.principals",
    "meaning": "the principals block is not an object of principals",
@@ -1839,6 +2013,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_vote_invalid"
   },
   {
+   "code": "received_not_sent",
+   "check": "marker.chain",
+   "meaning": "a hop received a token other than the one the previous hop sent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/received_not_sent"
+  },
+  {
    "code": "reconciled_retry_without_final_absent_answer",
    "check": "journal.verify",
    "meaning": "a reconciled retry lacks the final absent answer",
@@ -1849,6 +2029,30 @@
    "check": "identity.principals",
    "meaning": "a record names a kind the identity profile has no rule for",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/record_kind_unknown_to_identity_profile"
+  },
+  {
+   "code": "record_malformed",
+   "check": "marker.record",
+   "meaning": "the record is not strict JSON or not the shape of an actor-marker record",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/record_malformed"
+  },
+  {
+   "code": "record_subject_not_did",
+   "check": "key.did",
+   "meaning": "the record's subject is not the pinned DID",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/record_subject_not_did"
+  },
+  {
+   "code": "record_subject_unknown",
+   "check": "key.binding",
+   "meaning": "the record names no subject, so no binding of a key to a subject can be read",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/record_subject_unknown"
+  },
+  {
+   "code": "record_time_unknown",
+   "check": "key.binding",
+   "meaning": "the record has no time, so a binding's validity cannot be judged",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/record_time_unknown"
   },
   {
    "code": "retry_without_earlier_permit",
@@ -2205,6 +2409,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_wrong_issuer"
   },
   {
+   "code": "statement_signature_invalid",
+   "check": "marker.chain",
+   "meaning": "a hop's statement does not verify under its writer's key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/statement_signature_invalid"
+  },
+  {
+   "code": "statement_writer_unknown",
+   "check": "marker.chain",
+   "meaning": "a hop's statement is written by a party the consumer does not trust",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/statement_writer_unknown"
+  },
+  {
    "code": "step_field_missing",
    "check": "governance.exception",
    "meaning": "a workflow step lacks a required field",
@@ -2233,6 +2449,12 @@
    "check": "mesh.revocation",
    "meaning": "a stream with this id is already open",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stream_in_use"
+  },
+  {
+   "code": "subject_replaced",
+   "check": "marker.chain",
+   "meaning": "a hop sent another subject than the one it received",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/subject_replaced"
   },
   {
    "code": "threshold_not_pinned",
@@ -2317,6 +2539,12 @@
    "check": "journal.verify",
    "meaning": "the uncertain-effect reader does not support the record",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/uncertain_effect_not_supported"
+  },
+  {
+   "code": "unknown_critical_attribute_ignored",
+   "check": "marker.chain",
+   "meaning": "a token carries a critical attribute the hop ignored",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/unknown_critical_attribute_ignored"
   },
   {
    "code": "vote_by_proposer",

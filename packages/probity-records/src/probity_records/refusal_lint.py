@@ -398,6 +398,28 @@ NOT_LINTED = {
 }
 
 
+#: The verifier package's identity and authority checks, which report registered codes as their reasons. An
+#: authorization reason (a key that is pinned, bound, listed or logged; a marker that survives) is no refusal, so it
+#: is a sentinel here. The other modules of that package carry the contract codes of their own published predicates
+#: (some still kebab), and move into this scope as each contract is revised.
+VERIFIER_CONFIG = Config(
+    sentinels=frozenset({"", "ok", "key_pinned", "key_bound_at_time", "key_in_assertion_method", "key_in_log",
+                         "marker_survives"}))
+VERIFIER_MODULES = ("actor_marker", "key_authority")
+
+
+def lint_verifier(directory: Path) -> list[Finding]:
+    """Every unregistered refusal code in the verifier package's identity and authority checks, read from the
+    source directory of ``agent_evidence_verify``."""
+    from . import refusal_codes
+
+    findings: list[Finding] = []
+    for name in VERIFIER_MODULES:
+        path = directory / f"{name}.py"
+        findings += lint_source(path.name, path.read_text(encoding="utf-8"), refusal_codes.CODES, VERIFIER_CONFIG)
+    return findings
+
+
 def lint_package() -> list[Finding]:
     """Every unregistered refusal code in this package's own checks."""
     from . import refusal_codes
