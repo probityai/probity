@@ -183,7 +183,11 @@ def autonomous(tmp_path, *, revoke_sponsor: bool = False, pin_grant: bool = True
                   grant_root_key_ids=frozenset({root.key_id} if root_pinned else set()),
                   agent_sponsors={"agent-nightly": frozenset({(ISSUER, "owner@example.com")})},
                   standing_grants=((grant,),) if pin_grant else (), revocations=revocations)  # fmt: skip
-    return verify_journal(tmp_path, [gate.public_pem()], j.checkpoint(), trust=trust)["failures"]
+    failures = verify_journal(tmp_path, [gate.public_pem()], j.checkpoint(), trust=trust)["failures"]
+    # a lone intent line also fails the permit and effect checks; only the identity verdict is under test here
+    other = {f for f in failures if f == "line_1:intent_without_permit" or "open_intent_no_effect" in f}
+    assert set(failures) - other == {f for f in failures if "principal" in f}
+    return [f for f in failures if "principal" in f]
 
 
 def test_an_autonomous_record_verifies_offline_under_a_strict_auditor(tmp_path) -> None:

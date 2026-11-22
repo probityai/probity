@@ -767,9 +767,10 @@ function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, a
   if (problems.length) return [problems, null];
   const grants = auto.standingGrants ?? {};
   const grant = typeof block.standingGrant === "string" && Object.prototype.hasOwnProperty.call(grants, block.standingGrant) ? grants[block.standingGrant] : undefined;
-  const sponsoredAt = grant !== undefined && "notBefore" in grant ? String(grant.notBefore) : at;
   for (const r of ["agent", "approver"]) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
-  const sp = checkPrincipal(block.sponsor, sponsoredAt, pins); if (sp) problems.push(`principal_sponsor:${sp}`);
+  // the sponsor answered for the grant when it was issued; with no resolved grant the grant's own refusal decides
+  const sp = grant === undefined || !("notBefore" in grant) ? null : checkPrincipal(block.sponsor, String(grant.notBefore), pins);
+  if (sp) problems.push(`principal_sponsor:${sp}`);
   const sess = sessionProblem(block.session, at); if (sess) problems.push(sess);
   if (problems.length) return [problems, null];
   problems = grantProblems(block, at, grants);

@@ -220,13 +220,15 @@ def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], a
     if problems:
         return problems, None
     grant = standing_grants.get(block["standingGrant"]) if isinstance(block["standingGrant"], str) else None
-    sponsored_at = str(grant["notBefore"]) if grant is not None and "notBefore" in grant else at
     for role in ("agent", "approver"):
         if role in block:
             prob = check_principal(block[role], at, pins)
             if prob:
                 problems.append(f"principal_{role}:{prob}")
-    prob = check_principal(block["sponsor"], sponsored_at, pins)
+    # The sponsor answered for the grant when it was issued: with no resolved grant there is no such instant, and
+    # the grant's own refusal below is the reason the block falls.
+    prob = None if grant is None or "notBefore" not in grant else check_principal(block["sponsor"],
+                                                                                 str(grant["notBefore"]), pins)
     if prob:
         problems.append(f"principal_sponsor:{prob}")
     session = _session_problem(block["session"], at)
