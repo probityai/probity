@@ -75,7 +75,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 - `agent-evidence-replay`: replays a lab's agent action record and flags a changed or missing step
 - `agent-evidence-a2a`: verifies A2A agent card signatures over the served bytes, with corpora that score any card verifier, canonicaliser or webhook SSRF judge
 
-Install any of them pinned to the version shown: `pip install <package>==<version>`.
+Install any of them with `pip install <package>`; your lock file records the exact version.
 
 The Claude Code and Cursor plugins ship from [harnesses/agent-evidence-plugins](https://github.com/probityai/probity/blob/main/harnesses/agent-evidence-plugins/README.md).
 
