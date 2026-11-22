@@ -107,6 +107,20 @@ def _raw_key(value: Any, what: str) -> bytes:
     return raw
 
 
+def check_subject_id(kind: Any, ident: Any) -> None:
+    """Raise ``revocation_list_shape`` unless a list entry can name ``ident`` under ``kind``.
+
+    An enforcement point admits work only under subjects some list could revoke; this is the entry check a list
+    reader applies, so the two can never disagree. A digest kind's id is 64 lowercase hex, any other kind's is 1 to
+    512 printable ASCII characters.
+    """
+    if kind not in REVOCATION_KINDS:
+        raise _shape("entry_kind_unknown")
+    pattern = _HEX64 if kind in DIGEST_KINDS else _IDENTIFIER
+    if not isinstance(ident, str) or not pattern.fullmatch(ident):
+        raise _shape(f"entry_id_form:{kind}")
+
+
 def _check_entry(entry: Any) -> tuple[str, str]:
     if not isinstance(entry, dict):
         raise _shape("entry_not_an_object")
@@ -114,11 +128,7 @@ def _check_entry(entry: Any) -> tuple[str, str]:
     if not _ENTRY_REQUIRED <= members or not members <= _ENTRY_REQUIRED | _ENTRY_OPTIONAL:
         raise _shape("entry_members")
     kind, ident = entry["kind"], entry["id"]
-    if kind not in REVOCATION_KINDS:
-        raise _shape("entry_kind_unknown")
-    pattern = _HEX64 if kind in DIGEST_KINDS else _IDENTIFIER
-    if not isinstance(ident, str) or not pattern.fullmatch(ident):
-        raise _shape(f"entry_id_form:{kind}")
+    check_subject_id(kind, ident)
     _time(entry["revokedAt"], "revokedAt")
     if "reason" in entry and not isinstance(entry["reason"], str):
         raise _shape("entry_reason_not_text")

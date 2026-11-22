@@ -20,6 +20,7 @@ from probity_records import (
     RevocationState,
     Signer,
     Trust,
+    check_subject_id,
     grant_digest,
     issue_grant,
     list_digest,
@@ -352,3 +353,22 @@ def test_every_shared_vector_holds_under_this_reader() -> None:
                 break
         else:
             assert expected.get("state") == state.summary(), row["id"]
+
+
+@pytest.mark.parametrize(("kind", "ident"), [
+    ("grant", "a" * 64), ("key", "0" * 64), ("permit", "f" * 64),
+    ("agent", "agent://tenant/a"), ("stream", "s"), ("sponsor", "issuer#subject"), ("build", "x" * 512),
+])
+def test_check_subject_id_admits_every_id_a_list_can_name(kind: str, ident: str) -> None:
+    check_subject_id(kind, ident)
+
+
+@pytest.mark.parametrize(("kind", "ident", "why"), [
+    ("grant", "A" * 64, "entry_id_form:grant"), ("key", "a" * 63, "entry_id_form:key"),
+    ("agent", "", "entry_id_form:agent"), ("agent", "caf\u00e9", "entry_id_form:agent"),
+    ("stream", "x" * 513, "entry_id_form:stream"), ("sponsor", 7, "entry_id_form:sponsor"),
+    ("user", "u", "entry_kind_unknown"),
+])
+def test_check_subject_id_refuses_what_no_list_can_name(kind: str, ident: object, why: str) -> None:
+    with pytest.raises(RevocationError, match=f"^revocation_list_shape:{why}$"):
+        check_subject_id(kind, ident)
