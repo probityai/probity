@@ -43,6 +43,8 @@ All examples are authored synthetic records. They do not establish independent o
 | [Reconcile the principal each signed agent audit record names with identity-provider log events](adapters.md) | `idp_log_witness/v1` | `supported` | Authored synthetic identity-provider export over two corpus members; signed with a published test key that carries no trust outside the corpus. |
 | [Check an identity provider's signed token grant receipt against the grant you expect](token-grant-receipt.md) | `token_grant_receipt/v1` | `supported` | Recorded Keycloak client-credentials grant from the hook's end-to-end run; the recorder key signs only that run and carries no trust outside it. |
 | [Check that an evaluation claim record is admitted under my acceptance rule](evaluation-claim.md) | `evaluation_claim/v1` | `supported` | Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes. |
+| [Decide what a signed Observed Effect record lets a verifier conclude](adapters.md) | `evidence_sufficiency/v1` | `supported` | Authored synthetic corpus member and a stipulated consumer context; it does not establish who holds the observer key. |
+| [Check that no credential is reachable from the agent's environment](corpus-routes.md) | `credential_reachability/v1` | `supported` | Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus. |
 | [Check that a DNS-AID record's sig binds it to a key the zone owner published under DNSSEC](dns-aid.md) | `dns_aid_sig/v1` | `supported` | Record and JWKS signed by the dns-aid-core signer at 825ccea; the DNSSEC chain is a test root signed by dnspython, whose DS the policy pins. |
 | [Check that a DNS answer I hold offline validates under DNSSEC from the root](dns-aid.md) | `dnssec_rrset/v1` | `supported` | The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant. |
 | [Check that every call an agent made went to an endpoint a verified discovery record declared](dns-aid.md) | `declared_versus_acted/v1` | `contradicted` | A trajectory written by agent-evidence-observer's recorder with one declared call and one planted call to an undeclared host; witness key from a fixed test seed. |
@@ -57,7 +59,7 @@ The JSON `distribution.status` describes package-name availability: `agent-evide
 It does not assert that the source candidate bound by `package_metadata` has been uploaded.
 The separate `fixture_scope` describes where the indexed case and policy files live.
 
-The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.5.1 with the sample inputs its wheel carries.
+The [pinned registry recipe](install.md#install-the-published-package) pairs version 0.8.0 with the sample inputs its wheel carries.
 For this index, install its own checkout, then use the index's `argv` from that checkout root.
 Replace its first argument with your installed executable's path when the environment is separate.
 The index binds its inputs and implementation to exact bytes.

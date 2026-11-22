@@ -8,12 +8,12 @@
     "subfolder": "packages/agent-evidence-mcp",
     "source": "github"
   },
-  "version": "0.2.6",
+  "version": "0.2.7",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "agent-evidence-mcp",
-      "version": "0.2.6",
+      "version": "0.2.7",
       "transport": {
         "type": "stdio"
       }

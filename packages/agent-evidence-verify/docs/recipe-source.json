@@ -343,6 +343,24 @@
       "scope": "Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes."
     },
     {
+      "task": "Decide what a signed Observed Effect record lets a verifier conclude",
+      "claim_type": "evidence_sufficiency/v1",
+      "case": "examples/evidence-sufficiency/case.json",
+      "policy": "examples/evidence-sufficiency/policy.json",
+      "documentation": "docs/adapters.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member and a stipulated consumer context; it does not establish who holds the observer key."
+    },
+    {
+      "task": "Check that no credential is reachable from the agent's environment",
+      "claim_type": "credential_reachability/v1",
+      "case": "examples/corpus-routes/credential-reachability/case.json",
+      "policy": "examples/corpus-routes/credential-reachability/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
+    },
+    {
       "task": "Check that a DNS-AID record's sig binds it to a key the zone owner published under DNSSEC",
       "claim_type": "dns_aid_sig/v1",
       "case": "examples/dns-aid-sig/case.json",

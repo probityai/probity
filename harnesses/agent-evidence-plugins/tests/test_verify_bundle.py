@@ -59,6 +59,16 @@ def test_environment_runs_the_pinned_verifier():
     assert metadata.version(name) == version, f"tests run {name} {metadata.version(name)}, the gate pins {version}"
 
 
+def test_test_dependency_matches_the_gate_pin():
+    """pyproject's dev group pins the same release as PINNED, so pin-refresh moves both in one pull request."""
+    import tomllib
+
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    name = gate_pin().split("==")[0]
+    pins = [req for req in project["dependency-groups"]["dev"] if req.split("=")[0].split("<")[0].split(">")[0] == name]
+    assert pins == [gate_pin()], f"pyproject dev group pins {pins}, the gate pins {gate_pin()}"
+
+
 @pytest.mark.parametrize("fixture", [GOOD, CONTRADICTED], ids=lambda path: path.name)
 def test_fixtures_replay_under_the_pinned_verifier(fixture):
     """A bundle replays only under the release that built it, so the fixtures move with the pin."""
