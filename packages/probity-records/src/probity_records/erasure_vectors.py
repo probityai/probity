@@ -136,7 +136,7 @@ def vectors() -> list[dict[str, Any]]:
         {"kept": kept, "erasure": erasure, "blobs": blobs, "keys": _hex(KEYS)})
     add("O2", "the user key is destroyed: the user's fields read as erased, the approver's still open", "open",
         {"kept": kept, "erasure": erasure, "blobs": blobs, "keys": _hex({"approver": KEYS["approver"]})})
-    first = sorted(blobs)[0]
+    first = min(blobs)
     add("O3", "a ciphertext the payload store no longer holds reads as missing", "open",
         {"kept": kept, "erasure": erasure, "blobs": {d: b for d, b in blobs.items() if d != first},
          "keys": _hex(KEYS)})
