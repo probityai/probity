@@ -699,6 +699,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/effect_without_uncertain_effect_record"
   },
   {
+   "code": "egress_policy_refused",
+   "check": "mesh.revocation",
+   "meaning": "the egress policy refused the outbound request of an admitted stream",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/egress_policy_refused"
+  },
+  {
    "code": "exception_approved_under_another_policy",
    "check": "governance.exception",
    "meaning": "the exception is approved under another policy",
@@ -1897,6 +1903,12 @@
    "check": "governance.exception",
    "meaning": "a workflow step's quorum does not hold",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/step_quorum_failed"
+  },
+  {
+   "code": "stream_admission_error",
+   "check": "mesh.revocation",
+   "meaning": "a stream's admission failed with an error that is not a refusal of the permit",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stream_admission_error"
   },
   {
    "code": "stream_in_use",
