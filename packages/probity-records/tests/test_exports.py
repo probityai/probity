@@ -6,6 +6,9 @@ import json
 
 from probity_records import Signer, compare_seals, seal_export, verify_export_seal
 from probity_records.__main__ import main
+from probity_records.clock import SystemClock
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 ENTITIES = {"content": [
     {"id": "a1", "type": "service", "stage": "Approved", "createdBy": "u1", "lastModifiedBy": "u2",
@@ -24,7 +27,7 @@ def _bytes(doc) -> bytes:
 def test_census_reports_denominators_and_defects() -> None:
     signer = Signer.generate()
     data = _bytes(ENTITIES)
-    seal = seal_export(signer, data, source="governance-tenant-x", kind="entities", captured_at="2026-11-08T00:00:00Z")
+    seal = seal_export(signer, data, source="governance-tenant-x", kind="entities", captured_at="2026-11-08T00:00:00Z", sealed_at="2026-11-08T00:00:00Z")
     report = verify_export_seal(seal, data, [signer.public_pem()])
     assert report["verdict"] == "PASS", report["failures"]
     c = report["census"]
@@ -36,7 +39,7 @@ def test_census_reports_denominators_and_defects() -> None:
 def test_any_change_to_the_export_or_seal_fails() -> None:
     signer = Signer.generate()
     data = _bytes(ENTITIES)
-    seal = seal_export(signer, data, source="t", kind="entities", captured_at="2026-11-08T00:00:00Z")
+    seal = seal_export(signer, data, source="t", kind="entities", captured_at="2026-11-08T00:00:00Z", sealed_at="2026-11-08T00:00:00Z")
     edited = json.loads(data)
     edited["content"][0]["stage"] = "Rejected"
     assert "export_bytes_differ_from_seal" in verify_export_seal(seal, _bytes(edited), [signer.public_pem()])["failures"]
@@ -46,11 +49,11 @@ def test_any_change_to_the_export_or_seal_fails() -> None:
 
 def test_compare_seals_finds_silent_edits_and_deletions() -> None:
     signer = Signer.generate()
-    old = seal_export(signer, _bytes(ENTITIES), source="t", kind="entities", captured_at="2026-11-01T00:00:00Z")
+    old = seal_export(signer, _bytes(ENTITIES), source="t", kind="entities", captured_at="2026-11-01T00:00:00Z", sealed_at="2026-11-01T00:00:00Z")
     later = json.loads(_bytes(ENTITIES))
     later["content"][0]["stage"] = "Rejected"
     later["content"] = [r for r in later["content"] if r.get("id") != "a2"] + [{"id": "a9", "stage": "Draft"}]
-    new = seal_export(signer, _bytes(later), source="t", kind="entities", captured_at="2026-11-08T00:00:00Z")
+    new = seal_export(signer, _bytes(later), source="t", kind="entities", captured_at="2026-11-08T00:00:00Z", sealed_at="2026-11-08T00:00:00Z")
     assert compare_seals(old, new) == {"added": ["a9"], "changed": ["a1"], "removed": ["a2"]}
 
 

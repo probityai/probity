@@ -1,0 +1,1350 @@
+[
+  {
+    "description": "an agent acts for a user, with sponsor, approver, act claim and grant chain",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "document": {
+        "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "approver": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+          "subject": "bob@example.com",
+          "type": "approver"
+        },
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        "kind": "agent",
+        "sponsor": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        },
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI1",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"
+  },
+  {
+    "description": "an agent acts for a user, with sponsor, approver, act claim and grant chain (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "document": {
+        "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "approver": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+          "subject": "bob@example.com",
+          "type": "approver"
+        },
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        "kind": "agent",
+        "sponsor": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        },
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI1D",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "a sub-agent acts: the chain shows its parent, root first",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "document": {
+        "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator",
+            "subject": "orchestrator",
+            "type": "agent"
+          },
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "kind": "agent",
+        "sponsor": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        },
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI2",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+  },
+  {
+    "description": "a sub-agent acts: the chain shows its parent, root first (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "document": {
+        "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator",
+            "subject": "orchestrator",
+            "type": "agent"
+          },
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "kind": "agent",
+        "sponsor": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        },
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI2D",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator",
+          "subject": "orchestrator",
+          "type": "agent"
+        },
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "a human acted, attested by a fresh user-presence proof",
+    "direction": "string",
+    "expected": {
+      "aclKey": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "document": {
+        "evidence": {
+          "digest": "sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+          "method": "presence"
+        },
+        "id": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;evidence=presence:sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+        "kind": "human-attested",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "strict": null
+    },
+    "id": "CI3",
+    "input": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;evidence=presence:sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3"
+  },
+  {
+    "description": "a human acted, attested by a fresh user-presence proof (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "document": {
+        "evidence": {
+          "digest": "sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+          "method": "presence"
+        },
+        "id": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;evidence=presence:sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+        "kind": "human-attested",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "strict": null
+    },
+    "id": "CI3D",
+    "input": {
+      "evidence": {
+        "digest": "sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+        "method": "presence"
+      },
+      "id": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;evidence=presence:sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "kind": "human-attested",
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "a human acted, attested by the approval bound to the request",
+    "direction": "string",
+    "expected": {
+      "aclKey": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "document": {
+        "approver": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+          "subject": "bob@example.com",
+          "type": "approver"
+        },
+        "evidence": {
+          "digest": "sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+          "method": "approval"
+        },
+        "id": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;evidence=approval:sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "kind": "human-attested",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "strict": null
+    },
+    "id": "CI4",
+    "input": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;evidence=approval:sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4"
+  },
+  {
+    "description": "a human acted, attested by the approval bound to the request (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "document": {
+        "approver": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+          "subject": "bob@example.com",
+          "type": "approver"
+        },
+        "evidence": {
+          "digest": "sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+          "method": "approval"
+        },
+        "id": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;evidence=approval:sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "kind": "human-attested",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "strict": null
+    },
+    "id": "CI4D",
+    "input": {
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "evidence": {
+        "digest": "sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "method": "approval"
+      },
+      "id": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;evidence=approval:sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+      "kind": "human-attested",
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "the actor could not be established: kind unknown, refused by strict",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "document": {
+        "id": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "kind": "unknown",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": "identity_actor_unknown"
+    },
+    "id": "CI5",
+    "input": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "the actor could not be established: kind unknown, refused by strict (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "document": {
+        "id": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "kind": "unknown",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": "identity_actor_unknown"
+    },
+    "id": "CI5D",
+    "input": {
+      "id": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+      "kind": "unknown",
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "the transport identity of a mutual-TLS peer under a pinned SPIFFE trust domain",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+      "document": {
+        "id": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+        "kind": "transport",
+        "service": {
+          "domain": "spiffe://mesh.example.org",
+          "environment": "prod",
+          "id": "service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+          "subject": "billing",
+          "type": "service"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI6",
+    "input": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing"
+  },
+  {
+    "description": "the transport identity of a mutual-TLS peer under a pinned SPIFFE trust domain (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+      "document": {
+        "id": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+        "kind": "transport",
+        "service": {
+          "domain": "spiffe://mesh.example.org",
+          "environment": "prod",
+          "id": "service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+          "subject": "billing",
+          "type": "service"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI6D",
+    "input": {
+      "id": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+      "kind": "transport",
+      "service": {
+        "domain": "spiffe://mesh.example.org",
+        "environment": "prod",
+        "id": "service:prod/spiffe%3A%2F%2Fmesh.example.org/billing",
+        "subject": "billing",
+        "type": "service"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "an agent acting for no user names its sponsor",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "kind": "agent",
+        "sponsor": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI7",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com"
+  },
+  {
+    "description": "an agent acting for no user names its sponsor (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "kind": "agent",
+        "sponsor": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI7D",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "the same names in staging are a different identity",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "staging",
+            "id": "agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+        "kind": "agent",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "staging",
+          "id": "user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI8",
+    "input": "aid1!agent;user=user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds"
+  },
+  {
+    "description": "the same names in staging are a different identity (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "staging",
+            "id": "agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+        "kind": "agent",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "staging",
+          "id": "user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI8D",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "staging",
+          "id": "agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;user=user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+      "kind": "agent",
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "staging",
+        "id": "user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "the same local name under another issuer is a different identity",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com;chain=agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://login.example.org/tenant-b",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com;chain=agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+        "kind": "agent",
+        "user": {
+          "domain": "https://login.example.org/tenant-b",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI9",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com;chain=agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds"
+  },
+  {
+    "description": "the same local name under another issuer is a different identity (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com;chain=agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://login.example.org/tenant-b",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com;chain=agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+        "kind": "agent",
+        "user": {
+          "domain": "https://login.example.org/tenant-b",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI9D",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://login.example.org/tenant-b",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com;chain=agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+      "kind": "agent",
+      "user": {
+        "domain": "https://login.example.org/tenant-b",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "non-ASCII and reserved characters are escaped once, uppercase hex",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+            "subject": "a b%c",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+        "kind": "agent",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21",
+          "subject": "j\u00f6rg/ops;x=y>z!",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI10",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c"
+  },
+  {
+    "description": "non-ASCII and reserved characters are escaped once, uppercase hex (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+            "subject": "a b%c",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+        "kind": "agent",
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21",
+          "subject": "j\u00f6rg/ops;x=y>z!",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI10D",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+          "subject": "a b%c",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a%20b%25c",
+      "kind": "agent",
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21",
+        "subject": "j\u00f6rg/ops;x=y>z!",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "a plain user ref is not a canonical identity",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_string_malformed"
+    },
+    "id": "CR1",
+    "input": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "an unknown grammar version",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_version_unknown"
+    },
+    "id": "CR2",
+    "input": "aid2!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"
+  },
+  {
+    "description": "no critical marker",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_string_malformed"
+    },
+    "id": "CR3",
+    "input": "agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"
+  },
+  {
+    "description": "an unknown kind",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_kind_unknown"
+    },
+    "id": "CR4",
+    "input": "aid1!robot;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "an unknown attribute",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_unknown"
+    },
+    "id": "CR5",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2;tier=gold"
+  },
+  {
+    "description": "attributes out of order",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_order"
+    },
+    "id": "CR6",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "an attribute repeated",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_order"
+    },
+    "id": "CR7",
+    "input": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "an agent identity with no chain",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_missing"
+    },
+    "id": "CR8",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "a human-attested identity without its evidence",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_missing"
+    },
+    "id": "CR9",
+    "input": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "approval evidence without the approver",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_missing"
+    },
+    "id": "CR10",
+    "input": "aid1!human-attested;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;evidence=approval:sha256:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4"
+  },
+  {
+    "description": "a chain entry that is not an agent",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_ref_type_mismatch"
+    },
+    "id": "CR11",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "a sponsor slot carrying a user ref",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_ref_type_mismatch"
+    },
+    "id": "CR12",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "lowercase percent-encoding",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_component_not_canonical"
+    },
+    "id": "CR13",
+    "input": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%4aexample.com"
+  },
+  {
+    "description": "an unreserved octet encoded",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_component_not_canonical"
+    },
+    "id": "CR14",
+    "input": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/%61lice%40example.com"
+  },
+  {
+    "description": "a raw reserved octet inside a component",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_component_not_canonical"
+    },
+    "id": "CR15",
+    "input": "aid1!unknown;user=user:prod/x@y/alice"
+  },
+  {
+    "description": "an encoding that is not UTF-8",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_value_not_utf8"
+    },
+    "id": "CR16",
+    "input": "aid1!unknown;user=user:prod/idp/%FF"
+  },
+  {
+    "description": "an uppercase environment",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_environment_malformed"
+    },
+    "id": "CR17",
+    "input": "aid1!unknown;user=user:Prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "an uppercase digest",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_digest_malformed"
+    },
+    "id": "CR18",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1"
+  },
+  {
+    "description": "an agent acting for no user and no sponsor",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_missing"
+    },
+    "id": "CR19",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds"
+  },
+  {
+    "description": "act without the user whose credential carries it",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_missing"
+    },
+    "id": "CR20",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+  },
+  {
+    "description": "an agent twice in one chain",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_chain_repeats_agent"
+    },
+    "id": "CR21",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds"
+  },
+  {
+    "description": "an empty chain entry",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_ref_malformed"
+    },
+    "id": "CR22",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds>"
+  },
+  {
+    "description": "a transport identity carrying a user",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_not_allowed"
+    },
+    "id": "CR23",
+    "input": "aid1!transport;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing"
+  },
+  {
+    "description": "an unknown-actor identity carrying a chain",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_not_allowed"
+    },
+    "id": "CR24",
+    "input": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds"
+  },
+  {
+    "description": "a non-ASCII octet",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_string_malformed"
+    },
+    "id": "CR25",
+    "input": "aid1!unknown;user=user:prod/idp/\u00e9"
+  },
+  {
+    "description": "longer than 8192 octets",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_too_long"
+    },
+    "id": "CR26",
+    "input": "aid1!unknown;user=user:prod/idp/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  {
+    "description": "an empty attribute value",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_empty"
+    },
+    "id": "CR27",
+    "input": "aid1!unknown;user="
+  },
+  {
+    "description": "a chain deeper than 32 agents",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_chain_too_deep"
+    },
+    "id": "CR28",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a0>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a1>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a2>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a3>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a4>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a5>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a6>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a7>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a8>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a9>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a10>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a11>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a12>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a13>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a14>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a15>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a16>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a17>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a18>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a19>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a20>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a21>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a22>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a23>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a24>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a25>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a26>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a27>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a28>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a29>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a30>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a31>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a32"
+  },
+  {
+    "description": "the parts name mallory while the id names alice",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_document_id_mismatch"
+    },
+    "id": "CD1",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/mallory%40example.com",
+        "subject": "mallory@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "a ref whose id disagrees with its subject",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_document_id_mismatch"
+    },
+    "id": "CD2",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "mallory@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "an unknown member",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_attribute_unknown"
+    },
+    "id": "CD3",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "tier": "gold",
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "version true is not version 1",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_version_unknown"
+    },
+    "id": "CD4",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": true
+    }
+  },
+  {
+    "description": "a ref's own id names mallory while its parts and the identity id name the owner",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_document_id_mismatch"
+    },
+    "id": "CD5",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/mallory%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
+        "type": "user"
+      },
+      "version": 1
+    }
+  }
+]

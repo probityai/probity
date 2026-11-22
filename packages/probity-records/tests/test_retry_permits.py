@@ -13,7 +13,10 @@ from probity_records import (
     tool_call_predicate,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from test_records import ARGS, _effect, _write_run
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 
 def _common(pid: str) -> dict:
@@ -33,7 +36,7 @@ def _retry_failures(tmp_path, gate: Signer, journal: Journal) -> list[str]:
 
 def test_not_run_retry_after_a_committed_effect_is_refused(tmp_path) -> None:
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     pid = _write_run(journal, Signer.generate(), "committed", "confirmed")
     _reissue(journal, pid, NOT_RUN_RETRY)
     assert any("not_run_retry_but_an_effect_may_have_happened" in f for f in _retry_failures(tmp_path, gate, journal))
@@ -41,12 +44,12 @@ def test_not_run_retry_after_a_committed_effect_is_refused(tmp_path) -> None:
 
 def test_not_run_retry_with_no_intent_since_the_last_permit_is_accepted(tmp_path) -> None:
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     pid = permit_id("pause", "call-1", args_sha256(ARGS))
     _reissue(journal, pid, NOT_RUN_RETRY)
     assert any("retry_without_earlier_permit" in f for f in _retry_failures(tmp_path, gate, journal))
     (tmp_path / "two").mkdir()
-    other = Journal(tmp_path / "two", gate)
+    other = Journal(tmp_path / "two", gate, clock=SYSTEM_CLOCK)
     _reissue(other, pid, "no_approval_required")
     _reissue(other, pid, NOT_RUN_RETRY)
     assert _retry_failures(tmp_path / "two", gate, other) == []
@@ -54,7 +57,7 @@ def test_not_run_retry_with_no_intent_since_the_last_permit_is_accepted(tmp_path
 
 def test_reconciled_retry_needs_a_final_absent_answer(tmp_path) -> None:
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     pid = _write_run(journal, Signer.generate(), "unknown", "timeout")
     _reissue(journal, pid, RECONCILED_RETRY)
     assert any("reconciled_retry_without_final_absent_answer" in f for f in _retry_failures(tmp_path, gate, journal))
@@ -62,7 +65,7 @@ def test_reconciled_retry_needs_a_final_absent_answer(tmp_path) -> None:
 
 def test_an_effect_record_after_a_settled_outcome_is_refused(tmp_path) -> None:
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     pid = _write_run(journal, Signer.generate(), "committed", "confirmed")
     journal.append(TOOL_CALL_RECORD, "tool-call:call-1", args_sha256(ARGS), tool_call_predicate(
         phase="effect", outcome="committed", uncertain_effect=_effect("committed", "confirmed", 2), **_common(pid)))

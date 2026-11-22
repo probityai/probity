@@ -25,7 +25,6 @@ import datetime as _dt
 import hashlib
 import json
 import os
-import time
 import urllib.request
 import uuid
 from collections.abc import Callable, Iterable, Mapping
@@ -38,6 +37,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
 
+from .clock import Clock
 from .core import Signer, canonical, key_id, load_public, sha256_hex
 
 INTEGRITY_PREFIX = "audit.integrity."
@@ -239,10 +239,6 @@ def witness_signer(signer: Signer) -> Callable[[str, int, str], dict[str, str]]:
 
 # The producer side.
 
-def _now_ns() -> int:
-    return time.time_ns()
-
-
 @dataclass
 class AuditStream:
     """One hash-chained audit stream, signed by ``signer`` as a producer-tier signingprocessor would.
@@ -251,6 +247,7 @@ class AuditStream:
     """
 
     signer: Signer
+    clock: Clock = field(kw_only=True)
     service_name: str = "probity"
     stream_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     witness: Callable[[str, int, str], Mapping[str, str]] | None = None
@@ -297,7 +294,7 @@ class AuditStream:
             attrs["audit.sequence.previous_record_id"] = self._head_id
         if end:
             attrs["audit.sequence.end"] = True
-        stamp = timestamp or _now_ns()
+        stamp = timestamp if timestamp is not None else self.clock.now()
         record: dict[str, Any] = {"event_name": event_name, "timestamp": stamp, "observed_timestamp": stamp,
                                   "attributes": attrs}
         if body is not None:

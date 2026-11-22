@@ -28,7 +28,6 @@ from .core import (
     sign_envelope,
     statement,
 )
-from .journal import now
 
 EXPORT_SEAL = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/export-seal"
 EXPORT_KINDS = ("entities", "stages", "activity")
@@ -98,13 +97,13 @@ def census(records: list[Any], fields: FieldMap) -> dict[str, Any]:
 
 
 def seal_export(signer: Signer, data: bytes, *, source: str, kind: str, captured_at: str,
-                fields: FieldMap | None = None, sealed_at: str | None = None) -> dict[str, Any]:
+                sealed_at: str, fields: FieldMap | None = None) -> dict[str, Any]:
     """A DSSE envelope over an in-toto statement sealing one export's bytes and census."""
     if kind not in EXPORT_KINDS:
         raise ValueError(f"kind must be one of {EXPORT_KINDS}")
     fields = fields or FieldMap()
     predicate = {"capturedAt": captured_at, "census": census(parse_export(data), fields), "fieldMap": asdict(fields),
-                 "kind": kind, "rawBytes": len(data), "sealedAt": sealed_at or now(), "source": source}
+                 "kind": kind, "rawBytes": len(data), "sealedAt": sealed_at, "source": source}
     body = statement(f"export:{kind}", sha256_hex(data), EXPORT_SEAL, predicate)
     return sign_envelope(signer, canonical(body))
 

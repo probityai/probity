@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "agent-evidence-verify",
-      "project.version": "0.5.1",
+      "project.version": "0.8.0",
       "project.requires-python": ">=3.11",
       "project.dependencies": [
         "cryptography>=50.0.0",
@@ -63,7 +63,7 @@
         }
       }
     },
-    "sha256": "c3eef75eebd9900e5819240cefac0b6e69399761b47b9fd2d0a25182812991b5"
+    "sha256": "11afc8db035fb96a60f76284035785fc932f2b6e6a14dbb3773744237a1472c2"
   },
   "implementation": [
     {
@@ -85,6 +85,11 @@
       "path": "src/agent_evidence_verify/a2a_server.py",
       "bytes": 14758,
       "sha256": "46c7eba22232d50b7060aec6d92145b9cd105bf4333f69ae6a8a0caffe9d6b85"
+    },
+    {
+      "path": "src/agent_evidence_verify/actor_marker.py",
+      "bytes": 12308,
+      "sha256": "d137a4ad4a89bb24837b3a956ea733a87b6388aca864cdb67bcf2d686123c223"
     },
     {
       "path": "src/agent_evidence_verify/adapters/__init__.py",
@@ -122,11 +127,6 @@
       "sha256": "9a0b45b24fb366d4f207c09dd74cbb94d0b3ee0eb84ce6ba1bf572cd2323edad"
     },
     {
-      "path": "src/agent_evidence_verify/adapters/catalog_trust_manifest.py",
-      "bytes": 43427,
-      "sha256": "963998159c384b7634f970b01a47c8be429ca6f93545312057018267f5719c93"
-    },
-    {
       "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
       "bytes": 18903,
       "sha256": "c21cded71b6da06e7328baefd9351784f2c0169ed776f7cf56d9f63dc8826ae5"
@@ -135,6 +135,11 @@
       "path": "src/agent_evidence_verify/adapters/completion_claim.py",
       "bytes": 8581,
       "sha256": "b5f8f00f0de83f82ee079beef20084aaccba2a9dc759002f13c994913f28d963"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/credential_reachability.py",
+      "bytes": 18877,
+      "sha256": "d441dfec1959ed84db0c85030d481dca5c01965b9e5593b8e537eeed84a312f9"
     },
     {
       "path": "src/agent_evidence_verify/adapters/done_argv.py",
@@ -162,6 +167,11 @@
       "sha256": "b7a1a566ae53d99637f3348fbef1dcec20d91c562863e2c3c195c859687d7a48"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/evidence_sufficiency.py",
+      "bytes": 18109,
+      "sha256": "22b42c007ca3506c9587c0ebfd4f275f4c7087b7bfe85c2ce66e8cbbc4658414"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/execution_evidence.py",
       "bytes": 4158,
       "sha256": "214c2ebdf4d655cc61f2555638a9d0b2f77d801665d42436b4f44f729414c31c"
@@ -173,8 +183,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/jcs_canonical.py",
-      "bytes": 6677,
-      "sha256": "0e97863f9018960186957dde1a396824b8d47226d00d6325e373d80e0ff9cc6f"
+      "bytes": 7712,
+      "sha256": "3cc43add7bc2e9d7d938ce1031fe4422457383572ed24a2f9d2b0c39c8757d58"
     },
     {
       "path": "src/agent_evidence_verify/adapters/observed_effect.py",
@@ -187,14 +197,19 @@
       "sha256": "12eb97b528a89e6d855a96d583a850d5e23aca14b48f12464a5aa8df06410e31"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/payment_mandate.py",
+      "bytes": 13044,
+      "sha256": "faae5807616282c780e680fe887e7f1d82e7e1255a4975df54512c470ad14e60"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/probe_observed.py",
       "bytes": 8247,
       "sha256": "08902109d24c3ecc357290f74073ca7dc41852d2459ea24dbf7c6d702ef610b5"
     },
     {
       "path": "src/agent_evidence_verify/adapters/proof_of_control.py",
-      "bytes": 22073,
-      "sha256": "05e07044dfec6714dd28c84e5b932451635a1747a55a15be272cbc4daee2ff26"
+      "bytes": 23329,
+      "sha256": "87cf266073ba64b4804d2c77d6ee75e367f778653b1f06745fc0c4c368105e01"
     },
     {
       "path": "src/agent_evidence_verify/adapters/protected_paths.py",
@@ -215,6 +230,11 @@
       "path": "src/agent_evidence_verify/adapters/spend_reservation.py",
       "bytes": 16777,
       "sha256": "840f82f5a399e8aaead1aa722d608299af4ae76b6c6c15647251d78831b123fc"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/status_receipt_binding.py",
+      "bytes": 12297,
+      "sha256": "e5ad8e1196c8034e3192c7f9b271ecb8a8c39e0bdeaae9cce5faa865e1067099"
     },
     {
       "path": "src/agent_evidence_verify/adapters/token_grant_receipt.py",
@@ -248,8 +268,8 @@
     },
     {
       "path": "src/agent_evidence_verify/cli.py",
-      "bytes": 4918,
-      "sha256": "ad6e646eab30bd5361698dcfedb480da895f0bc3bb0f9731beb82413ba58c09f"
+      "bytes": 5376,
+      "sha256": "c66037cd0d0f5625f2180da73557668ed8086ecd41366de8e3160f3ad85a893a"
     },
     {
       "path": "src/agent_evidence_verify/common.py",
@@ -258,18 +278,28 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 11651,
-      "sha256": "44685d743b49850109f126ee00d8bfc3e9085b83fe0a235499ea77a9826ad035"
+      "bytes": 11744,
+      "sha256": "5cab88d2ce0f7d0c10ff9389681bc1225d75e70d578d77e290808b2b1908e430"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
-      "bytes": 5020,
-      "sha256": "c3043ac01f34657707dd673fef3faae54f795c5c98dc5288681c7859fa0ea468"
+      "bytes": 7364,
+      "sha256": "a4fbf64cd01f87ee1fd778cfa7d9d82befed6f4561fee17de0e7f57eb9b433b2"
+    },
+    {
+      "path": "src/agent_evidence_verify/decision_record.py",
+      "bytes": 101188,
+      "sha256": "7254a0f6fb805f972527051c9a9b593afaace04dc9f08121457caaa81f83d427"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
       "bytes": 8199,
       "sha256": "21c377c84014b9155974c32ece782430096c7944f538313fe7038566da7f8f5d"
+    },
+    {
+      "path": "src/agent_evidence_verify/evmsig.py",
+      "bytes": 10089,
+      "sha256": "57436955dc0c33c64191c8dddb3661190080b31f3ba20e21ad44c69b8e61a558"
     },
     {
       "path": "src/agent_evidence_verify/execution_evidence.py",
@@ -283,8 +313,8 @@
     },
     {
       "path": "src/agent_evidence_verify/ijson.py",
-      "bytes": 9787,
-      "sha256": "aabfde30fd9200821eacaef0910a31d43e51b011c24fbc0876e69e8f746e7bf6"
+      "bytes": 9373,
+      "sha256": "e7f496e9d09a7168bcb8fc7d5b14f02b7f6829e12c5dc173788e29506c9f2a13"
     },
     {
       "path": "src/agent_evidence_verify/index.py",
@@ -298,8 +328,18 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 27482,
-      "sha256": "58fcb3773c694394d073b5f8c5227e2bcb6382a4853ecebafed364fe193b28a8"
+      "bytes": 25833,
+      "sha256": "d1a389fbdba1edcae502b0aa929dedf5c84d93bf548ac51c30363c3681a93a8a"
+    },
+    {
+      "path": "src/agent_evidence_verify/ocsf_decision.py",
+      "bytes": 50377,
+      "sha256": "a2a4aa71df9ca93a20fea91ef732764c1e0dc0aacf95ba59a505af78506de466"
+    },
+    {
+      "path": "src/agent_evidence_verify/strictb64.py",
+      "bytes": 1797,
+      "sha256": "3dddcb39ca28d92a0fa969f75490791e244cec44b3049764ef11d02ec254e533"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
@@ -2052,48 +2092,74 @@
       ]
     },
     {
-      "task": "Check who signed an AI Catalog trust manifest and that it binds its entry",
-      "claim_type": "catalog_trust_manifest/v1",
-      "case": "examples/catalog-trust-manifest/case.json",
-      "policy": "examples/catalog-trust-manifest/policy.json",
-      "documentation": "docs/catalog-trust-manifest.md",
+      "task": "Decide what a signed Observed Effect record lets a verifier conclude",
+      "claim_type": "evidence_sufficiency/v1",
+      "case": "examples/evidence-sufficiency/case.json",
+      "policy": "examples/evidence-sufficiency/policy.json",
+      "documentation": "docs/adapters.md",
       "expected_decision": "supported",
-      "scope": "Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe.",
-      "case_id": "catalog-trust-manifest-ai-catalog-publisher",
-      "expected_reason": "signature_covers_release",
+      "scope": "Authored synthetic corpus member and a stipulated consumer context; it does not establish who holds the observer key.",
+      "case_id": "no-write-in-scope-pass",
+      "expected_reason": "evidence_sufficient",
       "exit_code": 0,
       "argv": [
         "agent-evidence-verify",
-        "examples/catalog-trust-manifest/case.json",
+        "examples/evidence-sufficiency/case.json",
         "--policy",
-        "examples/catalog-trust-manifest/policy.json",
+        "examples/evidence-sufficiency/policy.json",
         "--json"
       ],
       "bindings": [
         {
-          "path": "examples/catalog-trust-manifest/case.json",
-          "bytes": 628,
-          "sha256": "efbdd02225534f054975ed28bb2c82e6066fad16393c674a9fefd694ce1fc8b5"
+          "path": "examples/evidence-sufficiency/case.json",
+          "bytes": 268,
+          "sha256": "e4a80cf9f43ee9f5404e85f5d804bd2e26929dc933e548193eca44353c71ca4e"
         },
         {
-          "path": "examples/catalog-trust-manifest/policy.json",
-          "bytes": 697,
-          "sha256": "b34ce20d31509d5ea3ff51729be58b6de32ff9899866cf752932955202add516"
+          "path": "examples/evidence-sufficiency/policy.json",
+          "bytes": 672,
+          "sha256": "32d21b38a36f3001280d119508c9979f4fdee9cd2db7fb4320eb9bac7f41eaff"
         },
         {
-          "path": "examples/catalog-trust-manifest/artifact.json",
-          "bytes": 141,
-          "sha256": "5346c3b356f1b2db025b97d464d73a62442ca39ad1480549e23daff147f35ef1"
+          "path": "examples/evidence-sufficiency/envelope.json",
+          "bytes": 2847,
+          "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
+        }
+      ]
+    },
+    {
+      "task": "Check that no credential is reachable from the agent's environment",
+      "claim_type": "credential_reachability/v1",
+      "case": "examples/corpus-routes/credential-reachability/case.json",
+      "policy": "examples/corpus-routes/credential-reachability/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus.",
+      "case_id": "contained",
+      "expected_reason": "contained_verified",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/corpus-routes/credential-reachability/case.json",
+        "--policy",
+        "examples/corpus-routes/credential-reachability/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/credential-reachability/case.json",
+          "bytes": 255,
+          "sha256": "fc0d2b29df73b85995bb1d7563057b5d60282cc654ca28c7190caf6c128c131a"
         },
         {
-          "path": "examples/catalog-trust-manifest/catalog.json",
-          "bytes": 1344,
-          "sha256": "fe7aaee6d11350c4c54fef665c8ea41bee65f5c56066ff7210b2082cb848262b"
+          "path": "examples/corpus-routes/credential-reachability/policy.json",
+          "bytes": 1020,
+          "sha256": "b50cf2cbf3dceffb0b4a8e5cd4b02b232c8dbf6505d7b6237619820c1a16e4a9"
         },
         {
-          "path": "examples/catalog-trust-manifest/did-documents.json",
-          "bytes": 2755,
-          "sha256": "8b49c5d7a3dad753d337a8879ad50ea41947883460bf47e3bf3353f41a28c3fe"
+          "path": "examples/corpus-routes/credential-reachability/envelope.json",
+          "bytes": 4796,
+          "sha256": "050b0bb3688d734aefdaf19c99c1e69687512d9bcbc39c4c95a8690ab24337c2"
         }
       ]
     }

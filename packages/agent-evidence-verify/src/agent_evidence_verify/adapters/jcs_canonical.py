@@ -4,7 +4,8 @@ Two targets. ``rfc8785`` canonicalizes one JSON value. ``card-signing-input`` is
 signing input: the card without its top-level ``signatures`` member, canonicalized (A2A
 specification 8.4.1 rules 2 and 3). Numbers are IEEE 754 doubles written as ECMAScript
 ``Number::toString``; members sort by their UTF-16 code units; a lone surrogate, NaN, Infinity, a
-duplicate member or an integer outside the double range has no canonical form. The canonicalizer is
+duplicate member or an integer outside the double range, and any number token no double holds exactly (RFC 7493
+section 2.2), has no canonical form. The canonicalizer is
 a port of probityai/agent-evidence-vectors at commit 317df600f9a1503f32bcc2742b9f111036bdee32,
 ``packaging/agent_evidence_vectors/a2ajcs.py``.
 
@@ -121,10 +122,39 @@ def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return out
 
 
+def _exact_integer(token: str) -> int:
+    """An integer token a double holds exactly (RFC 7493 section 2.2), else :class:`Refusal`.
+
+    ``9007199254740993`` would canonicalize as ``9007199254740992``: the bytes a signer signs and the
+    number an exact reader reads would be two values.
+    """
+    value = int(token)
+    try:
+        exact = float(value) == value
+    except OverflowError as exc:
+        raise Refusal("integer outside the IEEE 754 double range") from exc
+    if not exact:
+        raise Refusal(f"integer {token} has more precision than a double holds")
+    return value
+
+
+def _exact_number(token: str) -> float:
+    """A non-integer token whose double, written at its shortest, is the token's own number."""
+    value = float(token)
+    if not math.isfinite(value) or Decimal(token) != Decimal(repr(value)):
+        raise Refusal(f"number {token} reads as the double {value!r}, another number")
+    return value
+
+
+def _no_constant(token: str) -> Any:
+    raise Refusal("NaN and Infinity have no JSON number form")
+
+
 def canonical(target: str, text: str) -> bytes:
     """The canonical bytes of ``text`` for ``target``; raises :class:`Refusal` when it has none."""
     try:
-        value = json.loads(text, object_pairs_hook=_no_duplicates)
+        value = json.loads(text, object_pairs_hook=_no_duplicates, parse_int=_exact_integer,
+                           parse_float=_exact_number, parse_constant=_no_constant)
     except Refusal:
         raise
     except ValueError as exc:

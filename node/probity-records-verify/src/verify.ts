@@ -16,6 +16,8 @@ import { createHash, createPublicKey, verify as edVerify, type KeyObject } from 
 import { run, isCelError } from "@bufbuild/cel";
 import { admit, JcsError } from "jcs-admit";
 
+export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } from "./identity.ts";
+
 export const TOOL_CALL_RECORD = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/tool-call-record";
 const IN_TOTO = "application/vnd.in-toto+json";
 const GRANT_DOMAIN = "probity-grant-v1\u0000";
@@ -144,13 +146,13 @@ function unb64(text: J): Buffer {
 
 // ---------- keys and signatures ----------
 
-function rawKey(raw: Buffer): KeyObject {
+export function rawKey(raw: Buffer): KeyObject {
   return createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: raw.toString("base64url") }, format: "jwk" });
 }
 export function keyId(key: KeyObject): string {
   return sha256Hex(Buffer.from(String((key.export({ format: "jwk" }) as J).x), "base64url"));
 }
-function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
+export function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
   try { return edVerify(null, data, key, sig); } catch { return false; }
 }
 const sigOk = (rawB64: J, domain: string, body: J, sig: J): boolean => {
@@ -533,14 +535,43 @@ function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string,
   if (trusted.proposerBound && !ev.proposer) return "quorum_proposer_unbound";
   const r = countVotes(trusted, request, ev.votes ?? [], at, ev.proposer);
   if (r.ignored.length) return `quorum_vote_invalid:${r.ignored[0]}`;
-  return r.status === "approved" ? "ok" : `quorum_${r.status}`;
+  if (r.status === "approved") return "ok";
+  return r.status === "refused" ? "quorum_refused" : "quorum_pending";
 }
 
 // ---------- grants ----------
 
+// RFC 7800 confirmation: exactly one method, jkt (RFC 9449) or x5t#S256 (RFC 8705), a SHA-256 thumbprint in
+// canonical base64url. A grant without one is a bearer token and is refused, as by the Python verifier.
+const CNF_METHODS = ["jkt", "x5t#S256"];
+function cnfProblem(cnf: J): string | null {
+  if (cnf === undefined || cnf === null) return "cnf_missing";
+  if (!isObj(cnf) || Object.keys(cnf).length !== 1) return "cnf_invalid";
+  const [[method, value]] = Object.entries(cnf) as [string, J][];
+  if (!CNF_METHODS.includes(method) || typeof value !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(value)) return "cnf_invalid";
+  const raw = Buffer.from(value, "base64url");
+  return raw.length === 32 && raw.toString("base64url") === value ? null : "cnf_invalid";
+}
+
+// A standing grant (grants.py): "sponsor" {issuer, subject} and "reviewBy" together, notBefore < reviewBy <= expiresAt.
+function standingProblem(body: J): string | null {
+  if (("sponsor" in body) !== ("reviewBy" in body)) return "grant_standing_incomplete";
+  if (!("sponsor" in body)) return null;
+  const s = body.sponsor;
+  if (!isObj(s) || Object.keys(s).sort().join(",") !== "issuer,subject" || !Object.values(s).every((v) => typeof v === "string" && v)) return "grant_sponsor_invalid";
+  try { sponsorId(s.issuer, s.subject); } catch { return "grant_sponsor_invalid"; }
+  let r: number, nb: number, ex: number;
+  try { r = ts(body.reviewBy); nb = ts(body.notBefore); ex = ts(body.expiresAt); } catch { return "grant_review_invalid"; }
+  return nb < r && r <= ex ? null : "grant_review_invalid";
+}
+
 function narrowingProblem(ch: J, p: J): string | null {
   if (ch.issuerKey !== p.holderKey) return "child_not_issued_by_parent_holder";
   if (ts(ch.notBefore) < ts(p.notBefore) || ts(ch.expiresAt) > ts(p.expiresAt)) return "child_window_wider_than_parent";
+  if ("sponsor" in p) {
+    if (!isObj(ch.sponsor) || ch.sponsor.issuer !== p.sponsor.issuer || ch.sponsor.subject !== p.sponsor.subject) return "child_changes_sponsor";
+    if (ts(ch.reviewBy) > ts(p.reviewBy)) return "child_review_later_than_parent";
+  } else if ("sponsor" in ch) return "child_adds_sponsor";
   if ((p.maxDepth ?? 0) < 1) return "parent_forbids_delegation";
   if ((ch.maxDepth ?? 0) > p.maxDepth - 1) return "child_depth_wider_than_parent";
   for (const [k, c] of Object.entries(p.context ?? {})) {
@@ -559,10 +590,11 @@ function narrowingProblem(ch: J, p: J): string | null {
     if ((ps.approval ?? "none") === "required" && (spec.approval ?? "none") !== "required") return `child_drops_approval:${tool}`;
     if ((ps.when ?? []).some((w: string) => !(spec.when ?? []).includes(w))) return `child_drops_condition:${tool}`;
     if ("quorum" in ps) { const q = quorumWidening(spec.quorum, ps.quorum); if (q) return `${q}:${tool}`; }
-    for (const [name, c] of Object.entries(spec.args)) {
-      if (!(name in ps.args)) return `child_adds_argument:${tool}.${name}`;
-      if (!narrows(c, ps.args[name])) return `child_widens_constraint:${tool}.${name}`;
-    }
+    const added = Object.keys(spec.args).filter((n) => !(n in ps.args)).sort();
+    if (added.length) return `child_adds_argument:${tool}.${added[0]}`;
+    const dropped = Object.keys(ps.args).filter((n) => !(n in spec.args)).sort();
+    if (dropped.length) return `child_drops_argument:${tool}.${dropped[0]}`;
+    for (const [name, c] of Object.entries(spec.args)) if (!narrows(c, ps.args[name])) return `child_widens_constraint:${tool}.${name}`;
   }
   return null;
 }
@@ -587,6 +619,10 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
   for (let depth = 0; depth < chain.length; depth++) {
     const body = isObj(chain[depth]) ? chain[depth].body : null;
     if (!isObj(body)) { result = `grant_shape:${depth}`; break; }
+    const cnf = cnfProblem(body.cnf);
+    if (cnf) { result = `grant_invalid:${depth}:${cnf}`; break; }
+    const standing = standingProblem(body);
+    if (standing) { result = `grant_invalid:${depth}:${standing}`; break; }
     let issuer: string;
     try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch (e) { result = `grant_invalid:${depth}:${(e as Error).message}`; break; }
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) { result = `grant_signature_unverified:${depth}`; break; }
@@ -602,8 +638,26 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
   for (let depth = 0; depth < issuers.length; depth++) {
     const body = chain[depth].body;
     if (!(ts(body.notBefore) <= when && when <= ts(body.expiresAt))) return [null, `grant_outside_window:${depth}`];
+    if ("reviewBy" in body && when >= ts(body.reviewBy)) return [null, `grant_review_overdue:${depth}`];
   }
   return result !== "ok" ? [null, result] : [chain[chain.length - 1].body, "ok"];
+}
+
+// Every body of a structurally verified chain by digest (grants.chain_digests); empty when the chain does not verify.
+export function chainDigests(chain: J[], roots: Set<string>): Record<string, J> {
+  const out: Record<string, J> = {};
+  let prev: J = null;
+  for (let depth = 0; depth < chain.length; depth++) {
+    const body = isObj(chain[depth]) ? chain[depth].body : null;
+    if (!isObj(body) || cnfProblem(body.cnf) || standingProblem(body)) return {};
+    let issuer: string;
+    try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch { return {}; }
+    if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) return {};
+    if (prev === null) { if (body.parent !== null || !roots.has(issuer)) return {}; }
+    else if (body.parent !== digestOf(prev) || narrowingProblem(body, prev)) return {};
+    out[digestOf(body)] = body; prev = body;
+  }
+  return out;
 }
 
 function checkCall(leaf: J, tool: string, args: J, ctx: J): string {
@@ -629,7 +683,7 @@ export function verifyGrantAllow(chain: J[], tool: string, args: J, at: string, 
 // ---------- identity ----------
 
 const MEMBERS = ["issuer", "subject", "clientId", "audience", "authMethod", "source", "tokenDigest", "issuedAt", "expiresAt", "kid", "key", "keyThumbprint", "jwksDigest"];
-const OPTIONAL = ["tenant", "act"];
+const OPTIONAL = ["tenant", "act", "cnf"];
 const SOURCES = ["jwt-access-token", "id-token", "jwt-assertion", "id-jag"];
 const AUTH = ["none", "client_secret_post", "client_secret_basic", "client_secret_jwt", "private_key_jwt", "tls_client_auth", "self_signed_tls_client_auth"];
 const THUMB: Record<string, string[]> = { RSA: ["e", "kty", "n"], EC: ["crv", "kty", "x", "y"], OKP: ["crv", "kty", "x"] };
@@ -650,6 +704,7 @@ function principalShape(p: J): string | null {
   if (!SOURCES.includes(p.source) || !AUTH.includes(p.authMethod)) return "principal_malformed";
   if (["tokenDigest", "jwksDigest"].some((m) => typeof p[m] !== "string" || !/^[0-9a-f]{64}$/.test(p[m]))) return "principal_malformed";
   if (!isObj(p.key) || ["d", "p", "q", "dp", "dq", "qi", "k"].some((k) => k in p.key)) return "principal_key_invalid";
+  if ("cnf" in p && cnfProblem(p.cnf)) return "principal_cnf_invalid";
   return null;
 }
 function actSubjects(act: J): string[] | null {
@@ -675,8 +730,61 @@ function checkPrincipal(p: J, at: string, pins: Record<string, string[]>): strin
   return null;
 }
 const ROLES = ["user", "agent", "sponsor", "approver"];
-export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null): [string[], string | null] {
-  if (!isObj(block) || !Object.keys(block).length || Object.keys(block).some((k) => !ROLES.includes(k))) return [["principals_malformed"], null];
+const AUTONOMOUS = ["session", "standingGrant"];
+const SESSION_ID_MAX = 256;
+const PRINTABLE = /^[\x21-\x7e]+$/;
+export function sponsorId(issuer: J, subject: J): string {
+  if (typeof issuer !== "string" || !issuer.startsWith("https://") || issuer.includes("#") || typeof subject !== "string" || !subject) throw new Error("sponsor_id_invalid");
+  const id = `${issuer}#${subject}`;
+  if (id.length > 512 || !PRINTABLE.test(id)) throw new Error("sponsor_id_invalid");
+  return id;
+}
+export interface AutonomousTrust { sponsors?: Record<string, [string, string][]> | null; standingGrants?: Record<string, J> | null }
+function sessionProblem(s: J, at: string): string | null {
+  if (!isObj(s) || Object.keys(s).sort().join(",") !== "id,startedAt" || typeof s.id !== "string" || !s.id.length || s.id.length > SESSION_ID_MAX || !PRINTABLE.test(s.id)) return "principals_session_malformed";
+  let started: number;
+  try { started = ts(s.startedAt); } catch { return "principals_session_malformed"; }
+  return started > ts(at) ? "principals_session_not_started" : null;
+}
+function grantProblems(block: J, at: string, grants: Record<string, J>): string[] {
+  const d = block.standingGrant;
+  if (typeof d !== "string" || !/^[0-9a-f]{64}$/.test(d)) return ["principals_standing_grant_malformed"];
+  const g = Object.prototype.hasOwnProperty.call(grants, d) ? grants[d] : undefined;
+  if (g === undefined) return ["principals_standing_grant_unknown"];
+  if (!("sponsor" in g) || !("reviewBy" in g)) return ["principals_standing_grant_not_standing"];
+  const out: string[] = [], w = ts(at);
+  if (w < ts(g.notBefore)) out.push("principals_standing_grant_not_yet_valid");
+  else if (w >= ts(g.expiresAt)) out.push("principals_standing_grant_expired");
+  else if (w >= ts(g.reviewBy)) out.push("principals_standing_grant_unreviewed");
+  const cnf = block.agent.cnf;
+  if (cnf === undefined || cnf === null || !pyEq(cnf, g.cnf ?? null)) out.push("principals_standing_grant_not_held_by_agent");
+  if (block.sponsor.issuer !== g.sponsor.issuer || block.sponsor.subject !== g.sponsor.subject || Object.keys(g.sponsor).length !== 2) out.push("principals_sponsor_not_the_grant_sponsor");
+  return out;
+}
+function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust): [string[], string | null] {
+  if ("user" in block) return [["principals_autonomous_has_user"], null];
+  let problems: string[] = ([["principals_need_agent", "agent"], ["principals_need_sponsor", "sponsor"], ["principals_need_session", "session"], ["principals_need_standing_grant", "standingGrant"]] as const)
+    .filter(([, m]) => !(m in block)).map(([code]) => code);
+  if (problems.length) return [problems, null];
+  const grants = auto.standingGrants ?? {};
+  const grant = typeof block.standingGrant === "string" && Object.prototype.hasOwnProperty.call(grants, block.standingGrant) ? grants[block.standingGrant] : undefined;
+  for (const r of ["agent", "approver"]) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
+  // the sponsor answered for the grant when it was issued; with no resolved grant the grant's own refusal decides
+  const sp = grant === undefined || !("notBefore" in grant) ? null : checkPrincipal(block.sponsor, String(grant.notBefore), pins);
+  if (sp) problems.push(`principal_sponsor:${sp}`);
+  const sess = sessionProblem(block.session, at); if (sess) problems.push(sess);
+  if (problems.length) return [problems, null];
+  problems = grantProblems(block, at, grants);
+  if (auto.sponsors === undefined || auto.sponsors === null) problems.push("principals_sponsors_not_pinned");
+  else if (!(auto.sponsors[block.agent.clientId] ?? []).some(([i, s]) => i === block.sponsor.issuer && s === block.sponsor.subject)) problems.push("principal_sponsor_not_registered");
+  if ("approver" in block && approvers === null) problems.push("principal_approver_without_approval");
+  else if (approvers !== null && !("approver" in block)) problems.push("principals_need_approver");
+  else if ("approver" in block && approvers !== null && !approvers.has(block.approver.subject)) problems.push("principal_approver_not_an_approval_signer");
+  return problems.length ? [problems, null] : [[], "autonomous"];
+}
+export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust = {}): [string[], string | null] {
+  if (!isObj(block) || !Object.keys(block).length || Object.keys(block).some((k) => !ROLES.includes(k) && !AUTONOMOUS.includes(k))) return [["principals_malformed"], null];
+  if (Object.keys(block).some((k) => AUTONOMOUS.includes(k))) return checkAutonomous(block, at, pins, approvers, auto);
   const problems: string[] = [];
   for (const r of ROLES) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
   if (!("user" in block) || !("agent" in block)) problems.push("principals_need_user_and_agent");
@@ -689,14 +797,48 @@ export function checkPrincipals(block: J, at: string, pins: Record<string, strin
 
 // ---------- journal ----------
 
-export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string }
+export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; possessionSkewSeconds?: number; agentSponsors?: Record<string, [string, string][]>; standingGrants?: J[][] }
+
+// The proof an allow rested on (possession.possession_record): it must name the key the leaf grant's cnf confirms.
+const POSSESSION_MEMBERS: Record<string, string[]> = { dpop: ["iat", "jkt", "jti", "method"], mtls: ["method", "x5t#S256"] };
+const MAX_JTI_BYTES = 128, DEFAULT_SKEW = 120, REPLAY_GRACE = 5;
+function possessionRecordProblem(record: J, cnf: J): string | null {
+  if (!isObj(record) || typeof record.method !== "string" || !Object.hasOwn(POSSESSION_MEMBERS, record.method)) return "possession_record_malformed";
+  const want = POSSESSION_MEMBERS[record.method], keys = Object.keys(record).sort();
+  if (keys.length !== want.length || keys.some((k, i) => k !== want[i])) return "possession_record_malformed";
+  if (record.method === "dpop" && (typeof record.iat !== "number" || !Number.isInteger(record.iat) || typeof record.jti !== "string"
+      || !record.jti || Buffer.byteLength(record.jti, "utf8") > MAX_JTI_BYTES)) return "possession_record_malformed";
+  const member = record.method === "dpop" ? "jkt" : "x5t#S256";
+  if (!isObj(cnf) || !Object.hasOwn(cnf, member) || typeof record[member] !== "string" || record[member] !== String(cnf[member])) return "possession_not_the_grant_key";
+  return null;
+}
+
+// A DPoP proof spent by two permits inside its lifetime (possession.duplicate_proofs): a replay.
+function duplicateProofs(bodies: [number, J][], skew: number): string[] {
+  const found: string[] = [], first = new Map<string, [number, number, J]>();
+  for (const [n, body] of bodies) {
+    const pred = body.predicate;
+    if (!isObj(pred) || pred.phase !== "authorize" || !isObj(pred.authority)) continue;
+    const rec = pred.authority.possession;
+    if (!isObj(rec) || rec.method !== "dpop" || typeof rec.jkt !== "string" || typeof rec.jti !== "string"
+        || typeof rec.iat !== "number" || !Number.isInteger(rec.iat)) continue;
+    const key = `${rec.jkt}.${rec.jti}`, permit = pred.permitId ?? null;
+    let used: number;
+    try { used = ts(pred.at) / 1e6; } catch { found.push(`line_${n}:dpop_proof_use_time_invalid`); continue; }
+    const earlier = first.get(key);
+    const live = earlier !== undefined && used <= earlier[1] + skew + REPLAY_GRACE;
+    if (live && earlier![2] !== permit) { found.push(`line_${n}:dpop_proof_replayed:${earlier![0]}`); continue; }
+    if (!live) first.set(key, [n, rec.iat, permit]);
+  }
+  return found;
+}
 
 function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], where: string): boolean {
   const reason = pred.reason;
   if (reason !== "grant" && reason !== "quorum") return false;
   const ev = pred.authority;
-  if (!isObj(ev) || ev.kind !== reason) { problems.push(`${where}:${reason}_allow_without_authority_evidence`); return true; }
-  if (trust === null) { problems.push(`${where}:${reason}_allow_but_no_trust_pinned`); return true; }
+  if (!isObj(ev) || ev.kind !== reason) { problems.push(`${where}:authority_evidence_missing:${reason}`); return true; }
+  if (trust === null) { problems.push(`${where}:authority_trust_not_pinned:${reason}`); return true; }
   const at = String(pred.at), pinned = { ...(trust.quorumPolicies ?? {}) };
   const quorumOutcome = (q: J, carried?: J): string => {
     if (carried) pinned[String(carried.policyId)] = carried;
@@ -709,9 +851,13 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
   const v = verifyGrantAllow(ev.chain ?? [], String(pred.tool), args, at, new Set(trust.grantRootKeyIds ?? []), ev.ctx ?? {});
   if (v.decision === "needs_approval" && isObj(ev.quorum)) {
     const o = quorumOutcome(ev.quorum, ev.chain[ev.chain.length - 1].body.tools[String(pred.tool)].quorum);
-    if (o !== "ok") problems.push(`${where}:grant_approval_${o}`);
+    if (o !== "ok") problems.push(`${where}:grant_approval_failed:${o}`);
   } else if (v.decision !== "allow") problems.push(`${where}:grant_${v.decision}:${v.reason}`);
   if (v.grantDigest && v.grantDigest !== pred.grantDigest) problems.push(`${where}:grant_digest_differs_from_record`);
+  if ("possession" in ev && v.grantDigest) {
+    const p = possessionRecordProblem(ev.possession, ev.chain[ev.chain.length - 1].body.cnf);
+    if (p) problems.push(`${where}:${p}`);
+  }
   return true;
 }
 
@@ -1003,24 +1149,24 @@ function checkApproval(pred: J, problems: string[], where: string, trust: TrustD
     const verdict = judgeApprovalBinding(embedded.record, payload);
     if (verdict.decision === "allow") readerAllowed.add(String(embedded.record?.approval?.approver));
     else if (pred.decision === "deny" && verdict.reason !== pred.reason && bindings.length === 1)
-      problems.push(`${where}:deny_reason_${pred.reason}_but_reader_says_${verdict.reason}`);
+      problems.push(`${where}:deny_reason_mismatch:${pred.reason}:${verdict.reason}`);
   });
   if (pred.decision !== "allow") return;
-  if (trust === null) { problems.push(`${where}:approval_allow_but_no_trust_pinned`); return; }
+  if (trust === null) { problems.push(`${where}:authority_trust_not_pinned:approval`); return; }
   const policy = (trust.quorumPolicies ?? {})[String(pred.approvalPolicyId)];
   if (policy === undefined) { problems.push(`${where}:approval_policy_not_pinned`); return; }
-  if (!pyEq(pred.threshold, policy.threshold)) problems.push(`${where}:threshold_${pyRepr(pred.threshold, isFloat(pred, "threshold", pred.threshold))}_is_not_the_pinned_${pyRepr(policy.threshold, isFloat(policy, "threshold", policy.threshold))}`);
+  if (!pyEq(pred.threshold, policy.threshold)) problems.push(`${where}:threshold_not_pinned:${pyRepr(pred.threshold, isFloat(pred, "threshold", pred.threshold))}:${pyRepr(policy.threshold, isFloat(policy, "threshold", policy.threshold))}`);
   const { counted: signed, problems: sigProblems } = countBindings(policy, bindings);
   problems.push(...sigProblems.map((p) => `${where}:${p}`));
   const counted = [...signed].filter((a) => readerAllowed.has(a));
-  if (counted.length < policy.threshold) problems.push(`${where}:recorded_allow_but_${counted.length}_of_${policy.threshold}_approvals_hold`);
+  if (counted.length < policy.threshold) problems.push(`${where}:approvals_below_threshold:${counted.length}:${policy.threshold}`);
 }
 
 function checkEffect(pred: J, problems: string[], where: string): void {
   const record = pred.uncertainEffect;
   if (!truthy(record)) { problems.push(`${where}:effect_without_uncertain_effect_record`); return; }
   const verdict = judgeUncertainEffect(record);
-  if (verdict.decision !== "supported") problems.push(`${where}:uncertain_effect_${verdict.decision}:${verdict.reason}`);
+  if (verdict.decision !== "supported") problems.push(`${where}:uncertain_effect_not_supported:${verdict.decision}:${verdict.reason}`);
   if (!pyEq(getOr(getOr(record, "operation", {}), "argsDigest", null), "sha256:" + String(pred.argsSha256))) problems.push(`${where}:effect_args_differ_from_call`);
   if (!pyEq(pred.outcome ?? null, verdict.reported_outcome)) problems.push(`${where}:outcome_field_differs_from_record`);
 }
@@ -1032,23 +1178,60 @@ function pyRepr(v: J, asFloat = false): string {
   return asFloat && Number.isInteger(v) ? `${v}.0` : String(v);
 }
 
-function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null): [J | null, string[]] {
+// An autonomous call runs on the standing grant its block names (journal.py _standing_problems): an allow rests on
+// it (a grant allow whose leaf it is), judged in the block's own agent and session; every intent and effect names it.
+function standingProblems(pred: J, block: J): string[] {
+  const named = block.standingGrant;
+  const phase = pred.phase;
+  if (phase === "intent" || phase === "effect") return pred.grantDigest === named ? [] : ["principals_standing_grant_not_the_authority"];
+  if (phase !== "authorize" || pred.decision !== "allow") return [];
+  const ev = pred.authority;
+  const chain = isObj(ev) && Array.isArray(ev.chain) ? ev.chain : null;
+  let leaf: string | null = null;
+  try { leaf = chain && chain.length ? digestOf(chain[chain.length - 1].body) : null; } catch { leaf = null; }
+  if (pred.reason !== "grant" || !isObj(ev) || ev.kind !== "grant" || leaf !== named || pred.grantDigest !== named)
+    return ["principals_standing_grant_not_the_authority"];
+  const ctx = ev.ctx ?? {};
+  const own: Record<string, J> = { agent: block.agent.clientId, session: block.session.id };
+  if (!isObj(ctx) || Object.entries(own).some(([k, v]) => k in ctx && !pyEq(ctx[k], v)))
+    return ["principals_standing_context_not_the_block"];
+  return [];
+}
+
+function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null, seen: Record<string, J>): [J | null, string[]] {
   const where = `line_${i}`, problems: string[] = [];
   let body: J;
   try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
   catch (e) { return [null, [`${where}:${(e as Error).message}`]]; }
   const pred = body.predicate ?? {};
-  if (pred.seq !== i) problems.push(`${where}:seq_${pred.seq ?? "None"}_not_${i}`);
+  if (pred.seq !== i) problems.push(`${where}:seq_mismatch:${pred.seq ?? "None"}:${i}`);
   if (pred.prev !== prev) problems.push(`${where}:chain_broken`);
   if (body.predicateType === TOOL_CALL_RECORD && pred.principals !== undefined && pred.principals !== null) {
     if (trust === null) problems.push(`${where}:principals_but_no_trust_pinned`);
     else {
-      const [found, grade] = checkPrincipals(pred.principals, String(pred.at), trust.identityIssuers ?? {}, approvalSigners(pred));
+      const block = pred.principals;
+      const autonomous = isObj(block) && Object.keys(block).some((k) => AUTONOMOUS.includes(k));
+      let grants: Record<string, J> | null = null;
+      if (autonomous) {
+        grants = { ...seen };
+        const roots = new Set(trust.grantRootKeyIds ?? []);
+        const chains = [...(trust.standingGrants ?? [])];
+        if (isObj(pred.authority) && Array.isArray(pred.authority.chain)) chains.push(pred.authority.chain);
+        for (const chain of chains) Object.assign(grants, chainDigests(chain, roots));
+      }
+      const sponsors = trust.agentSponsors && Object.keys(trust.agentSponsors).length ? trust.agentSponsors : null;
+      const [found, grade] = checkPrincipals(block, String(pred.at), trust.identityIssuers ?? {}, approvalSigners(pred), { sponsors, standingGrants: grants });
       problems.push(...found.map((p) => `${where}:${p}`));
-      if (grade !== null && trust.identityProfile === "strict" && grade !== "strict")
+      if (grade === "autonomous") problems.push(...standingProblems(pred, block).map((p) => `${where}:${p}`));
+      if (grade !== null && trust.identityProfile === "strict" && grade !== "strict" && grade !== "autonomous")
         problems.push(`${where}:principals_below_strict:${"act" in (pred.principals.user ?? {}) ? "act-chain" : "act-absent"}`);
     }
   }
+  // Keep the verified bodies of an allow's authority chain, so later intent and effect lines resolve the standing
+  // grant they name without the auditor pinning it.
+  if (body.predicateType === TOOL_CALL_RECORD && trust !== null && pred.phase === "authorize" && pred.decision === "allow"
+      && isObj(pred.authority) && Array.isArray(pred.authority.chain))
+    Object.assign(seen, chainDigests(pred.authority.chain, new Set(trust.grantRootKeyIds ?? [])));
   if (body.predicateType === TOOL_CALL_RECORD) {
     if (pred.phase === "authorize") checkApproval(pred, problems, where, trust);
     else if (pred.phase === "effect") checkEffect(pred, problems, where);
@@ -1063,7 +1246,7 @@ function spendOf(budget: J, args: J): number {
   return typeof v === "number" ? v : Infinity;
 }
 
-function crossChecks(bodies: [number, J][]): string[] {
+function crossChecks(bodies: [number, J][], skew: number): string[] {
   const problems: string[] = [];
   const uses = new Map<string, number>(), spent = new Map<string, number>(), charged = new Set<J>();
   for (const [i, body] of bodies) {
@@ -1085,6 +1268,7 @@ function crossChecks(bodies: [number, J][]): string[] {
       if ("spend" in budget && spent.get(d)! > budget.spend.max) problems.push(`line_${i}:grant_spend_exceeded:${d.slice(0, 12)}`);
     }
   }
+  problems.push(...duplicateProofs(bodies.filter(([, b]) => b.predicateType === TOOL_CALL_RECORD), skew));
   const grantOf = new Map<J, J>(), allowed = new Set<J>(), effects = new Map<J, number>(), intents = new Map<J, number>();
   for (const [i, body] of bodies) {
     if (body.predicateType !== TOOL_CALL_RECORD) continue;
@@ -1094,7 +1278,7 @@ function crossChecks(bodies: [number, J][]): string[] {
       allowed.add(pid);
       if (!grantOf.has(pid)) grantOf.set(pid, pred.grantDigest ?? null);
     } else if ((phase === "intent" || phase === "effect") && grantOf.has(pid) && (pred.grantDigest ?? null) !== grantOf.get(pid))
-      problems.push(`line_${i}:${phase}_grant_differs_from_permit`);
+      problems.push(`line_${i}:grant_differs_from_permit:${phase}`);
     if (phase === "intent") {
       if (!allowed.has(pid)) problems.push(`line_${i}:intent_without_permit`);
       if (!intents.has(pid)) intents.set(pid, i);
@@ -1116,25 +1300,170 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   let prev = GENESIS, verified = 0;
   const failures: string[] = [], bodies: [number, J][] = [];
   lines = lines.filter((l) => l.trim());
+  const seen: Record<string, J> = {}; // grant bodies of the authority chains verified so far, by digest
   lines.forEach((line, n) => {
     const i = n + 1;
-    const [body, problems] = checkLine(i, line, keys, prev, trust);
+    const [body, problems] = checkLine(i, line, keys, prev, trust, seen);
     prev = sha256Hex(Buffer.from(line, "utf8"));
     failures.push(...problems);
     if (body === null) return;
     bodies.push([i, body]);
     if (!problems.length) verified++;
   });
-  failures.push(...crossChecks(bodies));
+  failures.push(...crossChecks(bodies, trust?.possessionSkewSeconds ?? DEFAULT_SKEW));
   let checkpoint = "not_supplied";
   if (checkpointEnv !== null) {
     try {
       const cp = parseReceived(openEnvelope(checkpointEnv, keys)[0]).predicate;
-      if (cp.count !== lines.length) { failures.push(`checkpoint_count_${cp.count}_journal_has_${lines.length}`); checkpoint = "mismatch"; }
+      if (cp.count !== lines.length) { failures.push(`checkpoint_count_mismatch:${cp.count}:${lines.length}`); checkpoint = "mismatch"; }
       else if (cp.head !== prev) { failures.push("checkpoint_head_mismatch"); checkpoint = "mismatch"; }
       else checkpoint = "matches";
-    } catch (e) { failures.push(`checkpoint:${(e as Error).message}`); checkpoint = "invalid"; }
+    } catch (e) { failures.push(`checkpoint_invalid:${(e as Error).message}`); checkpoint = "invalid"; }
   }
   const verdict = failures.length ? "FAIL" : checkpoint !== "matches" ? "NOT_ESTABLISHED" : "PASS";
   return { verdict, records: lines.length, verified, failures, checkpoint };
+}
+
+// ---------- identity digests (packages/probity-records/docs/identity-digests.md) ----------
+//
+// The Python twin is probity_records.digests; test/shared.test.ts holds the two to
+// packages/probity-records/vectors/shared/identity_digests.json. The walk order is the spec's: a
+// container's depth, then at an object every member name, then its values in sorted member order.
+
+export const DIGEST_PREFIX = "sha256:";
+const ID_MAX_DEPTH = 64;
+const ID_MAX_ACTORS = 32;
+const ID_ROLES = new Set(["user", "agent", "sponsor", "approver"]);
+const HEX64 = /^[0-9a-f]{64}$/;
+const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+const PRINTABLE_ASCII = /^[\x20-\x7e]*$/;
+
+/** A value with no identity digest: `code`, and for identity_out_of_domain the `reason`. */
+export class IdentityDigestError extends Error {
+  readonly code: string;
+  readonly reason: string | null;
+  constructor(code: string, reason: string | null = null, detail = "") {
+    super([code, reason ?? "", detail].filter(Boolean).join(":"));
+    this.code = code;
+    this.reason = reason;
+  }
+}
+
+const outOfDomain = (reason: string): never => { throw new IdentityDigestError("identity_out_of_domain", reason); };
+
+function admitIdentity(v: J, holder: J, key: string, depth: number): void {
+  if (v === null || typeof v === "boolean") return;
+  if (typeof v === "string") { if (LONE_SURROGATE.test(v)) outOfDomain("lone_surrogate"); return; }
+  if (typeof v === "number") {
+    if (!Number.isFinite(v) || isFloat(holder, key, v)) outOfDomain("float");
+    if (Math.abs(v) > MAX_EXACT_INT) outOfDomain("integer_out_of_range");
+    return;
+  }
+  if (Array.isArray(v)) {
+    if (depth >= ID_MAX_DEPTH) outOfDomain("too_deep");
+    v.forEach((x, i) => admitIdentity(x, v, String(i), depth + 1));
+    return;
+  }
+  if (typeof v === "object") {
+    if (depth >= ID_MAX_DEPTH) outOfDomain("too_deep");
+    const names = Object.keys(v);
+    if (!names.every((n) => PRINTABLE_ASCII.test(n))) outOfDomain("member_name_not_ascii");
+    for (const n of names.sort()) admitIdentity(v[n], v, n, depth + 1);
+    return;
+  }
+  outOfDomain("unsupported_type");
+}
+
+function identityDigestOf(v: J): string {
+  try { return DIGEST_PREFIX + sha256Hex(canonicalBytes(v)); } catch (e) {
+    throw new IdentityDigestError("identity_out_of_domain", "no_canonical_form", (e as Error).message);
+  }
+}
+
+const isDigest = (v: J): boolean => typeof v === "string" && v.startsWith(DIGEST_PREFIX) && HEX64.test(v.slice(7));
+
+function principalsDoc(block: J, holder: J, key: string): J {
+  admitIdentity(block, holder, key, 0);
+  if (!isObj(block) || Object.keys(block).length === 0) throw new IdentityDigestError("identity_principals_malformed");
+  for (const [role, member] of Object.entries(block)) {
+    if (!ID_ROLES.has(role) || !isObj(member)) throw new IdentityDigestError("identity_principals_malformed");
+  }
+  return block;
+}
+
+/** probity_records.digests.principals_digest. */
+export function principalsDigest(block: J, holder: J = null, key = ""): string {
+  return identityDigestOf(principalsDoc(block, holder, key));
+}
+
+/** probity_records.digests.act_chain_digest. */
+export function actChainDigest(act: J, holder: J = null, key = ""): string {
+  if (act === null || act === undefined) throw new IdentityDigestError("identity_act_missing");
+  admitIdentity(act, holder, key, 0);
+  let level = act;
+  for (let actors = 1; ; actors++) {
+    if (!isObj(level) || typeof level.sub !== "string" || level.sub === "") throw new IdentityDigestError("identity_act_malformed");
+    if (actors > ID_MAX_ACTORS) throw new IdentityDigestError("identity_act_malformed");
+    if (!("act" in level)) return identityDigestOf(act);
+    level = level.act;
+  }
+}
+
+/** probity_records.digests.grant_chain_digest_of. */
+export function grantChainDigestOf(digests: J, holder: J = null, key = ""): string {
+  admitIdentity(digests, holder, key, 0);
+  if (!Array.isArray(digests)) throw new IdentityDigestError("identity_grant_chain_malformed");
+  if (digests.length === 0) throw new IdentityDigestError("identity_grant_chain_empty");
+  if (!digests.every((d) => typeof d === "string" && HEX64.test(d))) throw new IdentityDigestError("identity_grant_chain_malformed");
+  return identityDigestOf(digests);
+}
+
+/** probity_records.digests.grant_chain_digest: the digest of the links' grant digests, root first. */
+export function grantChainDigest(links: J): string {
+  if (!Array.isArray(links)) throw new IdentityDigestError("identity_grant_chain_malformed");
+  if (links.length === 0) throw new IdentityDigestError("identity_grant_chain_empty");
+  const digests = links.map((link) => {
+    if (!isObj(link) || !isObj(link.body)) throw new IdentityDigestError("identity_grant_chain_malformed");
+    try { return digestOf(link.body); } catch (e) {
+      throw new IdentityDigestError("identity_grant_chain_malformed", null, (e as Error).message);
+    }
+  });
+  return grantChainDigestOf(digests);
+}
+
+/** probity_records.digests.stamp_digest: null for an absent act claim or grant chain. */
+export function stampDigest(principals: J, act: J, grants: J): string {
+  if (!isDigest(principals) || !(act === null || isDigest(act)) || !(grants === null || isDigest(grants)))
+    throw new IdentityDigestError("identity_digest_malformed");
+  return identityDigestOf({ act, grants, principals });
+}
+
+/** probity_records.digests.stamp_digest_of. */
+export function stampDigestOf(block: J, links: J = null, holder: J = null, key = ""): string {
+  const doc = principalsDoc(block, holder, key);
+  const user = doc.user ?? {};
+  const act = "act" in user ? actChainDigest(user.act, user, "act") : null;
+  return stampDigest(identityDigestOf(doc), act, links === null ? null : grantChainDigest(links));
+}
+
+/** What the shared vectors expect for `fn` over the JSON text `input` of its argument array. */
+export function judgeDigest(fn: string, input: string): { digest: string } | { refused: string; reason: string | null } {
+  const args = parsePy(input);
+  try {
+    const digest = (() => {
+      switch (fn) {
+        case "principals_digest": return principalsDigest(args[0], args, "0");
+        case "act_chain_digest": return actChainDigest(args[0], args, "0");
+        case "grant_chain_digest": return grantChainDigest(args[0]);
+        case "grant_chain_digest_of": return grantChainDigestOf(args[0], args, "0");
+        case "stamp_digest": return stampDigest(args[0], args[1], args[2]);
+        case "stamp_digest_of": return stampDigestOf(args[0], args[1], args, "0");
+        default: throw new Error(`unknown digest function ${fn}`);
+      }
+    })();
+    return { digest };
+  } catch (e) {
+    if (e instanceof IdentityDigestError) return { refused: e.code, reason: e.reason };
+    throw e;
+  }
 }
