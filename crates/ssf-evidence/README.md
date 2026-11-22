@@ -4,9 +4,8 @@ Security Event Tokens for the OpenID Shared Signals Framework (SSF 1.0) whose CA
 
 It is for teams that send risk signals about AI agents to an identity provider, and for identity providers that want to act only on signals anyone can re-check.
 
-```toml
-[dependencies]
-ssf-evidence = "=0.1.0"
+```sh
+cargo add ssf-evidence
 ```
 
 ```rust
