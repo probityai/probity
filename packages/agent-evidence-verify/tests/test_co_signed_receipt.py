@@ -67,9 +67,21 @@ def test_member_rules_agree_with_admission(vector: dict) -> None:
     assert code == want, vector["rationale"]
 
 
+# The admission corpus holds no receipt that is not a JSON object, so the member rule for it is pinned here.
+NOT_AN_OBJECT = [b"[]", b"null", b"7", b'"receipt"']
+
+
+@pytest.mark.parametrize("text", NOT_AN_OBJECT, ids=[t.decode() for t in NOT_AN_OBJECT])
+def test_a_receipt_that_is_not_an_object_is_refused(text: bytes) -> None:
+    with pytest.raises(reader.Refused) as refusal:
+        reader.read(text)
+    assert refusal.value.args[0] == "receipt-shape-malformed"
+
+
 def test_every_refusal_code_has_a_vector() -> None:
     pinned = {case["expect"]["reason"] for case in INDEX["cases"]}
     pinned |= {c["expect"]["code"] for c in ADMISSION["cases"] if c["expect"]["verdict"] == "refuse"}
+    pinned.add("receipt-shape-malformed")  # NOT_AN_OBJECT above
     own = set(reader.REASONS) - set(reader.IJSON_CODES)
     assert own <= pinned, sorted(own - pinned)
 
