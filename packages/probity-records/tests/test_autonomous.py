@@ -276,7 +276,7 @@ def rests_on(tmp_path, *, authority: str = "standing", tool: str = "refund", arg
     trust = Trust(identity_issuers={ISSUER: frozenset({jwk_thumbprint(idp.jwk)})}, identity_profile="strict",
                   grant_root_key_ids=frozenset({root.key_id}),
                   agent_sponsors={"agent-nightly": frozenset({(ISSUER, "owner@example.com")})},
-                  revocations=revocations)  # fmt: skip
+                  standing_grants=((grant,),), revocations=revocations)  # the auditor pins the standing grant
     failures = verify_journal(tmp_path, [gate.public_pem()], j.checkpoint(), trust=trust)["failures"]
     return [f for f in failures if "open_intent_no_effect" not in f]
 
@@ -289,33 +289,33 @@ def test_an_allow_resting_on_another_grant_is_not_autonomous(tmp_path) -> None:
     # The agent key holds a broad grant with no sponsor and no review date; the block names the narrow standing
     # grant. The call ran on the broad grant, so no sponsor answered for it and no review bounds it.
     failures = rests_on(tmp_path, authority="plain", tool="wire", args={"to": "acct-9"}, intent_grant="plain")
-    assert "line_0:principals_standing_grant_not_the_authority" in failures
     assert "line_1:principals_standing_grant_not_the_authority" in failures
+    assert "line_2:principals_standing_grant_not_the_authority" in failures
 
 
 def test_an_allow_resting_on_no_grant_is_not_autonomous(tmp_path) -> None:
     failures = rests_on(tmp_path, authority="policy", tool="wire", args={"to": "acct-9"})
-    assert "line_0:principals_standing_grant_not_the_authority" in failures
     assert "line_1:principals_standing_grant_not_the_authority" in failures
+    assert "line_2:principals_standing_grant_not_the_authority" in failures
 
 
 def test_an_intent_naming_another_grant_than_its_block_is_refused(tmp_path) -> None:
-    assert "line_1:principals_standing_grant_not_the_authority" in rests_on(tmp_path, intent_grant="plain")
+    assert "line_2:principals_standing_grant_not_the_authority" in rests_on(tmp_path, intent_grant="plain")
 
 
 def test_a_call_outside_the_standing_grant_is_refused(tmp_path) -> None:
     failures = rests_on(tmp_path, args={"cents": 900000})
-    assert any(f.startswith("line_0:grant_deny:constraint_violation:cents") for f in failures), failures
+    assert any(f.startswith("line_1:grant_deny:constraint_violation:cents") for f in failures), failures
 
 
 def test_a_revoked_standing_grant_refuses_every_record_after_its_revocation(tmp_path) -> None:
     failures = rests_on(tmp_path, revoke=(("grant", "grant"),))
-    assert "line_1:principals_standing_grant_revoked" in failures, failures
+    assert "line_2:principals_standing_grant_revoked" in failures, failures
 
 
 def test_a_revoked_agent_refuses_its_records(tmp_path) -> None:
     failures = rests_on(tmp_path, revoke=(("agent", "agent"),))
-    assert {"line_0:principals_agent_revoked", "line_1:principals_agent_revoked"} <= set(failures), failures
+    assert {"line_1:principals_agent_revoked", "line_2:principals_agent_revoked"} <= set(failures), failures
 
 
 def test_a_grant_context_is_judged_against_the_block_not_a_context_the_record_chooses(tmp_path) -> None:
@@ -323,7 +323,7 @@ def test_a_grant_context_is_judged_against_the_block_not_a_context_the_record_ch
     assert rests_on(tmp_path / "a", context=pinned) == []
     # the block's session is run-1; the evidence claims another agent's identity for the grant's context
     failures = rests_on(tmp_path / "b", context=pinned, ctx={"agent": "agent-other", "session": "run-1"})
-    assert "line_0:principals_standing_context_not_the_block" in failures, failures
+    assert "line_1:principals_standing_context_not_the_block" in failures, failures
 
 
 def test_a_child_may_not_add_a_sponsor_under_a_plain_parent() -> None:
