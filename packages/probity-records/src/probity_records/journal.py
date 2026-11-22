@@ -2,7 +2,9 @@
 offline verifier an outsider runs over both.
 
 Each line is one envelope. Its statement's predicate carries ``seq`` (1, 2, ...), ``prev`` (SHA-256
-of the previous line's bytes, 64 zeros for the first) and ``at``. A checkpoint is a signed statement
+of the previous line's bytes, 64 zeros for the first) and ``at``, taken from the journal's ``Clock`` and never
+earlier than the ``at`` of any line already in the file, so a writer whose clock stepped back keeps the chain in
+order. A checkpoint is a signed statement
 of the line count and the last line's hash: pinned by an outsider, it exposes a truncated or
 rewritten journal.
 """
@@ -16,15 +18,16 @@ import json
 import os
 import threading
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .authority import Trust, check_authority
+from .authority import GRANT_ALLOW, Trust, check_authority
+from .clock import Clock, from_datetime, to_datetime
 from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
-from .grants import grant_digest, spend_of
-from .identity import act_grade, check_principals
+from .grants import chain_digests, grant_digest, spend_of
+from .identity import AUTONOMOUS, act_grade, check_principals, sponsor_id
 from .possession import DEFAULT_SKEW, duplicate_proofs
 from .quorum import count_bindings
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
@@ -37,8 +40,18 @@ JOURNAL_FILE = "journal.jsonl"
 KEYS_FILE = "keys.jsonl"
 
 
-def now() -> str:
-    return datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+def timestamp(ns: int) -> str:
+    """The journal's form of a wall time given in nanoseconds: RFC 3339, UTC, microseconds, ``Z``."""
+    return to_datetime(ns).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _at_ns(text: object) -> int | None:
+    if not isinstance(text, str):
+        return None
+    try:
+        return from_datetime(datetime.fromisoformat(text))
+    except ValueError:
+        return None
 
 
 def _line_hash(line: bytes) -> str:
@@ -59,12 +72,14 @@ class Journal:
     whose bytes an earlier fsync already covered does not fsync again.
     """
 
-    def __init__(self, directory: str | os.PathLike[str], signer: Any) -> None:
+    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock) -> None:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / JOURNAL_FILE
         self.signer = signer
+        self.clock = clock
         self._offset, self._seq, self._head = 0, 0, GENESIS
+        self._last_at = 0
         self._synced = 0
         self._sync_lock = threading.Lock()
         self._certify(signer)
@@ -97,7 +112,7 @@ class Journal:
         """Bring the cached head up to the file's current end, reading only the new bytes."""
         size = self.path.stat().st_size if self.path.exists() else 0
         if size < self._offset:  # the file was replaced or truncated under us: rescan from the start
-            self._offset, self._seq, self._head = 0, 0, GENESIS
+            self._offset, self._seq, self._head, self._last_at = 0, 0, GENESIS, 0
         if size > self._offset:
             with self.path.open("rb") as fh:
                 fh.seek(self._offset)
@@ -107,12 +122,20 @@ class Journal:
                     self._offset += len(line)
                     body = line.rstrip(b"\n")
                     if body.strip():
-                        self._seq = int(_payload(json.loads(body))["predicate"]["seq"])
+                        predicate = _payload(json.loads(body))["predicate"]
+                        self._seq = int(predicate["seq"])
                         self._head = _line_hash(body)
+                        at = _at_ns(predicate.get("at"))
+                        self._last_at = max(self._last_at, at if at is not None else 0)
         return self._seq, self._head
 
     def _tail(self) -> tuple[int, str]:
         return self._refresh()
+
+    def _stamp(self) -> str:
+        """Now, held at the latest ``at`` already in the file (call after a refresh)."""
+        self._last_at = max(self.clock.now(), self._last_at)
+        return timestamp(self._last_at)
 
     def _sync(self, fd: int, end: int) -> None:
         with self._sync_lock:
@@ -131,7 +154,7 @@ class Journal:
             fcntl.flock(guard, fcntl.LOCK_EX)
             seq, head = self._refresh()
             body = statement(subject_name, subject_digest, predicate_type,
-                             {**dict(predicate), "at": now(), "prev": head, "seq": seq + 1})
+                             {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
             envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
             line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
@@ -155,7 +178,7 @@ class Journal:
         """A signed statement of the line count and head, for an outsider to pin."""
         seq, head = self._refresh()
         body = statement("tool-call-journal", head, CHECKPOINT_TYPE,
-                         {"at": now(), "count": seq, "head": head,
+                         {"at": self._stamp(), "count": seq, "head": head,
                           "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))})
         return sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
 
@@ -271,19 +294,104 @@ def _approval_signers(pred: dict[str, Any]) -> set[str] | None:
     return names or None
 
 
-def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str) -> None:
+def _authority_chain(pred: Mapping[str, Any]) -> list[Any] | None:
+    evidence = pred.get("authority")
+    if isinstance(evidence, Mapping) and isinstance(evidence.get("chain"), list):
+        return list(evidence["chain"])
+    return None
+
+
+def _standing_grants(pred: Mapping[str, Any], trust: Trust,
+                     seen: Mapping[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:  # fmt: skip
+    """Every grant body an autonomous block may name: from chains the auditor pins, the record's own authority chain
+    and the authority chains of earlier lines of this journal (``seen``), each verified against the pinned grant
+    roots first. Nothing the record says selects a key."""
+    chains = [list(c) for c in trust.standing_grants]
+    own = _authority_chain(pred)
+    if own is not None:
+        chains.append(own)
+    found: dict[str, dict[str, Any]] = dict(seen)
+    for chain in chains:
+        found.update(chain_digests(chain, set(trust.grant_root_key_ids)))
+    return found
+
+
+def _standing_problems(pred: Mapping[str, Any], block: Mapping[str, Any]) -> list[str]:
+    """An autonomous call runs on the standing grant its block names, and the record shows it: an allow rests on that
+    grant (a grant allow whose leaf it is, so the reader re-runs the call under it), judged in the block's own agent
+    and session; every intent and effect names that grant. A refusal may name any tool: the grant admitted nothing."""
+    named = block["standingGrant"]
+    phase = pred.get("phase")
+    if phase in ("intent", "effect"):
+        return [] if pred.get("grantDigest") == named else ["principals_standing_grant_not_the_authority"]
+    if phase != "authorize" or pred.get("decision") != "allow":
+        return []
+    evidence = pred.get("authority")
+    chain = _authority_chain(pred)
+    try:
+        leaf = grant_digest(chain[-1]["body"]) if chain else None
+    except (KeyError, TypeError, ValueError):
+        leaf = None
+    if (pred.get("reason") != GRANT_ALLOW or not isinstance(evidence, Mapping) or evidence.get("kind") != GRANT_ALLOW
+            or leaf != named or pred.get("grantDigest") != named):  # fmt: skip
+        return ["principals_standing_grant_not_the_authority"]
+    ctx = evidence.get("ctx") or {}
+    session = block["session"]
+    own = {"agent": block["agent"]["clientId"], "session": session["id"]}
+    if not isinstance(ctx, Mapping) or any(key in ctx and ctx[key] != value for key, value in own.items()):
+        return ["principals_standing_context_not_the_block"]
+    return []
+
+
+def _revocation_problems(block: Mapping[str, Any], grade: str, at: str, trust: Trust) -> list[str]:
+    """A record answering to a subject the auditor's revocation list revoked at or before the record's time: its
+    agent (kind ``agent``, its client id), and for an autonomous block its sponsor and standing grant."""
+    revocations = trust.revocations
+    if revocations is None:
+        return []
+    problems = []
+    if revocations.revoked_at("agent", str(block["agent"]["clientId"]), at):
+        problems.append("principals_agent_revoked")
+    if grade == "autonomous":
+        sponsor = block["sponsor"]
+        if revocations.revoked_at("sponsor", sponsor_id(sponsor["issuer"], sponsor["subject"]), at):
+            problems.append("principals_sponsor_revoked")
+        if revocations.revoked_at("grant", str(block["standingGrant"]), at):
+            problems.append("principals_standing_grant_revoked")
+    return problems
+
+
+def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str,
+                    seen: dict[str, dict[str, Any]]) -> None:  # fmt: skip
     if trust is None:
         problems.append(f"{where}:principals_but_no_trust_pinned")
         return
-    found, grade = check_principals(pred["principals"], str(pred.get("at")), trust.identity_issuers,
-                                    _approval_signers(pred))
+    block = pred["principals"]
+    at = str(pred.get("at"))
+    autonomous = isinstance(block, dict) and bool(set(block) & set(AUTONOMOUS))
+    grants = _standing_grants(pred, trust, seen) if autonomous else None
+    found, grade = check_principals(block, at, trust.identity_issuers, _approval_signers(pred),
+                                    sponsors=trust.agent_sponsors or None, standing_grants=grants)
     problems.extend(f"{where}:{p}" for p in found)
-    if grade is not None and trust.identity_profile == "strict" and grade != "strict":
-        problems.append(f"{where}:principals_below_strict:{act_grade(pred['principals'])}")
+    if grade == "autonomous":
+        problems.extend(f"{where}:{p}" for p in _standing_problems(pred, block))
+    if grade is not None:
+        problems.extend(f"{where}:{p}" for p in _revocation_problems(block, grade, at, trust))
+    if grade is not None and trust.identity_profile == "strict" and grade not in ("strict", "autonomous"):
+        problems.append(f"{where}:principals_below_strict:{act_grade(block)}")
+
+
+def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[str, dict[str, Any]]) -> None:
+    """Keep the verified bodies of an allow's authority chain, so later intent and effect lines of the same journal
+    resolve the standing grant they name without the auditor pinning it."""
+    chain = _authority_chain(pred)
+    if trust is not None and chain is not None and pred.get("phase") == "authorize" and pred.get("decision") == "allow":
+        seen.update(chain_digests(chain, set(trust.grant_root_key_ids)))
 
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | None,
-                delegations: Mapping[str, Delegation]) -> tuple[dict[str, Any] | None, list[str]]:
+                delegations: Mapping[str, Delegation],
+                seen: dict[str, dict[str, Any]]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
     problems: list[str] = []
     where = f"line_{i}"
     try:
@@ -304,7 +412,9 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
     if pred.get("prev") != prev:
         problems.append(f"{where}:chain_broken")
     if body.get("predicateType") == TOOL_CALL_RECORD and pred.get("principals") is not None:
-        _check_identity(pred, trust, problems, where)
+        _check_identity(pred, trust, problems, where, seen)
+    if body.get("predicateType") == TOOL_CALL_RECORD:
+        _remember_standing(pred, trust, seen)
     if body.get("predicateType") == TOOL_CALL_RECORD:
         if pred.get("phase") == "authorize":
             _check_approval(pred, problems, where, trust)
@@ -489,8 +599,9 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     signer_ids: set[str] = set()
     outcomes: dict[str, int] = {}
     policy_allows = 0
+    seen: dict[str, dict[str, Any]] = {}  # grant bodies of the authority chains verified so far, by digest
     for i, line in enumerate(lines, 1):
-        body, problems = _check_line(i, line, keys, prev, trust, delegations)
+        body, problems = _check_line(i, line, keys, prev, trust, delegations, seen)
         prev = _line_hash(line.encode())
         failures.extend(problems)
         if body is None:

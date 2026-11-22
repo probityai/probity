@@ -21,10 +21,13 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.core import _b64, canonical, verify_permit
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.possession import cnf_for_signer
 from probity_records.walk import grant_walk, mint_grant_permit
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 AT = "2026-06-01T00:00:00Z"
 NB, EXP = "2026-01-01T00:00:00Z", "2099-12-31T00:00:00Z"
@@ -122,7 +125,7 @@ def _effect(args: dict) -> dict:
 
 
 def _journal(tmp_path, gate: Signer, chain: list, calls: list, effect_grant=None) -> Journal:
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     for n, args in enumerate(calls):
         pid = permit_id("p", f"c{n}", args_sha256(args))
         common = {"run_id": "r1", "tool_call_id": f"c{n}", "tool": "refund", "args_sha256_hex": args_sha256(args),

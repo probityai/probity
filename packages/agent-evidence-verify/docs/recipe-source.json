@@ -350,6 +350,15 @@
       "documentation": "docs/adapters.md",
       "expected_decision": "supported",
       "scope": "Authored synthetic corpus member and a stipulated consumer context; it does not establish who holds the observer key."
+    },
+    {
+      "task": "Check that no credential is reachable from the agent's environment",
+      "claim_type": "credential_reachability/v1",
+      "case": "examples/corpus-routes/credential-reachability/case.json",
+      "policy": "examples/corpus-routes/credential-reachability/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
     }
   ]
 }

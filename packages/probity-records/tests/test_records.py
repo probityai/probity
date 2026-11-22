@@ -23,7 +23,10 @@ from probity_records import (
     verify_journal,
 )
 from probity_records.authority import Trust
+from probity_records.clock import SystemClock
 from probity_records.quorum import approval_policy
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 ARGS = {"amount_cents": 4000, "customer_id": "alice", "payee_account": "acct-alice"}
 
@@ -113,7 +116,7 @@ def _write_run(journal: Journal, approver: Signer, outcome: str, reply: str) -> 
 
 def test_journal_verifies_offline_and_reports_denominator(tmp_path) -> None:
     gate, approver = Signer.generate(), Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     _write_run(journal, approver, "committed", "confirmed")
     trust = _trust(("human:ops", approver))
     report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=trust)
@@ -125,7 +128,7 @@ def test_journal_verifies_offline_and_reports_denominator(tmp_path) -> None:
 
 def test_tamper_truncation_and_wrong_key_fail(tmp_path) -> None:
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     _write_run(journal, Signer.generate(), "committed", "confirmed")
     checkpoint = journal.checkpoint()
     assert verify_journal(tmp_path, [Signer.generate().public_pem()], checkpoint)["verified"] == 0
@@ -143,7 +146,7 @@ def test_tamper_truncation_and_wrong_key_fail(tmp_path) -> None:
 
 def test_effect_record_claiming_success_after_lost_reply_fails(tmp_path) -> None:
     gate = Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     approver = Signer.generate()
     _write_run(journal, approver, "committed", "connection_lost")
     report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=_trust(("human:ops", approver)))
@@ -166,7 +169,7 @@ def _allow(journal: Journal, bindings: list[dict], threshold: int) -> None:
 
 def test_allow_is_recounted_under_the_pinned_policy(tmp_path) -> None:
     gate, ops, lead = Signer.generate(), Signer.generate(), Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     _allow(journal, [_embedded(ops)], 2)
     report = verify_journal(tmp_path, [gate.public_pem()], trust=_trust(("human:ops", ops), ("human:lead", lead), threshold=2))
     assert any("approvals_below_threshold:1:2" in f for f in report["failures"]), report["failures"]
@@ -176,25 +179,25 @@ def test_authority_cannot_lower_the_threshold_or_fabricate_approvers(tmp_path) -
     gate, ops, lead, forger = Signer.generate(), Signer.generate(), Signer.generate(), Signer.generate()
     trust = _trust(("human:ops", ops), ("human:lead", lead), threshold=2)
     # the authority writes threshold 1 although the auditor pinned 2
-    journal = Journal(tmp_path / "low", gate)
+    journal = Journal(tmp_path / "low", gate, clock=SYSTEM_CLOCK)
     _allow(journal, [_embedded(ops)], 1)
     report = verify_journal(tmp_path / "low", [gate.public_pem()], trust=trust)
     assert any("threshold_not_pinned:1:2" in f for f in report["failures"]), report["failures"]
     # the authority signs a second "human:ops" approval with its own key: the pinned key refuses it
     fake = _embedded(forger, "human:lead")
-    journal = Journal(tmp_path / "forged", gate)
+    journal = Journal(tmp_path / "forged", gate, clock=SYSTEM_CLOCK)
     _allow(journal, [_embedded(ops), fake], 2)
     report = verify_journal(tmp_path / "forged", [gate.public_pem()], trust=trust)
     assert report["verdict"] == "FAIL"
     assert any("approval_signature_unverified" in f or "approval_key_id_is_not_the_pinned_key" in f
                for f in report["failures"]), report["failures"]
     # the same approver twice counts once
-    journal = Journal(tmp_path / "twice", gate)
+    journal = Journal(tmp_path / "twice", gate, clock=SYSTEM_CLOCK)
     _allow(journal, [_embedded(ops), _embedded(ops)], 2)
     report = verify_journal(tmp_path / "twice", [gate.public_pem()], trust=trust)
     assert any("duplicate_approver" in f for f in report["failures"]), report["failures"]
     # two real approvers pass
-    journal = Journal(tmp_path / "ok", gate)
+    journal = Journal(tmp_path / "ok", gate, clock=SYSTEM_CLOCK)
     _allow(journal, [_embedded(ops), _embedded(lead, "human:lead")], 2)
     report = verify_journal(tmp_path / "ok", [gate.public_pem()], trust=trust)
     assert not report["failures"], report["failures"]
@@ -202,7 +205,7 @@ def test_authority_cannot_lower_the_threshold_or_fabricate_approvers(tmp_path) -
 
 def test_append_reads_only_new_bytes_and_sees_other_writers(tmp_path) -> None:
     gate = Signer.generate()
-    a, b = Journal(tmp_path, gate), Journal(tmp_path, gate)
+    a, b = Journal(tmp_path, gate, clock=SYSTEM_CLOCK), Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     for n in range(5):
         (a if n % 2 else b).append("t", f"s{n}", "00" * 32, {"n": n})
     seqs = [s["predicate"]["seq"] for s in a.statements()]
