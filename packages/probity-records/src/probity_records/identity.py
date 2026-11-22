@@ -214,9 +214,10 @@ def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], a
                       standing_grants: Mapping[str, Mapping[str, Any]]) -> tuple[list[str], str | None]:  # fmt: skip
     if "user" in block:
         return ["principals_autonomous_has_user"], None
-    problems = [f"principals_need_{name}" for name, member in
-                (("agent", "agent"), ("sponsor", "sponsor"), ("session", "session"),
-                 ("standing_grant", "standingGrant")) if member not in block]  # fmt: skip
+    problems = [code for code, member in
+                (("principals_need_agent", "agent"), ("principals_need_sponsor", "sponsor"),
+                 ("principals_need_session", "session"), ("principals_need_standing_grant", "standingGrant"))
+                if member not in block]  # fmt: skip
     if problems:
         return problems, None
     grant = standing_grants.get(block["standingGrant"]) if isinstance(block["standingGrant"], str) else None

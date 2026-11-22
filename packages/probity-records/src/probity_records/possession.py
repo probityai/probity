@@ -158,15 +158,19 @@ def normalize_htu(url: str) -> str:
     return f"{scheme}://{authority}{parts.path or '/'}"
 
 
+class _JwkRefused(ValueError):
+    """A proof's header key that is refused; the message is the refusal code the proof check reports."""
+
+
 def _load_jwk(alg: str, jwk: Any) -> Any:
-    """The public key of a JWK of exactly the shape ``alg`` takes, or ValueError naming the defect."""
+    """The public key of a JWK of exactly the shape ``alg`` takes, or ``_JwkRefused`` naming the defect."""
     if not isinstance(jwk, dict):
-        raise ValueError("dpop_jwk_invalid")
+        raise _JwkRefused("dpop_jwk_invalid")
     if any(m in jwk for m in ("d", "p", "q", "dp", "dq", "qi", "k")):
-        raise ValueError("dpop_jwk_private")
+        raise _JwkRefused("dpop_jwk_private")
     kty, crv = _JWK_CURVE[alg]
     if set(jwk) != set(_JWK_MEMBERS[alg]) or jwk.get("kty") != kty or jwk.get("crv") != crv:
-        raise ValueError("dpop_jwk_invalid")
+        raise _JwkRefused("dpop_jwk_invalid")
     try:
         x = unb64url(jwk["x"])
         if alg == "EdDSA":
@@ -178,7 +182,7 @@ def _load_jwk(alg: str, jwk: Any) -> Any:
             raise ValueError
         return ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), b"\x04" + x + y)
     except (ValueError, TypeError, KeyError) as exc:
-        raise ValueError("dpop_jwk_invalid") from exc
+        raise _JwkRefused("dpop_jwk_invalid") from exc
 
 
 def _verify_sig(alg: str, key: Any, signing_input: bytes, sig: bytes) -> bool:
@@ -224,7 +228,7 @@ def _header(segment: str, expected_jkt: str) -> tuple[str, Any, str | None]:
         return "", None, "dpop_alg_not_allowed"
     try:
         key = _load_jwk(alg, h.get("jwk"))
-    except ValueError as exc:
+    except _JwkRefused as exc:
         return "", None, str(exc)
     if "x5c" in h:
         problem = _x5c_problem(h["x5c"], h["jwk"])

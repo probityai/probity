@@ -136,9 +136,9 @@ def test_grant_carried_quorum_verifies_offline_and_widening_delegation_is_refuse
     passed = record(tmp_path / "ok", [_v(keys, "bob", req), _v(keys, "carol", req)])
     assert passed["verdict"] == "PASS", passed["failures"]
     under = record(tmp_path / "under", [_v(keys, "bob", req)])
-    assert any("grant_approval_quorum_pending" in f for f in under["failures"]), under["failures"]
+    assert any("grant_approval_failed:quorum_pending" in f for f in under["failures"]), under["failures"]
     own = record(tmp_path / "own", [_v(keys, "alice", req), _v(keys, "bob", req)])
-    assert any("grant_approval_quorum_vote_invalid:vote_by_proposer" in f for f in own["failures"]), own["failures"]
+    assert any("grant_approval_failed:quorum_vote_invalid:vote_by_proposer" in f for f in own["failures"]), own["failures"]
     # a record that drops the proposer changes the request hash, so the votes no longer match
     dropped = record(tmp_path / "dropped", [_v(keys, "bob", req), _v(keys, "carol", req)], proposer=None)
     assert dropped["verdict"] == "FAIL", dropped["failures"]

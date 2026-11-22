@@ -151,7 +151,7 @@ def test_a_journal_signed_through_a_kms_backend_verifies_and_names_its_custody(t
     assert verify_journal(tmp_path, [key.public_pem()], cp, trust=trust)["verdict"] == "PASS"
     wrong = Trust(key_custody={key.key_id: "aws-kms"})
     out = verify_journal(tmp_path, [key.public_pem()], cp, trust=wrong)
-    assert out["verdict"] == "FAIL" and any("key_custody" in f for f in out["failures"])
+    assert out["verdict"] == "FAIL" and any(f.startswith("key_custody_differs:") for f in out["failures"])
 
 
 def test_delegated_session_key_signs_large_records_under_a_kms_root(tmp_path) -> None:

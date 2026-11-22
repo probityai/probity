@@ -150,7 +150,7 @@ def validate_body(body: Mapping[str, Any]) -> None:
 
     problem = cnf_problem(body.get("cnf"))
     if problem:
-        raise ValueError(f"grant_{problem}")
+        raise ValueError(problem)
     _validate_tools(body.get("tools"))
     if not _int(body.get("maxDepth")):
         raise ValueError("grant_max_depth")

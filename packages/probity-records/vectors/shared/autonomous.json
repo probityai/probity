@@ -274,7 +274,7 @@
       "checkpoint": "matches",
       "failures": [
         "line_2:principals_standing_grant_not_the_authority",
-        "line_2:intent_grant_differs_from_permit",
+        "line_2:grant_differs_from_permit:intent",
         "line_2:open_intent_no_effect_record:4695ef718db9"
       ],
       "records": 2,

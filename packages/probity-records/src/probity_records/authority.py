@@ -77,9 +77,11 @@ def _check_grant(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Tr
         carried = leaf["tools"][str(pred.get("tool"))].get("quorum")
         outcome = _quorum_outcome(pred, evidence["quorum"], trust, at, carried)
         if outcome != "ok":
-            problems.append(f"{where}:grant_approval_{outcome}")
+            problems.append(f"{where}:grant_approval_failed:{outcome}")
+    elif verdict["decision"] == "deny":
+        problems.append(f"{where}:grant_deny:{verdict['reason']}")
     elif verdict["decision"] != "allow":
-        problems.append(f"{where}:grant_{verdict['decision']}:{verdict['reason']}")
+        problems.append(f"{where}:grant_needs_approval:{verdict['reason']}")
     if verdict["grantDigest"] and verdict["grantDigest"] != pred.get("grantDigest"):
         problems.append(f"{where}:grant_digest_differs_from_record")
     if "possession" in evidence and verdict["grantDigest"]:
@@ -124,10 +126,10 @@ def check_authority(pred: Mapping[str, Any], trust: Trust | None, problems: list
         return False
     evidence = pred.get("authority")
     if not isinstance(evidence, Mapping) or evidence.get("kind") != reason:
-        problems.append(f"{where}:{reason}_allow_without_authority_evidence")
+        problems.append(f"{where}:authority_evidence_missing:{reason}")
         return True
     if trust is None:
-        problems.append(f"{where}:{reason}_allow_but_no_trust_pinned")
+        problems.append(f"{where}:authority_trust_not_pinned:{reason}")
         return True
     CHECKS[reason](pred, evidence, trust, str(pred.get("at")), problems, where)
     return True
