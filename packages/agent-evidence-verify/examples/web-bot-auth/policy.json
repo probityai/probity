@@ -1,0 +1,22 @@
+{
+  "assessments": {
+    "web-bot-auth-signed-deploy-request": {
+      "at": "2026-11-21T12:02:00Z",
+      "authority": "api.example",
+      "body": "body.bin",
+      "claim_type": "web_bot_auth/v1",
+      "directory": "directory.json",
+      "directory_sha256": "403e72622e2f72b6e3804d53bde28b7076a4827312caa60e21f4c19f5e717dba",
+      "max_age_seconds": 600,
+      "max_validity_seconds": 600,
+      "request": "request.json",
+      "required_components": [
+        "@method",
+        "@path",
+        "content-digest"
+      ],
+      "signature_agent": "https://agent.example/.well-known/http-message-signatures-directory"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
