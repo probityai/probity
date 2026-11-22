@@ -13,6 +13,9 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from probity_records import Journal, Signer, Trust, verify_journal
 from probity_records import witness as w
+from probity_records.clock import SystemClock
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 ORIGIN = "authority.example/journal"
 
@@ -44,13 +47,13 @@ def test_root_matches_rfc9162_shapes() -> None:
 
 def _setup(tmp_path: Path, *, witnesses: int = 1):
     signer = Signer.generate()
-    journal = Journal(tmp_path / "authority", signer)
+    journal = Journal(tmp_path / "authority", signer, clock=SYSTEM_CLOCK)
     keys = [Ed25519PrivateKey.generate() for _ in range(witnesses)]
     servers, pairs = [], []
     feed_vkey = w.log_vkey(ORIGIN, signer)
     for n, key in enumerate(keys):
         wit = w.Witness(f"customer.example/witness-{n}", key, {ORIGIN: [w.parse_vkey(feed_vkey)]},
-                        state_dir=tmp_path / f"witness-{n}")
+                        state_dir=tmp_path / f"witness-{n}", clock=SYSTEM_CLOCK)
         srv = w.serve_witness(wit)
         servers.append(srv)
         pairs.append((f"http://127.0.0.1:{srv.server_address[1]}", wit.vkey.encode()))
@@ -106,7 +109,7 @@ def test_a_rewritten_or_truncated_journal_fails_and_a_new_tail_is_not_establishe
     assert out["verdict"] == "NOT_ESTABLISHED" and out["witnessed"]["status"] == "tail_unwitnessed"
     # the authority rewrites history, re-signing every line with its own key: the witness root no longer holds
     lines = journal.path.read_text().splitlines()
-    forged = Journal(tmp_path / "forged", signer)
+    forged = Journal(tmp_path / "forged", signer, clock=SYSTEM_CLOCK)
     for i in range(len(lines)):
         forged.append("https://example.test/t", f"s{i}", "0" * 64, {"phase": "note", "i": 100 + i})
     out = verify_journal(forged.directory, [signer.public_pem()], forged.checkpoint(), trust=trust,
@@ -153,7 +156,7 @@ def test_the_witness_remembers_across_restarts_and_the_feed_recovers_from_409(tm
     key = _setup.keys[0]  # type: ignore[attr-defined]
     servers[0].shutdown()
     wit = w.Witness("customer.example/witness-0", key, {ORIGIN: [w.parse_vkey(feed_vkey)]},
-                    state_dir=tmp_path / "witness-0")
+                    state_dir=tmp_path / "witness-0", clock=SYSTEM_CLOCK)
     assert wit._latest[ORIGIN][0] == 2
     srv = w.serve_witness(wit)
     url = f"http://127.0.0.1:{srv.server_address[1]}"
