@@ -98,8 +98,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/_sf.py",
-      "bytes": 9935,
-      "sha256": "26ed93a8cc08ca0f98b80bd0e68437ca70b7bc66214dd7e28782501906ba9b11"
+      "bytes": 11400,
+      "sha256": "3afa7eaa9a97cb786bb19e5d599096e7d6ad993a69a82b0c664771b4a253a645"
     },
     {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
@@ -253,8 +253,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/web_bot_auth.py",
-      "bytes": 28083,
-      "sha256": "6c97c1a773c6b211ae0d91d467ed7153ba29b6030c1b0e8ba53bf6c5f8337ba6"
+      "bytes": 34472,
+      "sha256": "f8f80fca181c81c315689a369c734022e3c059711b8d772fa6f9996ee15bbbb9"
     },
     {
       "path": "src/agent_evidence_verify/adapters/witnessed.py",

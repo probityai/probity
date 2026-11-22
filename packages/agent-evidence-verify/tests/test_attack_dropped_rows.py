@@ -13,7 +13,19 @@ from pathlib import Path
 
 import pytest
 from agent_evidence_verify.adapters import web_bot_auth as wba
-from test_web_bot_auth import AGENT, JWK, KEY, NOW, OTHER, OTHER_JWK, URL, b64url, judge, signed_request, verdict
+from test_web_bot_auth import (
+    AGENT,
+    JWK,
+    KEY,
+    NOW,
+    OTHER,
+    OTHER_JWK,
+    URL,
+    b64url,
+    judge,
+    signed_request,
+    verdict,
+)
 
 
 def b64(raw: bytes) -> str:
@@ -148,7 +160,11 @@ def test_w6c_a_key_marked_for_encryption(tmp_path: Path) -> None:
 
 
 def test_w6d_a_directory_that_publishes_the_private_key(tmp_path: Path) -> None:
-    from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
+    from cryptography.hazmat.primitives.serialization import (
+        Encoding,
+        NoEncryption,
+        PrivateFormat,
+    )
     d = b64url(KEY.private_bytes(Encoding.Raw, PrivateFormat.Raw, NoEncryption()))
     jwk = {**JWK, "d": d}  # anyone who read the directory can sign as this agent
     v = report("W6d private-key-published", judge(tmp_path, signed_request(), directory={"keys": [jwk]}))
