@@ -24,7 +24,8 @@ A standing grant is the authority an agent holds with no person in its session: 
 answers for it and the instant (``reviewBy``) by which a person must review it. The two members come together or
 not at all. From ``reviewBy`` on, the grant and every grant delegated under it admit nothing
 (``grant_review_overdue``); a review is a fresh issue with a later ``reviewBy``. A child of a standing grant keeps
-its sponsor and reviews no later.
+its sponsor and reviews no later; a child of a plain grant never becomes one (``child_adds_sponsor``): who answers
+for a standing grant is named by the pinned root that issues it, never by a delegate.
 
 ``holderKey`` signs the child grants its holder delegates. ``cnf`` names the key that presents the grant on a
 request (a DPoP key or a TLS client certificate, possibly the same key as ``holderKey``); the verifier accepts
@@ -207,6 +208,8 @@ def narrowing_problem(child: Mapping[str, Any], parent: Mapping[str, Any]) -> st
             return "child_changes_sponsor"
         if ts(child["reviewBy"]) > ts(parent["reviewBy"]):
             return "child_review_later_than_parent"
+    elif "sponsor" in child:
+        return "child_adds_sponsor"
     if parent.get("maxDepth", 0) < 1:
         return "parent_forbids_delegation"
     if child.get("maxDepth", 0) > parent["maxDepth"] - 1:
