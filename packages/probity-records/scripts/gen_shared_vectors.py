@@ -5,7 +5,8 @@ Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
 principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``standing_grants.json`` its standing
 grant chains, ``canonical_identity.json`` the canonical identity
-strings of ``canonical_identity_vectors``. ``canonical.json`` holds bytes and the canonical
+strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
+``digests_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
@@ -49,6 +50,7 @@ from probity_records import canonical as jcs
 from probity_records.canonical_identity_vectors import (
     vectors as canonical_identity_vectors,
 )
+from probity_records.clock import SystemClock
 from probity_records.core import (
     IN_TOTO_PAYLOAD_TYPE,
     STATEMENT_TYPE,
@@ -57,6 +59,7 @@ from probity_records.core import (
     canonical_of_received,
     pae,
 )
+from probity_records.digests_vectors import vectors as digest_vectors
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import standing_grant_vectors
 from probity_records.identity_vectors import vectors as identity_vectors
@@ -69,6 +72,8 @@ from probity_records.quorum import (
     sign_vote,
 )
 from probity_records.revocation import DIGEST_KINDS, REVOCATION_DOMAIN
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 NB, EXP, AT = "2026-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "2026-06-01T00:00:00Z"
 TOOLS = {"refund": {"approval": "none", "when": ["args.amount_cents < 3000 || args.currency == 'USD'"], "args": {
@@ -99,7 +104,7 @@ def chain(**root_kw) -> list[dict]:
 def grant_case(directory: Path, grants: list[dict], calls: list[dict], *, intent_grant: str | None = None,
                ctx: dict | None = None, possession: list[dict] | None = None) -> Journal:
     """One authorize and one intent record per call; ``possession`` gives each allow the proof it rested on."""
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     for n, args in enumerate(calls):
         pid = permit_id("p", f"c{n}", args_sha256(args))
         common = {"run_id": "r1", "tool_call_id": f"c{n}", "tool": "refund", "args_sha256_hex": args_sha256(args),
@@ -154,7 +159,7 @@ def quorum_case(directory: Path, votes: list[dict], proposer: str = "dave") -> J
     result = count(POLICY, QREQ, votes, AT, proposer=proposer)
     evidence = result.evidence(POLICY, QREQ, proposer=proposer, history="ab" * 32)
     evidence["votes"] = list(votes)
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     j.append(TOOL_CALL_RECORD, "tool-call:q1", args_sha256(QARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=evidence, run_id="r1",
         tool_call_id="q1", tool="pay", args_sha256_hex=args_sha256(QARGS), permit_id=QPID))
@@ -171,7 +176,7 @@ def solo_chain(tools: dict) -> list[dict]:
 def solo_case(directory: Path, tools: dict, tool: str, calls: list[dict]) -> Journal:
     """One recorded allow per call. A call the grant refuses is recorded as an allow all the same, so the
     verifier's own judgement of the grant is what the vector pins."""
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     grants = solo_chain(tools)
     for n, args in enumerate(calls):
         verdict = verify_grant_allow(grants, tool, args, AT, {ROOT.key_id}, ctx={})
@@ -247,7 +252,7 @@ def binding(signer: Signer, who: str, *, payload: dict | None = None, consumed: 
 
 def approval_case(directory: Path, bindings: list[dict], *, decision: str = "allow", reason: str = "bound",
                   threshold: int | None = 1, policy: str | None = "refunds1") -> Journal:
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     j.append(TOOL_CALL_RECORD, "tool-call:a1", args_sha256(AARGS), tool_call_predicate(
         phase="authorize", decision=decision, reason=reason, approval_bindings=bindings, threshold=threshold,
         approval_policy=policy, run_id="run", tool_call_id="a1", tool="refund_payment", args_sha256_hex=args_sha256(AARGS),
@@ -341,7 +346,7 @@ def effect_record(outcome: str, replies: list[str], owner_effects: int = 1, toke
 
 def effect_case(directory: Path, record: dict | None, *, outcome: str | None = None, args: str = E_DIGEST,
                 intent: bool = True) -> Journal:
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     pid = permit_id("pause", "e1", args)
     common = {"run_id": "run", "tool_call_id": "e1", "tool": "refund_payment", "args_sha256_hex": args, "permit_id": pid}
     j.append(TOOL_CALL_RECORD, "tool-call:e1", args, tool_call_predicate(
@@ -715,6 +720,7 @@ def main(out: Path) -> None:
     (out / "standing_grants.json").write_text(json.dumps(standing_grant_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")
+    (out / "identity_digests.json").write_text(json.dumps(digest_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")
     (out / "received.json").write_text(json.dumps(received_rows(), indent=2, sort_keys=True) + "\n")
     (out / "revocation.json").write_text(json.dumps(revocation_rows(), indent=2, sort_keys=True) + "\n")

@@ -14,8 +14,11 @@ from probity_records import (
     tool_call_predicate,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.identity import check_principals, verify_token
 from probity_records.identity_vectors import ISSUER, base, check, vectors
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 ALL = ("user", "agent", "sponsor", "approver")
 EXPECTED = {
@@ -89,7 +92,7 @@ def test_journal_checks_principals_at_the_record_time(tmp_path) -> None:
     gate = Signer.generate()
     v = base()
     args = {"x": 1}
-    j = Journal(tmp_path, gate)
+    j = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     j.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(args), tool_call_predicate(
         phase="intent", run_id="r", tool_call_id="c1", tool="t", args_sha256_hex=args_sha256(args),
         permit_id=permit_id("p", "c1", args_sha256(args)), principals=v["principals"]))

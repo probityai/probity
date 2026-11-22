@@ -1,0 +1,514 @@
+[
+  {
+    "description": "four principals, the user credential names the agent in act",
+    "expected": {
+      "digest": "sha256:90a58505472297e92458cd3ec95004363e701dace14479ee8473ea01074fbc85"
+    },
+    "function": "principals_digest",
+    "id": "PD1",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "the same block with every object's members reversed: the same digest",
+    "expected": {
+      "digest": "sha256:90a58505472297e92458cd3ec95004363e701dace14479ee8473ea01074fbc85"
+    },
+    "function": "principals_digest",
+    "id": "PD2",
+    "input": "[{\"approver\":{\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\",\"subject\":\"bob@example.com\",\"source\":\"id-token\",\"kid\":\"k1\",\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"key\":{\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\",\"kty\":\"OKP\",\"kid\":\"k1\",\"crv\":\"Ed25519\"},\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"issuer\":\"https://idp.example.com/realms/agents\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"clientId\":\"console\",\"authMethod\":\"private_key_jwt\",\"audience\":[\"console\"]},\"sponsor\":{\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\",\"subject\":\"owner@example.com\",\"source\":\"id-token\",\"kid\":\"k1\",\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"key\":{\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\",\"kty\":\"OKP\",\"kid\":\"k1\",\"crv\":\"Ed25519\"},\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"issuer\":\"https://idp.example.com/realms/agents\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"clientId\":\"console\",\"authMethod\":\"private_key_jwt\",\"audience\":[\"console\"]},\"agent\":{\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"},\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"subject\":\"agent-refunds\",\"source\":\"jwt-access-token\",\"kid\":\"k1\",\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"key\":{\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\",\"kty\":\"OKP\",\"kid\":\"k1\",\"crv\":\"Ed25519\"},\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"issuer\":\"https://idp.example.com/realms/agents\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"clientId\":\"agent-refunds\",\"authMethod\":\"private_key_jwt\",\"audience\":[\"https://api.example.com\"]},\"user\":{\"act\":{\"sub\":\"agent-refunds\"},\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"subject\":\"alice@example.com\",\"source\":\"id-jag\",\"kid\":\"k1\",\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"key\":{\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\",\"kty\":\"OKP\",\"kid\":\"k1\",\"crv\":\"Ed25519\"},\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"issuer\":\"https://idp.example.com/realms/agents\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"clientId\":\"agent-refunds\",\"authMethod\":\"private_key_jwt\",\"audience\":[\"https://api.example.com\"]}}]"
+  },
+  {
+    "description": "an astral character in a value is in the domain",
+    "expected": {
+      "digest": "sha256:f4c39a360f10dd814499a70226638e741b1928a5c89284569fa77986a4fabc3b"
+    },
+    "function": "principals_digest",
+    "id": "PD3",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice-\ud83d\ude00@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "an astral character in a member name",
+    "expected": {
+      "reason": "member_name_not_ascii",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD4",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"\ud83d\ude00\":1},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "a non-ASCII member name in the Basic Multilingual Plane",
+    "expected": {
+      "reason": "member_name_not_ascii",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD5",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"t\u00e9nant\":\"x\"},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "a control character in a member name",
+    "expected": {
+      "reason": "member_name_not_ascii",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD6",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"a\\tb\":\"x\"},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "an integer one beyond 2**53 - 1",
+    "expected": {
+      "reason": "integer_out_of_range",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD7",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":9007199254740992},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "the largest and smallest safe integers are in the domain",
+    "expected": {
+      "digest": "sha256:86b24c01d569309939412b6520dcc76172a4eee4d92506a3a84130e250a4545f"
+    },
+    "function": "principals_digest",
+    "id": "PD8",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":[9007199254740991,-9007199254740991]},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "a negative integer one beyond the safe range",
+    "expected": {
+      "reason": "integer_out_of_range",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD9",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":-9007199254740992},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "a fractional number",
+    "expected": {
+      "reason": "float",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD10",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":1.5},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "an integral number written as a float",
+    "expected": {
+      "reason": "float",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD11",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":7.0},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "an integral number written with an exponent",
+    "expected": {
+      "reason": "float",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD12",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":7e0},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "an escaped lone surrogate in a value",
+    "expected": {
+      "reason": "lone_surrogate",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD13",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":\"\\ud800\"},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "nesting 64 containers deep is in the domain",
+    "expected": {
+      "digest": "sha256:0fbd58bfed1b96d9e9ebd3de6590899742d39bf395c26ab8e78c6cec87fa9a7b"
+    },
+    "function": "principals_digest",
+    "id": "PD14",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":true}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "nesting 65 containers deep",
+    "expected": {
+      "reason": "too_deep",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD15",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"},\"extra\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":{\"n\":true}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "an empty block",
+    "expected": {
+      "reason": null,
+      "refused": "identity_principals_malformed"
+    },
+    "function": "principals_digest",
+    "id": "PD16",
+    "input": "[{}]"
+  },
+  {
+    "description": "a member that is not a role",
+    "expected": {
+      "reason": null,
+      "refused": "identity_principals_malformed"
+    },
+    "function": "principals_digest",
+    "id": "PD17",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"},\"operator\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}}}]"
+  },
+  {
+    "description": "a role that is not an object",
+    "expected": {
+      "reason": null,
+      "refused": "identity_principals_malformed"
+    },
+    "function": "principals_digest",
+    "id": "PD18",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}},\"agent\":\"agent-refunds\",\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "an array, not a block",
+    "expected": {
+      "reason": null,
+      "refused": "identity_principals_malformed"
+    },
+    "function": "principals_digest",
+    "id": "PD19",
+    "input": "[[{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}}]]"
+  },
+  {
+    "description": "the out-of-domain value is reported before the malformed block",
+    "expected": {
+      "reason": "float",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "principals_digest",
+    "id": "PD20",
+    "input": "[{\"operator\":1.5}]"
+  },
+  {
+    "description": "the act claim of the user credential",
+    "expected": {
+      "digest": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748"
+    },
+    "function": "act_chain_digest",
+    "id": "AC1",
+    "input": "[{\"sub\":\"agent-refunds\"}]"
+  },
+  {
+    "description": "a nested act claim, current actor first",
+    "expected": {
+      "digest": "sha256:85c97852c19f575908856938909b5aeec22ebd8f723b484803cb8e317b16fcf7"
+    },
+    "function": "act_chain_digest",
+    "id": "AC2",
+    "input": "[{\"sub\":\"agent-1\",\"act\":{\"sub\":\"agent-2\",\"act\":{\"sub\":\"agent-3\"}}}]"
+  },
+  {
+    "description": "the nested claim with members reversed: the same digest",
+    "expected": {
+      "digest": "sha256:85c97852c19f575908856938909b5aeec22ebd8f723b484803cb8e317b16fcf7"
+    },
+    "function": "act_chain_digest",
+    "id": "AC3",
+    "input": "[{\"act\":{\"act\":{\"sub\":\"agent-3\"},\"sub\":\"agent-2\"},\"sub\":\"agent-1\"}]"
+  },
+  {
+    "description": "a missing act claim has no digest",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_missing"
+    },
+    "function": "act_chain_digest",
+    "id": "AC4",
+    "input": "[null]"
+  },
+  {
+    "description": "an actor without sub",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_malformed"
+    },
+    "function": "act_chain_digest",
+    "id": "AC5",
+    "input": "[{\"client_id\":\"agent-refunds\"}]"
+  },
+  {
+    "description": "an actor with an empty sub",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_malformed"
+    },
+    "function": "act_chain_digest",
+    "id": "AC6",
+    "input": "[{\"sub\":\"\"}]"
+  },
+  {
+    "description": "a prior actor that is not an object",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_malformed"
+    },
+    "function": "act_chain_digest",
+    "id": "AC7",
+    "input": "[{\"sub\":\"a\",\"act\":\"b\"}]"
+  },
+  {
+    "description": "a null prior actor",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_malformed"
+    },
+    "function": "act_chain_digest",
+    "id": "AC8",
+    "input": "[{\"sub\":\"a\",\"act\":null}]"
+  },
+  {
+    "description": "32 actors",
+    "expected": {
+      "digest": "sha256:716893415e844cf22b118d6dd8e3a4cf1635ad8643476d7696564c090279810d"
+    },
+    "function": "act_chain_digest",
+    "id": "AC9",
+    "input": "[{\"sub\":\"agent-1\",\"act\":{\"sub\":\"agent-2\",\"act\":{\"sub\":\"agent-3\",\"act\":{\"sub\":\"agent-4\",\"act\":{\"sub\":\"agent-5\",\"act\":{\"sub\":\"agent-6\",\"act\":{\"sub\":\"agent-7\",\"act\":{\"sub\":\"agent-8\",\"act\":{\"sub\":\"agent-9\",\"act\":{\"sub\":\"agent-10\",\"act\":{\"sub\":\"agent-11\",\"act\":{\"sub\":\"agent-12\",\"act\":{\"sub\":\"agent-13\",\"act\":{\"sub\":\"agent-14\",\"act\":{\"sub\":\"agent-15\",\"act\":{\"sub\":\"agent-16\",\"act\":{\"sub\":\"agent-17\",\"act\":{\"sub\":\"agent-18\",\"act\":{\"sub\":\"agent-19\",\"act\":{\"sub\":\"agent-20\",\"act\":{\"sub\":\"agent-21\",\"act\":{\"sub\":\"agent-22\",\"act\":{\"sub\":\"agent-23\",\"act\":{\"sub\":\"agent-24\",\"act\":{\"sub\":\"agent-25\",\"act\":{\"sub\":\"agent-26\",\"act\":{\"sub\":\"agent-27\",\"act\":{\"sub\":\"agent-28\",\"act\":{\"sub\":\"agent-29\",\"act\":{\"sub\":\"agent-30\",\"act\":{\"sub\":\"agent-31\",\"act\":{\"sub\":\"agent-32\"}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}]"
+  },
+  {
+    "description": "33 actors",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_malformed"
+    },
+    "function": "act_chain_digest",
+    "id": "AC10",
+    "input": "[{\"sub\":\"agent-1\",\"act\":{\"sub\":\"agent-2\",\"act\":{\"sub\":\"agent-3\",\"act\":{\"sub\":\"agent-4\",\"act\":{\"sub\":\"agent-5\",\"act\":{\"sub\":\"agent-6\",\"act\":{\"sub\":\"agent-7\",\"act\":{\"sub\":\"agent-8\",\"act\":{\"sub\":\"agent-9\",\"act\":{\"sub\":\"agent-10\",\"act\":{\"sub\":\"agent-11\",\"act\":{\"sub\":\"agent-12\",\"act\":{\"sub\":\"agent-13\",\"act\":{\"sub\":\"agent-14\",\"act\":{\"sub\":\"agent-15\",\"act\":{\"sub\":\"agent-16\",\"act\":{\"sub\":\"agent-17\",\"act\":{\"sub\":\"agent-18\",\"act\":{\"sub\":\"agent-19\",\"act\":{\"sub\":\"agent-20\",\"act\":{\"sub\":\"agent-21\",\"act\":{\"sub\":\"agent-22\",\"act\":{\"sub\":\"agent-23\",\"act\":{\"sub\":\"agent-24\",\"act\":{\"sub\":\"agent-25\",\"act\":{\"sub\":\"agent-26\",\"act\":{\"sub\":\"agent-27\",\"act\":{\"sub\":\"agent-28\",\"act\":{\"sub\":\"agent-29\",\"act\":{\"sub\":\"agent-30\",\"act\":{\"sub\":\"agent-31\",\"act\":{\"sub\":\"agent-32\",\"act\":{\"sub\":\"agent-33\"}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}]"
+  },
+  {
+    "description": "a float inside the act claim",
+    "expected": {
+      "reason": "float",
+      "refused": "identity_out_of_domain"
+    },
+    "function": "act_chain_digest",
+    "id": "AC11",
+    "input": "[{\"sub\":\"a\",\"iat\":1.5}]"
+  },
+  {
+    "description": "a principals block is not an act claim",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_malformed"
+    },
+    "function": "act_chain_digest",
+    "id": "AC12",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}}]"
+  },
+  {
+    "description": "a root grant and one narrower link, root first",
+    "expected": {
+      "digest": "sha256:260052d5c1e3a0a601be49a71098d012698aabef5a51f413af6c44147ae2f782"
+    },
+    "function": "grant_chain_digest",
+    "id": "GC1",
+    "input": "[[{\"body\":{\"cnf\":{\"jkt\":\"QIwUiY-Ho-SMKigg_zsEDX8suCovVx1KQJ_q4TEhru4\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-root\",\"holderKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"issuerKey\":\"fVCBb83eRHk/dgANrP5M+0xcstW/3z/qU9IwasuXPzQ=\",\"maxDepth\":1,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":null,\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":500}}}},\"budget\":{\"uses\":10,\"spend\":{\"arg\":\"amount\",\"max\":1000}}},\"sig\":\"dwxl11FjCSrsjnYUM9GBjfqMT5cxgqvxnacTpKEDCGFhFRtHVo4dTLrsBtY3ukYQ+zc1v83vSCeDEp30UtfKBQ==\"},{\"body\":{\"cnf\":{\"jkt\":\"1Nr6KOMAzgj609291gqOkUcZtRBU2WVvA4EEmazUrUo\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-a-b\",\"holderKey\":\"Ib5njNz0Y4ZAg3esDUlIXkOafbs+b5WIza94RRGeO6Y=\",\"issuerKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"maxDepth\":0,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":\"714525b9d38a5ad348a2ce7172814c210cfbf522f1725b8df3e23bf7a0c04801\",\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":50}}}},\"budget\":{\"uses\":2,\"spend\":{\"arg\":\"amount\",\"max\":100}}},\"sig\":\"3c4+VwW65pVpMlNOo6u89NkBze8wngPy4bTkln0L9SWJ3M/C7wrwekl06IA4OCrzkB3i4Hj8H1FFli/jewXwBQ==\"}]]"
+  },
+  {
+    "description": "the same chain from its grant digests alone",
+    "expected": {
+      "digest": "sha256:260052d5c1e3a0a601be49a71098d012698aabef5a51f413af6c44147ae2f782"
+    },
+    "function": "grant_chain_digest_of",
+    "id": "GC2",
+    "input": "[[\"714525b9d38a5ad348a2ce7172814c210cfbf522f1725b8df3e23bf7a0c04801\",\"b808529d463b50cc0021b31dae907d6e9c0811614831ed73dd12679e4c4bf3bf\"]]"
+  },
+  {
+    "description": "a float in a grant body is the body's own matter: the chain still has a digest",
+    "expected": {
+      "digest": "sha256:46f1f6b00e69295b23802855316c8ca60a01123628ea413a40d70e4eaf4d8d3a"
+    },
+    "function": "grant_chain_digest",
+    "id": "GC3",
+    "input": "[[{\"body\":{\"cnf\":{\"jkt\":\"QIwUiY-Ho-SMKigg_zsEDX8suCovVx1KQJ_q4TEhru4\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-root\",\"holderKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"issuerKey\":\"fVCBb83eRHk/dgANrP5M+0xcstW/3z/qU9IwasuXPzQ=\",\"maxDepth\":1,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":null,\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":500}}}},\"budget\":{\"uses\":10,\"spend\":{\"arg\":\"amount\",\"max\":1000}}},\"sig\":\"dwxl11FjCSrsjnYUM9GBjfqMT5cxgqvxnacTpKEDCGFhFRtHVo4dTLrsBtY3ukYQ+zc1v83vSCeDEp30UtfKBQ==\"},{\"body\":{\"cnf\":{\"jkt\":\"1Nr6KOMAzgj609291gqOkUcZtRBU2WVvA4EEmazUrUo\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-a-b\",\"holderKey\":\"Ib5njNz0Y4ZAg3esDUlIXkOafbs+b5WIza94RRGeO6Y=\",\"issuerKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"maxDepth\":0,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":\"714525b9d38a5ad348a2ce7172814c210cfbf522f1725b8df3e23bf7a0c04801\",\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":50}}}},\"budget\":{\"uses\":2,\"spend\":{\"arg\":\"amount\",\"max\":9.5}}},\"sig\":\"8nqBG61QDiCJt0h7JlnwoeNkCDRQBKF7AxMHIQDW1I0IpEFoRUa/7OaULNOEMJaTK/ksTwuDf+J/4BrDCC2LBQ==\"}]]"
+  },
+  {
+    "description": "the links in the other order are another chain",
+    "expected": {
+      "digest": "sha256:15d63241365f8373d1c4352dc71d176845256f5192dabb4a1935391268910e60"
+    },
+    "function": "grant_chain_digest",
+    "id": "GC4",
+    "input": "[[{\"body\":{\"cnf\":{\"jkt\":\"1Nr6KOMAzgj609291gqOkUcZtRBU2WVvA4EEmazUrUo\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-a-b\",\"holderKey\":\"Ib5njNz0Y4ZAg3esDUlIXkOafbs+b5WIza94RRGeO6Y=\",\"issuerKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"maxDepth\":0,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":\"714525b9d38a5ad348a2ce7172814c210cfbf522f1725b8df3e23bf7a0c04801\",\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":50}}}},\"budget\":{\"uses\":2,\"spend\":{\"arg\":\"amount\",\"max\":100}}},\"sig\":\"3c4+VwW65pVpMlNOo6u89NkBze8wngPy4bTkln0L9SWJ3M/C7wrwekl06IA4OCrzkB3i4Hj8H1FFli/jewXwBQ==\"},{\"body\":{\"cnf\":{\"jkt\":\"QIwUiY-Ho-SMKigg_zsEDX8suCovVx1KQJ_q4TEhru4\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-root\",\"holderKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"issuerKey\":\"fVCBb83eRHk/dgANrP5M+0xcstW/3z/qU9IwasuXPzQ=\",\"maxDepth\":1,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":null,\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":500}}}},\"budget\":{\"uses\":10,\"spend\":{\"arg\":\"amount\",\"max\":1000}}},\"sig\":\"dwxl11FjCSrsjnYUM9GBjfqMT5cxgqvxnacTpKEDCGFhFRtHVo4dTLrsBtY3ukYQ+zc1v83vSCeDEp30UtfKBQ==\"}]]"
+  },
+  {
+    "description": "an empty chain",
+    "expected": {
+      "reason": null,
+      "refused": "identity_grant_chain_empty"
+    },
+    "function": "grant_chain_digest",
+    "id": "GC5",
+    "input": "[[]]"
+  },
+  {
+    "description": "a link without a body",
+    "expected": {
+      "reason": null,
+      "refused": "identity_grant_chain_malformed"
+    },
+    "function": "grant_chain_digest",
+    "id": "GC6",
+    "input": "[[{\"sig\":\"dwxl11FjCSrsjnYUM9GBjfqMT5cxgqvxnacTpKEDCGFhFRtHVo4dTLrsBtY3ukYQ+zc1v83vSCeDEp30UtfKBQ==\"}]]"
+  },
+  {
+    "description": "a chain that is not an array",
+    "expected": {
+      "reason": null,
+      "refused": "identity_grant_chain_malformed"
+    },
+    "function": "grant_chain_digest",
+    "id": "GC7",
+    "input": "[{\"body\":{\"cnf\":{\"jkt\":\"QIwUiY-Ho-SMKigg_zsEDX8suCovVx1KQJ_q4TEhru4\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-root\",\"holderKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"issuerKey\":\"fVCBb83eRHk/dgANrP5M+0xcstW/3z/qU9IwasuXPzQ=\",\"maxDepth\":1,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":null,\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":500}}}},\"budget\":{\"uses\":10,\"spend\":{\"arg\":\"amount\",\"max\":1000}}},\"sig\":\"dwxl11FjCSrsjnYUM9GBjfqMT5cxgqvxnacTpKEDCGFhFRtHVo4dTLrsBtY3ukYQ+zc1v83vSCeDEp30UtfKBQ==\"}]"
+  },
+  {
+    "description": "a body with an integer beyond the exact JSON range",
+    "expected": {
+      "reason": null,
+      "refused": "identity_grant_chain_malformed"
+    },
+    "function": "grant_chain_digest",
+    "id": "GC8",
+    "input": "[[{\"body\":{\"maxDepth\":9007199254740992},\"sig\":\"\"}]]"
+  },
+  {
+    "description": "an empty list of grant digests",
+    "expected": {
+      "reason": null,
+      "refused": "identity_grant_chain_empty"
+    },
+    "function": "grant_chain_digest_of",
+    "id": "GC9",
+    "input": "[[]]"
+  },
+  {
+    "description": "a grant digest in upper case",
+    "expected": {
+      "reason": null,
+      "refused": "identity_grant_chain_malformed"
+    },
+    "function": "grant_chain_digest_of",
+    "id": "GC10",
+    "input": "[[\"714525B9D38A5AD348A2CE7172814C210CFBF522F1725B8DF3E23BF7A0C04801\",\"B808529D463B50CC0021B31DAE907D6E9C0811614831ED73DD12679E4C4BF3BF\"]]"
+  },
+  {
+    "description": "a grant digest with the sha256: prefix",
+    "expected": {
+      "reason": null,
+      "refused": "identity_grant_chain_malformed"
+    },
+    "function": "grant_chain_digest_of",
+    "id": "GC11",
+    "input": "[[\"sha256:714525b9d38a5ad348a2ce7172814c210cfbf522f1725b8df3e23bf7a0c04801\"]]"
+  },
+  {
+    "description": "principals, act chain and grant chain",
+    "expected": {
+      "digest": "sha256:599a6b1f7dcb9a8388807150826f7eebab39332171698545f2c725cbcce9e67a"
+    },
+    "function": "stamp_digest",
+    "id": "SD1",
+    "input": "[\"sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\",\"sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2\",\"sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3\"]"
+  },
+  {
+    "description": "no act claim and no grants: both null",
+    "expected": {
+      "digest": "sha256:c76718a9d8836759b0720cb496b5e68b5f7c4f8ededc55d7c7f23a135ed292de"
+    },
+    "function": "stamp_digest",
+    "id": "SD2",
+    "input": "[\"sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\",null,null]"
+  },
+  {
+    "description": "an act claim and no grants",
+    "expected": {
+      "digest": "sha256:a4f747d62cd196a1461ff01eec907b53005a748b29672758744b8f7a6dbe97a8"
+    },
+    "function": "stamp_digest",
+    "id": "SD3",
+    "input": "[\"sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\",\"sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2\",null]"
+  },
+  {
+    "description": "a principals digest in upper case",
+    "expected": {
+      "reason": null,
+      "refused": "identity_digest_malformed"
+    },
+    "function": "stamp_digest",
+    "id": "SD4",
+    "input": "[\"SHA256:A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1A1\",\"sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2\",\"sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3\"]"
+  },
+  {
+    "description": "a bare hex digest without the prefix",
+    "expected": {
+      "reason": null,
+      "refused": "identity_digest_malformed"
+    },
+    "function": "stamp_digest",
+    "id": "SD5",
+    "input": "[\"a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\",\"sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2\",\"sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3\"]"
+  },
+  {
+    "description": "no principals digest",
+    "expected": {
+      "reason": null,
+      "refused": "identity_digest_malformed"
+    },
+    "function": "stamp_digest",
+    "id": "SD6",
+    "input": "[null,\"sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2\",\"sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3\"]"
+  },
+  {
+    "description": "a grant chain digest that is a number",
+    "expected": {
+      "reason": null,
+      "refused": "identity_digest_malformed"
+    },
+    "function": "stamp_digest",
+    "id": "SD7",
+    "input": "[\"sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\",\"sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2\",7]"
+  },
+  {
+    "description": "a block and its grant links",
+    "expected": {
+      "digest": "sha256:e95682f26f442dceb6f4a4e80997e0d0823724b6807125e2100538d14583e38e"
+    },
+    "function": "stamp_digest_of",
+    "id": "SS1",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":{\"sub\":\"agent-refunds\"}},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}},[{\"body\":{\"cnf\":{\"jkt\":\"QIwUiY-Ho-SMKigg_zsEDX8suCovVx1KQJ_q4TEhru4\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-root\",\"holderKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"issuerKey\":\"fVCBb83eRHk/dgANrP5M+0xcstW/3z/qU9IwasuXPzQ=\",\"maxDepth\":1,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":null,\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":500}}}},\"budget\":{\"uses\":10,\"spend\":{\"arg\":\"amount\",\"max\":1000}}},\"sig\":\"dwxl11FjCSrsjnYUM9GBjfqMT5cxgqvxnacTpKEDCGFhFRtHVo4dTLrsBtY3ukYQ+zc1v83vSCeDEp30UtfKBQ==\"},{\"body\":{\"cnf\":{\"jkt\":\"1Nr6KOMAzgj609291gqOkUcZtRBU2WVvA4EEmazUrUo\"},\"context\":{},\"expiresAt\":\"2026-11-22T00:00:00Z\",\"grantId\":\"g-a-b\",\"holderKey\":\"Ib5njNz0Y4ZAg3esDUlIXkOafbs+b5WIza94RRGeO6Y=\",\"issuerKey\":\"+ZJPiHArqjuJ1L5/TrJXq0yEKPwKdgyX4j4Pv080AJk=\",\"maxDepth\":0,\"notBefore\":\"2026-11-21T00:00:00Z\",\"parent\":\"714525b9d38a5ad348a2ce7172814c210cfbf522f1725b8df3e23bf7a0c04801\",\"tools\":{\"refund\":{\"args\":{\"amount\":{\"type\":\"range\",\"min\":0,\"max\":50}}}},\"budget\":{\"uses\":2,\"spend\":{\"arg\":\"amount\",\"max\":100}}},\"sig\":\"3c4+VwW65pVpMlNOo6u89NkBze8wngPy4bTkln0L9SWJ3M/C7wrwekl06IA4OCrzkB3i4Hj8H1FFli/jewXwBQ==\"}]]"
+  },
+  {
+    "description": "a block with no act claim and no grants",
+    "expected": {
+      "digest": "sha256:7ddb859f2374e4c234717067ee89d4a8db9e1804bf2acf47b1a919744dd7599f"
+    },
+    "function": "stamp_digest_of",
+    "id": "SS2",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\"},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}},null]"
+  },
+  {
+    "description": "a user principal whose act member is null",
+    "expected": {
+      "reason": null,
+      "refused": "identity_act_missing"
+    },
+    "function": "stamp_digest_of",
+    "id": "SS3",
+    "input": "[{\"user\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-jag\",\"subject\":\"alice@example.com\",\"tokenDigest\":\"f6f9cd3e98cb3193d35abf62ec6b08a352465cbcbf26bad04c53afc77b66aabf\",\"act\":null},\"agent\":{\"audience\":[\"https://api.example.com\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"agent-refunds\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"jwt-access-token\",\"subject\":\"agent-refunds\",\"tokenDigest\":\"850af69075450eb78e8b8969b5a069aee9b73787936da775cda8a6323d8abfe8\",\"cnf\":{\"jkt\":\"kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k\"}},\"sponsor\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"owner@example.com\",\"tokenDigest\":\"75939630e3642fb9941bc1c0ea7d5adb3de774a82892d1352fbf7ef3d43ae12e\"},\"approver\":{\"audience\":[\"console\"],\"authMethod\":\"private_key_jwt\",\"clientId\":\"console\",\"expiresAt\":\"2026-11-08T12:20:00Z\",\"issuedAt\":\"2026-11-08T11:20:00Z\",\"issuer\":\"https://idp.example.com/realms/agents\",\"jwksDigest\":\"5ceaa9c0c333a9751c5efcb3261956f31357c8a5247fbc77a327e4b7b59ff2af\",\"key\":{\"crv\":\"Ed25519\",\"kid\":\"k1\",\"kty\":\"OKP\",\"x\":\"AS3u_bZ_1r_dVj6LHZPYZBcjzwDl8soTDaFstmgsbkg\"},\"keyThumbprint\":\"3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds\",\"kid\":\"k1\",\"source\":\"id-token\",\"subject\":\"bob@example.com\",\"tokenDigest\":\"dcab14f98a9b7a02036df7ddb3cf45b1897803eeff8dc70e321692848ce40323\"}},null]"
+  }
+]

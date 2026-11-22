@@ -30,7 +30,10 @@ from probity_records import (
     verify_journal,
     verify_permit,
 )
+from probity_records.clock import SystemClock, to_datetime
 from probity_records.journal import KEYS_FILE
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 
 def _raw(key: Ed25519PrivateKey) -> bytes:
@@ -141,7 +144,7 @@ def test_gcp_kms_signs_and_names_the_key_version() -> None:
 
 def test_a_journal_signed_through_a_kms_backend_verifies_and_names_its_custody(tmp_path) -> None:
     key = GcpKmsKey("projects/p/k/1", client=FakeGcpKms())
-    journal = Journal(tmp_path, key)
+    journal = Journal(tmp_path, key, clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     cp = journal.checkpoint()
     trust = Trust(key_custody={key.key_id: "gcp-kms"})
@@ -153,9 +156,9 @@ def test_a_journal_signed_through_a_kms_backend_verifies_and_names_its_custody(t
 
 def test_delegated_session_key_signs_large_records_under_a_kms_root(tmp_path) -> None:
     root = AwsKmsKey("k1", client=FakeAwsKms())
-    session = delegate(root, timedelta(hours=1))
+    session = delegate(root, timedelta(hours=1), now=to_datetime(SYSTEM_CLOCK.now()))
     assert session.key_id != root.key_id and session.provenance["root"]["backend"] == "aws-kms"
-    journal = Journal(tmp_path, session)
+    journal = Journal(tmp_path, session, clock=SYSTEM_CLOCK)
     big = {"phase": "note", "blob": "x" * 20000}  # far past the 4096-byte raw KMS cap
     journal.append("https://example.test/t", "s", "0" * 64, big)
     out = verify_journal(tmp_path, [root.public_pem()], journal.checkpoint(),
@@ -169,11 +172,11 @@ def test_delegated_session_key_signs_large_records_under_a_kms_root(tmp_path) ->
 def test_a_session_key_outside_its_window_or_from_an_unpinned_root_is_refused(tmp_path) -> None:
     root = Signer.generate()
     past = delegate(root, timedelta(minutes=5), now=datetime.now(UTC) - timedelta(hours=2))
-    journal = Journal(tmp_path, past)
+    journal = Journal(tmp_path, past, clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     out = verify_journal(tmp_path, [root.public_pem()], journal.checkpoint())
     assert any("outside_its_certified_window" in f for f in out["failures"])
-    rogue = delegate(Signer.generate())
+    rogue = delegate(Signer.generate(), now=to_datetime(SYSTEM_CLOCK.now()))
     with pytest.raises(ValueError, match="delegation_unverified"):
         verify_delegation(rogue.certificate, [root.public])
     forged = json.loads(json.dumps(past.certificate))
@@ -184,18 +187,18 @@ def test_a_session_key_outside_its_window_or_from_an_unpinned_root_is_refused(tm
 
 def test_rotation_records_each_certificate_once(tmp_path) -> None:
     root = Signer.generate()
-    journal = Journal(tmp_path, delegate(root))
+    journal = Journal(tmp_path, delegate(root, now=to_datetime(SYSTEM_CLOCK.now())), clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
-    journal.rotate(delegate(root))
+    journal.rotate(delegate(root, now=to_datetime(SYSTEM_CLOCK.now())))
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
-    Journal(tmp_path, journal.signer)  # reopening with the same key adds nothing
+    Journal(tmp_path, journal.signer, clock=SYSTEM_CLOCK)  # reopening with the same key adds nothing
     assert len((tmp_path / KEYS_FILE).read_text().splitlines()) == 2
     assert verify_journal(tmp_path, [root.public_pem()], journal.checkpoint())["verdict"] == "PASS"
 
 
 def test_permits_carry_custody_and_a_delegated_permit_verifies_under_the_root_only() -> None:
     root = Signer.generate()
-    session = delegate(root)
+    session = delegate(root, now=to_datetime(SYSTEM_CLOCK.now()))
     now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # issued inside the window
     permit = sign_permit(session, {"issuedAt": now, "permitId": "p"})
     claims = verify_permit(permit, root.public_pem())

@@ -15,13 +15,14 @@ from pathlib import Path
 
 from probity_records import Journal, Signer, Trust, verify_journal
 from probity_records import witness as w
+from probity_records.clock import SystemClock
 
 ORIGIN = "authority.example/interop"
 
 
 def main(binary: str) -> int:
     signer = Signer.generate()
-    journal = Journal(Path(tempfile.mkdtemp()) / "authority", signer)
+    journal = Journal(Path(tempfile.mkdtemp()) / "authority", signer, clock=SystemClock())  # the entry point
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
     port = s.getsockname()[1]

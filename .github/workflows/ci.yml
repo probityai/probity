@@ -988,6 +988,8 @@ jobs:
           test -x "$bin"
           echo "PROBITY_OTELCOL=$bin" >> "$GITHUB_ENV"
       # The package keeps its own lock beside it, outside the root workspace; scripts/test.sh is its one test entry.
+      # test.sh syncs --frozen, which installs a stale lock without a word, so the lock is held to the pyproject first.
+      - run: uv lock --check
       - run: sh scripts/test.sh
 
   package-probity-verify-tests:
