@@ -216,26 +216,26 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
         if verdict["decision"] == "allow":
             reader_allowed.add(str(embedded["record"].get("approval", {}).get("approver")))
         elif pred.get("decision") == "deny" and verdict["reason"] != pred.get("reason") and len(bindings) == 1:
-            problems.append(f"{where}:deny_reason_{pred.get('reason')}_but_reader_says_{verdict['reason']}")
+            problems.append(f"{where}:deny_reason_mismatch:{pred.get('reason')}:{verdict['reason']}")
     if pred.get("decision") != "allow":
         return
     # The M of N is re-counted under the quorum policy the AUDITOR pinned: the approver keys and the
     # threshold come from Trust, never from the record the authority wrote.
     if trust is None:
-        problems.append(f"{where}:approval_allow_but_no_trust_pinned")
+        problems.append(f"{where}:authority_trust_not_pinned:approval")
         return
     policy = trust.quorum_policies.get(str(pred.get("approvalPolicyId")))
     if policy is None:
         problems.append(f"{where}:approval_policy_not_pinned")
         return
     if pred.get("threshold") != policy["threshold"]:
-        problems.append(f"{where}:threshold_{pred.get('threshold')}_is_not_the_pinned_{policy['threshold']}")
+        problems.append(f"{where}:threshold_not_pinned:{pred.get('threshold')}:{policy['threshold']}")
     signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked,
                                           oidc_pins=trust.identity_issuers)
     problems.extend(f"{where}:{p}" for p in sig_problems)
     counted = signed & reader_allowed
     if len(counted) < policy["threshold"]:
-        problems.append(f"{where}:recorded_allow_but_{len(counted)}_of_{policy['threshold']}_approvals_hold")
+        problems.append(f"{where}:approvals_below_threshold:{len(counted)}:{policy['threshold']}")
 
 
 def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str | None:
@@ -245,7 +245,7 @@ def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str 
         return None
     verdict = judge_uncertain_effect(record)
     if verdict["decision"] != "supported":
-        problems.append(f"{where}:uncertain_effect_{verdict['decision']}:{verdict['reason']}")
+        problems.append(f"{where}:uncertain_effect_not_supported:{verdict['decision']}:{verdict['reason']}")
     if record.get("operation", {}).get("argsDigest") != "sha256:" + str(pred.get("argsSha256")):
         problems.append(f"{where}:effect_args_differ_from_call")
     if pred.get("outcome") != verdict.get("reported_outcome"):
@@ -300,7 +300,7 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         if delegation is not None and trust.key_revoked(delegation.root_key_id, str(pred.get("at"))):
             problems.append(f"{where}:signer_root_key_revoked")
     if pred.get("seq") != i:
-        problems.append(f"{where}:seq_{pred.get('seq')}_not_{i}")
+        problems.append(f"{where}:seq_mismatch:{pred.get('seq')}:{i}")
     if pred.get("prev") != prev:
         problems.append(f"{where}:chain_broken")
     if body.get("predicateType") == TOOL_CALL_RECORD and pred.get("principals") is not None:
@@ -401,7 +401,7 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[s
             since_allow[pid] = []
             grant_of.setdefault(pid, pred.get("grantDigest"))
         elif phase in ("intent", "effect") and pid in grant_of and pred.get("grantDigest") != grant_of[pid]:
-            problems.append(f"line_{i}:{phase}_grant_differs_from_permit")
+            problems.append(f"line_{i}:grant_differs_from_permit:{phase}")
         if phase == "intent":
             if pid not in allowed:
                 problems.append(f"line_{i}:intent_without_permit")

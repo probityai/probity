@@ -89,7 +89,7 @@ def test_expired_or_underapproved_exception_fails_offline(tmp_path) -> None:
     body = _exception()
     gate, journal = _record(tmp_path / "b", body, _votes(keys, policy, exception_digest(body), ("risk",)), policy)
     failures = verify_journal(tmp_path / "b", [gate.public_pem()], journal.checkpoint(), trust=trust)["failures"]
-    assert any("exception_quorum_pending" in f for f in failures), failures
+    assert any("exception_quorum_failed:quorum_pending" in f for f in failures), failures
 
 
 def test_workflow_steps_are_signed_records_with_risk_routing(tmp_path) -> None:

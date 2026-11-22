@@ -120,7 +120,7 @@ def test_journal_verifies_offline_and_reports_denominator(tmp_path) -> None:
     assert (report["verdict"], report["verified"], report["records"]) == ("PASS", 3, 3), report["failures"]
     assert verify_journal(tmp_path, [gate.public_pem()], trust=trust)["verdict"] == "NOT_ESTABLISHED"
     unpinned = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint())
-    assert any("approval_allow_but_no_trust_pinned" in f for f in unpinned["failures"])
+    assert any("authority_trust_not_pinned:approval" in f for f in unpinned["failures"])
 
 
 def test_tamper_truncation_and_wrong_key_fail(tmp_path) -> None:
@@ -169,7 +169,7 @@ def test_allow_is_recounted_under_the_pinned_policy(tmp_path) -> None:
     journal = Journal(tmp_path, gate)
     _allow(journal, [_embedded(ops)], 2)
     report = verify_journal(tmp_path, [gate.public_pem()], trust=_trust(("human:ops", ops), ("human:lead", lead), threshold=2))
-    assert any("1_of_2_approvals_hold" in f for f in report["failures"]), report["failures"]
+    assert any("approvals_below_threshold:1:2" in f for f in report["failures"]), report["failures"]
 
 
 def test_authority_cannot_lower_the_threshold_or_fabricate_approvers(tmp_path) -> None:
@@ -179,7 +179,7 @@ def test_authority_cannot_lower_the_threshold_or_fabricate_approvers(tmp_path) -
     journal = Journal(tmp_path / "low", gate)
     _allow(journal, [_embedded(ops)], 1)
     report = verify_journal(tmp_path / "low", [gate.public_pem()], trust=trust)
-    assert any("threshold_1_is_not_the_pinned_2" in f for f in report["failures"]), report["failures"]
+    assert any("threshold_not_pinned:1:2" in f for f in report["failures"]), report["failures"]
     # the authority signs a second "human:ops" approval with its own key: the pinned key refuses it
     fake = _embedded(forger, "human:lead")
     journal = Journal(tmp_path / "forged", gate)

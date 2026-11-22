@@ -535,7 +535,8 @@ function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string,
   if (trusted.proposerBound && !ev.proposer) return "quorum_proposer_unbound";
   const r = countVotes(trusted, request, ev.votes ?? [], at, ev.proposer);
   if (r.ignored.length) return `quorum_vote_invalid:${r.ignored[0]}`;
-  return r.status === "approved" ? "ok" : `quorum_${r.status}`;
+  if (r.status === "approved") return "ok";
+  return r.status === "refused" ? "quorum_refused" : "quorum_pending";
 }
 
 // ---------- grants ----------
@@ -602,7 +603,7 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
     const body = isObj(chain[depth]) ? chain[depth].body : null;
     if (!isObj(body)) { result = `grant_shape:${depth}`; break; }
     const cnf = cnfProblem(body.cnf);
-    if (cnf) { result = `grant_invalid:${depth}:grant_${cnf}`; break; }
+    if (cnf) { result = `grant_invalid:${depth}:${cnf}`; break; }
     let issuer: string;
     try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch (e) { result = `grant_invalid:${depth}:${(e as Error).message}`; break; }
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) { result = `grant_signature_unverified:${depth}`; break; }
@@ -746,8 +747,8 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
   const reason = pred.reason;
   if (reason !== "grant" && reason !== "quorum") return false;
   const ev = pred.authority;
-  if (!isObj(ev) || ev.kind !== reason) { problems.push(`${where}:${reason}_allow_without_authority_evidence`); return true; }
-  if (trust === null) { problems.push(`${where}:${reason}_allow_but_no_trust_pinned`); return true; }
+  if (!isObj(ev) || ev.kind !== reason) { problems.push(`${where}:authority_evidence_missing:${reason}`); return true; }
+  if (trust === null) { problems.push(`${where}:authority_trust_not_pinned:${reason}`); return true; }
   const at = String(pred.at), pinned = { ...(trust.quorumPolicies ?? {}) };
   const quorumOutcome = (q: J, carried?: J): string => {
     if (carried) pinned[String(carried.policyId)] = carried;
@@ -760,7 +761,7 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
   const v = verifyGrantAllow(ev.chain ?? [], String(pred.tool), args, at, new Set(trust.grantRootKeyIds ?? []), ev.ctx ?? {});
   if (v.decision === "needs_approval" && isObj(ev.quorum)) {
     const o = quorumOutcome(ev.quorum, ev.chain[ev.chain.length - 1].body.tools[String(pred.tool)].quorum);
-    if (o !== "ok") problems.push(`${where}:grant_approval_${o}`);
+    if (o !== "ok") problems.push(`${where}:grant_approval_failed:${o}`);
   } else if (v.decision !== "allow") problems.push(`${where}:grant_${v.decision}:${v.reason}`);
   if (v.grantDigest && v.grantDigest !== pred.grantDigest) problems.push(`${where}:grant_digest_differs_from_record`);
   if ("possession" in ev && v.grantDigest) {
@@ -1058,24 +1059,24 @@ function checkApproval(pred: J, problems: string[], where: string, trust: TrustD
     const verdict = judgeApprovalBinding(embedded.record, payload);
     if (verdict.decision === "allow") readerAllowed.add(String(embedded.record?.approval?.approver));
     else if (pred.decision === "deny" && verdict.reason !== pred.reason && bindings.length === 1)
-      problems.push(`${where}:deny_reason_${pred.reason}_but_reader_says_${verdict.reason}`);
+      problems.push(`${where}:deny_reason_mismatch:${pred.reason}:${verdict.reason}`);
   });
   if (pred.decision !== "allow") return;
-  if (trust === null) { problems.push(`${where}:approval_allow_but_no_trust_pinned`); return; }
+  if (trust === null) { problems.push(`${where}:authority_trust_not_pinned:approval`); return; }
   const policy = (trust.quorumPolicies ?? {})[String(pred.approvalPolicyId)];
   if (policy === undefined) { problems.push(`${where}:approval_policy_not_pinned`); return; }
-  if (!pyEq(pred.threshold, policy.threshold)) problems.push(`${where}:threshold_${pyRepr(pred.threshold, isFloat(pred, "threshold", pred.threshold))}_is_not_the_pinned_${pyRepr(policy.threshold, isFloat(policy, "threshold", policy.threshold))}`);
+  if (!pyEq(pred.threshold, policy.threshold)) problems.push(`${where}:threshold_not_pinned:${pyRepr(pred.threshold, isFloat(pred, "threshold", pred.threshold))}:${pyRepr(policy.threshold, isFloat(policy, "threshold", policy.threshold))}`);
   const { counted: signed, problems: sigProblems } = countBindings(policy, bindings);
   problems.push(...sigProblems.map((p) => `${where}:${p}`));
   const counted = [...signed].filter((a) => readerAllowed.has(a));
-  if (counted.length < policy.threshold) problems.push(`${where}:recorded_allow_but_${counted.length}_of_${policy.threshold}_approvals_hold`);
+  if (counted.length < policy.threshold) problems.push(`${where}:approvals_below_threshold:${counted.length}:${policy.threshold}`);
 }
 
 function checkEffect(pred: J, problems: string[], where: string): void {
   const record = pred.uncertainEffect;
   if (!truthy(record)) { problems.push(`${where}:effect_without_uncertain_effect_record`); return; }
   const verdict = judgeUncertainEffect(record);
-  if (verdict.decision !== "supported") problems.push(`${where}:uncertain_effect_${verdict.decision}:${verdict.reason}`);
+  if (verdict.decision !== "supported") problems.push(`${where}:uncertain_effect_not_supported:${verdict.decision}:${verdict.reason}`);
   if (!pyEq(getOr(getOr(record, "operation", {}), "argsDigest", null), "sha256:" + String(pred.argsSha256))) problems.push(`${where}:effect_args_differ_from_call`);
   if (!pyEq(pred.outcome ?? null, verdict.reported_outcome)) problems.push(`${where}:outcome_field_differs_from_record`);
 }
@@ -1093,7 +1094,7 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
   catch (e) { return [null, [`${where}:${(e as Error).message}`]]; }
   const pred = body.predicate ?? {};
-  if (pred.seq !== i) problems.push(`${where}:seq_${pred.seq ?? "None"}_not_${i}`);
+  if (pred.seq !== i) problems.push(`${where}:seq_mismatch:${pred.seq ?? "None"}:${i}`);
   if (pred.prev !== prev) problems.push(`${where}:chain_broken`);
   if (body.predicateType === TOOL_CALL_RECORD && pred.principals !== undefined && pred.principals !== null) {
     if (trust === null) problems.push(`${where}:principals_but_no_trust_pinned`);
@@ -1150,7 +1151,7 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
       allowed.add(pid);
       if (!grantOf.has(pid)) grantOf.set(pid, pred.grantDigest ?? null);
     } else if ((phase === "intent" || phase === "effect") && grantOf.has(pid) && (pred.grantDigest ?? null) !== grantOf.get(pid))
-      problems.push(`line_${i}:${phase}_grant_differs_from_permit`);
+      problems.push(`line_${i}:grant_differs_from_permit:${phase}`);
     if (phase === "intent") {
       if (!allowed.has(pid)) problems.push(`line_${i}:intent_without_permit`);
       if (!intents.has(pid)) intents.set(pid, i);
