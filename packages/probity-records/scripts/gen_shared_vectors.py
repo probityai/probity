@@ -21,7 +21,6 @@ import time
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 from probity_records import (
     GRANT_ALLOW,
     QUORUM_ALLOW,

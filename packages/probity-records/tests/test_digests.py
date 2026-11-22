@@ -11,7 +11,6 @@ from typing import Any
 
 import jcs_admit
 import pytest
-
 from probity_records.digests import (
     CODES,
     MAX_SAFE_INT,
