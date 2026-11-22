@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
+reason each corpus declares.
+
+- `agent-payment-mandate/v1`: the payment evidence pack of an agent-initiated charge, card-side records and the 21
+  x402 `exact` on EVM (EIP-3009) records. The signer is recovered from the EIP-712 signature under the requirement's
+  token domain; no field that names a signer is read. 36 of 36 members.
+- `status-receipt-binding/v1`: a credential status receipt held to the credential's bytes by digest, under an
+  authority key the case supplies. 24 of 24 members.
+- `actor-marker-survival/v1`: a chain of signed hop statements held to the corpus's twenty checks, with every
+  writer's key and role read only from the corpus's `TRUST.json` once its SHA-256 matches the manifest. 30 of 30
+  members.
+
 ## 0.8.0 (2026-11-21)
 
 A minor release: a new claim type, `evidence_sufficiency/v1`. It decides what one conforming Observed Effect

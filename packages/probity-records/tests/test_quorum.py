@@ -20,6 +20,7 @@ from probity_records import (
     tool_call_predicate,
     verify_journal,
 )
+from probity_records.possession import cnf_for_signer
 
 AT = "2026-06-01T00:00:00Z"
 ARGS = {"amount_cents": 90000, "customer_id": "cust-alice"}
@@ -90,7 +91,7 @@ def test_grant_that_requires_approval_is_satisfied_by_a_quorum(tmp_path) -> None
     root, agent, gate = Signer.generate(), Signer.generate(), Signer.generate()
     tools = {"refund_payment": {"approval": "required", "args": {
         "amount_cents": {"type": "range", "min": 1, "max": 100000}, "customer_id": {"type": "wildcard"}}}}
-    chain = [issue_grant(root, grant_id="g", holder_key=raw_public(agent), tools=tools,
+    chain = [issue_grant(root, grant_id="g", holder_key=raw_public(agent), cnf=cnf_for_signer(agent), tools=tools,
                          not_before="2026-01-01T00:00:00Z", expires_at="2099-12-31T00:00:00Z")]
     evidence = {**grant_evidence(chain, ARGS),
                 "quorum": count_votes(policy, req, [_vote(keys, "ops", req), _vote(keys, "finance", req)],
