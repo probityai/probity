@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { canonicalBytes, canonicalOfReceived, checkPrincipals, judgeIdentity, parsePy, verifyJournal } from "../src/verify.ts";
+import { canonicalBytes, canonicalOfReceived, chainDigests, checkPrincipals, judgeIdentity, parsePy, verifyGrantAllow, verifyJournal } from "../src/verify.ts";
 
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
@@ -20,8 +20,19 @@ for (const family of JOURNAL_FAMILIES) {
 
 for (const v of load("identity.json")) {
   test(`${v.id} ${v.description}`, () => {
-    const [problems, grade] = checkPrincipals(v.principals, v.at, v.pins, new Set(v.approvers));
+    const approvers = v.approvers === null ? null : new Set<string>(v.approvers);
+    const [problems, grade] = checkPrincipals(v.principals, v.at, v.pins, approvers,
+      { sponsors: v.sponsors === undefined ? undefined : v.sponsors, standingGrants: v.standingGrants ?? {} });
     assert.deepEqual({ problems, grade }, { problems: v.expected.problems, grade: v.expected.grade });
+  });
+}
+
+// Standing grants: the same allow or refusal, and the same resolved digests, for every chain.
+for (const v of load("standing_grants.json")) {
+  test(`${v.id} ${v.description}`, () => {
+    const { decision, reason, grantDigest } = verifyGrantAllow(v.chain, v.tool, v.args, v.at, new Set(v.roots));
+    const digests = Object.keys(chainDigests(v.chain, new Set(v.roots))).sort();
+    assert.deepEqual({ decision, reason, grantDigest, digests }, v.expected);
   });
 }
 
@@ -47,5 +58,5 @@ for (const v of load("canonical_identity.json")) {
 }
 
 test("every family is non-empty", () => {
-  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "canonical.json", "canonical_identity.json"]) assert.ok(load(f).length > 0, f);
+  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "standing_grants.json", "canonical.json", "canonical_identity.json"]) assert.ok(load(f).length > 0, f);
 });

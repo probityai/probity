@@ -3,7 +3,8 @@
 Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint", "keys": [pem],
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
-principal-level vectors of ``identity_vectors``, ``canonical_identity.json`` the canonical identity
+principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``standing_grants.json`` its standing
+grant chains, ``canonical_identity.json`` the canonical identity
 strings of ``canonical_identity_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
@@ -57,6 +58,7 @@ from probity_records.core import (
     pae,
 )
 from probity_records.grants import GRANT_DOMAIN
+from probity_records.identity_vectors import standing_grant_vectors
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
@@ -710,6 +712,7 @@ def main(out: Path) -> None:
                                                                  "checkpoint")}})
         (out / f"{family}.json").write_text(json.dumps(out_rows, indent=2, sort_keys=True) + "\n")
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
+    (out / "standing_grants.json").write_text(json.dumps(standing_grant_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")

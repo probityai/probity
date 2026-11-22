@@ -17,6 +17,17 @@ Graded, never refused, on delegation: ``act-chain`` when the user's credential n
 ``act``, ``act-absent`` when it carries no ``act``. ``strict`` conformance needs all four principals
 and ``act-chain``; anything else that passes is ``basic``. An auditor may require ``strict``.
 
+Autonomous: an agent that runs with no person in its session. Its block carries no ``user``; it carries the agent,
+the ``sponsor`` who answers for it, the digest of its standing grant (``standingGrant``, a capability grant that names
+that sponsor and a review date, ``grants.py``) and its ``session`` ({"id", "startedAt"}). ``check_principals`` grades
+it ``autonomous`` when the standing grant is one the verifier resolved from content it verified against its own
+pinned grant roots, is inside its window and before its review date, is held by the agent's confirmed key (``cnf``)
+and names this sponsor; the sponsor is registered for this agent in the registry the auditor pins; and the approver
+is present exactly when an approval admitted the call. The sponsor's credential is checked at the grant's
+``notBefore``, the moment the sponsor answered for it, never per call. A ``user`` in such a block is refused
+(``principals_autonomous_has_user``): an autonomous block never carries a person's token. ``autonomous`` is
+strict-equivalent: an auditor that requires ``strict`` accepts it.
+
 When the auditor holds the token itself and the JWKS snapshot, ``verify_token`` re-verifies the JWS
 signature and every claim the principal states, closing the gap the audit-record member leaves open
 (that the signature verified).
@@ -40,6 +51,10 @@ from .core import canonical, sha256_hex
 from .grants import ts
 
 ROLES = ("user", "agent", "sponsor", "approver")
+#: The members of an autonomous block beside its roles.
+AUTONOMOUS = ("session", "standingGrant")
+#: The longest session id an autonomous block carries.
+SESSION_ID_MAX = 256
 MEMBERS = ("issuer", "subject", "clientId", "audience", "authMethod", "source", "tokenDigest", "issuedAt",
            "expiresAt", "kid", "key", "keyThumbprint", "jwksDigest")
 OPTIONAL = ("tenant", "act", "cnf")
@@ -142,12 +157,111 @@ def check_principal(p: Any, at: str, pins: Mapping[str, Any]) -> str | None:
     return None
 
 
-def check_principals(block: Any, at: str, pins: Mapping[str, Any],
-                     approvers: set[str] | None = None) -> tuple[list[str], str | None]:
-    """(problems, grade) for one record's ``principals``. Grade is ``strict`` or ``basic``; None
-    when a problem refuses the block."""
-    if not isinstance(block, dict) or not block or set(block) - set(ROLES):
+def sponsor_id(issuer: str, subject: str) -> str:
+    """The id a sponsor goes by in the revocation list (kind ``sponsor``): ``<issuer>#<subject>``. An issuer is an
+    https URL with no fragment (OpenID Connect Discovery 1.0, section 3), so the first ``#`` splits it
+    unambiguously; ValueError for anything else."""
+    if (not isinstance(issuer, str) or not issuer.startswith("https://") or "#" in issuer
+            or not isinstance(subject, str) or not subject):  # fmt: skip
+        raise ValueError("sponsor_id_invalid")
+    ident = f"{issuer}#{subject}"
+    if len(ident) > 512 or not all("\x21" <= c <= "\x7e" for c in ident):
+        raise ValueError("sponsor_id_invalid")
+    return ident
+
+
+def _session_problem(session: Any, at: str) -> str | None:
+    if (not isinstance(session, dict) or set(session) != {"id", "startedAt"} or not isinstance(session["id"], str)
+            or not 0 < len(session["id"]) <= SESSION_ID_MAX
+            or not all("\x21" <= c <= "\x7e" for c in session["id"])):  # fmt: skip
+        return "principals_session_malformed"
+    try:
+        started_late = ts(session["startedAt"]) > ts(at)
+    except (TypeError, ValueError):
+        return "principals_session_malformed"
+    return "principals_session_not_started" if started_late else None
+
+
+def _grant_problems(block: Mapping[str, Any], at: str,
+                    standing_grants: Mapping[str, Mapping[str, Any]]) -> list[str]:  # fmt: skip
+    digest = block["standingGrant"]
+    if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+        return ["principals_standing_grant_malformed"]
+    grant = standing_grants.get(digest)
+    if grant is None:
+        return ["principals_standing_grant_unknown"]
+    if "sponsor" not in grant or "reviewBy" not in grant:
+        return ["principals_standing_grant_not_standing"]
+    problems = []
+    when = ts(at)
+    if when < ts(grant["notBefore"]):
+        problems.append("principals_standing_grant_not_yet_valid")
+    elif when >= ts(grant["expiresAt"]):
+        problems.append("principals_standing_grant_expired")
+    elif when >= ts(grant["reviewBy"]):
+        problems.append("principals_standing_grant_unreviewed")
+    cnf = block["agent"].get("cnf")
+    if cnf is None or cnf != grant.get("cnf"):
+        problems.append("principals_standing_grant_not_held_by_agent")
+    sponsor = block["sponsor"]
+    if {"issuer": sponsor["issuer"], "subject": sponsor["subject"]} != grant["sponsor"]:
+        problems.append("principals_sponsor_not_the_grant_sponsor")
+    return problems
+
+
+def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], approvers: set[str] | None,
+                      sponsors: Mapping[str, Any] | None,
+                      standing_grants: Mapping[str, Mapping[str, Any]]) -> tuple[list[str], str | None]:  # fmt: skip
+    if "user" in block:
+        return ["principals_autonomous_has_user"], None
+    problems = [f"principals_need_{name}" for name, member in
+                (("agent", "agent"), ("sponsor", "sponsor"), ("session", "session"),
+                 ("standing_grant", "standingGrant")) if member not in block]  # fmt: skip
+    if problems:
+        return problems, None
+    grant = standing_grants.get(block["standingGrant"]) if isinstance(block["standingGrant"], str) else None
+    sponsored_at = str(grant["notBefore"]) if grant is not None and "notBefore" in grant else at
+    for role in ("agent", "approver"):
+        if role in block:
+            prob = check_principal(block[role], at, pins)
+            if prob:
+                problems.append(f"principal_{role}:{prob}")
+    prob = check_principal(block["sponsor"], sponsored_at, pins)
+    if prob:
+        problems.append(f"principal_sponsor:{prob}")
+    session = _session_problem(block["session"], at)
+    if session:
+        problems.append(session)
+    if problems:
+        return problems, None
+    problems = _grant_problems(block, at, standing_grants)
+    agent, sponsor = block["agent"], block["sponsor"]
+    if sponsors is None:
+        problems.append("principals_sponsors_not_pinned")
+    elif (sponsor["issuer"], sponsor["subject"]) not in {tuple(s) for s in sponsors.get(agent["clientId"], ())}:
+        problems.append("principal_sponsor_not_registered")
+    if "approver" in block and approvers is None:
+        problems.append("principal_approver_without_approval")
+    elif approvers is not None and "approver" not in block:
+        problems.append("principals_need_approver")
+    elif "approver" in block and approvers is not None and block["approver"]["subject"] not in approvers:
+        problems.append("principal_approver_not_an_approval_signer")
+    return (problems, None) if problems else ([], "autonomous")
+
+
+def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: set[str] | None = None, *,
+                     sponsors: Mapping[str, Any] | None = None,
+                     standing_grants: Mapping[str, Mapping[str, Any]] | None = None) -> tuple[list[str], str | None]:
+    """(problems, grade) for one record's ``principals``. Grade is ``strict``, ``basic`` or ``autonomous``; None
+    when a problem refuses the block.
+
+    ``sponsors`` is the registry the auditor pins: agent client id to the (issuer, subject) pairs registered as its
+    sponsors. ``standing_grants`` maps a grant digest to a grant body the caller verified against its own pinned
+    grant roots (``grants.chain_digests``); nothing in the record chooses either."""
+    if not isinstance(block, dict) or not block or set(block) - set(ROLES) - set(AUTONOMOUS):
         return ["principals_malformed"], None
+    if set(block) & set(AUTONOMOUS):
+        return _check_autonomous(block, at, pins, approvers, sponsors, standing_grants or {})
     problems = [f"principal_{role}:{prob}" for role in ROLES if role in block
                 for prob in [check_principal(block[role], at, pins)] if prob]
     if "user" not in block or "agent" not in block:

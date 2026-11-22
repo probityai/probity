@@ -23,8 +23,8 @@ from typing import Any
 from .authority import Trust, check_authority
 from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
-from .grants import grant_digest, spend_of
-from .identity import act_grade, check_principals
+from .grants import chain_digests, grant_digest, spend_of
+from .identity import AUTONOMOUS, act_grade, check_principals, sponsor_id
 from .possession import DEFAULT_SKEW, duplicate_proofs
 from .quorum import count_bindings
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
@@ -271,15 +271,36 @@ def _approval_signers(pred: dict[str, Any]) -> set[str] | None:
     return names or None
 
 
+def _standing_grants(pred: Mapping[str, Any], trust: Trust) -> dict[str, dict[str, Any]]:
+    """Every grant body an autonomous block may name: from chains the auditor pins and the record's own authority
+    chain, each verified against the pinned grant roots first. Nothing the record says selects a key."""
+    chains = [list(c) for c in trust.standing_grants]
+    evidence = pred.get("authority")
+    if isinstance(evidence, Mapping) and isinstance(evidence.get("chain"), list):
+        chains.append(list(evidence["chain"]))
+    found: dict[str, dict[str, Any]] = {}
+    for chain in chains:
+        found.update(chain_digests(chain, set(trust.grant_root_key_ids)))
+    return found
+
+
 def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str) -> None:
     if trust is None:
         problems.append(f"{where}:principals_but_no_trust_pinned")
         return
-    found, grade = check_principals(pred["principals"], str(pred.get("at")), trust.identity_issuers,
-                                    _approval_signers(pred))
+    block = pred["principals"]
+    autonomous = isinstance(block, dict) and bool(set(block) & set(AUTONOMOUS))
+    found, grade = check_principals(block, str(pred.get("at")), trust.identity_issuers, _approval_signers(pred),
+                                    sponsors=trust.agent_sponsors or None,
+                                    standing_grants=_standing_grants(pred, trust) if autonomous else None)  # fmt: skip
     problems.extend(f"{where}:{p}" for p in found)
-    if grade is not None and trust.identity_profile == "strict" and grade != "strict":
-        problems.append(f"{where}:principals_below_strict:{act_grade(pred['principals'])}")
+    if grade == "autonomous" and trust.revocations is not None:
+        sponsor = block["sponsor"]
+        if trust.revocations.revoked_at("sponsor", sponsor_id(sponsor["issuer"], sponsor["subject"]),
+                                        str(pred.get("at"))):  # fmt: skip
+            problems.append(f"{where}:principals_sponsor_revoked")
+    if grade is not None and trust.identity_profile == "strict" and grade not in ("strict", "autonomous"):
+        problems.append(f"{where}:principals_below_strict:{act_grade(block)}")
 
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | None,

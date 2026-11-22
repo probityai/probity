@@ -33,6 +33,24 @@ EXPECTED = {
     "ID14": (["principals_need_user_and_agent"], None),
     "ID15": (["principal_agent:principal_cnf_invalid"], None),
     "ID16": (["principal_agent:principal_cnf_invalid"], None),
+    # autonomous: no person in the session
+    "ID17": ([], "autonomous"), "ID18": ([], "autonomous"),
+    "ID19": (["principals_need_sponsor"], None),
+    "ID20": (["principal_sponsor_not_registered"], None),
+    "ID21": (["principals_standing_grant_expired"], None),
+    "ID22": (["principals_standing_grant_unreviewed"], None),
+    "ID23": (["principals_autonomous_has_user"], None),
+    "ID24": (["principals_need_session"], None),
+    "ID25": (["principals_standing_grant_not_held_by_agent"], None),
+    "ID26": (["principals_sponsor_not_the_grant_sponsor"], None),
+    "ID27": (["principals_standing_grant_unknown"], None),
+    "ID28": (["principals_sponsors_not_pinned"], None),
+    "ID29": (["principals_session_not_started"], None),
+    "ID30": (["principal_approver_without_approval"], None),
+    "ID31": (["principal_sponsor:principal_not_yet_valid"], None),
+    "ID32": (["principals_need_approver"], None),
+    "ID33": (["principals_session_malformed"], None),
+    "ID34": (["principals_standing_grant_not_held_by_agent"], None),
 }
 
 

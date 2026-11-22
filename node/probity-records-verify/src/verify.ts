@@ -552,9 +552,25 @@ function cnfProblem(cnf: J): string | null {
   return raw.length === 32 && raw.toString("base64url") === value ? null : "cnf_invalid";
 }
 
+// A standing grant (grants.py): "sponsor" {issuer, subject} and "reviewBy" together, notBefore < reviewBy <= expiresAt.
+function standingProblem(body: J): string | null {
+  if (("sponsor" in body) !== ("reviewBy" in body)) return "grant_standing_incomplete";
+  if (!("sponsor" in body)) return null;
+  const s = body.sponsor;
+  if (!isObj(s) || Object.keys(s).sort().join(",") !== "issuer,subject" || !Object.values(s).every((v) => typeof v === "string" && v)) return "grant_sponsor_invalid";
+  try { sponsorId(s.issuer, s.subject); } catch { return "grant_sponsor_invalid"; }
+  let r: number, nb: number, ex: number;
+  try { r = ts(body.reviewBy); nb = ts(body.notBefore); ex = ts(body.expiresAt); } catch { return "grant_review_invalid"; }
+  return nb < r && r <= ex ? null : "grant_review_invalid";
+}
+
 function narrowingProblem(ch: J, p: J): string | null {
   if (ch.issuerKey !== p.holderKey) return "child_not_issued_by_parent_holder";
   if (ts(ch.notBefore) < ts(p.notBefore) || ts(ch.expiresAt) > ts(p.expiresAt)) return "child_window_wider_than_parent";
+  if ("sponsor" in p) {
+    if (!isObj(ch.sponsor) || ch.sponsor.issuer !== p.sponsor.issuer || ch.sponsor.subject !== p.sponsor.subject) return "child_changes_sponsor";
+    if (ts(ch.reviewBy) > ts(p.reviewBy)) return "child_review_later_than_parent";
+  }
   if ((p.maxDepth ?? 0) < 1) return "parent_forbids_delegation";
   if ((ch.maxDepth ?? 0) > p.maxDepth - 1) return "child_depth_wider_than_parent";
   for (const [k, c] of Object.entries(p.context ?? {})) {
@@ -573,10 +589,11 @@ function narrowingProblem(ch: J, p: J): string | null {
     if ((ps.approval ?? "none") === "required" && (spec.approval ?? "none") !== "required") return `child_drops_approval:${tool}`;
     if ((ps.when ?? []).some((w: string) => !(spec.when ?? []).includes(w))) return `child_drops_condition:${tool}`;
     if ("quorum" in ps) { const q = quorumWidening(spec.quorum, ps.quorum); if (q) return `${q}:${tool}`; }
-    for (const [name, c] of Object.entries(spec.args)) {
-      if (!(name in ps.args)) return `child_adds_argument:${tool}.${name}`;
-      if (!narrows(c, ps.args[name])) return `child_widens_constraint:${tool}.${name}`;
-    }
+    const added = Object.keys(spec.args).filter((n) => !(n in ps.args)).sort();
+    if (added.length) return `child_adds_argument:${tool}.${added[0]}`;
+    const dropped = Object.keys(ps.args).filter((n) => !(n in spec.args)).sort();
+    if (dropped.length) return `child_drops_argument:${tool}.${dropped[0]}`;
+    for (const [name, c] of Object.entries(spec.args)) if (!narrows(c, ps.args[name])) return `child_widens_constraint:${tool}.${name}`;
   }
   return null;
 }
@@ -603,6 +620,8 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
     if (!isObj(body)) { result = `grant_shape:${depth}`; break; }
     const cnf = cnfProblem(body.cnf);
     if (cnf) { result = `grant_invalid:${depth}:grant_${cnf}`; break; }
+    const standing = standingProblem(body);
+    if (standing) { result = `grant_invalid:${depth}:${standing}`; break; }
     let issuer: string;
     try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch (e) { result = `grant_invalid:${depth}:${(e as Error).message}`; break; }
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) { result = `grant_signature_unverified:${depth}`; break; }
@@ -618,8 +637,26 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
   for (let depth = 0; depth < issuers.length; depth++) {
     const body = chain[depth].body;
     if (!(ts(body.notBefore) <= when && when <= ts(body.expiresAt))) return [null, `grant_outside_window:${depth}`];
+    if ("reviewBy" in body && when >= ts(body.reviewBy)) return [null, `grant_review_overdue:${depth}`];
   }
   return result !== "ok" ? [null, result] : [chain[chain.length - 1].body, "ok"];
+}
+
+// Every body of a structurally verified chain by digest (grants.chain_digests); empty when the chain does not verify.
+export function chainDigests(chain: J[], roots: Set<string>): Record<string, J> {
+  const out: Record<string, J> = {};
+  let prev: J = null;
+  for (let depth = 0; depth < chain.length; depth++) {
+    const body = isObj(chain[depth]) ? chain[depth].body : null;
+    if (!isObj(body) || cnfProblem(body.cnf) || standingProblem(body)) return {};
+    let issuer: string;
+    try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch { return {}; }
+    if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) return {};
+    if (prev === null) { if (body.parent !== null || !roots.has(issuer)) return {}; }
+    else if (body.parent !== digestOf(prev) || narrowingProblem(body, prev)) return {};
+    out[digestOf(body)] = body; prev = body;
+  }
+  return out;
 }
 
 function checkCall(leaf: J, tool: string, args: J, ctx: J): string {
@@ -692,8 +729,60 @@ function checkPrincipal(p: J, at: string, pins: Record<string, string[]>): strin
   return null;
 }
 const ROLES = ["user", "agent", "sponsor", "approver"];
-export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null): [string[], string | null] {
-  if (!isObj(block) || !Object.keys(block).length || Object.keys(block).some((k) => !ROLES.includes(k))) return [["principals_malformed"], null];
+const AUTONOMOUS = ["session", "standingGrant"];
+const SESSION_ID_MAX = 256;
+const PRINTABLE = /^[\x21-\x7e]+$/;
+export function sponsorId(issuer: J, subject: J): string {
+  if (typeof issuer !== "string" || !issuer.startsWith("https://") || issuer.includes("#") || typeof subject !== "string" || !subject) throw new Error("sponsor_id_invalid");
+  const id = `${issuer}#${subject}`;
+  if (id.length > 512 || !PRINTABLE.test(id)) throw new Error("sponsor_id_invalid");
+  return id;
+}
+export interface AutonomousTrust { sponsors?: Record<string, [string, string][]> | null; standingGrants?: Record<string, J> | null }
+function sessionProblem(s: J, at: string): string | null {
+  if (!isObj(s) || Object.keys(s).sort().join(",") !== "id,startedAt" || typeof s.id !== "string" || !s.id.length || s.id.length > SESSION_ID_MAX || !PRINTABLE.test(s.id)) return "principals_session_malformed";
+  let started: number;
+  try { started = ts(s.startedAt); } catch { return "principals_session_malformed"; }
+  return started > ts(at) ? "principals_session_not_started" : null;
+}
+function grantProblems(block: J, at: string, grants: Record<string, J>): string[] {
+  const d = block.standingGrant;
+  if (typeof d !== "string" || !/^[0-9a-f]{64}$/.test(d)) return ["principals_standing_grant_malformed"];
+  const g = Object.prototype.hasOwnProperty.call(grants, d) ? grants[d] : undefined;
+  if (g === undefined) return ["principals_standing_grant_unknown"];
+  if (!("sponsor" in g) || !("reviewBy" in g)) return ["principals_standing_grant_not_standing"];
+  const out: string[] = [], w = ts(at);
+  if (w < ts(g.notBefore)) out.push("principals_standing_grant_not_yet_valid");
+  else if (w >= ts(g.expiresAt)) out.push("principals_standing_grant_expired");
+  else if (w >= ts(g.reviewBy)) out.push("principals_standing_grant_unreviewed");
+  const cnf = block.agent.cnf;
+  if (cnf === undefined || cnf === null || !pyEq(cnf, g.cnf ?? null)) out.push("principals_standing_grant_not_held_by_agent");
+  if (block.sponsor.issuer !== g.sponsor.issuer || block.sponsor.subject !== g.sponsor.subject || Object.keys(g.sponsor).length !== 2) out.push("principals_sponsor_not_the_grant_sponsor");
+  return out;
+}
+function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust): [string[], string | null] {
+  if ("user" in block) return [["principals_autonomous_has_user"], null];
+  let problems = ([["agent", "agent"], ["sponsor", "sponsor"], ["session", "session"], ["standing_grant", "standingGrant"]] as const)
+    .filter(([, m]) => !(m in block)).map(([n]) => `principals_need_${n}`);
+  if (problems.length) return [problems, null];
+  const grants = auto.standingGrants ?? {};
+  const grant = typeof block.standingGrant === "string" && Object.prototype.hasOwnProperty.call(grants, block.standingGrant) ? grants[block.standingGrant] : undefined;
+  const sponsoredAt = grant !== undefined && "notBefore" in grant ? String(grant.notBefore) : at;
+  for (const r of ["agent", "approver"]) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
+  const sp = checkPrincipal(block.sponsor, sponsoredAt, pins); if (sp) problems.push(`principal_sponsor:${sp}`);
+  const sess = sessionProblem(block.session, at); if (sess) problems.push(sess);
+  if (problems.length) return [problems, null];
+  problems = grantProblems(block, at, grants);
+  if (auto.sponsors === undefined || auto.sponsors === null) problems.push("principals_sponsors_not_pinned");
+  else if (!(auto.sponsors[block.agent.clientId] ?? []).some(([i, s]) => i === block.sponsor.issuer && s === block.sponsor.subject)) problems.push("principal_sponsor_not_registered");
+  if ("approver" in block && approvers === null) problems.push("principal_approver_without_approval");
+  else if (approvers !== null && !("approver" in block)) problems.push("principals_need_approver");
+  else if ("approver" in block && approvers !== null && !approvers.has(block.approver.subject)) problems.push("principal_approver_not_an_approval_signer");
+  return problems.length ? [problems, null] : [[], "autonomous"];
+}
+export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust = {}): [string[], string | null] {
+  if (!isObj(block) || !Object.keys(block).length || Object.keys(block).some((k) => !ROLES.includes(k) && !AUTONOMOUS.includes(k))) return [["principals_malformed"], null];
+  if (Object.keys(block).some((k) => AUTONOMOUS.includes(k))) return checkAutonomous(block, at, pins, approvers, auto);
   const problems: string[] = [];
   for (const r of ROLES) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
   if (!("user" in block) || !("agent" in block)) problems.push("principals_need_user_and_agent");
@@ -706,7 +795,7 @@ export function checkPrincipals(block: J, at: string, pins: Record<string, strin
 
 // ---------- journal ----------
 
-export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; possessionSkewSeconds?: number }
+export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; possessionSkewSeconds?: number; agentSponsors?: Record<string, [string, string][]>; standingGrants?: J[][] }
 
 // The proof an allow rested on (possession.possession_record): it must name the key the leaf grant's cnf confirms.
 const POSSESSION_MEMBERS: Record<string, string[]> = { dpop: ["iat", "jkt", "jti", "method"], mtls: ["method", "x5t#S256"] };
@@ -1098,9 +1187,20 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   if (body.predicateType === TOOL_CALL_RECORD && pred.principals !== undefined && pred.principals !== null) {
     if (trust === null) problems.push(`${where}:principals_but_no_trust_pinned`);
     else {
-      const [found, grade] = checkPrincipals(pred.principals, String(pred.at), trust.identityIssuers ?? {}, approvalSigners(pred));
+      const block = pred.principals;
+      const autonomous = isObj(block) && Object.keys(block).some((k) => AUTONOMOUS.includes(k));
+      let grants: Record<string, J> | null = null;
+      if (autonomous) {
+        grants = {};
+        const roots = new Set(trust.grantRootKeyIds ?? []);
+        const chains = [...(trust.standingGrants ?? [])];
+        if (isObj(pred.authority) && Array.isArray(pred.authority.chain)) chains.push(pred.authority.chain);
+        for (const chain of chains) Object.assign(grants, chainDigests(chain, roots));
+      }
+      const sponsors = trust.agentSponsors && Object.keys(trust.agentSponsors).length ? trust.agentSponsors : null;
+      const [found, grade] = checkPrincipals(block, String(pred.at), trust.identityIssuers ?? {}, approvalSigners(pred), { sponsors, standingGrants: grants });
       problems.push(...found.map((p) => `${where}:${p}`));
-      if (grade !== null && trust.identityProfile === "strict" && grade !== "strict")
+      if (grade !== null && trust.identityProfile === "strict" && grade !== "strict" && grade !== "autonomous")
         problems.push(`${where}:principals_below_strict:${"act" in (pred.principals.user ?? {}) ? "act-chain" : "act-absent"}`);
     }
   }
