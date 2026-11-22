@@ -64,6 +64,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 | [probity&#8209;ratchet&#8209;cases](packages/probity-ratchet-cases/README.md) | PyPI | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
 | [probity&#8209;effects](packages/probity-effects/README.md) | PyPI | **0.2.0** | - |
 | [agent&#8209;evidence&#8209;replay](packages/agent-evidence-replay/README.md) | PyPI | **0.1.0** | - |
+| [agent&#8209;evidence&#8209;a2a](packages/agent-evidence-a2a/README.md) | PyPI | **0.1.0** | - |
 
 - `probityai`: the `probityai` command; `probityai verify` today
 - `agent-evidence-verify`: offline verifier: supported, contradicted or not established
@@ -72,6 +73,7 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 - `probity-ratchet-cases`: agent task cases graded on final state: a simulated company, tool faults, exact graders
 - `probity-effects`: keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios
 - `agent-evidence-replay`: replays a lab's agent action record and flags a changed or missing step
+- `agent-evidence-a2a`: verifies A2A agent card signatures over the served bytes, with corpora that score any card verifier, canonicaliser or webhook SSRF judge
 
 Install any of them pinned to the version shown: `pip install <package>==<version>`.
 

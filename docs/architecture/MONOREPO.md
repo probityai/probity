@@ -16,7 +16,7 @@ tests/               tests of the repository tools
 
 Members today: `agent-evidence-verify`, `probityai` (the `probityai` command), `probity-ratchet`,
 `probity-ratchet-cases`, `agent-evidence-observer`, `agent-evidence-mcp`,
-`agent-evidence-replay` and `probity-effects`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
+`agent-evidence-replay`, `agent-evidence-a2a` and `probity-effects`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
 publishes nothing or carries a name other than its distribution's.
 
 ## Decisions
@@ -113,7 +113,7 @@ the tree can change in steps while `main` stays green.
 
 Every PyPI project released from this repository has the same publisher: owner `probityai`, repository
 `probity`, workflow `release.yml`, environment `pypi`. That covers `agent-evidence-verify`, `probityai`,
-`agent-evidence-observer`, `probity-ratchet` and `probity-ratchet-cases` now, and
+`agent-evidence-observer`, `probity-ratchet`, `probity-ratchet-cases` and `agent-evidence-a2a` now, and
 `agent-evidence-admission`, `agent-evidence-vocabulary` and `agent-evidence-vectors` when they move in.
 
 The ratchet code ships two PyPI projects, so it moves in as two members, each with its own tag:
