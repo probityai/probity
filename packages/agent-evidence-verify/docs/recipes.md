@@ -45,6 +45,7 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check that an evaluation claim record is admitted under my acceptance rule](evaluation-claim.md) | `evaluation_claim/v1` | `supported` | Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes. |
 | [Decide what a signed Observed Effect record lets a verifier conclude](adapters.md) | `evidence_sufficiency/v1` | `supported` | Authored synthetic corpus member and a stipulated consumer context; it does not establish who holds the observer key. |
 | [Check that no credential is reachable from the agent's environment](corpus-routes.md) | `credential_reachability/v1` | `supported` | Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus. |
+| [Check who signed an AI Catalog trust manifest and that it binds its entry](catalog-trust-manifest.md) | `catalog_trust_manifest/v1` | `supported` | Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe. |
 
 ## Retrieve a command
 
