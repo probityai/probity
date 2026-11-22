@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Record envelope v2 (`probity_records.erasure`): a record whose fields are kept, pseudonymized or encrypted per
+  data subject by a closed schema, so its signed bytes, its chain and its log proofs stay verifiable after a
+  subject's key is destroyed. Seal, open, one-field disclosure, the schema lint and the erasability label a
+  verifier prints. Spec in [docs/erasure.md](docs/erasure.md), 28 shared vectors in `vectors/shared/erasure.json`.
 - ML-DSA-44 checkpoint cosignatures (c2sp.org/tlog-cosignature, signature type 0x06). `witness` parses 0x06
   vkeys, verifies 0x06 lines over the `subtree/v1` CosignedSubtree, and `cosign_mldsa` signs one (it refuses a
   checkpoint with extension lines, which the line would not cover). A tlog-policy may name a 0x06 witness key, and a

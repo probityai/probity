@@ -6,7 +6,7 @@ expected block is this package's own ``verify_journal`` result. ``identity.json`
 principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``standing_grants.json`` its standing
 grant chains, ``canonical_identity.json`` the canonical identity
 strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
-``digests_vectors``. ``canonical.json`` holds bytes and the canonical
+``digests_vectors``, ``erasure.json`` the record envelope v2 cases of ``erasure_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
@@ -61,6 +61,7 @@ from probity_records.core import (
     pae,
 )
 from probity_records.digests_vectors import vectors as digest_vectors
+from probity_records.erasure_vectors import vectors as erasure_vectors
 from probity_records.grants import GRANT_DOMAIN, grant_digest
 from probity_records.identity_vectors import (
     autonomous_record_parts,
@@ -782,6 +783,7 @@ def main(out: Path) -> None:
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")
     (out / "identity_digests.json").write_text(json.dumps(digest_vectors(), indent=2, sort_keys=True) + "\n")
+    (out / "erasure.json").write_text(json.dumps(erasure_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")
     (out / "received.json").write_text(json.dumps(received_rows(), indent=2, sort_keys=True) + "\n")
     (out / "revocation.json").write_text(json.dumps(revocation_rows(), indent=2, sort_keys=True) + "\n")
