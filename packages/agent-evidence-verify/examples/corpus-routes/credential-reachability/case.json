@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "envelope.json": {
+      "length": 4800,
+      "path": "envelope.json",
+      "sha256": "c7f3543aee38d2ea8efe5743dcbaffd1330bd73b95822e8bece9a058fc444849"
+    }
+  },
+  "case_id": "contained",
+  "schema_version": "probity-case/v1"
+}
