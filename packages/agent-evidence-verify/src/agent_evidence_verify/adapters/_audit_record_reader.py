@@ -1681,7 +1681,7 @@ def verify(raw: bytes, policy: Policy, *, disabled: str | None = None) -> Report
                 rule(state)
     except Malformed as exc:
         return Report("malformed", [exc.code], state.derived_tier)
-    except (KeyError, TypeError, AttributeError, IndexError) as exc:
+    except (KeyError, TypeError, AttributeError, IndexError):
         return Report("malformed", ["unhandled-shape"])
     return Report("valid", [], state.derived_tier)
 
