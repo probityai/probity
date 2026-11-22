@@ -21,6 +21,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/agent_unknown"
   },
   {
+   "code": "allow_not_under_a_grant",
+   "check": "grants.walk",
+   "meaning": "the allow the walk starts from carries no grant evidence",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/allow_not_under_a_grant"
+  },
+  {
    "code": "allow_without_approval_binding",
    "check": "journal.verify",
    "meaning": "an approval allow carries no approval binding",
@@ -169,6 +175,12 @@
    "check": "journal.verify",
    "meaning": "a record does not name its predecessor's digest",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/chain_broken"
+  },
+  {
+   "code": "chain_parent_link_broken",
+   "check": "grants.walk",
+   "meaning": "a link of the walked chain does not name the link before it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/chain_parent_link_broken"
   },
   {
    "code": "child_adds_argument",
@@ -939,6 +951,24 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_when_shape"
   },
   {
+   "code": "hop_arguments_differ",
+   "check": "grants.walk",
+   "meaning": "an intent or effect record carries other arguments than its allow",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/hop_arguments_differ"
+  },
+  {
+   "code": "hop_names_another_grant",
+   "check": "grants.walk",
+   "meaning": "an intent or effect record names another grant than its allow",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/hop_names_another_grant"
+  },
+  {
+   "code": "hop_record_missing",
+   "check": "grants.walk",
+   "meaning": "the walk finds no intent or effect record for the permit",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/hop_record_missing"
+  },
+  {
    "code": "identity_actor_unknown",
    "check": "identity.string",
    "meaning": "the strict profile refuses an identity whose actor is unknown",
@@ -1149,6 +1179,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/mtls_certificate_not_yet_valid"
   },
   {
+   "code": "no_allow_for_permit",
+   "check": "grants.walk",
+   "meaning": "the walk finds no allow record for the permit",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/no_allow_for_permit"
+  },
+  {
    "code": "not_run_retry_but_an_effect_may_have_happened",
    "check": "journal.verify",
    "meaning": "a retry records not run where an effect may have happened",
@@ -1213,6 +1249,12 @@
    "check": "mesh.permit",
    "meaning": "the permit's lifetime has passed",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/permit_expired"
+  },
+  {
+   "code": "permit_grant_is_not_the_leaf",
+   "check": "grants.walk",
+   "meaning": "the permit's grant is not the leaf of the chain it carries",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/permit_grant_is_not_the_leaf"
   },
   {
    "code": "permit_key_mismatch",

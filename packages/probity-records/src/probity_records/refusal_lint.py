@@ -281,7 +281,7 @@ PACKAGE_CONFIG = Config(
     assigned=frozenset({"result", "problem", "verdict", "outcome"}))
 #: The modules whose refusals the registry holds: identity, possession, authority, approval, revocation, journal.
 PACKAGE_MODULES = ("authority", "canonical_identity", "celexpr", "constraints", "governance", "grants", "identity",
-                   "journal", "oidc_approval", "possession", "quorum", "revocation")
+                   "journal", "oidc_approval", "possession", "quorum", "revocation", "walk")
 
 
 def lint_package() -> list[Finding]:

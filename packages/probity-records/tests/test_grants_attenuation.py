@@ -164,7 +164,7 @@ def test_grant_to_effect_walk_passes_offline_and_a_swapped_grant_fails(tmp_path)
     swapped = _journal(tmp_path / "bad", gate, chain, [CALL], effect_grant="ab" * 32)
     bad = verify_journal(tmp_path / "bad", [gate.public_pem()], swapped.checkpoint(), trust=trust)
     assert "line_3:grant_differs_from_permit:effect" in bad["failures"]
-    assert "effect_names_another_grant" in grant_walk(bad["statements"], pid)["problems"]
+    assert "hop_names_another_grant:effect" in grant_walk(bad["statements"], pid)["problems"]
 
 
 def test_verifier_recounts_budget_from_the_journal(tmp_path) -> None:
