@@ -138,8 +138,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/credential_reachability.py",
-      "bytes": 18844,
-      "sha256": "6ce795cafbf2a0acc38c524fa6a4c45fb409d1b602cf83cfd045b5b054231074"
+      "bytes": 18877,
+      "sha256": "d441dfec1959ed84db0c85030d481dca5c01965b9e5593b8e537eeed84a312f9"
     },
     {
       "path": "src/agent_evidence_verify/adapters/done_argv.py",
@@ -2149,7 +2149,7 @@
         {
           "path": "examples/corpus-routes/credential-reachability/case.json",
           "bytes": 255,
-          "sha256": "046f6bd8910da1744d53db59555a3b90aae4a4ed9d095cef1a778d76e1e7630c"
+          "sha256": "fc0d2b29df73b85995bb1d7563057b5d60282cc654ca28c7190caf6c128c131a"
         },
         {
           "path": "examples/corpus-routes/credential-reachability/policy.json",
@@ -2158,8 +2158,8 @@
         },
         {
           "path": "examples/corpus-routes/credential-reachability/envelope.json",
-          "bytes": 4800,
-          "sha256": "c7f3543aee38d2ea8efe5743dcbaffd1330bd73b95822e8bece9a058fc444849"
+          "bytes": 4796,
+          "sha256": "050b0bb3688d734aefdaf19c99c1e69687512d9bcbc39c4c95a8690ab24337c2"
         }
       ]
     }

@@ -146,7 +146,7 @@ SHA-256 of its key, or carries a malformed pin raises `CaseError`.
 
 A record that passes every rule is `supported` with the reason `contained_verified`, `exposed_verified` or
 `incomplete_verified`; a supported `exposed` record is a verified finding, and only `contained` supports "no
-credential without an agent marker is reachable" for the listed classes, at `probedAt`, from the agent's
+credential other than one issued to the agent is reachable" for the listed classes, at `probedAt`, from the agent's
 vantage. Every other rule failure is `contradicted` or `not_established` as the contract states, with its
 code as the reason. The corpus's two `no_verdict` members (an envelope that is not JSON, a signature that is
 not base64) map to `contradicted` / `malformed_envelope`, because the kernel has three decisions.

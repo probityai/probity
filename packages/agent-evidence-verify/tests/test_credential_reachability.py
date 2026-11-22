@@ -28,7 +28,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 ROOT = Path(__file__).resolve().parent / "data" / "credential-reachability"
-MANIFEST_SHA256 = "eef8b19b38b76912843f8c990980decb4ceb0c536b3ad7d784d1649b76e78366"
+MANIFEST_SHA256 = "030e80486baf75fb695bfe9104271d135ad3c1f536943f3ee749c757a4295fd8"
 MANIFEST = json.loads((ROOT / "MANIFEST.json").read_bytes())
 HOST = "credential-reachability/v1 test environment-host key"
 AGENT = "credential-reachability/v1 test key the agent holds"
@@ -99,7 +99,7 @@ def test_every_rule_reason_of_the_contract_is_forced_by_a_member() -> None:
     reasons = {e["expected"]["reason"].split(":")[0] for e in MANIFEST["vectors"]}
     assert {"signed_by_agent_key", "signature_invalid", "untrusted_key", "challenge_mismatch",
             "audience_mismatch", "result_stale", "probed_in_future", "class_set_unsupported",
-            "class_missing", "class_duplicate", "marked_undeclared", "placeholder_undeclared",
+            "class_missing", "class_duplicate", "issued_to_agent_undeclared", "placeholder_undeclared",
             "reachable_reported_clean", "untested_reported_clean", "class_verdict_mismatch",
             "result_overstates", "result_mismatch", "attempt_fields",
             "environment_mismatch"} <= reasons

@@ -55,11 +55,11 @@ CLASSES = ("ssh-agent", "ssh-key-file", "cloud-metadata", "cloud-config-file",
            "registry-config-file", "browser-cookie-store", "environment-token",
            "cluster-service-account", "git-credential", "host-keyring")
 VERDICTS = ("reachable", "not_reachable", "could_not_test")
-OUTCOMES = ("found", "marked", "placeholder", "absent", "denied", "error", "not_run")
+OUTCOMES = ("found", "issued_to_agent", "placeholder", "absent", "denied", "error", "not_run")
 #: Best first: a declared result earlier than the derived one overstates it.
 RESULTS = ("contained", "incomplete", "exposed")
 MEMBERS = ("classSet", "audience", "challenge", "probedAt", "vantage", "probe", "placeholders",
-           "markedCredentials", "classes", "result")
+           "issuedToAgent", "classes", "result")
 ATTEMPT_MEMBERS = frozenset({"locator", "outcome", "digestPrefix", "detail"})
 MAX_ENVELOPE_BYTES = 4 * 1024 * 1024
 MAX_SIGNATURES = 1024
@@ -251,7 +251,7 @@ FIELD_CHECKS: tuple[tuple[str, Any], ...] = (
     ("vantage", lambda v: _text(v, TEXT200)),
     ("probe", _probe_wellformed),
     ("placeholders", lambda v: _listed(v, {"prefix"}, lambda e: _text(e["prefix"], TEXT200))),
-    ("markedCredentials", lambda v: _listed(
+    ("issuedToAgent", lambda v: _listed(
         v, {"id", "digestPrefix"},
         lambda e: _text(e["id"], TEXT200) and _text(e["digestPrefix"], HEX12))),
     ("classes", lambda v: isinstance(v, list) and all(_class_wellformed(c) for c in v)),
@@ -295,7 +295,7 @@ def _wellformed(p: dict[str, Any]) -> None:
             raise _unestablished(f"predicate_field_invalid:{name}")
     for c in p["classes"]:
         for a in c["attempts"]:
-            carries = a["outcome"] in ("found", "marked")
+            carries = a["outcome"] in ("found", "issued_to_agent")
             if (not set(a) <= ATTEMPT_MEMBERS or ("digestPrefix" in a) != carries
                     or (carries and not _text(a["digestPrefix"], HEX12))):
                 raise _refuse("attempt_fields")
@@ -319,7 +319,7 @@ def _binding(p: dict[str, Any], trust: _Trust) -> None:
 
 
 def _coverage(p: dict[str, Any]) -> None:
-    """Rules 21 to 24: each class once, every class present, marked and placeholder attempts declared."""
+    """Rules 21 to 24: each class once, every class present, issued-to-agent and placeholder attempts declared."""
     seen: set[str] = set()
     for c in p["classes"]:
         if c["class"] in seen:
@@ -328,10 +328,10 @@ def _coverage(p: dict[str, Any]) -> None:
     for name in CLASSES:
         if name not in seen:
             raise _refuse(f"class_missing:{name}")
-    declared = {e["digestPrefix"] for e in p["markedCredentials"]}
+    declared = {e["digestPrefix"] for e in p["issuedToAgent"]}
     attempts = [a for c in p["classes"] for a in c["attempts"]]
-    if any(a["outcome"] == "marked" and a["digestPrefix"] not in declared for a in attempts):
-        raise _refuse("marked_undeclared")
+    if any(a["outcome"] == "issued_to_agent" and a["digestPrefix"] not in declared for a in attempts):
+        raise _refuse("issued_to_agent_undeclared")
     if not p["placeholders"] and any(a["outcome"] == "placeholder" for a in attempts):
         raise _refuse("placeholder_undeclared")
 
