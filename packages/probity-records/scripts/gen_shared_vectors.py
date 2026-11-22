@@ -62,7 +62,10 @@ from probity_records.core import (
 )
 from probity_records.digests_vectors import vectors as digest_vectors
 from probity_records.grants import GRANT_DOMAIN, grant_digest
-from probity_records.identity_vectors import autonomous_record_parts, standing_grant_vectors
+from probity_records.identity_vectors import (
+    autonomous_record_parts,
+    standing_grant_vectors,
+)
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
@@ -148,14 +151,18 @@ def autonomous_case(directory: Path, *, authority: str = "standing", intent: str
 
 
 def autonomous_trust() -> tuple[Trust, dict]:
-    """The auditor of the autonomous family: identity pins, the sponsor registry, the grant root, strict."""
+    """The auditor of the autonomous family: identity pins, the sponsor registry, the grant root, the standing grant
+    (pinned, so a record that names it while resting on something else is judged on that, not on an unknown grant),
+    strict."""
     parts = autonomous_record_parts()
     sponsors = {agent: [tuple(s) for s in refs] for agent, refs in parts["sponsors"].items()}
     trust = Trust(grant_root_key_ids=frozenset({parts["root"]}), identity_profile="strict",
                   identity_issuers={url: frozenset(t) for url, t in parts["pins"].items()},
-                  agent_sponsors={agent: frozenset(refs) for agent, refs in sponsors.items()})  # fmt: skip
+                  agent_sponsors={agent: frozenset(refs) for agent, refs in sponsors.items()},
+                  standing_grants=((parts["standing"],),))  # fmt: skip
     doc = {"grantRootKeyIds": [parts["root"]], "identityProfile": "strict", "identityIssuers": parts["pins"],
-           "agentSponsors": {agent: [list(s) for s in refs] for agent, refs in sponsors.items()}}
+           "agentSponsors": {agent: [list(s) for s in refs] for agent, refs in sponsors.items()},
+           "standingGrants": [[parts["standing"]]]}
     return trust, doc
 
 
