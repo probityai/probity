@@ -1,0 +1,26 @@
+{
+  "title": "probityai: check what an AI agent did, from the bytes, before you trust it",
+  "upload_type": "software",
+  "license": "Apache-2.0",
+  "creators": [
+    {
+      "name": "Gilda, Sankalp",
+      "orcid": "0000-0002-3645-4501"
+    }
+  ],
+  "description": "<p>Command-line tools and libraries that decide a claim about an agent run against pinned evidence or a DSSE envelope, record agent actions as signed, retained evidence, and turn an observed agent failure into a guard proven by replay. Each decision can be replayed offline from the retained bytes.</p>",
+  "keywords": [
+    "agent evidence",
+    "verification",
+    "signed records",
+    "offline verification",
+    "agentic systems"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/probityai/probity",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
