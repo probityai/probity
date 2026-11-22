@@ -4,7 +4,8 @@ Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
 principal-level vectors of ``identity_vectors``, ``canonical_identity.json`` the canonical identity
-strings of ``canonical_identity_vectors``. ``canonical.json`` holds bytes and the canonical
+strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
+``digests_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
@@ -56,6 +57,7 @@ from probity_records.core import (
     canonical_of_received,
     pae,
 )
+from probity_records.digests_vectors import vectors as digest_vectors
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.possession import cnf_for_signer
@@ -712,6 +714,7 @@ def main(out: Path) -> None:
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")
+    (out / "identity_digests.json").write_text(json.dumps(digest_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")
     (out / "received.json").write_text(json.dumps(received_rows(), indent=2, sort_keys=True) + "\n")
     (out / "revocation.json").write_text(json.dumps(revocation_rows(), indent=2, sort_keys=True) + "\n")
