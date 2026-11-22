@@ -50,7 +50,7 @@ def check() -> dict[str, object]:
     code, ssrf = _run(command, "ssrf")
     assert isinstance(ssrf, dict)
     _expect("ssrf exit", code, 0)
-    _expect("ssrf", (len(ssrf["caught"]), ssrf["missed"], ssrf["false_flags"]), (30, [], []))
+    _expect("ssrf", (ssrf["caught"], ssrf["missed"], ssrf["false_flags"]), (30, [], []))
 
     code, canon = _run(command, "canonicaliser")
     assert isinstance(canon, dict)
@@ -64,7 +64,7 @@ def check() -> dict[str, object]:
 
     return {"command": NAME, "version": version(NAME), "console_scripts": scripts,
             "cards_detected": corpus["detected"], "cards_pending": len(corpus["pending"]),
-            "ssrf_caught": len(ssrf["caught"]), "vectors_passed": canon["passed"]}
+            "ssrf_caught": ssrf["caught"], "vectors_passed": canon["passed"]}
 
 
 if __name__ == "__main__":
