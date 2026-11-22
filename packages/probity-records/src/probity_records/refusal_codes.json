@@ -417,6 +417,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/credential_names_only_user"
   },
   {
+   "code": "credential_unscrubbable",
+   "check": "gateway.hook",
+   "meaning": "a credential's value cannot be recognised and scrubbed from an echo, so it is not injected",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/credential_unscrubbable"
+  },
+  {
    "code": "deferred_dispatch_without_stored_principals",
    "check": "marker.chain",
    "meaning": "a deferred dispatch ran under principals other than the ones stored when it was queued",
@@ -2143,6 +2149,12 @@
    "check": "revocation.list",
    "meaning": "a successor list drops an entry of its predecessor",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_list_drops_entry"
+  },
+  {
+   "code": "revocation_list_fork",
+   "check": "mesh.revocation",
+   "meaning": "a list of the sequence the gate holds has another digest than the held list",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_list_fork"
   },
   {
    "code": "revocation_list_gap",
