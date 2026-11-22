@@ -28,3 +28,6 @@ Issues = "https://github.com/probityai/probity/issues"
 # depend on it bring their own dependency trees.
 [dependency-groups]
 dev = ["pytest>=9.2.0,<10"]
+
+[tool.setuptools.package-data]
+probity_records = ["refusal_codes.json"]
