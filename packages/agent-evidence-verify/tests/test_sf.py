@@ -40,8 +40,8 @@ def test_string_escapes_and_serialisation() -> None:
     "a=(1 2",                    # unterminated inner list
     'a="unterminated',
     "a=:AQID",                   # unterminated byte sequence
-    "a=:AQI:",                   # missing padding
-    "a=:AR==:",                  # non-canonical padding bits: a second spelling of one byte string
+    "a=:A:",                     # a length no base64 text can have
+    "a=:AQ=I:",                  # padding before the end
     "a=:AQID!:",                 # outside the alphabet
     "a=?2",
     "a=1x",
@@ -57,6 +57,25 @@ def test_string_escapes_and_serialisation() -> None:
 def test_malformed_dictionary_is_refused(text: str) -> None:
     with pytest.raises(sf.SFError):
         sf.parse_dictionary(text)
+
+
+@pytest.mark.parametrize(("text", "raw"), [("a=:AQI:", b"\x01\x02"), ("a=:AR==:", b"\x01"), ("a=:AQI=:", b"\x01\x02")])
+def test_byte_sequences_follow_rfc_8941_section_4_2_7(text: str, raw: bytes) -> None:
+    # Missing padding and non-zero pad bits are read, as RFC 8941 says a parser SHOULD; the value is re-serialised
+    # in the one canonical spelling, so the spelling never reaches a signature base.
+    member = sf.parse_dictionary(text)["a"]
+    assert isinstance(member, sf.Item) and member.value == raw
+    assert sf.serialize_member(member) == sf.serialize_bare_item(raw)
+
+
+@pytest.mark.parametrize(("text", "strict"), [("(a  b);p=1", "(a b);p=1"), ("x  ;  y", None), ("a=1,   b", "a=1, b"),
+                                               ("tok", "tok")])
+def test_reserialize_is_the_strict_form(text: str, strict: str | None) -> None:
+    if strict is None:
+        with pytest.raises(sf.SFError):
+            sf.reserialize(text)
+    else:
+        assert sf.reserialize(text) == strict
 
 
 def test_digits_outside_ascii_are_never_numbers() -> None:

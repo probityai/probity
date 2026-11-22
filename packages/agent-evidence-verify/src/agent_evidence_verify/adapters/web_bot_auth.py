@@ -27,14 +27,22 @@ The checks run in this order, and the first that fails names the reason:
    more than 60 s), within the consumer's ``max_age_seconds`` and ``max_validity_seconds`` when pinned.
 4. A body is covered. When the request has a body, the signature must cover ``content-digest`` and the header
    must equal the digest of the received body (RFC 9421 section 7.2.8 names the substitution attack that
-   verifying the signature alone does not stop; RFC 9530 defines the header). When ``content-digest`` is covered
-   and no body is bound, the body is taken to be empty.
-5. The key is in the pinned directory (otherwise ``not_established``: a stale pin is not a forgery), is not
-   a published test key unless the consumer says it is testing, and verifies the signature base RFC 9421
-   section 2.5 defines.
+   verifying the signature alone does not stop; RFC 9530 defines the header). Only the Content-Digest members
+   the signature covers are read: a member outside a ``key``-scoped coverage is unsigned and binds nothing. When
+   no body is bound but the request declares one (a nonzero ``Content-Length``, a ``Transfer-Encoding``) or the
+   signature covers ``content-digest``, the body is ``not_established``, never assumed empty.
+5. The key is in the pinned directory (otherwise ``not_established``: a stale pin is not a forgery), is
+   current under the directory's own ``nbf`` and ``exp``, is marked for signing when ``use`` or ``key_ops`` say
+   anything, carries no private member ``d``, is not a published test key unless the consumer says it is
+   testing, and verifies the signature base RFC 9421 section 2.5 defines.
 
-``supported`` means the pinned directory's key signed this request, for this authority, inside its validity, over
-the body that arrived. It does not establish that the request was not replayed inside that window (this adapter keeps no
+A request may carry several Web Bot Auth signatures (the draft's section 5.2.2): without a ``label`` each
+is judged on its own and the request is ``supported`` when one of them passes every check; otherwise the
+failure reported is that of the first signature that names the pinned signer, else the first.
+
+``supported`` means the pinned directory's key signed the components the signature covers, for this authority,
+inside its validity, over the body that arrived. ``scope.record.uncovered`` names the request parts (method,
+path, query) the signature leaves open: a signature over ``@authority`` alone holds for any method and path. It does not establish that the request was not replayed inside that window (this adapter keeps no
 state; a gateway that wants one-use admission keeps its own record of the signature's ``nonce`` or digest), who
 holds the key, or that the directory is the signer's own. A request that is not a well-formed capture, or a
 policy that is not, raises :class:`CaseError`; a malformed signature header on a well-formed capture is
@@ -51,7 +59,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qsl, quote, urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -67,14 +75,21 @@ TAG = "web-bot-auth"
 #: RFC 9421 Appendix B.1.4's published Ed25519 key, which the Web Bot Auth drafts' test vectors also use.
 KNOWN_TEST_KEYS_X = frozenset({"JrQLj5P_89iXES9-vFgrIy29clF9CC_oPPsw3c5D0bs"})
 MAX_SKEW_SECONDS = 60
+#: The draft (section 4.2) RECOMMENDS that expires be no more than 24 hours after created. This adapter keeps no
+#: replay state, so the validity window is the replay window: it is bounded by default, and a consumer that accepts
+#: a longer one pins ``max_validity_seconds`` to say so.
+DEFAULT_MAX_VALIDITY_SECONDS = 24 * 60 * 60
+#: RFC 3986 unreserved bytes the WHATWG application/x-www-form-urlencoded serializer leaves as they are.
+_FORM_SAFE = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*-._")
 MAX_HEADERS = 256
 MAX_FIELD_BYTES = 16 * 1024
 DIGESTS: dict[str, Callable[[bytes], bytes]] = {
     "sha-256": lambda body: hashlib.sha256(body).digest(),
     "sha-512": lambda body: hashlib.sha512(body).digest(),
 }
-LIMIT = ("Checks that the pinned directory's key signed this request, for the authority the consumer serves, "
-         "inside the signature's validity and over the body that arrived. It keeps no state, so it does not "
+LIMIT = ("Checks that the pinned directory's key signed the components the signature covers (scope.record lists "
+         "them and the request parts left uncovered), for the authority the consumer serves, inside the "
+         "signature's validity and over the body that arrived. It keeps no state, so it does not "
          "establish that the request was not replayed inside that window, who holds the key, or that the directory "
          "is the signer's own.")
 
@@ -189,6 +204,14 @@ def _directory(raw: bytes) -> dict[str, dict[str, Any]]:
             raise CaseError(f"{label}.x: not a canonical base64url Ed25519 key") from error
         if jwk_thumbprint(key) != kid:
             raise CaseError(f"{label}.kid: is not the key's RFC 7638 thumbprint")
+        for bound_name in ("nbf", "exp"):
+            if bound_name in key and type(key[bound_name]) is not int:
+                raise CaseError(f"{label}.{bound_name}: expected an integer NumericDate")
+        if "use" in key and not isinstance(key["use"], str):
+            raise CaseError(f"{label}.use: expected a string")
+        if "key_ops" in key and (not isinstance(key["key_ops"], list)
+                                 or not all(isinstance(op, str) for op in key["key_ops"])):
+            raise CaseError(f"{label}.key_ops: expected a list of strings")
         if kid in keys:
             raise CaseError(f"{label}.kid: repeated")
         keys[kid] = key
@@ -209,6 +232,11 @@ def _authority(url: str) -> str:
     return f"{host}:{port}" if port not in (None, default) else host
 
 
+def _form_encode(text: str) -> str:
+    """RFC 9421 section 2.2.8 step 2: WHATWG "percent-encode after encoding" of UTF-8, a space as %20."""
+    return "".join(chr(b) if b in _FORM_SAFE else f"%{b:02X}" for b in text.encode("utf-8"))
+
+
 def _no_params(name: str, params: dict[str, sf.BareItem]) -> None:
     if params:
         raise _contradicted("signature_base_invalid", f"{name} takes no parameters")
@@ -220,12 +248,12 @@ def _derived(request: Request, name: str, params: dict[str, sf.BareItem]) -> str
         wanted = params.get("name")
         if not isinstance(wanted, str) or set(params) != {"name"}:
             raise _contradicted("signature_base_invalid", "@query-param needs exactly one parameter, name")
-        found = [v for k, v in parse_qsl(parts.query, keep_blank_values=True) if k == wanted]
+        found = [_form_encode(v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if _form_encode(k) == wanted]
         if len(found) != 1:
             raise _contradicted("signature_base_invalid", f"@query-param {wanted!r} occurs {len(found)} times")
-        return quote(found[0], safe="")
+        return found[0]
     values = {
-        "@method": lambda: request.method.upper(),
+        "@method": lambda: request.method,  # RFC 9421 section 2.2.1: case sensitive, never transformed
         "@target-uri": lambda: request.url,
         "@authority": lambda: _authority(request.url),
         "@scheme": lambda: parts.scheme.lower(),
@@ -258,7 +286,7 @@ def _field(request: Request, name: str, params: dict[str, sf.BareItem]) -> str:
                 raise sf.SFError(f"no member {key!r}")
             return sf.serialize_member(members[key])
         if "sf" in params:
-            return value if value.startswith("(") else sf.serialize_member(sf.parse_item(value))
+            return sf.reserialize(value)
     except sf.SFError as error:
         raise _contradicted("signature_base_invalid", f"{name} is not the Structured Field its parameter says: {error}") from error
     return value
@@ -309,17 +337,22 @@ def _dictionary(request: Request, name: str, absent: str = "signature_absent") -
         raise _contradicted("signature_headers_malformed", f"{name}: {error}") from error
 
 
-def _chosen(request: Request, label: str | None) -> tuple[str, sf.InnerList]:
+def _candidates(request: Request, label: str | None) -> list[tuple[str, sf.InnerList]]:
+    """The signatures to judge: the consumer's label, else every Inner List whose tag is web-bot-auth, in order."""
     inputs = _dictionary(request, "signature-input")
-    for candidate in [label] if label else list(inputs):
-        member = inputs.get(candidate)
-        if member is None and label:
+    if label:
+        member = inputs.get(label)
+        if member is None:
             raise _contradicted("signature_absent", f"no Signature-Input for label {label!r}")
-        if isinstance(member, sf.InnerList) and (label or member.params.get("tag") == TAG):
-            return candidate, member
-        if label:
+        if not isinstance(member, sf.InnerList):
             raise _contradicted("signature_headers_malformed", f"Signature-Input {label!r} is not an Inner List")
-    raise _contradicted("signature_absent", f"no signature carries tag={TAG!r}")
+        return [(label, member)]
+    found = [(name, member) for name, member in inputs.items()
+             if isinstance(member, sf.InnerList) and member.params.get("tag") == TAG
+             and not isinstance(member.params.get("tag"), sf.Token)]
+    if not found:
+        raise _contradicted("signature_absent", f"no signature carries tag={TAG!r}")
+    return found
 
 
 def _parameters(inner: sf.InnerList) -> tuple[int, int, str]:
@@ -349,8 +382,7 @@ def _agent_member(inner: sf.InnerList) -> str:
     return members[0]
 
 
-def _read_signature(request: Request, label: str | None) -> _Signature:
-    chosen, inner = _chosen(request, label)
+def _read_signature(request: Request, chosen: str, inner: sf.InnerList) -> _Signature:
     created, expires, keyid = _parameters(inner)
     value = _dictionary(request, "signature").get(chosen)
     if not isinstance(value, sf.Item) or not isinstance(value.value, bytes):
@@ -397,8 +429,8 @@ def _check_time(sig: _Signature, at: int, assessment: dict) -> None:
     age = assessment.get("max_age_seconds")
     if age is not None and at - sig.created > age:
         raise _contradicted("signature_too_old", f"created {at - sig.created} s before {_iso(at)}, over the {age} s limit")
-    window = assessment.get("max_validity_seconds")
-    if window is not None and sig.expires - sig.created > window:
+    window = assessment.get("max_validity_seconds", DEFAULT_MAX_VALIDITY_SECONDS)
+    if sig.expires - sig.created > window:
         raise _contradicted("validity_window_too_long", f"valid for {sig.expires - sig.created} s, over the {window} s limit")
 
 
@@ -406,24 +438,45 @@ def _iso(seconds: int) -> str:
     return datetime.fromtimestamp(seconds, tz=UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _check_body(request: Request, sig: _Signature, body: bytes) -> dict[str, Any]:
+def _declares_body(request: Request) -> bool:
+    length = request.field_value("content-length")
+    return request.field_value("transfer-encoding") is not None or (length is not None and length.strip() != "0")
+
+
+def _covered_digest_members(sig: _Signature) -> set[str] | None:
+    """The Content-Digest members the signature covers: ``None`` when it covers the whole field."""
+    items = [i for i in sig.inner.items if i.value == "content-digest"]
+    if any("key" not in i.params for i in items):
+        return None
+    return {str(i.params["key"]) for i in items}
+
+
+def _check_body(request: Request, sig: _Signature, bound_body: bytes | None) -> dict[str, Any]:
     """The covered Content-Digest equals the digest of the received body, and a body is always covered."""
     covered = "content-digest" in sig.components
+    if bound_body is None:
+        if covered or _declares_body(request):
+            raise _Fail("not_established", "body_unavailable",
+                        "the request declares or covers a body and the case binds none")
+        bound_body = b""
+    body = bound_body
     if body and not covered:
         raise _contradicted("body_not_covered", "the request has a body and the signature does not cover content-digest")
     if not covered:
         return {"id": "body", "status": "met", "covered": False, "length": 0}
     members = _dictionary_of_digest(request)
+    signed = _covered_digest_members(sig)
     verified = []
     for algorithm, compute in DIGESTS.items():
         member = members.get(algorithm)
-        if member is None:
-            continue
+        if member is None or (signed is not None and algorithm not in signed):
+            continue  # an uncovered member is unsigned: it binds nothing and is never trusted
         if not isinstance(member, sf.Item) or not isinstance(member.value, bytes) or member.value != compute(body):
             raise _contradicted("content_digest_mismatch", f"{algorithm} is not the digest of the received body")
         verified.append(algorithm)
     if not verified:
-        raise _contradicted("content_digest_unsupported", "content-digest carries no sha-256 or sha-512 member")
+        raise _contradicted("content_digest_unsupported",
+                            "content-digest carries no covered sha-256 or sha-512 member")
     return {"id": "body", "status": "met", "covered": True, "length": len(body), "algorithms": verified}
 
 
@@ -437,10 +490,19 @@ def _dictionary_of_digest(request: Request) -> dict[str, sf.Member]:
         raise _contradicted("content_digest_mismatch", f"content-digest: {error}") from error
 
 
-def _check_signature(sig: _Signature, request: Request, keys: dict[str, dict], allow_test: bool) -> dict[str, Any]:
+def _check_signature(sig: _Signature, request: Request, keys: dict[str, dict], allow_test: bool,
+                     at: int) -> dict[str, Any]:
     key = keys.get(sig.keyid)
     if key is None:
         raise _Fail("not_established", "key_not_in_directory", f"keyid {sig.keyid[:12]}... is not in the pinned directory")
+    if "d" in key:
+        raise _contradicted("key_private_published", "the pinned directory publishes this key's private part")
+    if key.get("use", "sig") != "sig" or ("key_ops" in key and "verify" not in key["key_ops"]):
+        raise _contradicted("key_not_for_signing", "the pinned directory does not mark this key for signatures")
+    if "nbf" in key and (at < key["nbf"] or sig.created < key["nbf"]):
+        raise _contradicted("key_not_yet_valid", f"the key is valid from {_iso(key['nbf'])}")
+    if "exp" in key and (at >= key["exp"] or sig.created >= key["exp"]):
+        raise _contradicted("key_expired", f"the key expired at {_iso(key['exp'])}")
     if key["x"] in KNOWN_TEST_KEYS_X and not allow_test:
         raise _contradicted("test_key_refused", "the signing key is a published test key (RFC 9421 Appendix B.1.4)")
     base = signature_base(request, sig.inner)
@@ -504,30 +566,66 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     if pinned["status"] != "met":
         return decision(case_id, CLAIM_TYPE, scope, "not_established", "directory_not_pinned", [pinned])
     keys = _directory(directory_raw)
-    body = b""
+    body: bytes | None = None
     if "body" in assessment:
         body_raw, body_binding = bound(artifacts, artifact_root, assessment["body"], "assessment.body")
         scope["body"] = body_binding
         if body_raw is None:
             return decision(case_id, CLAIM_TYPE, scope, "not_established", "body_unavailable", [pinned])
         body = body_raw
-    checks: list[dict[str, Any]] = [pinned]
     try:
-        sig = _read_signature(request, assessment.get("label"))
+        candidates = _candidates(request, assessment.get("label"))
+    except _Fail as failure:
+        checks = [pinned, {"id": failure.reason, "status": "failed", "detail": failure.detail}]
+        return decision(case_id, CLAIM_TYPE, scope, failure.verdict, failure.reason, checks)
+    failures: list[tuple[_Fail, list[dict[str, Any]], bool]] = []
+    for chosen, inner in candidates:
+        outcome = _judge_one(request, chosen, inner, keys, body, at, assessment)
+        if isinstance(outcome[0], _Signature):
+            sig, checks = outcome
+            scope["record"] = {"label": sig.label, "keyid": sig.keyid, "created": sig.created, "expires": sig.expires,
+                               "covered": list(sig.components), "uncovered": _uncovered(sig)}
+            if len(candidates) > 1:
+                checks.append({"id": "signatures", "status": "met", "judged": [c for c, _ in candidates],
+                               "supported_by": sig.label})
+            return decision(case_id, CLAIM_TYPE, scope, "supported", "request_signed_by_pinned_agent", [pinned, *checks])
+        failures.append(outcome)
+    failure, checks, names_pinned = next((f for f in failures if f[2]), failures[0])
+    if len(candidates) > 1:
+        checks.append({"id": "signatures", "status": "failed", "judged": [c for c, _ in candidates],
+                       "reasons": [f[0].reason for f in failures]})
+    return decision(case_id, CLAIM_TYPE, scope, failure.verdict, failure.reason, [pinned, *checks])
+
+
+def _uncovered(sig: _Signature) -> list[str]:
+    """The request parts the signature leaves open (a query bound only per parameter counts as open)."""
+    covered = set(sig.components)
+    whole = covered & {"@target-uri", "@request-target"}
+    parts = {"method": {"@method"}, "path": {"@path"}, "query": {"@query"}}
+    return [part for part, names in parts.items() if not (covered & names or whole)]
+
+
+def _judge_one(request: Request, chosen: str, inner: sf.InnerList, keys: dict[str, dict], body: bytes | None,
+               at: int, assessment: dict) -> tuple[_Signature, list[dict[str, Any]]] | tuple[_Fail, list, bool]:
+    """Every check for one signature: the signature and its checks, or the failure, its checks and whether
+    the failing signature named the pinned signer."""
+    checks: list[dict[str, Any]] = []
+    names_pinned = False
+    try:
+        sig = _read_signature(request, chosen, inner)
         checks.append({"id": "signature_headers", "status": "met", "label": sig.label,
                        "created": sig.created, "expires": sig.expires, "keyid": sig.keyid})
         _check_components(sig, assessment.get("required_components", []))
         checks.append({"id": "components", "status": "met", "covered": list(sig.components)})
         agent = _check_agent(request, sig, assessment["signature_agent"])
+        names_pinned = True
         checks.append({"id": "signature_agent", "status": "met", "observed": agent})
         checks.append({"id": "authority", "status": "met", "observed": _check_authority(request, assessment["authority"])})
         _check_time(sig, at, assessment)
         checks.append({"id": "validity", "status": "met", "created": _iso(sig.created), "expires": _iso(sig.expires)})
         checks.append(_check_body(request, sig, body))
-        checks.append(_check_signature(sig, request, keys, bool(assessment.get("allow_test_keys", False))))
+        checks.append(_check_signature(sig, request, keys, bool(assessment.get("allow_test_keys", False)), at))
     except _Fail as failure:
         checks.append({"id": failure.reason, "status": "failed", "detail": failure.detail})
-        return decision(case_id, CLAIM_TYPE, scope, failure.verdict, failure.reason, checks)
-    scope["record"] = {"label": sig.label, "keyid": sig.keyid, "created": sig.created, "expires": sig.expires,
-                       "covered": list(sig.components)}
-    return decision(case_id, CLAIM_TYPE, scope, "supported", "request_signed_by_pinned_agent", checks)
+        return failure, checks, names_pinned
+    return sig, checks

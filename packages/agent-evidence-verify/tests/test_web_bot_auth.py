@@ -155,8 +155,9 @@ DRAFT_BASE = ('"@authority": example.com\n"signature-agent";key="agent2": "https
               'keyid="poqkLGiymh_W0uP6PZFw-dvez3QJT5SolqXBCW38r0U";alg="ed25519";expires=4889289600;'
               'nonce="n9p433xm+NJ3ph3upfBIGmsuwHw387YV7Q/F+6BSpGCVjYCqQw6rznNA8PVVLySrAWsv0hQtFioQb6E1YsauiA==";'
               'tag="web-bot-auth"')
+# The draft's example is valid for a century; the 24-hour default window refuses it unless the consumer pins one.
 DRAFT_ASSESSMENT = {"signature_agent": "https://signature-agent.test", "authority": "example.com",
-                    "at": "2026-10-14T12:00:00Z"}
+                    "at": "2026-10-14T12:00:00Z", "max_validity_seconds": 4889289600 - 1735689600}
 
 
 def test_signature_base_matches_the_drafts_example() -> None:

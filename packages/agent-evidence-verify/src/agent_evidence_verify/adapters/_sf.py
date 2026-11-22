@@ -4,11 +4,15 @@ Dictionaries, Items and Inner Lists; bare items of type String, Token, Integer, 
 Sequence and Boolean; parameters on items and inner lists. Dates and Display Strings (RFC 9651)
 are not read. A parse error raises :class:`SFError`.
 
-Three rules go beyond RFC 8941, because a signature verifier must not let a repeated name or an
+Two rules go beyond RFC 8941, because a signature verifier must not let a repeated name or an
 unusual spelling decide which value it read. A repeated Dictionary key and a repeated parameter
 name are refused (RFC 8941 keeps the last). A number is read only from the digits 0 to 9 (the
-regular-expression class for digits and ``str.isdigit`` also accept other scripts' digits). A Byte
-Sequence is read only in the one spelling an encoder writes (``strictb64.std``).
+regular-expression class for digits and ``str.isdigit`` also accept other scripts' digits).
+
+A Byte Sequence follows RFC 8941 section 4.2.7: any character outside the base64 alphabet is
+refused, and missing padding and non-zero pad bits are accepted, as that section says a parser
+SHOULD. Neither spelling changes the bytes read, and a value that enters a signature base is
+re-serialised here in the one canonical spelling, so the leniency never reaches what is signed.
 
 Serialisation is the strict form of RFC 8941 section 4.1, which the signature base requires
 (RFC 9421 sections 2.1.2 and 2.5), so a value re-serialised here is, byte for byte, what another
@@ -23,7 +27,6 @@ import re
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_EVEN, Decimal
 
-from .. import strictb64
 
 
 class SFError(ValueError):
@@ -59,6 +62,7 @@ _KEY_START = re.compile(r"[a-z*]")
 _KEY_CHARS = re.compile(r"[a-z0-9_\-.*]")
 _NUMBER = re.compile(r"-?([0-9]+)(\.[0-9]+)?")
 _DIGITS = "0123456789"
+_B64 = re.compile(r"[A-Za-z0-9+/]*={0,2}")
 
 
 class _Parser:
@@ -220,8 +224,10 @@ class _Parser:
             raise self.fail("unterminated byte sequence")
         raw = self.s[self.i : end]
         self.i = end + 1
+        if not _B64.fullmatch(raw) or len(raw) % 4 == 1:
+            raise self.fail("bad base64")
         try:
-            return strictb64.std(raw)
+            return base64.b64decode(raw.rstrip("=") + "=" * (-len(raw.rstrip("=")) % 4), validate=True)
         except (binascii.Error, ValueError) as error:
             raise self.fail(f"bad base64: {error}") from error
 
@@ -244,6 +250,25 @@ def parse_dictionary(text: str) -> dict[str, Member]:
     if not p.done():
         raise p.fail("trailing characters")
     return out
+
+
+def parse_inner_list(text: str) -> InnerList:
+    p = _Parser(text.strip(" \t"))
+    inner = p.inner_list()
+    if not p.done():
+        raise p.fail("trailing characters")
+    return inner
+
+
+def reserialize(text: str) -> str:
+    """RFC 9421 section 2.1.1: the strict serialisation of a field the sf flag marks, as an Item, an Inner
+    List or a Dictionary, whichever parses first. A value that is none of them raises :class:`SFError`."""
+    for parse in (parse_item, parse_inner_list):
+        try:
+            return serialize_member(parse(text))
+        except SFError:
+            continue
+    return serialize_dictionary(parse_dictionary(text))
 
 
 def parse_item(text: str) -> Item:
@@ -303,3 +328,13 @@ def serialize_member(member: Member) -> str:
     if isinstance(member, InnerList):
         return serialize_inner_list(member)
     return serialize_item(member)
+
+
+def serialize_dictionary(members: dict[str, Member]) -> str:
+    out = []
+    for key, member in members.items():
+        if isinstance(member, Item) and member.value is True:
+            out.append(key + serialize_params(member.params))
+        else:
+            out.append(f"{key}={serialize_member(member)}")
+    return ", ".join(out)
