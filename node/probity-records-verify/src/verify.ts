@@ -146,13 +146,13 @@ function unb64(text: J): Buffer {
 
 // ---------- keys and signatures ----------
 
-function rawKey(raw: Buffer): KeyObject {
+export function rawKey(raw: Buffer): KeyObject {
   return createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: raw.toString("base64url") }, format: "jwk" });
 }
 export function keyId(key: KeyObject): string {
   return sha256Hex(Buffer.from(String((key.export({ format: "jwk" }) as J).x), "base64url"));
 }
-function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
+export function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
   try { return edVerify(null, data, key, sig); } catch { return false; }
 }
 const sigOk = (rawB64: J, domain: string, body: J, sig: J): boolean => {
