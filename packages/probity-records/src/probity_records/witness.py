@@ -20,7 +20,6 @@ import hashlib
 import os
 import re
 import threading
-import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Sequence
@@ -35,6 +34,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
+from .clock import NS_PER_S, Clock
 
 SIG_ED25519 = 0x01
 SIG_COSIGNATURE_V1 = 0x04
@@ -445,7 +446,7 @@ class Witness:
     key: Ed25519PrivateKey
     logs: dict[str, list[VerifierKey]]
     state_dir: Path | None = None
-    clock: Callable[[], int] = lambda: int(time.time())
+    clock: Clock = field(kw_only=True)
     _latest: dict[str, tuple[int, bytes]] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -505,7 +506,7 @@ class Witness:
                 raise WitnessRefused(422, "a size-zero checkpoint carries the empty root")
             if not verify_consistency(old, cp.size, stored, cp.root, proof):
                 raise WitnessRefused(422, "consistency proof does not verify")
-            line = cosign(parsed.text, self.name, self.key, self.clock())
+            line = cosign(parsed.text, self.name, self.key, self.clock.now() // NS_PER_S)
             self._save(cp.origin, cp.size, cp.root)
         return line.encode()
 

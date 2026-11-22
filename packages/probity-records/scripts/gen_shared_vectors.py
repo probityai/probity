@@ -4,7 +4,8 @@ Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
 principal-level vectors of ``identity_vectors``, ``canonical_identity.json`` the canonical identity
-strings of ``canonical_identity_vectors``. ``canonical.json`` holds bytes and the canonical
+strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
+``digests_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
@@ -12,6 +13,7 @@ scripts/gen_shared_vectors.py vectors/shared``.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import sys
@@ -23,8 +25,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from probity_records import (
     GRANT_ALLOW,
     QUORUM_ALLOW,
+    REVOCATION_KINDS,
     TOOL_CALL_RECORD,
     Journal,
+    RevocationState,
     Signer,
     Trust,
     args_sha256,
@@ -36,6 +40,7 @@ from probity_records import (
     permit_id,
     raw_public,
     sign_approval,
+    sign_revocations,
     tool_call_predicate,
     verify_grant_allow,
     verify_journal,
@@ -44,6 +49,7 @@ from probity_records import canonical as jcs
 from probity_records.canonical_identity_vectors import (
     vectors as canonical_identity_vectors,
 )
+from probity_records.clock import SystemClock
 from probity_records.core import (
     IN_TOTO_PAYLOAD_TYPE,
     STATEMENT_TYPE,
@@ -52,6 +58,7 @@ from probity_records.core import (
     canonical_of_received,
     pae,
 )
+from probity_records.digests_vectors import vectors as digest_vectors
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.possession import cnf_for_signer
@@ -62,6 +69,9 @@ from probity_records.quorum import (
     sign_deputy,
     sign_vote,
 )
+from probity_records.revocation import DIGEST_KINDS, REVOCATION_DOMAIN
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 NB, EXP, AT = "2026-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "2026-06-01T00:00:00Z"
 TOOLS = {"refund": {"approval": "none", "when": ["args.amount_cents < 3000 || args.currency == 'USD'"], "args": {
@@ -92,7 +102,7 @@ def chain(**root_kw) -> list[dict]:
 def grant_case(directory: Path, grants: list[dict], calls: list[dict], *, intent_grant: str | None = None,
                ctx: dict | None = None, possession: list[dict] | None = None) -> Journal:
     """One authorize and one intent record per call; ``possession`` gives each allow the proof it rested on."""
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     for n, args in enumerate(calls):
         pid = permit_id("p", f"c{n}", args_sha256(args))
         common = {"run_id": "r1", "tool_call_id": f"c{n}", "tool": "refund", "args_sha256_hex": args_sha256(args),
@@ -147,7 +157,7 @@ def quorum_case(directory: Path, votes: list[dict], proposer: str = "dave") -> J
     result = count(POLICY, QREQ, votes, AT, proposer=proposer)
     evidence = result.evidence(POLICY, QREQ, proposer=proposer, history="ab" * 32)
     evidence["votes"] = list(votes)
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     j.append(TOOL_CALL_RECORD, "tool-call:q1", args_sha256(QARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=evidence, run_id="r1",
         tool_call_id="q1", tool="pay", args_sha256_hex=args_sha256(QARGS), permit_id=QPID))
@@ -164,7 +174,7 @@ def solo_chain(tools: dict) -> list[dict]:
 def solo_case(directory: Path, tools: dict, tool: str, calls: list[dict]) -> Journal:
     """One recorded allow per call. A call the grant refuses is recorded as an allow all the same, so the
     verifier's own judgement of the grant is what the vector pins."""
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     grants = solo_chain(tools)
     for n, args in enumerate(calls):
         verdict = verify_grant_allow(grants, tool, args, AT, {ROOT.key_id}, ctx={})
@@ -240,7 +250,7 @@ def binding(signer: Signer, who: str, *, payload: dict | None = None, consumed: 
 
 def approval_case(directory: Path, bindings: list[dict], *, decision: str = "allow", reason: str = "bound",
                   threshold: int | None = 1, policy: str | None = "refunds1") -> Journal:
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     j.append(TOOL_CALL_RECORD, "tool-call:a1", args_sha256(AARGS), tool_call_predicate(
         phase="authorize", decision=decision, reason=reason, approval_bindings=bindings, threshold=threshold,
         approval_policy=policy, run_id="run", tool_call_id="a1", tool="refund_payment", args_sha256_hex=args_sha256(AARGS),
@@ -334,7 +344,7 @@ def effect_record(outcome: str, replies: list[str], owner_effects: int = 1, toke
 
 def effect_case(directory: Path, record: dict | None, *, outcome: str | None = None, args: str = E_DIGEST,
                 intent: bool = True) -> Journal:
-    j = Journal(directory, GATE)
+    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
     pid = permit_id("pause", "e1", args)
     common = {"run_id": "run", "tool_call_id": "e1", "tool": "refund_payment", "args_sha256_hex": args, "permit_id": pid}
     j.append(TOOL_CALL_RECORD, "tool-call:e1", args, tool_call_predicate(
@@ -489,6 +499,157 @@ def received_rows() -> list[dict]:
     return out
 
 
+# -- revocation lists ------------------------------------------------------------------------------------------------
+
+RL_ROOT, RL_NEXT, RL_OUTSIDER = key("revocation-root"), key("revocation-successor"), key("revocation-outsider")
+#: A successor whose key id sorts after RL_ROOT's (RL_NEXT's sorts before it): a reader that walked the entries in
+#: order would give the two cases different roots.
+RL_NEXT_LATE = key("revocation-successor-1")
+T0, T1, T2, T3 = "2026-06-01T00:00:00Z", "2026-06-02T00:00:00Z", "2026-06-03T00:00:00Z", "2026-06-04T00:00:00Z"
+DIGEST_A = hashlib.sha256(b"grant-a").hexdigest()
+
+
+def rl(seq: int, entries: list, previous: dict | None = None, *, at: str = T0, signer: Signer = RL_ROOT,
+       list_id: str = "probity-revocations") -> dict:
+    return sign_revocations(signer, list_id=list_id, seq=seq, issued_at=at, entries=entries, previous=previous)
+
+
+def rl_entry(kind: str, ident: str, at: str = T0, **extra) -> dict:
+    return {"kind": kind, "id": ident, "revokedAt": at, **extra}
+
+
+def rl_resign(body: dict, signer: Signer = RL_ROOT) -> dict:
+    """Sign a body the issuer would refuse, so a reader sees a malformed list with a valid signature."""
+    try:
+        message = REVOCATION_DOMAIN + canonical(body)
+    except ValueError:
+        return {"body": body, "sig": _b64(bytes(64))}
+    return {"body": body, "sig": _b64(signer.sign(message))}
+
+
+def loosen(char: str) -> str:
+    """The same base64 digit with its lowest (unused, so non-canonical) bit set."""
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    return alphabet[alphabet.index(char) | 1]
+
+
+def rl_edit(signed: dict, **members) -> dict:
+    return rl_resign({**signed["body"], **members})
+
+
+def revocation_rows() -> list[dict]:
+    """Cases every reader of the one revocation list must agree on."""
+    one = rl(1, [])
+    two = rl(2, [rl_entry("agent", "agent:alpha", T1), rl_entry("stream", "stream-7", T1)], one, at=T1)
+    every = [rl_entry(k, DIGEST_A if k in DIGEST_KINDS else f"{k}:one", T2, reason="test") for k in REVOCATION_KINDS]
+    three = rl(3, sorted(two["body"]["entries"] + every, key=lambda e: (e["kind"], e["id"])), two, at=T2)
+    rotate = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT))])
+    by_next = rl(2, rotate["body"]["entries"], rotate, at=T1, signer=RL_NEXT)
+    killed = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="compromised")])
+    both_early = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT)),
+                        rl_entry("key", RL_NEXT.key_id, reason="compromised")])
+    both_late = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT_LATE)),
+                       rl_entry("key", RL_NEXT_LATE.key_id, reason="compromised")])
+    assert RL_NEXT.key_id < RL_ROOT.key_id < RL_NEXT_LATE.key_id
+    sig = base64.b64decode(one["sig"])
+    loose_sig = one["sig"][:-3] + loosen(one["sig"][-3]) + "=="
+    loose_key = one["body"]["issuerKey"][:-2] + loosen(one["body"]["issuerKey"][-2]) + "="
+    accept, refuse = "accept", "refuse"
+    cases: list[tuple[str, str, list, str, str | None, int | None]] = [
+        ("RL01", "an empty first list is in force", [one], accept, None, None),
+        ("RL02", "a chain of three lists naming every kind", [one, two, three], accept, None, None),
+        ("RL03", "a root rotates to its successor, which signs the next list", [rotate, by_next], accept, None, None),
+        ("RL04", "a reason outside the BMP canonicalises the same in every reader",
+         [rl(1, [rl_entry("sponsor", "sponsor:acme", reason="key on a lost laptop \U0001F4BB\u2028")])],
+         accept, None, None),
+        ("RL05", "an unknown kind is refused even when signed",
+         [rl_edit(one, entries=[rl_entry("tenant", "tenant:x")])], refuse, "revocation_list_shape", 0),
+        ("RL06", "entries out of order are refused",
+         [rl_edit(one, entries=[rl_entry("stream", "s"), rl_entry("agent", "a")])], refuse,
+         "revocation_list_shape", 0),
+        ("RL07", "a duplicate entry is refused",
+         [rl_edit(one, entries=[rl_entry("agent", "a"), rl_entry("agent", "a")])], refuse,
+         "revocation_list_shape", 0),
+        ("RL08", "a non-ASCII identifier is refused",
+         [rl_edit(one, entries=[rl_entry("agent", "agent:\u00e9")])], refuse, "revocation_list_shape", 0),
+        ("RL09", "an identifier with a space is refused",
+         [rl_edit(one, entries=[rl_entry("agent", "agent one")])], refuse, "revocation_list_shape", 0),
+        ("RL10", "an identifier of 513 characters is refused",
+         [rl_edit(one, entries=[rl_entry("agent", "a" * 513)])], refuse, "revocation_list_shape", 0),
+        ("RL11", "an extra body member is refused", [rl_edit(one, extra="x")], refuse, "revocation_list_shape", 0),
+        ("RL12", "a boolean seq is refused", [rl_edit(one, seq=True)], refuse, "revocation_list_shape", 0),
+        ("RL13", "a seq beyond 2^53-1 is refused", [rl_edit(one, seq=2**53, previous="sha256:" + "00" * 32)],
+         refuse, "revocation_list_shape", 0),
+        ("RL14", "a timestamp with an offset is refused", [rl_edit(one, issuedAt="2026-06-01T00:00:00+00:00")],
+         refuse, "revocation_list_shape", 0),
+        ("RL15", "a timestamp that is not a calendar day is refused", [rl_edit(one, issuedAt="2026-02-30T00:00:00Z")],
+         refuse, "revocation_list_shape", 0),
+        ("RL16", "an issuer key in non-canonical base64 is refused", [rl_edit(one, issuerKey=loose_key)], refuse,
+         "revocation_list_shape", 0),
+        ("RL17", "an upper-case grant digest is refused",
+         [rl_edit(one, entries=[rl_entry("grant", DIGEST_A.upper())])], refuse, "revocation_list_shape", 0),
+        ("RL18", "a successor on an agent entry is refused",
+         [rl_edit(one, entries=[rl_entry("agent", "a", successor=raw_public(RL_NEXT))])], refuse,
+         "revocation_list_shape", 0),
+        ("RL19", "a signed list with an extra top-level member is refused", [{**one, "issuer": "x"}], refuse,
+         "revocation_list_shape", 0),
+        ("RL20", "another type is refused", [rl_edit(one, type="https://example.org/revocations")], refuse,
+         "revocation_list_shape", 0),
+        ("RL21", "a list from a key that is not a pinned root is refused", [rl(1, [], signer=RL_OUTSIDER)], refuse,
+         "revocation_list_signer_not_a_root", 0),
+        ("RL22", "a list whose entries were edited after signing is refused",
+         [{"body": {**two["body"], "entries": [], "previous": None, "seq": 1}, "sig": two["sig"]}], refuse,
+         "revocation_list_signature_unverified", 0),
+        ("RL23", "a pinned issuer key over another key's signature is refused",
+         [{"body": one["body"], "sig": rl_resign(one["body"], RL_OUTSIDER)["sig"]}], refuse,
+         "revocation_list_signature_unverified", 0),
+        ("RL24", "a signature with one bit flipped is refused",
+         [{**one, "sig": _b64(bytes([sig[0] ^ 1]) + sig[1:])}], refuse, "revocation_list_signature_unverified", 0),
+        ("RL25", "a signature in non-canonical base64 is refused", [{**one, "sig": loose_sig}], refuse,
+         "revocation_list_signature_unverified", 0),
+        ("RL26", "a list from another chain is refused", [one, rl(2, [], one, at=T1, list_id="other")], refuse,
+         "revocation_list_other_chain", 1),
+        ("RL27", "the list in force replayed is refused", [one, two, two], refuse, "revocation_list_rollback", 2),
+        ("RL28", "a rollback to an earlier list is refused", [one, two, one], refuse, "revocation_list_rollback", 2),
+        ("RL29", "a list from the future (a seq gap) is refused", [one, three], refuse, "revocation_list_gap", 1),
+        ("RL30", "a fresh reader refuses a first list past seq 1", [two], refuse, "revocation_list_gap", 0),
+        ("RL31", "a fork (seq right, previous wrong) is refused",
+         [one, two, rl(3, two["body"]["entries"], one, at=T2)], refuse, "revocation_list_previous_mismatch", 2),
+        ("RL32", "a list issued before the list in force is refused",
+         [one, two, rl(3, two["body"]["entries"], two, at=T0)], refuse, "revocation_list_time_reversed", 2),
+        ("RL33", "an entry revoked after the list's issue time is refused",
+         [rl_edit(one, entries=[rl_entry("agent", "a", T1)])], refuse, "revocation_entry_from_future", 0),
+        ("RL34", "a list that drops an entry (shrinks) is refused", [one, two, rl(3, [], two, at=T2)], refuse,
+         "revocation_list_drops_entry", 2),
+        ("RL35", "a list that edits an entry is refused",
+         [one, two, rl(3, [{**two["body"]["entries"][0], "reason": "changed"}, two["body"]["entries"][1]], two,
+                       at=T2)], refuse, "revocation_list_drops_entry", 2),
+        ("RL36", "after rotation the old root's next list is refused",
+         [rotate, rl(2, rotate["body"]["entries"], rotate, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
+        ("RL37", "a root revoked without a successor ends the chain",
+         [killed, rl(2, killed["body"]["entries"], killed, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
+        ("RL38", "a root revoked with a successor that the same list revokes ends the chain (successor id sorts before)",
+         [both_early, rl(2, both_early["body"]["entries"], both_early, at=T1, signer=RL_NEXT)], refuse,
+         "revocation_list_signer_not_a_root", 1),
+        ("RL39", "a root revoked with a successor that the same list revokes ends the chain (successor id sorts after)",
+         [both_late, rl(2, both_late["body"]["entries"], both_late, at=T1, signer=RL_NEXT_LATE)], refuse,
+         "revocation_list_signer_not_a_root", 1),
+    ]
+    rows = []
+    for vid, description, lists, verdict, code, index in cases:
+        expected: dict
+        if verdict == accept:
+            state = RevocationState(roots=frozenset({RL_ROOT.key_id}))
+            for signed in lists:
+                state = state.apply(signed)
+            expected = {"state": state.summary()}
+        else:
+            expected = {"index": index, "refused": code}
+        rows.append({"description": description, "expected": expected, "id": vid, "lists": lists,
+                     "roots": [RL_ROOT.key_id]})
+    return rows
+
+
 def trust_doc() -> dict:
     return {"grantRootKeyIds": [ROOT.key_id], "quorumPolicies": {"pay": POLICY, **APOL}}
 
@@ -556,8 +717,10 @@ def main(out: Path) -> None:
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")
+    (out / "identity_digests.json").write_text(json.dumps(digest_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")
     (out / "received.json").write_text(json.dumps(received_rows(), indent=2, sort_keys=True) + "\n")
+    (out / "revocation.json").write_text(json.dumps(revocation_rows(), indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":

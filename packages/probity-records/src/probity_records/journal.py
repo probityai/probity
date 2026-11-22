@@ -2,7 +2,9 @@
 offline verifier an outsider runs over both.
 
 Each line is one envelope. Its statement's predicate carries ``seq`` (1, 2, ...), ``prev`` (SHA-256
-of the previous line's bytes, 64 zeros for the first) and ``at``. A checkpoint is a signed statement
+of the previous line's bytes, 64 zeros for the first) and ``at``, taken from the journal's ``Clock`` and never
+earlier than the ``at`` of any line already in the file, so a writer whose clock stepped back keeps the chain in
+order. A checkpoint is a signed statement
 of the line count and the last line's hash: pinned by an outsider, it exposes a truncated or
 rewritten journal.
 """
@@ -16,11 +18,12 @@ import json
 import os
 import threading
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from .authority import Trust, check_authority
+from .clock import Clock, from_datetime, to_datetime
 from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
 from .grants import grant_digest, spend_of
@@ -37,8 +40,18 @@ JOURNAL_FILE = "journal.jsonl"
 KEYS_FILE = "keys.jsonl"
 
 
-def now() -> str:
-    return datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+def timestamp(ns: int) -> str:
+    """The journal's form of a wall time given in nanoseconds: RFC 3339, UTC, microseconds, ``Z``."""
+    return to_datetime(ns).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _at_ns(text: object) -> int | None:
+    if not isinstance(text, str):
+        return None
+    try:
+        return from_datetime(datetime.fromisoformat(text))
+    except ValueError:
+        return None
 
 
 def _line_hash(line: bytes) -> str:
@@ -59,12 +72,14 @@ class Journal:
     whose bytes an earlier fsync already covered does not fsync again.
     """
 
-    def __init__(self, directory: str | os.PathLike[str], signer: Any) -> None:
+    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock) -> None:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / JOURNAL_FILE
         self.signer = signer
+        self.clock = clock
         self._offset, self._seq, self._head = 0, 0, GENESIS
+        self._last_at = 0
         self._synced = 0
         self._sync_lock = threading.Lock()
         self._certify(signer)
@@ -97,7 +112,7 @@ class Journal:
         """Bring the cached head up to the file's current end, reading only the new bytes."""
         size = self.path.stat().st_size if self.path.exists() else 0
         if size < self._offset:  # the file was replaced or truncated under us: rescan from the start
-            self._offset, self._seq, self._head = 0, 0, GENESIS
+            self._offset, self._seq, self._head, self._last_at = 0, 0, GENESIS, 0
         if size > self._offset:
             with self.path.open("rb") as fh:
                 fh.seek(self._offset)
@@ -107,12 +122,20 @@ class Journal:
                     self._offset += len(line)
                     body = line.rstrip(b"\n")
                     if body.strip():
-                        self._seq = int(_payload(json.loads(body))["predicate"]["seq"])
+                        predicate = _payload(json.loads(body))["predicate"]
+                        self._seq = int(predicate["seq"])
                         self._head = _line_hash(body)
+                        at = _at_ns(predicate.get("at"))
+                        self._last_at = max(self._last_at, at if at is not None else 0)
         return self._seq, self._head
 
     def _tail(self) -> tuple[int, str]:
         return self._refresh()
+
+    def _stamp(self) -> str:
+        """Now, held at the latest ``at`` already in the file (call after a refresh)."""
+        self._last_at = max(self.clock.now(), self._last_at)
+        return timestamp(self._last_at)
 
     def _sync(self, fd: int, end: int) -> None:
         with self._sync_lock:
@@ -131,7 +154,7 @@ class Journal:
             fcntl.flock(guard, fcntl.LOCK_EX)
             seq, head = self._refresh()
             body = statement(subject_name, subject_digest, predicate_type,
-                             {**dict(predicate), "at": now(), "prev": head, "seq": seq + 1})
+                             {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
             envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
             line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
@@ -155,7 +178,7 @@ class Journal:
         """A signed statement of the line count and head, for an outsider to pin."""
         seq, head = self._refresh()
         body = statement("tool-call-journal", head, CHECKPOINT_TYPE,
-                         {"at": now(), "count": seq, "head": head,
+                         {"at": self._stamp(), "count": seq, "head": head,
                           "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))})
         return sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
 

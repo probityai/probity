@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 from probity_records import Journal, Signer, tool_call_predicate
+from probity_records.clock import SystemClock
 from probity_records.otel import (
     AuditStream,
     Reveal,
@@ -32,6 +33,8 @@ from probity_records.otel import (
     witness_signer,
 )
 
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
+
 
 def _attrs(actor: str = "agent:orders") -> dict:
     return {"audit.actor.id": actor, "audit.actor.type": "service", "audit.action": "EXECUTE",
@@ -39,7 +42,7 @@ def _attrs(actor: str = "agent:orders") -> dict:
 
 
 def _stream(witness: Signer | None = None) -> AuditStream:
-    return AuditStream(Signer.generate(), witness=witness_signer(witness) if witness else None)
+    return AuditStream(Signer.generate(), clock=SYSTEM_CLOCK, witness=witness_signer(witness) if witness else None)
 
 
 def test_signing_payload_matches_the_processor_encoding() -> None:
@@ -121,7 +124,7 @@ def test_a_witness_cosigns_the_real_head_and_catches_a_fork() -> None:
                            require_witness=True)
     assert report.ok and report.witnessed == {stream.stream_id: 1}
     # The producer holds its key and forks: a second chain under the same stream id with record 2 changed.
-    fork = AuditStream(stream.signer, stream_id=stream.stream_id, certificate=stream.certificate,
+    fork = AuditStream(stream.signer, clock=SYSTEM_CLOCK, stream_id=stream.stream_id, certificate=stream.certificate,
                        witness=lambda s, n, h: {"keyId": witness.key_id,
                                                 "sig": stream.records[2]["attributes"]["probity.witness.signature"]})
     fork.emit("a", _attrs())
@@ -146,7 +149,7 @@ def test_an_unpinned_witness_and_a_missing_witness_are_refused() -> None:
 
 
 def test_the_journal_export_carries_each_record_digest_and_a_missing_line_is_named(tmp_path: Path) -> None:
-    journal = Journal(tmp_path, Signer.generate())
+    journal = Journal(tmp_path, Signer.generate(), clock=SYSTEM_CLOCK)
     for phase in ("authorize", "intent", "effect"):
         journal.append("https://example.test/tool-call", "call", "0" * 64, tool_call_predicate(
             phase=phase, run_id="run-1", tool_call_id="tc-1", tool="create_order", args_sha256_hex="a" * 64,

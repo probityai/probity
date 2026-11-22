@@ -18,6 +18,7 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
     count,
@@ -26,6 +27,8 @@ from probity_records.quorum import (
     sign_vote,
     widening_problem,
 )
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 AT = "2026-06-01T00:00:00Z"
 W = {"issued_at": "2026-05-01T00:00:00Z", "expires_at": "2099-01-01T00:00:00Z"}
@@ -122,7 +125,7 @@ def test_grant_carried_quorum_verifies_offline_and_widening_delegation_is_refuse
         quorum = result.evidence(policy, req, proposer=proposer, history="ab" * 32)
         quorum["votes"] = list(votes)  # what a dishonest authority would write: every vote it got
         evidence = {**grant_evidence(chain, ARGS), "quorum": quorum}
-        j = Journal(directory, gate)
+        j = Journal(directory, gate, clock=SYSTEM_CLOCK)
         j.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(ARGS), tool_call_predicate(
             phase="authorize", decision="allow", reason=GRANT_ALLOW, authority=evidence,
             grant_digest=evidence["grantDigest"], run_id="r", tool_call_id="c1", tool="pay",

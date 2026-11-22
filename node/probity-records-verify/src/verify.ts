@@ -146,13 +146,13 @@ function unb64(text: J): Buffer {
 
 // ---------- keys and signatures ----------
 
-function rawKey(raw: Buffer): KeyObject {
+export function rawKey(raw: Buffer): KeyObject {
   return createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: raw.toString("base64url") }, format: "jwk" });
 }
 export function keyId(key: KeyObject): string {
   return sha256Hex(Buffer.from(String((key.export({ format: "jwk" }) as J).x), "base64url"));
 }
-function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
+export function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
   try { return edVerify(null, data, key, sig); } catch { return false; }
 }
 const sigOk = (rawB64: J, domain: string, body: J, sig: J): boolean => {
@@ -1193,4 +1193,148 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   }
   const verdict = failures.length ? "FAIL" : checkpoint !== "matches" ? "NOT_ESTABLISHED" : "PASS";
   return { verdict, records: lines.length, verified, failures, checkpoint };
+}
+
+// ---------- identity digests (packages/probity-records/docs/identity-digests.md) ----------
+//
+// The Python twin is probity_records.digests; test/shared.test.ts holds the two to
+// packages/probity-records/vectors/shared/identity_digests.json. The walk order is the spec's: a
+// container's depth, then at an object every member name, then its values in sorted member order.
+
+export const DIGEST_PREFIX = "sha256:";
+const ID_MAX_DEPTH = 64;
+const ID_MAX_ACTORS = 32;
+const ID_ROLES = new Set(["user", "agent", "sponsor", "approver"]);
+const HEX64 = /^[0-9a-f]{64}$/;
+const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+const PRINTABLE_ASCII = /^[\x20-\x7e]*$/;
+
+/** A value with no identity digest: `code`, and for identity_out_of_domain the `reason`. */
+export class IdentityDigestError extends Error {
+  readonly code: string;
+  readonly reason: string | null;
+  constructor(code: string, reason: string | null = null, detail = "") {
+    super([code, reason ?? "", detail].filter(Boolean).join(":"));
+    this.code = code;
+    this.reason = reason;
+  }
+}
+
+const outOfDomain = (reason: string): never => { throw new IdentityDigestError("identity_out_of_domain", reason); };
+
+function admitIdentity(v: J, holder: J, key: string, depth: number): void {
+  if (v === null || typeof v === "boolean") return;
+  if (typeof v === "string") { if (LONE_SURROGATE.test(v)) outOfDomain("lone_surrogate"); return; }
+  if (typeof v === "number") {
+    if (!Number.isFinite(v) || isFloat(holder, key, v)) outOfDomain("float");
+    if (Math.abs(v) > MAX_EXACT_INT) outOfDomain("integer_out_of_range");
+    return;
+  }
+  if (Array.isArray(v)) {
+    if (depth >= ID_MAX_DEPTH) outOfDomain("too_deep");
+    v.forEach((x, i) => admitIdentity(x, v, String(i), depth + 1));
+    return;
+  }
+  if (typeof v === "object") {
+    if (depth >= ID_MAX_DEPTH) outOfDomain("too_deep");
+    const names = Object.keys(v);
+    if (!names.every((n) => PRINTABLE_ASCII.test(n))) outOfDomain("member_name_not_ascii");
+    for (const n of names.sort()) admitIdentity(v[n], v, n, depth + 1);
+    return;
+  }
+  outOfDomain("unsupported_type");
+}
+
+function identityDigestOf(v: J): string {
+  try { return DIGEST_PREFIX + sha256Hex(canonicalBytes(v)); } catch (e) {
+    throw new IdentityDigestError("identity_out_of_domain", "no_canonical_form", (e as Error).message);
+  }
+}
+
+const isDigest = (v: J): boolean => typeof v === "string" && v.startsWith(DIGEST_PREFIX) && HEX64.test(v.slice(7));
+
+function principalsDoc(block: J, holder: J, key: string): J {
+  admitIdentity(block, holder, key, 0);
+  if (!isObj(block) || Object.keys(block).length === 0) throw new IdentityDigestError("identity_principals_malformed");
+  for (const [role, member] of Object.entries(block)) {
+    if (!ID_ROLES.has(role) || !isObj(member)) throw new IdentityDigestError("identity_principals_malformed");
+  }
+  return block;
+}
+
+/** probity_records.digests.principals_digest. */
+export function principalsDigest(block: J, holder: J = null, key = ""): string {
+  return identityDigestOf(principalsDoc(block, holder, key));
+}
+
+/** probity_records.digests.act_chain_digest. */
+export function actChainDigest(act: J, holder: J = null, key = ""): string {
+  if (act === null || act === undefined) throw new IdentityDigestError("identity_act_missing");
+  admitIdentity(act, holder, key, 0);
+  let level = act;
+  for (let actors = 1; ; actors++) {
+    if (!isObj(level) || typeof level.sub !== "string" || level.sub === "") throw new IdentityDigestError("identity_act_malformed");
+    if (actors > ID_MAX_ACTORS) throw new IdentityDigestError("identity_act_malformed");
+    if (!("act" in level)) return identityDigestOf(act);
+    level = level.act;
+  }
+}
+
+/** probity_records.digests.grant_chain_digest_of. */
+export function grantChainDigestOf(digests: J, holder: J = null, key = ""): string {
+  admitIdentity(digests, holder, key, 0);
+  if (!Array.isArray(digests)) throw new IdentityDigestError("identity_grant_chain_malformed");
+  if (digests.length === 0) throw new IdentityDigestError("identity_grant_chain_empty");
+  if (!digests.every((d) => typeof d === "string" && HEX64.test(d))) throw new IdentityDigestError("identity_grant_chain_malformed");
+  return identityDigestOf(digests);
+}
+
+/** probity_records.digests.grant_chain_digest: the digest of the links' grant digests, root first. */
+export function grantChainDigest(links: J): string {
+  if (!Array.isArray(links)) throw new IdentityDigestError("identity_grant_chain_malformed");
+  if (links.length === 0) throw new IdentityDigestError("identity_grant_chain_empty");
+  const digests = links.map((link) => {
+    if (!isObj(link) || !isObj(link.body)) throw new IdentityDigestError("identity_grant_chain_malformed");
+    try { return digestOf(link.body); } catch (e) {
+      throw new IdentityDigestError("identity_grant_chain_malformed", null, (e as Error).message);
+    }
+  });
+  return grantChainDigestOf(digests);
+}
+
+/** probity_records.digests.stamp_digest: null for an absent act claim or grant chain. */
+export function stampDigest(principals: J, act: J, grants: J): string {
+  if (!isDigest(principals) || !(act === null || isDigest(act)) || !(grants === null || isDigest(grants)))
+    throw new IdentityDigestError("identity_digest_malformed");
+  return identityDigestOf({ act, grants, principals });
+}
+
+/** probity_records.digests.stamp_digest_of. */
+export function stampDigestOf(block: J, links: J = null, holder: J = null, key = ""): string {
+  const doc = principalsDoc(block, holder, key);
+  const user = doc.user ?? {};
+  const act = "act" in user ? actChainDigest(user.act, user, "act") : null;
+  return stampDigest(identityDigestOf(doc), act, links === null ? null : grantChainDigest(links));
+}
+
+/** What the shared vectors expect for `fn` over the JSON text `input` of its argument array. */
+export function judgeDigest(fn: string, input: string): { digest: string } | { refused: string; reason: string | null } {
+  const args = parsePy(input);
+  try {
+    const digest = (() => {
+      switch (fn) {
+        case "principals_digest": return principalsDigest(args[0], args, "0");
+        case "act_chain_digest": return actChainDigest(args[0], args, "0");
+        case "grant_chain_digest": return grantChainDigest(args[0]);
+        case "grant_chain_digest_of": return grantChainDigestOf(args[0], args, "0");
+        case "stamp_digest": return stampDigest(args[0], args[1], args[2]);
+        case "stamp_digest_of": return stampDigestOf(args[0], args[1], args, "0");
+        default: throw new Error(`unknown digest function ${fn}`);
+      }
+    })();
+    return { digest };
+  } catch (e) {
+    if (e instanceof IdentityDigestError) return { refused: e.code, reason: e.reason };
+    throw e;
+  }
 }

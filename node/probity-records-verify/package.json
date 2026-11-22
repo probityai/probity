@@ -11,7 +11,8 @@
     "directory": "node/probity-records-verify"
   },
   "exports": {
-    ".": "./dist/verify.js"
+    ".": "./dist/verify.js",
+    "./revocation": "./dist/revocation.js"
   },
   "bin": {
     "probity-records-verify": "./dist/cli.js"
