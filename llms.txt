@@ -7,6 +7,7 @@
 - [agent-evidence-verify](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/llms.txt): offline verifier that decides supported, contradicted or not_established
 - [agent-evidence-observer 0.1.0](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/llms.txt): records agent runs as pinned evidence
 - [probity-ratchet 0.2.0](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/README.md): signed receipts for improving an agent against held-out cases
+- [agent-evidence-a2a 0.1.0](https://github.com/probityai/probity/blob/main/packages/agent-evidence-a2a/README.md): verifies A2A agent card signatures over the served bytes and scores card verifiers, canonicalisers and webhook SSRF judges
 - [probityai](https://github.com/probityai/probity/blob/main/packages/probityai/README.md): the `probity` command and its subcommand seam
 
 ## Repository
