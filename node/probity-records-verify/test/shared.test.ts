@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { canonicalBytes, canonicalOfReceived, checkPrincipals, parsePy, verifyJournal } from "../src/verify.ts";
+import { canonicalBytes, canonicalOfReceived, checkPrincipals, judgeIdentity, parsePy, verifyJournal } from "../src/verify.ts";
 
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
@@ -39,6 +39,13 @@ for (const v of load("canonical.json")) {
   });
 }
 
+// The canonical identity string: the same outcome, or the same refusal code, for every string and document.
+for (const v of load("canonical_identity.json")) {
+  test(`${v.id} ${v.description}`, () => {
+    assert.deepEqual(judgeIdentity(v.direction, v.input), v.expected);
+  });
+}
+
 test("every family is non-empty", () => {
-  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "canonical.json"]) assert.ok(load(f).length > 0, f);
+  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "canonical.json", "canonical_identity.json"]) assert.ok(load(f).length > 0, f);
 });

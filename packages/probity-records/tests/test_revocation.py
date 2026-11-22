@@ -18,6 +18,7 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.possession import cnf_for_signer
 from test_records import _approval, _trust, _write_run
 
 PAST = "2000-01-01T00:00:00Z"
@@ -93,9 +94,9 @@ def test_root_rotation_hands_over_to_the_successor() -> None:
 def test_revoking_a_parent_grant_revokes_its_descendants() -> None:
     root, agent, sub, rev = (Signer.generate() for _ in range(4))
     tools = {"t": {"args": {"n": {"type": "range", "max": 10}}}}
-    parent = issue_grant(root, grant_id="p", holder_key=raw_public(agent), tools=tools, max_depth=1,
+    parent = issue_grant(root, grant_id="p", holder_key=raw_public(agent), cnf=cnf_for_signer(agent), tools=tools, max_depth=1,
                          not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")
-    child = issue_grant(agent, grant_id="c", holder_key=raw_public(sub), tools=tools, parent=parent,
+    child = issue_grant(agent, grant_id="c", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), tools=tools, parent=parent,
                         not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")
     state = RevocationState.from_lists(
         [_list(rev, 1, [{"kind": "grant", "id": grant_digest(parent["body"]), "revokedAt": PAST, "reason": "x"}])],

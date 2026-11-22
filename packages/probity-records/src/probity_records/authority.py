@@ -15,6 +15,7 @@ from typing import Any
 
 from . import governance, grants, quorum
 from .core import admitted_loads
+from .possession import DEFAULT_SKEW, possession_record_problem
 from .revocation import RevocationState
 
 GRANT_ALLOW = "grant"
@@ -37,6 +38,9 @@ class Trust:
     #: A c2sp.org/tlog-policy (text): when set, a journal verifies only with a checkpoint its quorum
     #: of witnesses (keys the customer holds) cosigned.
     witness_policy: str | None = None
+    #: The DPoP freshness skew (seconds) the verifier at the call site applied: a proof stays single-use for
+    #: ``iat`` plus this plus ``possession.REPLAY_GRACE`` seconds, and the journal is checked for reuse inside it.
+    possession_skew_seconds: int = DEFAULT_SKEW
 
     def key_revoked(self, kid: str, at: str) -> bool:
         return self.revocations is not None and self.revocations.key_revoked(kid, at)
@@ -71,6 +75,10 @@ def _check_grant(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Tr
         problems.append(f"{where}:grant_{verdict['decision']}:{verdict['reason']}")
     if verdict["grantDigest"] and verdict["grantDigest"] != pred.get("grantDigest"):
         problems.append(f"{where}:grant_digest_differs_from_record")
+    if "possession" in evidence and verdict["grantDigest"]:
+        problem = possession_record_problem(evidence["possession"], evidence["chain"][-1]["body"].get("cnf"))
+        if problem:
+            problems.append(f"{where}:{problem}")
 
 
 def _quorum_outcome(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Trust, at: str,

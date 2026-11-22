@@ -25,6 +25,7 @@ from .identity import (
     check_principals,
     jwk_thumbprint,
     jwks_digest,
+    possession_grade,
     verify_token,
 )
 
@@ -32,6 +33,8 @@ AT = "2026-11-08T12:00:00Z"
 _AT_EPOCH = 1794139200  # AT as seconds since the epoch
 IAT, EXP = _AT_EPOCH - 2400, _AT_EPOCH + 1200  # 11:20 .. 12:20 on the vectors' day
 ISSUER = "https://idp.example.com/realms/agents"
+# The agent's access token is DPoP-bound (RFC 9449 section 6.1) to this key's thumbprint.
+AGENT_CNF = {"jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"}  # the RFC 8037 appendix A.3 key
 
 
 def _iso_at(seconds: int) -> str:
@@ -62,8 +65,9 @@ def _principal(token: str, jwk: dict, jwks: dict, source: str, claims: dict) -> 
          "expiresAt": _iso(claims["exp"]), "issuedAt": _iso(claims["iat"]), "issuer": claims["iss"],
          "jwksDigest": jwks_digest(jwks), "key": jwk, "keyThumbprint": jwk_thumbprint(jwk), "kid": jwk["kid"],
          "source": source, "subject": claims["sub"], "tokenDigest": sha256_hex(token.encode())}
-    if "act" in claims:
-        p["act"] = claims["act"]
+    for member in ("act", "cnf"):
+        if member in claims:
+            p[member] = copy.deepcopy(claims[member])
     return p
 
 
@@ -75,7 +79,7 @@ def base() -> dict[str, Any]:
         "user": ("id-jag", "oauth-id-jag+jwt", {"sub": "alice@example.com", "client_id": "agent-refunds",
                                                 "aud": "https://api.example.com", "act": {"sub": "agent-refunds"}}),
         "agent": ("jwt-access-token", "at+jwt", {"sub": "agent-refunds", "client_id": "agent-refunds",
-                                                 "aud": "https://api.example.com"}),
+                                                 "aud": "https://api.example.com", "cnf": dict(AGENT_CNF)}),
         "sponsor": ("id-token", "JWT", {"sub": "owner@example.com", "client_id": "console",
                                         "aud": "console"}),
         "approver": ("id-token", "JWT", {"sub": "bob@example.com", "client_id": "console", "aud": "console"}),
@@ -117,6 +121,10 @@ def vectors() -> list[dict[str, Any]]:
              lambda v: v["principals"]["agent"]["key"].__setitem__("d", "AA")),
         _mut("ID13", "credential not yet valid", lambda v: v.__setitem__("at", _iso_at(IAT - 1))),
         _mut("ID14", "agent principal missing", lambda v: v["principals"].pop("agent")),
+        _mut("ID15", "agent cnf names two confirmation methods",
+             lambda v: v["principals"]["agent"]["cnf"].__setitem__("x5t#S256", "A" * 43)),
+        _mut("ID16", "agent cnf thumbprint is not a SHA-256 digest",
+             lambda v: v["principals"]["agent"].__setitem__("cnf", {"jkt": "short"})),
     ]
     for v in out:
         problems, grade = check_principals(v["principals"], v["at"], {k: frozenset(t) for k, t in v["pins"].items()},
@@ -125,6 +133,7 @@ def vectors() -> list[dict[str, Any]]:
                         for role, p in v["principals"].items() if role in v["tokens"]}
         v["expected"] = {"problems": problems, "grade": grade,
                          "act": "act-chain" if "act" in v["principals"].get("user", {}) else "act-absent",
+                         "possession": possession_grade(v["principals"]),
                          "tokens": token_checks}
     return copy.deepcopy(out)
 

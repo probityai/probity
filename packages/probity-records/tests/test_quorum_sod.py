@@ -18,6 +18,7 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
     count,
     request_hash,
@@ -107,10 +108,10 @@ def test_grant_carried_quorum_verifies_offline_and_widening_delegation_is_refuse
     keys, policy, pid, req = _setup()
     root, agent, sub, gate = (Signer.generate() for _ in range(4))
     tools = {"pay": {"approval": "required", "quorum": policy, "args": {"amount_cents": {"type": "range", "max": 10**6}}}}
-    parent = issue_grant(root, grant_id="g", holder_key=raw_public(agent), tools=tools, max_depth=1,
+    parent = issue_grant(root, grant_id="g", holder_key=raw_public(agent), cnf=cnf_for_signer(agent), tools=tools, max_depth=1,
                          not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")
     with pytest.raises(ValueError, match="child_lowers_threshold:pay"):
-        issue_grant(agent, grant_id="c", holder_key=raw_public(sub), parent=parent,
+        issue_grant(agent, grant_id="c", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), parent=parent,
                     tools={"pay": {**tools["pay"], "quorum": {**policy, "threshold": 1}}},
                     not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")
     chain = [parent]
