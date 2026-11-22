@@ -31,8 +31,15 @@ class Trust:
     revocations: RevocationState | None = None
     #: issuer URL -> the RFC 7638 thumbprints the auditor pins for that issuer's signing keys
     identity_issuers: Mapping[str, frozenset[str]] = field(default_factory=dict)
-    #: "basic" accepts a principals block without an act chain (graded); "strict" refuses it
+    #: "basic" accepts a principals block without an act chain (graded); "strict" refuses it (and accepts an
+    #: "autonomous" block, which is strict-equivalent)
     identity_profile: str = "basic"
+    #: agent client id -> the (issuer, subject) pairs registered as its sponsors: the registry an autonomous
+    #: block's sponsor must be in. Unset, no autonomous block verifies.
+    agent_sponsors: Mapping[str, frozenset[tuple[str, str]]] = field(default_factory=dict)
+    #: Grant chains (root to leaf) the auditor pins, beside the ones a record's own authority carries: the standing
+    #: grants an autonomous block may name. Each is verified against ``grant_root_key_ids`` before it counts.
+    standing_grants: tuple[tuple[Mapping[str, Any], ...], ...] = ()
     #: Signing key id -> the custody backend its checkpoint must name ("aws-kms", "vault-transit", ...).
     key_custody: Mapping[str, str] = field(default_factory=dict)
     #: A c2sp.org/tlog-policy (text): when set, a journal verifies only with a checkpoint its quorum

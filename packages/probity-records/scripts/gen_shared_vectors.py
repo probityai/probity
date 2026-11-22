@@ -3,7 +3,8 @@
 Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint", "keys": [pem],
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
-principal-level vectors of ``identity_vectors``, ``canonical_identity.json`` the canonical identity
+principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``standing_grants.json`` its standing
+grant chains, ``canonical_identity.json`` the canonical identity
 strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
 ``digests_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
@@ -19,6 +20,7 @@ import json
 import sys
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -49,7 +51,7 @@ from probity_records import canonical as jcs
 from probity_records.canonical_identity_vectors import (
     vectors as canonical_identity_vectors,
 )
-from probity_records.clock import SystemClock
+from probity_records.clock import FixedClock, SystemClock, from_datetime
 from probity_records.core import (
     IN_TOTO_PAYLOAD_TYPE,
     STATEMENT_TYPE,
@@ -59,7 +61,11 @@ from probity_records.core import (
     pae,
 )
 from probity_records.digests_vectors import vectors as digest_vectors
-from probity_records.grants import GRANT_DOMAIN
+from probity_records.grants import GRANT_DOMAIN, grant_digest
+from probity_records.identity_vectors import (
+    autonomous_record_parts,
+    standing_grant_vectors,
+)
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
@@ -116,6 +122,48 @@ def grant_case(directory: Path, grants: list[dict], calls: list[dict], *, intent
         j.append(TOOL_CALL_RECORD, f"tool-call:c{n}", args_sha256(args), tool_call_predicate(
             phase="intent", grant_digest=intent_grant or digest, **common))
     return j
+
+
+def autonomous_case(directory: Path, *, authority: str = "standing", intent: str = "standing",
+                    ctx: dict | None = None, tool: str = "refund", args: dict | None = None) -> Journal:
+    """One autonomous call (authorize allow, then intent) at the identity vectors' instant; its block names the
+    standing grant. The allow rests on ``authority``: "standing", "plain" (a broad grant the same agent key holds,
+    with no sponsor or review date) or "policy" (no grant at all); the intent names ``intent``'s grant."""
+    parts = autonomous_record_parts()
+    block = parts["principals"]
+    args = {"amount_cents": 40} if args is None else args
+    ctx = {"agent": block["agent"]["clientId"], "session": block["session"]["id"]} if ctx is None else ctx
+    digest = args_sha256(args)
+    common = {"run_id": "r1", "tool_call_id": "c0", "tool": tool, "args_sha256_hex": digest,
+              "permit_id": permit_id("p", "c0", digest), "principals": block}
+    j = Journal(directory, GATE, clock=FixedClock(from_datetime(datetime.fromisoformat(parts["at"]))))
+    if authority == "policy":
+        allow = tool_call_predicate(phase="authorize", decision="allow", reason="no_approval_required", **common)
+    else:
+        chain = [parts[authority]]
+        allow = tool_call_predicate(phase="authorize", decision="allow", reason=GRANT_ALLOW,
+                                    authority=grant_evidence(chain, args, ctx),
+                                    grant_digest=grant_digest(chain[-1]["body"]), **common)  # fmt: skip
+    j.append(TOOL_CALL_RECORD, "tool-call:c0", digest, allow)
+    named = None if authority == "policy" else grant_digest(parts[intent]["body"])
+    j.append(TOOL_CALL_RECORD, "tool-call:c0", digest, tool_call_predicate(phase="intent", grant_digest=named, **common))
+    return j
+
+
+def autonomous_trust() -> tuple[Trust, dict]:
+    """The auditor of the autonomous family: identity pins, the sponsor registry, the grant root, the standing grant
+    (pinned, so a record that names it while resting on something else is judged on that, not on an unknown grant),
+    strict."""
+    parts = autonomous_record_parts()
+    sponsors = {agent: [tuple(s) for s in refs] for agent, refs in parts["sponsors"].items()}
+    trust = Trust(grant_root_key_ids=frozenset({parts["root"]}), identity_profile="strict",
+                  identity_issuers={url: frozenset(t) for url, t in parts["pins"].items()},
+                  agent_sponsors={agent: frozenset(refs) for agent, refs in sponsors.items()},
+                  standing_grants=((parts["standing"],),))  # fmt: skip
+    doc = {"grantRootKeyIds": [parts["root"]], "identityProfile": "strict", "identityIssuers": parts["pins"],
+           "agentSponsors": {agent: [list(s) for s in refs] for agent, refs in sponsors.items()},
+           "standingGrants": [[parts["standing"]]]}
+    return trust, doc
 
 
 def forged_wide() -> list[dict]:
@@ -697,24 +745,40 @@ def main(out: Path) -> None:
                 d, [vote("carol", "finance"), vote("alice", "security")], proposer=None)),
         ],
     }
+    cases["autonomous"] = [
+        ("AV1", "an autonomous call that rests on the standing grant its block names: identity holds",
+         lambda d: autonomous_case(d)),
+        ("AV2", "the allow rests on a broad plain grant the agent key also holds, the block names the standing grant",
+         lambda d: autonomous_case(d, authority="plain", intent="plain", tool="wire", args={"to": "acct-9"})),
+        ("AV3", "the allow rests on no grant at all, the block names the standing grant",
+         lambda d: autonomous_case(d, authority="policy", tool="wire", args={"to": "acct-9"})),
+        ("AV4", "the intent names another grant than its block",
+         lambda d: autonomous_case(d, intent="plain")),
+        ("AV5", "the grant evidence states another agent than the block for the grant's context",
+         lambda d: autonomous_case(d, ctx={"agent": "agent-other", "session": "run-2026-11-08-nightly"})),
+        ("AV6", "a call outside the standing grant's constraint", lambda d: autonomous_case(d, args={"amount_cents": 9000})),
+    ]
     cases["constraints"] = constraint_rows()
     cases["approvals"] = approval_rows()
     cases["effects"] = effect_rows()
     trust = Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
+    family_trust = {"autonomous": autonomous_trust()}
     for family, rows in cases.items():
         out_rows = []
+        auditor, auditor_doc = family_trust.get(family, (trust, trust_doc()))
         for vid, description, build in rows:
             with tempfile.TemporaryDirectory() as tmp:
                 j = build(Path(tmp))
                 checkpoint = j.checkpoint()
                 lines = [line for line in j.path.read_text().splitlines() if line.strip()]
-                report = verify_journal(tmp, [GATE.public_pem()], checkpoint, trust=trust)
+                report = verify_journal(tmp, [GATE.public_pem()], checkpoint, trust=auditor)
             out_rows.append({"id": vid, "description": description, "journal": lines, "checkpoint": checkpoint,
-                             "keys": [GATE.public_pem().decode()], "trust": trust_doc(),
+                             "keys": [GATE.public_pem().decode()], "trust": auditor_doc,
                              "expected": {k: report[k] for k in ("verdict", "records", "verified", "failures",
                                                                  "checkpoint")}})
         (out / f"{family}.json").write_text(json.dumps(out_rows, indent=2, sort_keys=True) + "\n")
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
+    (out / "standing_grants.json").write_text(json.dumps(standing_grant_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")
     (out / "identity_digests.json").write_text(json.dumps(digest_vectors(), indent=2, sort_keys=True) + "\n")
