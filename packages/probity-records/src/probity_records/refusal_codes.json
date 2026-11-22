@@ -1551,6 +1551,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_effect_before_list"
   },
   {
+   "code": "revocation_effect_list_stale",
+   "check": "mesh.revocation",
+   "meaning": "an effect cites a revocation list older than the list in force",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_effect_list_stale"
+  },
+  {
    "code": "revocation_effect_malformed",
    "check": "mesh.revocation",
    "meaning": "an effect record is malformed",

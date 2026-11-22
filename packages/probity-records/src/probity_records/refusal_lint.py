@@ -277,14 +277,20 @@ def lint_source(path: str, source: str, registry: Iterable[str], config: Config)
 
 
 def registered(*registry_paths: Path) -> frozenset[str]:
-    """The codes of the packaged registry, or of the registry files given (a private projection adds its own)."""
-    from . import refusal_codes
+    """The codes of the packaged registry, or of the registry files given (a private projection adds its own).
 
+    A file is read for its codes alone, so this module runs as a single file beside any registry; the registry
+    format itself is checked by ``refusal_codes.parse``."""
     if not registry_paths:
+        from . import refusal_codes
+
         return frozenset(refusal_codes.CODES)
     out: set[str] = set()
     for path in registry_paths:
-        out |= set(refusal_codes.parse(json.loads(path.read_text(encoding="utf-8"))))
+        for entry in json.loads(path.read_text(encoding="utf-8"))["codes"]:
+            if not CODE.match(entry["code"]):
+                raise ValueError(f"{path}: {entry['code']!r} is not a snake-case code")
+            out.add(entry["code"])
     return frozenset(out)
 
 

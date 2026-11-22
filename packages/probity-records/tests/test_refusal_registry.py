@@ -112,6 +112,15 @@ def test_unknown_lint_settings_are_refused() -> None:
         Config.load({"carrier": ["Hop"]})
 
 
+def test_registry_files_are_read_for_their_codes_alone(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    extra = tmp_path / "extra.json"
+    extra.write_text(json.dumps({"codes": [{"code": "private_code"}]}), encoding="utf-8")
+    assert refusal_lint.registered(extra) == {"private_code"}
+    extra.write_text(json.dumps({"codes": [{"code": "private-code"}]}), encoding="utf-8")
+    with pytest.raises(ValueError, match="not a snake-case code"):
+        refusal_lint.registered(extra)
+
+
 def test_the_cli_exits_one_on_a_finding(tmp_path) -> None:  # type: ignore[no-untyped-def]
     source = tmp_path / "m.py"
     source.write_text('def f():\n    return "no-edge"\n', encoding="utf-8")
