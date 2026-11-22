@@ -93,6 +93,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/approval_signature_unverified"
   },
   {
+   "code": "approval_threshold_not_met",
+   "check": "approval.quorum",
+   "meaning": "fewer valid approvals arrived than the policy's threshold",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/approval_threshold_not_met"
+  },
+  {
    "code": "approvals_below_threshold",
    "check": "journal.verify",
    "meaning": "fewer approvals hold than the pinned threshold",
@@ -1297,6 +1303,12 @@
    "check": "mesh.route",
    "meaning": "a policy change holds an edge outside the configured ceiling",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_beyond_ceiling"
+  },
+  {
+   "code": "policy_fail_open_refused",
+   "check": "mesh.route",
+   "meaning": "a caller declares a fail-open fallback in a run that fails closed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_fail_open_refused"
   },
   {
    "code": "policy_fallback_opens_edges",

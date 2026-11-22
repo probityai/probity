@@ -78,6 +78,8 @@ def test_a_refusal_string_names_its_code_before_the_detail() -> None:
     ('FORGED = frozenset({"bad-signature"})\ndef f(reason):\n    return reason in FORGED\n',
      ["refusal code not in snake form"]),
     ('UNUSED = "not-a-refusal"\n', []),
+    ('MARK = "aid1!"\ndef f(k):\n    return MARK + k\n', []),
+    ('MARK = "id-v1"\ndef f(k):\n    return MARK + k\n', ["refusal code not in snake form"]),
     ('def f(r):\n    return f"delegation-{r}"\n', ["refusal code composed at run time"]),
     ('def f(r):\n    return "delegation-" + r\n', ["refusal code composed at run time"]),
     ('def f(d):\n    return None, f"grant_revoked:{d}"\n', []),
@@ -95,6 +97,12 @@ def test_a_refusal_string_names_its_code_before_the_detail() -> None:
     ('def f():\n    return {"decision": "deny", "reason": "grant-revoked"}\n', ["refusal code not in snake form"]),
     ('def f():\n    return "sha256:" + "0" * 64\n', []),
     ('def f(x):\n    return x.decode("utf-8")\n', []),
+    ('def f(r, e):\n    raise Refused(f"{r}: {e} under change")\n', []),
+    ('def f(r, e):\n    raise Refused(f"{r}_x: {e}")\n', ["refusal code composed at run time"]),
+    ('A = ("permit-missing",)\nB = ("edge_absent",)\ndef f(reason):\n    return reason in A + B\n',
+     ["refusal code not in snake form"]),
+    ('def f(problems, i):\n    problems.append(f"entry {i}: grant-x")\n', ["refusal code not in snake form"]),
+    ('def f(problems, i, e):\n    problems.append(f"entry {i}: {e}")\n', []),
 ])
 def test_the_lint_reads_every_refusal_position(source: str, refused: list[str]) -> None:
     assert findings(source) == refused
@@ -105,6 +113,16 @@ def test_a_name_configured_for_one_file_applies_to_that_file_only() -> None:
     assert [f.problem for f in lint_source("m.py", 'raise ValueError("grant-x")\n', KNOWN, config)] == [
         "refusal code not in snake form"]
     assert lint_source("other.py", 'raise ValueError("grant-x")\n', KNOWN, config) == []
+
+
+def test_a_call_names_the_positions_that_hold_codes_and_an_exempt_call_holds_none() -> None:
+    config = Config(refusal_calls=frozenset({"_refuse@1"}), exempt_calls=frozenset({"set_policy"}))
+    assert lint_source("m.py", '_refuse("mint", "edge_absent")\n', KNOWN, config) == []
+    assert [f.problem for f in lint_source("m.py", '_refuse("mint", "no-edge")\n', KNOWN, config)] == [
+        "refusal code not in snake form"]
+    assert lint_source("m.py", 'set_policy([], reason="initial-policy")\n', KNOWN, config) == []
+    assert [f.problem for f in lint_source("m.py", 'other([], reason="initial-policy")\n', KNOWN, config)] == [
+        "refusal code not in snake form"]
 
 
 def test_unknown_lint_settings_are_refused() -> None:

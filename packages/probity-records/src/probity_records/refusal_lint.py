@@ -47,20 +47,36 @@ class Config:
     exempt_functions: frozenset[str] = frozenset()
     located_lists: frozenset[str] = frozenset()
     assigned: frozenset[str] = frozenset()
+    exempt_calls: frozenset[str] = frozenset()
     keywords: frozenset[str] = frozenset({"reason", "code", "refusal"})
     sentinels: frozenset[str] = frozenset({"", "ok"})
 
     @classmethod
     def load(cls, data: Mapping[str, Any]) -> Config:
         unknown = set(data) - {"carriers", "refusal_calls", "raisers", "exempt_functions", "located_lists",
-                              "assigned", "keywords", "sentinels"}
+                              "assigned", "exempt_calls", "keywords", "sentinels"}
         if unknown:
             raise ValueError(f"unknown lint settings {sorted(unknown)}")
         return cls(**{k: frozenset(map(str, v)) for k, v in data.items()})
 
     def has(self, kind: frozenset[str], file: str, name: str) -> bool:
         """``name`` is configured for every file, or for this file as ``<file name>::<name>``."""
-        return name in kind or f"{Path(file).name}::{name}" in kind
+        return self.positions(kind, file, name) is not None
+
+    def positions(self, kind: frozenset[str], file: str, name: str) -> frozenset[int] | None:
+        """The argument positions of a configured call (``name@1`` names one; bare, every one), or None."""
+        found: set[int] = set()
+        every = False
+        for entry in kind:
+            spec, _, at = entry.partition("@")
+            if spec in (name, f"{Path(file).name}::{name}"):
+                if at:
+                    found.add(int(at))
+                else:
+                    every = True
+        if every:
+            return frozenset(range(-1, 64))
+        return frozenset(found) if found else None
 
 
 @dataclass(frozen=True)
@@ -80,7 +96,7 @@ class _Scan:
     config: Config
     registry: frozenset[str]
     findings: list[Finding] = field(default_factory=list)
-    used_names: set[str] = field(default_factory=set)
+    used_names: dict[str, bool] = field(default_factory=dict)  # name -> every string judged, not only code-shaped
 
     def judge(self, line: int, text: str) -> None:
         code = text.split(":", 1)[0]
@@ -96,6 +112,9 @@ class _Scan:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             if not shaped_only or CANDIDATE.match(node.value):
                 self.judge(node.lineno, node.value)
+        elif isinstance(node, ast.BinOp) and _head(node) is None and not isinstance(node.left, ast.JoinedStr):
+            self.strings(node.left, shaped_only=shaped_only)  # NAMES + OTHERS: each operand is judged where made
+            self.strings(node.right, shaped_only=shaped_only)
         elif isinstance(node, (ast.JoinedStr, ast.BinOp)):
             self.composed(node, shaped_only=shaped_only)
         elif isinstance(node, (ast.Tuple, ast.List, ast.Set)):
@@ -105,7 +124,7 @@ class _Scan:
             self.strings(node.body, shaped_only=shaped_only)
             self.strings(node.orelse, shaped_only=shaped_only)
         elif isinstance(node, ast.Name):
-            self.used_names.add(node.id)
+            self.used_names[node.id] = self.used_names.get(node.id, False) or not shaped_only
         elif isinstance(node, ast.Call) and _name(node.func) in ("frozenset", "set", "tuple", "list"):
             for arg in node.args:
                 self.strings(arg, shaped_only=shaped_only)
@@ -126,10 +145,13 @@ class _Scan:
             elif code:
                 self.judge(node.lineno, code)
         elif isinstance(node, ast.Name):
-            self.used_names.add(node.id)
+            self.used_names[node.id] = True
 
     def composed(self, node: ast.JoinedStr | ast.BinOp, *, shaped_only: bool) -> None:
         head = _head(node)
+        first = _segments(node.values)[0] if isinstance(node, ast.JoinedStr) else []
+        if first and not any(isinstance(piece, str) for piece in first):
+            return  # f"{code}: detail": the code is a value, judged where it was made
         if head is None:
             if not shaped_only:
                 self.findings.append(Finding(self.path, node.lineno, ast.unparse(node), "refusal code composed at run time"))
@@ -157,8 +179,8 @@ def _segments(values: list[ast.expr]) -> list[list[ast.expr | str]]:
             for i, piece in enumerate(pieces):
                 if i:
                     out.append([])
-                if piece:
-                    out[-1].append(piece)
+                if piece.strip():
+                    out[-1].append(piece.strip())
         else:
             out[-1].append(value)
     return out
@@ -217,9 +239,13 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
                 scan.strings(value, shaped_only=True)
         elif isinstance(node, ast.Call):
             called = _name(node.func)
-            if cfg.has(cfg.carriers, scan.path, called) or cfg.has(cfg.refusal_calls, scan.path, called):
-                for arg in node.args:
-                    scan.strings(arg, shaped_only=False)
+            if cfg.has(cfg.exempt_calls, scan.path, called):
+                continue  # its arguments and keywords name something other than a refusal (a policy change's cause)
+            at = cfg.positions(cfg.carriers, scan.path, called) or cfg.positions(cfg.refusal_calls, scan.path, called)
+            if at is not None:
+                for index, arg in enumerate(node.args):
+                    if index in at:
+                        scan.strings(arg, shaped_only=False)
             elif (called == "append" and isinstance(node.func, ast.Attribute)
                   and cfg.has(cfg.located_lists, scan.path, _name(node.func.value)) and node.args):
                 scan.located(node.args[0])
@@ -242,8 +268,9 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
             targets, value = [node.target], node.value
         else:
             continue
-        if any(isinstance(t, ast.Name) and t.id in scan.used_names for t in targets):
-            scan.strings(value, shaped_only=False)
+        used = [scan.used_names[t.id] for t in targets if isinstance(t, ast.Name) and t.id in scan.used_names]
+        if used:
+            scan.strings(value, shaped_only=not any(used))
 
 
 #: Where this package's own checks put refusal codes.
