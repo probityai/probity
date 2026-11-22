@@ -118,6 +118,28 @@ def _standing(*, review: int = _AT_EPOCH + 43200, expires: int = _AT_EPOCH + 129
                        sponsor={"issuer": sponsor[0], "subject": sponsor[1]}, review_by=_iso_at(review))["body"]
 
 
+def autonomous_record_parts() -> dict[str, Any]:
+    """What a journal of autonomous records needs, deterministic: the autonomous block (``_auto``'s), the signed
+    standing grant it names, a broad plain grant the same agent key holds (no sponsor, no review date), the grant
+    root's key id, the identity pins and the sponsor registry. The shared journal vectors are built from these."""
+    v = _auto("parts", "parts")
+    root = Signer(_key("probity-identity-vectors/grant-root"))
+    holder = raw_public(Signer(_key("probity-identity-vectors/agent-holder")))
+    common = {"holder_key": holder, "cnf": dict(AGENT_CNF), "not_before": _iso_at(GRANT_NB),
+              "expires_at": _iso_at(_AT_EPOCH + 129600)}
+    standing = issue_grant(root, grant_id="standing-refunds-nightly",
+                           tools={"refund": {"args": {"amount_cents": {"type": "range", "min": 1, "max": 5000}}}},
+                           sponsor={"issuer": SPONSOR_REF[0], "subject": SPONSOR_REF[1]},
+                           review_by=_iso_at(_AT_EPOCH + 43200), **common)  # fmt: skip
+    if grant_digest(standing["body"]) != v["principals"]["standingGrant"]:
+        raise AssertionError("the signed standing grant is not the one the autonomous block names")
+    plain = issue_grant(root, grant_id="broad-refunds", tools={"refund": {"args": {"amount_cents": {"type": "wildcard"}}},
+                                                               "wire": {"args": {"to": {"type": "wildcard"}}}},
+                        **common)  # fmt: skip
+    return {"at": AT, "principals": v["principals"], "pins": v["pins"], "sponsors": v["sponsors"],
+            "standing": standing, "plain": plain, "root": root.key_id}
+
+
 def _auto(vid: str, description: str, fn=None, **grant: Any) -> dict[str, Any]:
     """An autonomous block: the agent, the sponsor (as presented at the grant's issue), the session, the grant."""
     v = base()
@@ -292,6 +314,8 @@ def standing_grant_vectors() -> list[dict[str, Any]]:
         ("SG11", "forged child that drops an argument its parent constrains (a call without it is unbounded)",
          [parent, _signed(holder, {**child_body, "tools": {"refund": {"args": {
              "amount_cents": {"type": "range", "min": 1, "max": 5000}}}}})], AT),
+        ("SG12", "a delegate of a plain grant names a sponsor: only the pinned root says who answers",
+         [_signed(root, plain), _signed(holder, {**child_body, "parent": grant_digest(plain)})], AT),
     ]
     out = []
     for vid, description, chain, at in rows:

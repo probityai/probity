@@ -570,7 +570,7 @@ function narrowingProblem(ch: J, p: J): string | null {
   if ("sponsor" in p) {
     if (!isObj(ch.sponsor) || ch.sponsor.issuer !== p.sponsor.issuer || ch.sponsor.subject !== p.sponsor.subject) return "child_changes_sponsor";
     if (ts(ch.reviewBy) > ts(p.reviewBy)) return "child_review_later_than_parent";
-  }
+  } else if ("sponsor" in ch) return "child_adds_sponsor";
   if ((p.maxDepth ?? 0) < 1) return "parent_forbids_delegation";
   if ((ch.maxDepth ?? 0) > p.maxDepth - 1) return "child_depth_wider_than_parent";
   for (const [k, c] of Object.entries(p.context ?? {})) {
@@ -1177,7 +1177,27 @@ function pyRepr(v: J, asFloat = false): string {
   return asFloat && Number.isInteger(v) ? `${v}.0` : String(v);
 }
 
-function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null): [J | null, string[]] {
+// An autonomous call runs on the standing grant its block names (journal.py _standing_problems): an allow rests on
+// it (a grant allow whose leaf it is), judged in the block's own agent and session; every intent and effect names it.
+function standingProblems(pred: J, block: J): string[] {
+  const named = block.standingGrant;
+  const phase = pred.phase;
+  if (phase === "intent" || phase === "effect") return pred.grantDigest === named ? [] : ["principals_standing_grant_not_the_authority"];
+  if (phase !== "authorize" || pred.decision !== "allow") return [];
+  const ev = pred.authority;
+  const chain = isObj(ev) && Array.isArray(ev.chain) ? ev.chain : null;
+  let leaf: string | null = null;
+  try { leaf = chain && chain.length ? digestOf(chain[chain.length - 1].body) : null; } catch { leaf = null; }
+  if (pred.reason !== "grant" || !isObj(ev) || ev.kind !== "grant" || leaf !== named || pred.grantDigest !== named)
+    return ["principals_standing_grant_not_the_authority"];
+  const ctx = ev.ctx ?? {};
+  const own: Record<string, J> = { agent: block.agent.clientId, session: block.session.id };
+  if (!isObj(ctx) || Object.entries(own).some(([k, v]) => k in ctx && !pyEq(ctx[k], v)))
+    return ["principals_standing_context_not_the_block"];
+  return [];
+}
+
+function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null, seen: Record<string, J>): [J | null, string[]] {
   const where = `line_${i}`, problems: string[] = [];
   let body: J;
   try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
@@ -1192,7 +1212,7 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
       const autonomous = isObj(block) && Object.keys(block).some((k) => AUTONOMOUS.includes(k));
       let grants: Record<string, J> | null = null;
       if (autonomous) {
-        grants = {};
+        grants = { ...seen };
         const roots = new Set(trust.grantRootKeyIds ?? []);
         const chains = [...(trust.standingGrants ?? [])];
         if (isObj(pred.authority) && Array.isArray(pred.authority.chain)) chains.push(pred.authority.chain);
@@ -1201,10 +1221,16 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
       const sponsors = trust.agentSponsors && Object.keys(trust.agentSponsors).length ? trust.agentSponsors : null;
       const [found, grade] = checkPrincipals(block, String(pred.at), trust.identityIssuers ?? {}, approvalSigners(pred), { sponsors, standingGrants: grants });
       problems.push(...found.map((p) => `${where}:${p}`));
+      if (grade === "autonomous") problems.push(...standingProblems(pred, block).map((p) => `${where}:${p}`));
       if (grade !== null && trust.identityProfile === "strict" && grade !== "strict" && grade !== "autonomous")
         problems.push(`${where}:principals_below_strict:${"act" in (pred.principals.user ?? {}) ? "act-chain" : "act-absent"}`);
     }
   }
+  // Keep the verified bodies of an allow's authority chain, so later intent and effect lines resolve the standing
+  // grant they name without the auditor pinning it.
+  if (body.predicateType === TOOL_CALL_RECORD && trust !== null && pred.phase === "authorize" && pred.decision === "allow"
+      && isObj(pred.authority) && Array.isArray(pred.authority.chain))
+    Object.assign(seen, chainDigests(pred.authority.chain, new Set(trust.grantRootKeyIds ?? [])));
   if (body.predicateType === TOOL_CALL_RECORD) {
     if (pred.phase === "authorize") checkApproval(pred, problems, where, trust);
     else if (pred.phase === "effect") checkEffect(pred, problems, where);
@@ -1273,9 +1299,10 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   let prev = GENESIS, verified = 0;
   const failures: string[] = [], bodies: [number, J][] = [];
   lines = lines.filter((l) => l.trim());
+  const seen: Record<string, J> = {}; // grant bodies of the authority chains verified so far, by digest
   lines.forEach((line, n) => {
     const i = n + 1;
-    const [body, problems] = checkLine(i, line, keys, prev, trust);
+    const [body, problems] = checkLine(i, line, keys, prev, trust, seen);
     prev = sha256Hex(Buffer.from(line, "utf8"));
     failures.push(...problems);
     if (body === null) return;

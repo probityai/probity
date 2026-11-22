@@ -178,7 +178,8 @@ def autonomous(tmp_path, *, revoke_sponsor: bool = False, pin_grant: bool = True
     j = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     j.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(args), tool_call_predicate(
         phase="intent", run_id="r", tool_call_id="c1", tool="refund", args_sha256_hex=args_sha256(args),
-        permit_id=permit_id("p", "c1", args_sha256(args)), principals=block))
+        permit_id=permit_id("p", "c1", args_sha256(args)), grant_digest=grant_digest(grant["body"]),
+        principals=block))
     revocations = None
     if revoke_sponsor:
         signed = sign_revocations(root, list_id="acme", seq=1, issued_at=iso(NOW - timedelta(minutes=1)), entries=[
@@ -339,4 +340,4 @@ def test_a_child_may_not_add_a_sponsor_under_a_plain_parent() -> None:
     forged = issue_grant(holder, **common)
     forged["body"].update({"sponsor": SPONSOR, "reviewBy": iso(NOW + timedelta(days=1))})
     forged["sig"] = base64.b64encode(holder.sign(GRANT_DOMAIN + canonical(forged["body"]))).decode()
-    assert chain_problem([plain, forged], {root.key_id}) == "child_adds_sponsor"
+    assert chain_problem([plain, forged], {root.key_id}) == "child_adds_sponsor:1"
