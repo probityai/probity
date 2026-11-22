@@ -6,7 +6,7 @@ exact call arguments, the human approval it rests on, and what the call did, inc
 It is for framework integrations (Temporal, Pydantic AI) that write those records, and for the
 auditor who verifies them without access to the system that ran the agent.
 
-Install: `pip install probity-records==0.2.0`
+Install: `pip install probity-records==0.3.0`
 
 ```python
 from probity_records import Journal, Signer, verify_journal
