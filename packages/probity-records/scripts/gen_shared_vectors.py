@@ -3,7 +3,8 @@
 Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint", "keys": [pem],
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
-principal-level vectors of ``identity_vectors``. ``canonical.json`` holds bytes and the canonical
+principal-level vectors of ``identity_vectors``, ``canonical_identity.json`` the canonical identity
+strings of ``canonical_identity_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
@@ -15,6 +16,7 @@ import hashlib
 import json
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -39,6 +41,9 @@ from probity_records import (
     verify_journal,
 )
 from probity_records import canonical as jcs
+from probity_records.canonical_identity_vectors import (
+    vectors as canonical_identity_vectors,
+)
 from probity_records.core import (
     IN_TOTO_PAYLOAD_TYPE,
     STATEMENT_TYPE,
@@ -49,6 +54,7 @@ from probity_records.core import (
 )
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.identity_vectors import vectors as identity_vectors
+from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
     approval_policy,
     count,
@@ -75,16 +81,17 @@ GATE, ROOT, AGENT, SUB = key("gate"), key("root"), key("agent"), key("sub")
 
 def chain(**root_kw) -> list[dict]:
     root_kw.setdefault("context", WF)
-    parent = issue_grant(ROOT, grant_id="g-root", holder_key=raw_public(AGENT), tools=TOOLS, max_depth=1,
+    parent = issue_grant(ROOT, grant_id="g-root", holder_key=raw_public(AGENT), cnf=cnf_for_signer(AGENT), tools=TOOLS, max_depth=1,
                          not_before=NB, expires_at=EXP, **root_kw)
     budget = root_kw.get("budget")
-    child = issue_grant(AGENT, grant_id="g-child", holder_key=raw_public(SUB), tools=TOOLS, parent=parent,
+    child = issue_grant(AGENT, grant_id="g-child", holder_key=raw_public(SUB), cnf=cnf_for_signer(SUB), tools=TOOLS, parent=parent,
                         not_before=NB, expires_at=EXP, context=root_kw["context"], budget=budget)
     return [parent, child]
 
 
 def grant_case(directory: Path, grants: list[dict], calls: list[dict], *, intent_grant: str | None = None,
-               ctx: dict | None = None) -> Journal:
+               ctx: dict | None = None, possession: list[dict] | None = None) -> Journal:
+    """One authorize and one intent record per call; ``possession`` gives each allow the proof it rested on."""
     j = Journal(directory, GATE)
     for n, args in enumerate(calls):
         pid = permit_id("p", f"c{n}", args_sha256(args))
@@ -93,7 +100,8 @@ def grant_case(directory: Path, grants: list[dict], calls: list[dict], *, intent
         verdict = verify_grant_allow(grants, "refund", args, AT, {ROOT.key_id}, ctx=ctx or CTX)
         digest = verdict["grantDigest"] or "00" * 32
         j.append(TOOL_CALL_RECORD, f"tool-call:c{n}", args_sha256(args), tool_call_predicate(
-            phase="authorize", decision="allow", reason=GRANT_ALLOW, authority=grant_evidence(grants, args, ctx or CTX),
+            phase="authorize", decision="allow", reason=GRANT_ALLOW,
+            authority=grant_evidence(grants, args, ctx or CTX, possession[n] if possession else None),
             grant_digest=digest, **common))
         j.append(TOOL_CALL_RECORD, f"tool-call:c{n}", args_sha256(args), tool_call_predicate(
             phase="intent", grant_digest=intent_grant or digest, **common))
@@ -105,6 +113,18 @@ def forged_wide() -> list[dict]:
     wide = {**child["body"], "tools": {"refund": {**TOOLS["refund"], "args": {
         **TOOLS["refund"]["args"], "amount_cents": {"type": "range", "min": 1, "max": 400000}}}}}
     return [parent, {"body": wide, "sig": _b64(AGENT.sign(GRANT_DOMAIN + canonical(wide)))}]
+
+
+def dpop_use(jti: str, holder: Signer = SUB) -> dict:
+    """The possession record of a DPoP proof by ``holder`` (the leaf grant's cnf key by default), made now, so
+    the journal's own record times fall inside its lifetime."""
+    return {"iat": int(time.time()), "jkt": cnf_for_signer(holder)["jkt"], "jti": jti, "method": "dpop"}
+
+
+def bearer_grant() -> list[dict]:
+    """A root grant with no ``cnf``, signed by the trusted root: a bearer token, refused by every verifier."""
+    body = {k: v for k, v in chain()[0]["body"].items() if k != "cnf"}
+    return [{"body": body, "sig": _b64(ROOT.sign(GRANT_DOMAIN + canonical(body)))}]
 
 
 QNAMES = ("alice", "bob", "carol", "dave")
@@ -137,7 +157,7 @@ def quorum_case(directory: Path, votes: list[dict], proposer: str = "dave") -> J
 # ---- constraint edge cases: IPv6 CIDR, shell quoting, int vs float ----
 
 def solo_chain(tools: dict) -> list[dict]:
-    return [issue_grant(ROOT, grant_id="g-solo", holder_key=raw_public(AGENT), tools=tools, not_before=NB,
+    return [issue_grant(ROOT, grant_id="g-solo", holder_key=raw_public(AGENT), cnf=cnf_for_signer(AGENT), tools=tools, not_before=NB,
                         expires_at=EXP)]
 
 
@@ -495,6 +515,14 @@ def main(out: Path) -> None:
              lambda d: grant_case(d, chain(), [{"amount_cents": 3500, "currency": "EUR", "note": None}])),
             ("GV6", "recorded allow from a workflow outside the grant's context",
              lambda d: grant_case(d, chain(), [usd], ctx={"workflowId": "payroll-1", "runId": "r1"})),
+            ("GV7", "a grant that names no holder confirmation key (cnf): a bearer grant",
+             lambda d: grant_case(d, bearer_grant(), [usd])),
+            ("GV8", "one DPoP proof spent by two permits inside its lifetime: a replay",
+             lambda d: grant_case(d, chain(), [usd, eur], possession=[dpop_use("proof-1"), dpop_use("proof-1")])),
+            ("GV9", "an allow whose possession record names the parent's key, not the leaf grant's cnf",
+             lambda d: grant_case(d, chain(), [usd], possession=[dpop_use("proof-1", AGENT)])),
+            ("GV10", "two permits, each with its own DPoP proof by the leaf grant's key: every record holds",
+             lambda d: grant_case(d, chain(), [usd, eur], possession=[dpop_use("proof-1"), dpop_use("proof-2")])),
         ],
         "quorum": [
             ("QV1", "two approvers fill the two roles; the proposer does not vote",
@@ -526,6 +554,8 @@ def main(out: Path) -> None:
                                                                  "checkpoint")}})
         (out / f"{family}.json").write_text(json.dumps(out_rows, indent=2, sort_keys=True) + "\n")
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
+    (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
+                                                 + "\n")
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")
     (out / "received.json").write_text(json.dumps(received_rows(), indent=2, sort_keys=True) + "\n")
 

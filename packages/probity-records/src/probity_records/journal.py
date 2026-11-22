@@ -25,6 +25,7 @@ from .core import admitted_loads, load_public, open_envelope, sign_envelope, sta
 from .governance import GOVERNANCE_STEP, check_step
 from .grants import grant_digest, spend_of
 from .identity import act_grade, check_principals
+from .possession import DEFAULT_SKEW, duplicate_proofs
 from .quorum import count_bindings
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
 from .signing import Delegation, verify_delegation
@@ -367,13 +368,16 @@ def _retry_problem(pred: dict[str, Any], since_allow: list[str], last_effect: st
     return "not_run_retry_but_an_effect_may_have_happened"
 
 
-def _cross_checks(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
+def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[str]:
     """Run-level rules: an effect needs an earlier allow for its permit; a re-issued permit needs an
     earlier allow and the journal's own evidence that the earlier call did not take effect; a permit
     whose outcome settled (committed or unknown) gets no later effect record; an intent with no effect
     record is an open operation, reported, never read as success; an intent or effect names the same
-    grant as the allow its permit rests on; grant budgets hold."""
+    grant as the allow its permit rests on; grant budgets hold; no DPoP proof is spent by two permits inside its
+    lifetime."""
     problems: list[str] = _budget_problems(bodies)
+    tool_calls = [(i, b) for i, b in bodies if b.get("predicateType") == TOOL_CALL_RECORD]
+    problems.extend(f"line_{i}:{reason}" for i, reason in duplicate_proofs(tool_calls, skew=skew))
     grant_of: dict[str, Any] = {}
     allowed: set[str] = set()
     effects: dict[str, str | None] = {}  # pid -> outcome of its latest effect record
@@ -500,7 +504,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
             policy_allows += 1
         if pred.get("phase") == "effect" and pred.get("outcome"):
             outcomes[pred["outcome"]] = outcomes.get(pred["outcome"], 0) + 1
-    failures.extend(_cross_checks(bodies))
+    failures.extend(_cross_checks(bodies, trust.possession_skew_seconds if trust is not None else DEFAULT_SKEW))
     checkpoint = "not_supplied"
     if checkpoint_env is not None:
         try:
