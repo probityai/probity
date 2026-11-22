@@ -108,7 +108,7 @@ def read_i_json(path: str | os.PathLike[str], *, max_bytes: int = MAX_DOCUMENT_B
         OSError: The file cannot be opened or read.
         IJsonError: The file is larger than *max_bytes*, not UTF-8, or not I-JSON; the message begins with *path*.
     """
-    with open(path, "rb") as handle:  # noqa: PTH123 -- takes the str and PathLike forms its callers hold
+    with open(path, "rb") as handle:
         data = handle.read(max_bytes + 1)
     name = os.fspath(path)
     if len(data) > max_bytes:

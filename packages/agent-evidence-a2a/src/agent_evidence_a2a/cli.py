@@ -11,7 +11,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from agent_evidence_a2a.corpus import default_verifier, score_card_verifier, score_ssrf_judge
+from agent_evidence_a2a.corpus import (
+    default_verifier,
+    score_card_verifier,
+    score_ssrf_judge,
+)
 from agent_evidence_a2a.ssrf import recorded_judge
 from agent_evidence_a2a.transport import probe
 from agent_evidence_a2a.trust import TrustStore

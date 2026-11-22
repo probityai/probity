@@ -31,7 +31,12 @@ from types import MappingProxyType
 from typing import Final
 from urllib.parse import urlsplit
 
-from agent_evidence_a2a.ssrf import Resolver, literal_address, resolved_addresses, system_resolver
+from agent_evidence_a2a.ssrf import (
+    Resolver,
+    literal_address,
+    resolved_addresses,
+    system_resolver,
+)
 
 #: The modern floor for AUTH-TLS-002: A2A 7.1 (v1.0.0 and v1.0.1) recommends TLS 1.3 or later.
 MODERN_TLS_FLOOR: Final = ssl.TLSVersion.TLSv1_3

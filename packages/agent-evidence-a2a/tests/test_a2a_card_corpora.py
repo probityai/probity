@@ -19,7 +19,11 @@ from agent_evidence_a2a import (
 )
 from agent_evidence_a2a.cli import main
 from agent_evidence_a2a.corpus import default_verifier, ground_truth
-from agent_evidence_a2a.vectors import broken_ascii_escaping, broken_code_point_order, reference_canonicalize
+from agent_evidence_a2a.vectors import (
+    broken_ascii_escaping,
+    broken_code_point_order,
+    reference_canonicalize,
+)
 
 DATA = Path(str(files("agent_evidence_a2a"))) / "data"
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "agent_card_schema.py"

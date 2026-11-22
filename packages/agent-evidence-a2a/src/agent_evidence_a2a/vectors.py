@@ -10,7 +10,12 @@ from typing import Any, Final
 import rfc8785
 
 from agent_evidence_a2a._data import data_json
-from agent_evidence_a2a._ijson import MAX_DOCUMENT_BYTES, IJsonError, parse_i_json, parse_vector_json
+from agent_evidence_a2a._ijson import (
+    MAX_DOCUMENT_BYTES,
+    IJsonError,
+    parse_i_json,
+    parse_vector_json,
+)
 
 #: The most one conformance vector's raw input may hold.
 _MAX_VECTOR_BYTES: Final = MAX_DOCUMENT_BYTES
