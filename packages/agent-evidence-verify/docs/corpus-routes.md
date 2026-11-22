@@ -128,6 +128,33 @@ an unauthorised key is `contradicted` with the authority's reason, and a key no 
 key-transparency authority can decide; a DID document or an inclusion proof is a case artifact the policy names. The roots of an inclusion or consistency proof are the artifact's own and carry no trust outside
 it.
 
+### `credential_reachability/v1` (`vectors-credential-reachability`, 58 cases)
+
+The assessment names an `envelope` artifact (a DSSE envelope holding a Credential Reachability statement) and
+every trust input, all from the consumer's policy and none from the record: `trusted_signers` and `agent_keys`
+(each `{keyid: base64 raw Ed25519 key}`, a keyid being the SHA-256 of its key), `environment` (`name` and
+`sha256` of the environment contract), `audience`, `challenge`, `judged_at`, `max_age_seconds`, `payload_type`,
+and optionally `probe_digests`. The claim: the record is a conforming probe result for that environment, bound
+to that audience and challenge, fresh at `judged_at`, signed by a trusted signer, and every class verdict and
+the result are the ones its attempts derive. The 26 rules run in the contract's order and the first refusal is
+the reason.
+
+A signature is checked only under the key of `trusted_signers` that the envelope's `keyid` names. A key the
+agent holds is used only to refuse: any signature that verifies under one, whatever `keyid` it names, is
+`contradicted` / `signed_by_agent_key`. A policy that lists one key in both tables, names a keyid that is not the
+SHA-256 of its key, or carries a malformed pin raises `CaseError`.
+
+A record that passes every rule is `supported` with the reason `contained_verified`, `exposed_verified` or
+`incomplete_verified`; a supported `exposed` record is a verified finding, and only `contained` supports "no
+credential other than one issued to the agent is reachable" for the listed classes, at `probedAt`, from the agent's
+vantage. Every other rule failure is `contradicted` or `not_established` as the contract states, with its
+code as the reason. The corpus's two `no_verdict` members (an envelope that is not JSON, a signature that is
+not base64) map to `contradicted` / `malformed_envelope`, because the kernel has three decisions.
+
+The corpus is unreleased until agent-evidence-vectors v0.38.0, so `tests/data/credential-reachability` holds a
+copy of its 58 members with the MANIFEST's digest pinned in `tests/test_credential_reachability.py`; the
+adversarial tests there re-sign a member to try a forged payload byte, a swapped key naming the trusted keyid, an
+agent co-signature, a replayed challenge, an expired result, another audience and a class-set downgrade.
 ## Corpus-mode routes
 
 These suites are judged by `agent-evidence-verify corpus DIR`, which prints one verdict line per member in the

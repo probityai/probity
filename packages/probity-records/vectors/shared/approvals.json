@@ -164,7 +164,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_1_of_2_approvals_hold"
+        "line_1:approvals_below_threshold:1:2"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -242,7 +242,7 @@
       "checkpoint": "matches",
       "failures": [
         "line_1:binding_1:approval_signature_unverified",
-        "line_1:recorded_allow_but_1_of_2_approvals_hold"
+        "line_1:approvals_below_threshold:1:2"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -320,7 +320,7 @@
       "checkpoint": "matches",
       "failures": [
         "line_1:binding_1:duplicate_approver",
-        "line_1:recorded_allow_but_1_of_2_approvals_hold"
+        "line_1:approvals_below_threshold:1:2"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -397,7 +397,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:threshold_1_is_not_the_pinned_2"
+        "line_1:threshold_not_pinned:1:2"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -474,7 +474,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:threshold_3.0_is_not_the_pinned_2"
+        "line_1:threshold_not_pinned:3.0:2"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -626,7 +626,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -778,7 +778,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:deny_reason_payload_mismatch_but_reader_says_approval_replayed"
+        "line_1:deny_reason_mismatch:payload_mismatch:approval_replayed"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -856,7 +856,7 @@
       "checkpoint": "matches",
       "failures": [
         "line_1:binding_0:approval_payload_is_not_the_call_arguments",
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -933,7 +933,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1010,7 +1010,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1087,7 +1087,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1314,7 +1314,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1391,7 +1391,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1468,7 +1468,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1545,7 +1545,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1622,7 +1622,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1699,7 +1699,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -1776,7 +1776,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -2007,7 +2007,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
@@ -2084,7 +2084,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:recorded_allow_but_0_of_1_approvals_hold"
+        "line_1:approvals_below_threshold:0:1"
       ],
       "records": 1,
       "verdict": "FAIL",
