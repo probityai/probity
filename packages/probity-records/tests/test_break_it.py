@@ -20,6 +20,7 @@ from probity_records import (
     verify_export_seal,
 )
 from probity_records.constraints import check
+from probity_records.possession import cnf_for_signer
 
 T0 = "2026-01-01T00:00:00Z"
 T1 = "2027-01-01T00:00:00Z"
@@ -28,7 +29,7 @@ T1 = "2027-01-01T00:00:00Z"
 # ---- widened grant -------------------------------------------------------------------------------
 def _root_and_holder() -> tuple[Signer, Signer, dict]:
     root, holder = Signer.generate(), Signer.generate()
-    parent = issue_grant(root, grant_id="g1", holder_key=raw_public(holder), not_before=T0, expires_at=T1, max_depth=1,
+    parent = issue_grant(root, grant_id="g1", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), not_before=T0, expires_at=T1, max_depth=1,
                          tools={"transfer": {"args": {"to": {"type": "exact", "value": "acct-1"},
                                                       "amount": {"type": "range", "max": 100}}}})
     return root, holder, parent
@@ -40,14 +41,14 @@ def test_child_grant_that_drops_a_parent_constraint_is_refused() -> None:
     root, holder, parent = _root_and_holder()
     widened = {"transfer": {"args": {"to": {"type": "exact", "value": "acct-1"}}}}
     with pytest.raises(ValueError, match="child_drops_argument"):
-        issue_grant(holder, grant_id="g2", holder_key=raw_public(Signer.generate()), not_before=T0,
+        issue_grant(holder, grant_id="g2", holder_key=raw_public(Signer.generate()), cnf=cnf_for_signer(Signer.generate()), not_before=T0,
                     expires_at=T1, tools=widened, parent=parent)
     # A forged chain that skips issue_grant's own check is refused by every verifier.
     from probity_records.core import _b64
     from probity_records.core import canonical as jcs
     from probity_records.grants import GRANT_DOMAIN, grant_digest
 
-    body = {"context": {}, "expiresAt": T1, "grantId": "g2", "holderKey": raw_public(Signer.generate()),
+    body = {"cnf": cnf_for_signer(holder), "context": {}, "expiresAt": T1, "grantId": "g2", "holderKey": raw_public(Signer.generate()),
             "issuerKey": raw_public(holder), "maxDepth": 0, "notBefore": T0, "parent": grant_digest(parent["body"]),
             "tools": widened}
     child = {"body": body, "sig": _b64(holder.sign(GRANT_DOMAIN + jcs(body)))}
