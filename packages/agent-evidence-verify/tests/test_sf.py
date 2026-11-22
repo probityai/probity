@@ -74,7 +74,7 @@ def test_whitespace_rules() -> None:
 
 def test_decimal_serialises_to_three_places_without_trailing_zeros() -> None:
     assert sf.serialize_bare_item(Decimal("1.5000")) == "1.5"
-    assert sf.serialize_bare_item(Decimal("2")) == "2.0"
+    assert sf.serialize_bare_item(Decimal(2)) == "2.0"
     assert sf.serialize_bare_item(Decimal("0.0005")) == "0.0"
 
 
