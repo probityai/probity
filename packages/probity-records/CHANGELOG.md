@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- ML-DSA-44 checkpoint cosignatures (c2sp.org/tlog-cosignature, signature type 0x06). `witness` parses 0x06
+  vkeys, verifies 0x06 lines over the `subtree/v1` CosignedSubtree, and `cosign_mldsa` signs one (it refuses a
+  checkpoint with extension lines, which the line would not cover). A tlog-policy may name a 0x06 witness key, and a
+  0x06 log key named after the origin, the log's own post-quantum signature. `VerifiedCheckpoint.log_types` lists
+  the log's valid signature types and `post_quantum(policy)` the counted 0x06 witnesses. Held to
+  filippo.io/torchwood in both directions: `vectors/shared/mldsa44-xcheck.json`.
+- The receipt map (`probity_records.receipt_map`): a sparse Merkle map keyed on (issuer key, permit id, stage),
+  whose proofs show a record is the one receipt a log committed for that key, or that the key has none. Spec in
+  [docs/receipt-map.md](docs/receipt-map.md), 16 proof cases, 4 keys and 5 refused keys in
+  `vectors/shared/receipt-map.json`.
+- `cryptography` 50 or later (ML-DSA-44); `agent-evidence-verify` already required it.
+
 ## 0.3.0
 
 Breaking changes from 0.2.0; callers change as each item says.
