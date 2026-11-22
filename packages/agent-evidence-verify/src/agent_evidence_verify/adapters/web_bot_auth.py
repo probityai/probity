@@ -590,7 +590,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
                                "supported_by": sig.label})
             return decision(case_id, CLAIM_TYPE, scope, "supported", "request_signed_by_pinned_agent", [pinned, *checks])
         failures.append(outcome)
-    failure, checks, names_pinned = next((f for f in failures if f[2]), failures[0])
+    failure, checks, _ = next((f for f in failures if f[2]), failures[0])
     if len(candidates) > 1:
         checks.append({"id": "signatures", "status": "failed", "judged": [c for c, _ in candidates],
                        "reasons": [f[0].reason for f in failures]})

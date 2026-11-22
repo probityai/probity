@@ -28,7 +28,6 @@ from dataclasses import dataclass, field
 from decimal import ROUND_HALF_EVEN, Decimal
 
 
-
 class SFError(ValueError):
     """The field is not a valid Structured Field of the expected type."""
 

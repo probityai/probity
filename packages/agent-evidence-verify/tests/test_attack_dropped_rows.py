@@ -12,9 +12,8 @@ import json
 from pathlib import Path
 
 import pytest
-from agent_evidence_verify.adapters import _sf as sf
 from agent_evidence_verify.adapters import web_bot_auth as wba
-from test_web_bot_auth import AGENT, AT, BODY, JWK, KEY, NOW, OTHER, OTHER_JWK, URL, b64url, judge, signed_request, verdict
+from test_web_bot_auth import AGENT, JWK, KEY, NOW, OTHER, OTHER_JWK, URL, b64url, judge, signed_request, verdict
 
 
 def b64(raw: bytes) -> str:
