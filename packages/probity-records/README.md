@@ -56,3 +56,7 @@ governance checks from the records and the trust the auditor pins, and re-counts
 (M of N) under the approver keys and threshold the auditor pinned, re-verifying each approver's own
 signature. An export seal is re-checked with `verify_export_seal` or `python -m probity_records
 verify-export`.
+
+## Where each identity piece lives
+
+`identity`, `canonical_identity`, `grants`, `possession`, `revocation` and `quorum` each have one module, and a TypeScript twin in `node/probity-records-verify` where one exists. [The table](docs/identity-homes.md) names every file.
