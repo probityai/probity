@@ -45,7 +45,43 @@
           "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
         ]
       },
-      "identityProfile": "strict"
+      "identityProfile": "strict",
+      "standingGrants": [
+        [
+          {
+            "body": {
+              "cnf": {
+                "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+              },
+              "context": {},
+              "expiresAt": "2026-11-10T00:00:00Z",
+              "grantId": "standing-refunds-nightly",
+              "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+              "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+              "maxDepth": 0,
+              "notBefore": "2026-11-08T11:30:00Z",
+              "parent": null,
+              "reviewBy": "2026-11-09T00:00:00Z",
+              "sponsor": {
+                "issuer": "https://idp.example.com/realms/agents",
+                "subject": "owner@example.com"
+              },
+              "tools": {
+                "refund": {
+                  "args": {
+                    "amount_cents": {
+                      "max": 5000,
+                      "min": 1,
+                      "type": "range"
+                    }
+                  }
+                }
+              }
+            },
+            "sig": "lFhcfPO9a9wSxalw/g8N6zvYz2J6rl2ULCoJUIOHGRmg020H6LvdKz/snR6tIm5qgee7bpPyzUFaY1tiey8jAw=="
+          }
+        ]
+      ]
     }
   },
   {
@@ -63,8 +99,8 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:principals_standing_grant_unknown",
-        "line_2:principals_standing_grant_unknown",
+        "line_1:principals_standing_grant_not_the_authority",
+        "line_2:principals_standing_grant_not_the_authority",
         "line_2:open_intent_no_effect_record:346cced5017d"
       ],
       "records": 2,
@@ -96,7 +132,43 @@
           "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
         ]
       },
-      "identityProfile": "strict"
+      "identityProfile": "strict",
+      "standingGrants": [
+        [
+          {
+            "body": {
+              "cnf": {
+                "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+              },
+              "context": {},
+              "expiresAt": "2026-11-10T00:00:00Z",
+              "grantId": "standing-refunds-nightly",
+              "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+              "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+              "maxDepth": 0,
+              "notBefore": "2026-11-08T11:30:00Z",
+              "parent": null,
+              "reviewBy": "2026-11-09T00:00:00Z",
+              "sponsor": {
+                "issuer": "https://idp.example.com/realms/agents",
+                "subject": "owner@example.com"
+              },
+              "tools": {
+                "refund": {
+                  "args": {
+                    "amount_cents": {
+                      "max": 5000,
+                      "min": 1,
+                      "type": "range"
+                    }
+                  }
+                }
+              }
+            },
+            "sig": "lFhcfPO9a9wSxalw/g8N6zvYz2J6rl2ULCoJUIOHGRmg020H6LvdKz/snR6tIm5qgee7bpPyzUFaY1tiey8jAw=="
+          }
+        ]
+      ]
     }
   },
   {
@@ -114,8 +186,8 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_1:principals_standing_grant_unknown",
-        "line_2:principals_standing_grant_unknown",
+        "line_1:principals_standing_grant_not_the_authority",
+        "line_2:principals_standing_grant_not_the_authority",
         "line_2:open_intent_no_effect_record:346cced5017d"
       ],
       "records": 2,
@@ -147,7 +219,43 @@
           "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
         ]
       },
-      "identityProfile": "strict"
+      "identityProfile": "strict",
+      "standingGrants": [
+        [
+          {
+            "body": {
+              "cnf": {
+                "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+              },
+              "context": {},
+              "expiresAt": "2026-11-10T00:00:00Z",
+              "grantId": "standing-refunds-nightly",
+              "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+              "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+              "maxDepth": 0,
+              "notBefore": "2026-11-08T11:30:00Z",
+              "parent": null,
+              "reviewBy": "2026-11-09T00:00:00Z",
+              "sponsor": {
+                "issuer": "https://idp.example.com/realms/agents",
+                "subject": "owner@example.com"
+              },
+              "tools": {
+                "refund": {
+                  "args": {
+                    "amount_cents": {
+                      "max": 5000,
+                      "min": 1,
+                      "type": "range"
+                    }
+                  }
+                }
+              }
+            },
+            "sig": "lFhcfPO9a9wSxalw/g8N6zvYz2J6rl2ULCoJUIOHGRmg020H6LvdKz/snR6tIm5qgee7bpPyzUFaY1tiey8jAw=="
+          }
+        ]
+      ]
     }
   },
   {
@@ -198,7 +306,43 @@
           "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
         ]
       },
-      "identityProfile": "strict"
+      "identityProfile": "strict",
+      "standingGrants": [
+        [
+          {
+            "body": {
+              "cnf": {
+                "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+              },
+              "context": {},
+              "expiresAt": "2026-11-10T00:00:00Z",
+              "grantId": "standing-refunds-nightly",
+              "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+              "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+              "maxDepth": 0,
+              "notBefore": "2026-11-08T11:30:00Z",
+              "parent": null,
+              "reviewBy": "2026-11-09T00:00:00Z",
+              "sponsor": {
+                "issuer": "https://idp.example.com/realms/agents",
+                "subject": "owner@example.com"
+              },
+              "tools": {
+                "refund": {
+                  "args": {
+                    "amount_cents": {
+                      "max": 5000,
+                      "min": 1,
+                      "type": "range"
+                    }
+                  }
+                }
+              }
+            },
+            "sig": "lFhcfPO9a9wSxalw/g8N6zvYz2J6rl2ULCoJUIOHGRmg020H6LvdKz/snR6tIm5qgee7bpPyzUFaY1tiey8jAw=="
+          }
+        ]
+      ]
     }
   },
   {
@@ -248,7 +392,43 @@
           "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
         ]
       },
-      "identityProfile": "strict"
+      "identityProfile": "strict",
+      "standingGrants": [
+        [
+          {
+            "body": {
+              "cnf": {
+                "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+              },
+              "context": {},
+              "expiresAt": "2026-11-10T00:00:00Z",
+              "grantId": "standing-refunds-nightly",
+              "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+              "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+              "maxDepth": 0,
+              "notBefore": "2026-11-08T11:30:00Z",
+              "parent": null,
+              "reviewBy": "2026-11-09T00:00:00Z",
+              "sponsor": {
+                "issuer": "https://idp.example.com/realms/agents",
+                "subject": "owner@example.com"
+              },
+              "tools": {
+                "refund": {
+                  "args": {
+                    "amount_cents": {
+                      "max": 5000,
+                      "min": 1,
+                      "type": "range"
+                    }
+                  }
+                }
+              }
+            },
+            "sig": "lFhcfPO9a9wSxalw/g8N6zvYz2J6rl2ULCoJUIOHGRmg020H6LvdKz/snR6tIm5qgee7bpPyzUFaY1tiey8jAw=="
+          }
+        ]
+      ]
     }
   },
   {
@@ -298,7 +478,43 @@
           "3KxbtKpVdQXeb0cW3OHCH4mscRnST5U1t6pQG8hbFds"
         ]
       },
-      "identityProfile": "strict"
+      "identityProfile": "strict",
+      "standingGrants": [
+        [
+          {
+            "body": {
+              "cnf": {
+                "jkt": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+              },
+              "context": {},
+              "expiresAt": "2026-11-10T00:00:00Z",
+              "grantId": "standing-refunds-nightly",
+              "holderKey": "ZH6E6V1FS6GM1lTz7ZlADHkLetSkyJb5ohapQ0Nd6hE=",
+              "issuerKey": "j3yuHOo73XYHX1cW3fnohDFjKqu+Z7RPrnoe4y873xw=",
+              "maxDepth": 0,
+              "notBefore": "2026-11-08T11:30:00Z",
+              "parent": null,
+              "reviewBy": "2026-11-09T00:00:00Z",
+              "sponsor": {
+                "issuer": "https://idp.example.com/realms/agents",
+                "subject": "owner@example.com"
+              },
+              "tools": {
+                "refund": {
+                  "args": {
+                    "amount_cents": {
+                      "max": 5000,
+                      "min": 1,
+                      "type": "range"
+                    }
+                  }
+                }
+              }
+            },
+            "sig": "lFhcfPO9a9wSxalw/g8N6zvYz2J6rl2ULCoJUIOHGRmg020H6LvdKz/snR6tIm5qgee7bpPyzUFaY1tiey8jAw=="
+          }
+        ]
+      ]
     }
   }
 ]
