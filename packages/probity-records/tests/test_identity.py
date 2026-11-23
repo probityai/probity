@@ -54,7 +54,12 @@ EXPECTED = {
     "ID32": (["principals_need_approver"], None),
     "ID33": (["principals_session_malformed"], None),
     "ID34": (["principals_standing_grant_not_held_by_agent"], None),
+    "ID35": ([f"principal_{r}:principal_key_not_pinned" for r in ("user", "agent", "sponsor", "approver")], None),
+    "ID36": ([], "strict"),
+    "ID37": ([], "strict"),
 }
+#: The vectors whose escrowed tokens are refused, by role (every other token verifies).
+TOKEN_REFUSALS = {"ID36": {"user": "token_type_mismatch:id-jag"}, "ID37": {"agent": "token_not_yet_valid"}}
 
 
 def test_every_vector_has_its_expected_outcome_and_is_deterministic() -> None:
@@ -63,6 +68,10 @@ def test_every_vector_has_its_expected_outcome_and_is_deterministic() -> None:
     assert vs == vectors() and check(vs) == []
     assert vs[0]["expected"]["act"] == "act-chain" and vs[1]["expected"]["act"] == "act-absent"
     assert all(t is None for t in vs[0]["expected"]["tokens"].values())
+    for v in vs:
+        refused = {role: why for role, why in v["expected"]["tokens"].items() if why is not None}
+        if v["id"] in TOKEN_REFUSALS:
+            assert refused == TOKEN_REFUSALS[v["id"]], v["id"]
 
 
 def test_escrowed_tokens_reverify_and_a_swapped_claim_is_refused() -> None:

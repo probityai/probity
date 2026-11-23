@@ -5,7 +5,7 @@ Verify A2A agent card signatures over the bytes the server sent, and score any c
 It is for authors of A2A agents, SDKs and conformance suites who need a card verdict that matches the wire, not a parsed object.
 
 ```sh
-pip install agent-evidence-a2a==0.1.0
+pip install agent-evidence-a2a
 ```
 
 ```python

@@ -1041,7 +1041,7 @@ jobs:
           python-version: '3.12'
       # tests/test_otel.py runs a real collector with the stock contrib verifyprocessor and fails, never skips,
       # without one; build it from the pinned builder config (collector v0.165.0 needs go 1.26).
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: '1.26.x'
           cache-dependency-path: packages/probity-records/scripts/otelcol/builder-config.yaml

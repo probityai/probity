@@ -58,8 +58,10 @@ class RepoReadmeTest(unittest.TestCase):
     def test_no_summed_badge_and_every_badge_links_its_own_page(self) -> None:
         text = REPO_README.read_text(encoding="utf-8")
         self.assertNotRegex(text, r"dl-[a-z0-9-]+-total\.svg")
-        pairs = re.findall(r'<a href="([^"]+)"><img[^>]*src="assets/badges/dl-pypi-([^"]+)\.svg"', text)
-        pairs += [(u, n) for n, u in re.findall(r"\(assets/badges/dl-pypi-([^)]+)\.svg\)\]\(([^)]+)\)", text)]
+        # The README names badges by absolute raw URL, so PyPI renders them (a relative path does not).
+        prefix = r"(?:https://raw\.githubusercontent\.com/probityai/probity/main/)?"
+        pairs = re.findall(r'<a href="([^"]+)"><img[^>]*src="' + prefix + r'assets/badges/dl-pypi-([^"]+)\.svg"', text)
+        pairs += [(u, n) for n, u in re.findall(r"\(" + prefix + r"assets/badges/dl-pypi-([^)]+)\.svg\)\]\(([^)]+)\)", text)]
         self.assertTrue(pairs)
         for url, name in pairs:
             self.assertEqual(url, f"https://pepy.tech/projects/{name}")
@@ -68,7 +70,7 @@ class RepoReadmeTest(unittest.TestCase):
 
     def test_package_table_rows_stay_on_one_line(self) -> None:
         text = REPO_README.read_text(encoding="utf-8")
-        rows = [ln for ln in text.splitlines() if ln.startswith("| [") and "**" in ln]
+        rows = [ln for ln in text.splitlines() if ln.startswith("| [") and " | PyPI | " in ln]
         self.assertTrue(rows)
         for ln in rows:
             self.assertNotIn("<br>", ln)
