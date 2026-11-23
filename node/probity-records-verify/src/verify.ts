@@ -133,7 +133,7 @@ export function canonicalOfReceived(raw: Uint8Array): Buffer {
 }
 
 /** Whether `value`, read from `holder[key]`, is a Python float: a fractional number, or an integral one written as a float. */
-function isFloat(holder: J, key: string | number, value: J): boolean {
+export function isFloat(holder: J, key: string | number, value: J): boolean {
   return typeof value === "number" && (!Number.isInteger(value) || (holder !== null && typeof holder === "object" && (FLOAT_KEYS.get(holder)?.has(String(key)) ?? false)));
 }
 
@@ -184,7 +184,7 @@ function openEnvelope(env: J, keys: KeyObject[]): [Buffer, string] {
 
 // ---------- time ----------
 
-function ts(text: J): number {
+export function ts(text: J): number {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})$/.exec(String(text));
   if (!m) throw new Error("time_invalid");
   const base = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
@@ -544,7 +544,7 @@ function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string,
 // RFC 7800 confirmation: exactly one method, jkt (RFC 9449) or x5t#S256 (RFC 8705), a SHA-256 thumbprint in
 // canonical base64url. A grant without one is a bearer token and is refused, as by the Python verifier.
 const CNF_METHODS = ["jkt", "x5t#S256"];
-function cnfProblem(cnf: J): string | null {
+export function cnfProblem(cnf: J): string | null {
   if (cnf === undefined || cnf === null) return "cnf_missing";
   if (!isObj(cnf) || Object.keys(cnf).length !== 1) return "cnf_invalid";
   const [[method, value]] = Object.entries(cnf) as [string, J][];
