@@ -2,7 +2,7 @@
 
 ## 0.9.0 (unreleased)
 
-A minor release: thirteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
+A minor release: fourteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser

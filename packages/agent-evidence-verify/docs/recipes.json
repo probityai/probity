@@ -97,6 +97,21 @@
       "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/_audit_record_reader.py",
+      "bytes": 109005,
+      "sha256": "c3022933195dd7fe0c500fbde8aaf3fe27d585f204c14720e415743948eb42f4"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/_sf.py",
+      "bytes": 11400,
+      "sha256": "3afa7eaa9a97cb786bb19e5d599096e7d6ad993a69a82b0c664771b4a253a645"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/a2a_signed_card.py",
+      "bytes": 17667,
+      "sha256": "79ca43a486dcc1fe2d7122955d77878c7a6fddee62ac2f70b9b95d07f4a63e6c"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
       "bytes": 11849,
       "sha256": "e35e29b6c8bc8ff8a6713132d4cf428e8c644eebc307d91edc7d202d9fcbd849"
@@ -115,6 +130,11 @@
       "path": "src/agent_evidence_verify/adapters/audit_principal.py",
       "bytes": 13886,
       "sha256": "268616ce121ab4ad9e5a6c7326c1caa7a1f7864141d19477731ed678c89b2877"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/audit_record.py",
+      "bytes": 8682,
+      "sha256": "19062d8cf7b278474bc29f8a24796ebd8495a41297a1a8d3bc2d8a513b3f47ce"
     },
     {
       "path": "src/agent_evidence_verify/adapters/authority_anchor.py",
@@ -137,9 +157,19 @@
       "sha256": "37a04492ce057aae92599b7f5f5561a7872d42d8264d15ed7bbd06887d976b7d"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/catalog_trust_manifest.py",
+      "bytes": 40968,
+      "sha256": "27f2aff21f5705d969ede94885049cc3b463962922caced4ab859daa89bfa22f"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
       "bytes": 18903,
       "sha256": "c21cded71b6da06e7328baefd9351784f2c0169ed776f7cf56d9f63dc8826ae5"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/co_signed_receipt.py",
+      "bytes": 15488,
+      "sha256": "0e628515829d411d350793eda9ddf131c90a1ecbc436859ac00e76bc96883224"
     },
     {
       "path": "src/agent_evidence_verify/adapters/completion_claim.py",
@@ -150,6 +180,21 @@
       "path": "src/agent_evidence_verify/adapters/credential_reachability.py",
       "bytes": 18877,
       "sha256": "d441dfec1959ed84db0c85030d481dca5c01965b9e5593b8e537eeed84a312f9"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/declared_versus_acted.py",
+      "bytes": 20134,
+      "sha256": "fa0fa52efcffc04a349aed4dd988db70550633845604ca4fc78332527e265fae"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/dns_aid_sig.py",
+      "bytes": 21456,
+      "sha256": "7f475d4c79f6f23586766f63a0107135a83727d2caca2110a59debb4187f833d"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/dnssec_rrset.py",
+      "bytes": 2820,
+      "sha256": "a834ef5299942dda5a5b5dbdef9ec2b2e0226e04174ca24c3f9e2d713e6d837b"
     },
     {
       "path": "src/agent_evidence_verify/adapters/done_argv.py",
@@ -193,8 +238,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/jcs_canonical.py",
-      "bytes": 7712,
-      "sha256": "3cc43add7bc2e9d7d938ce1031fe4422457383572ed24a2f9d2b0c39c8757d58"
+      "bytes": 9153,
+      "sha256": "add0012c71e3f8c9bac1c4859f85ada7b87ae3635e969af7423fb523d712a4e9"
     },
     {
       "path": "src/agent_evidence_verify/adapters/lifecycle_binding.py",
@@ -223,8 +268,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/proof_of_control.py",
-      "bytes": 23329,
-      "sha256": "87cf266073ba64b4804d2c77d6ee75e367f778653b1f06745fc0c4c368105e01"
+      "bytes": 21987,
+      "sha256": "9779033e2cbead8185cfa9e0be87d3c0df7b0e737c3740ac4791857b6984d501"
     },
     {
       "path": "src/agent_evidence_verify/adapters/protected_paths.py",
@@ -272,6 +317,11 @@
       "sha256": "fe48d9a19aaf0e940c8de0a1ab7bb2764e48155f44bf1d7b0b98eb8c4a0ff005"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/web_bot_auth.py",
+      "bytes": 34472,
+      "sha256": "f8f80fca181c81c315689a369c734022e3c059711b8d772fa6f9996ee15bbbb9"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/witnessed.py",
       "bytes": 6328,
       "sha256": "66f3139503a46af9a04cff5c030c842795535bf6ab40ef1fa35547c1fa8ec0eb"
@@ -298,8 +348,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 12137,
-      "sha256": "aad3d656e53db755f3ccf23e91891c7771e11cdf60cc7d10a303b1be452e05b9"
+      "bytes": 12749,
+      "sha256": "db23090729df3f3017f8d2f4338ef3409dec51aebbae4a8c312ea92034efd40c"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -310,6 +360,11 @@
       "path": "src/agent_evidence_verify/decision_record.py",
       "bytes": 101188,
       "sha256": "7254a0f6fb805f972527051c9a9b593afaace04dc9f08121457caaa81f83d427"
+    },
+    {
+      "path": "src/agent_evidence_verify/dnssec.py",
+      "bytes": 22535,
+      "sha256": "1d6c440132dd4e0018ac6722ac2f0b529b3557296ff0f23b98475c830879a839"
     },
     {
       "path": "src/agent_evidence_verify/dsse.py",
@@ -333,13 +388,18 @@
     },
     {
       "path": "src/agent_evidence_verify/ijson.py",
-      "bytes": 9373,
-      "sha256": "e7f496e9d09a7168bcb8fc7d5b14f02b7f6829e12c5dc173788e29506c9f2a13"
+      "bytes": 9787,
+      "sha256": "aabfde30fd9200821eacaef0910a31d43e51b011c24fbc0876e69e8f746e7bf6"
     },
     {
       "path": "src/agent_evidence_verify/index.py",
       "bytes": 12389,
       "sha256": "fe919df5ff1172805243e742b37c5df585eacef4566c06c199071113de1986dc"
+    },
+    {
+      "path": "src/agent_evidence_verify/jose.py",
+      "bytes": 7692,
+      "sha256": "6cc325ada39b288f026c0b789ce62126669cdfa6138d9c89a0a4145fdcda1935"
     },
     {
       "path": "src/agent_evidence_verify/json_input.py",
@@ -348,8 +408,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 25833,
-      "sha256": "d1a389fbdba1edcae502b0aa929dedf5c84d93bf548ac51c30363c3681a93a8a"
+      "bytes": 32646,
+      "sha256": "66f6012e315bfa035ca05630d1477b32d064ee8206c536f7d02bd2be2578bdee"
     },
     {
       "path": "src/agent_evidence_verify/ocsf_decision.py",
@@ -1902,6 +1962,47 @@
       ]
     },
     {
+      "task": "Check an agent audit record, its retention entry and its dating",
+      "claim_type": "agent_audit_record/v1",
+      "case": "examples/corpus-routes/audit-record/case.json",
+      "policy": "examples/corpus-routes/audit-record/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member (R17 of vectors-agent-audit-record); signed with a published test key that carries no trust outside the corpus.",
+      "case_id": "audit-record-r17",
+      "expected_reason": "record_conforms",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/corpus-routes/audit-record/case.json",
+        "--policy",
+        "examples/corpus-routes/audit-record/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/audit-record/case.json",
+          "bytes": 417,
+          "sha256": "46447d03d7d5d746fd61cdbbf41c836958c7e50eb8e00837ec1723686899a958"
+        },
+        {
+          "path": "examples/corpus-routes/audit-record/policy.json",
+          "bytes": 221,
+          "sha256": "81751a571b97ec46349b855547d5e95af29802694f3e12be81e537df186a10a0"
+        },
+        {
+          "path": "examples/corpus-routes/audit-record/retained-record.json",
+          "bytes": 6133,
+          "sha256": "ee8be250abf867cd978dda0f3a1f1443842b9cbe5daa0aa4858a77a183a6c618"
+        },
+        {
+          "path": "examples/corpus-routes/audit-record/trust.json",
+          "bytes": 4921,
+          "sha256": "512fa833e874c75301f5837e706e88ba85b43df3cae72d6c3ad7ca912628f398"
+        }
+      ]
+    },
+    {
       "task": "Check a Proof-of-Control token chain, inclusion proof or canonical form",
       "claim_type": "proof_of_control/v1",
       "case": "examples/corpus-routes/proof-of-control/case.json",
@@ -2144,6 +2245,52 @@
           "path": "examples/evidence-sufficiency/envelope.json",
           "bytes": 2847,
           "sha256": "162352770f2f6c1cd861685e8e84c85603948b324cfa58752e7ad9dd76747da8"
+        }
+      ]
+    },
+    {
+      "task": "Check that a request was signed by the agent you pinned, under Web Bot Auth",
+      "claim_type": "web_bot_auth/v1",
+      "case": "examples/web-bot-auth/case.json",
+      "policy": "examples/web-bot-auth/policy.json",
+      "documentation": "docs/web-bot-auth.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic signed request and fixture key; pinned directory; no live fetch, no replay state.",
+      "case_id": "web-bot-auth-signed-deploy-request",
+      "expected_reason": "request_signed_by_pinned_agent",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/web-bot-auth/case.json",
+        "--policy",
+        "examples/web-bot-auth/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/web-bot-auth/case.json",
+          "bytes": 598,
+          "sha256": "010e0b1331a269138d51cfe24d357becf4f080580dcb9b5495441c12b2b4fedb"
+        },
+        {
+          "path": "examples/web-bot-auth/policy.json",
+          "bytes": 678,
+          "sha256": "2a6d435159d24e8ed2c34fafc04380e34533ddcd648583738e5c9e7dc127ec29"
+        },
+        {
+          "path": "examples/web-bot-auth/body.bin",
+          "bytes": 42,
+          "sha256": "21ad3ea1e5cedd2d3e9e2948ea9220f483d0248be3a239eef271ef29505a956a"
+        },
+        {
+          "path": "examples/web-bot-auth/directory.json",
+          "bytes": 213,
+          "sha256": "403e72622e2f72b6e3804d53bde28b7076a4827312caa60e21f4c19f5e717dba"
+        },
+        {
+          "path": "examples/web-bot-auth/request.json",
+          "bytes": 847,
+          "sha256": "a7c5c403753b31c6a6e34210a1e9e0dfe9376898e6f4a497b434861a8df35fea"
         }
       ]
     },
@@ -2400,6 +2547,262 @@
           "path": "examples/capability-credential/credential.json",
           "bytes": 357,
           "sha256": "033edd8f093395999e685660cbd853f25bf09e665da1a760dadab17cc3770756"
+        }
+      ]
+    },
+    {
+      "task": "Check who signed an AI Catalog trust manifest and that it binds its entry",
+      "claim_type": "catalog_trust_manifest/v1",
+      "case": "examples/catalog-trust-manifest/case.json",
+      "policy": "examples/catalog-trust-manifest/policy.json",
+      "documentation": "docs/catalog-trust-manifest.md",
+      "expected_decision": "supported",
+      "scope": "Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe.",
+      "case_id": "catalog-trust-manifest-ai-catalog-publisher",
+      "expected_reason": "signature_covers_release",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/catalog-trust-manifest/case.json",
+        "--policy",
+        "examples/catalog-trust-manifest/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/catalog-trust-manifest/case.json",
+          "bytes": 628,
+          "sha256": "efbdd02225534f054975ed28bb2c82e6066fad16393c674a9fefd694ce1fc8b5"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/policy.json",
+          "bytes": 697,
+          "sha256": "b34ce20d31509d5ea3ff51729be58b6de32ff9899866cf752932955202add516"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/artifact.json",
+          "bytes": 141,
+          "sha256": "5346c3b356f1b2db025b97d464d73a62442ca39ad1480549e23daff147f35ef1"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/catalog.json",
+          "bytes": 1344,
+          "sha256": "fe7aaee6d11350c4c54fef665c8ea41bee65f5c56066ff7210b2082cb848262b"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/did-documents.json",
+          "bytes": 2755,
+          "sha256": "8b49c5d7a3dad753d337a8879ad50ea41947883460bf47e3bf3353f41a28c3fe"
+        }
+      ]
+    },
+    {
+      "task": "Check that a DNS-AID record's sig binds it to a key the zone owner published under DNSSEC",
+      "claim_type": "dns_aid_sig/v1",
+      "case": "examples/dns-aid-sig/case.json",
+      "policy": "examples/dns-aid-sig/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "Record and JWKS signed by the dns-aid-core signer at 825ccea; the DNSSEC chain is a test root signed by dnspython, whose DS the policy pins.",
+      "case_id": "dns-aid-sig-dnssec-key",
+      "expected_reason": "binding_verified",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/dns-aid-sig/case.json",
+        "--policy",
+        "examples/dns-aid-sig/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/dns-aid-sig/case.json",
+          "bytes": 584,
+          "sha256": "16f04c702d3c778d3026f9043d8b109cd0f1ba304dd529e6846a6432047f2ac8"
+        },
+        {
+          "path": "examples/dns-aid-sig/policy.json",
+          "bytes": 555,
+          "sha256": "939a88daa5a18830657f82133d9387aaeb7cadfcb00862cefe116007c525ac56"
+        },
+        {
+          "path": "examples/dns-aid-sig/dnssec.chain",
+          "bytes": 1235,
+          "sha256": "b0a96b915aa0a78797138dde516bddbb5ad80feca0fe295b92615bbfd0a12595"
+        },
+        {
+          "path": "examples/dns-aid-sig/jwks.json",
+          "bytes": 222,
+          "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+        },
+        {
+          "path": "examples/dns-aid-sig/record.json",
+          "bytes": 880,
+          "sha256": "d149d3a91bcca454e7230517a7d909423242d1fcdb6c28bbd6286391b78a6713"
+        }
+      ]
+    },
+    {
+      "task": "Check that a DNS answer I hold offline validates under DNSSEC from the root",
+      "claim_type": "dnssec_rrset/v1",
+      "case": "examples/dnssec-rrset/case.json",
+      "policy": "examples/dnssec-rrset/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "supported",
+      "scope": "The HTTPS RRset of cloudflare.com and its chain from the IANA root, captured 2026-11-17 and checked at that instant.",
+      "case_id": "dnssec-rrset-https",
+      "expected_reason": "rrset_validated",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/dnssec-rrset/case.json",
+        "--policy",
+        "examples/dnssec-rrset/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/dnssec-rrset/case.json",
+          "bytes": 256,
+          "sha256": "d89745eebe13681c6614939bdf0086515b47de7c4ee5e2695f8db7ced567d035"
+        },
+        {
+          "path": "examples/dnssec-rrset/policy.json",
+          "bytes": 515,
+          "sha256": "7e7b15d8a10642d82224bc5f0233ca66e5bc586d05b034fbe2bc9915e754bd38"
+        },
+        {
+          "path": "examples/dnssec-rrset/chain.bin",
+          "bytes": 2418,
+          "sha256": "dd06a10c520fc81075a8d9c2047b2344c5568d99f750f1b2343d726fcf17c21a"
+        }
+      ]
+    },
+    {
+      "task": "Check that every call an agent made went to an endpoint a verified discovery record declared",
+      "claim_type": "declared_versus_acted/v1",
+      "case": "examples/declared-versus-acted/case.json",
+      "policy": "examples/declared-versus-acted/policy.json",
+      "documentation": "docs/dns-aid.md",
+      "expected_decision": "contradicted",
+      "scope": "A trajectory written by agent-evidence-observer's recorder with one declared call and one planted call to an undeclared host; witness key from a fixed test seed.",
+      "case_id": "declared-versus-acted-undeclared-call",
+      "expected_reason": "call_not_declared",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/declared-versus-acted/case.json",
+        "--policy",
+        "examples/declared-versus-acted/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/declared-versus-acted/case.json",
+          "bytes": 603,
+          "sha256": "bfb4eddc719fcfebcd782d7d02703a80560188e7b40d0fb98fdb767912906545"
+        },
+        {
+          "path": "examples/declared-versus-acted/policy.json",
+          "bytes": 665,
+          "sha256": "013b2adf357781bca58ac0bf81e9533d7e2802111d0efc090f288727b1578939"
+        },
+        {
+          "path": "examples/declared-versus-acted/head.json",
+          "bytes": 364,
+          "sha256": "871b26d4226b1d22d8118f77ec0f26ce9f66f5c04fbe8c0da1da9a850ef6cfc8"
+        },
+        {
+          "path": "examples/declared-versus-acted/jwks.json",
+          "bytes": 222,
+          "sha256": "c08e7c3bfc9e57689837aaac5307c3548389f6391efd73465b9773622d1b4ef0"
+        },
+        {
+          "path": "examples/declared-versus-acted/trajectory.jsonl",
+          "bytes": 1706,
+          "sha256": "5efb36e4c2187a8ac86c9ea22843186fdeb1af6034962e936d934d9929eee528"
+        }
+      ]
+    },
+    {
+      "task": "Check that an A2A Agent Card was signed by a key of its own DID that the consumer trusts",
+      "claim_type": "a2a_signed_card/v1",
+      "case": "examples/a2a-signed-card/case.json",
+      "policy": "examples/a2a-signed-card/policy.json",
+      "documentation": "docs/a2a-signed-card.md",
+      "expected_decision": "supported",
+      "scope": "The valid-conformance-extension card of tests/data/a2a-signed-card; the consumer pins the owner's Ed25519 key under its kid, so the verdict says which key of the card's DID signed the card and that the card names its conformance corpus and verifier inside the signature, not that the agent behaves as the card says.",
+      "case_id": "a2a-signed-card-pinned-owner-key",
+      "expected_reason": "card_signature_authorized",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/a2a-signed-card/case.json",
+        "--policy",
+        "examples/a2a-signed-card/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/a2a-signed-card/case.json",
+          "bytes": 427,
+          "sha256": "ef038fe4c5eeefd1f190f8b08136d43933b8779533d0a2cabee8d4dda33e540c"
+        },
+        {
+          "path": "examples/a2a-signed-card/policy.json",
+          "bytes": 561,
+          "sha256": "1a508bf36c9533d570f7563820c7e98ebaf887ee7c62156cf474f966fdee744a"
+        },
+        {
+          "path": "examples/a2a-signed-card/card.json",
+          "bytes": 1294,
+          "sha256": "dfc3d96fbd32ac4ba418a8d4e9845ec3fe5a9590d2974ea0fca57fcb86266414"
+        },
+        {
+          "path": "examples/a2a-signed-card/jwks.json",
+          "bytes": 402,
+          "sha256": "393675ced92f85de65cbc7d4a39c45713b7fa25ea71acabcf437dbb7a3da7414"
+        }
+      ]
+    },
+    {
+      "task": "Check which parties a co-signed tool-call receipt binds and that both keys may speak for them",
+      "claim_type": "co_signed_receipt/v1",
+      "case": "examples/co-signed-receipt/case.json",
+      "policy": "examples/co-signed-receipt/policy.json",
+      "documentation": "docs/co-signed-receipt.md",
+      "expected_decision": "supported",
+      "scope": "The valid-co-signed receipt of tests/data/co-signed-receipt; the consumer pins the agent's and the caller's Ed25519 keys, so the verdict says both parties signed the same bytes, not that the receipt is true or that the parties are independent.",
+      "case_id": "co-signed-receipt-both-keys-pinned",
+      "expected_reason": "receipt_signers_authorized",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/co-signed-receipt/case.json",
+        "--policy",
+        "examples/co-signed-receipt/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/co-signed-receipt/case.json",
+          "bytes": 434,
+          "sha256": "1d7c2081d7ae6f4f24b91842328fe6d28461cc1553c1e353dfc195ddf8181626"
+        },
+        {
+          "path": "examples/co-signed-receipt/policy.json",
+          "bytes": 648,
+          "sha256": "b7846fa4653f2b4b8e8dd39aca2031a05dccb2d8af28d2e7cd77e29eb534cd1a"
+        },
+        {
+          "path": "examples/co-signed-receipt/keys.json",
+          "bytes": 272,
+          "sha256": "f724d2aee5adc09b1600335e5c9de52dda5d2ed6814b71a35468cd31fd78e483"
+        },
+        {
+          "path": "examples/co-signed-receipt/receipt.json",
+          "bytes": 713,
+          "sha256": "626fe4eef435a91c2e1b445c1ee8ebb9ab81d978f387c02f8205fc42969f227f"
         }
       ]
     }
