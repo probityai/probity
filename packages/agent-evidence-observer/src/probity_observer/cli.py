@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+import traceback
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -45,12 +47,29 @@ def run_verify_command(arguments: argparse.Namespace) -> dict[str, str]:
     return {"status": "verified", "witnessScope": claim["witnessScope"], "noDetectedGap": str(claim["coverage"]["noDetectedGap"]).lower()}
 
 
+#: Exit codes: 0 verified, 1 refused (the record fails a check, or a file it names cannot be read),
+#: 2 usage (argparse), 3 the verifier itself failed on this input. A refusal prints one JSON object
+#: naming the reason, so a consumer can tell "this record is wrong" from "the check did not finish".
+VERIFIED, REFUSED, VERIFIER_ERROR = 0, 1, 3
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Verify a retained packet, boundary run or workload run with pinned keys."""
     parser = argparse.ArgumentParser(description=__doc__)
     add_verify_commands(parser.add_subparsers(dest="command", required=True))
-    print(json.dumps(run_verify_command(parser.parse_args(argv)), sort_keys=True))
-    return 0
+    arguments = parser.parse_args(argv)
+    try:
+        verdict = run_verify_command(arguments)
+    except (ValueError, OSError) as error:
+        # VerificationError and CoverageError are ValueErrors: the record was read and refused.
+        print(json.dumps({"reason": str(error), "refusal": type(error).__name__, "status": "refused"}, sort_keys=True))
+        return REFUSED
+    except Exception as error:  # noqa: BLE001 - a malformed record must never surface as a bare traceback
+        print(json.dumps({"error": f"{type(error).__name__}: {error}", "status": "verifier-error"}, sort_keys=True))
+        traceback.print_exc(file=sys.stderr)
+        return VERIFIER_ERROR
+    print(json.dumps(verdict, sort_keys=True))
+    return VERIFIED
 
 
 if __name__ == "__main__":

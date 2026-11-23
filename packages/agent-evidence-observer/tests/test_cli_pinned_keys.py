@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import shutil
 from pathlib import Path
 
 import pytest
-from probity_observer.cli import main
+from probity_observer.cli import REFUSED, main
 from probity_observer.crypto import (
     SigningKey,
-    VerificationError,
     canonical,
     digest,
     strict_loads,
@@ -97,7 +97,8 @@ def test_packet_resigned_under_fresh_keys_is_refused(tmp_path: Path, capsys: pyt
     # The forgery is internally consistent: it verifies under the forger's own keys.
     assert main(["verify", str(root), *pins(observer.public_hex, witness.public_hex)]) == 0
     capsys.readouterr()
-    # Against the independently pinned keys it never prints a verified line.
-    with pytest.raises(VerificationError, match="pinned observer key"):
-        main(["verify", str(root), *pins()])
-    assert "verified" not in capsys.readouterr().out
+    # Against the independently pinned keys it never prints a verified line: it prints a refusal.
+    assert main(["verify", str(root), *pins()]) == REFUSED
+    answer = json.loads(capsys.readouterr().out)
+    assert answer["status"] == "refused" and answer["refusal"] == "VerificationError"
+    assert "pinned observer key" in answer["reason"]

@@ -1,0 +1,16 @@
+{
+  "assessments": {
+    "evidence-digest-example": {
+      "claim_type": "evidence_digest/v1",
+      "consumed": {
+        "e001": "e001.json",
+        "e002": "e002.json",
+        "e003": "e003.json",
+        "e004": "e004.json",
+        "e005": "e005.json"
+      },
+      "manifest": "manifest.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

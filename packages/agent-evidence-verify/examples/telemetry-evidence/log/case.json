@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "events.jsonl": {
+      "length": 828,
+      "path": "events.jsonl",
+      "sha256": "0583664909332d0b18396556cb51900b1554c2561b72e8abca34458f3ef3a17c"
+    },
+    "head.json": {
+      "length": 314,
+      "path": "head.json",
+      "sha256": "333d82b28921f51ae2f1f9cb39b7aa6fb519e4bb51426a7e43080a27df982472"
+    }
+  },
+  "case_id": "event-log-example",
+  "schema_version": "probity-case/v1"
+}
