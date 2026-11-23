@@ -253,3 +253,12 @@ def test_the_dnssec_refusal_codes_of_the_key_authority_check_are_registered() ->
     codes = {v.value for v in table.values}
     assert len(codes) == 19
     assert codes <= set(refusal_codes.CODES)
+
+
+def test_the_receiver_policy_refusal_codes_are_registered_under_their_check() -> None:
+    """A receiver built on these records refuses a request its route policy does not admit with one of two codes; a
+    receiver in any language names the refusal by the same identifier."""
+    for code in ("receiver_policy_denied", "receiver_agent_rule_missing"):
+        entry = refusal_codes.lookup(code)
+        assert entry.check == "receiver.policy"
+        assert entry.uri == refusal_codes.REGISTRY + "/" + code
