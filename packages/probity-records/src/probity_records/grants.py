@@ -10,7 +10,7 @@ Grant body::
 
     {"grantId": str, "issuerKey": b64 raw Ed25519, "holderKey": b64 raw Ed25519,
      "cnf": {"jkt": RFC 7638 thumbprint} | {"x5t#S256": certificate thumbprint},   # RFC 7800 confirmation
-     "parent": sha256 hex of the parent body or None, "notBefore": iso, "expiresAt": iso,
+     "parent": sha256 hex of the parent body or None, "notBefore": time, "expiresAt": time,
      "maxDepth": int,                       # further delegations allowed below this grant
      "context": {key: constraint},          # the call context the permit names (workflowId, runId, agent...)
      "budget": {"uses": int, "spend": {"arg": name, "max": number}},   # optional, both parts optional
@@ -18,7 +18,12 @@ Grant body::
                       "when": [CEL expression over args, tool, ctx],
                       "quorum": approval policy (see quorum.py)}},
      "sponsor": {"issuer": https URL, "subject": str},   # optional, with reviewBy: a standing grant
-     "reviewBy": iso}                                    # notBefore < reviewBy <= expiresAt
+     "reviewBy": time}                                   # notBefore < reviewBy <= expiresAt
+
+Every ``time`` is an RFC 3339 date-time with an explicit offset, in the one grammar both verifiers parse (``ts``):
+``YYYY-MM-DDTHH:MM:SS``, up to six fraction digits, then ``Z`` or ``+HH:MM`` / ``-HH:MM``. A time with no offset names
+no instant, so a body carrying one is refused (``grant_timestamp_offset_missing``), and any other form is refused
+(``grant_timestamp_invalid``): a verifier never guesses a zone and never throws on a grant it was handed.
 
 A standing grant is the authority an agent holds with no person in its session: it names the ``sponsor`` who
 answers for it and the instant (``reviewBy``) by which a person must review it. The two members come together or
@@ -47,8 +52,9 @@ authorize, intent and effect records, so an outsider walks grant to permit to ef
 from __future__ import annotations
 
 import base64
+import re
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
@@ -61,8 +67,45 @@ CAPABILITY_GRANT = "https://probityai.github.io/agent-evidence-vectors/predicate
 APPROVAL_LEVELS = ("none", "required")
 
 
-def ts(text: str) -> datetime:
-    return datetime.fromisoformat(text)
+#: The one timestamp grammar (RFC 3339 section 5.6 date-time, at most microseconds), the same as ``ts`` in the
+#: TypeScript verifier. The offset group is optional here only so that its absence is named, never accepted.
+_TIME = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})?")
+
+
+def ts(text: Any) -> datetime:
+    """The instant an RFC 3339 timestamp names, as an aware datetime.
+
+    ValueError ``grant_timestamp_offset_missing`` for a date-time with no offset (it names no instant), and
+    ``grant_timestamp_invalid`` for anything else outside the grammar, including a field out of range (month 13, hour 24,
+    second 60): ``datetime.fromisoformat`` accepts forms the TypeScript verifier refuses, so it is not used."""
+    m = _TIME.fullmatch(text) if isinstance(text, str) else None
+    if m is None:
+        raise ValueError("grant_timestamp_invalid")
+    year, month, day, hour, minute, second, fraction, offset = m.groups()
+    if offset is None:
+        raise ValueError("grant_timestamp_offset_missing")
+    if offset == "Z":
+        zone = UTC
+    else:
+        hours, minutes = int(offset[1:3]), int(offset[4:6])
+        if hours > 23 or minutes > 59:
+            raise ValueError("grant_timestamp_invalid")
+        zone = timezone((-1 if offset[0] == "-" else 1) * timedelta(hours=hours, minutes=minutes))
+    try:
+        return datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),
+                        int((fraction or "").ljust(6, "0")), zone)
+    except ValueError:
+        raise ValueError("grant_timestamp_invalid") from None
+
+
+def _validate_times(body: Mapping[str, Any]) -> None:
+    """Every instant a grant names parses as one (``ts``); ValueError ``<code>:<member>`` for the first that does not."""
+    members = ("notBefore", "expiresAt", "reviewBy") if "reviewBy" in body else ("notBefore", "expiresAt")
+    for member in members:
+        try:
+            ts(body.get(member))
+        except ValueError as exc:
+            raise ValueError(f"{exc}:{member}") from None
 
 
 def raw_public(signer: Signer) -> str:
@@ -135,12 +178,7 @@ def _validate_standing(body: Mapping[str, Any]) -> None:
         sponsor_id(sponsor["issuer"], sponsor["subject"])
     except ValueError:
         raise ValueError("grant_sponsor_invalid") from None
-    try:
-        review, start, end = ts(body["reviewBy"]), ts(body["notBefore"]), ts(body["expiresAt"])
-        inside = start < review <= end  # TypeError when one instant names a zone and another does not
-    except (TypeError, ValueError, KeyError):
-        raise ValueError("grant_review_invalid") from None
-    if not inside:
+    if not ts(body["notBefore"]) < ts(body["reviewBy"]) <= ts(body["expiresAt"]):  # each parsed by _validate_times
         raise ValueError("grant_review_invalid")
 
 
@@ -151,6 +189,7 @@ def validate_body(body: Mapping[str, Any]) -> None:
     problem = cnf_problem(body.get("cnf"))
     if problem:
         raise ValueError(problem)
+    _validate_times(body)
     _validate_tools(body.get("tools"))
     if not _int(body.get("maxDepth")):
         raise ValueError("grant_max_depth")
@@ -340,9 +379,12 @@ def verify_chain(chain: list[Mapping[str, Any]], root_key_ids: set[str], at: str
     """
     if not chain:
         return None, "grant_chain_empty"
+    try:
+        when = ts(at)
+    except ValueError:
+        return None, "grant_use_time_invalid"
     revoked_grants = revoked_grants or set()
     issuers, digests, result = _structure(chain, frozenset(root_key_ids))
-    when = ts(at)
     for depth, (issuer_id, digest) in enumerate(zip(issuers, digests, strict=True)):
         if key_revoked is not None and key_revoked(issuer_id, at):
             return None, f"grant_issuer_key_revoked:{depth}"

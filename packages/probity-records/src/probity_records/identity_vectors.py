@@ -257,6 +257,12 @@ def vectors() -> list[dict[str, Any]]:
         _mut("ID36", "the user principal states an access token, its token is an identity assertion grant",
              lambda v: v["principals"]["user"].__setitem__("source", "jwt-access-token")),
         _mut("ID37", "the agent's token is not valid before a time after the record", _agent_not_before),
+        _mut("ID38", "no approval admitted the call and the block names no approver: strict",
+             lambda v: (v["principals"].pop("approver"), v.__setitem__("approvers", None))),
+        _mut("ID39", "the block names an approver but no approval admitted the call",
+             lambda v: v.__setitem__("approvers", None)),
+        _mut("ID40", "an approval admitted the call and the block does not name the approver: basic",
+             lambda v: v["principals"].pop("approver")),
     ]
     for v in out:
         approvers = None if v["approvers"] is None else set(v["approvers"])

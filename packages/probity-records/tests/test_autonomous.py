@@ -84,8 +84,11 @@ def test_a_standing_grant_names_its_sponsor_and_review_date_together() -> None:
                 {"issuer": ISSUER, "subject": ""}, {"issuer": ISSUER, "subject": "a b"}, {**SPONSOR, "extra": "1"}):
         with pytest.raises(ValueError, match="grant_sponsor_invalid"):
             issue_grant(root, **common, sponsor=bad, review_by=iso(NOW + timedelta(hours=1)))
-    for review in (iso(NOW), iso(NOW + timedelta(days=2)), "2026-01-01T00:00:00", "soon"):
+    for review in (iso(NOW), iso(NOW + timedelta(days=2))):
         with pytest.raises(ValueError, match="grant_review_invalid"):
+            issue_grant(root, **common, sponsor=SPONSOR, review_by=review)
+    for review, code in (("2026-01-01T00:00:00", "grant_timestamp_offset_missing"), ("soon", "grant_timestamp_invalid")):
+        with pytest.raises(ValueError, match=f"^{code}:reviewBy$"):
             issue_grant(root, **common, sponsor=SPONSOR, review_by=review)
 
 

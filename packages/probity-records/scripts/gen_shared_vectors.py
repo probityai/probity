@@ -177,6 +177,20 @@ def forged_wide() -> list[dict]:
     return [parent, {"body": wide, "sig": _b64(AGENT.sign(GRANT_DOMAIN + canonical(wide)))}]
 
 
+def forged_times(depth: int, **times: str) -> list[dict]:
+    """The two-grant chain with grant ``depth`` re-signed by its own issuer over the given ``notBefore`` /
+    ``expiresAt``: a time outside the one RFC 3339 grammar (no offset, a field out of range) that no issuing check
+    saw. Every verifier refuses it as a grant defect; none throws or reads it in its own zone."""
+    grants = chain()
+    body = {**grants[depth]["body"], **times}
+    signer = ROOT if depth == 0 else AGENT
+    grants[depth] = {"body": body, "sig": _b64(signer.sign(GRANT_DOMAIN + canonical(body)))}
+    if depth == 0:
+        child = {**grants[1]["body"], "parent": grant_digest(body)}
+        grants[1] = {"body": child, "sig": _b64(AGENT.sign(GRANT_DOMAIN + canonical(child)))}
+    return grants
+
+
 def dpop_use(jti: str, holder: Signer = SUB) -> dict:
     """The possession record of a DPoP proof by ``holder`` (the leaf grant's cnf key by default), made now, so
     the journal's own record times fall inside its lifetime."""
@@ -733,7 +747,8 @@ def identity_case(directory: Path, records: list[dict]) -> Journal:
 
 
 def identity_rows() -> list[tuple[str, str, object]]:
-    block = identity_base()["principals"]
+    full = identity_base()["principals"]
+    block = {role: p for role, p in full.items() if role != "approver"}  # a call no human approved names no approver
     swapped = copy.deepcopy(block)
     swapped["agent"]["subject"] = "agent-payroll"
     swapped["user"]["act"] = {"sub": "agent-payroll"}
@@ -743,9 +758,12 @@ def identity_rows() -> list[tuple[str, str, object]]:
     def allow(principals: dict | None) -> dict:
         return identity_call("authorize", principals, decision="allow", reason="no_approval_required")
 
-    def approved(approver: str) -> dict:
-        named = copy.deepcopy(block)
-        named["approver"]["subject"] = WHO[approver]
+    def approved(approver: str | None) -> dict:
+        named = copy.deepcopy(full)
+        if approver is None:
+            del named["approver"]
+        else:
+            named["approver"]["subject"] = WHO[approver]
         return identity_call("authorize", named, decision="allow", reason="bound", threshold=1,
                              approval_policy="refunds1of2",
                              approval_bindings=[binding(OPS, WHO["ops"]),
@@ -761,6 +779,16 @@ def identity_rows() -> list[tuple[str, str, object]]:
          lambda d: identity_case(d, [approved("lead")])),
         ("IJ5", "the approver principal names the approver the allow counts",
          lambda d: identity_case(d, [approved("ops")])),
+        ("IJ6", "an allow no approval admitted names an approver: a person approved when none did",
+         lambda d: identity_case(d, [allow(full)])),
+        ("IJ7", "an allow an approval admitted does not name its approver: below strict",
+         lambda d: identity_case(d, [approved(None)])),
+        ("IJ8", "an unapproved allow names no sponsor: below strict",
+         lambda d: identity_case(d, [allow({r: p for r, p in block.items() if r != "sponsor"})])),
+        ("IJ9", "the intent of an approved allow names the approver that allow counted: identity holds",
+         lambda d: identity_case(d, [approved("ops"), identity_call("intent", approved("ops")["principals"])])),
+        ("IJ10", "the intent of an unapproved allow names an approver",
+         lambda d: identity_case(d, [allow(block), identity_call("intent", full)])),
     ]
 
 
@@ -798,6 +826,12 @@ def main(out: Path) -> None:
              lambda d: grant_case(d, chain(), [usd], possession=[dpop_use("proof-1", AGENT)])),
             ("GV10", "two permits, each with its own DPoP proof by the leaf grant's key: every record holds",
              lambda d: grant_case(d, chain(), [usd, eur], possession=[dpop_use("proof-1"), dpop_use("proof-2")])),
+            ("GV11", "the root grant's notBefore carries no UTC offset, so it names no instant",
+             lambda d: grant_case(d, forged_times(0, notBefore=NB.removesuffix("Z")), [usd])),
+            ("GV12", "the child grant's expiresAt carries no UTC offset",
+             lambda d: grant_case(d, forged_times(1, expiresAt=EXP.removesuffix("Z")), [usd])),
+            ("GV13", "the child grant's expiresAt names month 13, which a lenient parser rolls into January",
+             lambda d: grant_case(d, forged_times(1, expiresAt="2026-13-01T00:00:00Z"), [usd])),
         ],
         "quorum": [
             ("QV1", "two approvers fill the two roles; the proposer does not vote",

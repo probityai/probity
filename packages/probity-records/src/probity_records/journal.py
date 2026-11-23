@@ -27,7 +27,7 @@ from .clock import Clock, from_datetime, to_datetime
 from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
 from .grants import chain_digests, grant_digest, spend_of
-from .identity import AUTONOMOUS, act_grade, check_principals, sponsor_id
+from .identity import AUTONOMOUS, check_principals, sponsor_id, strict_shortfall
 from .possession import DEFAULT_SKEW, duplicate_proofs
 from .quorum import count_bindings
 from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_effect
@@ -389,7 +389,7 @@ def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[st
     if grade is not None:
         problems.extend(f"{where}:{p}" for p in _revocation_problems(block, grade, at, trust))
     if grade is not None and trust.identity_profile == "strict" and grade not in ("strict", "autonomous"):
-        problems.append(f"{where}:principals_below_strict:{act_grade(block)}")
+        problems.append(f"{where}:principals_below_strict:{strict_shortfall(block, approvers)}")
 
 
 def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[str, dict[str, Any]]) -> None:
@@ -401,8 +401,8 @@ def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[
 
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | None,
-                delegations: Mapping[str, Delegation],
-                seen: dict[str, dict[str, Any]]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
+                delegations: Mapping[str, Delegation], seen: dict[str, dict[str, Any]],
+                counted: dict[str, set[str] | None]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
     problems: list[str] = []
     where = f"line_{i}"
     try:
@@ -426,7 +426,14 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         # The approvals are judged first, because an approver principal may name only an approver this record
         # counts; their problems are reported after the identity's, as before.
         approval_problems: list[str] = []
-        approvers = _check_approval(pred, approval_problems, where, trust) if pred.get("phase") == "authorize" else None
+        pid = str(pred.get("permitId"))
+        if pred.get("phase") == "authorize":
+            approvers = _check_approval(pred, approval_problems, where, trust)
+            if pred.get("decision") == "allow":
+                counted.setdefault(pid, approvers)
+        else:
+            # An intent or effect answers to the allow its permit rests on: the approvers that allow counted.
+            approvers = counted.get(pid)
         if pred.get("principals") is not None:
             _check_identity(pred, trust, problems, where, seen, approvers)
         elif pred.get("phase") == "authorize" and trust is not None and trust.identity_profile == "strict":
@@ -632,8 +639,9 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     outcomes: dict[str, int] = {}
     policy_allows = 0
     seen: dict[str, dict[str, Any]] = {}  # grant bodies of the authority chains verified so far, by digest
+    counted: dict[str, set[str] | None] = {}  # permit id -> the approvers its first allow counted
     for i, line in enumerate(lines, 1):
-        body, problems = _check_line(i, line, keys, prev, trust, delegations, seen)
+        body, problems = _check_line(i, line, keys, prev, trust, delegations, seen, counted)
         prev = _line_hash(line.encode())
         failures.extend(problems)
         if body is None:

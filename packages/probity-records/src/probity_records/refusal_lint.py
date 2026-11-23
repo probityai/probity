@@ -365,7 +365,7 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
 PACKAGE_CONFIG = Config(
     raisers=frozenset({"RevocationError", "IdentityStringError", "IdentityDigestError@0", "_JwkRefused",
                        "grants.py::ValueError"}),
-    exempt_functions=frozenset({"act_grade", "possession_grade"}),  # they return grades, never refusals
+    exempt_functions=frozenset({"act_grade", "possession_grade", "strict_shortfall"}),  # grades, never refusals
     located_lists=frozenset({"problems", "found", "ignored", "failures"}),
     assigned=frozenset({"result", "problem", "verdict", "outcome"}))
 #: The modules whose refusals the registry holds: identity, possession, authority, approval, revocation, journal.

@@ -184,13 +184,33 @@ function openEnvelope(env: J, keys: KeyObject[]): [Buffer, string] {
 
 // ---------- time ----------
 
+// The one timestamp grammar (grants.ts): RFC 3339 date-time, at most six fraction digits, an explicit offset. Microseconds
+// since the epoch; throws grant_timestamp_offset_missing for a date-time with no offset (it names no instant) and
+// grant_timestamp_invalid for anything else, a field out of range included (Date.UTC would roll month 13 into January).
 export function ts(text: J): number {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})$/.exec(String(text));
-  if (!m) throw new Error("time_invalid");
-  const base = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+  const m = typeof text === "string" ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})?$/.exec(text) : null;
+  if (!m) throw new Error("grant_timestamp_invalid");
+  if (m[8] === undefined) throw new Error("grant_timestamp_offset_missing");
+  const [y, mo, d, h, mi, sec] = m.slice(1, 7).map(Number);
+  const base = Date.UTC(y, mo - 1, d, h, mi, sec);
+  const back = new Date(base);
+  if (y < 1 || back.getUTCFullYear() !== y || back.getUTCMonth() !== mo - 1 || back.getUTCDate() !== d || h > 23 || mi > 59 || sec > 59)
+    throw new Error("grant_timestamp_invalid");
   let off = 0;
-  if (m[8] !== "Z") off = (m[8][0] === "-" ? -1 : 1) * (+m[8].slice(1, 3) * 60 + +m[8].slice(4, 6)) * 60000;
+  if (m[8] !== "Z") {
+    const oh = +m[8].slice(1, 3), om = +m[8].slice(4, 6);
+    if (oh > 23 || om > 59) throw new Error("grant_timestamp_invalid");
+    off = (m[8][0] === "-" ? -1 : 1) * (oh * 60 + om) * 60000;
+  }
   return (base - off) * 1000 + Number((m[7] ?? "").padEnd(6, "0"));
+}
+
+// Every instant a grant names parses (grants._validate_times): "<code>:<member>" for the first that does not.
+function timesProblem(body: J): string | null {
+  for (const member of "reviewBy" in body ? ["notBefore", "expiresAt", "reviewBy"] : ["notBefore", "expiresAt"]) {
+    try { ts(body[member]); } catch (e) { return `${(e as Error).message}:${member}`; }
+  }
+  return null;
 }
 
 // ---------- CEL ----------
@@ -560,9 +580,8 @@ function standingProblem(body: J): string | null {
   const s = body.sponsor;
   if (!isObj(s) || Object.keys(s).sort().join(",") !== "issuer,subject" || !Object.values(s).every((v) => typeof v === "string" && v)) return "grant_sponsor_invalid";
   try { sponsorId(s.issuer, s.subject); } catch { return "grant_sponsor_invalid"; }
-  let r: number, nb: number, ex: number;
-  try { r = ts(body.reviewBy); nb = ts(body.notBefore); ex = ts(body.expiresAt); } catch { return "grant_review_invalid"; }
-  return nb < r && r <= ex ? null : "grant_review_invalid";
+  const r = ts(body.reviewBy);  // each parsed by timesProblem first
+  return ts(body.notBefore) < r && r <= ts(body.expiresAt) ? null : "grant_review_invalid";
 }
 
 function narrowingProblem(ch: J, p: J): string | null {
@@ -614,6 +633,8 @@ function quorumWidening(ch: J, p: J): string | null {
 
 function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, string] {
   if (!chain.length) return [null, "grant_chain_empty"];
+  let when: number;
+  try { when = ts(at); } catch { return [null, "grant_use_time_invalid"]; }
   const issuers: string[] = [], digests: string[] = [];
   let result = "ok", prev: J = null;
   for (let depth = 0; depth < chain.length; depth++) {
@@ -621,6 +642,8 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
     if (!isObj(body)) { result = `grant_shape:${depth}`; break; }
     const cnf = cnfProblem(body.cnf);
     if (cnf) { result = `grant_invalid:${depth}:${cnf}`; break; }
+    const times = timesProblem(body);
+    if (times) { result = `grant_invalid:${depth}:${times}`; break; }
     const standing = standingProblem(body);
     if (standing) { result = `grant_invalid:${depth}:${standing}`; break; }
     let issuer: string;
@@ -634,7 +657,6 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
     }
     issuers.push(issuer); digests.push(digestOf(body)); prev = body;
   }
-  const when = ts(at);
   for (let depth = 0; depth < issuers.length; depth++) {
     const body = chain[depth].body;
     if (!(ts(body.notBefore) <= when && when <= ts(body.expiresAt))) return [null, `grant_outside_window:${depth}`];
@@ -649,7 +671,7 @@ export function chainDigests(chain: J[], roots: Set<string>): Record<string, J> 
   let prev: J = null;
   for (let depth = 0; depth < chain.length; depth++) {
     const body = isObj(chain[depth]) ? chain[depth].body : null;
-    if (!isObj(body) || cnfProblem(body.cnf) || standingProblem(body)) return {};
+    if (!isObj(body) || cnfProblem(body.cnf) || timesProblem(body) || standingProblem(body)) return {};
     let issuer: string;
     try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch { return {}; }
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) return {};
@@ -792,8 +814,18 @@ export function checkPrincipals(block: J, at: string, pins: Record<string, strin
   if (problems.length) return [problems, null];
   const chain = "act" in block.user ? actSubjects(block.user.act) ?? [] : [];
   if (chain.length && ![block.agent.subject, block.agent.clientId].includes(chain[0])) return [["principal_act_names_another_agent"], null];
-  if ("approver" in block && approvers !== null && !approvers.has(block.approver.subject)) return [["principal_approver_not_an_approval_signer"], null];
-  return [[], chain.length && ROLES.every((r) => r in block) ? "strict" : "basic"];
+  if ("approver" in block && (approvers === null || approvers.size === 0)) return [["principal_approver_without_approval"], null];
+  if ("approver" in block && !approvers!.has(block.approver.subject)) return [["principal_approver_not_an_approval_signer"], null];
+  return [[], strictShortfall(block, approvers) === null ? "strict" : "basic"];
+}
+
+// What keeps a human-session block that passed from strict (identity.strict_shortfall): the user credential's act
+// chain, the sponsor, and the approver exactly when an approval admitted the call.
+export function strictShortfall(block: J, approvers: Set<string> | null): string | null {
+  if (!("act" in (block.user ?? {}))) return "act-absent";
+  if (!("sponsor" in block)) return "sponsor-absent";
+  if (approvers !== null && approvers.size > 0 && !("approver" in block)) return "approver-absent";
+  return null;
 }
 
 // ---------- journal ----------
@@ -1210,7 +1242,8 @@ function standingProblems(pred: J, block: J): string[] {
   return [];
 }
 
-function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null, seen: Record<string, J>): [J | null, string[]] {
+function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null, seen: Record<string, J>,
+                   counted: Map<string, Set<string> | null>): [J | null, string[]] {
   const where = `line_${i}`, problems: string[] = [];
   let body: J;
   try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
@@ -1221,7 +1254,14 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   // The approvals are judged first, because an approver principal may name only an approver this record counts; their
   // problems are reported after the identity's.
   const approvalProblems: string[] = [];
-  const approvers = body.predicateType === TOOL_CALL_RECORD && pred.phase === "authorize" ? checkApproval(pred, approvalProblems, where, trust) : null;
+  let approvers: Set<string> | null = null;
+  if (body.predicateType === TOOL_CALL_RECORD) {
+    const pid = String(pred.permitId);
+    if (pred.phase === "authorize") {
+      approvers = checkApproval(pred, approvalProblems, where, trust);
+      if (pred.decision === "allow" && !counted.has(pid)) counted.set(pid, approvers);
+    } else approvers = counted.get(pid) ?? null; // an intent or effect answers to the approvers its permit's allow counted
+  }
   if (body.predicateType === TOOL_CALL_RECORD && (pred.principals === undefined || pred.principals === null)
       && pred.phase === "authorize" && trust !== null && trust.identityProfile === "strict")
     problems.push(`${where}:principals_missing`);
@@ -1243,7 +1283,7 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
       problems.push(...found.map((p) => `${where}:${p}`));
       if (grade === "autonomous") problems.push(...standingProblems(pred, block).map((p) => `${where}:${p}`));
       if (grade !== null && trust.identityProfile === "strict" && grade !== "strict" && grade !== "autonomous")
-        problems.push(`${where}:principals_below_strict:${"act" in (pred.principals.user ?? {}) ? "act-chain" : "act-absent"}`);
+        problems.push(`${where}:principals_below_strict:${strictShortfall(block, approvers)}`);
     }
   }
   // Keep the verified bodies of an allow's authority chain, so later intent and effect lines resolve the standing
@@ -1333,9 +1373,10 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   const failures: string[] = [], bodies: [number, J][] = [];
   lines = lines.filter((l) => l.trim());
   const seen: Record<string, J> = {}; // grant bodies of the authority chains verified so far, by digest
+  const counted = new Map<string, Set<string> | null>(); // permit id -> the approvers its first allow counted
   lines.forEach((line, n) => {
     const i = n + 1;
-    const [body, problems] = checkLine(i, line, keys, prev, trust, seen);
+    const [body, problems] = checkLine(i, line, keys, prev, trust, seen, counted);
     prev = sha256Hex(Buffer.from(line, "utf8"));
     failures.push(...problems);
     if (body === null) return;
