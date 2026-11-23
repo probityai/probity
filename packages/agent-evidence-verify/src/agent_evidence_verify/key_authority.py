@@ -241,8 +241,20 @@ def parse_instant(value: Any, label: str = "instant") -> Instant:
             second_of_day = _DAY
     except ValueError as exc:
         raise CaseError(f"{label}: expected an RFC 3339 date-time with an offset") from exc
-    exact = Fraction(int(fraction), 10 ** len(fraction)) if fraction else Fraction(0)
+    fraction = (fraction or "").rstrip("0")
+    exact = Fraction(_digit_value(fraction), 10 ** len(fraction)) if fraction else Fraction(0)
     return _instant(utc_day, second_of_day + exact)
+
+
+def _digit_value(digits: str) -> int:
+    """The integer an ASCII digit string names, at any length. ``int()`` of a string stops at 4300
+    digits (CPython's conversion limit) and RFC 3339 bounds no ``time-secfrac``, so a long fraction
+    would end the read with a ValueError instead of an instant."""
+    value = 0
+    for start in range(0, len(digits), 4000):
+        chunk = digits[start:start + 4000]
+        value = value * 10 ** len(chunk) + int(chunk)
+    return value
 
 
 _EPOCH_ORDINAL = datetime.date(1970, 1, 1).toordinal()

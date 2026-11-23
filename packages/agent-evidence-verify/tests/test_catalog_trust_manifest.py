@@ -18,6 +18,9 @@ from agent_evidence_verify import adjudicate, jose
 from agent_evidence_verify.adapters import catalog_trust_manifest as reader
 from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.key_authority import jwk_key_bytes
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
 DATA = Path(__file__).parent / "data" / "catalog-trust-manifest"
 MANIFEST = json.loads((DATA / "MANIFEST.json").read_text(encoding="utf-8"))
@@ -276,6 +279,141 @@ def test_an_unbound_vendored_attestation_is_not_established(tmp_path: Path) -> N
                                                       "attestation_unavailable")
 
 
+#: The checks that read the artifact bytes: with the artifact unbound they cannot be decided, so
+#: only these may turn into ``artifact_unavailable``. ``url_origin_unbound`` reads the artifact only
+#: off the publisher's origin, where the artifact alone can bind the url.
+_READS_THE_ARTIFACT = {"artifact_digest_mismatch", "url_origin_unbound"}
+
+
+def _vendored_paths_normal(name: str) -> bool:
+    context = json.loads((DATA / "cases" / name / "context.json").read_text(encoding="utf-8"))
+    return all(_normal(f) for f in context.get("attestationFiles") or [] if f)
+
+
+#: Every refused vector that carries an artifact, except the two consumer-input gates (case
+#: errors) and the vendored-path case the artifact binder refuses before any read.
+_REFUSED_WITH_ARTIFACT = [v for v in VECTORS if v["expected"]["decision"] == "reject"
+                          and "artifact.json" in v["files"]
+                          and v["expected"]["reason"] not in reader.GATES[:2]
+                          and _vendored_paths_normal(v["id"])]
+
+
+@pytest.mark.parametrize("vector", _REFUSED_WITH_ARTIFACT, ids=lambda v: v["id"])
+def test_a_missing_artifact_never_masks_a_refusal(tmp_path: Path, vector: dict) -> None:
+    """An unbound artifact leaves every refusal the artifact bytes cannot change in place: a
+    manifest that is expired, from the future, or signed by someone other than the publisher is
+    contradicted whether or not the consumer fetched the artifact."""
+    name = vector["id"]
+    root = _copy(tmp_path, name)
+    (root / name / "artifact.json").unlink()
+    case, policy = _inputs(root, name)
+    result = adjudicate(case, policy, root)
+    reason = vector["expected"]["reason"]
+    context = json.loads((root / name / "context.json").read_text(encoding="utf-8"))
+    catalog = json.loads((root / name / "catalog.json").read_text(encoding="utf-8"))
+    entries = catalog.get("entries") if isinstance(catalog, dict) else None
+    index = context.get("entry", 0)
+    entry = entries[index] if isinstance(entries, list) and isinstance(index, int) \
+        and 0 <= index < len(entries) else {}
+    # An entry delivered as inline data never reads the artifact file.
+    if reason in _READS_THE_ARTIFACT and isinstance(entry, dict) and "url" in entry:
+        assert (result["decision"], result["reason"]) == ("not_established",
+                                                          "artifact_unavailable")
+    else:
+        assert (result["decision"], result["reason"]) == ("contradicted", reason)
+
+
+def test_a_missing_attestation_never_masks_a_later_refusal(tmp_path: Path) -> None:
+    """With one vendored attestation unbound, the other is still read and the time checks still
+    run: an expired manifest is contradicted, not reported as missing evidence."""
+    name = "accept-attestations-dsse-bound"
+    root = _copy(tmp_path, name)
+    (root / name / "attestation-0.dsse.json").unlink()
+    case, policy = _inputs(root, name, at="2028-01-01T00:00:00Z")
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("contradicted", "manifest_expired")
+    (root / name / "artifact.json").unlink()
+    case, policy = _inputs(root, name, at="2028-01-01T00:00:00Z")
+    assert adjudicate(case, policy, root)["reason"] == "manifest_expired"
+
+
+def test_the_first_missing_evidence_names_the_reason(tmp_path: Path) -> None:
+    name = "accept-attestations-dsse-bound"
+    root = _copy(tmp_path, name)
+    (root / name / "attestation-1.dsse.json").unlink()
+    (root / name / "artifact.json").unlink()
+    case, policy = _inputs(root, name)
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("not_established", "artifact_unavailable")
+
+
+# --------------------------------------------------------------------------- long fractions
+
+#: The corpus's ES256 publisher key: TEST KEYS ONLY, derived from the SHA-256 of a public label
+#: exactly as the corpus generator derives it (gen_vectors.py ``scalar``).
+_PUBLISHER_LABEL = "catalog-trust-manifest publisher es256"
+
+
+def _publisher_key() -> ec.EllipticCurvePrivateKey:
+    order = int("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16)
+    scalar = int.from_bytes(hashlib.sha256(_PUBLISHER_LABEL.encode()).digest(), "big") % (order - 1)
+    return ec.derive_private_key(scalar + 1, ec.SECP256R1())
+
+
+def _resign_draft(catalog: dict) -> None:
+    """Sign entry 0's trust manifest under ard-draft-bu-00 with the corpus publisher key."""
+    manifest = catalog["entries"][0]["trustManifest"]
+    header = reader.b64url(b'{"alg":"ES256","kid":"did:web:publisher.example#es256"}')
+    body = reader.canonical(reader.payload(reader.DRAFT, catalog, 0, 0))
+    der = _publisher_key().sign(header.encode() + b"." + reader.b64url(body).encode(),
+                                ec.ECDSA(hashes.SHA256()))
+    r, s = decode_dss_signature(der)
+    manifest["signature"] = f"{header}..{reader.b64url(r.to_bytes(32, 'big') + s.to_bytes(32, 'big'))}"
+
+
+def test_the_test_key_is_the_corpus_publisher_key() -> None:
+    documents = json.loads((DATA / "cases" / "accept-draft-es256" / "did-documents.json")
+                           .read_text(encoding="utf-8"))
+    method = documents["did:web:publisher.example"]["verificationMethod"]
+    jwk = next(m["publicKeyJwk"] for m in method if m["id"].endswith("#es256"))
+    numbers = _publisher_key().public_key().public_numbers()
+    assert reader.b64url_decode(jwk["x"]) == numbers.x.to_bytes(32, "big")
+
+
+_LONG = "1" * 5000  # past CPython's 4300-digit int() limit
+
+
+@pytest.mark.parametrize("issued,at,expected", [
+    (f"2026-11-01T00:00:00.{_LONG}Z", "2026-11-16T00:00:00Z", ("supported", reader.PASS_REASON[reader.DRAFT])),
+    (f"2026-11-16T00:00:00.{_LONG}2Z", f"2026-11-16T00:00:00.{_LONG}1Z", ("contradicted", "issued_in_future")),
+    (f"2026-11-16T00:00:00.{_LONG}1000Z", f"2026-11-16T00:00:00.{_LONG}1Z",
+     ("supported", reader.PASS_REASON[reader.DRAFT])),
+])
+def test_a_fraction_of_any_length_is_read_exactly(tmp_path: Path, issued: str, at: str,
+                                                  expected: tuple) -> None:
+    """RFC 3339 bounds no time-secfrac: a signed issuedAt or a check time past 4300 fraction
+    digits is an instant, ordered on its last digit, never a crash of the reader."""
+    name = "accept-draft-es256"
+    root = _copy(tmp_path, name)
+    path = root / name / "catalog.json"
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    catalog["entries"][0]["trustManifest"]["issuedAt"] = issued
+    _resign_draft(catalog)
+    path.write_text(json.dumps(catalog), encoding="utf-8")
+    case, policy = _inputs(root, name, at=at)
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == expected
+
+
+def test_instants_order_on_their_last_fraction_digit() -> None:
+    base = "2026-11-16T00:00:00."
+    assert reader.instant(base + "5Z") > reader.instant(base + "49999Z")
+    assert reader.instant(base + "5Z") < reader.instant(base + "51Z")
+    assert reader.instant(base + "50Z") == reader.instant(base + "5Z")
+    assert reader.instant(base + _LONG + "Z") < reader.instant(base + _LONG + "1Z")
+    assert reader.instant("2026-11-16T00:00:00Z") == reader.instant("2026-11-16T01:00:00.000+01:00")
+
+
 def test_a_check_time_that_is_not_rfc3339_is_a_case_error() -> None:
     root = DATA / "cases"
     case, policy = _inputs(root, "accept-draft-es256", at="2026-11-16 00:00:00Z")
@@ -297,6 +435,40 @@ def test_a_number_outside_the_signed_bytes_does_not_refuse(tmp_path: Path) -> No
     case, policy = _inputs(root, name)
     result = adjudicate(case, policy, root)
     assert (result["decision"], result["reason"]) == ("supported", "signature_covers_release")
+
+
+#: An integer token past CPython's 4300-digit int() limit: valid JSON (RFC 8259 bounds none).
+_HUGE = "9" * 5000
+
+
+def test_an_integer_too_long_to_convert_is_json_outside_the_signed_bytes(tmp_path: Path) -> None:
+    """Such a token used to read as json_invalid wherever it sat, while 2**53 + 1 in the same
+    unsigned member was accepted: the profile reads number range in the signed bytes only."""
+    name = "accept-draft-eddsa"
+    root = _copy(tmp_path, name)
+    for file, member in (("did-documents.json", "x-big"), ("catalog.json", "x-host-big")):
+        path = root / name / file
+        text = path.read_text(encoding="utf-8").rstrip()
+        assert text.endswith("}")
+        path.write_text(f'{text[:-1]}, "{member}": -{_HUGE}}}', encoding="utf-8")
+    # Pins from the unedited documents: the stdlib json the helper uses cannot read the token.
+    case, policy = _inputs(root, name, key_authority=_pin_all(DATA / "cases" / name))
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("supported", "signature_covers_release")
+
+
+def test_an_integer_too_long_to_convert_in_the_signed_bytes_is_not_interoperable(
+        tmp_path: Path) -> None:
+    name = "accept-draft-eddsa"
+    root = _copy(tmp_path, name)
+    path = root / name / "catalog.json"
+    text = path.read_text(encoding="utf-8")
+    anchor = '"identity": '
+    assert text.count(anchor) == 1
+    path.write_text(text.replace(anchor, f'"x-big": {_HUGE}, {anchor}'), encoding="utf-8")
+    case, policy = _inputs(root, name)
+    result = adjudicate(case, policy, root)
+    assert (result["decision"], result["reason"]) == ("contradicted", "number_not_interoperable")
 
 
 def test_the_der_reader_refuses_a_non_minimal_integer() -> None:
