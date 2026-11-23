@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "body.bin": {
+      "length": 42,
+      "path": "body.bin",
+      "sha256": "21ad3ea1e5cedd2d3e9e2948ea9220f483d0248be3a239eef271ef29505a956a"
+    },
+    "directory.json": {
+      "length": 213,
+      "path": "directory.json",
+      "sha256": "403e72622e2f72b6e3804d53bde28b7076a4827312caa60e21f4c19f5e717dba"
+    },
+    "request.json": {
+      "length": 847,
+      "path": "request.json",
+      "sha256": "a7c5c403753b31c6a6e34210a1e9e0dfe9376898e6f4a497b434861a8df35fea"
+    }
+  },
+  "case_id": "web-bot-auth-signed-deploy-request",
+  "schema_version": "probity-case/v1"
+}

@@ -1,0 +1,30 @@
+{
+  "headers": [
+    [
+      "Host",
+      "api.example"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Content-Digest",
+      "sha-256=:Ia0+oeXO3S0+nilI6pIg9IPQJIvjojnu8nHvKVBalWo=:"
+    ],
+    [
+      "Signature-Agent",
+      "agent1=\"https://agent.example/.well-known/http-message-signatures-directory\""
+    ],
+    [
+      "Signature-Input",
+      "sig1=(\"@method\" \"@authority\" \"@path\" \"content-digest\" \"signature-agent\";key=\"agent1\");created=1795262400;expires=1795262700;keyid=\"LrIPZqYRSA5863xkOc63yvbwsV1-LgZg_NPDnQ-aMg8\";alg=\"ed25519\";nonce=\"deploy-0001\";tag=\"web-bot-auth\""
+    ],
+    [
+      "Signature",
+      "sig1=:c0BuRRBt36m5gRyG9IXU4SbbF1GYpmeKmE/X7ukYk6WBJArKV0J1NxnETs1Ut9usVKZq5bmYLK4BTPPjzBvcDw==:"
+    ]
+  ],
+  "method": "POST",
+  "url": "https://api.example/v1/deploy"
+}

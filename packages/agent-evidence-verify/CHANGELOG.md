@@ -81,6 +81,16 @@ A minor release: thirteen new claim types and three more suites in corpus mode; 
   trust document the reader cannot read is refused as the consumer's error. Route and example:
   `docs/corpus-routes.md`, `examples/corpus-routes/audit-record/`.
 
+A new claim type, `web_bot_auth/v1`: was this HTTP request signed, under Web Bot Auth (RFC 9421 with
+`draft-ietf-webbotauth-httpsig-protocol-01`), by the agent the consumer pinned? It runs offline against a request
+capture, a pinned key directory, the authority the consumer serves and the consumer's own instant. The verifying key
+comes only from the pinned directory, a request with a body must cover a `Content-Digest` equal to the digest of the
+received body (only the members the signature covers count), and a signature made for another host or signer is
+`contradicted`. The directory's own `nbf`, `exp`, `use` and `key_ops` are honoured, a key published with its private part
+signs nothing, the validity window is 24 hours unless the consumer pins another, every Web Bot Auth signature on a
+request is judged on its own, and the record names the method, path or query a signature leaves uncovered. See
+`docs/web-bot-auth.md`.
+
 Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
 reason each corpus declares.
 

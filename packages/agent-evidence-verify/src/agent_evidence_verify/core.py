@@ -52,6 +52,7 @@ from .adapters import (
     token_grant_receipt,
     tool_claim_match,
     uncertain_effect,
+    web_bot_auth,
 )
 from .common import CaseError
 from .identity import verifier_reference
@@ -106,6 +107,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "declared_versus_acted/v1": declared_versus_acted.adjudicate,
     "a2a_signed_card/v1": a2a_signed_card.adjudicate,
     "co_signed_receipt/v1": co_signed_receipt.adjudicate,
+    "web_bot_auth/v1": web_bot_auth.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")
