@@ -147,15 +147,14 @@
       "sha256": "9a0b45b24fb366d4f207c09dd74cbb94d0b3ee0eb84ce6ba1bf572cd2323edad"
     },
     {
-<<<<<<< save/p6-347
-      "path": "src/agent_evidence_verify/adapters/catalog_trust_manifest.py",
-      "bytes": 39041,
-      "sha256": "3642c5943f524155e2877c4dc5c51609ab06dc2e2f556e836a9f9817491bc89f"
-=======
       "path": "src/agent_evidence_verify/adapters/capability_credential.py",
       "bytes": 18144,
       "sha256": "37a04492ce057aae92599b7f5f5561a7872d42d8264d15ed7bbd06887d976b7d"
->>>>>>> save/p6-358-b
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/catalog_trust_manifest.py",
+      "bytes": 39041,
+      "sha256": "3642c5943f524155e2877c4dc5c51609ab06dc2e2f556e836a9f9817491bc89f"
     },
     {
       "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
@@ -324,13 +323,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-<<<<<<< save/p6-347
-      "bytes": 12068,
-      "sha256": "6c66a61daeeb1a1ddd8fadfc32520ccce5f4c8e60e2bd358e0f28ced766dbd47"
-=======
-      "bytes": 12209,
-      "sha256": "2f957d5c77eb2be8abaf974e42348201df2e732357f178d32ba4c04e1aebe98e"
->>>>>>> save/p6-358-b
+      "bytes": 12461,
+      "sha256": "88e2064801e270de3b8a4569959219b3b55df5474cc15c0a5d92b9be5a72aa17"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -2261,23 +2255,6 @@
       ]
     },
     {
-<<<<<<< save/p6-347
-      "task": "Check who signed an AI Catalog trust manifest and that it binds its entry",
-      "claim_type": "catalog_trust_manifest/v1",
-      "case": "examples/catalog-trust-manifest/case.json",
-      "policy": "examples/catalog-trust-manifest/policy.json",
-      "documentation": "docs/catalog-trust-manifest.md",
-      "expected_decision": "supported",
-      "scope": "Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe.",
-      "case_id": "catalog-trust-manifest-ai-catalog-publisher",
-      "expected_reason": "signature_covers_release",
-      "exit_code": 0,
-      "argv": [
-        "agent-evidence-verify",
-        "examples/catalog-trust-manifest/case.json",
-        "--policy",
-        "examples/catalog-trust-manifest/policy.json",
-=======
       "task": "Check that the copy a consumer read matches its published digests",
       "claim_type": "evidence_digest/v1",
       "case": "examples/telemetry-evidence/digest/case.json",
@@ -2293,36 +2270,10 @@
         "examples/telemetry-evidence/digest/case.json",
         "--policy",
         "examples/telemetry-evidence/digest/policy.json",
->>>>>>> save/p6-358-b
         "--json"
       ],
       "bindings": [
         {
-<<<<<<< save/p6-347
-          "path": "examples/catalog-trust-manifest/case.json",
-          "bytes": 628,
-          "sha256": "efbdd02225534f054975ed28bb2c82e6066fad16393c674a9fefd694ce1fc8b5"
-        },
-        {
-          "path": "examples/catalog-trust-manifest/policy.json",
-          "bytes": 697,
-          "sha256": "b34ce20d31509d5ea3ff51729be58b6de32ff9899866cf752932955202add516"
-        },
-        {
-          "path": "examples/catalog-trust-manifest/artifact.json",
-          "bytes": 141,
-          "sha256": "5346c3b356f1b2db025b97d464d73a62442ca39ad1480549e23daff147f35ef1"
-        },
-        {
-          "path": "examples/catalog-trust-manifest/catalog.json",
-          "bytes": 1344,
-          "sha256": "fe7aaee6d11350c4c54fef665c8ea41bee65f5c56066ff7210b2082cb848262b"
-        },
-        {
-          "path": "examples/catalog-trust-manifest/did-documents.json",
-          "bytes": 2755,
-          "sha256": "8b49c5d7a3dad753d337a8879ad50ea41947883460bf47e3bf3353f41a28c3fe"
-=======
           "path": "examples/telemetry-evidence/digest/case.json",
           "bytes": 1048,
           "sha256": "14b31e1ccf1eeb32b1921e023161f7537c17394257e695abe78fe608e98a56bc"
@@ -2361,28 +2312,10 @@
           "path": "examples/telemetry-evidence/digest/manifest.json",
           "bytes": 799,
           "sha256": "6ff7a618a172437afc8af5c8ae6253d02f47421a3ed570b7092f34f3be591b7e"
->>>>>>> save/p6-358-b
         }
       ]
     },
     {
-<<<<<<< save/p6-347
-      "task": "Check that an A2A Agent Card was signed by a key of its own DID that the consumer trusts",
-      "claim_type": "a2a_signed_card/v1",
-      "case": "examples/a2a-signed-card/case.json",
-      "policy": "examples/a2a-signed-card/policy.json",
-      "documentation": "docs/a2a-signed-card.md",
-      "expected_decision": "supported",
-      "scope": "The valid-conformance-extension card of tests/data/a2a-signed-card; the consumer pins the owner's Ed25519 key under its kid, so the verdict says which key of the card's DID signed the card and that the card names its conformance corpus and verifier inside the signature, not that the agent behaves as the card says.",
-      "case_id": "a2a-signed-card-pinned-owner-key",
-      "expected_reason": "card_signature_authorized",
-      "exit_code": 0,
-      "argv": [
-        "agent-evidence-verify",
-        "examples/a2a-signed-card/case.json",
-        "--policy",
-        "examples/a2a-signed-card/policy.json",
-=======
       "task": "Check that an event log is complete against its retained head",
       "claim_type": "event_log_completeness/v1",
       "case": "examples/telemetry-evidence/log/case.json",
@@ -2398,31 +2331,10 @@
         "examples/telemetry-evidence/log/case.json",
         "--policy",
         "examples/telemetry-evidence/log/policy.json",
->>>>>>> save/p6-358-b
         "--json"
       ],
       "bindings": [
         {
-<<<<<<< save/p6-347
-          "path": "examples/a2a-signed-card/case.json",
-          "bytes": 427,
-          "sha256": "ef038fe4c5eeefd1f190f8b08136d43933b8779533d0a2cabee8d4dda33e540c"
-        },
-        {
-          "path": "examples/a2a-signed-card/policy.json",
-          "bytes": 561,
-          "sha256": "1a508bf36c9533d570f7563820c7e98ebaf887ee7c62156cf474f966fdee744a"
-        },
-        {
-          "path": "examples/a2a-signed-card/card.json",
-          "bytes": 1294,
-          "sha256": "dfc3d96fbd32ac4ba418a8d4e9845ec3fe5a9590d2974ea0fca57fcb86266414"
-        },
-        {
-          "path": "examples/a2a-signed-card/jwks.json",
-          "bytes": 402,
-          "sha256": "393675ced92f85de65cbc7d4a39c45713b7fa25ea71acabcf437dbb7a3da7414"
-=======
           "path": "examples/telemetry-evidence/log/case.json",
           "bytes": 417,
           "sha256": "26b47a7a20bf328355325e4645783363e2f9a14545ae081a0c4a2930d2a42a76"
@@ -2441,28 +2353,10 @@
           "path": "examples/telemetry-evidence/log/head.json",
           "bytes": 314,
           "sha256": "333d82b28921f51ae2f1f9cb39b7aa6fb519e4bb51426a7e43080a27df982472"
->>>>>>> save/p6-358-b
         }
       ]
     },
     {
-<<<<<<< save/p6-347
-      "task": "Check which parties a co-signed tool-call receipt binds and that both keys may speak for them",
-      "claim_type": "co_signed_receipt/v1",
-      "case": "examples/co-signed-receipt/case.json",
-      "policy": "examples/co-signed-receipt/policy.json",
-      "documentation": "docs/co-signed-receipt.md",
-      "expected_decision": "supported",
-      "scope": "The valid-co-signed receipt of tests/data/co-signed-receipt; the consumer pins the agent's and the caller's Ed25519 keys, so the verdict says both parties signed the same bytes, not that the receipt is true or that the parties are independent.",
-      "case_id": "co-signed-receipt-both-keys-pinned",
-      "expected_reason": "receipt_signers_authorized",
-      "exit_code": 0,
-      "argv": [
-        "agent-evidence-verify",
-        "examples/co-signed-receipt/case.json",
-        "--policy",
-        "examples/co-signed-receipt/policy.json",
-=======
       "task": "Check that the action an authority released is the action that ran",
       "claim_type": "lifecycle_binding/v1",
       "case": "examples/lifecycle-binding/case.json",
@@ -2478,31 +2372,10 @@
         "examples/lifecycle-binding/case.json",
         "--policy",
         "examples/lifecycle-binding/policy.json",
->>>>>>> save/p6-358-b
         "--json"
       ],
       "bindings": [
         {
-<<<<<<< save/p6-347
-          "path": "examples/co-signed-receipt/case.json",
-          "bytes": 434,
-          "sha256": "1d7c2081d7ae6f4f24b91842328fe6d28461cc1553c1e353dfc195ddf8181626"
-        },
-        {
-          "path": "examples/co-signed-receipt/policy.json",
-          "bytes": 648,
-          "sha256": "b7846fa4653f2b4b8e8dd39aca2031a05dccb2d8af28d2e7cd77e29eb534cd1a"
-        },
-        {
-          "path": "examples/co-signed-receipt/keys.json",
-          "bytes": 272,
-          "sha256": "f724d2aee5adc09b1600335e5c9de52dda5d2ed6814b71a35468cd31fd78e483"
-        },
-        {
-          "path": "examples/co-signed-receipt/receipt.json",
-          "bytes": 713,
-          "sha256": "626fe4eef435a91c2e1b445c1ee8ebb9ab81d978f387c02f8205fc42969f227f"
-=======
           "path": "examples/lifecycle-binding/case.json",
           "bytes": 602,
           "sha256": "9faf31b3ed82be9e0e903c41dee385f2a7834f6478c5cc8766435f7165fb3dda"
@@ -2598,7 +2471,134 @@
           "path": "examples/capability-credential/credential.json",
           "bytes": 357,
           "sha256": "033edd8f093395999e685660cbd853f25bf09e665da1a760dadab17cc3770756"
->>>>>>> save/p6-358-b
+        }
+      ]
+    },
+    {
+      "task": "Check who signed an AI Catalog trust manifest and that it binds its entry",
+      "claim_type": "catalog_trust_manifest/v1",
+      "case": "examples/catalog-trust-manifest/case.json",
+      "policy": "examples/catalog-trust-manifest/policy.json",
+      "documentation": "docs/catalog-trust-manifest.md",
+      "expected_decision": "supported",
+      "scope": "Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe.",
+      "case_id": "catalog-trust-manifest-ai-catalog-publisher",
+      "expected_reason": "signature_covers_release",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/catalog-trust-manifest/case.json",
+        "--policy",
+        "examples/catalog-trust-manifest/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/catalog-trust-manifest/case.json",
+          "bytes": 628,
+          "sha256": "efbdd02225534f054975ed28bb2c82e6066fad16393c674a9fefd694ce1fc8b5"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/policy.json",
+          "bytes": 697,
+          "sha256": "b34ce20d31509d5ea3ff51729be58b6de32ff9899866cf752932955202add516"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/artifact.json",
+          "bytes": 141,
+          "sha256": "5346c3b356f1b2db025b97d464d73a62442ca39ad1480549e23daff147f35ef1"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/catalog.json",
+          "bytes": 1344,
+          "sha256": "fe7aaee6d11350c4c54fef665c8ea41bee65f5c56066ff7210b2082cb848262b"
+        },
+        {
+          "path": "examples/catalog-trust-manifest/did-documents.json",
+          "bytes": 2755,
+          "sha256": "8b49c5d7a3dad753d337a8879ad50ea41947883460bf47e3bf3353f41a28c3fe"
+        }
+      ]
+    },
+    {
+      "task": "Check that an A2A Agent Card was signed by a key of its own DID that the consumer trusts",
+      "claim_type": "a2a_signed_card/v1",
+      "case": "examples/a2a-signed-card/case.json",
+      "policy": "examples/a2a-signed-card/policy.json",
+      "documentation": "docs/a2a-signed-card.md",
+      "expected_decision": "supported",
+      "scope": "The valid-conformance-extension card of tests/data/a2a-signed-card; the consumer pins the owner's Ed25519 key under its kid, so the verdict says which key of the card's DID signed the card and that the card names its conformance corpus and verifier inside the signature, not that the agent behaves as the card says.",
+      "case_id": "a2a-signed-card-pinned-owner-key",
+      "expected_reason": "card_signature_authorized",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/a2a-signed-card/case.json",
+        "--policy",
+        "examples/a2a-signed-card/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/a2a-signed-card/case.json",
+          "bytes": 427,
+          "sha256": "ef038fe4c5eeefd1f190f8b08136d43933b8779533d0a2cabee8d4dda33e540c"
+        },
+        {
+          "path": "examples/a2a-signed-card/policy.json",
+          "bytes": 561,
+          "sha256": "1a508bf36c9533d570f7563820c7e98ebaf887ee7c62156cf474f966fdee744a"
+        },
+        {
+          "path": "examples/a2a-signed-card/card.json",
+          "bytes": 1294,
+          "sha256": "dfc3d96fbd32ac4ba418a8d4e9845ec3fe5a9590d2974ea0fca57fcb86266414"
+        },
+        {
+          "path": "examples/a2a-signed-card/jwks.json",
+          "bytes": 402,
+          "sha256": "393675ced92f85de65cbc7d4a39c45713b7fa25ea71acabcf437dbb7a3da7414"
+        }
+      ]
+    },
+    {
+      "task": "Check which parties a co-signed tool-call receipt binds and that both keys may speak for them",
+      "claim_type": "co_signed_receipt/v1",
+      "case": "examples/co-signed-receipt/case.json",
+      "policy": "examples/co-signed-receipt/policy.json",
+      "documentation": "docs/co-signed-receipt.md",
+      "expected_decision": "supported",
+      "scope": "The valid-co-signed receipt of tests/data/co-signed-receipt; the consumer pins the agent's and the caller's Ed25519 keys, so the verdict says both parties signed the same bytes, not that the receipt is true or that the parties are independent.",
+      "case_id": "co-signed-receipt-both-keys-pinned",
+      "expected_reason": "receipt_signers_authorized",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/co-signed-receipt/case.json",
+        "--policy",
+        "examples/co-signed-receipt/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/co-signed-receipt/case.json",
+          "bytes": 434,
+          "sha256": "1d7c2081d7ae6f4f24b91842328fe6d28461cc1553c1e353dfc195ddf8181626"
+        },
+        {
+          "path": "examples/co-signed-receipt/policy.json",
+          "bytes": 648,
+          "sha256": "b7846fa4653f2b4b8e8dd39aca2031a05dccb2d8af28d2e7cd77e29eb534cd1a"
+        },
+        {
+          "path": "examples/co-signed-receipt/keys.json",
+          "bytes": 272,
+          "sha256": "f724d2aee5adc09b1600335e5c9de52dda5d2ed6814b71a35468cd31fd78e483"
+        },
+        {
+          "path": "examples/co-signed-receipt/receipt.json",
+          "bytes": 713,
+          "sha256": "626fe4eef435a91c2e1b445c1ee8ebb9ab81d978f387c02f8205fc42969f227f"
         }
       ]
     }
