@@ -7,3 +7,5 @@ recursive-include docs *.md *.json
 recursive-include vectors-source-coverage *.json *.txt *.html *.py *.md
 recursive-include vectors-operand-lineage *.json *.py *.md
 recursive-include vectors-done-checks *.json *.py *.md
+recursive-include tests *.jsonl *.chain
+recursive-include examples *.chain
