@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.0 (unreleased)
+## 0.9.0 (2026-11-23)
 
 A minor release: fourteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 

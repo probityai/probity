@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.6.0
+
+- Breaking: the agent stamp is an RFC 9421 HTTP message signature, label `probity`, in place of the
+  `Probity-Agent-Stamp` JWS. A gateway sends four fields: `Probity-Principals` (the canonical identity, the agent
+  client and the principals digest), `Content-Digest` (RFC 9530, sha-256), `Signature-Input` and `Signature`. The
+  signature covers `@method`, `@target-uri`, `@authority`, `content-digest` and `probity-principals`, in that order,
+  with `created`, `expires` (at most 300 s later), `nonce`, `keyid`, `alg="ed25519"` and `tag="probity-principals/v1"`.
+  `verify_request` reads the stamp from `RequestFacts.headers` and returns its `nonce` and `expires` for a single-use
+  store; `stamp` is no longer a token role. A stamp for another method, target, authority or body is refused as
+  `stamp_forged` or `stamp_request_mismatch`. The fields are read by `agent_evidence_verify.structured_fields`, so the
+  floor is agent-evidence-verify 0.9.0.
+- The refusal registry holds the gateway's outbound credential codes (`exchange_*`, `outbound_*`,
+  `release_unrecorded`).
+- Record envelope v2 (`probity_records.erasure`) closes a length channel and gains two helpers. A schema may fix the
+  plaintext size of a class (`Schema.fixed`, `Schema.size`); every ciphertext of that class is padded to exactly
+  that size and a larger plaintext is refused (`payload_over_fixed_size`). With padding to a multiple of 256 alone,
+  an approver whose name and principal crossed a boundary was re-linked across its votes from the ciphertext length
+  after its key was destroyed. The lint refuses a malformed, duplicated or partial fixed size (`fixed_size_malformed`,
+  `fixed_size_duplicate`, `fixed_size_partial`). A schema's JSON form now requires `fixed` (`{}` when nothing is
+  fixed); a schema document written before this version without it is refused as `schema_malformed`. `open_sealed` refuses a signed
+  ciphertext length that is not the blob's (`ciphertext_length_mismatch`) and `check_block` refuses a `bytes` that is
+  not an integer of at least 28. New: `check_padding` (a keyless check that a writer padded), `reference` (a keyed
+  per-leaf handle for a value inside a body its subject signs) and `personal_traces` (the canary lint over signed
+  bytes). Shared vectors `erasure.json` gain S8 to S10, O12, P1 to P4, L4, L5, R1 to R3, T1 and T2.
+
 ## 0.5.0
 
 Breaking changes from 0.4.0; callers change as each item says.
