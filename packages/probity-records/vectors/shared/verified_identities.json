@@ -2601,6 +2601,137 @@
       "tenant": "acme",
       "version": 1
     },
+    "description": "an agent acting for no user and naming no sponsor",
+    "expected": {
+      "refused": "identity_attribute_missing"
+    },
+    "id": "VR26",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the act claim names the acting agent as its own parent",
+    "expected": {
+      "refused": "identity_chain_repeats_agent"
+    },
+    "id": "VR27",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsiYWN0Ijp7InN1YiI6ImFnZW50LXJlZnVuZHMifSwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.zULukGtvPKdfJpxFRSkzAyzh8qr56fdoFDsM1dxFlSd5GplJT5GMQ_aQSyhZ0lHVOrnnQb0xQPCn-CcoCJODAQ"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
     "description": "a key-bound agent token with no proof",
     "expected": {
       "refused": "dpop_proof_missing"

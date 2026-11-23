@@ -3,6 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { judgeVerified } from "../src/verified.ts";
 import { canonicalBytes, canonicalOfReceived, chainDigests, checkPrincipals, judgeDigest, judgeIdentity, parsePy, verifyGrantAllow, verifyJournal } from "../src/verify.ts";
 
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
@@ -64,6 +65,13 @@ for (const v of load("identity_digests.json")) {
   });
 }
 
+// The verified identities of a request: the same identities and spend values, or the same refusal code.
+for (const v of load("verified_identities.json")) {
+  test(`${v.id} ${v.description}`, () => {
+    assert.deepEqual(judgeVerified(v), v.expected);
+  });
+}
+
 test("every family is non-empty", () => {
-  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "standing_grants.json", "canonical.json", "canonical_identity.json", "identity_digests.json"]) assert.ok(load(f).length > 0, f);
+  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "standing_grants.json", "canonical.json", "canonical_identity.json", "identity_digests.json", "verified_identities.json"]) assert.ok(load(f).length > 0, f);
 });

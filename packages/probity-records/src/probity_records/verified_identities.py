@@ -420,7 +420,10 @@ def verify_request(tokens: Mapping[str, str], bundle: TrustBundle | Mapping[str,
         identity = stamp.stamp.canonical_identity()
     else:
         found = {role: _token(role, tokens[role], trust, when) for role in TOKEN_ROLES if role in tokens}
-        identity = _identity_from_tokens(found, trust)
+        try:
+            identity = _identity_from_tokens(found, trust)
+        except IdentityStringError as exc:
+            raise _refuse(exc.code, str(exc)) from exc
         proof = _possession([found[r] for r in TOKEN_ROLES if r in found], request, at)
     _environment(identity, trust)
     try:

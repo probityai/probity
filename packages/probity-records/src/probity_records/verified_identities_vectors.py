@@ -278,6 +278,9 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
         ("VR19", "no credential at all", c({})),
         ("VR20", "a role this verifier does not take", c({"user": user, "approver": sponsor})),
         ("VR21", "a sponsor with no agent", c({"user": token("user", act=None), "sponsor": sponsor})),
+        ("VR26", "an agent acting for no user and naming no sponsor", c({"agent": agent})),
+        ("VR27", "the act claim names the acting agent as its own parent",
+         c({"user": token("user", act={"sub": "agent-refunds", "act": {"sub": "agent-refunds"}}), "agent": agent})),
         # --- refused: possession ---
         ("VR22", "a key-bound agent token with no proof", c({"user": user, "agent": bound}, request=request())),
         ("VR23", "a key-bound agent token and its proof for one route, replayed on another route",
@@ -366,6 +369,7 @@ EXPECTED_REFUSALS = {
     "VR17": "token_malformed", "VR18": "principal_credential_missing", "VR19": "principal_credential_missing",
     "VR20": "principal_role_not_configured", "VR21": "principals_need_agent", "VR22": "dpop_proof_missing",
     "VR23": "dpop_htu_mismatch", "VR24": "dpop_key_not_confirmed", "VR25": "mtls_certificate_missing",
+    "VR26": "identity_attribute_missing", "VR27": "identity_chain_repeats_agent",
     "VS1": "identity_sources_mixed", "VS2": "stamp_forged", "VS3": "stamp_key_mismatch", "VS4": "stamp_wrong_audience",
     "VS5": "stamp_expired", "VS6": "stamp_request_mismatch", "VS7": "stamp_malformed",
     "VS8": "stamp_identity_mismatch", "VS9": "identity_environment_mismatch", "VS10": "stamp_lifetime_too_long",
