@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- The strict grade follows the gateway writer's rule: user, agent and sponsor, the user credential's `act` chain
+  naming the agent, and the approver present exactly when an approval admitted the call. A call no human approved is
+  now strict without an approver (it was basic, so a strict writer refused the record that answers a pending
+  approval). An approver principal no approval counts is refused under every profile
+  (`principal_approver_without_approval`); an approved call that does not name its approver is basic. An intent or
+  effect record answers to the approvers its permit's allow counted. `principals_below_strict` names what is missing
+  (`act-absent`, `sponsor-absent`, `approver-absent`); `identity.strict_shortfall` returns it.
+- Grant times parse in one RFC 3339 grammar with an explicit offset, in both verifiers. A grant whose `notBefore`,
+  `expiresAt` or `reviewBy` has no offset is refused (`grant_timestamp_offset_missing:<member>`) instead of raising
+  TypeError out of `verify_chain`; any other form, an out-of-range field included, is refused
+  (`grant_timestamp_invalid:<member>`), and a use time that names no instant is refused (`grant_use_time_invalid`).
+  The TypeScript verifier no longer rolls a month 13 forward.
 - Identity records that name the wrong party are refused. An issuer's pins written as one string pin nothing (a
   string that contained a thumbprint used to match it). `verify_token` refuses a token whose `typ` names another
   credential type than the principal's `source` (`token_type_mismatch`), and takes the record's time `at=` to refuse
