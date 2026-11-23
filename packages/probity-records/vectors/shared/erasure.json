@@ -124,6 +124,7 @@
         "verdict": "allow"
       },
       "schema": {
+        "fixed": {},
         "name": "example-decision@2",
         "rules": [
           {
@@ -322,6 +323,7 @@
         "verdict": "allow"
       },
       "schema": {
+        "fixed": {},
         "name": "example-decision@2",
         "rules": [
           {
@@ -461,6 +463,7 @@
         "record_kind": "summary"
       },
       "schema": {
+        "fixed": {},
         "name": "example-summary@2",
         "rules": [
           {
@@ -541,6 +544,7 @@
         "verdict": "allow"
       },
       "schema": {
+        "fixed": {},
         "name": "example-decision@2",
         "rules": [
           {
@@ -689,6 +693,7 @@
         "verdict": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       },
       "schema": {
+        "fixed": {},
         "name": "example-decision@2",
         "rules": [
           {
@@ -836,6 +841,7 @@
         "verdict": "allow"
       },
       "schema": {
+        "fixed": {},
         "name": "example-decision@2",
         "rules": [
           {
@@ -956,6 +962,7 @@
         "email": "x"
       },
       "schema": {
+        "fixed": {},
         "name": "bad@2",
         "rules": [
           {
@@ -971,6 +978,275 @@
       },
       "subjectRole": null,
       "subjectValue": null
+    },
+    "op": "seal"
+  },
+  {
+    "description": "a class the schema fixes: the approver payload is padded to exactly 512 bytes",
+    "expected": {
+      "blobs": {
+        "8a5009f96b1a9858717a80b2fcdd452526943e9fd2b15b2f08b955aef414e108": "b74817ab03a893cc345a3f45ac25cb83b337edb67bd143619bcdf921662b40efe71698cd6fba51b98e1b7b124a6229cf912908bab7ce49d16f4f1fa4606e4159b6e104a87c5bd81eb73b8e0f47ead298d94a8ddea3ed9ec47837fb6382cc3792a393fc13229d303bbdeff9b4e32478a05706de1ceebf6953c22cbc13b3fb529294d5f0535a0d2e03e923673d54672434f985ff9d18b49d6eb6c3e682ce57010ecb864958fc87e647fb636e593f20d42861ee5af7d908c3231e2ee838462147a4b9c2a611bb9792d47534d25f56dd8e8cf5d894eb85b1ea2f6f272e0bbbc4c548d36cf9788d520ae46b2b9c97f4ae79dbefe5fb32658149bc89712ced62bae0fc3b7ca996d851bafc5c78a4426c85a656b6782631885f677357f928eb241c09fae2a09e6e32fc202fea3052b7109c2e90b2c6d3d7b7c3a95e0f1f180d49c683612daf829a4332594dae7aabdce15d3a8ca28b0fa5df551f378d5bc1f9401ba92680b4a27e80d8443c71012dbd4092399c7894a5bcb2f4924113c1f0c97078f479e707a24e0cd4de36659b6d30e416d1a33231f6665275a1558084dc9a5b57d46c9a1c645028a95f0bb851c3a624bced68c3c57a276b566d807b94e02b3feb4949a83cfa0ba6c4dd9c887461149c238cb68ef420bcbc746313a7060813756e7afcba83cd8da1659e8077960be57f8639dd59501596b2198ba3ecd4c666be5419b55a47d51d70e8cf726cf00a00e6dea16b1e4e066e18c6e02328439319"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 540,
+            "class": "payload",
+            "sha256": "8a5009f96b1a9858717a80b2fcdd452526943e9fd2b15b2f08b955aef414e108",
+            "subject": "approver"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "decision": "kept",
+          "record_kind": "kept"
+        },
+        "commitments": {},
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {},
+        "roles": {
+          "approver": "approver"
+        },
+        "schema": "example-vote@2",
+        "subjectRole": "approver"
+      },
+      "kept": {
+        "decision": "approve",
+        "record_kind": "approval_vote"
+      },
+      "subjectDigest": "90a2032603b4f15ab3f654a2f09aac6753f8593d3bfb615660ace335ad220ea7"
+    },
+    "id": "S8",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": "al@example.com",
+        "decision": "approve",
+        "record_kind": "approval_vote"
+      },
+      "schema": {
+        "fixed": {
+          "payload": 512
+        },
+        "name": "example-vote@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "decision",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      },
+      "subjectRole": "approver",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "a longer approver name gives a ciphertext of the same size as S8",
+    "expected": {
+      "blobs": {
+        "745008fdd7736c44a643199e71f79bc4bd77d9eb3609242d73af1b805b335cbd": "b74817ab03a893cc345a3f45ac25cb83b337edb67bd143619bc1f4196a3e48eefe1b93cd6db959e392553f57186f7e80c37d40f3f9891d9e212f5afc21231115f3ef47e73159851eb73b8e0f47ead298d94a8ddea3ed9ec47837fb6382cc3792a393fc13229d303bbdeff9b4e32478a05706de1ceebf6953c22cbc13b3fb529294d5f0535a0d2e03e923673d54672434f985ff9d18b49d6eb6c3e682ce57010ecb864958fc87e647fb636e593f20d42861ee5af7d908c3231e2ee838462147a4b9c2a611bb9792d47534d25f56dd8e8cf5d894eb85b1ea2f6f272e0bbbc4c548d36cf9788d520ae46b2b9c97f4ae79dbefe5fb32658149bc89712ced62bae0fc3b7ca996d851bafc5c78a4426c85a656b6782631885f677357f928eb241c09fae2a09e6e32fc202fea3052b7109c2e90b2c6d3d7b7c3a95e0f1f180d49c683612daf829a4332594dae7aabdce15d3a8ca28b0fa5df551f378d5bc1f9401ba92680b4a27e80d8443c71012dbd4092399c7894a5bcb2f4924113c1f0c97078f479e707a24e0cd4de36659b6d30e416d1a33231f6665275a1558084dc9a5b57d46c9a1c645028a95f0bb851c3a624bced68c3c57a276b566d807b94e02b3feb4949a83cfa0ba6c4dd9c887461149c238cb68ef420bcbc746313a7060813756e7afcba83cd8da1659e8077960be57f8639dd59501596b2198ba3ecd4c666be5419b55a47d51d70e8cf726cf00a0077ac1927708a6b860940c1cb605b1ee3"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 540,
+            "class": "payload",
+            "sha256": "745008fdd7736c44a643199e71f79bc4bd77d9eb3609242d73af1b805b335cbd",
+            "subject": "approver"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "decision": "kept",
+          "record_kind": "kept"
+        },
+        "commitments": {},
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {},
+        "roles": {
+          "approver": "approver"
+        },
+        "schema": "example-vote@2",
+        "subjectRole": "approver"
+      },
+      "kept": {
+        "decision": "approve",
+        "record_kind": "approval_vote"
+      },
+      "subjectDigest": "90a2032603b4f15ab3f654a2f09aac6753f8593d3bfb615660ace335ad220ea7"
+    },
+    "id": "S9",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": "maximilian.alexander-worthington@example.com",
+        "decision": "approve",
+        "record_kind": "approval_vote"
+      },
+      "schema": {
+        "fixed": {
+          "payload": 512
+        },
+        "name": "example-vote@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "decision",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      },
+      "subjectRole": "approver",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "a plaintext larger than its fixed size is refused, never padded past it",
+    "expected": {
+      "refused": "payload_over_fixed_size"
+    },
+    "id": "S10",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "decision": "approve",
+        "record_kind": "approval_vote"
+      },
+      "schema": {
+        "fixed": {
+          "payload": 512
+        },
+        "name": "example-vote@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "decision",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      },
+      "subjectRole": "approver",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
     },
     "op": "seal"
   },
@@ -1976,6 +2252,681 @@
     "op": "open"
   },
   {
+    "description": "a signed ciphertext length that is not the blob's length is refused",
+    "expected": {
+      "refused": "ciphertext_length_mismatch"
+    },
+    "id": "O12",
+    "input": {
+      "blobs": {
+        "442b6bf9e108d21c16f551a2151cfef4f1259789c919b9e3211433885a56073b": "12c5de27248f2e1cdbb12b09e1f72484a31a2a1c7c760bb2c4647a9146b645393ea7e01f1d4e7ac5f44b73b7eb1cea0fb79d4d4dd1f92c81dd719822ca522a2461da396688c267886a4293eb5232ffc6576976648f6d81991637caa04d3ea771fb9383e482745433b9c4d4879a5ce7243c43c0d8600f2d6f13925221bd10786ba3ea112c794a849e0888bd8e0d5da4b23418a57e61c2d72a1c1d4d5095bb8be6d2643ef610ab791fc5aa7b7c6e44f6190a2c2f5f917d478fab15e0175ac4bba3949b85f253e6194a4502d9c1491206f14e7a9c900bdd9cf84b26f91de6623d91d6004603cc1604e7e71ff2e89464ccf78e0b43da1d75f2b43a95d5b1b90112ecba13f231a83b842e5e9bc4a03e95ae1d843fe39d6f93f19fa6cf697f",
+        "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68": "520720529fac33e6e17ba34447d2fbe6c1eb2890a1a2f29aad06c1b6cc659fefb9cc43bdd41bb6cf95a2417c7d7ed4f5fbf6daa34a3681001a06a6572ba0df1fd51b1ed023e0418958459e0efb1c3a3e9905f92770c4dd9c2e2ed0fa0d1d8f12db53ad23b82fcc61dfcdfa8452eda0fd12abb52da7376f0fd56a5115283557623128cefbf23b2a6d95b2dcdb4dae6a0ba13ee6c0146b5f4b2562802dbb908ef646f4ec14c188c94be3529fe2879cdbb22959216a7f4b172d5fb1ce7f77b660797fae4489da3988a7b9ab404fc341abd2df775b032291b281e2ae2c0676de0302d8e6db3af02b42625c4897ecd5d6becac80cf16c92830939feb9e7552e352ef0015837c9eaa729d32d1c366f6d1526c3dade256220b847cdfa12fb82",
+        "e0250185a28d98681e9d9a14c31881e970b0ce4c88f7d868820a028520c81b2b": "b74817ab03a893cc345a3f45ac25cb83b337edb67bd143619bcff4136c3f61e7ef1b909360b012f89c56794f4a6229cf912908bab7ce49d16f4f1fa4606e4159b6e104a87c5bd81eb73b8e0f47ead298d94a8ddea3ed9ec47837fb6382cc3792a393fc13229d303bbdeff9b4e32478a05706de1ceebf6953c22cbc13b3fb529294d5f0535a0d2e03e923673d54672434f985ff9d18b49d6eb6c3e682ce57010ecb864958fc87e647fb636e593f20d42861ee5af7d908c3231e2ee838462147a4b9c2a611bb9792d47534d25f56dd8e8cf5d894eb85b1ea2f6f272e0bbbc4c548d36cf9788d520ae46b2b9c97f4ae79dbefe5fb32658149bc89712ced62bae0fc3b7ca996d851bafc5c78a442fbf5fc6766530f672027e62b8cfc1e3f",
+        "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559": "097464c836609e37d61710e9d126c6a4b1f2f4fde14149256ec21ad2c1629d24197fcc45bd5548a9a53cfc335c497c5ae94873466de5b75fbf86104d8d37f68f089e3fe54ca898243bb5c1814e6fea7ae122003467bca3df14829003effe6190c0145acf1b630dc316a311b625d8744323dd19e9608f78658849e545b7b7dea424e95bbee90145809b748636367e2a7c365739abc17d0cdae7d106d4441719db128ce4cc104755c9ac1055a44c5b2319c1be7226ce75a953365df21db70ad54f6cb018077f711072a9673faba682a002cae846a5470c820c29f72e396f4cece817ddd84c16e78c63cf95aca24214c529943375bd0b852ba7f7cfce4f62e62f8cb8b3b9078e06db340c229a3225c7d10c5212a0aef1bf3bd12bca222c"
+      },
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "e0250185a28d98681e9d9a14c31881e970b0ce4c88f7d868820a028520c81b2b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 285,
+            "class": "pseudonym",
+            "sha256": "442b6bf9e108d21c16f551a2151cfef4f1259789c919b9e3211433885a56073b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver": "0f389ba7ad9530b3f9ebbb74697b371daf067a40b0edc781fc068ac2600b95fa",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver": "approver",
+          "intent": "user",
+          "principals.approver": "approver",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "kept": {
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "record_kind": "decision",
+        "sequence": 3,
+        "verdict": "allow"
+      },
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      }
+    },
+    "op": "open"
+  },
+  {
+    "description": "every ciphertext padded to a multiple of 256: no problems",
+    "expected": {
+      "problems": []
+    },
+    "id": "P1",
+    "input": {
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "e0250185a28d98681e9d9a14c31881e970b0ce4c88f7d868820a028520c81b2b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "442b6bf9e108d21c16f551a2151cfef4f1259789c919b9e3211433885a56073b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver": "0f389ba7ad9530b3f9ebbb74697b371daf067a40b0edc781fc068ac2600b95fa",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver": "approver",
+          "intent": "user",
+          "principals.approver": "approver",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      }
+    },
+    "op": "check-padding"
+  },
+  {
+    "description": "read under a schema that fixes payload at 512 bytes, a 256-byte payload ciphertext is found",
+    "expected": {
+      "problems": [
+        "ciphertext_size_not_fixed:approver/payload:256",
+        "ciphertext_size_not_fixed:user/payload:256"
+      ]
+    },
+    "id": "P2",
+    "input": {
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "e0250185a28d98681e9d9a14c31881e970b0ce4c88f7d868820a028520c81b2b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "442b6bf9e108d21c16f551a2151cfef4f1259789c919b9e3211433885a56073b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver": "0f389ba7ad9530b3f9ebbb74697b371daf067a40b0edc781fc068ac2600b95fa",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver": "approver",
+          "intent": "user",
+          "principals.approver": "approver",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "schema": {
+        "fixed": {
+          "payload": 512
+        },
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      }
+    },
+    "op": "check-padding"
+  },
+  {
+    "description": "a ciphertext whose plaintext is not a multiple of 256 bytes is found from the signed block alone",
+    "expected": {
+      "problems": [
+        "ciphertext_not_padded:approver/pseudonym:300"
+      ]
+    },
+    "id": "P3",
+    "input": {
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "e0250185a28d98681e9d9a14c31881e970b0ce4c88f7d868820a028520c81b2b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 328,
+            "class": "pseudonym",
+            "sha256": "442b6bf9e108d21c16f551a2151cfef4f1259789c919b9e3211433885a56073b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver": "0f389ba7ad9530b3f9ebbb74697b371daf067a40b0edc781fc068ac2600b95fa",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver": "approver",
+          "intent": "user",
+          "principals.approver": "approver",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      }
+    },
+    "op": "check-padding"
+  },
+  {
+    "description": "a block of another schema is not judged against this one",
+    "expected": {
+      "problems": [
+        "schema_mismatch:example-decision@2"
+      ]
+    },
+    "id": "P4",
+    "input": {
+      "erasure": {
+        "ciphertexts": [
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "e0250185a28d98681e9d9a14c31881e970b0ce4c88f7d868820a028520c81b2b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "442b6bf9e108d21c16f551a2151cfef4f1259789c919b9e3211433885a56073b",
+            "subject": "approver"
+          },
+          {
+            "bytes": 284,
+            "class": "payload",
+            "sha256": "efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559",
+            "subject": "user"
+          },
+          {
+            "bytes": 284,
+            "class": "pseudonym",
+            "sha256": "d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68",
+            "subject": "user"
+          }
+        ],
+        "classes": {
+          "approver": "payload",
+          "intent": "payload",
+          "previous_record_sha256": "kept",
+          "principals.approver": "pseudonym",
+          "principals.user": "pseudonym",
+          "reasons": "payload",
+          "record_kind": "kept",
+          "sequence": "kept",
+          "session_sha256": "pseudonym",
+          "verdict": "kept"
+        },
+        "commitments": {
+          "intent": "05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68"
+        },
+        "format": "probity-record-envelope/v2",
+        "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+        "pseudonyms": {
+          "principals.approver": "0f389ba7ad9530b3f9ebbb74697b371daf067a40b0edc781fc068ac2600b95fa",
+          "principals.user": "a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b",
+          "session_sha256": "48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126"
+        },
+        "roles": {
+          "approver": "approver",
+          "intent": "user",
+          "principals.approver": "approver",
+          "principals.user": "user",
+          "reasons": "user",
+          "session_sha256": "user"
+        },
+        "schema": "example-decision@2",
+        "subjectRole": "user"
+      },
+      "schema": {
+        "fixed": {
+          "payload": 512
+        },
+        "name": "example-vote@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "decision",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "check-padding"
+  },
+  {
     "description": "one committed field disclosed: its value and k_field, never the subject key",
     "expected": {
       "fieldKey": "bb4f67d05de4bbe55faa5b1f46fdc147b87597bae59354afce92d6d367fe79c6",
@@ -2392,6 +3343,7 @@
     "id": "L1",
     "input": {
       "schema": {
+        "fixed": {},
         "name": "example-decision@2",
         "rules": [
           {
@@ -2483,6 +3435,106 @@
     "op": "lint"
   },
   {
+    "description": "a fixed size on the kept class, and one that is not a positive multiple of 256",
+    "expected": {
+      "problems": [
+        "fixed_size_malformed:kept:256",
+        "fixed_size_malformed:payload:100"
+      ]
+    },
+    "id": "L4",
+    "input": {
+      "schema": {
+        "fixed": {
+          "kept": 256,
+          "payload": 100
+        },
+        "name": "bad@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "decision",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "lint"
+  },
+  {
+    "description": "a schema that fixes payload but leaves a pseudonym ciphertext padded: its length is still a channel",
+    "expected": {
+      "problems": [
+        "fixed_size_partial:pseudonym"
+      ]
+    },
+    "id": "L5",
+    "input": {
+      "schema": {
+        "fixed": {
+          "payload": 512
+        },
+        "name": "bad@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "decision",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "request",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "lint"
+  },
+  {
     "description": "personal or digest-of-personal fields kept, and digest-named kept fields not declared structural",
     "expected": {
       "problems": [
@@ -2495,6 +3547,7 @@
     "id": "L2",
     "input": {
       "schema": {
+        "fixed": {},
         "name": "bad@2",
         "rules": [
           {
@@ -2539,6 +3592,7 @@
     "id": "L3",
     "input": {
       "schema": {
+        "fixed": {},
         "name": "bad@2",
         "rules": [
           {
@@ -2570,6 +3624,94 @@
       }
     },
     "op": "lint"
+  },
+  {
+    "description": "a keyed reference to an approver inside a body it signs",
+    "expected": {
+      "reference": "c985c84d476b7fcdd95574fa0f41d7b56da419ff59f99073ee086f60f094772d"
+    },
+    "id": "R1",
+    "input": {
+      "key": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+      "label": "approver",
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "value": "carol@example.com"
+    },
+    "op": "reference"
+  },
+  {
+    "description": "the same approver under another leaf gives an unrelated reference",
+    "expected": {
+      "reference": "58ba21b16931c6f974e9574ac7bc4ad33bfedb4c31328e70d55a65605dbd84f0"
+    },
+    "id": "R2",
+    "input": {
+      "key": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+      "label": "approver",
+      "leaf": "a317909fadcf364314b153f2e9e456e0",
+      "value": "carol@example.com"
+    },
+    "op": "reference"
+  },
+  {
+    "description": "the same approver under another label gives an unrelated reference",
+    "expected": {
+      "reference": "18ad32e1223b3533f6e3e010dbb49c7fa09d824ad2cd4de963759f6ba3d3fb50"
+    },
+    "id": "R3",
+    "input": {
+      "key": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+      "label": "approver-principal",
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "value": "carol@example.com"
+    },
+    "op": "reference"
+  },
+  {
+    "description": "a sealed record's signed bytes show no canary, in clear or under a plain digest",
+    "expected": {
+      "traces": []
+    },
+    "id": "T1",
+    "input": {
+      "personal": [
+        "carol@example.com",
+        "alice",
+        {
+          "issuer": "https://idp.example",
+          "subject": "alice"
+        },
+        "5555555555555555555555555555555555555555555555555555555555555555"
+      ],
+      "signed": "{\"erasure\":{\"ciphertexts\":[{\"bytes\":284,\"class\":\"payload\",\"sha256\":\"e0250185a28d98681e9d9a14c31881e970b0ce4c88f7d868820a028520c81b2b\",\"subject\":\"approver\"},{\"bytes\":284,\"class\":\"pseudonym\",\"sha256\":\"442b6bf9e108d21c16f551a2151cfef4f1259789c919b9e3211433885a56073b\",\"subject\":\"approver\"},{\"bytes\":284,\"class\":\"payload\",\"sha256\":\"efb40d3de7bbd601ae68d4c8470669031a3776ee583b8b1db8a0ad23391e0559\",\"subject\":\"user\"},{\"bytes\":284,\"class\":\"pseudonym\",\"sha256\":\"d5e374b2abb66e62bc71a88bcd1e4998cd767ac69ad586675053477ec6989b68\",\"subject\":\"user\"}],\"classes\":{\"approver\":\"payload\",\"intent\":\"payload\",\"previous_record_sha256\":\"kept\",\"principals.approver\":\"pseudonym\",\"principals.user\":\"pseudonym\",\"reasons\":\"payload\",\"record_kind\":\"kept\",\"sequence\":\"kept\",\"session_sha256\":\"pseudonym\",\"verdict\":\"kept\"},\"commitments\":{\"intent\":\"05496abdf10511d59b986e13c90f623319640912dda90d0b1e8b3b3287344c68\"},\"format\":\"probity-record-envelope/v2\",\"leaf\":\"4f51855bba6e41641170c3bfcf2b3b79\",\"pseudonyms\":{\"principals.approver\":\"0f389ba7ad9530b3f9ebbb74697b371daf067a40b0edc781fc068ac2600b95fa\",\"principals.user\":\"a1bbaca33ae6001b67d4a4a18fbd6bf246018ff857be823102313f733d65326b\",\"session_sha256\":\"48fd206acc5888bd6af1c332d88db620d2a4c0491696ea59e1ef6cc79a2e0126\"},\"roles\":{\"approver\":\"approver\",\"intent\":\"user\",\"principals.approver\":\"approver\",\"principals.user\":\"user\",\"reasons\":\"user\",\"session_sha256\":\"user\"},\"schema\":\"example-decision@2\",\"subjectRole\":\"user\"},\"previous_record_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"record_kind\":\"decision\",\"sequence\":3,\"subject\":\"491a467fcf1c18fc2a0eecf8429facca3834523a04684367816d2e21c48e10dc\",\"verdict\":\"allow\"}"
+    },
+    "op": "personal-traces"
+  },
+  {
+    "description": "a v1-style record: a name in clear (any case), an object in clear, an upper-case hex digest and a base64 digest of JCS bytes are each found",
+    "expected": {
+      "traces": [
+        "clear:'carol@example.com'",
+        "sha256(jcs):base64:'carol@example.com'",
+        "clear:'alice'",
+        "sha256(utf8):'alice'",
+        "clear:{'issuer': 'https://idp.example', 'subject': 'alice'}"
+      ]
+    },
+    "id": "T2",
+    "input": {
+      "personal": [
+        "carol@example.com",
+        "alice",
+        {
+          "issuer": "https://idp.example",
+          "subject": "alice"
+        },
+        "5555555555555555555555555555555555555555555555555555555555555555"
+      ],
+      "signed": "{\"approver\":\"Carol@Example.com\",\"approver_digest\":\"vaquyYPSWcmT0qzinS4FNU+j5ClBgMH02RtU2zZomSE=\",\"principal\":{\"issuer\":\"https://idp.example\",\"subject\":\"alice\"},\"record_kind\":\"decision\",\"user_sha256\":\"2BD806C97F0E00AF1A1FC3328FA763A9269723C8DB8FAC4F93AF71DB186D6E90\"}"
+    },
+    "op": "personal-traces"
   },
   {
     "description": "every record in envelope v2: erasable, and the kept class is printed",
