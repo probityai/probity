@@ -404,6 +404,15 @@
       "documentation": "docs/capability-credential.md",
       "expected_decision": "supported",
       "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example."
+    },
+    {
+      "task": "Check who signed an AI Catalog trust manifest and that it binds its entry",
+      "claim_type": "catalog_trust_manifest/v1",
+      "case": "examples/catalog-trust-manifest/case.json",
+      "policy": "examples/catalog-trust-manifest/policy.json",
+      "documentation": "docs/catalog-trust-manifest.md",
+      "expected_decision": "supported",
+      "scope": "Catalog, DID documents and artifact of the accept-aic-publisher case of the agent-evidence-vectors catalog-trust-manifest corpus; the consumer pins the publisher's ES256 key, so the verdict says who signed and what the signature binds, not that the artifact is safe."
     }
   ]
 }

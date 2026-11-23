@@ -22,6 +22,7 @@ from .adapters import (
     authority_anchor,
     brokered_file_write,
     capability_credential,
+    catalog_trust_manifest,
     cbor_receipt_chain,
     completion_claim,
     credential_reachability,
@@ -92,6 +93,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "lifecycle_binding/v1": lifecycle_binding.adjudicate,
     "aep_package/v1": aep_package.adjudicate,
     "capability_credential/v1": capability_credential.adjudicate,
+    "catalog_trust_manifest/v1": catalog_trust_manifest.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

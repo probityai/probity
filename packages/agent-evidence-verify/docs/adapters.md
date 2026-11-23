@@ -165,3 +165,12 @@ receipt, ML-DSA-65 signature and RFC 3161 time stamp in order, with each check a
 case-variant member, an escaped or non-ASCII or newline-terminated time, `-0` in either signing direction) and the
 distinct-authority classes (a named key that does not sign, one key under two ids, the issuer's own key as cosigner,
 a threshold met by one authority).
+
+## Catalog trust manifests
+
+[`catalog_trust_manifest/v1`](catalog-trust-manifest.md) judges one signed object of an ARD catalog
+or an AI Catalog: which key signed which bytes under which of four closed constructions, and whether
+the signed subject binds the entry, its artifact and its vendored DSSE attestations. Every signing
+key goes through the consumer's key authority. It is a port of the reference reader in
+agent-evidence-vectors, with the same checks, order and codes, and a parity test over that reader's
+corpus and the matrix row 11 break vectors.
