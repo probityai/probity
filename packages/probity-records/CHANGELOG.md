@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.8.0 (2026-11-23)
+
+- A grant body now has one grammar, checked the same way by the Python verifier and the TypeScript verifier. Before
+  this version the two refused different things with different text: Python carried library messages in its details
+  (a Python `repr`, the cel-cpp message) that the TypeScript twin could not reproduce, a malformed quorum policy or
+  an invalid regex crashed `verify_chain` in Python, and `{"spend": null}` passed validation and then crashed
+  narrowing. `validate_body` now refuses every malformed body as a registered code with a fixed detail, in one
+  order: `cnf`, times, tools, depth, context, budget, standing, issuer key.
+- 23 new refusal codes: `grant_arg_constraint_invalid`, `grant_context_constraint_invalid`, `grant_when_invalid`,
+  `grant_quorum_invalid` and `grant_issuer_key_invalid`; the constraint codes `constraint_unknown`,
+  `constraint_member_missing`, `constraint_member_invalid`, `constraint_range_unbounded`, `constraint_regex_invalid`
+  and `constraint_cidr_invalid`; the CEL codes `cel_expression_empty`, `cel_syntax_invalid` and
+  `cel_type_check_failed`; and the quorum policy codes `quorum_policy_shape`, `quorum_roles_shape`,
+  `quorum_role_invalid`, `quorum_roles_unsatisfiable`, `quorum_threshold_out_of_range`,
+  `quorum_approver_key_shape`, `quorum_approvers_share_a_key`, `quorum_policy_without_approvers` and
+  `quorum_proposer_bound_shape`. A caller that matched on the old free-text details changes to match on these codes.
+- CEL expressions are checked for syntax at validation in both verifiers; the type check stays in `issue_grant`
+  (`cel_type_check_failed`), because no TypeScript CEL engine exports one.
+- Shared vectors `grant_bodies.json` (62 cases) and `grant_calls.json` (5 cases) hold both verifiers to these codes,
+  and `grants.json` gains journal cases GV14 and GV15.
+
 ## 0.7.0 (2026-11-23)
 
 - The refusal registry holds the receiver policy's codes (check `receiver.policy`): `receiver_policy_denied` (a
