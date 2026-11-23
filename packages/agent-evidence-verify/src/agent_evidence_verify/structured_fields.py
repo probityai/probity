@@ -2,7 +2,8 @@
 
 Dictionaries, Items and Inner Lists; bare items of type String, Token, Integer, Decimal, Byte
 Sequence and Boolean; parameters on items and inner lists. Dates and Display Strings (RFC 9651)
-are not read. A parse error raises :class:`SFError`.
+are not read. A parse error raises :class:`SFError`. This is the one Structured Field reader of the
+tree: the Web Bot Auth adapter and the agent stamp carrier of probity-records both read through it.
 
 Two rules go beyond RFC 8941, because a signature verifier must not let a repeated name or an
 unusual spelling decide which value it read. A repeated Dictionary key and a repeated parameter

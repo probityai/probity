@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
-from agent_evidence_verify.adapters import _sf as sf
+from agent_evidence_verify import structured_fields as sf
 
 
 def test_dictionary_of_inner_list_and_items_round_trips() -> None:
