@@ -15,6 +15,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/actor_order_changed"
   },
   {
+   "code": "agent_cnf_not_the_registered_key",
+   "check": "identity.principals",
+   "meaning": "the agent token's confirmation key is not the key registered for that agent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/agent_cnf_not_the_registered_key"
+  },
+  {
+   "code": "agent_credential_is_bearer",
+   "check": "identity.principals",
+   "meaning": "the profile requires a key-bound agent token and the token names no confirmation key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/agent_credential_is_bearer"
+  },
+  {
    "code": "agent_identity_missing",
    "check": "mesh.permit",
    "meaning": "the request carries no agent identity",
@@ -573,6 +585,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/delegation_revoked_in_flight"
   },
   {
+   "code": "delegation_root_not_the_entry_agent",
+   "check": "delegation.hop",
+   "meaning": "the delegation chain's root grant is not held by the agent the request entered as",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/delegation_root_not_the_entry_agent"
+  },
+  {
    "code": "delegation_tools_empty",
    "check": "delegation.hop",
    "meaning": "the narrowed delegation allows no tool",
@@ -1083,6 +1101,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_chain_empty"
   },
   {
+   "code": "grant_chain_header_malformed",
+   "check": "grants.chain",
+   "meaning": "the grant chain a request presents is over the size limit or is not a base64url JSON array of signed grants",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_chain_header_malformed"
+  },
+  {
    "code": "grant_context_shape",
    "check": "grants.chain",
    "meaning": "a grant's context constraints are not well formed",
@@ -1105,6 +1129,12 @@
    "check": "authority.record",
    "meaning": "the grant digest re-derived differs from the record's",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_digest_differs_from_record"
+  },
+  {
+   "code": "grant_holder_is_not_the_agent",
+   "check": "possession.proof",
+   "meaning": "the leaf grant names a holder key the agent token does not confirm",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_holder_is_not_the_agent"
   },
   {
    "code": "grant_invalid",
@@ -1905,6 +1935,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_issuer_invalid"
   },
   {
+   "code": "principal_issuer_not_scoped_for_role",
+   "check": "identity.principals",
+   "meaning": "the principal's issuer is trusted, but not for the role it arrives in",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_issuer_not_scoped_for_role"
+  },
+  {
+   "code": "principal_issuer_not_scoped_for_tenant",
+   "check": "identity.principals",
+   "meaning": "the principal's issuer is trusted, but not for the tenant the request is for",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_issuer_not_scoped_for_tenant"
+  },
+  {
    "code": "principal_issuer_untrusted",
    "check": "identity.principals",
    "meaning": "the principal's issuer is not trusted for its role",
@@ -1927,6 +1969,12 @@
    "check": "identity.principals",
    "meaning": "the principal's key id does not name its key",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_kid_mismatch"
+  },
+  {
+   "code": "principal_lifetime_exceeds_ceiling",
+   "check": "identity.principals",
+   "meaning": "the agent token lives longer than the profile's lifetime ceiling",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_lifetime_exceeds_ceiling"
   },
   {
    "code": "principal_malformed",
