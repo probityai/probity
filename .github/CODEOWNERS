@@ -1,7 +1,5 @@
 # One line per workspace member, so a member can get its own reviewers without
 # touching the others. The last matching line wins.
-*                         @astrogilda
-/packages/agent-evidence-verify/ @astrogilda
-/packages/probityai/      @astrogilda
-/packages/probity-effects/ @astrogilda
-/.github/                 @astrogilda
+# No catch-all owner: routine pull requests, including dependency bumps, do
+# not request a maintainer's review. Add a line for a member when a
+# maintainer takes it on.
