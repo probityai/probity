@@ -1,7 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
+Breaking changes from 0.3.0; callers change as each item says.
+
+- Standing grants and the autonomous principals profile (#404). A grant body may carry `sponsor` ({"issuer", "subject"})
+  and `reviewBy`, together or not at all, with `notBefore < reviewBy <= expiresAt`; `issue_grant` takes `sponsor=` and
+  `review_by=`. From `reviewBy` on, the grant and every grant delegated under it admit nothing (`grant_review_overdue`).
+  A child keeps its sponsor and reviews no later than its parent (`child_changes_sponsor`,
+  `child_review_later_than_parent`); a child of a plain grant never becomes one (`child_adds_sponsor`). New:
+  `grants.is_standing`, `grants.chain_problem`, `grants.chain_digests`, `identity.sponsor_id`, and the `autonomous`
+  principals grade (strict-equivalent), whose block carries `agent`, `sponsor`, `session` and `standingGrant` and never
+  a `user` (`principals_autonomous_has_user`). `check_principals` takes `sponsors=` and `standing_grants=`; `Trust`
+  gains `agent_sponsors` and `standing_grants`. Shared vectors `autonomous.json` and `standing_grants.json`.
+- One refusal-code registry (#407). `probity_records.refusal_codes` and the packaged `refusal_codes.json` register every
+  code a check reports, each with a stable identifier `REGISTRY/<code>`; `refusal_lint` refuses an unregistered
+  refusal string in source. The detail of a refusal now follows a colon after the code. Renamed codes (breaking for
+  any caller that matches the old text): `grant_approval_<x>` is `grant_approval_failed:<x>`; a grant that needs
+  approval reports `grant_needs_approval:<reason>` and a denial `grant_deny:<reason>`; `<kind>_allow_without_authority_evidence`
+  is `authority_evidence_missing:<kind>`; `<kind>_allow_but_no_trust_pinned` is `authority_trust_not_pinned:<kind>`;
+  `exception_<x>` is `exception_quorum_failed:<x>` and `step_<x>` is `step_quorum_failed:<x>`;
+  `step_missing_<f>` is `step_field_missing:<f>`; `no_<phase>_record` is `hop_record_missing:<phase>`,
+  `<phase>_names_another_grant` is `hop_names_another_grant:<phase>` and `<phase>_arguments_differ` is
+  `hop_arguments_differ:<phase>`; `seq_<n>_not_<i>` is `seq_mismatch:<n>:<i>`; a quorum that did not approve reports
+  `quorum_refused` or `quorum_pending`; `grant_<cnf problem>` is the cnf problem code alone; a session key line
+  reports `keys_line_<n>:session_key_delegation_invalid:<detail>`.
 - Identity records that name the wrong party are refused. An issuer's pins written as one string pin nothing (a
   string that contained a thumbprint used to match it). `verify_token` refuses a token whose `typ` names another
   credential type than the principal's `source` (`token_type_mismatch`), and takes the record's time `at=` to refuse
