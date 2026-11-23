@@ -1833,6 +1833,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_but_no_trust_pinned"
   },
   {
+   "code": "principals_differ_from_permit",
+   "check": "journal.verify",
+   "meaning": "a later record of a permit names other parties than the allow it rests on",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_differ_from_permit"
+  },
+  {
    "code": "principals_expired_at_use",
    "check": "marker.chain",
    "meaning": "the principals a hop used had expired at the time of use",
@@ -2533,6 +2539,12 @@
    "check": "identity.principals",
    "meaning": "the token is not a well-formed compact JWS",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/token_malformed"
+  },
+  {
+   "code": "token_not_yet_valid",
+   "check": "identity.principals",
+   "meaning": "the token's not-before time is after the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/token_not_yet_valid"
   },
   {
    "code": "token_signature_unverified",
