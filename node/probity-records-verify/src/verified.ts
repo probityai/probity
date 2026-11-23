@@ -5,13 +5,17 @@
 // thumbprint, scoped to roles and tenants. Spec: packages/probity-records/docs/verified-identities.md.
 import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
+import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
 import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parsePy, ts } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-export const STAMP_HEADER = "probity-agent-stamp";
-export const STAMP_TYP = "probity-agent-stamp+jwt";
+export const PRINCIPALS_HEADER = "probity-principals";
+export const STAMP_HEADERS = [PRINCIPALS_HEADER, "content-digest", "signature-input", "signature"];
+export const COVERED = ["@method", "@target-uri", "@authority", "content-digest", PRINCIPALS_HEADER];
+const STAMP_PARAMS = ["alg", "created", "expires", "keyid", "nonce", "tag"];
 export const MAX_TTL_SECONDS = 300;
+const MAX_NONCE_BYTES = 128;
 const TOKEN_ROLES = ["user", "agent", "sponsor"] as const;
 const PIN_ROLES = [...TOKEN_ROLES, "stamp"];
 const ROLE_TYPES: Record<string, (string | null)[]> = { user: ["at+jwt", "oauth-id-jag+jwt"], agent: ["at+jwt"], sponsor: [null, "jwt"] };
@@ -19,8 +23,6 @@ const KEY_REFERENCES = ["jku", "jwk", "x5u", "x5c"];
 const BUNDLE_MEMBERS = ["audience", "environment", "issuers", "profile", "tenant", "version"];
 const PRIVATE_JWK = ["d", "p", "q", "dp", "dq", "qi", "k", "oth"];
 const MIN_RSA_BITS = 2048;
-const STAMP_CLAIMS = ["aud", "exp", "iat", "iss", "jti", "request_sha256", "stamp"];
-const STAMP_MEMBERS = ["act", "agent", "grants", "identity", "principals", "user"];
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
 /** A request whose identities cannot be established; `code` is the registered reason. */
@@ -124,16 +126,24 @@ function parseIssuer(url: string, entry: J): PinnedKey[] {
   return pinned;
 }
 
+function admit(bundle: TrustBundle, key: PinnedKey, role: string): PinnedKey {
+  if (!key.roles.has(role) || !key.tenants.has(bundle.tenant)) return refuse("principal_key_not_pinned", `${role} in ${bundle.tenant}`);
+  return key;
+}
+
 function pinnedKey(bundle: TrustBundle, issuer: J, role: string, kid: J): PinnedKey {
   const keys = typeof issuer === "string" ? bundle.issuers.get(issuer) : undefined;
   if (keys === undefined) return refuse("principal_issuer_untrusted", String(issuer).slice(0, 80));
-  const matches = role === "stamp"
-    ? keys.filter((k) => isStampKey(k.jwk) && stampKeyId(rawOf(k.jwk)) === kid)
-    : keys.filter((k) => typeof kid === "string" && k.jwk.kid === kid);
-  if (matches.length !== 1) return refuse(role === "stamp" ? "stamp_key_mismatch" : "token_kid_unknown");
-  const key = matches[0];
-  if (!key.roles.has(role) || !key.tenants.has(bundle.tenant)) return refuse("principal_key_not_pinned", `${role} in ${bundle.tenant}`);
-  return key;
+  const matches = keys.filter((k) => typeof kid === "string" && k.jwk.kid === kid);
+  if (matches.length !== 1) return refuse("token_kid_unknown");
+  return admit(bundle, matches[0], role);
+}
+
+/** TrustBundle.stamp_key: the one listed Ed25519 key whose stamp key id is `keyid`, pinned for stamps here. */
+function stampKey(bundle: TrustBundle, keyid: string): PinnedKey {
+  const matches = [...bundle.issuers.values()].flat().filter((k) => isStampKey(k.jwk) && stampKeyId(rawOf(k.jwk)) === keyid);
+  if (matches.length !== 1) return refuse("stamp_key_mismatch");
+  return admit(bundle, matches[0], "stamp");
 }
 
 // --- signatures ---------------------------------------------------------------------------------------------------
@@ -236,7 +246,7 @@ const DPOP_JWK: Record<string, string[]> = { ES256: ["crv", "kty", "x", "y"], Ed
 const DPOP_CURVE: Record<string, [string, string]> = { ES256: ["EC", "P-256"], EdDSA: ["OKP", "Ed25519"] };
 const MAX_PROOF_BYTES = 8 << 10, MAX_JTI_BYTES = 128, DEFAULT_SKEW = 120;
 
-export interface RequestFacts { method: string; url: string; content: Buffer | null; dpop: string | null; clientCertificate: Buffer | null }
+export interface RequestFacts { method: string; url: string; content: Buffer | null; dpop: string | null; clientCertificate: Buffer | null; headers: [string, string][] }
 
 function eq(a: string, b: string): boolean {
   const x = Buffer.from(a), y = Buffer.from(b);
@@ -381,82 +391,117 @@ function possession(tokens: Token[], request: RequestFacts | null, at: string): 
 
 // --- the stamp: probity_records.stamp -------------------------------------------------------------------------------
 
-export interface VerifiedStamp { identity: CanonicalIdentity; jti: string; exp: number }
+export interface VerifiedStamp { identity: CanonicalIdentity; nonce: string; expires: number }
 
 class StampRefused extends VerifiedIdentitiesRefused {}
 const stampRefuse = (code: string, detail = ""): never => { throw new StampRefused(code, detail); };
+const isString = (v: unknown): v is string => typeof v === "string";
+const isInteger = (v: unknown): v is number => typeof v === "number";
+const DEFAULT_PORTS: Record<string, string> = { "http:": "80", "https:": "443" };
 
-function stampSegment(text: string): J {
-  try { return segmentJson(text); } catch { return stampRefuse("stamp_malformed"); }
+function dictionary(value: string): Map<string, Member> {
+  try { return parseDictionary(value); } catch (e) { if (e instanceof SFError) return stampRefuse("stamp_malformed"); throw e; }
 }
 
-function stampHeader(token: J): J {
-  const parts = typeof token === "string" && /^[\x00-\x7f]*$/.test(token) ? token.split(".") : [];
-  if (parts.length !== 3 || parts.some((p) => p === "")) stampRefuse("stamp_malformed");
-  const header = stampSegment(parts[0]);
-  if (!sameKeys(header, ["alg", "kid", "typ"])) stampRefuse("stamp_header_invalid");
-  if (header.alg !== "EdDSA" || header.typ !== STAMP_TYP) stampRefuse("stamp_header_invalid");
-  return header;
+/** stamp.stamp_fields: the stamp fields of a request's header lines, null when it carries no stamp at all. */
+export function stampFields(headers: [string, string][]): Map<string, string> | null {
+  const found = new Map<string, string[]>();
+  for (const [name, value] of headers) {
+    const lower = name.toLowerCase();
+    if (STAMP_HEADERS.includes(lower)) found.set(lower, [...(found.get(lower) ?? []), value]);
+  }
+  if ([...found.values()].some((v) => v.length > 1)) stampRefuse("stamp_repeated");
+  const fields = new Map([...found].map(([n, v]) => [n, v[0]]));
+  const labelled = ["signature-input", "signature"].filter((n) => fields.has(n) && dictionary(fields.get(n) as string).has("probity"));
+  if (!fields.has(PRINCIPALS_HEADER) && labelled.length === 0) return null;
+  if (STAMP_HEADERS.some((n) => !fields.has(n) || ((n === "signature-input" || n === "signature") && !labelled.includes(n)))) stampRefuse("stamp_malformed");
+  return fields;
 }
 
-const text = (v: J): string => (typeof v === "string" && v !== "" ? v : stampRefuse("stamp_malformed"));
+function stampParams(member: Member | undefined): { created: number; expires: number; nonce: string; keyid: string; inner: InnerList } {
+  if (member === undefined || member.kind !== "inner") return stampRefuse("stamp_header_invalid");
+  const covered = member.items.map((i) => i.value);
+  if (covered.length !== COVERED.length || covered.some((c, k) => c !== COVERED[k]) || member.items.some((i) => i.params.size > 0)) stampRefuse("stamp_header_invalid");
+  const p = member.params;
+  if ([...p.keys()].sort().join("\0") !== STAMP_PARAMS.join("\0")) stampRefuse("stamp_header_invalid");
+  if (p.get("alg") !== "ed25519" || p.get("tag") !== "probity-principals/v1") stampRefuse("stamp_header_invalid");
+  const created = p.get("created"), expires = p.get("expires"), nonce = p.get("nonce"), keyid = p.get("keyid");
+  if (!isInteger(created) || !isInteger(expires)) return stampRefuse("stamp_header_invalid");
+  if (!isString(nonce) || nonce === "" || !isString(keyid) || keyid === "") return stampRefuse("stamp_header_invalid");
+  if (Buffer.byteLength(nonce, "ascii") > MAX_NONCE_BYTES) stampRefuse("stamp_header_invalid");
+  return { created, expires, nonce, keyid, inner: member };
+}
 
-function stampIdentity(doc: J): CanonicalIdentity {
-  if (!sameKeys(doc, STAMP_MEMBERS)) stampRefuse("stamp_malformed");
-  if (!sameKeys(doc.user, ["iss", "sub"]) || !sameKeys(doc.agent, ["client_id", "iss", "sub"])) stampRefuse("stamp_malformed");
-  const principals = text(doc.principals);
-  if (!DIGEST.test(principals)) stampRefuse("stamp_malformed");
-  for (const name of ["act", "grants"]) if (doc[name] !== null && !(typeof doc[name] === "string" && DIGEST.test(doc[name]))) stampRefuse("stamp_malformed");
-  const user = [text(doc.user.iss), text(doc.user.sub)], agent = [text(doc.agent.iss), text(doc.agent.sub), text(doc.agent.client_id)];
-  const ident = text(doc.identity);
-  if (user[0] === agent[0] && user[1] === agent[1]) stampRefuse("stamp_downgraded");
+/** stamp.authority: the host in lower case, the port only when it is not the scheme's default. */
+function authority(target: string): string {
+  const u = new URL(target);
+  if (!(u.protocol in DEFAULT_PORTS) || u.username !== "" || u.password !== "" || u.hash !== "") throw new TypeError("a stamped target is an absolute http(s) URI");
+  return u.port === "" || u.port === DEFAULT_PORTS[u.protocol] ? u.hostname.toLowerCase() : `${u.hostname.toLowerCase()}:${u.port}`;
+}
+
+function signatureBase(method: string, target: string, digestValue: string, principalsValue: string, inner: InnerList): Buffer {
+  const base = [`"@method": ${method}`, `"@target-uri": ${target}`, `"@authority": ${authority(target)}`,
+    `"content-digest": ${digestValue.trim()}`, `"${PRINCIPALS_HEADER}": ${principalsValue.trim()}`,
+    `"@signature-params": ${serializeInnerList(inner)}`].join("\n");
+  if (!/^[\x00-\x7f]*$/.test(base) || base.includes("\r") || base.includes("\0")) stampRefuse("stamp_malformed");
+  return Buffer.from(base, "ascii");
+}
+
+const stringItem = (m: Member | undefined): string | null => (m !== undefined && m.kind === "item" && m.params.size === 0 && isString(m.value) ? m.value : null);
+
+/** Stamp.from_field and Stamp.of: the identity a `Probity-Principals` value states. */
+function principalsIdentity(value: string): CanonicalIdentity {
+  const members = dictionary(value);
+  if ([...members.keys()].join("\0") !== "id\0client\0principals") stampRefuse("stamp_malformed");
+  const [ident, client, principals] = ["id", "client", "principals"].map((n) => stringItem(members.get(n)));
+  if (ident === null || client === null || principals === null) return stampRefuse("stamp_malformed");
+  if (client === "" || !DIGEST.test(principals)) stampRefuse("stamp_malformed");
   let found: CanonicalIdentity;
   try { found = CanonicalIdentity.parse(ident); } catch { return stampRefuse("stamp_identity_mismatch"); }
-  const a = found.chain[found.chain.length - 1];
-  if (found.kind !== "agent" || !a || !found.user || found.user.domain !== user[0] || found.user.subject !== user[1]
-    || a.domain !== agent[0] || a.subject !== agent[1] || (found.act ?? null) !== doc.act || (found.grants ?? null) !== doc.grants) {
-    stampRefuse("stamp_identity_mismatch");
-  }
+  const agent = found.chain[found.chain.length - 1];
+  if (found.kind !== "agent" || agent === undefined) return stampRefuse("stamp_downgraded");
+  if (!found.user) return stampRefuse("stamp_no_user");
+  if (agent.domain === found.user.domain && agent.subject === found.user.subject) stampRefuse("stamp_downgraded");
   return found;
 }
 
-/** stamp.verify_stamp_token: every stateless check of one stamp under the pinned raw Ed25519 key. */
-export function verifyStampToken(token: J, publicRaw: Buffer, issuer: string, audience: string, requestSha256: string | null, nowNs: bigint): VerifiedStamp {
-  const header = stampHeader(token);
-  const [head, body, sig] = (token as string).split(".");
-  if (header.kid !== stampKeyId(publicRaw)) stampRefuse("stamp_key_mismatch");
-  let ok = false;
-  try { ok = cryptoVerify(null, Buffer.from(`${head}.${body}`, "ascii"), publicKey({ kty: "OKP", crv: "Ed25519", x: b64u(publicRaw) }), Buffer.from(sig, "base64url")); } catch { ok = false; }
-  if (!ok) stampRefuse("stamp_forged");
-  const claims = stampSegment(body);
-  if (!sameKeys(claims, STAMP_CLAIMS)) stampRefuse("stamp_malformed");
-  if (claims.iss !== issuer) stampRefuse("stamp_wrong_issuer");
-  if (claims.aud !== audience) stampRefuse("stamp_wrong_audience");
-  if (claims.request_sha256 !== requestSha256) stampRefuse("stamp_request_mismatch");
-  if (!isInt(claims, "iat") || !isInt(claims, "exp")) stampRefuse("stamp_malformed");
-  const iat = claims.iat as number, exp = claims.exp as number;
-  if (exp <= iat) stampRefuse("stamp_malformed");
-  if (exp - iat > MAX_TTL_SECONDS) stampRefuse("stamp_lifetime_too_long");
-  const moment = Number(nowNs) / 1e9;
-  if (iat > moment) stampRefuse("stamp_not_yet_valid");
-  if (moment >= exp) stampRefuse("stamp_expired");
-  if (typeof claims.jti !== "string" || claims.jti === "" || utf8Len(claims.jti) > MAX_JTI_BYTES) stampRefuse("stamp_malformed");
-  return { identity: stampIdentity(claims.stamp), jti: claims.jti, exp };
+function presentedKeyId(fields: Map<string, string>): string {
+  return stampParams(dictionary(fields.get("signature-input") as string).get("probity")).keyid;
 }
 
-function verifyStampOf(token: J, bundle: TrustBundle, request: RequestFacts | null, at: string): VerifiedStamp {
-  const header = stampHeader(token);
-  const claims = stampSegment((token as string).split(".")[1]);
-  const issuer = isObj(claims) ? claims.iss : undefined;
-  if (typeof issuer !== "string" || !bundle.issuers.has(issuer)) stampRefuse("stamp_wrong_issuer");
-  const key = pinnedKey(bundle, issuer, "stamp", header.kid);
-  const content = request === null ? null : request.content;
-  return verifyStampToken(token, rawOf(key.jwk), issuer, bundle.audience, content === null ? null : sha256Hex(content), BigInt(ts(at)) * 1000n);
+/** stamp.verify_stamp: every stateless check of the stamp a request's header lines carry, under the pinned key. */
+export function verifyStamp(headers: [string, string][], method: string, target: string, body: Buffer | null, publicRaw: Buffer, nowNs: bigint): VerifiedStamp {
+  const fields = stampFields(headers);
+  if (fields === null) return stampRefuse("stamp_dropped");
+  const inputs = dictionary(fields.get("signature-input") as string), signatures = dictionary(fields.get("signature") as string);
+  const digests = dictionary(fields.get("content-digest") as string);
+  const { created, expires, nonce, keyid, inner } = stampParams(inputs.get("probity"));
+  if (keyid !== stampKeyId(publicRaw)) stampRefuse("stamp_key_mismatch");
+  const signature = signatures.get("probity") as Item | InnerList;
+  if (signature.kind !== "item" || signature.params.size > 0 || !Buffer.isBuffer(signature.value)) return stampRefuse("stamp_malformed");
+  const sha = digests.get("sha-256");
+  if (digests.size !== 1 || sha === undefined || sha.kind !== "item" || sha.params.size > 0 || !Buffer.isBuffer(sha.value)) return stampRefuse("stamp_malformed");
+  if (!sha.value.equals(createHash("sha256").update(body ?? Buffer.alloc(0)).digest())) stampRefuse("stamp_request_mismatch");
+  const base = signatureBase(method, target, fields.get("content-digest") as string, fields.get(PRINCIPALS_HEADER) as string, inner);
+  let ok = false;
+  try { ok = cryptoVerify(null, base, publicKey({ kty: "OKP", crv: "Ed25519", x: b64u(publicRaw) }), signature.value); } catch { ok = false; }
+  if (!ok) stampRefuse("stamp_forged");
+  const moment = Number(nowNs) / 1e9;
+  if (expires <= created) stampRefuse("stamp_malformed");
+  if (expires - created > MAX_TTL_SECONDS) stampRefuse("stamp_lifetime_too_long");
+  if (created > moment) stampRefuse("stamp_not_yet_valid");
+  if (moment >= expires) stampRefuse("stamp_expired");
+  return { identity: principalsIdentity(fields.get(PRINCIPALS_HEADER) as string), nonce, expires };
+}
+
+function verifyStampOf(fields: Map<string, string>, bundle: TrustBundle, request: RequestFacts, at: string): VerifiedStamp {
+  const key = stampKey(bundle, presentedKeyId(fields));
+  return verifyStamp(request.headers, request.method, request.url, request.content, rawOf(key.jwk), BigInt(ts(at)) * 1000n);
 }
 
 // --- the request --------------------------------------------------------------------------------------------------
 
-export interface VerifiedRequest { identities: CanonicalIdentity[]; proof: string | null; stampJti: string | null }
+export interface VerifiedRequest { identities: CanonicalIdentity[]; proof: string | null; stamp: { nonce: string; expires: number } | null }
 
 function checkEnvironment(identity: CanonicalIdentity, bundle: TrustBundle): void {
   const refs = [identity.user, ...identity.chain, identity.sponsor, identity.approver, identity.service];
@@ -467,14 +512,16 @@ function checkEnvironment(identity: CanonicalIdentity, bundle: TrustBundle): voi
 export function verifyRequest(tokens: Record<string, J>, bundleDoc: J, at: string, transport: CanonicalIdentity | null, request: RequestFacts | null): VerifiedRequest {
   const bundle = parseBundle(bundleDoc);
   if (transport !== null && (!(transport instanceof CanonicalIdentity) || transport.kind !== "transport")) throw new TypeError("transport is a CanonicalIdentity of kind transport");
-  if (!isObj(tokens) || Object.keys(tokens).length === 0) refuse("principal_credential_missing");
-  if (Object.keys(tokens).some((r) => ![...TOKEN_ROLES, "stamp"].includes(r))) refuse("principal_role_not_configured");
+  if (!isObj(tokens)) throw new TypeError("tokens maps a role to a compact JWS");
+  if (Object.keys(tokens).some((r) => !(TOKEN_ROLES as readonly string[]).includes(r))) refuse("principal_role_not_configured");
+  const fields = request === null ? null : stampFields(request.headers);
+  if (Object.keys(tokens).length === 0 && fields === null) refuse("principal_credential_missing");
   const when = ts(at) / 1e6;
-  let identity: CanonicalIdentity, proof: string | null = null, stampJti: string | null = null;
-  if ("stamp" in tokens) {
-    if (Object.keys(tokens).length !== 1) refuse("identity_sources_mixed");
-    const stamp = verifyStampOf(tokens.stamp, bundle, request, at);
-    identity = stamp.identity; stampJti = stamp.jti;
+  let identity: CanonicalIdentity, proof: string | null = null, stamp: { nonce: string; expires: number } | null = null;
+  if (fields !== null && request !== null) {
+    if (Object.keys(tokens).length !== 0) refuse("identity_sources_mixed");
+    const found = verifyStampOf(fields, bundle, request, at);
+    identity = found.identity; stamp = { nonce: found.nonce, expires: found.expires };
   } else {
     const found: Record<string, Token> = {};
     for (const role of TOKEN_ROLES) if (role in tokens) found[role] = verifyToken(role, tokens[role], bundle, when);
@@ -487,7 +534,7 @@ export function verifyRequest(tokens: Record<string, J>, bundleDoc: J, at: strin
   try { identity.check(bundle.profile); } catch (e) { if (e instanceof IdentityStringError) refuse(e.code); throw e; }
   const identities = [identity];
   if (transport !== null) { checkEnvironment(transport, bundle); identities.push(transport); }
-  return { identities, proof, stampJti };
+  return { identities, proof, stamp };
 }
 
 /** verified_identities.verified_identities. */
@@ -501,11 +548,12 @@ export function judgeVerified(v: J): J {
   const facts: RequestFacts | null = r === null ? null : {
     method: r.method, url: r.url, content: r.contentB64 === null ? null : Buffer.from(r.contentB64, "base64"),
     dpop: r.dpop, clientCertificate: r.clientCertificateB64 === null ? null : Buffer.from(r.clientCertificateB64, "base64"),
+    headers: r.headers,
   };
   const transport = v.transport === null ? null : CanonicalIdentity.parse(v.transport);
   try {
     const found = verifyRequest(v.tokens, v.bundle, v.at, transport, facts);
-    return { identities: found.identities.map((i) => i.document()), proof: found.proof, stampJti: found.stampJti };
+    return { identities: found.identities.map((i) => i.document()), proof: found.proof, stamp: found.stamp };
   } catch (e) {
     if (e instanceof VerifiedIdentitiesRefused) return { refused: e.code };
     throw e;
