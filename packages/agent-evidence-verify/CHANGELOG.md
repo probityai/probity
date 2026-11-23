@@ -2,9 +2,7 @@
 
 ## 0.9.0 (unreleased)
 
-A minor release: six new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
-A minor release: four new claim types (`credential_reachability/v1`, `dns_aid_sig/v1`, `dnssec_rrset/v1` and
-`declared_versus_acted/v1`) and three more suites in corpus mode.
+A minor release: thirteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
@@ -61,6 +59,27 @@ A minor release: four new claim types (`credential_reachability/v1`, `dns_aid_si
   endpoint clients read differently, before the resolution it names, after `exp` or under an unauthorised key is
   `contradicted`, and the scope carries the call denominator. Lines end at `\n` only and the head signature is
   canonical base64. Example: `examples/declared-versus-acted/`.
+- `catalog_trust_manifest/v1`: judges one signed object of an ARD catalog or an AI Catalog: which key signed which bytes
+  under which of four closed constructions, and whether the signed subject binds the entry, its artifact and its vendored
+  DSSE attestations, with every signing key admitted only through the consumer's key authority. Doc:
+  `docs/catalog-trust-manifest.md`.
+- `a2a_signed_card/v1`: judges one A2A Agent Card: which keys of the card's own DID signed its bytes, whether every `kid` is
+  a key of that DID, and whether the consumer's key authority lets each key speak for it. A key served with the card or
+  fetched from its `jku` is never authority by itself. Doc: `docs/a2a-signed-card.md`.
+- `co_signed_receipt/v1`: judges one tool-call receipt: the admission member rules first, then the agent's signature and any
+  co-signature, then each party's key under its own key authority, and reports the attribution as `co_signed`,
+  `single_signed` or `unattributed_evidence`. Doc: `docs/co-signed-receipt.md`.
+- `agent_audit_record/v1`: judges an agent audit record, a retained record with its dating check, or a set of records,
+  under the consumer's trust document, and carries every field a member of `vectors-agent-audit-record` declares
+  (verdict and first code, recomputed tier, `withinLimit`, dating, joint set result). Each time bound is kept apart
+  (skew only on the future side, `maxAge` on the past, the OpenTimestamps allowance on both anchor bounds) and every
+  integer is range-checked before arithmetic. All 235 corpus members agree, so the Action's reference stage can read
+  M of M on that corpus. The assessment names the `shape` it holds (`envelope`, `retained` or `set`), never read off the
+  record, so a retained record stripped of a failing retention entry cannot pass as an envelope. A time value is an
+  RFC 3339 date-time only, and no input, signed or not, makes the reader raise: a lone surrogate, nesting past the
+  stack, a 4300-digit integer, an `anchorWithin` no timedelta holds and an `issuedAt` in year 1 are each judged. A
+  trust document the reader cannot read is refused as the consumer's error. Route and example:
+  `docs/corpus-routes.md`, `examples/corpus-routes/audit-record/`.
 
 Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
 reason each corpus declares.

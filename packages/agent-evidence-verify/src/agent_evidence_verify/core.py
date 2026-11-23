@@ -16,14 +16,17 @@ from pathlib import Path
 from typing import Any
 
 from .adapters import (
+    a2a_signed_card,
     acceptance_observed,
     aep_package,
     audit_principal,
+    audit_record,
     authority_anchor,
     brokered_file_write,
     capability_credential,
     catalog_trust_manifest,
     cbor_receipt_chain,
+    co_signed_receipt,
     completion_claim,
     credential_reachability,
     declared_versus_acted,
@@ -86,6 +89,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "observed_effect/v1": observed_effect.adjudicate,
     "evidence_sufficiency/v1": evidence_sufficiency.adjudicate,
     "audit_principal/v1": audit_principal.adjudicate,
+    "agent_audit_record/v1": audit_record.adjudicate,
     "credential_reachability/v1": credential_reachability.adjudicate,
     "token_grant_receipt/v1": token_grant_receipt.adjudicate,
     "idp_log_witness/v1": idp_log_witness.adjudicate,
@@ -100,6 +104,8 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "dns_aid_sig/v1": dns_aid_sig.adjudicate,
     "dnssec_rrset/v1": dnssec_rrset.adjudicate,
     "declared_versus_acted/v1": declared_versus_acted.adjudicate,
+    "a2a_signed_card/v1": a2a_signed_card.adjudicate,
+    "co_signed_receipt/v1": co_signed_receipt.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

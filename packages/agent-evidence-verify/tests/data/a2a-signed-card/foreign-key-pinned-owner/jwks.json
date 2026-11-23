@@ -1,0 +1,10 @@
+{
+  "keys": [
+    {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "GqMtvqElFAu9jcZg8fsuf7Cwj65dMGlhFy7Z2SxS_KI",
+      "kid": "did:web:agent.example.test#ed25519"
+    }
+  ]
+}

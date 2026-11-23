@@ -1,0 +1,40 @@
+{
+  "name": "Invoice Reader",
+  "description": "Reads invoices and returns their line items.",
+  "supportedInterfaces": [
+    {
+      "url": "https://agent.example.test/a2a/v1",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "version": "1.4.0",
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "application/pdf"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "read-invoice",
+      "name": "Read invoice",
+      "description": "Returns the line items of one invoice.",
+      "tags": [
+        "invoice"
+      ]
+    }
+  ],
+  "signatures": [
+    {
+      "protected": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpPU0UifQ",
+      "signature": "w-qLo-V34UN65FYgOe3d9rK154Rq8HEowoLt_9rgdOSNWLIuUMyu7y62HaV0gwba1DZq_LV4pp0HNJaVkbHfDg",
+      "header": {
+        "kid": "did:web:agent.example.test#ed25519"
+      }
+    }
+  ]
+}

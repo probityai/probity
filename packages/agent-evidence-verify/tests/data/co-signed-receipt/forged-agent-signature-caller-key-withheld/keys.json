@@ -1,0 +1,7 @@
+{
+  "did:web:agent.example.test": {
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "Xwe1jOWJvfHoM8mpwxZpgJe2uJ98wZkF-mUxtrJ8kw8"
+  }
+}

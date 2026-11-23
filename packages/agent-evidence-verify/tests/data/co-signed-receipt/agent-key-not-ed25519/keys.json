@@ -1,0 +1,13 @@
+{
+  "did:web:agent.example.test": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "tw8rBDCZvJYVkJ0i3X3JZJceuIyinNvq839yq9Z902c",
+    "y": "TQw4alAB6ltj8KQFZjyBfeQ5mp_Q2wVH3NzDXP5CHfc"
+  },
+  "did:web:caller.example.test": {
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "9xuTYXgSydfNHMOdbwivoEgXJVMWM2-AFP84HNOHYIw"
+  }
+}

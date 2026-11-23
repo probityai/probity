@@ -14,7 +14,7 @@ import shutil
 from pathlib import Path, PurePosixPath
 
 import pytest
-from agent_evidence_verify import adjudicate
+from agent_evidence_verify import adjudicate, jose
 from agent_evidence_verify.adapters import catalog_trust_manifest as reader
 from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.key_authority import jwk_key_bytes
@@ -301,9 +301,9 @@ def test_a_number_outside_the_signed_bytes_does_not_refuse(tmp_path: Path) -> No
 
 def test_the_der_reader_refuses_a_non_minimal_integer() -> None:
     raw = bytes([0x30, 0x07, 0x02, 0x02, 0x00, 0x01, 0x02, 0x01, 0x01])
-    assert reader.der_signature(raw) is None
+    assert jose.der_signature(raw) is None
     minimal = bytes([0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x01])
-    assert reader.der_signature(minimal) == (1).to_bytes(32, "big") + (1).to_bytes(32, "big")
+    assert jose.der_signature(minimal) == (1).to_bytes(32, "big") + (1).to_bytes(32, "big")
 
 
 @pytest.mark.parametrize("text,ok", [

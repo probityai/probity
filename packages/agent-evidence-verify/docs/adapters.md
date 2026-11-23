@@ -182,3 +182,19 @@ record's signed binding under a key authority the consumer names, validate any R
 DNSSEC from a pinned trust anchor, and join an observer's witnessed trajectory of discovery answers
 and calls, so a call to an undeclared endpoint, after a binding's `exp`, or under an unauthorised key
 is `contradicted`.
+## Signed Agent Cards
+
+[`a2a_signed_card/v1`](a2a-signed-card.md) judges one A2A Agent Card: which keys of the card's own
+DID signed its bytes (JWS over RFC 8785 of the card minus `signatures`), whether every `kid` is a key
+of that DID, and whether the consumer's key authority lets each key speak for it. A key served with
+the card, or fetched from its `jku`, is never authority by itself. A card that lists the
+conformance extension names its corpus and verifier inside its signature.
+
+## Co-signed receipts
+
+[`co_signed_receipt/v1`](co-signed-receipt.md) judges one tool-call receipt: the admission
+member rules first (a valid signature over a malformed receipt is refused), then the agent's
+signature and any co-signature, then each party's key under its own key authority. It reports the
+evidence attribution once key authority decides it, `co_signed`, `single_signed` or
+`unattributed_evidence`.
+

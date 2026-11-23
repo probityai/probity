@@ -1,0 +1,21 @@
+{
+  "assessments": {
+    "a2a-signed-card-pinned-owner-key": {
+      "at": "2026-11-17T12:00:00Z",
+      "card": "card.json",
+      "card_did": "did:web:agent.example.test",
+      "claim_type": "a2a_signed_card/v1",
+      "key_authority": {
+        "keys": [
+          {
+            "kid": "did:web:agent.example.test#ed25519",
+            "public_key_sha256": "988254c3f35c407cd77b0177b45288d574921ed5f776a4dab048817406183c04"
+          }
+        ],
+        "kind": "pin"
+      },
+      "keys": "jwks.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

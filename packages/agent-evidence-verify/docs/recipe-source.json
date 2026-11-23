@@ -298,6 +298,15 @@
       "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
     },
     {
+      "task": "Check an agent audit record, its retention entry and its dating",
+      "claim_type": "agent_audit_record/v1",
+      "case": "examples/corpus-routes/audit-record/case.json",
+      "policy": "examples/corpus-routes/audit-record/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member (R17 of vectors-agent-audit-record); signed with a published test key that carries no trust outside the corpus."
+    },
+    {
       "task": "Check a Proof-of-Control token chain, inclusion proof or canonical form",
       "claim_type": "proof_of_control/v1",
       "case": "examples/corpus-routes/proof-of-control/case.json",
@@ -440,6 +449,24 @@
       "documentation": "docs/dns-aid.md",
       "expected_decision": "contradicted",
       "scope": "A trajectory written by agent-evidence-observer's recorder with one declared call and one planted call to an undeclared host; witness key from a fixed test seed."
+    },
+    {
+      "task": "Check that an A2A Agent Card was signed by a key of its own DID that the consumer trusts",
+      "claim_type": "a2a_signed_card/v1",
+      "case": "examples/a2a-signed-card/case.json",
+      "policy": "examples/a2a-signed-card/policy.json",
+      "documentation": "docs/a2a-signed-card.md",
+      "expected_decision": "supported",
+      "scope": "The valid-conformance-extension card of tests/data/a2a-signed-card; the consumer pins the owner's Ed25519 key under its kid, so the verdict says which key of the card's DID signed the card and that the card names its conformance corpus and verifier inside the signature, not that the agent behaves as the card says."
+    },
+    {
+      "task": "Check which parties a co-signed tool-call receipt binds and that both keys may speak for them",
+      "claim_type": "co_signed_receipt/v1",
+      "case": "examples/co-signed-receipt/case.json",
+      "policy": "examples/co-signed-receipt/policy.json",
+      "documentation": "docs/co-signed-receipt.md",
+      "expected_decision": "supported",
+      "scope": "The valid-co-signed receipt of tests/data/co-signed-receipt; the consumer pins the agent's and the caller's Ed25519 keys, so the verdict says both parties signed the same bytes, not that the receipt is true or that the parties are independent."
     }
   ]
 }
