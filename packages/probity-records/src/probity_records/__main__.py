@@ -13,9 +13,10 @@ import json
 import sys
 from pathlib import Path
 
+from .clock import SystemClock
 from .core import Signer
 from .exports import EXPORT_KINDS, compare_seals, seal_export, verify_export_seal
-from .journal import now
+from .journal import timestamp
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -48,8 +49,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"differ": bad}))
         return 1 if bad else 0
     if args.cmd == "seal-export":
+        sealed_at = timestamp(SystemClock().now())  # the command line is the process entry point: its one clock
         envelope = seal_export(Signer.from_pem(args.key.read_bytes()), args.export.read_bytes(), source=args.source,
-                               kind=args.kind, captured_at=args.captured_at or now())
+                               kind=args.kind, captured_at=args.captured_at or sealed_at, sealed_at=sealed_at)
         args.out.write_text(json.dumps(envelope, indent=2, sort_keys=True) + "\n")
         return 0
     if args.cmd == "verify-export":

@@ -1,9 +1,71 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (unreleased)
 
-Two fixes to `ocsf-decision`; the decision for every other claim type is unchanged.
+A minor release: a new claim type, `credential_reachability/v1`, and three more suites in corpus mode.
 
+- `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
+  environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
+  cookie stores, environment tokens, cluster service-account tokens, git credentials, host keyrings). It applies the
+  26 rules of the Credential Reachability predicate under the consumer's pinned signer keys, agent keys, environment,
+  audience, challenge and time, and recomputes each class verdict and the result from the attempts. See
+  [reference routes](docs/corpus-routes.md).
+
+Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
+reason each corpus declares.
+
+- `agent-payment-mandate/v1`: the payment evidence pack of an agent-initiated charge, card-side records and the 21
+  x402 `exact` on EVM (EIP-3009) records. The signer is recovered from the EIP-712 signature under the requirement's
+  token domain; no field that names a signer is read. 36 of 36 members.
+- `status-receipt-binding/v1`: a credential status receipt held to the credential's bytes by digest, under an
+  authority key the case supplies. 24 of 24 members.
+- `actor-marker-survival/v1`: a chain of signed hop statements held to the corpus's twenty checks, with every
+  writer's key and role read only from the corpus's `TRUST.json` once its SHA-256 matches the manifest. 30 of 30
+  members.
+
+## 0.8.0 (2026-11-21)
+
+A minor release: a new claim type, `evidence_sufficiency/v1`. It decides what one conforming Observed Effect
+record lets a verifier conclude (the question section 7.4 of the CoSAI WS4 containment paper asks), where
+`observed_effect/v1` only decides whether the record conforms.
+
+- `evidence_sufficiency/v1` judges three properties of one signed Observed Effect record under the consumer's own
+  pinned context: `no_write_in_scope` (`supported`, `contradicted` on an observed write, or `not_established` naming
+  the unmet obligation), `action_outcome` (`present`, `absent` or `pending`), and `observer_independence` (the
+  three-condition test). A record the admission step refuses as malformed and an unsupported property raise
+  `CaseError` with no verdict; a coherent record whose own rules refuse its claim is `not_established`.
+  The 36 candidate cases of the WS4 containment paper's section 7.4 are its test vectors
+  (`tests/data/evidence-sufficiency/cases`, byte for byte as published in cosai-oasis/ws4-secure-design-agentic-systems).
+
+## 0.7.0 (2026-11-20)
+
+A minor release: `agent-evidence-verify decision-record` refuses or holds four records 0.6.0 accepted. A consumer that
+reads these dimensions can turn red.
+
+- The decision-record reader holds the trust policy to its published closed schema (members, the `revoked_at` and
+  `revocation_reason` pair, the two reasons). A member it does not know was skipped, so a misspelled revocation
+  verified a key; it now refuses. An unknown relying-party source fails every strict dimension that reads a source, a
+  corpus member naming an unknown member is not read, and the OCSF reader's corpus member follows the same rule.
+- The `strict` profile refuses a seal dated before a stage the relying party observed, because the key's state was
+  judged on a time the seal cannot have been made at.
+- `jcs_canonical/v1` refuses number tokens no double holds: an integer a double does not hold exactly
+  (9007199254740993) and a non-integer token whose double is another number (1e-400) have no canonical form, as
+  RFC 8785 and RFC 7493 section 2.2 require, so a signature over rewritten bytes no longer reads as a signature over
+  the original value. Exact large values such as 1E21 keep their form.
+
+- Carried base64 (specification and bounds bytes, the seal's signature, a pinned certificate) is read only in its
+  canonical spelling, through one shared `strictb64` module that is the corpus readers' definition byte for byte. A
+  second spelling of a seal value (sixteen texts decode to one Ed25519 signature) fails `structural_validity`.
+- `independent_timestamp` in the relying party's sources carries its own reading of a timestamp token (the SHA-256 it
+  covers and its time). `time_assurance` reads the issuer's times against it as an upper bound only: `failed` when the
+  issuer dates the attachment after it (and `baseline` refuses), `verified` within a day before it, `not_checked`
+  further before it, so a backdated record anchored months later never reads as verified.
+- A seal key superseded (or compromised) before it is read, signing at a stated time before its retirement, reads
+  `unavailable` instead of `verified`: whoever holds a retired key can state any earlier time. An independent
+  timestamp earlier than the retirement verifies it on the timestamp's time; a stated time at or after the retirement
+  fails for either reason; a timestamp before the key's validity fails the key state.
+- An identity source entry confirms a person only when it names the `source` it rests on, and a grant held by a person
+  whose identity the source does not confirm no longer verifies `authority_independent`.
 - A record whose `time` is OCSF's millisecond integer was read on the wrong axis: the integer was taken as
   seconds from 1970 while a key's RFC 3339 window is counted from 0001-01-01, so every such record fell before
   every key window. It is now read as milliseconds from 1970-01-01T00:00:00Z, the same instant as its RFC 3339

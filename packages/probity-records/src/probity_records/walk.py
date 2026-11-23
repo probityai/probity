@@ -72,12 +72,12 @@ def grant_walk(statements: Iterable[Mapping[str, Any]], permit: str) -> dict[str
     for phase in ("intent", "effect"):
         pred = hops.get(phase)
         if pred is None:
-            problems.append(f"no_{phase}_record")
+            problems.append(f"hop_record_missing:{phase}")
             continue
         if allow is not None and pred.get("grantDigest") != allow.get("grantDigest"):
-            problems.append(f"{phase}_names_another_grant")
+            problems.append(f"hop_names_another_grant:{phase}")
         if allow is not None and pred.get("argsSha256") != allow.get("argsSha256"):
-            problems.append(f"{phase}_arguments_differ")
+            problems.append(f"hop_arguments_differ:{phase}")
     effect = hops.get("effect")
     return {"ok": not problems, "problems": problems, "grantChain": chain, "grantDigest": leaf,
             "authorize": allow.get("seq") if allow else None,

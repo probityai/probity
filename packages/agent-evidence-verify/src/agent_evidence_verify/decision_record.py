@@ -22,13 +22,16 @@ accepts (:func:`verdict`):
   whether this attachment is the latest the relying party knows for the decision; and whether it
   is signed. Under ``strict`` every one of them, and the issuer signature, must be ``verified``.
 
-The reader does not read RFC 3161 tokens or other timestamps carried beside an attachment: where
-one is supplied, ``time_assurance`` is ``not_supported`` and never ``verified``.
+The reader does not parse RFC 3161 tokens. A relying party that has verified one supplies its reading
+(``independent_timestamp``: the SHA-256 the token covers and its time); ``time_assurance`` then reads
+the issuer's times against it. A timestamp shows only that the bytes existed no later than its time:
+an issuer time after it fails, one within a day before it is verified, and one further before it is
+``not_checked``, never ``verified``. Timestamps that travel beside an attachment with no such reading
+are ``not_supported``.
 """
 
 from __future__ import annotations
 
-import base64
 import binascii
 import hashlib
 import re
@@ -37,6 +40,7 @@ from datetime import date
 from fractions import Fraction
 from typing import Any
 
+from . import strictb64
 from .ijson import IJSONError, parse_ijson
 
 PROFILE = "dps-action-binding"
@@ -59,8 +63,36 @@ STRICT_DIMENSIONS = (
     "approver_independence", "single_effect_per_request", "identity_independent",
     "authority_independent", "time_independent", "latest_attachment", "signature_required")
 PROFILES = ("baseline", "strict")
+#: The members the published trust-policy schema defines (dps-anchoring-trust-policy 0.2.0,
+#: ``extensions/anchoring/schemas/trust-policy.schema.json``). Every object it describes is closed, so
+#: a member outside these sets makes the policy invalid: a relying party who writes ``revokedAt`` for
+#: ``revoked_at`` asked for a revocation, and a reader that drops the member would verify the key.
+POLICY_MEMBERS = frozenset({"profile", "profile_version", "policy_ref", "tsas", "bitcoin_header_sources",
+                            "keys", "checkpoint_sources"})
+POLICY_ENTRY_MEMBERS = {
+    "keys": frozenset({"key_ref", "holder", "role", "algorithm", "public_key_hex", "not_before",
+                       "not_after", "revoked_at", "revocation_reason", "identity_source_ref",
+                       "webauthn", "certificate_b64"}),
+    "tsas": frozenset({"tsa_ref", "holder", "certificate_b64", "not_before", "not_after", "revoked_at",
+                       "revocation_reason"}),
+    "bitcoin_header_sources": frozenset({"source_ref", "network", "kind", "holder"}),
+    "checkpoint_sources": frozenset({"source_ref", "kind", "holder", "chain_ids", "key_refs", "format",
+                                     "service_key_refs"}),
+}
+REVOCATION_REASONS = ("superseded", "compromised")
+#: The relying party's sources the strict profile reads; a source under another name is not dropped.
+RELYING_PARTY_MEMBERS = frozenset({"identities", "authority_grants", "independent_times", "latest",
+                                   "target_effects"})
+#: The strict dimensions that read a relying-party source.
+RELYING_PARTY_DIMENSIONS = ("single_effect_per_request", "identity_independent", "authority_independent",
+                            "time_independent", "latest_attachment")
+#: The members of one corpus member (``decision-record/v1``).
+MEMBER_MEMBERS = frozenset({"attachment", "record", "trust_policy", "relying_party", "timestamps_beside",
+                            "profile"})
 
 MAX_SAFE_INTEGER = 2**53 - 1
+#: How far before an independent timestamp an issuer's time may lie and still be read as shown by it.
+STATED_TIME_SLACK_SECONDS = 24 * 3600
 OUTCOME_WORDS = ("approved", "rejected", "escalated")
 BOUNDS_MEMBERS = ("operation", "target", "policy_version", "input_version_refs", "parameters",
                   "max_requests", "valid_from", "valid_until")
@@ -71,7 +103,6 @@ _DIGEST = re.compile(r"^[0-9a-f]{64}$")
 _STAGE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _DECISION_ID = re.compile(r"^DR-[0-9]{4}-[0-9]{3,}$")
 _SEALED_AT = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
-_B64 = re.compile(r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
 
 
 class NotRead(ValueError):
@@ -164,11 +195,17 @@ def _json_integer(value: Any) -> bool:
 
 
 def _b64(text: Any) -> bytes | None:
-    if not isinstance(text, str) or len(text) < 4 or not _B64.match(text):
+    """Padded standard base64 in the one spelling an encoder writes, or None.
+
+    Every carried value (specification and bounds bytes, the seal's signature, a pinned certificate)
+    is read through :mod:`strictb64`: a text whose unused trailing bits are set is another spelling of
+    the same bytes, so the attachment's digest would change while its signature still verified.
+    """
+    if not isinstance(text, str) or len(text) < 4:
         return None
     try:
-        return base64.b64decode(text, validate=True)
-    except (binascii.Error, ValueError):
+        return strictb64.std(text)
+    except (binascii.Error, ValueError, TypeError):
         return None
 
 
@@ -364,7 +401,7 @@ def _check_content(content: Any, where: str, tally: Tally) -> None:
     if isinstance(content, dict) and content.get("availability") == "available":
         if (_check_members(content, {"availability", "bytes_b64"}, set(), where, tally)
                 and _b64(content["bytes_b64"]) is None):
-            tally.fail(f"{where}: bytes_b64 is not padded base64")
+            tally.fail(f"{where}: bytes_b64 is not padded base64 in its canonical spelling")
     elif isinstance(content, dict) and content.get("availability") == "unavailable":
         if (_check_members(content, {"availability", "reason"}, {"reason_ref"}, where, tally)
                 and content["reason"] not in reasons):
@@ -409,7 +446,7 @@ def _check_signature_shape(sig: Any, tally: Tally) -> None:
     if not (isinstance(sig["sealed_at"], str) and _SEALED_AT.match(sig["sealed_at"])):
         tally.fail("issuer_signature: sealed_at is not written YYYY-MM-DDTHH:MM:SSZ")
     if _b64(sig["value_b64"]) is None:
-        tally.fail("issuer_signature: value_b64 is not padded base64")
+        tally.fail("issuer_signature: value_b64 is not padded base64 in its canonical spelling")
 
 
 def structural_validity(doc: Any) -> dict[str, Any]:
@@ -1307,6 +1344,9 @@ class TrustPolicy:
         ref = policy.get("policy_ref")
         if policy.get("profile") != POLICY_PROFILE or policy.get("profile_version") != POLICY_VERSION:
             return cls(ref, {}, f"the trust policy is not {POLICY_PROFILE} {POLICY_VERSION}")
+        problem = _policy_members_problem(policy)
+        if problem:
+            return cls(ref, {}, problem)
         keys: dict[str, dict] = {}
         seen_keys: dict[str, str] = {}
         refs: set[str] = set()
@@ -1337,8 +1377,28 @@ class TrustPolicy:
         return dim(VERIFIED)
 
 
+def _policy_members_problem(policy: dict) -> str:
+    """Why the policy's members fall outside the published schema, or ``""`` when they do not."""
+    extra = sorted(set(policy) - POLICY_MEMBERS)
+    if extra:
+        return f"the trust policy names members its schema does not define: {extra}"
+    for name, allowed in POLICY_ENTRY_MEMBERS.items():
+        for entry in policy.get(name) or []:
+            if not isinstance(entry, dict):
+                continue
+            extra = sorted(set(entry) - allowed)
+            if extra:
+                return f"an entry of {name} names members its schema does not define: {extra}"
+            if ("revoked_at" in entry) != ("revocation_reason" in entry):
+                return f"an entry of {name} gives revoked_at and revocation_reason only together"
+            if "revocation_reason" in entry and entry["revocation_reason"] not in REVOCATION_REASONS:
+                return (f"an entry of {name} gives revocation_reason {entry['revocation_reason']!r}, "
+                        f"not one of {list(REVOCATION_REASONS)}")
+    return ""
+
+
 def issuer_signature(data: bytes, doc: dict, policy: TrustPolicy | None,
-                     latest_stage: Instant | None) -> dict:
+                     latest_stage: Instant | None, stamp: Stamp | None = None) -> dict:
     """The attachment's seal copy, checked with the relying party's own key for its reference."""
     sig = doc.get("issuer_signature")
     if sig is None:
@@ -1364,7 +1424,7 @@ def issuer_signature(data: bytes, doc: dict, policy: TrustPolicy | None,
     findings: list[str] = []
     signature_ok = _signature_verifies(data, doc, sig, entry, findings)
     base["certificate"] = _certificate(entry, findings)
-    base["key_state"] = _key_state(entry, sig.get("sealed_at"), findings)
+    base["key_state"] = _key_state(entry, sig.get("sealed_at"), stamp)
     sealed = instant(sig.get("sealed_at"))
     if latest_stage is not None and sealed.ok and latest_stage.ok and sealed.seconds < latest_stage.seconds:
         findings.append("sealed_at is earlier than the latest stage the attachment records; both are "
@@ -1408,9 +1468,9 @@ def _certificate(entry: dict, findings: list[str]) -> str:
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
     try:
-        cert = x509.load_der_x509_certificate(base64.b64decode(pinned, validate=True))
+        cert = x509.load_der_x509_certificate(strictb64.std(pinned))
         held = cert.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
-    except (ValueError, TypeError, binascii.Error):
+    except (ValueError, TypeError, binascii.Error, UnicodeEncodeError):
         findings.append("the pinned certificate cannot be read")
         return FAILED
     if held.hex() != str(entry.get("public_key_hex", "")).lower():
@@ -1419,7 +1479,13 @@ def _certificate(entry: dict, findings: list[str]) -> str:
     return VERIFIED
 
 
-def _key_state(entry: dict, sealed_at: Any, findings: list[str]) -> dict:
+def _key_state(entry: dict, sealed_at: Any, stamp: Stamp | None) -> dict:
+    """The seal key's state when it signed, by the stated time or by an independent timestamp.
+
+    A key's validity and retirement are read against ``sealed_at``. Once a key is retired, superseded
+    or compromised, whoever holds it can state any earlier time, so a stated time before the
+    retirement establishes nothing: only an independent timestamp earlier than the retirement does.
+    """
     stated = instant(sealed_at)
     base = {"key_ref": entry.get("key_ref"), "time_basis": "stated_time", "time": sealed_at}
     if not stated.ok:
@@ -1429,17 +1495,104 @@ def _key_state(entry: dict, sealed_at: Any, findings: list[str]) -> dict:
         return dim(FAILED, "the policy's validity for the key names no instant", **base)
     if not (start.seconds <= stated.seconds <= end.seconds):
         return dim(FAILED, "signed outside the key's validity", **base)
-    if "revoked_at" in entry:
-        revoked = instant(entry.get("revoked_at"))
-        if not revoked.ok:
-            return dim(FAILED, "the policy's revocation time names no instant", **base)
-        if entry.get("revocation_reason") == "compromised":
-            return dim(UNAVAILABLE, "the key was compromised: only an independent timestamp earlier "
-                                    "than its revocation can establish when it signed, and none is "
-                                    "read", **base)
-        if stated.seconds >= revoked.seconds:
-            return dim(FAILED, "signed after the key was superseded", **base)
-    return dim(VERIFIED, **base)
+    upper = stamp.upper if stamp is not None and stamp.covers else None
+    stamped = {**base, "time_basis": "independent_timestamp", "time": upper.text if upper else None}
+    if upper is not None and upper.seconds < start.seconds:
+        return dim(FAILED, f"the independent timestamp shows the seal existed ({upper.text}) before the "
+                           "key's validity began", **stamped)
+    if "revoked_at" not in entry:
+        return dim(VERIFIED, **base)
+    revoked = instant(entry.get("revoked_at"))
+    if not revoked.ok:
+        return dim(FAILED, "the policy's revocation time names no instant", **base)
+    how = ("revoked as compromised" if entry.get("revocation_reason") == "compromised"
+           else "superseded" if entry.get("revocation_reason") == "superseded" else "revoked")
+    if stated.seconds >= revoked.seconds:
+        return dim(FAILED, f"signed after the key was {how}, by its stated time", **base)
+    if upper is not None and upper.seconds < revoked.seconds:
+        return dim(VERIFIED, **stamped)
+    held = ("the one the relying party holds is not earlier" if upper is not None
+            else "the relying party holds none")
+    return dim(UNAVAILABLE, f"the key was {how} at {entry.get('revoked_at')}: whoever holds a retired key "
+                            "can state any earlier time, so only an independent timestamp earlier than "
+                            f"the retirement establishes when it signed, and {held}", **base)
+
+
+# --- independent time ----------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Stamp:
+    """The relying party's reading of one timestamp token: what it covers and its time."""
+
+    upper: Instant
+    subject: str  # "attachment", "issuer_signature", or "" when it covers neither
+    source_ref: Any
+    problem: str = ""
+
+    @property
+    def covers(self) -> bool:
+        return not self.problem
+
+
+def read_stamp(given: Any, digest: str, doc: dict) -> Stamp | None:
+    """The relying party's ``independent_timestamp``, matched to the attachment's bytes or its seal.
+
+    ``subject_sha256`` is the digest the token's message imprint names; it covers this attachment
+    when it is the attachment's SHA-256 or the SHA-256 of its seal's signature bytes.
+    """
+    if given is None:
+        return None
+    if not isinstance(given, dict):
+        return Stamp(Instant(repr(given), None), "", None, "the independent timestamp is not an object")
+    upper = instant(given.get("existed_no_later_than"))
+    source = given.get("source_ref")
+    if not upper.ok:
+        return Stamp(upper, "", source, f"the independent timestamp's time names no instant ({upper.why})")
+    subject = given.get("subject_sha256")
+    sig = doc.get("issuer_signature")
+    raw = _b64(sig.get("value_b64")) if isinstance(sig, dict) else None
+    if subject == digest:
+        return Stamp(upper, "attachment", source)
+    if raw is not None and subject == sha256_hex(raw):
+        return Stamp(upper, "issuer_signature", source)
+    return Stamp(upper, "", source, "the independent timestamp covers neither this attachment's bytes nor "
+                                    "its seal's signature")
+
+
+def _issuer_times(att: Attachment) -> list[Instant]:
+    times = [att.at(s) for s in att.stages]
+    sig = att.doc.get("issuer_signature")
+    if isinstance(sig, dict):
+        times.append(instant(sig.get("sealed_at")))
+    return [t for t in times if t.ok]
+
+
+def time_assurance(att: Attachment, stamp: Stamp | None, timestamps_beside: bool) -> dict:
+    """The issuer's times against an independent timestamp, which bounds them only from above."""
+    if stamp is None:
+        if timestamps_beside:
+            return dim(NOT_SUPPORTED, "timestamps beside the attachment are not read by this reader; a "
+                                      "relying party that verified one supplies its reading as "
+                                      "independent_timestamp", basis="issuer_assertion")
+        return dim(NOT_CHECKED, basis="issuer_assertion")
+    base = {"basis": "independent_timestamp", "source_ref": stamp.source_ref,
+            "existed_no_later_than": stamp.upper.text, "covers": stamp.subject or None}
+    if not stamp.covers:
+        return dim(UNAVAILABLE, stamp.problem, **base)
+    times = _issuer_times(att)
+    if not times:
+        return dim(NOT_CHECKED, "no issuer time names an instant", **base)
+    latest = max(times, key=lambda t: t.seconds)
+    base["stated"] = latest.text
+    upper = stamp.upper.seconds
+    if latest.seconds > upper:
+        return dim(FAILED, f"the issuer dates the attachment {latest.text}, after the timestamp shows it "
+                           f"existed ({stamp.upper.text})", consistency="inconsistent", **base)
+    if upper - latest.seconds > STATED_TIME_SLACK_SECONDS:
+        return dim(NOT_CHECKED, f"the issuer's latest time {latest.text} is more than a day before the "
+                                f"timestamp ({stamp.upper.text}); the timestamp shows only that the bytes "
+                                "existed no later than that, not when they were made", **base)
+    return dim(VERIFIED, consistency="consistent", **base)
 
 
 # --- the strict profile --------------------------------------------------------------------------
@@ -1489,20 +1642,40 @@ def _named_actors(att: Attachment) -> list[tuple[str, Any]]:
     return out
 
 
+def _identity_problem(identities: dict, actor: Any) -> str:
+    """Why the relying party's identity source does not confirm ``actor``, or the empty string.
+
+    An entry confirms a person only when its status is ``verified`` and it names the ``source`` the
+    binding rests on: a verified status with no source is an assertion, not an identity.
+    """
+    entry = identities.get(actor)
+    if not isinstance(entry, dict):
+        return f"{actor!r} is not in the relying party's identity source"
+    if entry.get("status") != VERIFIED:
+        return f"the identity source gives {actor!r} as {entry.get('status')!r}"
+    if not _is_ref(entry.get("source")):
+        return f"the identity source gives {actor!r} as verified and names no source it rests on"
+    return ""
+
+
 def _identity_independent(att: Attachment, identities: dict | None) -> dict:
     if identities is None:
         return dim(NOT_CHECKED, "the relying party supplied no identity source", basis="issuer_assertion")
     tally = Tally()
     for sid, actor in _named_actors(att):
-        entry = identities.get(actor)
-        if not isinstance(entry, dict):
-            tally.fail(f"{sid}: {actor!r} is not in the relying party's identity source")
-        elif entry.get("status") != VERIFIED:
-            tally.fail(f"{sid}: the identity source gives {actor!r} as {entry.get('status')!r}")
+        problem = _identity_problem(identities, actor)
+        if problem:
+            tally.fail(f"{sid}: {problem}")
     return tally.result(basis="independent_source")
 
 
-def _authority_independent(att: Attachment, grants: list | None) -> dict:
+def _authority_independent(att: Attachment, grants: list | None, identities: dict | None) -> dict:
+    """Each approval's and change's authority, granted by the relying party's own source.
+
+    A grant is held by a person: when the relying party's identity source does not confirm the
+    person acting, their grant does not verify the act. Without an identity source the grant stands
+    as the authority source gives it, and ``identity_independent`` reports the identity unchecked.
+    """
     if grants is None:
         return dim(NOT_CHECKED, "the relying party supplied no authority source", basis="issuer_assertion")
     held = {(g.get("actor_ref"), g.get("authority_ref")) for g in grants if isinstance(g, dict)}
@@ -1512,12 +1685,15 @@ def _authority_independent(att: Attachment, grants: list | None) -> dict:
         if pair not in held:
             tally.fail(f"{stage.get('stage_id')}: the relying party's authority source grants "
                        f"{pair[0]!r} no {pair[1]!r}")
+        elif identities is not None and _identity_problem(identities, pair[0]):
+            tally.fail(f"{stage.get('stage_id')}: {pair[0]!r} holds {pair[1]!r}, but "
+                       f"{_identity_problem(identities, pair[0])}")
     if not att.approvals():
         tally.skip("no approval is recorded")
     return tally.result(basis="independent_source")
 
 
-def _time_independent(att: Attachment, clock: dict | None) -> dict:
+def _time_independent(att: Attachment, clock: dict | None, sealed_at: Any = None) -> dict:
     if clock is None:
         return dim(NOT_CHECKED, "the relying party supplied no independent observation of the stages' "
                                 "times", basis="issuer_assertion")
@@ -1544,6 +1720,15 @@ def _time_independent(att: Attachment, clock: dict | None) -> dict:
         approved, ran = instant(seen.get(basis.get("stage_id"))), instant(seen.get(attempt.get("stage_id")))
         if approved.ok and ran.ok and approved.seconds > ran.seconds:
             tally.fail(f"{attempt.get('stage_id')}: observed before the approval it rests on")
+    # The seal covers every stage, so it was made after each stage the relying party saw happen. A seal
+    # dated earlier states a time it cannot have been made at, and the key's state was judged on that time.
+    sealed = instant(sealed_at)
+    if sealed.ok:
+        for stage in targets:
+            mark = instant(seen.get(stage.get("stage_id")))
+            if mark.ok and sealed.seconds < mark.seconds:
+                tally.fail(f"the seal is dated {sealed.text}, before {stage.get('stage_id')}, which the "
+                           f"relying party observed at {mark.text}")
     return tally.result(basis="independent_source")
 
 
@@ -1556,17 +1741,30 @@ def _latest(decision_id: str, digest: str, latest: dict | None) -> dict:
 
 
 def strict_dimensions(att: Attachment, digest: str, signature: dict, relying: dict) -> dict:
-    """The checks the strict profile adds, each a dimension of its own."""
-    return {
+    """The checks the strict profile adds, each a dimension of its own.
+
+    A relying-party source under a name the reader does not know fails every dimension that reads a
+    source: the relying party asked for a check this reader would otherwise not apply.
+    """
+    unknown = sorted(set(relying) - RELYING_PARTY_MEMBERS)
+    sig = att.doc.get("issuer_signature")
+    sealed_at = sig.get("sealed_at") if isinstance(sig, dict) else None
+    dimensions = {
         "approver_independence": _approver_independence(att),
         "single_effect_per_request": _single_effect(att, relying.get("target_effects") or {}),
         "identity_independent": _identity_independent(att, relying.get("identities")),
-        "authority_independent": _authority_independent(att, relying.get("authority_grants")),
-        "time_independent": _time_independent(att, relying.get("independent_times")),
+        "authority_independent": _authority_independent(att, relying.get("authority_grants"),
+                                                        relying.get("identities")),
+        "time_independent": _time_independent(att, relying.get("independent_times"), sealed_at),
         "latest_attachment": _latest(str(att.doc.get("decision_id")), digest, relying.get("latest")),
         "signature_required": dim(VERIFIED) if signature["status"] == VERIFIED else dim(
             FAILED, "the relying party requires a verified issuer signature"),
     }
+    if unknown:
+        for name in RELYING_PARTY_DIMENSIONS:
+            dimensions[name] = dim(FAILED, f"the relying party's sources name members this reader does not "
+                                           f"define: {unknown}; none is dropped")
+    return dimensions
 
 
 # --- the report ----------------------------------------------------------------------------------
@@ -1581,6 +1779,7 @@ def read(data: bytes, *, record: bytes | None = None, trust_policy: Any = None,
     """Read one attachment's exact bytes and report every dimension separately."""
     digest = sha256_hex(data)
     policy = TrustPolicy.read(trust_policy) if trust_policy is not None else None
+    party = relying_party or {}
     out: dict[str, Any] = {"profile": PROFILE, "profile_version": PROFILE_VERSION,
                            "attachment_digest": digest}
     try:
@@ -1623,12 +1822,11 @@ def read(data: bytes, *, record: bytes | None = None, trust_policy: Any = None,
     latest = max(times, key=lambda t: t.seconds) if times else None
     out["trust_policy"] = policy.report() if policy is not None else dim(
         NOT_CHECKED, "no trust policy is configured")
-    out["issuer_signature"] = issuer_signature(data, doc, policy, latest)
-    out["time_assurance"] = (dim(NOT_SUPPORTED, "timestamps beside the attachment are not read by this "
-                                                "reader", basis="issuer_assertion")
-                             if timestamps_beside else dim(NOT_CHECKED, basis="issuer_assertion"))
+    stamp = read_stamp(party.get("independent_timestamp"), digest, doc)
+    out["issuer_signature"] = issuer_signature(data, doc, policy, latest, stamp)
+    out["time_assurance"] = time_assurance(att, stamp, timestamps_beside)
     out["legal_signature"] = _legal(att)
-    out["strict"] = strict_dimensions(att, digest, out["issuer_signature"], relying_party or {})
+    out["strict"] = strict_dimensions(att, digest, out["issuer_signature"], party)
     out["scope_of_conclusion"] = SCOPE
     return out
 
@@ -1652,13 +1850,14 @@ def _unread(out: dict, why: str) -> dict:
 def verdict(report: dict, profile: str = "baseline") -> tuple[str, str | None]:
     """What one profile accepts: ``("accept", None)`` or ``("reject", "<dimension>:<status>")``.
 
-    ``baseline`` refuses a report whose structure, any binding dimension or the issuer signature
-    failed. ``strict`` also requires every binding and strict dimension to be verified. Neither
-    changes what the report says about any dimension.
+    ``baseline`` refuses a report whose structure, any binding dimension, the issuer signature or
+    the issuer's times against an independent timestamp failed. ``strict`` also requires every
+    binding and strict dimension to be verified. Neither changes what the report says about any
+    dimension.
     """
     if profile not in PROFILES:
         raise ValueError(f"profile {profile!r} is not one of {PROFILES}")
-    names = ("structural_validity",) + BINDING_DIMENSIONS + ("issuer_signature",)
+    names = ("structural_validity",) + BINDING_DIMENSIONS + ("issuer_signature", "time_assurance")
     for name in names:
         if report[name]["status"] == FAILED:
             return "reject", f"{name}:{FAILED}"
@@ -1758,6 +1957,9 @@ def read_member(member: dict) -> tuple[dict, str, str | None]:
     A member carries ``attachment`` (the exact text), and optionally ``record`` (text),
     ``trust_policy``, ``relying_party``, ``timestamps_beside`` and ``profile``.
     """
+    extra = sorted(set(member) - MEMBER_MEMBERS)
+    if extra:
+        raise ValueError(f"the member names members {SUITE} does not define: {extra}")
     record = member.get("record")
     report = read(member["attachment"].encode("utf-8"),
                   record=record.encode("utf-8") if isinstance(record, str) else None,

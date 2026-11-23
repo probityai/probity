@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -253,3 +254,158 @@ def test_corpus_mode_answers_each_member_under_its_profile(tmp_path):
     got = {line["vector"]: (line["verdict"], line["reason"]) for line in corpus.lines(tmp_path)}
     assert got == {"baseline-self-approval": ("accept", None),
                    "strict-self-approval": ("reject", "approver_independence:failed")}
+
+
+# --- the four checks 0.7.0 adds -------------------------------------------------------------------
+
+def _signature_sha256(doc: dict) -> str:
+    return hashlib.sha256(base64.b64decode(doc["issuer_signature"]["value_b64"])).hexdigest()
+
+
+def _stamp(doc: dict, existed_no_later_than: str, subject: str | None = None) -> dict:
+    """The relying party's own reading of a timestamp token over the attachment's seal."""
+    return {"source_ref": "tsa-example-1", "subject_sha256": subject or _signature_sha256(doc),
+            "existed_no_later_than": existed_no_later_than}
+
+
+def _with_seal_key(**changes) -> dict:
+    policy = copy.deepcopy(POLICY)
+    next(k for k in policy["keys"] if k["key_ref"] == "org-seal-1").update(changes)
+    return policy
+
+
+@pytest.mark.parametrize("upper,status", [
+    ("2026-10-01T10:30:00Z", dr.VERIFIED),     # sealed 10:00, timestamped half an hour later
+    ("2027-05-02T10:30:00Z", dr.NOT_CHECKED),  # stated seven months before the timestamp covering it
+    ("2026-10-01T09:30:00Z", dr.FAILED),       # the issuer dates the seal after the bytes existed
+])
+def test_an_independent_timestamp_bounds_the_issuer_time_from_above_only(upper, status):
+    doc = VECTORS["attachments"]["A0"]
+    data = dr.compact(doc)
+    report = dr.read(data, trust_policy=POLICY, relying_party={"independent_timestamp": _stamp(doc, upper)})
+    time = report["time_assurance"]
+    assert time["status"] == status
+    assert time["basis"] == "independent_timestamp"
+    assert time["existed_no_later_than"] == upper
+    if status == dr.FAILED:
+        assert dr.verdict(report, "baseline") == ("reject", "time_assurance:failed")
+    else:
+        assert dr.verdict(report, "baseline") == ("accept", None)
+
+
+def test_a_timestamp_over_other_bytes_covers_nothing_here():
+    doc = VECTORS["attachments"]["A0"]
+    report = dr.read(dr.compact(doc), trust_policy=POLICY,
+                     relying_party={"independent_timestamp": _stamp(doc, "2026-10-01T10:30:00Z", "0" * 64)})
+    assert report["time_assurance"]["status"] == dr.UNAVAILABLE
+
+
+def test_a_timestamp_over_the_attachment_bytes_also_covers_it():
+    doc = VECTORS["attachments"]["A0"]
+    data = dr.compact(doc)
+    stamp = _stamp(doc, "2026-10-01T10:30:00Z", dr.sha256_hex(data))
+    assert dr.read(data, relying_party={"independent_timestamp": stamp})["time_assurance"]["status"] == dr.VERIFIED
+
+
+def test_a_superseded_key_stating_an_earlier_time_is_not_established_without_a_timestamp():
+    doc = VECTORS["attachments"]["A0"]
+    data = dr.compact(doc)
+    policy = _with_seal_key(revoked_at="2026-10-01T12:00:00Z", revocation_reason="superseded")
+    report = dr.read(data, trust_policy=policy)
+    signature = report["issuer_signature"]
+    assert (signature["status"], signature["key_state"]["status"]) == (dr.UNAVAILABLE, dr.UNAVAILABLE)
+    assert dr.verdict(report, "baseline") == ("accept", None)
+    party = _relying_party(doc, dr.sha256_hex(data))
+    strict = dr.read(data, record=_record("R0"), trust_policy=policy, relying_party=party)
+    assert dr.verdict(strict, "strict") == ("reject", "signature_required:failed")
+    # A timestamp earlier than the retirement establishes the time the stated one cannot.
+    anchored = dr.read(data, trust_policy=policy,
+                       relying_party={"independent_timestamp": _stamp(doc, "2026-10-01T10:30:00Z")})
+    key_state = anchored["issuer_signature"]["key_state"]
+    assert (anchored["issuer_signature"]["status"], key_state["status"]) == (dr.VERIFIED, dr.VERIFIED)
+    assert key_state["time_basis"] == "independent_timestamp"
+    late = dr.read(data, trust_policy=policy,
+                   relying_party={"independent_timestamp": _stamp(doc, "2026-10-01T13:00:00Z")})
+    assert late["issuer_signature"]["key_state"]["status"] == dr.UNAVAILABLE
+
+
+def test_a_retired_key_signing_after_its_retirement_fails_by_its_own_stated_time():
+    data = dr.compact(VECTORS["attachments"]["A0"])
+    for reason in ("superseded", "compromised"):
+        policy = _with_seal_key(revoked_at="2026-10-01T09:00:00Z", revocation_reason=reason)
+        assert dr.read(data, trust_policy=policy)["issuer_signature"]["key_state"]["status"] == dr.FAILED
+
+
+def test_a_timestamp_before_the_keys_validity_fails_the_key_state():
+    doc = VECTORS["attachments"]["A0"]
+    policy = _with_seal_key(not_before="2026-10-01T09:45:00Z")
+    report = dr.read(dr.compact(doc), trust_policy=policy,
+                     relying_party={"independent_timestamp": _stamp(doc, "2026-10-01T09:40:00Z")})
+    assert report["issuer_signature"]["key_state"]["status"] == dr.FAILED
+
+
+def _respell(text: str) -> list[str]:
+    """Every other base64 text whose decoded bytes are ``text``'s: the unused low bits set."""
+    pad = len(text) - len(text.rstrip("="))
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    last = len(text) - pad - 1
+    unused = {2: 4, 1: 2}.get(pad, 0)  # "==" leaves four bits unused, "=" two
+    base = alphabet.index(text[last])
+    out = [text[:last] + alphabet[base | low] + text[last + 1:] for low in range(1, 2 ** unused)]
+    assert all(base64.b64decode(t) == base64.b64decode(text) for t in out)
+    return out
+
+
+def test_a_signature_in_any_spelling_but_its_canonical_one_is_not_read():
+    doc = copy.deepcopy(VECTORS["attachments"]["A0"])
+    canonical = doc["issuer_signature"]["value_b64"]
+    spellings = _respell(canonical)
+    assert len(spellings) == 15  # sixteen texts of one signature, one of them canonical
+    for spelling in spellings:
+        doc["issuer_signature"]["value_b64"] = spelling
+        report = dr.read(dr.compact(doc), trust_policy=POLICY)
+        assert report["structural_validity"]["status"] == dr.FAILED, spelling
+        assert dr.verdict(report, "baseline") == ("reject", "structural_validity:failed")
+    doc["issuer_signature"]["value_b64"] = canonical
+    assert dr.read(dr.compact(doc), trust_policy=POLICY)["issuer_signature"]["status"] == dr.VERIFIED
+
+
+def test_carried_bytes_in_a_second_spelling_are_not_read():
+    doc = _attachment("A0")
+    doc.pop("issuer_signature")
+    content = doc["action_specifications"][0]["content"]
+    raw = base64.b64decode(content["bytes_b64"]) + b" "  # one byte more: the last group carries padding
+    content["bytes_b64"] = base64.b64encode(raw).decode("ascii")
+    assert dr.read(dr.compact(doc))["structural_validity"]["status"] == dr.VERIFIED
+    content["bytes_b64"] = _respell(content["bytes_b64"])[0]
+    assert dr.read(dr.compact(doc))["structural_validity"]["status"] == dr.FAILED
+
+
+def test_a_verified_identity_that_names_no_source_is_not_an_identity():
+    doc = VECTORS["attachments"]["A0"]
+    data = dr.compact(doc)
+    party = _relying_party(doc, dr.sha256_hex(data))
+    party["identities"]["owner-example-1"] = {"status": "verified"}
+    report = dr.read(data, record=_record("R0"), trust_policy=POLICY, relying_party=party)
+    assert report["strict"]["identity_independent"]["status"] == dr.FAILED
+    assert dr.verdict(report, "strict") == ("reject", "identity_independent:failed")
+
+
+@pytest.mark.parametrize("entry", [{"status": "failed", "source": "urn:example:directory"},
+                                   {"status": "verified"}, None])
+def test_authority_held_by_a_person_whose_identity_failed_is_not_verified(entry):
+    doc = VECTORS["attachments"]["A0"]
+    data = dr.compact(doc)
+    party = _relying_party(doc, dr.sha256_hex(data))
+    if entry is None:
+        del party["identities"]["owner-example-1"]
+    else:
+        party["identities"]["owner-example-1"] = entry
+    strict = dr.read(data, record=_record("R0"), trust_policy=POLICY, relying_party=party)["strict"]
+    assert strict["identity_independent"]["status"] == dr.FAILED
+    assert strict["authority_independent"]["status"] == dr.FAILED
+    # Without an identity source the authority stands as its own source gives it.
+    del party["identities"]
+    strict = dr.read(data, record=_record("R0"), trust_policy=POLICY, relying_party=party)["strict"]
+    assert strict["identity_independent"]["status"] == dr.NOT_CHECKED
+    assert strict["authority_independent"]["status"] == dr.VERIFIED
