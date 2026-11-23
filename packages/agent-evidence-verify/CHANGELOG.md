@@ -4,6 +4,8 @@
 
 A minor release: fourteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 
+- `agent_evidence_verify.structured_fields` is a public module: the strict RFC 8941 reader and serialiser that the
+  Web Bot Auth adapter used privately. probity-records reads the agent stamp's RFC 9421 fields through it.
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
   cookie stores, environment tokens, cluster service-account tokens, git credentials, host keyrings). It applies the
