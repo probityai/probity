@@ -9,6 +9,7 @@ Each row names the files that hold one piece of the identity records. The TypeSc
 | Holder confirmation key (cnf) and the stateless DPoP and mutual-TLS proof checks | identity | `packages/probity-records/src/probity_records/possession.py` | `node/probity-records-verify/src/verify.ts` |
 | Record signer and key custody (KMS, Vault, delegated session keys) | identity | `packages/probity-records/src/probity_records/core.py`<br>`packages/probity-records/src/probity_records/signing.py` | - |
 | Canonical JSON (RFC 8785) under every identity digest | identity | `packages/probity-records/src/probity_records/core.py` | - |
+| Principals, act-chain, grant-chain and stamp digests over the one canonicaliser | identity | `packages/probity-records/src/probity_records/digests.py` | - |
 | Capability grant, delegation chain, attenuation and argument constraints | authority | `packages/probity-records/src/probity_records/grants.py`<br>`packages/probity-records/src/probity_records/constraints.py`<br>`packages/probity-records/src/probity_records/celexpr.py` | `node/probity-records-verify/src/verify.ts` |
 | The one signed revocation list: kinds agent, build, grant, key, permit, sponsor and stream | authority | `packages/probity-records/src/probity_records/revocation.py` | `node/probity-records-verify/src/revocation.ts` |
 | M-of-N approvals bound to the request hash, and the vote recount | authority | `packages/probity-records/src/probity_records/quorum.py`<br>`packages/probity-records/src/probity_records/oidc_approval.py` | `node/probity-records-verify/src/verify.ts` |
