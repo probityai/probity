@@ -80,6 +80,7 @@ from probity_records.quorum import (
     sign_vote,
 )
 from probity_records.revocation import DIGEST_KINDS, REVOCATION_DOMAIN
+from probity_records.verified_identities_vectors import vectors as verified_identity_vectors
 
 SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
@@ -887,6 +888,8 @@ def main(out: Path) -> None:
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")
     (out / "received.json").write_text(json.dumps(received_rows(), indent=2, sort_keys=True) + "\n")
     (out / "revocation.json").write_text(json.dumps(revocation_rows(), indent=2, sort_keys=True) + "\n")
+    (out / "verified_identities.json").write_text(json.dumps(verified_identity_vectors(), indent=2, sort_keys=True)
+                                                  + "\n")
 
 
 if __name__ == "__main__":
