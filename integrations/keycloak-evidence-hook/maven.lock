@@ -222,9 +222,9 @@ b90579bc652eac7331436e0a25533fce14130b9c6e015f2dd3a3d4bb07e942b7  ./org/eclipse/
 90b4be7a71c979d0c4dea20c20a28eb9e76a29df68ab9018cf011019a3e4f562  ./org/eclipse/sisu/org.eclipse.sisu.plexus/0.9.0.M4/org.eclipse.sisu.plexus-0.9.0.M4.pom
 0c829c9641ccac870d7d7ff012cbbad8447e912eb9a26d0d7283f09cba44c0d9  ./org/eclipse/sisu/sisu-inject/0.9.0.M4/sisu-inject-0.9.0.M4.pom
 792ac0801a095e8631f86a348dd6ba6298a0b01bcb91e8539f507eba9eefbf0a  ./org/infinispan/infinispan-bom/16.0.15/infinispan-bom-16.0.15.pom
-2e1f75a10e1581f32f8ffd66291414e5990c7c966bbb079dbb52151849a9ccce  ./org/jboss/jboss-parent/51/jboss-parent-51.pom
-f423e07bffce73bf2b6cc872f30981c06fe9cfd5a86a0b4f5fbdd11cfe0148e0  ./org/jboss/logging/jboss-logging/3.6.2.Final/jboss-logging-3.6.2.Final.jar
-3770b5c10fd0890055553abe9b37fc9e25e0ae7f556b134429b34247ba1a2409  ./org/jboss/logging/jboss-logging/3.6.2.Final/jboss-logging-3.6.2.Final.pom
+0615b429e3a21a0d6bd925d09ede2937892034272b4cd04bb9ab617d57e72b42  ./org/jboss/jboss-parent/52/jboss-parent-52.pom
+7c12ee575508f81e22b1db9334b969d0ec54ef0fd1dcba24eeab1a44235fc366  ./org/jboss/logging/jboss-logging/3.6.3.Final/jboss-logging-3.6.3.Final.jar
+e673490683b352b79e85c22df13b396e4b39e5f25cfef9c1b9e835ed123c0ca4  ./org/jboss/logging/jboss-logging/3.6.3.Final/jboss-logging-3.6.3.Final.pom
 1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab  ./org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar
 cdab929a3b95211f43d2090c5e2d0dfe8465960e378bc32b35841dab324433a6  ./org/jspecify/jspecify/1.0.0/jspecify-1.0.0.pom
 169dd904a4b0f6520cffe658cc62292bfe9f3c14a989fa92120724cde43a9968  ./org/junit/junit-bom/5.10.2/junit-bom-5.10.2.pom
