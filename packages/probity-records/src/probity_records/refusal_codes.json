@@ -2379,6 +2379,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_approver_key_shape"
   },
   {
+   "code": "quorum_approvers_share_a_key",
+   "check": "quorum.policy",
+   "meaning": "two quorum approvers name the same key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_approvers_share_a_key"
+  },
+  {
    "code": "quorum_for_another_request",
    "check": "approval.quorum",
    "meaning": "the quorum evidence is for another request",
@@ -2409,6 +2415,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_policy_shape"
   },
   {
+   "code": "quorum_policy_without_approvers",
+   "check": "quorum.policy",
+   "meaning": "a quorum policy names no approvers",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_policy_without_approvers"
+  },
+  {
+   "code": "quorum_proposer_bound_shape",
+   "check": "quorum.policy",
+   "meaning": "a quorum policy's proposerBound is not a boolean",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_proposer_bound_shape"
+  },
+  {
    "code": "quorum_proposer_unbound",
    "check": "approval.quorum",
    "meaning": "the policy binds the proposer and the evidence names none",
@@ -2419,6 +2437,30 @@
    "check": "approval.quorum",
    "meaning": "the quorum can no longer reach its threshold",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_refused"
+  },
+  {
+   "code": "quorum_role_invalid",
+   "check": "quorum.policy",
+   "meaning": "a quorum role names no members, a member outside the approvers, or a minimum out of range",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_role_invalid"
+  },
+  {
+   "code": "quorum_roles_shape",
+   "check": "quorum.policy",
+   "meaning": "a quorum policy's roles member is not an object",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_roles_shape"
+  },
+  {
+   "code": "quorum_roles_unsatisfiable",
+   "check": "quorum.policy",
+   "meaning": "the quorum roles' minimums need more approvers than the policy names",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_roles_unsatisfiable"
+  },
+  {
+   "code": "quorum_threshold_out_of_range",
+   "check": "quorum.policy",
+   "meaning": "a quorum threshold is not an integer from one to the approver count",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_threshold_out_of_range"
   },
   {
    "code": "quorum_vote_invalid",
