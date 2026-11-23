@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { judgeVerified } from "../src/verified.ts";
-import { canonicalBytes, canonicalOfReceived, chainDigests, checkPrincipals, judgeDigest, judgeIdentity, parsePy, verifyGrantAllow, verifyJournal } from "../src/verify.ts";
+import { bodyProblem, canonicalBytes, canonicalOfReceived, chainDigests, checkPrincipals, judgeDigest, judgeIdentity, parsePy, verifyGrantAllow, verifyJournal } from "../src/verify.ts";
 
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
@@ -34,6 +34,18 @@ for (const v of load("standing_grants.json")) {
     const { decision, reason, grantDigest } = verifyGrantAllow(v.chain, v.tool, v.args, v.at, new Set(v.roots));
     const digests = Object.keys(chainDigests(v.chain, new Set(v.roots))).sort();
     assert.deepEqual({ decision, reason, grantDigest, digests }, v.expected);
+  });
+}
+
+// The grant body grammar: the code grants.validate_body names, or null. parsePy keeps 1.0 a float, as Python does.
+const loadPy = (name: string) => parsePy(readFileSync(new URL(name, dir), "utf8"));
+for (const v of loadPy("grant_bodies.json")) {
+  test(`${v.id} ${v.description}`, () => assert.equal(bodyProblem(v.body), v.expected));
+}
+for (const v of loadPy("grant_calls.json")) {
+  test(`${v.id} ${v.description}`, () => {
+    const { decision, reason } = verifyGrantAllow(v.chain, v.tool, v.args, v.at, new Set(v.roots), v.ctx);
+    assert.deepEqual({ decision, reason }, v.expected);
   });
 }
 
@@ -73,5 +85,5 @@ for (const v of load("verified_identities.json")) {
 }
 
 test("every family is non-empty", () => {
-  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "standing_grants.json", "canonical.json", "canonical_identity.json", "identity_digests.json", "verified_identities.json"]) assert.ok(load(f).length > 0, f);
+  for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "standing_grants.json", "grant_bodies.json", "grant_calls.json", "canonical.json", "canonical_identity.json", "identity_digests.json", "verified_identities.json"]) assert.ok(load(f).length > 0, f);
 });

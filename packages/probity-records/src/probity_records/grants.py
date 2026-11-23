@@ -51,7 +51,6 @@ authorize, intent and effect records, so an outsider walks grant to permit to ef
 
 from __future__ import annotations
 
-import base64
 import re
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta, timezone
@@ -131,36 +130,55 @@ def _validate_budget(budget: Any) -> None:
     if "uses" in budget and not _int(budget["uses"]):
         raise ValueError("grant_budget_uses")
     spend = budget.get("spend")
-    if spend is not None and (not isinstance(spend, dict) or set(spend) != {"arg", "max"}
+    if "spend" in budget and (not isinstance(spend, dict) or set(spend) != {"arg", "max"}
                               or not isinstance(spend["arg"], str)
                               or not isinstance(spend["max"], (int, float)) or isinstance(spend["max"], bool)
-                              or spend["max"] < 0):
+                              or spend["max"] < 0):  # a null spend is refused: narrowing and spend_of read its members
         raise ValueError("grant_budget_spend")
 
 
 def _validate_tools(tools: Any) -> None:
+    """Every tool entry, in code point order of the tool names (and of the argument names inside one), so both
+    verifiers name the same defect first whatever order the JSON members were written in."""
     if not isinstance(tools, dict) or not tools:
         raise ValueError("grant_tools_empty")
-    for tool, spec in tools.items():
+    for tool in sorted(tools):
+        spec = tools[tool]
         if not isinstance(spec, dict) or not isinstance(spec.get("args"), dict):
             raise ValueError(f"grant_tool_shape:{tool}")
         if spec.get("approval", "none") not in APPROVAL_LEVELS:
             raise ValueError(f"grant_approval_level:{tool}")
-        for c in spec["args"].values():
-            constraints.validate(c)
+        for arg in sorted(spec["args"]):
+            found = constraints.problem(spec["args"][arg])
+            if found:
+                raise ValueError(f"grant_arg_constraint_invalid:{tool}.{arg}:{found}")
         when = spec.get("when", [])
         if not isinstance(when, list) or not all(isinstance(w, str) for w in when):
             raise ValueError(f"grant_when_shape:{tool}")
-        for w in when:
-            celexpr.compile_expr(w)
+        for n, w in enumerate(when):
+            found = celexpr.syntax_problem(w)
+            if found:
+                raise ValueError(f"grant_when_invalid:{tool}.{n}:{found}")
         if "quorum" in spec:
-            from .quorum import validate_policy
+            from .quorum import policy_problem
 
-            validate_policy(spec["quorum"])
+            found = policy_problem(spec["quorum"])
+            if found:
+                raise ValueError(f"grant_quorum_invalid:{tool}:{found}")
             if not spec["quorum"].get("proposerBound"):
                 raise ValueError(f"grant_quorum_must_bind_proposer:{tool}")
             if spec.get("approval") != "required":
                 raise ValueError(f"grant_quorum_without_required_approval:{tool}")
+
+
+def _issuer_key_ok(text: Any) -> bool:
+    """``issuerKey`` is the canonical base64 of a 32-byte raw Ed25519 public key (the one the signature names)."""
+    try:
+        raw = _unb64(text)
+        load_public(raw)
+    except (ValueError, TypeError):
+        return False
+    return len(raw) == 32
 
 
 def _validate_standing(body: Mapping[str, Any]) -> None:
@@ -183,7 +201,9 @@ def _validate_standing(body: Mapping[str, Any]) -> None:
 
 
 def validate_body(body: Mapping[str, Any]) -> None:
-    """Shape of a grant body on every axis; ValueError naming the first defect."""
+    """Shape of a grant body on every axis; ValueError naming the first defect, in this order: ``cnf``, the times,
+    the tools, ``maxDepth``, ``context``, ``budget``, the standing members, ``issuerKey``. The TypeScript verifier's
+    ``bodyProblem`` is this function, code for code; the shared vectors in ``grant_bodies.json`` hold the two to it."""
     from .possession import cnf_problem
 
     problem = cnf_problem(body.get("cnf"))
@@ -196,10 +216,47 @@ def validate_body(body: Mapping[str, Any]) -> None:
     ctx = body.get("context")
     if not isinstance(ctx, dict):
         raise ValueError("grant_context_shape")
-    for c in ctx.values():
-        constraints.validate(c)
+    for key in sorted(ctx):
+        found = constraints.problem(ctx[key])
+        if found:
+            raise ValueError(f"grant_context_constraint_invalid:{key}:{found}")
     _validate_budget(body.get("budget"))
     _validate_standing(body)
+    if not _issuer_key_ok(body.get("issuerKey")):
+        raise ValueError("grant_issuer_key_invalid")
+
+
+def body_problem(body: Any) -> str | None:
+    """None for a well-formed grant body; otherwise the code ``validate_body`` names (``grant_shape`` when it is not
+    an object)."""
+    if not isinstance(body, dict):
+        return "grant_shape"
+    try:
+        validate_body(body)
+    except ValueError as exc:
+        return str(exc)
+    return None
+
+
+def _typecheck_conditions(body: Mapping[str, Any]) -> None:
+    """The issuer's own check, beyond what a verifier runs: every CEL expression the grant signs type-checks under
+    cel-cpp, so an issuer never signs a condition that can never hold. ValueError ``<where>:cel_type_check_failed``."""
+    def exprs(c: Any) -> list[str]:
+        if c["type"] == "cel":
+            return [c["expr"]]
+        nested = c["of"] if c["type"] in ("all", "any") else [c["of"]] if c["type"] == "not" else []
+        return [e for x in nested for e in exprs(x)]
+
+    sites = [(f"grant_context_constraint_invalid:{k}", e) for k in sorted(body["context"]) for e in exprs(body["context"][k])]
+    for tool in sorted(body["tools"]):
+        spec = body["tools"][tool]
+        sites += [(f"grant_arg_constraint_invalid:{tool}.{a}", e) for a in sorted(spec["args"]) for e in exprs(spec["args"][a])]
+        sites += [(f"grant_when_invalid:{tool}.{n}", w) for n, w in enumerate(spec.get("when", []))]
+    for where, expr in sites:
+        try:
+            celexpr.compile_expr(expr)
+        except ValueError as exc:
+            raise ValueError(f"{where}:{exc}") from None
 
 
 def is_standing(body: Mapping[str, Any]) -> bool:
@@ -229,6 +286,7 @@ def issue_grant(issuer: Signer, *, grant_id: str, holder_key: str, cnf: Mapping[
     if review_by is not None:
         body["reviewBy"] = review_by
     validate_body(body)
+    _typecheck_conditions(body)
     if parent is not None:
         problem = narrowing_problem(body, parent["body"])
         if problem:
@@ -253,7 +311,8 @@ def narrowing_problem(child: Mapping[str, Any], parent: Mapping[str, Any]) -> st
         return "parent_forbids_delegation"
     if child.get("maxDepth", 0) > parent["maxDepth"] - 1:
         return "child_depth_wider_than_parent"
-    for key, c in parent.get("context", {}).items():
+    for key in sorted(parent.get("context", {})):
+        c = parent["context"][key]
         if key not in child.get("context", {}):
             return f"child_drops_context:{key}"
         if not constraints.narrows(child["context"][key], c):
@@ -261,7 +320,8 @@ def narrowing_problem(child: Mapping[str, Any], parent: Mapping[str, Any]) -> st
     problem = _budget_narrowing(child.get("budget"), parent.get("budget"))
     if problem:
         return problem
-    for tool, spec in child["tools"].items():
+    for tool in sorted(child["tools"]):  # code point order, as in validate_body and the TypeScript verifier
+        spec = child["tools"][tool]
         pspec = parent["tools"].get(tool)
         if pspec is None:
             return f"child_adds_tool:{tool}"
@@ -282,8 +342,8 @@ def narrowing_problem(child: Mapping[str, Any], parent: Mapping[str, Any]) -> st
         dropped = sorted(set(pspec["args"]) - set(spec["args"]))
         if dropped:  # a call without the argument would leave it to the tool's default, unbounded
             return f"child_drops_argument:{tool}.{dropped[0]}"
-        for name, c in spec["args"].items():
-            if not constraints.narrows(c, pspec["args"][name]):
+        for name in sorted(spec["args"]):
+            if not constraints.narrows(spec["args"][name], pspec["args"][name]):
                 return f"child_widens_constraint:{tool}.{name}"
     return None
 
@@ -337,7 +397,7 @@ def _structure(chain: list[Mapping[str, Any]], root_key_ids: frozenset[str]) -> 
             break
         try:
             validate_body(body)
-            issuer_id = key_id(load_public(base64.b64decode(body["issuerKey"])))
+            issuer_id = key_id(load_public(_unb64(body["issuerKey"])))
         except (ValueError, KeyError, TypeError) as exc:
             result = f"grant_invalid:{depth}:{exc}"
             break
@@ -427,7 +487,8 @@ def verify_call_under_grant(leaf: Mapping[str, Any], tool: str, args: Any, ctx: 
     present and satisfy its constraint (the chain proof makes the leaf at least as strict as every
     ancestor, so the leaf alone decides)."""
     ctx = dict(ctx or {})
-    for key, c in leaf.get("context", {}).items():
+    for key in sorted(leaf.get("context", {})):
+        c = leaf["context"][key]
         if key not in ctx or not constraints.check(c, ctx[key]):
             return f"context_violation:{key}"
     spec = leaf["tools"].get(tool)
@@ -438,8 +499,8 @@ def verify_call_under_grant(leaf: Mapping[str, Any], tool: str, args: Any, ctx: 
     extra = sorted(set(args) - set(spec["args"]))
     if extra:
         return f"argument_not_granted:{extra[0]}"
-    for name, c in spec["args"].items():
-        if not constraints.check(c, args.get(name)):
+    for name in sorted(spec["args"]):
+        if not constraints.check(spec["args"][name], args.get(name)):
             return f"constraint_violation:{name}"
     for n, expr in enumerate(spec.get("when", [])):
         if not celexpr.holds(expr, {"args": args, "tool": tool, "ctx": ctx}):

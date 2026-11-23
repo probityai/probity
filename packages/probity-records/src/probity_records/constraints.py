@@ -204,31 +204,74 @@ _REQUIRED = {"exact": ("value",), "one_of": ("values",), "not_one_of": ("values"
              "not": ("of",), "cel": ("expr",)}
 
 
-def validate(c: Any) -> dict[str, Any]:
-    """The constraint, when well formed; ConstraintError otherwise (an unknown type is refused)."""
-    if not isinstance(c, dict) or c.get("type") not in TYPES:
-        raise ConstraintError(f"unknown constraint: {c!r}")
-    missing = [k for k in _REQUIRED.get(c["type"], ()) if k not in c]
+#: Per type, in check order, each member's shape: ``(member, kind, required)``. A kind is ``list``, ``number``
+#: (an int or a float, never a bool), ``str``, ``strlist`` (a list of strings), ``bool`` or ``nonempty`` (a non-empty
+#: list). The TypeScript verifier holds the same table (``MEMBER_SHAPES`` in verify.ts), so both twins refuse one
+#: constraint with one code.
+_SHAPES: dict[str, tuple[tuple[str, str, bool], ...]] = {
+    "one_of": (("values", "list", True),), "not_one_of": (("values", "list", True),),
+    "range": (("min", "number", False), ("max", "number", False)), "pattern": (("pattern", "str", True),),
+    "regex": (("regex", "str", True),), "cidr": (("network", "str", True),),
+    "url_pattern": (("schemes", "strlist", True), ("hosts", "strlist", True), ("pathPrefix", "str", False)),
+    "url_safe": (("schemes", "strlist", False), ("hosts", "strlist", False), ("denyPrivate", "bool", False)),
+    "subpath": (("root", "str", True),), "shlex": (("allow", "list", True),), "contains": (("values", "list", True),),
+    "subset": (("values", "list", True),), "all": (("of", "nonempty", True),), "any": (("of", "nonempty", True),),
+    "cel": (("expr", "str", True),),
+}
+
+
+def _shape_ok(kind: str, value: Any) -> bool:
+    if kind == "number":
+        return _number(value)
+    if kind == "str":
+        return isinstance(value, str)
+    if kind == "bool":
+        return isinstance(value, bool)
+    if kind == "strlist":
+        return isinstance(value, list) and all(isinstance(x, str) for x in value)
+    return isinstance(value, list) and (kind == "list" or bool(value))
+
+
+def problem(c: Any) -> str | None:
+    """None when ``c`` is a well-formed constraint; otherwise the first defect, as a code both verifiers report:
+    ``constraint_unknown``, ``constraint_member_missing:<type>.<member>``, ``constraint_range_unbounded``,
+    ``constraint_member_invalid:<type>.<member>``, ``constraint_regex_invalid``, ``constraint_cidr_invalid`` or a
+    ``celexpr.syntax_problem`` code. A nested constraint reports its own code."""
+    if not isinstance(c, dict) or not isinstance(c.get("type"), str) or c["type"] not in TYPES:
+        return "constraint_unknown"
+    kind = c["type"]
+    missing = [k for k in _REQUIRED.get(kind, ()) if k not in c]
     if missing:
-        raise ConstraintError(f"{c['type']} needs {missing}")
-    if c["type"] == "range" and not ({"min", "max"} & c.keys()):
-        raise ConstraintError("range needs min or max")
-    if c["type"] in ("all", "any"):
-        if not isinstance(c["of"], list) or not c["of"]:
-            raise ConstraintError(f"{c['type']} needs a non-empty list")
-        for x in c["of"]:
-            validate(x)
-    if c["type"] == "not":
-        validate(c["of"])
-    if c["type"] == "regex":
-        re.compile(c["regex"])
-    if c["type"] == "cidr":
-        ipaddress.ip_network(c["network"])
-    if c["type"] == "cel":
+        return f"constraint_member_missing:{kind}.{missing[0]}"
+    if kind == "range" and not ({"min", "max"} & c.keys()):
+        return "constraint_range_unbounded"
+    for member, shape, required in _SHAPES.get(kind, ()):
+        if (required or member in c) and not _shape_ok(shape, c[member]):
+            return f"constraint_member_invalid:{kind}.{member}"
+    for nested in c["of"] if kind in ("all", "any") else [c["of"]] if kind == "not" else []:
+        found = problem(nested)
+        if found:
+            return found
+    if kind == "regex":
         try:
-            celexpr.compile_expr(c["expr"])
-        except ValueError as exc:
-            raise ConstraintError(str(exc)) from exc
+            re.compile(c["regex"])
+        except Exception:  # noqa: BLE001 - re.error is not a ValueError; any refusal to compile is the one defect
+            return "constraint_regex_invalid"
+    if kind == "cidr":
+        try:
+            ipaddress.ip_network(c["network"])
+        except ValueError:
+            return "constraint_cidr_invalid"
+    if kind == "cel":
+        return celexpr.syntax_problem(c["expr"])
+    return None
+
+
+def validate(c: Any) -> dict[str, Any]:
+    """The constraint, when well formed; ConstraintError naming the ``problem`` code otherwise."""
+    found = problem(c)
+    if found:
+        raise ConstraintError(found)
     return c
 
 

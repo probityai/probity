@@ -13,7 +13,7 @@
 // built-in adapter). A governance-step record is still reported as not ported, never passed.
 
 import { createHash, createPublicKey, verify as edVerify, type KeyObject } from "node:crypto";
-import { run, isCelError } from "@bufbuild/cel";
+import { celEnv, isCelError, parse as celParse, plan as celPlan } from "@bufbuild/cel";
 import { admit, JcsError } from "jcs-admit";
 
 export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } from "./identity.ts";
@@ -91,6 +91,11 @@ function structural(v: J): string {
 }
 const same = (a: J, b: J): boolean => structural(a) === structural(b);
 const isObj = (v: J): boolean => v !== null && typeof v === "object" && !Array.isArray(v);
+/** Whether `o` holds `k` itself: an inherited name (constructor, toString, __proto__) is never a member. */
+const own = (o: J, k: string): boolean => isObj(o) && Object.hasOwn(o, k);
+/** Code point order, which is Python's `sorted` over str: JavaScript's default sort compares UTF-16 code units. */
+const byCodePoint = (a: string, b: string): number => Buffer.compare(Buffer.from(a, "utf8"), Buffer.from(b, "utf8"));
+const sortedKeys = (o: J): string[] => Object.keys(o).sort(byCodePoint);
 
 // Python's json.loads keeps `3.0` a float, `3` an int and `1e2` a float, and the constraint checks
 // (`type(v) is type(c["value"])`) tell them apart; JSON.parse folds all of them into one number.
@@ -224,12 +229,76 @@ function toCel(v: J, asFloat = false): J {
   return v;
 }
 export function celHolds(expr: string, bindings: Record<string, J>, valueIsFloat = false): boolean {
+  if (celSyntaxProblem(expr) !== null) return false;
   try {
     const data: Record<string, J> = {};
     for (const name of ["value", "args", "tool", "ctx"]) data[name] = toCel(bindings[name] ?? null, name === "value" && valueIsFloat);
-    const out = run(expr, data);
+    const out = celPlan(celEnv(), celParse(expr + "\n"))(data);
     return !isCelError(out) && out === true;
   } catch { return false; }
+}
+
+// The syntax check a verifier runs on a grant (celexpr.syntax_problem): cel-cpp's parser, which @bufbuild/cel's
+// parser does not match on its own. The probed differences are closed here: a line comment at the very end (bufbuild
+// needs the newline cel-cpp does not), an unknown or short escape in a string or bytes literal and a \u or \U escape
+// in bytes (bufbuild keeps them), a lone surrogate, an integer literal outside 64 bits (bufbuild keeps the bigint) and a has() over
+// anything but a field (bufbuild leaves it a call). Type checking is not part of it: cel-cpp's checker has no twin
+// here, and an expression that parses but does not type-check never holds in either verifier.
+const CEL_BLANK = /^[ \t\n\r\f]*$/;
+const CEL_SIMPLE_ESCAPES = "abfnrtv\\?\"'`";
+function celLiteralsOk(src: string): boolean {
+  let i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (ch === "/" && src[i + 1] === "/") { while (i < src.length && src[i] !== "\n") i++; continue; }
+    if (ch !== "'" && ch !== '"') { i++; continue; }
+    const p1 = src[i - 1] ?? "", p2 = src[i - 2] ?? "";
+    const raw = p1 === "r" || p1 === "R", bytes = p1 === "b" || p1 === "B" || (raw && (p2 === "b" || p2 === "B"));
+    const quote = src.startsWith(ch.repeat(3), i) ? ch.repeat(3) : ch;
+    i += quote.length;
+    for (;;) {
+      if (i >= src.length) return true; // unterminated: the parser refuses it
+      if (src.startsWith(quote, i)) { i += quote.length; break; }
+      if (raw || src[i] !== "\\") { i++; continue; } // a raw literal has no escapes: a backslash is itself
+      const e = src[i + 1] ?? "";
+      if (CEL_SIMPLE_ESCAPES.includes(e) && e !== "") { i += 2; continue; }
+      const hex = (n: number): boolean => /^[0-9A-Fa-f]+$/.test(src.slice(i + 2, i + 2 + n)) && src.slice(i + 2, i + 2 + n).length === n;
+      if ((e === "x" || e === "X") && hex(2)) { i += 4; continue; }
+      if (e === "u" && !bytes && hex(4)) { i += 6; continue; }
+      if (e === "U" && !bytes && hex(8)) { i += 10; continue; }
+      if (/^[0-3][0-7][0-7]$/.test(src.slice(i + 1, i + 4))) { i += 4; continue; }
+      return false;
+    }
+  }
+  return true;
+}
+const INT64_MAX = 2n ** 63n - 1n, UINT64_MAX = 2n ** 64n - 1n;
+function celAstOk(e: J): boolean {
+  if (!isObj(e) || !isObj(e.exprKind)) return true;
+  const v = e.exprKind.value;
+  switch (e.exprKind.case) {
+    case "constExpr": {
+      const k = v.constantKind;
+      if (k?.case === "int64Value") return k.value >= -INT64 && k.value <= INT64_MAX;
+      if (k?.case === "uint64Value") return k.value >= 0n && k.value <= UINT64_MAX;
+      return true;
+    }
+    case "callExpr":
+      if (v.function === "has" && !v.target && v.args.length === 1) return false;
+      return celAstOk(v.target) && v.args.every(celAstOk);
+    case "selectExpr": return celAstOk(v.operand);
+    case "listExpr": return v.elements.every(celAstOk);
+    case "structExpr": return v.entries.every((x: J) => celAstOk(x.keyKind?.value) && celAstOk(x.value));
+    case "comprehensionExpr": return [v.iterRange, v.accuInit, v.loopCondition, v.loopStep, v.result].every(celAstOk);
+    default: return true;
+  }
+}
+export function celSyntaxProblem(expr: J): string | null {
+  if (typeof expr !== "string" || CEL_BLANK.test(expr)) return "cel_expression_empty";
+  if (!expr.isWellFormed() || !celLiteralsOk(expr)) return "cel_syntax_invalid"; // a lone surrogate is no UTF-8 text
+  let parsed: J;
+  try { parsed = celParse(expr + "\n"); } catch { return "cel_syntax_invalid"; }
+  return celAstOk(parsed.expr) ? null : "cel_syntax_invalid";
 }
 
 // ---------- constraints ----------
@@ -437,13 +506,45 @@ const REQUIRED: Record<string, string[]> = { exact: ["value"], one_of: ["values"
   regex: ["regex"], cidr: ["network"], url_pattern: ["schemes", "hosts"], subpath: ["root"], shlex: ["allow"],
   contains: ["values"], subset: ["values"], all: ["of"], any: ["of"], not: ["of"], cel: ["expr"] };
 
-function validateC(c: J): void {
-  if (!isObj(c) || !(c.type in CHECKS)) throw new Error(`unknown constraint`);
-  if ((REQUIRED[c.type] ?? []).some((k) => !(k in c))) throw new Error(`${c.type} needs`);
-  if (c.type === "range" && !("min" in c) && !("max" in c)) throw new Error("range needs min or max");
-  if (c.type === "all" || c.type === "any") { if (!Array.isArray(c.of) || !c.of.length) throw new Error("list"); c.of.forEach(validateC); }
-  if (c.type === "not") validateC(c.of);
+// Per type, in check order, each member's shape (constraints._SHAPES): [member, kind, required].
+const MEMBER_SHAPES: Record<string, [string, string, boolean][]> = {
+  one_of: [["values", "list", true]], not_one_of: [["values", "list", true]],
+  range: [["min", "number", false], ["max", "number", false]], pattern: [["pattern", "str", true]],
+  regex: [["regex", "str", true]], cidr: [["network", "str", true]],
+  url_pattern: [["schemes", "strlist", true], ["hosts", "strlist", true], ["pathPrefix", "str", false]],
+  url_safe: [["schemes", "strlist", false], ["hosts", "strlist", false], ["denyPrivate", "bool", false]],
+  subpath: [["root", "str", true]], shlex: [["allow", "list", true]], contains: [["values", "list", true]],
+  subset: [["values", "list", true]], all: [["of", "nonempty", true]], any: [["of", "nonempty", true]],
+  cel: [["expr", "str", true]],
+};
+function shapeOk(kind: string, v: J): boolean {
+  switch (kind) {
+    case "number": return typeof v === "number";
+    case "str": return typeof v === "string";
+    case "bool": return typeof v === "boolean";
+    case "strlist": return Array.isArray(v) && v.every((x) => typeof x === "string");
+    default: return Array.isArray(v) && (kind === "list" || v.length > 0);
+  }
 }
+/** constraints.problem: null for a well-formed constraint, else the code both verifiers report. */
+export function constraintProblem(c: J): string | null {
+  if (!isObj(c) || typeof c.type !== "string" || !Object.hasOwn(CHECKS, c.type)) return "constraint_unknown";
+  const t: string = c.type;
+  const missing = (REQUIRED[t] ?? []).find((k) => !own(c, k));
+  if (missing !== undefined) return `constraint_member_missing:${t}.${missing}`;
+  if (t === "range" && !own(c, "min") && !own(c, "max")) return "constraint_range_unbounded";
+  for (const [member, kind, required] of MEMBER_SHAPES[t] ?? [])
+    if ((required || own(c, member)) && !shapeOk(kind, c[member])) return `constraint_member_invalid:${t}.${member}`;
+  for (const nested of t === "all" || t === "any" ? c.of : t === "not" ? [c.of] : []) {
+    const found = constraintProblem(nested);
+    if (found) return found;
+  }
+  if (t === "regex") { try { new RegExp(c.regex); } catch { return "constraint_regex_invalid"; } }
+  if (t === "cidr" && parseNetwork(c.network) === null) return "constraint_cidr_invalid";
+  if (t === "cel") return celSyntaxProblem(c.expr);
+  return null;
+}
+function validateC(c: J): void { const found = constraintProblem(c); if (found) throw new Error(found); }
 export function check(c: J, v: J, vf: boolean = typeof v === "number" && !Number.isInteger(v)): boolean { validateC(c); return CHECKS[c.type](c, v, vf); }
 
 function sameTypeNarrows(ch: J, p: J): boolean {
@@ -559,6 +660,37 @@ function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string,
   return r.status === "refused" ? "quorum_refused" : "quorum_pending";
 }
 
+// ---------- quorum policy shape ----------
+
+/** quorum._key_identity: the text of a raw key or the canonical JSON of a key object; null names no key. */
+function keyIdentity(v: J): string | null {
+  if (typeof v === "string" && v) return "s:" + v;
+  if (isObj(v)) { try { return "o:" + canonical(v); } catch { return null; } }
+  return null;
+}
+const isInt = (holder: J, key: string | number, v: J): boolean => typeof v === "number" && Number.isInteger(v) && !isFloat(holder, key, v);
+/** quorum.policy_problem: null for a well-formed policy, else the code both verifiers report. */
+export function quorumPolicyProblem(policy: J): string | null {
+  if (!isObj(policy)) return "quorum_policy_shape";
+  const approvers = own(policy, "approvers") ? policy.approvers : null, m = own(policy, "threshold") ? policy.threshold : null;
+  if (!isObj(approvers) || !Object.keys(approvers).length) return "quorum_policy_without_approvers";
+  const n = Object.keys(approvers).length;
+  if (!isInt(policy, "threshold", m) || m < 1 || m > n) return "quorum_threshold_out_of_range";
+  const keys = Object.values(approvers).map(keyIdentity);
+  if (keys.includes(null)) return "quorum_approver_key_shape";
+  if (new Set(keys).size !== n) return "quorum_approvers_share_a_key";
+  if (own(policy, "proposerBound") && typeof policy.proposerBound !== "boolean") return "quorum_proposer_bound_shape";
+  const roles = own(policy, "roles") ? policy.roles : {};
+  if (!isObj(roles)) return "quorum_roles_shape";
+  for (const role of sortedKeys(roles)) {
+    const spec = roles[role], members = own(spec, "members") ? spec.members : null, k = own(spec, "min") ? spec.min : null;
+    if (!Array.isArray(members) || !members.length || !members.every((x) => typeof x === "string" && own(approvers, x))
+      || !isInt(spec, "min", k) || k < 1 || k > members.length) return `quorum_role_invalid:${role}`;
+  }
+  if (Object.values(roles).reduce((sum: number, spec: J) => sum + spec.min, 0) > n) return "quorum_roles_unsatisfiable";
+  return null;
+}
+
 // ---------- grants ----------
 
 // RFC 7800 confirmation: exactly one method, jkt (RFC 9449) or x5t#S256 (RFC 8705), a SHA-256 thumbprint in
@@ -584,6 +716,62 @@ function standingProblem(body: J): string | null {
   return ts(body.notBefore) < r && r <= ts(body.expiresAt) ? null : "grant_review_invalid";
 }
 
+const nonNegInt = (holder: J, key: string): boolean => own(holder, key) && isInt(holder, key, holder[key]) && holder[key] >= 0;
+function budgetProblem(b: J): string | null {
+  if (b === undefined || b === null) return null;
+  if (!isObj(b) || !Object.keys(b).length || Object.keys(b).some((k) => k !== "uses" && k !== "spend")) return "grant_budget_shape";
+  if (own(b, "uses") && !nonNegInt(b, "uses")) return "grant_budget_uses";
+  const sp = b.spend;
+  if (own(b, "spend") && (!isObj(sp) || Object.keys(sp).sort().join(",") !== "arg,max" || typeof sp.arg !== "string"
+    || typeof sp.max !== "number" || sp.max < 0)) return "grant_budget_spend";
+  return null;
+}
+function toolsProblem(tools: J): string | null {
+  if (!isObj(tools) || !Object.keys(tools).length) return "grant_tools_empty";
+  for (const tool of sortedKeys(tools)) {
+    const spec = tools[tool];
+    if (!isObj(spec) || !own(spec, "args") || !isObj(spec.args)) return `grant_tool_shape:${tool}`;
+    const level = own(spec, "approval") ? spec.approval : "none";
+    if (level !== "none" && level !== "required") return `grant_approval_level:${tool}`;
+    for (const arg of sortedKeys(spec.args)) {
+      const found = constraintProblem(spec.args[arg]);
+      if (found) return `grant_arg_constraint_invalid:${tool}.${arg}:${found}`;
+    }
+    const when = own(spec, "when") ? spec.when : [];
+    if (!Array.isArray(when) || !when.every((w) => typeof w === "string")) return `grant_when_shape:${tool}`;
+    for (let n = 0; n < when.length; n++) {
+      const found = celSyntaxProblem(when[n]);
+      if (found) return `grant_when_invalid:${tool}.${n}:${found}`;
+    }
+    if (own(spec, "quorum")) {
+      const found = quorumPolicyProblem(spec.quorum);
+      if (found) return `grant_quorum_invalid:${tool}:${found}`;
+      if (spec.quorum.proposerBound !== true) return `grant_quorum_must_bind_proposer:${tool}`;
+      if (spec.approval !== "required") return `grant_quorum_without_required_approval:${tool}`;
+    }
+  }
+  return null;
+}
+function issuerKeyOk(text: J): boolean {
+  try { const raw = unb64(text); if (raw.length !== 32) return false; rawKey(raw); return true; } catch { return false; }
+}
+/** grants.validate_body, code for code and in its order: null for a well-formed grant body, else the first defect. */
+export function bodyProblem(body: J): string | null {
+  if (!isObj(body)) return "grant_shape";
+  const found = cnfProblem(body.cnf) ?? timesProblem(body) ?? toolsProblem(body.tools);
+  if (found) return found;
+  if (!nonNegInt(body, "maxDepth")) return "grant_max_depth";
+  const ctx = own(body, "context") ? body.context : null;
+  if (!isObj(ctx)) return "grant_context_shape";
+  for (const key of sortedKeys(ctx)) {
+    const c = constraintProblem(ctx[key]);
+    if (c) return `grant_context_constraint_invalid:${key}:${c}`;
+  }
+  const rest = budgetProblem(body.budget) ?? standingProblem(body);
+  if (rest) return rest;
+  return issuerKeyOk(body.issuerKey) ? null : "grant_issuer_key_invalid";
+}
+
 function narrowingProblem(ch: J, p: J): string | null {
   if (ch.issuerKey !== p.holderKey) return "child_not_issued_by_parent_holder";
   if (ts(ch.notBefore) < ts(p.notBefore) || ts(ch.expiresAt) > ts(p.expiresAt)) return "child_window_wider_than_parent";
@@ -593,9 +781,9 @@ function narrowingProblem(ch: J, p: J): string | null {
   } else if ("sponsor" in ch) return "child_adds_sponsor";
   if ((p.maxDepth ?? 0) < 1) return "parent_forbids_delegation";
   if ((ch.maxDepth ?? 0) > p.maxDepth - 1) return "child_depth_wider_than_parent";
-  for (const [k, c] of Object.entries(p.context ?? {})) {
-    if (!(k in (ch.context ?? {}))) return `child_drops_context:${k}`;
-    if (!narrows(ch.context[k], c)) return `child_widens_context:${k}`;
+  for (const k of sortedKeys(p.context ?? {})) {
+    if (!own(ch.context ?? {}, k)) return `child_drops_context:${k}`;
+    if (!narrows(ch.context[k], p.context[k])) return `child_widens_context:${k}`;
   }
   const pb = p.budget, cb = ch.budget;
   if (pb !== undefined && pb !== null) {
@@ -603,17 +791,17 @@ function narrowingProblem(ch: J, p: J): string | null {
     if ("uses" in pb && (cb.uses ?? pb.uses + 1) > pb.uses) return "child_budget_wider_than_parent";
     if ("spend" in pb && (!cb.spend || cb.spend.arg !== pb.spend.arg || cb.spend.max > pb.spend.max)) return "child_spend_wider_than_parent";
   }
-  for (const [tool, spec] of Object.entries(ch.tools) as [string, J][]) {
-    const ps = p.tools[tool];
+  for (const tool of sortedKeys(ch.tools)) {
+    const spec = ch.tools[tool], ps = own(p.tools, tool) ? p.tools[tool] : undefined;
     if (ps === undefined) return `child_adds_tool:${tool}`;
     if ((ps.approval ?? "none") === "required" && (spec.approval ?? "none") !== "required") return `child_drops_approval:${tool}`;
     if ((ps.when ?? []).some((w: string) => !(spec.when ?? []).includes(w))) return `child_drops_condition:${tool}`;
     if ("quorum" in ps) { const q = quorumWidening(spec.quorum, ps.quorum); if (q) return `${q}:${tool}`; }
-    const added = Object.keys(spec.args).filter((n) => !(n in ps.args)).sort();
+    const added = sortedKeys(spec.args).filter((n) => !own(ps.args, n));
     if (added.length) return `child_adds_argument:${tool}.${added[0]}`;
-    const dropped = Object.keys(ps.args).filter((n) => !(n in spec.args)).sort();
+    const dropped = sortedKeys(ps.args).filter((n) => !own(spec.args, n));
     if (dropped.length) return `child_drops_argument:${tool}.${dropped[0]}`;
-    for (const [name, c] of Object.entries(spec.args)) if (!narrows(c, ps.args[name])) return `child_widens_constraint:${tool}.${name}`;
+    for (const name of sortedKeys(spec.args)) if (!narrows(spec.args[name], ps.args[name])) return `child_widens_constraint:${tool}.${name}`;
   }
   return null;
 }
@@ -640,14 +828,9 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
   for (let depth = 0; depth < chain.length; depth++) {
     const body = isObj(chain[depth]) ? chain[depth].body : null;
     if (!isObj(body)) { result = `grant_shape:${depth}`; break; }
-    const cnf = cnfProblem(body.cnf);
-    if (cnf) { result = `grant_invalid:${depth}:${cnf}`; break; }
-    const times = timesProblem(body);
-    if (times) { result = `grant_invalid:${depth}:${times}`; break; }
-    const standing = standingProblem(body);
-    if (standing) { result = `grant_invalid:${depth}:${standing}`; break; }
-    let issuer: string;
-    try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch (e) { result = `grant_invalid:${depth}:${(e as Error).message}`; break; }
+    const problem = bodyProblem(body);
+    if (problem) { result = `grant_invalid:${depth}:${problem}`; break; }
+    const issuer = keyId(rawKey(unb64(body.issuerKey)));  // bodyProblem proved it decodes
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) { result = `grant_signature_unverified:${depth}`; break; }
     if (prev === null) { if (body.parent !== null || !roots.has(issuer)) { result = "grant_root_untrusted"; break; } }
     else {
@@ -671,9 +854,8 @@ export function chainDigests(chain: J[], roots: Set<string>): Record<string, J> 
   let prev: J = null;
   for (let depth = 0; depth < chain.length; depth++) {
     const body = isObj(chain[depth]) ? chain[depth].body : null;
-    if (!isObj(body) || cnfProblem(body.cnf) || timesProblem(body) || standingProblem(body)) return {};
-    let issuer: string;
-    try { issuer = keyId(rawKey(Buffer.from(body.issuerKey, "base64"))); } catch { return {}; }
+    if (!isObj(body) || bodyProblem(body)) return {};
+    const issuer = keyId(rawKey(unb64(body.issuerKey)));
     if (!sigOk(body.issuerKey, GRANT_DOMAIN, body, chain[depth].sig)) return {};
     if (prev === null) { if (body.parent !== null || !roots.has(issuer)) return {}; }
     else if (body.parent !== digestOf(prev) || narrowingProblem(body, prev)) return {};
@@ -683,13 +865,13 @@ export function chainDigests(chain: J[], roots: Set<string>): Record<string, J> 
 }
 
 function checkCall(leaf: J, tool: string, args: J, ctx: J): string {
-  for (const [k, c] of Object.entries(leaf.context ?? {})) if (!(k in ctx) || !check(c, ctx[k], isFloat(ctx, k, ctx[k]))) return `context_violation:${k}`;
-  const spec = leaf.tools[tool];
+  for (const k of sortedKeys(leaf.context ?? {})) if (!own(ctx, k) || !check(leaf.context[k], ctx[k], isFloat(ctx, k, ctx[k]))) return `context_violation:${k}`;
+  const spec = own(leaf.tools, tool) ? leaf.tools[tool] : undefined;
   if (spec === undefined) return "tool_not_granted";
   if (!isObj(args)) return "arguments_not_an_object";
-  const extra = Object.keys(args).filter((k) => !(k in spec.args)).sort();
+  const extra = sortedKeys(args).filter((k) => !own(spec.args, k));
   if (extra.length) return `argument_not_granted:${extra[0]}`;
-  for (const [name, c] of Object.entries(spec.args)) if (!check(c, args[name] ?? null, isFloat(args, name, args[name]))) return `constraint_violation:${name}`;
+  for (const name of sortedKeys(spec.args)) if (!check(spec.args[name], own(args, name) ? args[name] : null, isFloat(args, name, args[name]))) return `constraint_violation:${name}`;
   const when: string[] = spec.when ?? [];
   for (let n = 0; n < when.length; n++) if (!celHolds(when[n], { args, tool, ctx })) return `condition_violation:${n}`;
   return (spec.approval ?? "none") === "required" ? "approval_required" : "ok";
@@ -1323,7 +1505,9 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
     let charges: [string, J, J][];
     try {
       const args = ev.argsB64 ? parseReceived(Buffer.from(ev.argsB64, "base64")) : null;
-      charges = (ev.chain ?? []).map((g: J) => [digestOf(g.body), g.body.budget, args]);
+      // A malformed body is skipped: its allow is refused already (grant_deny), and its budget has no members to count.
+      charges = (ev.chain ?? []).filter((g: J) => isObj(g) && isObj(g.body) && bodyProblem(g.body) === null)
+        .map((g: J) => [digestOf(g.body), g.body.budget, args]);
     } catch { continue; }
     if (charges.length) charged.add(pred.permitId);
     for (const [d, budget, args] of charges) {
