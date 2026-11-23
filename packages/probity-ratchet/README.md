@@ -16,7 +16,7 @@ uv sync
 Python 3.12 or later. The guard sandbox needs Linux.
 
 ```sh
-pip install probity-ratchet-cases==0.2.0 && ratchet-cases selftest   # the case suite alone: ../probity-ratchet-cases/README.md
+pip install probity-ratchet-cases && ratchet-cases selftest   # the case suite alone: ../probity-ratchet-cases/README.md
 ```
 
 ## Try it in 30 seconds
@@ -41,23 +41,23 @@ A signed refusal you can check offline is in `examples/refusal-v3-cell/`: `uv ru
 
 A support agent works in a simulated company: a billing provider, tickets, approvals and mail. Its eight case families are seven kinds of trap, each with benign twins (matching cases where the action is allowed, so a rule that blocks them fails), plus ordinary requests that must succeed. Every case is graded on the final state of every system, never on the agent's words.
 
-When the agent fails, the improver proposes a guard or a procedure (written steps for the agent). A change is adopted only if four checks pass: replay; fresh paired tests on held-out cases against the parent harness (the code around the model: prompt, tools and rules); no growth of the agent's authority; and a signed receipt, which verifies offline against a pinned public key. The gates are in [docs/ADMISSION.md](docs/ADMISSION.md). Every version, trace, evaluation and decision, rejections included, lives in MongoDB Atlas.
+When the agent fails, the improver proposes a guard or a procedure (written steps for the agent). A change is adopted only if four checks pass: replay; fresh paired tests on held-out cases against the parent harness (the code around the model: prompt, tools and rules); no growth of the agent's authority; and a signed receipt, which verifies offline against a pinned public key. The gates are in [docs/ADMISSION.md](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/ADMISSION.md). Every version, trace, evaluation and decision, rejections included, lives in MongoDB Atlas.
 
 ## Status
 
-Version 0.2.0, built on 2026-10-11 at the MongoDB harness hackathon. The suite, graders and rule are frozen before each run. Measured results, with denominators, are in [docs/RESULTS.md](docs/RESULTS.md).
+Version 0.2.0, built on 2026-10-11 at the MongoDB harness hackathon. The suite, graders and rule are frozen before each run. Measured results, with denominators, are in [docs/RESULTS.md](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/RESULTS.md).
 
 ## Docs
 
 | Page | What is in it |
 |---|---|
-| [Running](docs/RUNNING.md) | Local Atlas, environment and every command |
-| [Admission rule](docs/ADMISSION.md) | The gates in plain words |
-| [k-session rule](docs/SESSIONS.md) | The replicated rule, runner and offline check |
-| [Architecture](docs/ARCHITECTURE.md) | Packages, guard sandbox, storage |
-| [Verifying a decision](docs/VERIFY.md) | Check a receipt offline |
-| [Results](docs/RESULTS.md) | Every measured result and its records |
-| [Claude Code hook](examples/claude-code/README.md) | Prove a guard on your own sessions, then install it |
-| [Built today and reused](docs/REUSED.md) | What was written at the event and what is pinned |
-| [Signed refusal example](examples/refusal-v3-cell/README.md) | Check a refused candidate offline |
-| [Build contract](docs/CONTRACT.md) | Types, component interfaces and the full admission rule |
+| [Running](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/RUNNING.md) | Local Atlas, environment and every command |
+| [Admission rule](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/ADMISSION.md) | The gates in plain words |
+| [k-session rule](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/SESSIONS.md) | The replicated rule, runner and offline check |
+| [Architecture](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/ARCHITECTURE.md) | Packages, guard sandbox, storage |
+| [Verifying a decision](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/VERIFY.md) | Check a receipt offline |
+| [Results](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/RESULTS.md) | Every measured result and its records |
+| [Claude Code hook](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/examples/claude-code/README.md) | Prove a guard on your own sessions, then install it |
+| [Built today and reused](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/REUSED.md) | What was written at the event and what is pinned |
+| [Signed refusal example](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/examples/refusal-v3-cell/README.md) | Check a refused candidate offline |
+| [Build contract](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/docs/CONTRACT.md) | Types, component interfaces and the full admission rule |
