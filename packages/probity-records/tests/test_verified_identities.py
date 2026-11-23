@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 from probity_records.canonical_identity import CanonicalIdentity
-from probity_records.stamp import StampRefused, verify_stamp_token
 from probity_records.verified_identities import (
     RequestFacts,
     TrustBundle,
@@ -19,12 +18,11 @@ from probity_records.verified_identities import (
 from probity_records.verified_identities_vectors import (
     AT,
     EXPECTED_REFUSALS,
-    GATEWAY,
     NOW,
-    STAMP_KEY,
     bundle,
     check,
     judge,
+    request,
     stamp,
     token,
     vectors,
@@ -90,10 +88,18 @@ def test_a_key_the_token_names_is_never_used_even_when_it_is_the_pinned_key() ->
     assert err.value.code == "token_header_names_a_key"
 
 
-def test_the_proof_and_the_stamp_jti_are_returned_for_a_store_to_spend() -> None:
+def test_the_proof_and_the_stamp_nonce_are_returned_for_a_store_to_spend() -> None:
     row = next(r for r in ROWS if r["id"] == "VI10")
     assert row["expected"]["proof"] == "dpop"
-    assert next(r for r in ROWS if r["id"] == "VI9")["expected"]["stampJti"] == "stamp-0001"
+    assert next(r for r in ROWS if r["id"] == "VI9")["expected"]["stamp"] == {"nonce": "stamp-0001",
+                                                                               "expires": NOW + 50}
+
+
+def test_a_stamped_request_is_verified_from_its_header_lines_and_never_from_tokens() -> None:
+    stamped = judge({"tokens": {}, "bundle": bundle(), "at": AT, "transport": None, "request": request(headers=stamp())})
+    assert stamped == next(r for r in ROWS if r["id"] == "VI9")["expected"]
+    as_token = judge({"tokens": {"stamp": "x"}, "bundle": bundle(), "at": AT, "transport": None, "request": request()})
+    assert as_token == {"refused": "principal_role_not_configured"}
 
 
 def test_a_short_rsa_key_is_refused_in_the_bundle() -> None:
@@ -109,21 +115,6 @@ def test_a_transport_identity_of_another_kind_is_a_programming_error() -> None:
     with pytest.raises(TypeError):
         verify_request({"user": token("user"), "agent": token("agent")}, bundle(), AT,
                        CanonicalIdentity.parse(_identity("VI1")["id"]))
-
-
-def test_the_stamp_verifier_alone_refuses_a_future_stamp_and_another_issuer() -> None:
-    from cryptography.hazmat.primitives import serialization
-
-    raw = STAMP_KEY.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
-    body = b'{"jsonrpc":"2.0","method":"tools/call","id":1}'
-    from probity_records.core import sha256_hex
-
-    for kw, code in (({"issuer": GATEWAY, "now": (NOW - 3600) * 10**9}, "stamp_not_yet_valid"),
-                     ({"issuer": "gw.other", "now": NOW * 10**9}, "stamp_wrong_issuer")):
-        with pytest.raises(StampRefused) as err:
-            verify_stamp_token(stamp(), public_raw=raw, audience="https://billing.example.com/mcp",
-                               request_sha256=sha256_hex(body), **kw)
-        assert err.value.code == code
 
 
 def test_a_request_without_facts_cannot_prove_a_key_bound_token() -> None:
