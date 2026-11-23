@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "bindings.json": {
+      "length": 240,
+      "path": "bindings.json",
+      "sha256": "cb64ca4b4996b07add5044d9ae83944797bfbe708e2dad89a3a617c20239a203"
+    },
+    "records.json": {
+      "length": 2102,
+      "path": "records.json",
+      "sha256": "852caf767252bc0c3993e522c66789d1c1f1db477561087aed6f016e78bfea82"
+    },
+    "revocation.json": {
+      "length": 66,
+      "path": "revocation.json",
+      "sha256": "57368251124b506cdbe210b80008e4786b14e7339cf8ee141d8299ffb55f7e12"
+    }
+  },
+  "case_id": "lifecycle-binding-example",
+  "schema_version": "probity-case/v1"
+}

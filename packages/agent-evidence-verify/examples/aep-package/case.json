@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "package.aep": {
+      "length": 3771,
+      "path": "package.aep",
+      "sha256": "3f8a97cb62a9ae571527f704e6f3b6cbf15b06d3e1bf1fb42ec7be17b3b96fa1"
+    }
+  },
+  "case_id": "aep-package-example",
+  "schema_version": "probity-case/v1"
+}

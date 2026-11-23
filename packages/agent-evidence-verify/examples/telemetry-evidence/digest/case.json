@@ -1,0 +1,36 @@
+{
+  "artifacts": {
+    "e001.json": {
+      "length": 41,
+      "path": "e001.json",
+      "sha256": "9ab177ad646cda06239e203c9bf9f78497429506ffe4525b0cfd856067e92103"
+    },
+    "e002.json": {
+      "length": 41,
+      "path": "e002.json",
+      "sha256": "a1918a0e222afcee6c9a21519c355022ac1927fa357656e4fb2465158d200c34"
+    },
+    "e003.json": {
+      "length": 41,
+      "path": "e003.json",
+      "sha256": "7d9b32464f4d68fa39fc7003e3357efee6aeda900af2be04e18dc995cadfef44"
+    },
+    "e004.json": {
+      "length": 41,
+      "path": "e004.json",
+      "sha256": "4e9d6d30fab3ab734a565f6b23fb5fff01191bb1650d2573b3bb7d4c8a96fee0"
+    },
+    "e005.json": {
+      "length": 41,
+      "path": "e005.json",
+      "sha256": "0e45070b09196e62871d11791523ffcba00247561cace4de95d57c0c1e56dab4"
+    },
+    "manifest.json": {
+      "length": 799,
+      "path": "manifest.json",
+      "sha256": "6ff7a618a172437afc8af5c8ae6253d02f47421a3ed570b7092f34f3be591b7e"
+    }
+  },
+  "case_id": "evidence-digest-example",
+  "schema_version": "probity-case/v1"
+}

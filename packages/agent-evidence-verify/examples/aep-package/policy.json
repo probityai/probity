@@ -1,0 +1,25 @@
+{
+  "assessments": {
+    "aep-package-example": {
+      "authority": {
+        "keys": [
+          {
+            "public_key_sha256": "0e3381c4ae56021f26505a6b6e16ce0e45992b0cc891478f744dba47d29e22b3"
+          }
+        ],
+        "kind": "pin"
+      },
+      "claim_type": "aep_package/v1",
+      "package": "package.aep",
+      "tsa_authority": {
+        "keys": [
+          {
+            "public_key_sha256": "610147c092eba21b5eb8cecf7bafb60aaef9c19bbfe76e714035b5602ef9c46b"
+          }
+        ],
+        "kind": "pin"
+      }
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

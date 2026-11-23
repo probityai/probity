@@ -1,0 +1,36 @@
+{
+  "assessments": {
+    "capability-credential-example": {
+      "at": "2026-11-15T12:00:00Z",
+      "claim_type": "capability_credential/v1",
+      "cosigners": {
+        "cos-1": {
+          "authority": "org-1",
+          "public_key": "5519185df5eeefc2dec0cd6ece620d21a903c45efae28582ecda64ba1cd05f78"
+        },
+        "cos-1-alias": {
+          "authority": "org-1",
+          "public_key": "5519185df5eeefc2dec0cd6ece620d21a903c45efae28582ecda64ba1cd05f78"
+        },
+        "cos-2": {
+          "authority": "org-2",
+          "public_key": "ca944b5261c3ab1fcc2dc1751628209c84e81b9ade2390c2376444c797310460"
+        },
+        "cos-3": {
+          "authority": "org-1",
+          "public_key": "c4a1a859c257d6973c19e74f8b1ed2d33691c672456981df4e514461429e2d85"
+        },
+        "issuer-alias": {
+          "authority": "org-9",
+          "public_key": "a49475c4c40f53e5d83e206ed414ccea87796b9bf4e99258b6ebdf509d6dc0ca"
+        }
+      },
+      "credential": "credential.json",
+      "revoked": [],
+      "trusted_issuers": {
+        "issuer-a": "a49475c4c40f53e5d83e206ed414ccea87796b9bf4e99258b6ebdf509d6dc0ca"
+      }
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

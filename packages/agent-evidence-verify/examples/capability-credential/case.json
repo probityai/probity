@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "credential.json": {
+      "length": 357,
+      "path": "credential.json",
+      "sha256": "033edd8f093395999e685660cbd853f25bf09e665da1a760dadab17cc3770756"
+    }
+  },
+  "case_id": "capability-credential-example",
+  "schema_version": "probity-case/v1"
+}

@@ -1,0 +1,23 @@
+{
+  "assessments": {
+    "event-log-example": {
+      "authority": {
+        "keys": [
+          {
+            "public_key_sha256": "a138b571ece6fb71bf26f8692ea6683b731eea453441889b95cb12b851d9e43b"
+          }
+        ],
+        "kind": "pin"
+      },
+      "claim_type": "event_log_completeness/v1",
+      "coverage": {
+        "first_seq": 1,
+        "session": "s1"
+      },
+      "first_prev": "9982e1c8c9350a9b8cc69586b8b0cad41c50dfb5e96747d63afa85ddc618773e",
+      "head": "head.json",
+      "records": "events.jsonl"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

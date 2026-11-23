@@ -1,0 +1,6 @@
+{"seq": 1, "prev": "9982e1c8c9350a9b8cc69586b8b0cad41c50dfb5e96747d63afa85ddc618773e", "session": "s1", "name": "step-1", "status": "ok"}
+{"seq": 2, "prev": "ce345272478924249b4754678e772572db9a9a75f1fac0f7009f4040285b3aef", "session": "s1", "name": "step-2", "status": "ok"}
+{"seq": 3, "prev": "dfafeee6aaa83dacad8e36d8a045ddfd8fc559146f02fd0fed6d1fc74670c4b3", "session": "s1", "name": "step-3", "status": "ok"}
+{"seq": 4, "prev": "c1901649fd8b747462aef51c2c72b9a37f3a28879514571db1e589c2d6249bcf", "session": "s1", "name": "step-4", "status": "ok"}
+{"seq": 5, "prev": "60f901a0d6244ec336c35f9f77deb143c2bc65b2a7fab537e543ec97a55b863f", "session": "s1", "name": "step-5", "status": "ok"}
+{"seq": 6, "prev": "1444814cc5ca005e712815ce91ea1a80ce254130d809926e04f98f8fd5a3b7cb", "session": "s1", "name": "step-6", "status": "ok"}
