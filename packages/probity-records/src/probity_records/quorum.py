@@ -65,27 +65,57 @@ def policy_digest(policy: Mapping[str, Any]) -> str:
     return sha256_hex(canonical(dict(policy)))
 
 
-def validate_policy(policy: Mapping[str, Any]) -> None:
+def _key_identity(value: Any) -> str | None:
+    """What two approvers share when they share a key: the text of a raw key, or the canonical JSON of a key object.
+    None for any other value, which names no key."""
+    if isinstance(value, str) and value:
+        return "s:" + value
+    if isinstance(value, dict):
+        try:
+            return "o:" + canonical(value).decode("utf-8")
+        except ValueError:
+            return None
+    return None
+
+
+def policy_problem(policy: Any) -> str | None:
+    """None for a well-formed policy; otherwise the first defect, as a code both verifiers report. The TypeScript
+    verifier's ``quorumPolicyProblem`` is this function, code for code."""
+    if not isinstance(policy, dict):
+        return "quorum_policy_shape"
     approvers = policy.get("approvers")
     m = policy.get("threshold")
     if not isinstance(approvers, dict) or not approvers:
-        raise ValueError("quorum_policy_without_approvers")
+        return "quorum_policy_without_approvers"
     if not isinstance(m, int) or isinstance(m, bool) or not 1 <= m <= len(approvers):
-        raise ValueError("quorum_threshold_out_of_range")
-    if len({canonical(v) if isinstance(v, dict) else str(v) for v in approvers.values()}) != len(approvers):
-        raise ValueError("quorum_approvers_share_a_key")
+        return "quorum_threshold_out_of_range"
+    keys = [_key_identity(v) for v in approvers.values()]
+    if None in keys:
+        return "quorum_approver_key_shape"
+    if len(set(keys)) != len(approvers):
+        return "quorum_approvers_share_a_key"
     if not isinstance(policy.get("proposerBound", False), bool):
-        raise ValueError("quorum_proposer_bound_shape")
+        return "quorum_proposer_bound_shape"
     roles = policy.get("roles", {})
     if not isinstance(roles, dict):
-        raise ValueError("quorum_roles_shape")
-    for role, spec in roles.items():
-        members, k = (spec or {}).get("members"), (spec or {}).get("min")
-        if (not isinstance(members, list) or not members or not set(members) <= set(approvers)
+        return "quorum_roles_shape"
+    for role in sorted(roles):
+        spec = roles[role]
+        members, k = (spec.get("members"), spec.get("min")) if isinstance(spec, dict) else (None, None)
+        if (not isinstance(members, list) or not members or not all(isinstance(x, str) for x in members)
+                or not set(members) <= set(approvers)
                 or not isinstance(k, int) or isinstance(k, bool) or not 1 <= k <= len(members)):
-            raise ValueError(f"quorum_role_invalid:{role}")
+            return f"quorum_role_invalid:{role}"
     if sum(spec["min"] for spec in roles.values()) > len(approvers):
-        raise ValueError("quorum_roles_unsatisfiable")
+        return "quorum_roles_unsatisfiable"
+    return None
+
+
+def validate_policy(policy: Mapping[str, Any]) -> None:
+    """ValueError naming the ``policy_problem`` code of a policy that is not well formed."""
+    found = policy_problem(policy)
+    if found:
+        raise ValueError(found)
 
 
 def widening_problem(child: Mapping[str, Any] | None, parent: Mapping[str, Any]) -> str | None:

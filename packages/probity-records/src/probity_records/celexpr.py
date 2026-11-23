@@ -13,6 +13,7 @@ same bytes, so a verifier that reads the canonical bytes cannot tell them apart,
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from typing import Any
 
@@ -45,16 +46,41 @@ def _env() -> Any:
     return cel.NewEnv(variables={name: cel.Type.DYN for name in VARIABLES})
 
 
-@lru_cache(maxsize=4096)
-def compile_expr(expr: str) -> Any:
-    """The compiled program; ValueError when ``expr`` does not compile or does not name only the
-    shared variables."""
-    if not isinstance(expr, str) or not expr.strip():
-        raise ValueError("cel_expression_empty")
+#: The whitespace CEL's grammar skips (WHITESPACE in the CEL language definition). An expression of nothing else
+#: is empty; any other character goes to the parser.
+_BLANK = re.compile(r"[ \t\n\r\f]*")
+
+
+def syntax_problem(expr: Any) -> str | None:
+    """None when ``expr`` is a CEL expression that parses; otherwise ``cel_expression_empty`` (not a string, or
+    only whitespace) or ``cel_syntax_invalid``. This is the check a verifier runs on a grant: syntax only, because
+    the TypeScript verifier's CEL engine has no type checker that agrees with cel-cpp's, and an expression that
+    parses but does not type-check never holds at evaluation (``holds`` is false) in either verifier."""
+    if not isinstance(expr, str) or _BLANK.fullmatch(expr):
+        return "cel_expression_empty"
     try:
-        return _env().compile(expr)
+        _env().compile(expr, disable_check=True)
+    except Exception:  # noqa: BLE001 - every parser refusal is the one defect, whatever its message
+        return "cel_syntax_invalid"
+    return None
+
+
+@lru_cache(maxsize=4096)
+def _compiled(expr: str) -> Any:
+    return _env().compile(expr)
+
+
+def compile_expr(expr: Any) -> Any:
+    """The type-checked program; ValueError ``cel_expression_empty``, ``cel_syntax_invalid`` or
+    ``cel_type_check_failed`` (it parses, but cel-cpp's type check refuses it). An issuer runs this on every
+    expression it signs; a verifier runs ``syntax_problem``."""
+    found = syntax_problem(expr)
+    if found:
+        raise ValueError(found)
+    try:
+        return _compiled(expr)
     except Exception as exc:
-        raise ValueError(f"cel_compile_failed:{exc}") from exc
+        raise ValueError("cel_type_check_failed") from exc
 
 
 def holds(expr: str, bindings: dict[str, Any]) -> bool:

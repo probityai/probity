@@ -58,7 +58,7 @@ def test_cel_constraint_checks_and_only_conjunction_narrows() -> None:
     assert narrows(c, c)
     assert narrows({"type": "all", "of": [c, {"type": "pattern", "pattern": "cust-a*"}]}, c)
     assert not narrows({"type": "cel", "expr": "value.startsWith('cust-')"}, c)
-    with pytest.raises(ValueError, match="cel_compile_failed"):
+    with pytest.raises(ValueError, match="cel_syntax_invalid"):
         check_constraint({"type": "cel", "expr": "value ==="}, "x")
     assert check_constraint({"type": "cel", "expr": "value == 3"}, 3.0)  # JCS cannot tell 3.0 from 3
 

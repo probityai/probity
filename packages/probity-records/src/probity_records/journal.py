@@ -26,7 +26,7 @@ from .authority import GRANT_ALLOW, Trust, check_authority
 from .clock import Clock, from_datetime, to_datetime
 from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
-from .grants import chain_digests, grant_digest, spend_of
+from .grants import body_problem, chain_digests, grant_digest, spend_of
 from .identity import AUTONOMOUS, check_principals, sponsor_id, strict_shortfall
 from .possession import DEFAULT_SKEW, duplicate_proofs
 from .quorum import count_bindings
@@ -451,13 +451,15 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
 
 
 def _grant_charges(pred: dict[str, Any]) -> list[tuple[str, dict[str, Any] | None, Any]]:
-    """(grant digest, budget, call args) for every grant in the chain an allow rests on."""
+    """(grant digest, budget, call args) for every well-formed grant in the chain an allow rests on. A malformed body
+    is skipped: the allow it carries is refused already (``grant_deny``), and its budget has no members to count."""
     evidence = pred.get("authority")
     if not isinstance(evidence, Mapping) or evidence.get("kind") != "grant":
         return []
     try:
         args = admitted_loads(base64.b64decode(evidence.get("argsB64", ""))) if evidence.get("argsB64") else None
-        return [(grant_digest(g["body"]), g["body"].get("budget"), args) for g in evidence.get("chain", [])]
+        return [(grant_digest(g["body"]), g["body"].get("budget"), args) for g in evidence.get("chain", [])
+                if body_problem(g["body"]) is None]
     except (ValueError, KeyError, TypeError):
         return []
 

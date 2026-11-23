@@ -1,0 +1,306 @@
+[
+  {
+    "args": {
+      "alpha": 1,
+      "zeta": 1
+    },
+    "at": "2026-06-01T00:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+          },
+          "context": {
+            "area": {
+              "type": "exact",
+              "value": "a"
+            },
+            "zone": {
+              "type": "exact",
+              "value": "z"
+            }
+          },
+          "expiresAt": "2099-12-31T00:00:00Z",
+          "grantId": "g-call",
+          "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+          "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+          "maxDepth": 0,
+          "notBefore": "2026-01-01T00:00:00Z",
+          "parent": null,
+          "tools": {
+            "refund": {
+              "args": {
+                "alpha": {
+                  "type": "exact",
+                  "value": 1
+                },
+                "zeta": {
+                  "type": "exact",
+                  "value": 1
+                }
+              }
+            }
+          }
+        },
+        "sig": "WjJVgQvEfvR1A7Gy9wr+lyhD+efiO0ogIA6q0TmoWoZQfOtm9BKI9yqNWeZp1q2RCdFQiOpfl0EBVXYaT93MCg=="
+      }
+    ],
+    "ctx": {
+      "area": "a",
+      "zone": "z"
+    },
+    "description": "a call every member admits",
+    "expected": {
+      "decision": "allow",
+      "reason": "ok"
+    },
+    "id": "GC01",
+    "roots": [
+      "b8739473b1dd4035dc6b1035e25803d4346caf0da120773a3ee7c85aacd8bc02"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {},
+    "at": "2026-06-01T00:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+          },
+          "context": {
+            "area": {
+              "type": "exact",
+              "value": "a"
+            },
+            "zone": {
+              "type": "exact",
+              "value": "z"
+            }
+          },
+          "expiresAt": "2099-12-31T00:00:00Z",
+          "grantId": "g-call",
+          "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+          "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+          "maxDepth": 0,
+          "notBefore": "2026-01-01T00:00:00Z",
+          "parent": null,
+          "tools": {
+            "refund": {
+              "args": {
+                "alpha": {
+                  "type": "exact",
+                  "value": 1
+                },
+                "zeta": {
+                  "type": "exact",
+                  "value": 1
+                }
+              }
+            }
+          }
+        },
+        "sig": "WjJVgQvEfvR1A7Gy9wr+lyhD+efiO0ogIA6q0TmoWoZQfOtm9BKI9yqNWeZp1q2RCdFQiOpfl0EBVXYaT93MCg=="
+      }
+    ],
+    "ctx": {
+      "area": "a",
+      "zone": "z"
+    },
+    "description": "a tool named constructor, which every JavaScript object inherits",
+    "expected": {
+      "decision": "deny",
+      "reason": "tool_not_granted"
+    },
+    "id": "GC02",
+    "roots": [
+      "b8739473b1dd4035dc6b1035e25803d4346caf0da120773a3ee7c85aacd8bc02"
+    ],
+    "tool": "constructor"
+  },
+  {
+    "args": {},
+    "at": "2026-06-01T00:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+          },
+          "context": {
+            "area": {
+              "type": "exact",
+              "value": "a"
+            },
+            "zone": {
+              "type": "exact",
+              "value": "z"
+            }
+          },
+          "expiresAt": "2099-12-31T00:00:00Z",
+          "grantId": "g-call",
+          "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+          "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+          "maxDepth": 0,
+          "notBefore": "2026-01-01T00:00:00Z",
+          "parent": null,
+          "tools": {
+            "refund": {
+              "args": {
+                "alpha": {
+                  "type": "exact",
+                  "value": 1
+                },
+                "zeta": {
+                  "type": "exact",
+                  "value": 1
+                }
+              }
+            }
+          }
+        },
+        "sig": "WjJVgQvEfvR1A7Gy9wr+lyhD+efiO0ogIA6q0TmoWoZQfOtm9BKI9yqNWeZp1q2RCdFQiOpfl0EBVXYaT93MCg=="
+      }
+    ],
+    "ctx": {
+      "area": "a",
+      "zone": "z"
+    },
+    "description": "a tool named __proto__",
+    "expected": {
+      "decision": "deny",
+      "reason": "tool_not_granted"
+    },
+    "id": "GC03",
+    "roots": [
+      "b8739473b1dd4035dc6b1035e25803d4346caf0da120773a3ee7c85aacd8bc02"
+    ],
+    "tool": "__proto__"
+  },
+  {
+    "args": {
+      "alpha": 2,
+      "zeta": 2
+    },
+    "at": "2026-06-01T00:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+          },
+          "context": {
+            "area": {
+              "type": "exact",
+              "value": "a"
+            },
+            "zone": {
+              "type": "exact",
+              "value": "z"
+            }
+          },
+          "expiresAt": "2099-12-31T00:00:00Z",
+          "grantId": "g-call",
+          "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+          "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+          "maxDepth": 0,
+          "notBefore": "2026-01-01T00:00:00Z",
+          "parent": null,
+          "tools": {
+            "refund": {
+              "args": {
+                "alpha": {
+                  "type": "exact",
+                  "value": 1
+                },
+                "zeta": {
+                  "type": "exact",
+                  "value": 1
+                }
+              }
+            }
+          }
+        },
+        "sig": "WjJVgQvEfvR1A7Gy9wr+lyhD+efiO0ogIA6q0TmoWoZQfOtm9BKI9yqNWeZp1q2RCdFQiOpfl0EBVXYaT93MCg=="
+      }
+    ],
+    "ctx": {
+      "area": "a",
+      "zone": "z"
+    },
+    "description": "two arguments outside their constraints, written z before a: a is named",
+    "expected": {
+      "decision": "deny",
+      "reason": "constraint_violation:alpha"
+    },
+    "id": "GC04",
+    "roots": [
+      "b8739473b1dd4035dc6b1035e25803d4346caf0da120773a3ee7c85aacd8bc02"
+    ],
+    "tool": "refund"
+  },
+  {
+    "args": {
+      "alpha": 1,
+      "zeta": 1
+    },
+    "at": "2026-06-01T00:00:00Z",
+    "chain": [
+      {
+        "body": {
+          "cnf": {
+            "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+          },
+          "context": {
+            "area": {
+              "type": "exact",
+              "value": "a"
+            },
+            "zone": {
+              "type": "exact",
+              "value": "z"
+            }
+          },
+          "expiresAt": "2099-12-31T00:00:00Z",
+          "grantId": "g-call",
+          "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+          "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+          "maxDepth": 0,
+          "notBefore": "2026-01-01T00:00:00Z",
+          "parent": null,
+          "tools": {
+            "refund": {
+              "args": {
+                "alpha": {
+                  "type": "exact",
+                  "value": 1
+                },
+                "zeta": {
+                  "type": "exact",
+                  "value": 1
+                }
+              }
+            }
+          }
+        },
+        "sig": "WjJVgQvEfvR1A7Gy9wr+lyhD+efiO0ogIA6q0TmoWoZQfOtm9BKI9yqNWeZp1q2RCdFQiOpfl0EBVXYaT93MCg=="
+      }
+    ],
+    "ctx": {
+      "area": "x",
+      "zone": "x"
+    },
+    "description": "two context keys outside their constraints: area is named",
+    "expected": {
+      "decision": "deny",
+      "reason": "context_violation:area"
+    },
+    "id": "GC05",
+    "roots": [
+      "b8739473b1dd4035dc6b1035e25803d4346caf0da120773a3ee7c85aacd8bc02"
+    ],
+    "tool": "refund"
+  }
+]

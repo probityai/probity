@@ -387,6 +387,7 @@ NOT_LINTED = {
     "erasure": "record envelope v2, a record format check outside identity and authority",
     "erasure_vectors": "generates vectors from the checks",
     "exports": "the export seal, a record format check outside identity and authority",
+    "grant_body_vectors": "generates vectors from the checks",
     "identity_vectors": "generates vectors from the checks",
     "otel": "the audit-log stream, a record format check outside identity and authority",
     "receipt_map": "the receipt map's proofs, a log check outside identity and authority",
