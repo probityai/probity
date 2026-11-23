@@ -9,19 +9,22 @@ Two kinds of credential arrive:
 
 - the identity provider's tokens, when an agent calls the service directly: the user's token (``user``), the agent
   client's own access token (``agent``), and the sponsor's ID token (``sponsor``) for an agent acting for no user;
-- the agent stamp (``stamp``, ``stamp.py``), when the call comes through a gateway, which verified the principals and
-  forwards the stamp instead of their tokens. The two are never mixed in one request.
+- the agent stamp (``stamp.py``), when the call comes through a gateway, which verified the principals and forwards
+  the stamp instead of their tokens. The stamp is an RFC 9421 signature over the request's method, target URI,
+  authority, body digest and principals field, so it is read from the request's header lines (``RequestFacts``), never
+  from ``tokens``. The two are never mixed in one request.
 
 The verifying key never comes from the presented data. The trust bundle pins, per issuer, its public keys and, by RFC
 7638 thumbprint, which roles each key may sign for and in which tenants; a token's ``iss`` picks among the pinned
-issuers and its ``kid`` among that issuer's pinned keys. A header that names a key (``jku``, ``jwk``, ``x5u``,
+issuers and its ``kid`` among that issuer's pinned keys; a stamp's ``keyid`` is compared with the keys the bundle pins
+for stamps and never used to find one. A header that names a key (``jku``, ``jwk``, ``x5u``,
 ``x5c``) is refused, never followed, and so is one that marks an extension critical (``crit``), which this verifier
 implements none of.
 
 A token the identity provider bound to a key (RFC 7800 ``cnf``) is accepted only with a proof of possession for this
 request (``possession.check_possession``): a DPoP proof for this method and URL, or the client certificate, so the
 token cannot be replayed on another route. This function remembers nothing; ``verify_request`` returns the proof and
-the stamp's ``jti`` so a service that keeps state spends them once.
+the stamp's ``nonce`` and ``expires`` so a service that keeps state spends them once.
 
 Absence of an agent never means a human acted: a user's token with no agent token is kind ``unknown``, which the
 strict profile refuses. The format of the bundle, every check in order and the reasons are in
@@ -39,7 +42,6 @@ from typing import Any, Final
 
 from .canonical_identity import PROFILES, CanonicalIdentity, IdentityStringError, Ref
 from .clock import from_datetime
-from .core import sha256_hex
 from .digests import IdentityDigestError, act_chain_digest
 from .grants import ts
 from .identity import _verify_jws, jwk_thumbprint, unb64url
@@ -47,10 +49,10 @@ from .possession import CertificateProof, DpopProof, check_possession
 from .stamp import (
     StampRefused,
     VerifiedStamp,
-    stamp_header,
-    stamp_issuer,
+    presented_key_id,
+    stamp_fields,
     stamp_key_id,
-    verify_stamp_token,
+    verify_stamp,
 )
 
 VERSION: Final = 1
@@ -135,14 +137,22 @@ class TrustBundle:
         pinned = self.issuers.get(issuer)
         if pinned is None:
             raise _refuse("principal_issuer_untrusted", repr(issuer)[:80])
-        if role == "stamp":
-            matches = [k for k in pinned.keys if _is_stamp_key(k.jwk) and stamp_key_id(_raw(k.jwk)) == kid]
-        else:
-            matches = [k for k in pinned.keys if isinstance(kid, str) and k.jwk.get("kid") == kid]
+        matches = [k for k in pinned.keys if isinstance(kid, str) and k.jwk.get("kid") == kid]
         if len(matches) != 1:
-            raise _refuse("stamp_key_mismatch" if role == "stamp" else "token_kid_unknown",
-                          f"kid {str(kid)[:80]!r} selects no single pinned key of {issuer}")  # fmt: skip
-        key = matches[0]
+            raise _refuse("token_kid_unknown", f"kid {str(kid)[:80]!r} selects no single pinned key of {issuer}")
+        return self._admit(matches[0], role)
+
+    def stamp_key(self, keyid: str) -> PinnedKey:
+        """The one Ed25519 key the bundle lists whose stamp key id is ``keyid``, when it is pinned for stamps here.
+
+        The key id only picks among keys the bundle already lists, so a stamp cannot bring its own key."""
+        matches = [k for p in self.issuers.values() for k in p.keys
+                   if _is_stamp_key(k.jwk) and stamp_key_id(_raw(k.jwk)) == keyid]  # fmt: skip
+        if len(matches) != 1:
+            raise _refuse("stamp_key_mismatch", f"keyid {keyid[:80]!r} names no single key the bundle lists")
+        return self._admit(matches[0], "stamp")
+
+    def _admit(self, key: PinnedKey, role: str) -> PinnedKey:
         if role not in key.roles or self.tenant not in key.tenants:
             raise _refuse("principal_key_not_pinned", f"the key is not pinned for {role} in tenant {self.tenant}")
         return key
@@ -204,20 +214,22 @@ def _raw(jwk: Mapping[str, Any]) -> bytes:
 @dataclass(frozen=True)
 class RequestFacts:
     """What the service itself knows about the request: its method, its own external URL for the route (never one
-    built from the client's Host header), the body bytes (None for no body), and the possession proof presented: the
-    DPoP proof header, or the DER client certificate the TLS layer verified."""
+    built from the client's Host header), the body bytes (None for no body), the possession proof presented (the
+    DPoP proof header, or the DER client certificate the TLS layer verified), and the request's header lines as
+    (name, value) pairs, one per line received, from which an agent stamp is read."""
 
     method: str
     url: str
     content: bytes | None = None
     dpop: str | None = None
     client_certificate: bytes | None = None
+    headers: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
 class VerifiedRequest:
     """The identities of a request, and what a service that keeps state spends once: the possession proof and the
-    stamp's ``jti``."""
+    stamp's ``nonce`` until its ``expires``."""
 
     identities: tuple[CanonicalIdentity, ...]
     proof: DpopProof | CertificateProof | None
@@ -371,16 +383,11 @@ def _identity_from_tokens(found: Mapping[str, _Token], bundle: TrustBundle) -> C
                              act=act)  # fmt: skip
 
 
-def _stamp(token: Any, bundle: TrustBundle, request: RequestFacts | None, at: str) -> VerifiedStamp:
+def _stamp(bundle: TrustBundle, request: RequestFacts, at: str) -> VerifiedStamp:
     try:
-        issuer = stamp_issuer(token)
-        if not isinstance(issuer, str) or issuer not in bundle.issuers:
-            raise _refuse("stamp_wrong_issuer", repr(issuer)[:80])
-        key = bundle.key(issuer, "stamp", stamp_header(token)["kid"])
-        content = None if request is None else request.content
-        return verify_stamp_token(token, public_raw=_raw(key.jwk), issuer=issuer, audience=bundle.audience,
-                                  request_sha256=None if content is None else sha256_hex(content),
-                                  now=from_datetime(ts(at)))  # fmt: skip
+        key = bundle.stamp_key(presented_key_id(request.headers))
+        return verify_stamp(request.headers, method=request.method, target_uri=request.url, body=request.content,
+                            public_raw=_raw(key.jwk), now=from_datetime(ts(at)))  # fmt: skip
     except StampRefused as exc:
         raise _refuse(exc.code, str(exc)) from exc
 
@@ -396,27 +403,33 @@ def verify_request(tokens: Mapping[str, str], bundle: TrustBundle | Mapping[str,
                    request: RequestFacts | None = None) -> VerifiedRequest:  # fmt: skip
     """The identities of one request and the single-use values it presented; VerifiedIdentitiesRefused otherwise.
 
-    ``tokens`` maps a role (``user``, ``agent``, ``sponsor``) or ``stamp`` to the compact JWS presented for it.
-    ``at`` is the verifier's time (ISO 8601). ``transport`` is the identity a terminating TLS layer verified for the
+    ``tokens`` maps a role (``user``, ``agent``, ``sponsor``) to the compact JWS presented for it; an agent stamp is
+    read from ``request.headers`` instead. ``at`` is the verifier's time (ISO 8601). ``transport`` is the identity a terminating TLS layer verified for the
     peer under a trust root it pins; it is never read from the request."""
     trust = bundle if isinstance(bundle, TrustBundle) else TrustBundle.parse(bundle)
     if transport is not None and (not isinstance(transport, CanonicalIdentity) or transport.kind != "transport"):
         raise TypeError("transport is a CanonicalIdentity of kind transport")
-    if not isinstance(tokens, Mapping) or not tokens:
-        raise _refuse("principal_credential_missing", "the request presents no credential")
-    unknown = sorted(str(role) for role in tokens if role not in (*TOKEN_ROLES, "stamp"))
+    if not isinstance(tokens, Mapping):
+        raise TypeError("tokens maps a role to a compact JWS")
+    unknown = sorted(str(role) for role in tokens if role not in TOKEN_ROLES)
     if unknown:
         raise _refuse("principal_role_not_configured", ", ".join(unknown)[:80])
+    try:
+        stamped = None if request is None or stamp_fields(request.headers) is None else request
+    except StampRefused as exc:
+        raise _refuse(exc.code, str(exc)) from exc
+    if not tokens and stamped is None:
+        raise _refuse("principal_credential_missing", "the request presents no credential")
     try:
         when = ts(at).timestamp()
     except (TypeError, ValueError) as exc:
         raise TypeError("at is an ISO 8601 time") from exc
     stamp: VerifiedStamp | None = None
     proof: DpopProof | CertificateProof | None = None
-    if "stamp" in tokens:
-        if len(tokens) != 1:
+    if stamped is not None:
+        if tokens:
             raise _refuse("identity_sources_mixed", "a stamp is presented alone, never beside the tokens it replaces")
-        stamp = _stamp(tokens["stamp"], trust, request, at)
+        stamp = _stamp(trust, stamped, at)
         identity = stamp.stamp.canonical_identity()
     else:
         found = {role: _token(role, tokens[role], trust, when) for role in TOKEN_ROLES if role in tokens}

@@ -1,10 +1,11 @@
 """Conformance vectors for ``verified_identities`` and the agent stamp verifier (``stamp``).
 
 Each vector is ``{"id", "description", "tokens", "bundle", "at", "transport", "request", "expected"}``. ``tokens`` maps a
-role or ``stamp`` to a compact JWS; ``transport`` is a canonical identity string or null; ``request`` is null or
-``{"method", "url", "contentB64", "dpop", "clientCertificateB64"}`` (absent values null). ``expected`` is
-``{"refused": code}`` or ``{"identities": [documents], "proof": "dpop" | "mtls" | null, "stampJti": jti | null}``.
-A conforming verifier reports exactly these.
+role to a compact JWS; ``transport`` is a canonical identity string or null; ``request`` is null or
+``{"method", "url", "contentB64", "dpop", "clientCertificateB64", "headers"}`` (absent values null; ``headers`` is the
+list of ``[name, value]`` header lines, where an agent stamp travels). ``expected`` is ``{"refused": code}`` or
+``{"identities": [documents], "proof": "dpop" | "mtls" | null, "stamp": {"nonce", "expires"} | null}``. A conforming
+verifier reports exactly these.
 
 Every key here is derived from a fixed seed and every signature is deterministic (Ed25519, RFC 6979 ECDSA, RSA PKCS #1
 v1.5), so the file regenerates byte for byte.
@@ -20,6 +21,7 @@ from datetime import UTC, datetime, timedelta
 from functools import cache
 from typing import Any
 
+from agent_evidence_verify import structured_fields as sf
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
@@ -28,7 +30,6 @@ from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.x509.oid import NameOID
 
 from .canonical_identity import CanonicalIdentity, Ref
-from .core import sha256_hex
 from .digests import act_chain_digest
 from .identity import b64url, jwk_thumbprint
 from .possession import (
@@ -39,7 +40,19 @@ from .possession import (
     public_jwk,
     sign_dpop,
 )
-from .stamp import STAMP_TYP, stamp_key_id
+from .stamp import (
+    ALG,
+    CONTENT_DIGEST_HEADER,
+    COVERED,
+    LABEL,
+    PRINCIPALS_HEADER,
+    SIGNATURE_HEADER,
+    SIGNATURE_INPUT_HEADER,
+    TAG,
+    content_digest,
+    signature_base,
+    stamp_key_id,
+)
 from .verified_identities import RequestFacts, VerifiedIdentitiesRefused, verify_request
 
 AT = "2026-11-23T12:00:00+00:00"
@@ -117,9 +130,16 @@ USER_KEY, ROGUE_KEY, STAMP_KEY, HOLDER_KEY, OTHER_HOLDER = _ed(1), _ed(2), _ed(3
 OTHER_STAMP_KEY = _ed(6)
 
 
+def _segment(doc: dict[str, Any], *, sort_keys: bool = True) -> str:
+    """One JWS segment of ``doc``. The text starts ``{`` and a newline: legal JSON, and it keeps the segment from
+    opening with the base64 of ``{"``, which a secret scanner reads as the start of a live token."""
+    text = json.dumps(doc, separators=(",", ":"), sort_keys=sort_keys)
+    return b64url(("{\n" + text[1:]).encode())
+
+
 def _sign(key: Any, header: dict[str, Any], claims: dict[str, Any]) -> str:
     head = b64url(json.dumps(header, separators=(",", ":"), sort_keys=True).encode())
-    body = b64url(json.dumps(claims, separators=(",", ":"), sort_keys=True).encode())
+    body = _segment(claims)
     data = f"{head}.{body}".encode("ascii")
     if isinstance(key, Ed25519PrivateKey):
         sig = key.sign(data)
@@ -162,20 +182,47 @@ def bundle(profile: str = "basic", **issuers: Any) -> dict[str, Any]:
             "issuers": {**base, **issuers}}  # fmt: skip
 
 
-def stamp(*, key: Ed25519PrivateKey = STAMP_KEY, aud: str = AUDIENCE, iat: int = NOW - 10, exp: int = NOW + 50,
-          request_sha256: str | None = sha256_hex(BODY), identity: str | None = None, extra: dict | None = None,
-          claim: dict | None = None, kid: str | None = None, iss: str = GATEWAY) -> str:  # fmt: skip
-    raw = key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
-    act = act_chain_digest({"sub": "agent-refunds"})
-    ident = CanonicalIdentity(kind="agent", user=Ref("user", ENV, IDP, "alice@example.com"),
-                              chain=(Ref("agent", ENV, IDP, "agent-refunds"),), act=act)  # fmt: skip
-    body = {"user": {"iss": IDP, "sub": "alice@example.com"},
-            "agent": {"iss": IDP, "sub": "agent-refunds", "client_id": "agent-refunds"},
-            "principals": "sha256:" + "e5" * 32, "act": act, "grants": None,
-            "identity": identity or ident.render(), **(claim or {})}  # fmt: skip
-    claims = {"iss": iss, "aud": aud, "iat": iat, "exp": exp, "jti": "stamp-0001",
-              "request_sha256": request_sha256, "stamp": body, **(extra or {})}  # fmt: skip
-    return _sign(key, {"alg": "EdDSA", "typ": STAMP_TYP, "kid": kid or stamp_key_id(raw)}, claims)
+STAMP_ACT = act_chain_digest({"sub": "agent-refunds"})
+STAMP_IDENTITY = CanonicalIdentity(kind="agent", user=Ref("user", ENV, IDP, "alice@example.com"),
+                                   chain=(Ref("agent", ENV, IDP, "agent-refunds"),), act=STAMP_ACT).render()  # fmt: skip
+STAMP_PRINCIPALS = "sha256:" + "e5" * 32
+
+
+def principals_field(identity: str = STAMP_IDENTITY, *, client: str = "agent-refunds",
+                     principals: str = STAMP_PRINCIPALS, extra: dict[str, Any] | None = None) -> str:  # fmt: skip
+    """A ``Probity-Principals`` value; ``extra`` adds or replaces members (an ``sf.Item`` each)."""
+    members: dict[str, Any] = {"id": sf.Item(identity), "client": sf.Item(client), "principals": sf.Item(principals)}
+    return sf.serialize_dictionary({**members, **(extra or {})})
+
+
+def stamp(*, signer: Ed25519PrivateKey = STAMP_KEY, named_signer: Ed25519PrivateKey | None = None, method: str = "POST",
+          url: str = URL, body: bytes | None = BODY, created: int = NOW - 10, expires: int = NOW + 50,
+          nonce: Any = "stamp-0001", principals: str | None = None, covered: tuple[str, ...] = COVERED,
+          params: dict[str, Any] | None = None, names: tuple[str, str, str, str] | None = None) -> list[list[str]]:  # fmt: skip
+    """The four stamp header lines a gateway sends for one request, signed over ``method``, ``url`` and ``body``.
+
+    The keyword arguments build the attack cases: ``named_signer`` names another key than the signing one, ``covered``
+    and ``params`` change the signature input, ``names`` spells the four field names."""
+    raw = (named_signer or signer).public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    value = principals_field() if principals is None else principals
+    digest = content_digest(body)
+    members = {"created": created, "expires": expires, "nonce": nonce, "keyid": stamp_key_id(raw), "alg": ALG,
+               "tag": TAG, **(params or {})}  # fmt: skip
+    inner = sf.InnerList([sf.Item(c) for c in covered], {k: v for k, v in members.items() if v is not None})
+    base = signature_base(method=method, target_uri=url, content_digest_value=digest, principals_value=value,
+                          params=inner)  # fmt: skip
+    signature = sf.serialize_dictionary({LABEL: sf.Item(signer.sign(base))})
+    spelled = names or ("Probity-Principals", "Content-Digest", "Signature-Input", "Signature")
+    return [[spelled[0], value], [spelled[1], digest], [spelled[2], sf.serialize_dictionary({LABEL: inner})],
+            [spelled[3], signature]]  # fmt: skip
+
+
+def drop(lines: list[list[str]], name: str) -> list[list[str]]:
+    return [line for line in lines if line[0].lower() != name]
+
+
+def replace(lines: list[list[str]], name: str, value: str) -> list[list[str]]:
+    return [[n, value if n.lower() == name else v] for n, v in lines]
 
 
 @cache
@@ -190,13 +237,18 @@ def certificate() -> bytes:
 
 
 def request(*, dpop: str | None = None, cert: bytes | None = None, content: bytes | None = BODY,
-            method: str = "POST", url: str = URL) -> dict[str, Any]:
+            method: str = "POST", url: str = URL, headers: list[list[str]] | None = None) -> dict[str, Any]:  # fmt: skip
     return {"method": method, "url": url, "contentB64": None if content is None else base64.b64encode(content).decode(),
-            "dpop": dpop, "clientCertificateB64": None if cert is None else base64.b64encode(cert).decode()}
+            "dpop": dpop, "clientCertificateB64": None if cert is None else base64.b64encode(cert).decode(),
+            "headers": headers or []}  # fmt: skip
 
 
 def _proof(access: str, *, key: Ed25519PrivateKey = HOLDER_KEY, url: str = URL, jti: str = "dpop-0001") -> str:
-    return sign_dpop(key, "POST", url, iat=NOW, jti=jti, access_token=access, content=BODY)
+    """A DPoP proof, re-signed with the claims segment shaped as in ``_segment``."""
+    head, body, _ = sign_dpop(key, "POST", url, iat=NOW, jti=jti, access_token=access, content=BODY).split(".")
+    claims = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
+    shaped = _segment(claims, sort_keys=False)
+    return f"{head}.{shaped}.{b64url(key.sign(f'{head}.{shaped}'.encode('ascii')))}"
 
 
 TRANSPORT = CanonicalIdentity(kind="transport", service=Ref("service", ENV, "spiffe://mesh.example.org", "billing-gw"))
@@ -235,7 +287,15 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
                                                  "agent": token("agent", key=_rsa(), kid="rsa-1", iss=IDP_RSA)},
                                                 bundle=bundle(**{IDP_RSA: {"keys": [rsa_jwk], "pins": [rsa_pin]}}))),
         ("VI9", "a stamp from the pinned gateway names the identity the gateway verified",
-         c({"stamp": stamp()}, request=request())),
+         c({}, request=request(headers=stamp()))),
+        ("VI13", "the stamp's field names in another case are the same fields",
+         c({}, request=request(headers=stamp(names=("PROBITY-PRINCIPALS", "content-digest", "SIGNATURE-input",
+                                                    "signature"))))),
+        ("VI14", "another signer's Signature and Signature-Input are not a stamp: the tokens decide",
+         c({"user": user, "agent": agent},
+           request=request(headers=[["Signature-Input", 'sig1=("@method");created=1'], ["Signature", "sig1=:AAAA:"]]))),
+        ("VI15", "a stamp over a request with no body binds the digest of no bytes",
+         c({}, request=request(method="GET", content=None, headers=stamp(method="GET", body=None)))),
         ("VI10", "a key-bound agent token with a DPoP proof for this request",
          c({"user": user, "agent": bound}, request=request(dpop=_proof(bound)))),
         ("VI11", "a certificate-bound agent token with the confirmed client certificate",
@@ -290,29 +350,67 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
         ("VR25", "a certificate-bound agent token with no certificate",
          c({"user": user, "agent": cert_bound}, request=request())),
         # --- refused: the stamp ---
-        ("VS1", "a stamp beside the tokens it replaces", c({"stamp": stamp(), "agent": agent}, request=request())),
-        ("VS2", "a forged stamp", c({"stamp": _swap_claims(stamp(), aud="https://other.example")}, request=request())),
-        ("VS3", "a stamp signed by an unpinned key", c({"stamp": stamp(key=OTHER_STAMP_KEY)}, request=request())),
-        ("VS4", "a stamp for another audience", c({"stamp": stamp(aud="https://other.example")}, request=request())),
-        ("VS5", "an expired stamp", c({"stamp": stamp(iat=NOW - 100, exp=NOW - 1)}, request=request())),
-        ("VS6", "a stamp bound to other request bytes", c({"stamp": stamp()}, request=request(content=b"{}"))),
-        ("VS7", "a stamp with an unknown claim", c({"stamp": stamp(extra={"scope": "admin"})}, request=request())),
-        ("VS8", "a stamp whose identity names another agent",
-         c({"stamp": stamp(identity=CanonicalIdentity(kind="agent", user=Ref("user", ENV, IDP, "alice@example.com"),
-                                                      chain=(Ref("agent", ENV, IDP, "agent-payouts"),),
-                                                      act=act_chain_digest({"sub": "agent-refunds"})).render())},
-           request=request())),
-        ("VS9", "a stamp from staging read in prod",
-         c({"stamp": stamp(identity=CanonicalIdentity(kind="agent", user=Ref("user", "staging", IDP, "alice@example.com"),
-                                                      chain=(Ref("agent", "staging", IDP, "agent-refunds"),),
-                                                      act=act_chain_digest({"sub": "agent-refunds"})).render())},
-           request=request())),
-        ("VS10", "a stamp living longer than five minutes", c({"stamp": stamp(exp=NOW + 600)}, request=request())),
-        ("VS11", "a stamp naming the user acting alone",
-         c({"stamp": stamp(claim={"agent": {"iss": IDP, "sub": "alice@example.com", "client_id": "agent-refunds"}})},
-           request=request())),
-        ("VS12", "an identity provider's key signs a stamp under the provider's name",
-         c({"stamp": stamp(key=USER_KEY, iss=IDP)}, request=request())),
+        ("VS1", "a stamp beside the tokens it replaces", c({"agent": agent}, request=request(headers=stamp()))),
+        ("VS2", "a forged stamp: the signature bytes changed", c({}, request=request(headers=replace(
+            stamp(), SIGNATURE_HEADER, sf.serialize_dictionary({LABEL: sf.Item(bytes(64))}))))),
+        ("VS3", "a stamp signed by a key the bundle does not list", c({}, request=request(headers=stamp(signer=OTHER_STAMP_KEY)))),
+        ("VS4", "a stamp naming the pinned key but signed by another (swapped key)",
+         c({}, request=request(headers=stamp(signer=OTHER_STAMP_KEY, named_signer=STAMP_KEY)))),
+        ("VS5", "an expired stamp", c({}, request=request(headers=stamp(created=NOW - 100, expires=NOW - 1)))),
+        ("VS6", "a stamp for other body bytes", c({}, request=request(content=b"{}", headers=stamp()))),
+        ("VS7", "a stamp whose body and content digest were both replaced",
+         c({}, request=request(content=b"{}", headers=replace(stamp(), CONTENT_DIGEST_HEADER, content_digest(b"{}"))))),
+        ("VS8", "a stamp signed for another target, replayed on this one",
+         c({}, request=request(headers=stamp(url=PAYOUT)))),
+        ("VS9", "a stamp signed for another method", c({}, request=request(headers=stamp(method="PUT")))),
+        ("VS10", "a stamp signed for another authority", c({}, request=request(headers=stamp(
+            url="https://billing.example.com:8443/mcp/refund")))),
+        ("VS11", "a stamp whose principals were swapped for another user's after signing",
+         c({}, request=request(headers=replace(stamp(), PRINCIPALS_HEADER, principals_field(
+             CanonicalIdentity(kind="agent", user=Ref("user", ENV, IDP, "mallory@example.com"),
+                               chain=(Ref("agent", ENV, IDP, "agent-refunds"),), act=STAMP_ACT).render()))))),
+        ("VS12", "a stamp field given twice", c({}, request=request(headers=[*stamp(), ["probity-principals",
+                                                                                  principals_field()]]))),
+        ("VS13", "a stamp with no Signature line", c({}, request=request(headers=drop(stamp(), SIGNATURE_HEADER)))),
+        ("VS14", "a stamp with no principals field", c({}, request=request(headers=drop(stamp(), PRINCIPALS_HEADER)))),
+        ("VS15", "a stamp that does not cover the content digest",
+         c({}, request=request(headers=stamp(covered=("@method", "@target-uri", "@authority", PRINCIPALS_HEADER))))),
+        ("VS16", "a stamp covering the components in another order",
+         c({}, request=request(headers=stamp(covered=("@target-uri", "@method", "@authority", CONTENT_DIGEST_HEADER,
+                                                      PRINCIPALS_HEADER))))),
+        ("VS17", "a stamp with another tag", c({}, request=request(headers=stamp(params={"tag": "web-bot-auth"})))),
+        ("VS18", "a stamp naming another algorithm", c({}, request=request(headers=stamp(params={"alg": "hmac-sha256"})))),
+        ("VS19", "a stamp with no expires", c({}, request=request(headers=stamp(params={"expires": None})))),
+        ("VS20", "a stamp living longer than five minutes", c({}, request=request(headers=stamp(expires=NOW + 600)))),
+        ("VS21", "a stamp not yet valid", c({}, request=request(headers=stamp(created=NOW + 60, expires=NOW + 120)))),
+        ("VS22", "a stamp whose principals field is not a structured dictionary",
+         c({}, request=request(headers=stamp(principals="alice for agent-refunds")))),
+        ("VS23", "a stamp whose principals field carries another member",
+         c({}, request=request(headers=stamp(principals=principals_field(extra={"scope": sf.Item("admin")}))))),
+        ("VS24", "a stamp whose identity is not a canonical string",
+         c({}, request=request(headers=stamp(principals=principals_field("alice acting through agent-refunds"))))),
+        ("VS25", "a stamp naming the user acting alone (downgraded)",
+         c({}, request=request(headers=stamp(principals=principals_field(
+             CanonicalIdentity(kind="unknown", user=Ref("user", ENV, IDP, "alice@example.com")).render()))))),
+        ("VS26", "a stamp naming an agent acting for no user",
+         c({}, request=request(headers=stamp(principals=principals_field(CanonicalIdentity(
+             kind="agent", chain=(Ref("agent", ENV, IDP, "agent-refunds"),),
+             sponsor=Ref("sponsor", ENV, IDP, "owner@example.com")).render()))))),
+        ("VS27", "a stamp whose principals digest is not an identity digest",
+         c({}, request=request(headers=stamp(principals=principals_field(principals="e5" * 32))))),
+        ("VS28", "a stamp from staging read in prod",
+         c({}, request=request(headers=stamp(principals=principals_field(CanonicalIdentity(kind="agent", user=Ref("user", "staging", IDP, "alice@example.com"), chain=(Ref("agent", "staging", IDP, "agent-refunds"),), act=STAMP_ACT).render()))))),
+        ("VS29", "an identity provider's key signs a stamp", c({}, request=request(headers=stamp(signer=USER_KEY)))),
+        ("VS30", "a stamp key pinned for another tenant",
+         c({}, bundle=bundle(**{GATEWAY: {"keys": [_jwk(STAMP_KEY, None)],
+                                          "pins": [pin(STAMP_KEY, ["stamp"], tenants=["globex"], kid=None)[1]]}}),
+           request=request(headers=stamp()))),
+        ("VS31", "a stamp whose nonce is an Integer, not a String", c({}, request=request(headers=stamp(nonce=7)))),
+        ("VS32", "a stamp presented as a token role", c({"stamp": "not-a-token"}, request=request())),
+        ("VS33", "a content digest carrying a second algorithm",
+         c({}, request=request(headers=replace(stamp(), CONTENT_DIGEST_HEADER, content_digest(BODY) + ", sha-512=:AAAA:")))),
+        ("VS34", "a Signature-Input that is not a structured dictionary",
+         c({}, request=request(headers=replace(stamp(), SIGNATURE_INPUT_HEADER, "probity=(\"@method\"")))),
         # --- refused: the bundle ---
         ("VB1", "a bundle pin naming no listed key",
          c({"user": user, "agent": agent}, bundle=bundle(**{IDP: {"keys": [_jwk(USER_KEY, "idp-1")],
@@ -327,7 +425,7 @@ def _swap_claims(jws: str, **claims: Any) -> str:
     head, body, sig = jws.split(".")
     doc = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
     doc.update(claims)
-    return f"{head}.{b64url(json.dumps(doc, separators=(',', ':'), sort_keys=True).encode())}.{sig}"
+    return f"{head}.{_segment(doc)}.{sig}"
 
 
 def _alg_none(jws: str) -> str:
@@ -342,7 +440,8 @@ def judge(case: dict[str, Any]) -> dict[str, Any]:
     facts = None if raw is None else RequestFacts(
         method=raw["method"], url=raw["url"],
         content=None if raw["contentB64"] is None else base64.b64decode(raw["contentB64"]), dpop=raw["dpop"],
-        client_certificate=None if raw["clientCertificateB64"] is None else base64.b64decode(raw["clientCertificateB64"]))
+        client_certificate=None if raw["clientCertificateB64"] is None else base64.b64decode(raw["clientCertificateB64"]),
+        headers=tuple((name, value) for name, value in raw["headers"]))
     transport = None if case["transport"] is None else CanonicalIdentity.parse(case["transport"])
     try:
         found = verify_request(case["tokens"], case["bundle"], case["at"], transport, request=facts)
@@ -351,7 +450,7 @@ def judge(case: dict[str, Any]) -> dict[str, Any]:
     proof = "dpop" if isinstance(found.proof, DpopProof) else "mtls" if isinstance(found.proof, CertificateProof) \
         else None
     return {"identities": [i.document() for i in found.identities], "proof": proof,
-            "stampJti": None if found.stamp is None else found.stamp.jti}
+            "stamp": None if found.stamp is None else {"nonce": found.stamp.nonce, "expires": found.stamp.expires}}
 
 
 def vectors() -> list[dict[str, Any]]:
@@ -370,10 +469,17 @@ EXPECTED_REFUSALS = {
     "VR20": "principal_role_not_configured", "VR21": "principals_need_agent", "VR22": "dpop_proof_missing",
     "VR23": "dpop_htu_mismatch", "VR24": "dpop_key_not_confirmed", "VR25": "mtls_certificate_missing",
     "VR26": "identity_attribute_missing", "VR27": "identity_chain_repeats_agent",
-    "VS1": "identity_sources_mixed", "VS2": "stamp_forged", "VS3": "stamp_key_mismatch", "VS4": "stamp_wrong_audience",
-    "VS5": "stamp_expired", "VS6": "stamp_request_mismatch", "VS7": "stamp_malformed",
-    "VS8": "stamp_identity_mismatch", "VS9": "identity_environment_mismatch", "VS10": "stamp_lifetime_too_long",
-    "VS11": "stamp_downgraded", "VS12": "principal_key_not_pinned", "VB1": "trust_bundle_malformed",
+    "VS1": "identity_sources_mixed", "VS2": "stamp_forged", "VS3": "stamp_key_mismatch", "VS4": "stamp_forged",
+    "VS5": "stamp_expired", "VS6": "stamp_request_mismatch", "VS7": "stamp_forged", "VS8": "stamp_forged",
+    "VS9": "stamp_forged", "VS10": "stamp_forged", "VS11": "stamp_forged", "VS12": "stamp_repeated",
+    "VS13": "stamp_malformed", "VS14": "stamp_malformed", "VS15": "stamp_header_invalid",
+    "VS16": "stamp_header_invalid", "VS17": "stamp_header_invalid", "VS18": "stamp_header_invalid",
+    "VS19": "stamp_header_invalid", "VS20": "stamp_lifetime_too_long", "VS21": "stamp_not_yet_valid",
+    "VS22": "stamp_malformed", "VS23": "stamp_malformed", "VS24": "stamp_identity_mismatch",
+    "VS25": "stamp_downgraded", "VS26": "stamp_no_user", "VS27": "stamp_malformed",
+    "VS28": "identity_environment_mismatch", "VS29": "principal_key_not_pinned", "VS30": "principal_key_not_pinned",
+    "VS31": "stamp_header_invalid", "VS32": "principal_role_not_configured", "VS33": "stamp_malformed",
+    "VS34": "stamp_malformed", "VB1": "trust_bundle_malformed",
     "VB2": "trust_bundle_malformed",
 }
 

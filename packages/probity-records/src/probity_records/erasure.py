@@ -19,20 +19,24 @@ A v2 record splits every field of the record, by a declared schema, into one of 
 
 Every non-kept field names the data subject whose key covers it (a role: user, agent, sponsor, approver, session).
 The payload is encrypted per subject and per class (AES-256-GCM, a key derived per leaf, the AAD binding the format,
-leaf id, schema, subject and class, the plaintext padded to a multiple of 256 bytes so lengths do not identify
-values). The signed statement carries only the SHA-256 of each ciphertext; the ciphertext lives in a separate
-payload store. So the witnessed leaf is a commitment over (structural metadata, ciphertext digests, keyed tags) and
-stays verifiable when the ciphertext is deleted or its key destroyed. The statement's in-toto subject is a salted
-commitment to the call under the subject key, not a plain digest of it.
+leaf id, schema, subject and class, the plaintext padded to a multiple of 256 bytes, or to one exact size for a
+class the schema fixes, so a length cannot tell two values or two subjects apart). The signed statement carries only
+the SHA-256 of each ciphertext; the ciphertext lives in a separate payload store. So the witnessed leaf is a
+commitment over (structural metadata, ciphertext digests, keyed tags) and stays verifiable when the ciphertext is
+deleted or its key destroyed. The statement's in-toto subject is a salted commitment to the call under the subject
+key, not a plain digest of it.
 
 Nothing here holds or chooses a key: callers pass subject keys (the custodian, the one party that holds them,
-creates and destroys them). A schema travels as JSON (`Schema.to_json`, `Schema.from_json`), so another
+creates and destroys them). `reference` gives a subject-keyed handle for a value inside a body the subject signs, which
+cannot be pseudonymised after signing; `personal_traces` checks signed bytes for known personal values, in clear or
+under a plain digest. A schema travels as JSON (`Schema.to_json`, `Schema.from_json`), so another
 implementation seals and opens the same bytes; the shared vectors (`vectors/shared/erasure.json`, from
 `erasure_vectors`) fix keys, leaf ids and nonces. Spec: docs/erasure.md.
 """
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
@@ -61,6 +65,7 @@ ERASED: Final = "commitment only, content erased at {at}"
 LEAF_BYTES: Final = 16
 KEY_BYTES: Final = 32
 NONCE_BYTES: Final = 12
+TAG_BYTES: Final = 16  # the AES-GCM tag after the ciphertext
 _HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 _HEX32 = re.compile(r"[0-9a-f]{32}\Z")
 #: Field names that look like digests; a kept one must be declared structural (`Schema.structural`).
@@ -95,6 +100,9 @@ class Schema:
     name: str
     rules: tuple[Rule, ...]
     structural: frozenset[str] = frozenset()  # kept fields that are digests over payload-blind data
+    #: Classes whose every plaintext is padded to one exact size, so a ciphertext length says nothing of whose it is
+    #: (an approver's vote: the name inside would otherwise set the length); a larger plaintext is refused.
+    fixed: tuple[tuple[str, int], ...] = ()
 
     @property
     def ident(self) -> str:
@@ -113,9 +121,13 @@ class Schema:
     def kept(self) -> tuple[str, ...]:
         return tuple(r.path for r in self.rules if r.cls == KEPT)
 
+    def size(self, cls: str) -> int | None:
+        """The exact plaintext size of every ciphertext of `cls`, or None when it is padded to a multiple of PAD."""
+        return dict(self.fixed).get(cls)
+
     def to_json(self) -> dict[str, Any]:
         """The schema as JSON, the form the shared vectors and other implementations read."""
-        return {"name": self.name, "structural": sorted(self.structural),
+        return {"name": self.name, "structural": sorted(self.structural), "fixed": dict(sorted(self.fixed)),
                 "rules": [{"path": r.path, "class": r.cls, "subject": r.subject, "personal": r.personal,
                            "digestOfPersonal": r.digest_of_personal, "commit": r.commit} for r in self.rules]}
 
@@ -132,11 +144,19 @@ class Schema:
                 raise EnvelopeError("schema_malformed", repr(value))
             return value
 
+        def count(value: Any) -> int:
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise EnvelopeError("schema_malformed", repr(value))
+            return value
+
         try:
             rules = tuple(Rule(text(r["path"]), text(r["class"]), None if r["subject"] is None else text(r["subject"]),
                                flag(r["personal"]), flag(r["digestOfPersonal"]), flag(r["commit"]))
                           for r in doc["rules"])  # fmt: skip
-            return cls(text(doc["name"]), rules, frozenset(text(p) for p in doc["structural"]))
+            if not isinstance(doc["fixed"], Mapping):
+                raise EnvelopeError("schema_malformed", "fixed is not an object")
+            fixed = tuple(sorted((text(c), count(n)) for c, n in doc["fixed"].items()))
+            return cls(text(doc["name"]), rules, frozenset(text(p) for p in doc["structural"]), fixed)
         except (KeyError, TypeError) as exc:
             raise EnvelopeError("schema_malformed", str(exc)) from exc
 
@@ -176,6 +196,18 @@ def lint_schema(schema: Schema) -> list[str]:
     for parent in split:
         if "." in parent:
             problems.append(f"split_deeper_than_two:{parent}")
+    sized: set[str] = set()
+    for cls, size in schema.fixed:
+        if cls in sized:
+            problems.append(f"fixed_size_duplicate:{cls}")
+        sized.add(cls)
+        if (cls not in (PSEUDONYM, PAYLOAD) or isinstance(size, bool) or not isinstance(size, int) or size <= 0
+                or size % PAD):
+            problems.append(f"fixed_size_malformed:{cls}:{size}")
+    if schema.fixed:
+        # One fixed class beside a padded one leaves the padded ciphertext's length as the channel the fix closed.
+        used = {r.cls for r in schema.rules if r.cls in (PSEUDONYM, PAYLOAD)}
+        problems.extend(f"fixed_size_partial:{cls}" for cls in sorted(used - sized))
     return problems
 
 
@@ -204,6 +236,14 @@ def pseudonym(subject_key: bytes, leaf: bytes, path: str, value: Any) -> str:
     return tag(derive(subject_key, "pseudonym", leaf, path), value)
 
 
+def reference(subject_key: bytes, label: str, leaf: bytes, value: Any) -> str:
+    """A keyed reference to `value` for one leaf, for a value inside a body the subject signs (an approver named in
+    its own signed vote cannot be pseudonymised after signing). The same for one (key, label, leaf, value),
+    unrelated across leaves and labels, and impossible to recompute or to test against a guessed value once the
+    subject key is destroyed. HKDF label `reference/<label>`, empty path."""
+    return tag(derive(subject_key, "reference/" + label, leaf, ""), value)
+
+
 def subject_commitment(subject_key: bytes, leaf: bytes, value: Any) -> str:
     """The in-toto subject digest of a v2 record: the call committed under the subject key (salted by the key and
     the leaf), so a dictionary of calls does not find the record and two records of one call do not link."""
@@ -214,9 +254,14 @@ def _aad(leaf: bytes, schema: str, subject: str, cls: str) -> bytes:
     return canonical({"class": cls, "format": FORMAT, "leaf": leaf.hex(), "schema": schema, "subject": subject})
 
 
-def _pad(data: bytes) -> bytes:
-    # JSON ignores trailing whitespace, so padding with spaces keeps the plaintext one JCS object plus blanks.
-    return data + b" " * (-len(data) % PAD)
+def _pad(data: bytes, size: int | None = None) -> bytes:
+    """`data` padded with spaces to a multiple of PAD, or to exactly `size`; a plaintext over `size` is refused.
+    JSON ignores trailing whitespace, so the plaintext stays one JCS object plus blanks."""
+    if size is None:
+        return data + b" " * (-len(data) % PAD)
+    if len(data) > size:
+        raise EnvelopeError("payload_over_fixed_size", f"{len(data)} > {size}")
+    return data + b" " * (size - len(data))
 
 
 # ---- sealing --------------------------------------------------------------------------------------------------
@@ -318,7 +363,7 @@ def seal(
     for (role, cls), fields in sorted(groups.items()):
         pkey = derive(keys[role], "payload/" + cls, leaf, role)
         iv = os.urandom(NONCE_BYTES) if nonce is None else nonce[(role, cls)]
-        blob = iv + AESGCM(pkey).encrypt(iv, _pad(canonical(fields)), _aad(leaf, schema.ident, role, cls))
+        blob = iv + AESGCM(pkey).encrypt(iv, _pad(canonical(fields), schema.size(cls)), _aad(leaf, schema.ident, role, cls))
         digest = hashlib.sha256(blob).hexdigest()
         blobs[digest] = blob
         ciphertexts.append({"bytes": len(blob), "class": cls, "sha256": digest, "subject": role})
@@ -386,6 +431,8 @@ def open_sealed(
             continue
         if hashlib.sha256(blob).hexdigest() != digest:
             raise EnvelopeError("ciphertext_digest_mismatch", digest)
+        if len(blob) != entry["bytes"]:
+            raise EnvelopeError("ciphertext_length_mismatch", f"{role}/{cls}")
         pkey = derive(key, "payload/" + cls, leaf, role)
         try:
             plain = AESGCM(pkey).decrypt(blob[:NONCE_BYTES], blob[NONCE_BYTES:], _aad(leaf, erasure["schema"], role, cls))
@@ -431,13 +478,35 @@ def check_block(erasure: Mapping[str, Any]) -> None:
     seen: set[tuple[str, str]] = set()
     for e in entries:
         if (not isinstance(e, Mapping) or e.get("class") not in (PSEUDONYM, PAYLOAD) or e.get("subject") not in ROLES
-                or not isinstance(e.get("sha256"), str) or not _HEX64.fullmatch(e["sha256"])):
+                or not isinstance(e.get("sha256"), str) or not _HEX64.fullmatch(e["sha256"])
+                or isinstance(e.get("bytes"), bool) or not isinstance(e.get("bytes"), int)
+                or e["bytes"] < NONCE_BYTES + TAG_BYTES):
             raise EnvelopeError("ciphertexts_malformed")
         if (e["subject"], e["class"]) in seen:
             raise EnvelopeError("ciphertexts_duplicate")
         seen.add((e["subject"], e["class"]))
     if seen != {(roles[p], c) for p, c in classes.items() if c != KEPT}:
         raise EnvelopeError("ciphertexts_do_not_cover_fields")
+
+
+def check_padding(schema: Schema, erasure: Mapping[str, Any]) -> list[str]:
+    """Why the ciphertext sizes in a well-formed `erasure` block let a length identify a value; [] when none do.
+    Run by a reader that holds the schema: every ciphertext of a class the schema fixes holds exactly that many
+    plaintext bytes, every other one a multiple of PAD. A writer that skipped the padding is found here from the
+    signed block alone, without any key."""
+    check_block(erasure)
+    if erasure["schema"] != schema.ident:
+        return [f"schema_mismatch:{erasure['schema']}"]
+    problems: list[str] = []
+    for entry in erasure["ciphertexts"]:
+        plain = entry["bytes"] - NONCE_BYTES - TAG_BYTES
+        size = schema.size(entry["class"])
+        where = f"{entry['subject']}/{entry['class']}:{plain}"
+        if size is not None and plain != size:
+            problems.append(f"ciphertext_size_not_fixed:{where}")
+        elif size is None and (plain <= 0 or plain % PAD):
+            problems.append(f"ciphertext_not_padded:{where}")
+    return problems
 
 
 # ---- disclosure -----------------------------------------------------------------------------------------------
@@ -506,3 +575,37 @@ def erased_reading(at: str) -> str:
     """How a verifier reads an assertion whose subject key was shredded at `at`: its grade stands on the
     commitment, its content is gone."""
     return ERASED.format(at=at)
+
+
+# ---- the canary lint ------------------------------------------------------------------------------------------
+def _digest_forms(digest: bytes) -> list[str]:
+    raw = [base64.b64encode(digest).decode("ascii"), base64.urlsafe_b64encode(digest).decode("ascii")]
+    return [form for b64 in raw for form in (b64, b64.rstrip("="))]
+
+
+def personal_traces(signed: bytes, personal: Iterable[Any]) -> list[str]:
+    """Each way a known personal value shows in `signed` (the bytes a writer signed, after any DSSE base64 is decoded):
+    in clear (as JSON text, escaped either way for non-ASCII, a non-string value as its JCS text), or as a plain
+    SHA-256 of its UTF-8 bytes (a string) or its JCS bytes, in hex of either case (with or without `sha256:`) or in
+    base64 or base64url, padded or not. [] when none does. A schema lint judges declared rules; this judges what a
+    writer actually signed, so a field declared kept that carries a name is found too. Run it with canary values."""
+    lower = signed.lower()
+    found: list[str] = []
+    for value in personal:
+        if isinstance(value, str):
+            clear = {json.dumps(value, ensure_ascii=False)[1:-1], json.dumps(value, ensure_ascii=True)[1:-1]}
+        else:
+            clear = {canonical(value).decode("utf-8")}
+        digests = {"sha256(jcs)": hashlib.sha256(canonical(value)).digest()}
+        if isinstance(value, str):
+            digests = {"sha256(utf8)": hashlib.sha256(value.encode("utf-8")).digest(), **digests}
+        hits: list[str] = []
+        if any(text and text.lower().encode("utf-8") in lower for text in clear):
+            hits.append("clear")
+        for name, digest in digests.items():
+            if digest.hex().encode("ascii") in lower:
+                hits.append(name)
+            elif any(form.encode("ascii") in signed for form in _digest_forms(digest)):
+                hits.append(name + ":base64")
+        found.extend(f"{hit}:{value!r}" for hit in dict.fromkeys(hits))
+    return found

@@ -15,7 +15,7 @@ identities = verified_identities(
 )
 ```
 
-`verify_request` takes the same arguments and also returns what a service that keeps state spends once: the possession proof and the stamp's `jti`.
+`verify_request` takes the same arguments and also returns what a service that keeps state spends once: the possession proof, and the stamp's `nonce` until its `expires`.
 
 ## The trust bundle
 
@@ -46,7 +46,7 @@ Every member is required and no other member is allowed. Each pin names one list
 A request presents one of two things:
 
 - **Identity-provider tokens**, when an agent calls the service directly: `user` (an RFC 9068 access token, `typ` `at+jwt`, or an identity assertion grant, `oauth-id-jag+jwt`), `agent` (the agent client's own access token) and `sponsor` (an ID token, for an agent acting for no user).
-- **The agent stamp** (`stamp`), when the call comes through a gateway that verified the principals and forwards the stamp instead of their tokens. A stamp is never presented beside tokens (`identity_sources_mixed`).
+- **The agent stamp**, when the call comes through a gateway that verified the principals and forwards the stamp instead of their tokens. The stamp is an HTTP message signature (RFC 9421) over the request, so it is read from the request's header lines (`RequestFacts.headers`, one `(name, value)` pair per line received), not from a token role. A stamp is never presented beside tokens (`identity_sources_mixed`).
 
 ## Checks, in order
 
@@ -67,7 +67,29 @@ Then for the request:
 - The user's `act` claim names the presented agent first (`principal_act_names_another_agent`); the user's token was issued to the agent's client (`principal_user_token_not_issued_to_agent`). A sponsor answers for an agent (`principals_need_agent`).
 - Every token bound to a key (RFC 7800 `cnf`) is bound to the same key (`possession_not_the_grant_key`) and is proven held for this request by `possession.check_possession`: a DPoP proof for this method, this URL and these body bytes, whose `ath` binds the agent's token, or the confirmed client certificate. A token and proof captured on one route and replayed on another fails `dpop_htu_mismatch`. The proof is returned so a service that keeps state spends it once.
 
-For a stamp (`stamp.verify_stamp_token`): the header is exactly `alg` `EdDSA`, `typ` `probity-agent-stamp+jwt` and `kid` (`stamp_header_invalid`); `iss` is a pinned issuer (`stamp_wrong_issuer`) and `kid` is the SHA-256 of a raw Ed25519 key pinned for `stamp` there (`stamp_key_mismatch`, `principal_key_not_pinned`); the signature verifies (`stamp_forged`); the claims are exactly `iss`, `aud`, `iat`, `exp`, `jti`, `request_sha256` and `stamp` (`stamp_malformed`); `aud` is the bundle's audience (`stamp_wrong_audience`); `request_sha256` is the SHA-256 of the body received, null for no body (`stamp_request_mismatch`); the lifetime is at most 300 seconds (`stamp_lifetime_too_long`) and the time is inside it (`stamp_not_yet_valid`, `stamp_expired`). The `stamp` claim is exactly `user`, `agent`, `principals`, `act`, `grants` and `identity`; it names an agent other than the user (`stamp_downgraded`); and `identity` is a canonical identity string naming the same user, agent, act digest and grant digest (`stamp_identity_mismatch`). The request identity is that string, so a service behind the gateway reads exactly the identity a service called directly reads.
+For a stamp (`stamp.verify_stamp`), in this order:
+
+1. The four fields `Probity-Principals`, `Content-Digest`, `Signature-Input` and `Signature` are each given once, in any case (`stamp_repeated`), and all four are present once any is (`stamp_malformed`). A `Signature` with no `probity` member belongs to another signer and is not a stamp.
+2. Each is an RFC 8941 dictionary, read by `agent_evidence_verify.structured_fields` (`stamp_malformed`).
+3. The `probity` signature input covers exactly `("@method" "@target-uri" "@authority" "content-digest" "probity-principals")`, in that order, and has exactly the parameters `created`, `expires` (Integers), `nonce`, `keyid` (Strings, the nonce at most 128 bytes), `alg="ed25519"` and `tag="probity-principals/v1"` (`stamp_header_invalid`).
+4. `keyid`, the lowercase hex SHA-256 of a raw Ed25519 key, names exactly one key the bundle lists (`stamp_key_mismatch`), and that key is pinned for `stamp` in the bundle's tenant (`principal_key_not_pinned`). The key id only picks among listed keys: a stamp never brings its own key.
+5. `Content-Digest` is exactly one `sha-256` Byte Sequence (`stamp_malformed`) and it is the digest of the body received (`stamp_request_mismatch`).
+6. The Ed25519 signature verifies over the RFC 9421 signature base built from the request the service received: its method, its own external URL and that URL's authority (`stamp_forged`). A stamp signed for another method, route, host or port therefore fails here.
+7. `expires` is after `created` (`stamp_malformed`) and at most 300 seconds later (`stamp_lifetime_too_long`); `created` is not after the time (`stamp_not_yet_valid`); the time is before `expires` (`stamp_expired`).
+8. `Probity-Principals` is exactly the String members `id`, `client` and `principals`, in that order, with `principals` a `sha256:` identity digest (`stamp_malformed`); `id` is a canonical identity string (`stamp_identity_mismatch`) of kind `agent` (`stamp_downgraded`) naming the user it acts for (`stamp_no_user`) and an agent that is not that user (`stamp_downgraded`).
+
+The verifier remembers nothing. A service that keeps state spends `(nonce, expires)` in its own single-use store after these checks pass, so a captured stamp cannot be replayed even on the same request.
+
+A gateway signs with `stamp.sign_stamp`:
+
+```
+Probity-Principals: id="aid1!agent;user=...;chain=...;act=sha256:...", client="agent-refunds", principals="sha256:..."
+Content-Digest: sha-256=:<base64 SHA-256 of the body>:
+Signature-Input: probity=("@method" "@target-uri" "@authority" "content-digest" "probity-principals");created=1795435190;expires=1795435250;nonce="...";keyid="<hex SHA-256 of the raw key>";alg="ed25519";tag="probity-principals/v1"
+Signature: probity=:<Ed25519 signature>:
+```
+
+The user, the agent chain, the `act` digest and the `grants` digest are read from `id`, so the stamp carries each once and they cannot disagree.
 
 Last, every ref of the request identity and of the transport identity is in the bundle's environment (`identity_environment_mismatch`), so a staging identity is never read in production, and the bundle's profile is applied: `strict` refuses kind `unknown` (`identity_actor_unknown`).
 
@@ -77,4 +99,4 @@ For tokens: kind `agent`; the user ref is the user token's `iss` and `sub`; the 
 
 ## Vectors
 
-`vectors/shared/verified_identities.json` holds 53 cases, generated by `verified_identities_vectors.py` with fixed keys and deterministic signatures. The TypeScript verifier (`node/probity-records-verify/src/verified.ts`) reports the same identities or the same refusal code for each.
+`vectors/shared/verified_identities.json` holds 78 cases, written by `scripts/gen_shared_vectors.py` from `verified_identities_vectors.py` with fixed keys and deterministic signatures. The TypeScript verifier (`node/probity-records-verify/src/verified.ts`) reports the same identities or the same refusal code for each.
