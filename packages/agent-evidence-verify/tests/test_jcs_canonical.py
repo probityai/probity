@@ -62,16 +62,26 @@ FRACTIONS_PAST_THE_BOUND = ["12345678901234567.5", "9007199254740991.5", "-90071
 
 
 @pytest.mark.parametrize("token", FRACTIONS_PAST_THE_BOUND)
-def test_the_bounded_profile_refuses_a_fraction_that_rounds_past_the_bound(token: str) -> None:
+def test_a_fraction_that_rounds_to_another_number_is_refused_under_every_target(token: str) -> None:
+    # The decimal reader already refuses a token whose double is another number, so these never
+    # reach the bounded rule; the profile and the plain target agree.
+    text = '{"n":' + token + "}"
+    for target in ("rfc8785", "rfc8785-safe-integer"):
+        with pytest.raises(Refusal, match="another number"):
+            canonical(target, text)
+
+
+@pytest.mark.parametrize("token", ["9007199254740992.0", "-9007199254740992.0", "1e16"])
+def test_the_bounded_profile_refuses_an_exact_double_at_or_past_two_pow_53(token: str) -> None:
     text = '{"n":' + token + "}"
     with pytest.raises(Refusal, match="number_not_interoperable"):
         canonical_bounded(text)
-    # RFC 8785 as written still rounds it; only the bounded profile is a signing input.
+    # RFC 8785 as written keeps it; only the bounded profile is a signing input.
     assert canonical("rfc8785", text).startswith(b'{"n":')
 
 
-def test_the_bounded_profile_keeps_a_fraction_that_rounds_into_range() -> None:
-    assert canonical_bounded('{"n":9007199254740991.4}') == b'{"n":9007199254740991}'
+def test_the_bounded_profile_keeps_a_double_inside_the_bound() -> None:
+    assert canonical_bounded('{"n":9007199254740991.0}') == b'{"n":9007199254740991}'
 
 
 @pytest.mark.parametrize("token,expected", [("1e20", b"100000000000000000000"), ("1e21", b"1e+21")])
