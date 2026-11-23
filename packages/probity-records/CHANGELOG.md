@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2026-11-23)
 
 - The refusal registry holds the receiver policy's codes (check `receiver.policy`): `receiver_policy_denied` (a
   deny rule or the route default refuses an identity the request presents) and `receiver_agent_rule_missing` (an
