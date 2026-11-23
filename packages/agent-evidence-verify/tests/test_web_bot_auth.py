@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 
 import pytest
 from agent_evidence_verify import adjudicate
-from agent_evidence_verify.adapters import _sf as sf
+from agent_evidence_verify import structured_fields as sf
 from agent_evidence_verify.adapters import web_bot_auth as wba
 from agent_evidence_verify.common import CaseError
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey

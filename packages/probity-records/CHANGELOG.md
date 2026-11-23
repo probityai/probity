@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Eight refusal codes are registered for key-bound agent tokens and presented grant chains:
+  `agent_cnf_not_the_registered_key`, `agent_credential_is_bearer`, `principal_issuer_not_scoped_for_role`,
+  `principal_issuer_not_scoped_for_tenant` and `principal_lifetime_exceeds_ceiling` (identity.principals),
+  `grant_holder_is_not_the_agent` (possession.proof), `grant_chain_header_malformed` (grants.chain) and
+  `delegation_root_not_the_entry_agent` (delegation.hop).
 - The strict grade follows the gateway writer's rule: user, agent and sponsor, the user credential's `act` chain
   naming the agent, and the approver present exactly when an approval admitted the call. A call no human approved is
   now strict without an approver (it was basic, so a strict writer refused the record that answers a pending
