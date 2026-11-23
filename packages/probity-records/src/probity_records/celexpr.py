@@ -79,7 +79,7 @@ def compile_expr(expr: Any) -> Any:
         raise ValueError(found)
     try:
         return _compiled(expr)
-    except Exception as exc:  # noqa: BLE001 - the checker's message is cel-cpp's own text, never a code
+    except Exception as exc:
         raise ValueError("cel_type_check_failed") from exc
 
 
