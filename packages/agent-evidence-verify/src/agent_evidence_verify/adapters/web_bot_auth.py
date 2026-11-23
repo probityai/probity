@@ -67,7 +67,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from .. import strictb64
 from ..common import CaseError, _digest, _instant, _string
 from ..ijson import IJSONError, parse_ijson
-from . import _sf as sf
+from .. import structured_fields as sf
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "web_bot_auth/v1"

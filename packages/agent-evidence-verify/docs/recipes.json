@@ -102,11 +102,6 @@
       "sha256": "c3022933195dd7fe0c500fbde8aaf3fe27d585f204c14720e415743948eb42f4"
     },
     {
-      "path": "src/agent_evidence_verify/adapters/_sf.py",
-      "bytes": 11400,
-      "sha256": "3afa7eaa9a97cb786bb19e5d599096e7d6ad993a69a82b0c664771b4a253a645"
-    },
-    {
       "path": "src/agent_evidence_verify/adapters/a2a_signed_card.py",
       "bytes": 17667,
       "sha256": "79ca43a486dcc1fe2d7122955d77878c7a6fddee62ac2f70b9b95d07f4a63e6c"
@@ -318,8 +313,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/web_bot_auth.py",
-      "bytes": 34472,
-      "sha256": "f8f80fca181c81c315689a369c734022e3c059711b8d772fa6f9996ee15bbbb9"
+      "bytes": 34487,
+      "sha256": "25f5a866dea37b704569704fae462994af6fd43e9a7c20d353520ac49b114fd0"
     },
     {
       "path": "src/agent_evidence_verify/adapters/witnessed.py",
@@ -420,6 +415,11 @@
       "path": "src/agent_evidence_verify/strictb64.py",
       "bytes": 1797,
       "sha256": "3dddcb39ca28d92a0fa969f75490791e244cec44b3049764ef11d02ec254e533"
+    },
+    {
+      "path": "src/agent_evidence_verify/structured_fields.py",
+      "bytes": 11547,
+      "sha256": "93c018a718c7f93f3536041e4aa5b86013c150c605425c6f0f8554ffc9c0fc8f"
     },
     {
       "path": "src/agent_evidence_verify/verdict_codes.py",
