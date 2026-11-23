@@ -80,7 +80,9 @@ from probity_records.quorum import (
     sign_vote,
 )
 from probity_records.revocation import DIGEST_KINDS, REVOCATION_DOMAIN
-from probity_records.verified_identities_vectors import vectors as verified_identity_vectors
+from probity_records.verified_identities_vectors import (
+    vectors as verified_identity_vectors,
+)
 
 SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 

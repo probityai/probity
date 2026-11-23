@@ -46,7 +46,14 @@ from .digests import IdentityDigestError, act_chain_digest
 from .grants import ts
 from .identity import _verify_jws, jwk_thumbprint, unb64url
 from .possession import CertificateProof, DpopProof, check_possession
-from .stamp import StampRefused, VerifiedStamp, presented_key_id, stamp_fields, stamp_key_id, verify_stamp
+from .stamp import (
+    StampRefused,
+    VerifiedStamp,
+    presented_key_id,
+    stamp_fields,
+    stamp_key_id,
+    verify_stamp,
+)
 
 VERSION: Final = 1
 #: The roles a request credential may sign for, and the stamp a gateway signs.

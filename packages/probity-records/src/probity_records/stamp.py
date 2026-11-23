@@ -43,7 +43,10 @@ from urllib.parse import urlsplit
 
 from agent_evidence_verify import structured_fields as sf
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 
 from .canonical_identity import CanonicalIdentity, IdentityStringError
 from .clock import NS_PER_S
