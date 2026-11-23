@@ -241,7 +241,7 @@ def judge(receipt_bytes: bytes, keys: Any) -> tuple[dict[str, Any], list[tuple[s
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     """Judge the bound receipt, then ask each party's key authority about its key."""
-    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authority_evidence, authorize
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authorize, evidence
     case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, _REQUIRED, _OPTIONAL)
     scope: dict[str, Any] = {"limit": LIMIT}
     receipt_bytes, scope["receipt"] = bound(artifacts, artifact_root, assessment["receipt"],
@@ -278,9 +278,9 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     configs = [assessment.get("key_authority"), assessment.get("cosigner_key_authority")]
     answers = []
     for (did, key), config in zip(signers, configs):
-        document, proof = authority_evidence(config, artifacts, artifact_root, scope)
+        proved = evidence(config, artifacts, artifact_root, scope)
         answers.append(authorize(config, key, subject=did, at=receipt["timestamp"],
-                                 did_document=document, inclusion_proof=proof))
+                                 **proved))
     authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
     if authority.outcome == AUTHORIZED:
         check["evidence_attribution"] = attribution

@@ -292,7 +292,7 @@ def _context(assessment: dict) -> str:
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     """Judge the bound card, then ask the consumer's key authority about every signing key."""
-    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authority_evidence, authorize
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authorize, evidence
     case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, _REQUIRED, _OPTIONAL)
     card_did = _context(assessment)
     scope: dict[str, Any] = {"card_did": card_did, "limit": LIMIT}
@@ -306,11 +306,11 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     if card is None:
         return decision(case_id, CLAIM_TYPE, scope, "not_established", "card_unavailable")
     config = assessment.get("key_authority")
-    document, proof = authority_evidence(config, artifacts, artifact_root, scope)
+    proved = evidence(config, artifacts, artifact_root, scope)
     check: dict[str, Any] = {"id": "a2a_signed_card"}
     try:
         key_set = None if key_set_bytes is None else _strict(key_set_bytes, "jwks_malformed")
-        signers, extension = judge(card, card_did, key_set, document)
+        signers, extension = judge(card, card_did, key_set, proved.get("did_document"))
     except Refused as refusal:
         check.update(status="fail", reason=str(refusal.args[0]))
         return decision(case_id, CLAIM_TYPE, scope, "contradicted", str(refusal.args[0]), [check])
@@ -323,7 +323,7 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     if extension is not None:
         check["conformance_extension"] = extension
     answers = [authorize(config, key, kid=kid, subject=card_did, at=assessment.get("at"),
-                         did_document=document, inclusion_proof=proof) for kid, key in signers]
+                         **proved) for kid, key in signers]
     authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
     checks = [check, authority.check()]
     if authority.outcome == AUTHORIZED:
