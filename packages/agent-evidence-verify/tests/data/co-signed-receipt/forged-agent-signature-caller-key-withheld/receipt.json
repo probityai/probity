@@ -1,0 +1,14 @@
+{
+  "formatVersion": "1",
+  "agentDid": "did:web:agent.example.test",
+  "callerDid": "did:web:caller.example.test",
+  "toolName": "translate",
+  "taskHash": "c529a6638467eceb7dce72e5265f6ff548c57139aa911610a88845159909db68",
+  "resultHash": "7d785f43ae44d81b1eb967b2eb215609578bc34334f2f6dcfd7ba631e172a193",
+  "success": true,
+  "failureType": "",
+  "latencyMs": 142,
+  "timestamp": "2026-11-17T11:59:58.250Z",
+  "signature": "d8c931eadca1cfb50feca5f8352bc49f7f8242721df41bbacd3f25fc1dea46ab208fae44733d05d038a7ebc13623ca55b453610366aff57fbd2e614a1877770e",
+  "callerSignature": "3ee607982d2926335a5943e4c35f1d181a09f6645e1528df3eac0ebb0a2308fda690be67346a72e641af15cb5cbbc17ee8abcb7a6cca1117d7d4c9d0a571cd0b"
+}

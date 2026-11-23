@@ -165,3 +165,36 @@ receipt, ML-DSA-65 signature and RFC 3161 time stamp in order, with each check a
 case-variant member, an escaped or non-ASCII or newline-terminated time, `-0` in either signing direction) and the
 distinct-authority classes (a named key that does not sign, one key under two ids, the issuer's own key as cosigner,
 a threshold met by one authority).
+
+## Catalog trust manifests
+
+[`catalog_trust_manifest/v1`](catalog-trust-manifest.md) judges one signed object of an ARD catalog
+or an AI Catalog: which key signed which bytes under which of four closed constructions, and whether
+the signed subject binds the entry, its artifact and its vendored DSSE attestations. Every signing
+key goes through the consumer's key authority. It is a port of the reference reader in
+agent-evidence-vectors, with the same checks, order and codes, and a parity test over that reader's
+corpus and the matrix row 11 break vectors.
+
+## DNS-AID discovery and the calls that followed it
+
+[`dns_aid_sig/v1`, `dnssec_rrset/v1` and `declared_versus_acted/v1`](dns-aid.md) check a DNS-AID
+record's signed binding under a key authority the consumer names, validate any RRset offline under
+DNSSEC from a pinned trust anchor, and join an observer's witnessed trajectory of discovery answers
+and calls, so a call to an undeclared endpoint, after a binding's `exp`, or under an unauthorised key
+is `contradicted`.
+## Signed Agent Cards
+
+[`a2a_signed_card/v1`](a2a-signed-card.md) judges one A2A Agent Card: which keys of the card's own
+DID signed its bytes (JWS over RFC 8785 of the card minus `signatures`), whether every `kid` is a key
+of that DID, and whether the consumer's key authority lets each key speak for it. A key served with
+the card, or fetched from its `jku`, is never authority by itself. A card that lists the
+conformance extension names its corpus and verifier inside its signature.
+
+## Co-signed receipts
+
+[`co_signed_receipt/v1`](co-signed-receipt.md) judges one tool-call receipt: the admission
+member rules first (a valid signature over a malformed receipt is refused), then the agent's
+signature and any co-signature, then each party's key under its own key authority. It reports the
+evidence attribution once key authority decides it, `co_signed`, `single_signed` or
+`unattributed_evidence`.
+

@@ -241,3 +241,15 @@ def test_an_exempt_function_nested_in_a_checked_one_leaves_its_labels_alone() ->
               "        return label\n"
               "    return grade\n")
     assert findings(source) == []
+
+
+def test_the_dnssec_refusal_codes_of_the_key_authority_check_are_registered() -> None:
+    """The ``dnssec_<reason>`` codes are values of one table, which the lint does not read as refusal positions."""
+    import ast
+
+    path = Path(__file__).resolve().parents[2] / "agent-evidence-verify" / "src" / "agent_evidence_verify" / "key_authority.py"
+    table = next(n.value for n in ast.parse(path.read_text(encoding="utf-8")).body
+                 if isinstance(n, ast.Assign) and any(getattr(t, "id", "") == "_DNSSEC_REFUSALS" for t in n.targets))
+    codes = {v.value for v in table.values}
+    assert len(codes) == 19
+    assert codes <= set(refusal_codes.CODES)

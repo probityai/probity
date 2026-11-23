@@ -362,7 +362,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             args.host, HOST, "https://github.com/UKGovernmentBEIS/inspect_ai"
         )
         receipt["readerSource"] = checkout(
-            args.reader_source, READER, "https://github.com/probityai/agent-evidence-observer"
+            args.reader_source,
+            READER,
+            "https://github.com/probityai-archive/agent-evidence-observer",
         )
         _install_checks(args, policy, env, receipt, native_policy["files"])
         declaration = population()

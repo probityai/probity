@@ -2,7 +2,7 @@
 
 ## 0.9.0 (unreleased)
 
-A minor release: seven new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
+A minor release: fourteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
@@ -40,6 +40,35 @@ A minor release: seven new claim types and three more suites in corpus mode; the
   one key under two ids, the issuer's own key as cosigner, a threshold of one authority, a short count), and a spent
   use limit (`uses_exhausted`), each with its own code; a `revocation_ref` outside the consumer's `revocation_sources`
   and a use limit with no recorded count are `not_established`. Doc: `docs/capability-credential.md`.
+- `dns_aid_sig/v1`: checks a DNS-AID discovery record's `sig` (compact JWS, ES256) against the served record
+  under the `dns-aid-sig-binding/v1` profile (strict canonical base64url, I-JSON header and payload, `crit`
+  refused, integer `port`/`iat`/`exp`, protocol bound from `proto` then `alpn`, `svcb1` over RFC 8785 with
+  empty distinct from absent) and agrees only when the consumer's key authority authorises the key for the
+  zone. A `jwks_url` is read as every common client reads it (a backslash, userinfo, control character or
+  non-hostname host is refused), a `port` is 0 to 65535, and an inverted window is refused. Every verdict names
+  the key-set fingerprint it read and the `fqdn` and `zone` the record claimed; malformed record input is a
+  verdict, never an exception. Page: `docs/dns-aid.md`, example: `examples/dns-aid-sig/`.
+- `dnssec_rrset/v1` and the `dnssec-chain` key-authority kind: offline DNSSEC validation (RFC 4034, RFC 4035;
+  RSA, ECDSA, EdDSA; SHA-256 and SHA-384 DS) of an RRset from a pinned trust anchor, from a chain in DNS wire
+  format. A missing record reads `not_established`, never validated; a key with the REVOKE bit validates no
+  zone data, and the authority holds only when the zone that signed the key record contains the record's zone,
+  so a delegated child zone never vouches for its parent. Example: `examples/dnssec-rrset/` (a real chain from
+  the IANA root).
+- `declared_versus_acted/v1`: joins an agent-evidence-observer trajectory of resolution and call events,
+  verified against its witnessed head, with the bindings it relied on; a call to an undeclared endpoint, to an
+  endpoint clients read differently, before the resolution it names, after `exp` or under an unauthorised key is
+  `contradicted`, and the scope carries the call denominator. Lines end at `\n` only and the head signature is
+  canonical base64. Example: `examples/declared-versus-acted/`.
+- `catalog_trust_manifest/v1`: judges one signed object of an ARD catalog or an AI Catalog: which key signed which bytes
+  under which of four closed constructions, and whether the signed subject binds the entry, its artifact and its vendored
+  DSSE attestations, with every signing key admitted only through the consumer's key authority. Doc:
+  `docs/catalog-trust-manifest.md`.
+- `a2a_signed_card/v1`: judges one A2A Agent Card: which keys of the card's own DID signed its bytes, whether every `kid` is
+  a key of that DID, and whether the consumer's key authority lets each key speak for it. A key served with the card or
+  fetched from its `jku` is never authority by itself. Doc: `docs/a2a-signed-card.md`.
+- `co_signed_receipt/v1`: judges one tool-call receipt: the admission member rules first, then the agent's signature and any
+  co-signature, then each party's key under its own key authority, and reports the attribution as `co_signed`,
+  `single_signed` or `unattributed_evidence`. Doc: `docs/co-signed-receipt.md`.
 - `agent_audit_record/v1`: judges an agent audit record, a retained record with its dating check, or a set of records,
   under the consumer's trust document, and carries every field a member of `vectors-agent-audit-record` declares
   (verdict and first code, recomputed tier, `withinLimit`, dating, joint set result). Each time bound is kept apart
@@ -51,6 +80,16 @@ A minor release: seven new claim types and three more suites in corpus mode; the
   stack, a 4300-digit integer, an `anchorWithin` no timedelta holds and an `issuedAt` in year 1 are each judged. A
   trust document the reader cannot read is refused as the consumer's error. Route and example:
   `docs/corpus-routes.md`, `examples/corpus-routes/audit-record/`.
+
+A new claim type, `web_bot_auth/v1`: was this HTTP request signed, under Web Bot Auth (RFC 9421 with
+`draft-ietf-webbotauth-httpsig-protocol-01`), by the agent the consumer pinned? It runs offline against a request
+capture, a pinned key directory, the authority the consumer serves and the consumer's own instant. The verifying key
+comes only from the pinned directory, a request with a body must cover a `Content-Digest` equal to the digest of the
+received body (only the members the signature covers count), and a signature made for another host or signer is
+`contradicted`. The directory's own `nbf`, `exp`, `use` and `key_ops` are honoured, a key published with its private part
+signs nothing, the validity window is 24 hours unless the consumer pins another, every Web Bot Auth signature on a
+request is judged on its own, and the record names the method, path or query a signature leaves uncovered. See
+`docs/web-bot-auth.md`.
 
 Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
 reason each corpus declares.

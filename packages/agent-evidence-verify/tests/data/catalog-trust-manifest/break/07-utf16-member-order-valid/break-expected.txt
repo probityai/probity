@@ -1,0 +1,1 @@
+ACCEPT L=True (correct RFC 8785 bytes). Old probes sort by code point and print INVALID.

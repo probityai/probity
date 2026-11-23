@@ -1,0 +1,7 @@
+{
+  "id": "did:web:agent.example.test",
+  "verificationMethod": true,
+  "assertionMethod": [
+    "did:web:agent.example.test#ed25519"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "card.json": {
+      "length": 1294,
+      "path": "card.json",
+      "sha256": "dfc3d96fbd32ac4ba418a8d4e9845ec3fe5a9590d2974ea0fca57fcb86266414"
+    },
+    "jwks.json": {
+      "length": 402,
+      "path": "jwks.json",
+      "sha256": "393675ced92f85de65cbc7d4a39c45713b7fa25ea71acabcf437dbb7a3da7414"
+    }
+  },
+  "case_id": "a2a-signed-card-pinned-owner-key",
+  "schema_version": "probity-case/v1"
+}

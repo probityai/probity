@@ -403,8 +403,8 @@ NOT_LINTED = {
 #: is a sentinel here. The other modules of that package carry the contract codes of their own published predicates
 #: (some still kebab), and move into this scope as each contract is revised.
 VERIFIER_CONFIG = Config(
-    sentinels=frozenset({"", "ok", "key_pinned", "key_bound_at_time", "key_in_assertion_method", "key_in_log",
-                         "marker_survives"}))
+    sentinels=frozenset({"", "ok", "key_pinned", "key_bound_at_time", "key_in_assertion_method",
+                         "key_in_dnssec_record", "key_in_log", "marker_survives"}))
 VERIFIER_MODULES = ("actor_marker", "key_authority")
 
 

@@ -1,0 +1,8 @@
+{
+ "count": 2,
+ "format": "probity-trajectory-head-v1",
+ "head": "1f617d00339940692d60decb039f6fb058d1077423ede6a74c936d71d1236330",
+ "keyid": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+ "signature": "VTDUuCMqyq86SV3yCKL1aXENVSGnEXblZW8T9QhFWWMpuwkR6SpmtzvQ3aTsla2DRSqph6tTLMc+7jHa4vYnBg==",
+ "trajectory": "dva-unnamed-call-before-any-resolution"
+}

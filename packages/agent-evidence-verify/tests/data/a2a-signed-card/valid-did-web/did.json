@@ -1,0 +1,18 @@
+{
+  "id": "did:web:agent.example.test",
+  "verificationMethod": [
+    {
+      "id": "did:web:agent.example.test#ed25519",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:agent.example.test",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "sLA7MDb22l2Dov4gyhFwCB7tmlu2ucab-J2ZQeVCDbQ"
+      }
+    }
+  ],
+  "assertionMethod": [
+    "did:web:agent.example.test#ed25519"
+  ]
+}

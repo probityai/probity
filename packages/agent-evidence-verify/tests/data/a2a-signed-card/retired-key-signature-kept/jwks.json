@@ -1,0 +1,16 @@
+{
+  "keys": [
+    {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "sLA7MDb22l2Dov4gyhFwCB7tmlu2ucab-J2ZQeVCDbQ",
+      "kid": "did:web:agent.example.test#ed25519"
+    },
+    {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "Rdsf3ERtYirUdT7dKDeUu3qkfJy2G-o2BB50SIsNHFw",
+      "kid": "did:web:agent.example.test#next"
+    }
+  ]
+}

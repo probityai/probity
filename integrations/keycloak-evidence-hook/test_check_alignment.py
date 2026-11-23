@@ -143,6 +143,16 @@ class CheckAlignment(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("image tag 26.4.7 != pom keycloak.version 26.6.3", err)
 
+    def test_compose_tag_that_rebuilds_the_release_passes(self) -> None:
+        self.write(kv="26.6.3", logging="3.6.2.Final", rs="3.1.0", tag="26.6.3-3")
+        self.assertEqual(ca.check(self.hook, self.repo), [])
+
+    def test_compose_tag_that_rebuilds_another_release_fails(self) -> None:
+        self.write(kv="26.6.3", logging="3.6.2.Final", rs="3.1.0", tag="26.4.7-3")
+        rc, err = self.run_main()
+        self.assertEqual(rc, 1)
+        self.assertIn("image tag 26.4.7-3 != pom keycloak.version 26.6.3", err)
+
     def test_image_without_digest_fails(self) -> None:
         self.write(
             kv="26.6.3",
