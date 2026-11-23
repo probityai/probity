@@ -138,6 +138,8 @@ def _verify_roots(claim: dict[str, Any], entries: list[dict[str, Any]]) -> None:
 
 
 _PACKET_FIELDS = frozenset({"authority", "checkpoint", "claim", "claimKeyid", "claimSignature", "commitment", "startCheckpoint"})
+_PACKET_OBJECT_FIELDS = ("authority", "checkpoint", "claim", "commitment", "startCheckpoint")
+_PACKET_STRING_FIELDS = ("claimKeyid", "claimSignature")
 
 
 def _verify_packet_shape(packet: Any) -> None:
@@ -148,6 +150,12 @@ def _verify_packet_shape(packet: Any) -> None:
     """
     if not isinstance(packet, dict) or packet.keys() - {"authorizationBinding"} != _PACKET_FIELDS:
         raise VerificationError("packet fields are unsupported")
+    for name in _PACKET_OBJECT_FIELDS:
+        if not isinstance(packet[name], dict):
+            raise VerificationError(f"packet field {name} is not an object")
+    for name in _PACKET_STRING_FIELDS:
+        if not isinstance(packet[name], str):
+            raise VerificationError(f"packet field {name} is not a string")
 
 
 def verify_packet(
@@ -183,6 +191,23 @@ def verify_packet(
     VerificationError
         If a signature, history, binding, or optional current tree differs.
     """
+    try:
+        return _verify_packet_fields(packet, history_path, pinned_observer_key, pinned_witness_key, workspace)
+    except (KeyError, TypeError, IndexError, AttributeError) as error:
+        # The packet is untrusted input and its fields are read before every signature over them
+        # is checked, so a member of the wrong type or a missing one surfaced as a bare TypeError or
+        # KeyError: 50 of 318 one-field type swaps of the broker-packet fixture crashed 0.2.0.
+        raise VerificationError(f"packet is malformed ({type(error).__name__}: {error})") from error
+
+
+def _verify_packet_fields(
+    packet: dict[str, Any],
+    history_path: Path,
+    pinned_observer_key: str,
+    pinned_witness_key: str,
+    workspace: Path | None = None,
+) -> dict[str, Any]:
+    """The checks of ``verify_packet``, which turns a malformed packet into a refusal."""
     _verify_packet_shape(packet)
     entries = read_history(history_path)
     claim = packet["claim"]

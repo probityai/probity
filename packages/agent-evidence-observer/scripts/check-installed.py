@@ -40,7 +40,8 @@ with tempfile.TemporaryDirectory(prefix="observer-installed-") as output:
     result = altered_copy / "workspace/result.txt"
     result.write_bytes(result.read_bytes() + b"altered\n")
     altered = subprocess.run([command, "verify", str(altered_copy), *pins], cwd=root, capture_output=True, check=False)
-    if altered.returncode == 0 or altered.stdout:
-        raise ValueError("altered retained effects must not produce a verified result")
+    refusal = json.loads(altered.stdout) if altered.stdout else {}
+    if altered.returncode != 1 or altered.stderr or refusal.get("status") != "refused":
+        raise ValueError("altered retained effects must be refused with exit 1 and a refusal record")
 print(json.dumps({"installed_module": str(installed), "results": [expected],
                   "altered_effect_exit_code": altered.returncode}, sort_keys=True))
