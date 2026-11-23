@@ -1,0 +1,57 @@
+# Gitleaks fingerprints of test fixtures. One line per finding, each bound to the commit that introduced it; no path is ignored as a whole.
+# A fingerprint names a commit, so a rewritten commit needs a new line. Fixture generators regenerate each file byte for byte.
+
+# probity-records verified-identities vectors generator: the hit is the type annotation 'key: Ed25519PrivateKey = STAMP_KEY' in the stamp() signature, a name and not a key value; STAMP_KEY is a fixed-seed test key. Introduced by the commit named in the fingerprint (PR 428).
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/src/probity_records/verified_identities_vectors.py:generic-api-key:192
+
+# probity-records erasure vectors: every key is sha256('erasure-vectors/' + label), a fixed test label, and the generator packages/probity-records/src/probity_records/erasure_vectors.py regenerates the file byte for byte. The hits are the hex keys and field keys of the conformance vectors, never a credential. Introduced by the commit named in each fingerprint (PR 430).
+23cf4ed6c4f4b206ead5c42c72b225edf285e968:packages/probity-records/vectors/shared/erasure.json:generic-api-key:2932
+23cf4ed6c4f4b206ead5c42c72b225edf285e968:packages/probity-records/vectors/shared/erasure.json:generic-api-key:3005
+23cf4ed6c4f4b206ead5c42c72b225edf285e968:packages/probity-records/vectors/shared/erasure.json:generic-api-key:3635
+23cf4ed6c4f4b206ead5c42c72b225edf285e968:packages/probity-records/vectors/shared/erasure.json:generic-api-key:3649
+23cf4ed6c4f4b206ead5c42c72b225edf285e968:packages/probity-records/vectors/shared/erasure.json:generic-api-key:3663
+
+# probity-records verified-identities vectors: the JWTs are signed by test keys derived from fixed seeds (bytes([seed]) * 32, a seeded RSA key, a fixed EC scalar) in packages/probity-records/src/probity_records/verified_identities_vectors.py, which regenerates the file byte for byte. Test fixtures, never a credential. Introduced by the commit named in each fingerprint (PR 428).
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1088
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1295
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1301
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1399
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1490
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1491
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1556
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1622
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1688
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1754
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1820
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1886
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:1952
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2018
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2084
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2150
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2151
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2231
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2232
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2313
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2314
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2577
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2578
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2644
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2709
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2837
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2838
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2903
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2904
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:2969
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3034
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3035
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3107
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3108
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3174
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3180
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3181
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3247
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3253
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3254
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3326
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3327
+23c2fa9044ea223e89a1cad8c8e7e602a9e8b791:packages/probity-records/vectors/shared/verified_identities.json:jwt:3416
