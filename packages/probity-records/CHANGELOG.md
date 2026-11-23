@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
 - Breaking: the agent stamp is an RFC 9421 HTTP message signature, label `probity`, in place of the
   `Probity-Agent-Stamp` JWS. A gateway sends four fields: `Probity-Principals` (the canonical identity, the agent
