@@ -1095,6 +1095,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_standing_incomplete"
   },
   {
+   "code": "grant_timestamp_invalid",
+   "check": "grants.chain",
+   "meaning": "a grant time (notBefore, expiresAt, reviewBy) is missing or is not an RFC 3339 date-time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_timestamp_invalid"
+  },
+  {
+   "code": "grant_timestamp_offset_missing",
+   "check": "grants.chain",
+   "meaning": "a grant time has no UTC offset, so it names no instant",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_timestamp_offset_missing"
+  },
+  {
    "code": "grant_tool_shape",
    "check": "grants.chain",
    "meaning": "a grant's tool entry is not well formed",
@@ -1105,6 +1117,12 @@
    "check": "grants.chain",
    "meaning": "a grant allows no tool",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_tools_empty"
+  },
+  {
+   "code": "grant_use_time_invalid",
+   "check": "grants.chain",
+   "meaning": "the time a grant chain is judged at is not an RFC 3339 date-time with an offset",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_use_time_invalid"
   },
   {
    "code": "grant_when_shape",
