@@ -37,7 +37,7 @@ from probity_observer.replay import (
     replay_consumption,
 )
 
-SOURCE = "https://github.com/probityai/agent-evidence-observer"
+SOURCE = "https://github.com/probityai/probity"
 
 
 def _pin(raw: bytes, revision: str) -> ArtifactPin:

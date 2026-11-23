@@ -5,7 +5,7 @@ Start with the [worked example](../TOOL-MANIFEST-EFFECT.md).
 ## Source and contributor
 
 Kenneives selected `ask_wiki_question` on `https://mcp.deepwiki.com/mcp` in
-[the first collaboration case](https://github.com/probityai/agent-evidence/issues/24#issuecomment-6247268743).
+[the first collaboration case](https://github.com/probityai/agent-evidence-vectors/issues/352#issuecomment-6529863593).
 The complete upstream case is pinned at AgentAvow commit
 `36426cfd5152bba6a27766febfac8aaef47b6f34`, in
 [tool-manifest-digest-vectors-v1](https://github.com/AgentAvow/AgentAvow/tree/36426cfd5152bba6a27766febfac8aaef47b6f34/docs/standards/tool-manifest-digest-vectors-v1).
@@ -36,7 +36,7 @@ The two output files carry the run's own clock in `runEvaluationTime`, so a reru
 never matches a published run byte for byte as written. Substitute the published
 `runEvaluationTime` into both files, then compare SHA-256 digests. Runs on macOS
 arm64, Linux aarch64 and Linux x86_64 at `00e92b0` differed in that field alone
-([agent-evidence#50](https://github.com/probityai/agent-evidence/issues/50)).
+([agent-evidence-vectors#346](https://github.com/probityai/agent-evidence-vectors/issues/346)).
 
 The public `probity_observer.tool_manifest` consumer accepts a separately selected
 Ed25519 JWK, a compact JWS and `ToolGate`. `require_served_tool` also recomputes

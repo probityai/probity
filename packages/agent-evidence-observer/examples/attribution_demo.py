@@ -28,7 +28,7 @@ from probity_observer.grant_records import (
     verify_grant,
 )
 
-SOURCE = "https://github.com/probityai/agent-evidence-observer"
+SOURCE = "https://github.com/probityai-archive/agent-evidence-observer"
 REVISION = "0c3ec928bd8d3c0caf5b292b828143bfa7099d34"
 
 
