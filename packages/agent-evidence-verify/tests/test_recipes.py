@@ -6,6 +6,7 @@ import re
 import runpy
 import shutil
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,8 @@ def test_package_availability_and_fixture_scope_have_distinct_contracts(recipes)
     assert result["schema_version"] == "probity-recipes/v2"
     assert result["distribution"] == {
         "name": "agent-evidence-verify", "status": "published",
-        "installation": "docs/install.md", "python": ">=3.12",
+        "installation": "docs/install.md",
+        "python": tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["requires-python"],
     }
     assert result["fixture_scope"] == "source-checkout"
     assert result["operator"] == "author-run synthetic fixtures"

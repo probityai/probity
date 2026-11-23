@@ -1,0 +1,105 @@
+[
+  {
+    "checkpoint": null,
+    "description": "the signed payload repeats its predicate member",
+    "expected": {
+      "checkpoint": "not_supplied",
+      "failures": [
+        "line_1:jcs_refused:DuplicateMember"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "RV1",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJwcmVkaWNhdGUiOnsicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJzZXEiOjF9LCJwcmVkaWNhdGUiOnsicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJzZXEiOjEsInRvb2wiOiJzaGFkb3cifX0=\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"WDqNmpTLM825MGdxgFYOESCx45T0jUNPaGkqmor2ADjmRNNSni/uLWQH7z89S0fsCzM4T6sDrd6Id9C18q2nAg==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": null
+  },
+  {
+    "checkpoint": null,
+    "description": "the signed payload carries a byte that is never UTF-8",
+    "expected": {
+      "checkpoint": "not_supplied",
+      "failures": [
+        "line_1:jcs_refused:StringNotScalar"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "RV2",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJwcmVkaWNhdGUiOnsicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJzZXEiOjEsInRvb2wiOiL/In19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"QHnwWz24VliIdZNAOknpIo9h+xZpnEe+izRqy09HYnZUsBpazhr6y648tof1r2cN1RdkKboCHt2w4fT3dRmiBQ==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": null
+  },
+  {
+    "checkpoint": null,
+    "description": "the signed payload carries a lone surrogate escape",
+    "expected": {
+      "checkpoint": "not_supplied",
+      "failures": [
+        "line_1:jcs_refused:StringNotScalar"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "RV3",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJwcmVkaWNhdGUiOnsicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJzZXEiOjEsInRvb2wiOiJcdWQ4MDAifX0=\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"7+m425mp2JLTcG3WJMLfiMHCPQkKo5elFYwqoW7U8hUQjmXXnRlegrzkcxBfvuXP5JyzFdFQJgQmJ4ijQrcpAw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": null
+  },
+  {
+    "checkpoint": null,
+    "description": "the envelope line repeats its payload member; the last one is signed",
+    "expected": {
+      "checkpoint": "not_supplied",
+      "failures": [
+        "line_1:jcs_refused:DuplicateMember"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "RV4",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJwcmVkaWNhdGUiOnsicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJzZXEiOjF9fQ==\",\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJwcmVkaWNhdGUiOnsicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJzZXEiOjEsInRvb2wiOiJvdGhlciJ9fQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"HU2DTG9kcgsawUnaUjaS50WWLUR87ZLf1rj3bXOgL9hYz3xaytzMG9NK90MoktEZdhuWsaQ+CuWAt4QEegG4CQ==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": null
+  },
+  {
+    "checkpoint": null,
+    "description": "control: the same record with one predicate member",
+    "expected": {
+      "checkpoint": "not_supplied",
+      "failures": [],
+      "records": 1,
+      "verdict": "NOT_ESTABLISHED",
+      "verified": 1
+    },
+    "id": "RV5",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJwcmVkaWNhdGUiOnsicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJzZXEiOjF9fQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"rHHFjWpMpMLE6p2XewNW4vRIDhWM80f2l5sdZ8/Aak1kq4ZIg1fuqFYjkoOMgnStBd8/ofWHfGcaRpOZFhKUDg==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": null
+  }
+]

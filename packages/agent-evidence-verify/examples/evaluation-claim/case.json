@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "case-set.json": {
+      "length": 423,
+      "path": "case-set.json",
+      "sha256": "84342c50c2ea17851ca9ef574a1d7581dcb8715ed48f6b5def0fa65348656b76"
+    },
+    "profile.json": {
+      "length": 758,
+      "path": "profile.json",
+      "sha256": "5ec2fb34b52972022350cbb8dea4b4d7a0a4d1d57f6e5c017b28bec020df12ab"
+    },
+    "record.json": {
+      "length": 1718,
+      "path": "record.json",
+      "sha256": "7df39e924a8ee42cd33d448fd077435875377eb7fb7eb56f569b491bd0c2b819"
+    }
+  },
+  "case_id": "evaluation-claim-full-pass",
+  "schema_version": "probity-case/v1"
+}

@@ -16,7 +16,7 @@ tests/               tests of the repository tools
 
 Members today: `agent-evidence-verify`, `probityai` (the `probityai` command), `probity-ratchet`,
 `probity-ratchet-cases`, `agent-evidence-observer`, `agent-evidence-mcp`,
-`agent-evidence-replay` and `probity-effects`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
+`agent-evidence-replay`, `agent-evidence-a2a` and `probity-effects`, each under `packages/<its name>/`. A test fails when a folder under `packages/`
 publishes nothing or carries a name other than its distribution's.
 
 ## Decisions
@@ -31,7 +31,7 @@ publishes nothing or carries a name other than its distribution's.
 | Licences | Each member and crate carries its own `LICENSE`, declared in its package metadata. The root `LICENSE` (Apache-2.0) covers repository files and is the one GitHub shows. | A scanner reads the same licence from a wheel as before. CC0 data and Apache-2.0 code can sit side by side. |
 | Release toolchain | One hash-pinned `requirements-release.lock` at the root; every Python member builds with setuptools from it. | The build of every distribution is reproducible with one set of pinned tools. |
 | Dependabot | One uv entry per lock (`/` and each member that keeps its own), one GitHub Actions entry for `/`. A cargo entry for `/` arrives with the first crate. | Each lock is its own update stream; grouped updates give one pull request per lock and ecosystem. |
-| CODEOWNERS | One line per member directory. | A member can get its own reviewers in one line. |
+| CODEOWNERS | Header comments only; a member gets one owner line when a maintainer takes it on. | Routine pull requests and dependency bumps do not request a review. |
 | Cargo | Root `Cargo.toml` with `resolver = "3"`, shared `[workspace.package]` and `[workspace.lints]`, and an empty `members` list. The change that imports the first crate sets `members = ["crates/*"]`. | Cargo refuses a member glob that matches no directory. The lint table is written now so every imported crate inherits it (`unwrap_used`, `expect_used`, `undocumented_unsafe_blocks` and `await_holding_lock` denied). |
 | Go module | The vectors Go module moves to `vectors/go.mod` with module path `github.com/probityai/probity/vectors`, tagged `vectors/vX.Y.Z`. | Go resolves a module in a subdirectory only from a tag prefixed with that directory. The archived repository's module gets a `// Deprecated: use github.com/probityai/probity/vectors` line. No `go.work` is needed for one module. |
 
@@ -113,7 +113,7 @@ the tree can change in steps while `main` stays green.
 
 Every PyPI project released from this repository has the same publisher: owner `probityai`, repository
 `probity`, workflow `release.yml`, environment `pypi`. That covers `agent-evidence-verify`, `probityai`,
-`agent-evidence-observer`, `probity-ratchet` and `probity-ratchet-cases` now, and
+`agent-evidence-observer`, `probity-ratchet`, `probity-ratchet-cases` and `agent-evidence-a2a` now, and
 `agent-evidence-admission`, `agent-evidence-vocabulary` and `agent-evidence-vectors` when they move in.
 
 The ratchet code ships two PyPI projects, so it moves in as two members, each with its own tag:
@@ -137,7 +137,7 @@ The `agent-evidence-verify` publisher used for 0.1.1 names repository `agent-evi
 
 ### Install line and versions
 
-The README's pinned install line is `pip install agent-evidence-verify==0.5.1`, the current PyPI release. When
+The README's pinned install line is `pip install agent-evidence-verify==0.8.0`, the current PyPI release. When
 `probityai` is first released, the README's install line becomes `pip install probityai==X.Y.Z`.
 `probityai` depends on `agent-evidence-verify>=0.2.0`, the first release that registers `verify`, so
 `agent-evidence-verify` 0.2.0 is published first. Every member keeps its own version line, and `probityai` <!-- version-pins: keep -->

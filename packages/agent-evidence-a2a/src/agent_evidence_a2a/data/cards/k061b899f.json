@@ -1,0 +1,52 @@
+{
+ "name": "Atlas",
+ "description": "Answers questions about the catalogue.",
+ "version": "1.0.0",
+ "supportedInterfaces": [
+  {
+   "url": "https://agent.example.com/a2a",
+   "protocolBinding": "JSONRPC",
+   "protocolVersion": "1.0"
+  }
+ ],
+ "provider": {
+  "organization": "Example Org",
+  "url": "https://example.com"
+ },
+ "capabilities": {
+  "streaming": true,
+  "pushNotifications": false,
+  "extensions": [
+   {
+    "uri": "https://example.com/ext/v1",
+    "params": {
+     "😀": "astral",
+     "｡": "bmp",
+     "a": "ascii"
+    }
+   }
+  ]
+ },
+ "defaultInputModes": [
+  "text/plain"
+ ],
+ "defaultOutputModes": [
+  "text/plain"
+ ],
+ "skills": [
+  {
+   "id": "s1",
+   "name": "Ask",
+   "description": "Ask things",
+   "tags": [
+    "qa"
+   ]
+  }
+ ],
+ "signatures": [
+  {
+   "protected": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpPU0UiLCJraWQiOiJrQSJ9",
+   "signature": "iw8lQyOJGUaOac9C8iSL-mVx0lc_72C8jJ6kK8vI5jhmm8JUPJlEnsijbXjsgg2seG8drv64HSNjECsFHf9mLg"
+  }
+ ]
+}

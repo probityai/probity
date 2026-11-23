@@ -9,7 +9,6 @@ Run with --check to compare the committed bytes.
 import argparse
 import base64
 import json
-import sys
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -79,12 +78,27 @@ def vectors():
 
 
 def expected(name, run, key, status):
-    """The ``probityai verify --json`` stdout, or the stderr line for a refusal."""
-    sys.path.insert(0, str(HERE.parents[1] / "src"))
+    """The ``probityai verify --json`` stdout, or the stderr line for a refusal.
+
+    The installed package runs, the same files the test suite checks. The committed bytes name the
+    verifier's version, which only an installed release has: a source tree put ahead of an
+    installed wheel, or one never installed, is refused rather than written without it.
+    """
     import contextlib
+    import importlib.util
     import io
 
+    if importlib.util.find_spec("agent_evidence_verify") is None:
+        raise SystemExit("agent_evidence_verify is not installed; install it (pip install -e .) first")
     from agent_evidence_verify.cli import main
+    from agent_evidence_verify.identity import (
+        placeholder_release_detail,
+        running_release,
+    )
+
+    if running_release() is None:
+        raise SystemExit("the running agent_evidence_verify is not an installed release's files, so "
+                         "its decisions name no version; run the generator against the install")
 
     err = io.StringIO()
     argv = [str(HERE / f"{name}.dsse.json"), "--case", str(DONE / run / "receipt.case.json"),
@@ -98,7 +112,7 @@ def expected(name, run, key, status):
     if code != status:
         raise SystemExit(f"{name}: exit {code}, expected {status}: {err.getvalue()}")
     text = stdout.getvalue() if status == 0 else err.getvalue().encode("utf-8")
-    return text.replace(str(HERE).encode(), b"<vectors>")
+    return placeholder_release_detail(text.replace(str(HERE).encode(), b"<vectors>"))
 
 
 def files():

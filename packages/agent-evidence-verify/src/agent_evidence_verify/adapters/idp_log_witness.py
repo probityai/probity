@@ -50,11 +50,18 @@ from __future__ import annotations
 
 import base64
 import datetime
-import json
 from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _digest, _string
+from ..ijson import (
+    JSON_WHITESPACE,
+    IJSONError,
+    decode_utf8,
+    describe,
+    parse_ijson,
+    parse_lines,
+)
 from . import audit_principal
 from .bound_records import assessment_for, bound, decision
 
@@ -127,15 +134,11 @@ def _actor_subjects(actor: Any) -> set[str]:
 
 
 def _auth0_events(raw: bytes) -> list[_Event]:
-    text = raw.decode("utf-8")
-    stripped = text.strip()
     try:
-        if stripped.startswith("["):
-            items = json.loads(stripped)
-        else:
-            items = [json.loads(line) for line in stripped.splitlines() if line.strip()]
-    except json.JSONDecodeError as error:
-        raise CaseError("idp export: not JSON or newline-delimited JSON") from error
+        stripped = decode_utf8(raw).strip(JSON_WHITESPACE)
+        items = parse_ijson(stripped) if stripped.startswith("[") else parse_lines(stripped)
+    except IJSONError as error:
+        raise CaseError(f"idp export: not JSON or newline-delimited JSON ({describe(error)})") from error
     events: list[_Event] = []
     for index, item in enumerate(items):
         label = f"idp export[{index}]"
@@ -159,9 +162,9 @@ def _auth0_events(raw: bytes) -> list[_Event]:
 
 def _okta_events(raw: bytes) -> list[_Event]:
     try:
-        items = json.loads(raw.decode("utf-8"))
-    except json.JSONDecodeError as error:
-        raise CaseError("idp export: not JSON") from error
+        items = parse_ijson(raw)
+    except IJSONError as error:
+        raise CaseError(f"idp export: not JSON ({describe(error)})") from error
     if not isinstance(items, list):
         raise CaseError("idp export: expected a JSON array of System Log events")
     events: list[_Event] = []
@@ -195,8 +198,8 @@ READERS = {"auth0": _auth0_events, "okta": _okta_events}
 
 def _principal(raw: bytes) -> dict[str, Any]:
     """The principal member of an envelope ``audit_principal`` has already judged valid."""
-    envelope = json.loads(raw)
-    statement = json.loads(base64.b64decode(envelope["payload"], validate=True))
+    envelope = parse_ijson(raw)
+    statement = parse_ijson(base64.b64decode(envelope["payload"], validate=True))
     return statement["predicate"]["principal"]
 
 

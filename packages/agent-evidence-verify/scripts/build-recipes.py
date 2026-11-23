@@ -104,7 +104,9 @@ def build(root: Path, source: dict) -> dict:
         "schema_scope": "Project recipe convention; not a discovery standard.",
         "repository": "https://github.com/probityai/probity/tree/main/packages/agent-evidence-verify",
         "distribution": {"name": "agent-evidence-verify", "status": "published",
-                         "installation": "docs/install.md", "python": ">=3.12"},
+                         "installation": "docs/install.md",
+                         # The range the manifest declares, never restated here.
+                         "python": package_binding(root)["values"]["project.requires-python"]},
         "fixture_scope": "source-checkout",
         "operator": "author-run synthetic fixtures",
         "error_behavior": {"exit_code": 2, "verdict": False},

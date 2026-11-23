@@ -13,13 +13,13 @@ not a record or a bundle at all raises :class:`CaseError`.
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
 from ..common import CaseError
+from ..ijson import IJSONError, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 HOST = "https://probityai.github.io/agent-evidence-vectors"
@@ -125,39 +125,16 @@ Json = Any
 # Strict JSON and value shapes
 
 
-def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in out:
-            raise ValueError(f"duplicate member {key!r}")
-        out[key] = value
-    return out
-
-
-def _no_constant(name: str) -> Any:
-    raise ValueError(f"non-standard number {name}")
-
-
-def _no_surrogate(value: Json) -> None:
-    if isinstance(value, str):
-        if any("\ud800" <= ch <= "\udfff" for ch in value):
-            raise ValueError("a string carries a lone surrogate")
-    elif isinstance(value, list):
-        for item in value:
-            _no_surrogate(item)
-    elif isinstance(value, dict):
-        for key, item in value.items():
-            _no_surrogate(key)
-            _no_surrogate(item)
-
-
 def strict_json(data: bytes) -> Json:
-    """Parse strict JSON: UTF-8, no duplicate member at any depth, no NaN, and no
-    string escaping a lone surrogate, which no UTF-8 text can carry."""
-    text = data.decode("utf-8")
-    value = json.loads(text, object_pairs_hook=_no_duplicates, parse_constant=_no_constant)
-    _no_surrogate(value)
-    return value
+    """Parse strict JSON with the shared I-JSON reader: UTF-8, no duplicate member at any depth,
+    no NaN, no integer outside +-(2**53 - 1), and no string escaping a lone surrogate. Input nested
+    past the reader's bound gets no verdict, as input too deep to walk always has."""
+    try:
+        return parse_ijson(data)
+    except IJSONError as exc:
+        if exc.code == "nesting-too-deep":
+            raise CaseError("an input is nested too deeply to judge") from exc
+        raise
 
 
 def _exact(value: Json, required: tuple[str, ...], optional: tuple[str, ...] = ()) -> bool:
@@ -564,6 +541,8 @@ def check_record_bytes(data: bytes) -> tuple[str, str]:
     """Check one statement's bytes: strict JSON first, then its document."""
     try:
         statement = strict_json(data)
+    except CaseError:
+        raise
     except (UnicodeDecodeError, ValueError):
         return "reject", "statement-malformed"
     return check_statement(statement)
