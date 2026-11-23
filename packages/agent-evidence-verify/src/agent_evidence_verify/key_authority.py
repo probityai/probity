@@ -523,6 +523,31 @@ def dnssec_anchor(config: Any, label: str = "authority") -> tuple[str, list[str]
     return anchor["zone"], anchor["ds"]
 
 
+#: The refusal code of each reason ``dnssec.validate`` gives for a chain that is bogus or indeterminate. Written out
+#: in full, not composed at run time, so the refusal-code lint can read every code.
+_DNSSEC_REFUSALS = {
+    "algorithm_unsupported": "dnssec_algorithm_unsupported",
+    "chain_malformed": "dnssec_chain_malformed",
+    "chain_too_deep": "dnssec_chain_too_deep",
+    "dnskey_missing": "dnssec_dnskey_missing",
+    "ds_algorithm_unsupported": "dnssec_ds_algorithm_unsupported",
+    "ds_malformed": "dnssec_ds_malformed",
+    "ds_mismatch": "dnssec_ds_mismatch",
+    "ds_missing": "dnssec_ds_missing",
+    "name_outside_trust_anchor": "dnssec_name_outside_trust_anchor",
+    "rrset_missing": "dnssec_rrset_missing",
+    "rrsig_expired": "dnssec_rrsig_expired",
+    "rrsig_key_not_trusted": "dnssec_rrsig_key_not_trusted",
+    "rrsig_missing": "dnssec_rrsig_missing",
+    "rrsig_not_yet_valid": "dnssec_rrsig_not_yet_valid",
+    "rrtype_unsupported": "dnssec_rrtype_unsupported",
+    "signature_invalid": "dnssec_signature_invalid",
+    "signer_not_authoritative": "dnssec_signer_not_authoritative",
+    "signer_outside_trust_anchor": "dnssec_signer_outside_trust_anchor",
+    "wildcard_expansion_unsupported": "dnssec_wildcard_expansion_unsupported",
+}
+
+
 def _dnssec_chain(config: dict, key: bytes, subject: str | None, at: Instant | None,
                   chain: bytes | None) -> tuple[str, str, list[str]]:
     zone, ds = dnssec_anchor(config)
@@ -544,9 +569,9 @@ def _dnssec_chain(config: dict, key: bytes, subject: str | None, at: Instant | N
         return UNKNOWN, "dnssec_chain_unavailable", []
     result = dnssec.validate(chain, config["name"], dnssec.TYPES["TXT"], zone, ds, posix_seconds(at))
     if result.outcome == dnssec.BOGUS:
-        return UNAUTHORIZED, "dnssec_" + result.reason, []
+        return UNAUTHORIZED, _DNSSEC_REFUSALS[result.reason], []
     if result.outcome == dnssec.INDETERMINATE:
-        return UNKNOWN, "dnssec_" + result.reason, []
+        return UNKNOWN, _DNSSEC_REFUSALS[result.reason], []
     if subject_labels is not None and (result.zone is None
                                        or not dnssec.is_within(subject_labels, result.zone)):
         return UNAUTHORIZED, "key_record_signed_by_another_zone", []

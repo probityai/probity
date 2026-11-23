@@ -657,6 +657,126 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/did_document_unavailable"
   },
   {
+   "code": "dnssec_algorithm_unsupported",
+   "check": "key.dnssec",
+   "meaning": "a signature in the chain uses an algorithm this verifier does not implement",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_algorithm_unsupported"
+  },
+  {
+   "code": "dnssec_chain_malformed",
+   "check": "key.dnssec",
+   "meaning": "the DNSSEC chain is not well-formed DNS wire format",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_chain_malformed"
+  },
+  {
+   "code": "dnssec_chain_too_deep",
+   "check": "key.dnssec",
+   "meaning": "the DNSSEC chain needs more delegation steps than the verifier follows",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_chain_too_deep"
+  },
+  {
+   "code": "dnssec_chain_unavailable",
+   "check": "key.dnssec",
+   "meaning": "no DNSSEC chain was supplied for the key record, so the key cannot be judged",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_chain_unavailable"
+  },
+  {
+   "code": "dnssec_dnskey_missing",
+   "check": "key.dnssec",
+   "meaning": "the chain holds no DNSKEY record set for a zone it needs",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_dnskey_missing"
+  },
+  {
+   "code": "dnssec_ds_algorithm_unsupported",
+   "check": "key.dnssec",
+   "meaning": "the delegation signer record names a digest algorithm this verifier does not implement",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_ds_algorithm_unsupported"
+  },
+  {
+   "code": "dnssec_ds_malformed",
+   "check": "key.dnssec",
+   "meaning": "a delegation signer record in the chain is malformed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_ds_malformed"
+  },
+  {
+   "code": "dnssec_ds_mismatch",
+   "check": "key.dnssec",
+   "meaning": "no DNSKEY of the zone matches the delegation signer digest from its parent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_ds_mismatch"
+  },
+  {
+   "code": "dnssec_ds_missing",
+   "check": "key.dnssec",
+   "meaning": "the chain holds no delegation signer record for a zone it needs",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_ds_missing"
+  },
+  {
+   "code": "dnssec_name_outside_trust_anchor",
+   "check": "key.dnssec",
+   "meaning": "the name asked about lies outside the zone of the trust anchor",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_name_outside_trust_anchor"
+  },
+  {
+   "code": "dnssec_rrset_missing",
+   "check": "key.dnssec",
+   "meaning": "the record set asked about is not in the chain",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_rrset_missing"
+  },
+  {
+   "code": "dnssec_rrsig_expired",
+   "check": "key.dnssec",
+   "meaning": "the signature over the record set had expired at the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_rrsig_expired"
+  },
+  {
+   "code": "dnssec_rrsig_key_not_trusted",
+   "check": "key.dnssec",
+   "meaning": "the signature over the record set names a key the validated chain does not trust",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_rrsig_key_not_trusted"
+  },
+  {
+   "code": "dnssec_rrsig_missing",
+   "check": "key.dnssec",
+   "meaning": "the record set carries no signature in the chain",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_rrsig_missing"
+  },
+  {
+   "code": "dnssec_rrsig_not_yet_valid",
+   "check": "key.dnssec",
+   "meaning": "the signature over the record set was not yet valid at the record's time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_rrsig_not_yet_valid"
+  },
+  {
+   "code": "dnssec_rrtype_unsupported",
+   "check": "key.dnssec",
+   "meaning": "the record type asked about is not one this verifier validates",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_rrtype_unsupported"
+  },
+  {
+   "code": "dnssec_signature_invalid",
+   "check": "key.dnssec",
+   "meaning": "the signature over the record set does not verify under the zone key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_signature_invalid"
+  },
+  {
+   "code": "dnssec_signer_not_authoritative",
+   "check": "key.dnssec",
+   "meaning": "the signature over the record set comes from a zone that is not authoritative for its name",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_signer_not_authoritative"
+  },
+  {
+   "code": "dnssec_signer_outside_trust_anchor",
+   "check": "key.dnssec",
+   "meaning": "the signing zone lies outside the zone of the trust anchor",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_signer_outside_trust_anchor"
+  },
+  {
+   "code": "dnssec_wildcard_expansion_unsupported",
+   "check": "key.dnssec",
+   "meaning": "the record set is a wildcard expansion, which this verifier does not validate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/dnssec_wildcard_expansion_unsupported"
+  },
+  {
    "code": "downgraded_to_user_alone",
    "check": "marker.survival",
    "meaning": "the chain sent downstream names the user alone where the origin owed a chain of actors",
@@ -1407,6 +1527,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_in_did_document"
   },
   {
+   "code": "key_not_in_dnssec_record",
+   "check": "key.dnssec",
+   "meaning": "the DNSSEC-validated key record does not hold this key's digest",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_not_in_dnssec_record"
+  },
+  {
    "code": "key_not_in_jwks",
    "check": "identity.principals",
    "meaning": "the token's key id names no key of the issuer's pinned set",
@@ -1429,6 +1555,18 @@
    "check": "key.binding",
    "meaning": "the record's time is outside the validity window of the key's binding",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_outside_validity"
+  },
+  {
+   "code": "key_record_outside_subject",
+   "check": "key.dnssec",
+   "meaning": "the key record's name is not within the subject the record names",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_record_outside_subject"
+  },
+  {
+   "code": "key_record_signed_by_another_zone",
+   "check": "key.dnssec",
+   "meaning": "the DNSSEC chain that validates the key record is signed by a zone that is not the subject's own",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/key_record_signed_by_another_zone"
   },
   {
    "code": "key_revoked",

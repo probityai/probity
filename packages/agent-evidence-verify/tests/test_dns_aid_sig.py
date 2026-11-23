@@ -253,3 +253,23 @@ def test_only_es256_is_read_even_when_an_es256_signature_verifies(tmp_path, alg,
     assert result["decision"] == expected
     if expected == "contradicted":
         assert result["reason"] == "jws_alg_not_es256"
+
+
+def test_every_reason_the_dnssec_validator_gives_has_its_own_refusal_code():
+    """A bogus or indeterminate chain is refused under ``dnssec_<reason>``, written out so the registry lint reads it."""
+    import ast
+
+    from agent_evidence_verify import dnssec, key_authority
+
+    tree = ast.parse(Path(dnssec.__file__).read_text(encoding="utf-8"))
+    reasons = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            name = ast.unparse(node.func)
+            if name == "Result" and len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
+                reasons.add(node.args[1].value)
+            if name == "failures.append":
+                reasons.add(node.args[0].value)
+    reasons.discard("rrset_validated")
+    assert reasons == set(key_authority._DNSSEC_REFUSALS)
+    assert all(code == "dnssec_" + reason for reason, code in key_authority._DNSSEC_REFUSALS.items())
