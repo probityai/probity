@@ -13,9 +13,21 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from probity_records import Signer, issue_grant, raw_public, verify_chain, verify_grant_allow
+from probity_records import (
+    Signer,
+    issue_grant,
+    raw_public,
+    verify_chain,
+    verify_grant_allow,
+)
 from probity_records.core import _b64, canonical
-from probity_records.grants import GRANT_DOMAIN, chain_problem, grant_digest, ts, validate_body
+from probity_records.grants import (
+    GRANT_DOMAIN,
+    chain_problem,
+    grant_digest,
+    ts,
+    validate_body,
+)
 from probity_records.possession import cnf_for_signer
 
 AT = "2026-06-01T00:00:00Z"

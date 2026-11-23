@@ -54,7 +54,7 @@ from __future__ import annotations
 import base64
 import re
 from collections.abc import Mapping
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
@@ -85,7 +85,7 @@ def ts(text: Any) -> datetime:
     if offset is None:
         raise ValueError("grant_timestamp_offset_missing")
     if offset == "Z":
-        zone = timezone.utc
+        zone = UTC
     else:
         hours, minutes = int(offset[1:3]), int(offset[4:6])
         if hours > 23 or minutes > 59:
