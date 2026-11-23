@@ -7,7 +7,7 @@ Check retained agent-write records and selected native framework reports offline
 
 Use it in agent harnesses and evaluation pipelines that need to check replayable action records or put a consumer gate on retained reports.
 
-Install the root package: `pip install agent-evidence-observer==0.2.0`.
+Install the root package: `pip install agent-evidence-observer`.
 
 ## Quick start
 
@@ -15,7 +15,7 @@ Check a retained signed packet with the released package. You need Python 3.12 o
 
 ```sh
 git clone https://github.com/probityai/probity && cd probity/packages/agent-evidence-observer
-uvx --from agent-evidence-observer==0.2.0 agent-evidence-observer verify scripts/fixtures/broker-packet \
+uvx --from agent-evidence-observer agent-evidence-observer verify scripts/fixtures/broker-packet \
   --observer-key a592976c199b8a4f3a80ca4412df916de591aa4a10f95e0b8030e1321bd2d9de \
   --witness-key 143f322c613549cf4da40ae09b0634f82b68d2d5a1017639bdde2e1eb15353f6
 ```

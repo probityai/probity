@@ -7,7 +7,8 @@ where ``expected`` is ``{"problems": [...], "grade": "strict" | "basic" | "auton
 ``tokens`` maps a role to its escrowed token for ``verify_token``. An autonomous vector (``ID17`` on) also carries
 ``sponsors`` (agent client id to the registered [issuer, subject] pairs, or null when none is pinned) and
 ``standingGrants`` (grant digest to the grant body the verifier resolved); its ``approvers`` is null when no approval
-admitted the call.
+admitted the call. ``pins`` maps an issuer to its pinned thumbprints exactly as an auditor wrote them (``ID35`` writes
+one as a string, which pins nothing); ``tokens`` are checked at the vector's ``at``.
 
 ``python -m probity_records identity-vectors`` prints them as JSON; ``check`` re-runs them.
 """
@@ -209,6 +210,20 @@ def _bearer_agent(v: dict[str, Any]) -> None:
     v["principals"]["agent"] = _principal(v["tokens"]["agent"], dict(jwk), v["jwks"], "jwt-access-token", claims)
 
 
+def _agent_not_before(v: dict[str, Any]) -> None:
+    """The agent's access token carries ``nbf`` one minute after the record's time."""
+    priv, jwk = _key("probity-identity-vectors/issuer-key-1"), v["jwks"]["keys"][0]
+    claims = {"iss": ISSUER, "iat": IAT, "exp": EXP, "nbf": _AT_EPOCH + 60, "jti": "jti-agent", "sub": "agent-refunds",
+              "client_id": "agent-refunds", "aud": "https://api.example.com", "cnf": dict(AGENT_CNF)}
+    v["tokens"]["agent"] = _token(priv, "k1", claims, "at+jwt")
+    v["principals"]["agent"] = _principal(v["tokens"]["agent"], dict(jwk), v["jwks"], "jwt-access-token", claims)
+
+
+def _pin_as_string(v: dict[str, Any]) -> None:
+    """The issuer's pin written as one string that holds the real thumbprint between other characters."""
+    v["pins"] = {ISSUER: "x" + v["pins"][ISSUER][0] + "x"}
+
+
 def vectors() -> list[dict[str, Any]]:
     out = [
         _mut("ID1", "four principals, user credential names the agent in act: strict", lambda v: None),
@@ -237,15 +252,21 @@ def vectors() -> list[dict[str, Any]]:
              lambda v: v["principals"]["agent"].__setitem__("cnf", {"jkt": "short"})),
     ]
     out += _autonomous_vectors()
+    out += [
+        _mut("ID35", "the issuer's pin is written as a string that contains the thumbprint", _pin_as_string),
+        _mut("ID36", "the user principal states an access token, its token is an identity assertion grant",
+             lambda v: v["principals"]["user"].__setitem__("source", "jwt-access-token")),
+        _mut("ID37", "the agent's token is not valid before a time after the record", _agent_not_before),
+    ]
     for v in out:
         approvers = None if v["approvers"] is None else set(v["approvers"])
         sponsors = v.get("sponsors")
-        problems, grade = check_principals(v["principals"], v["at"], {k: frozenset(t) for k, t in v["pins"].items()},
+        problems, grade = check_principals(v["principals"], v["at"], v["pins"],
                                            approvers,
                                            sponsors=None if sponsors is None else
                                            {a: frozenset(map(tuple, s)) for a, s in sponsors.items()},
                                            standing_grants=v.get("standingGrants"))  # fmt: skip
-        token_checks = {role: verify_token(p, v["tokens"][role], v["jwks"])
+        token_checks = {role: verify_token(p, v["tokens"][role], v["jwks"], at=v["at"])
                         for role, p in v["principals"].items() if role in v["tokens"]}
         v["expected"] = {"problems": problems, "grade": grade,  # an autonomous block has no user: act-absent
                          "act": "act-chain" if "act" in v["principals"].get("user", {}) else "act-absent",

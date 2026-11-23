@@ -64,7 +64,7 @@ tag = "agent-evidence-a2a-v{version}"
 
 [family]
 "pypi:agent-evidence-vectors" = "0.38.0"
-"pypi:agent-evidence-admission" = "0.2.1"
+"pypi:agent-evidence-admission" = "0.3.0"
 "pypi:agent-evidence-vocabulary" = "0.9.0"
 
 [scan]
