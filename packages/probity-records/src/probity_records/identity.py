@@ -16,8 +16,12 @@ An issuer's pins are a collection of thumbprints (a set, list or tuple); a pin w
 refused rather than searched, so a string that merely contains a thumbprint pins nothing.
 
 Graded, never refused, on delegation: ``act-chain`` when the user's credential names the agent in
-``act``, ``act-absent`` when it carries no ``act``. ``strict`` conformance needs all four principals
-and ``act-chain``; anything else that passes is ``basic``. An auditor may require ``strict``.
+``act``, ``act-absent`` when it carries no ``act``. ``strict`` conformance needs the user, the agent and the
+sponsor, ``act-chain``, and the approver exactly when an approval admitted the call: a call no human approved is
+strict without one, and an approved call is strict only with its approver named. An approver principal no approval
+counts is refused (``principal_approver_without_approval``) under every profile: it states that a person approved
+when none did. Anything else that passes is ``basic`` (``strict_shortfall`` names what it lacks). An auditor may
+require ``strict``.
 
 Autonomous: an agent that runs with no person in its session. Its block carries no ``user``; it carries the agent,
 the ``sponsor`` who answers for it, the digest of its standing grant (``standingGrant``, a capability grant that names
@@ -285,10 +289,25 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: se
     chain = _act_subjects(user.get("act")) if "act" in user else []
     if chain and chain[0] not in (agent["subject"], agent["clientId"]):
         return ["principal_act_names_another_agent"], None
-    if "approver" in block and approvers is not None and block["approver"]["subject"] not in approvers:
-        return ["principal_approver_not_an_approval_signer"], None
-    strict = chain and all(r in block for r in ROLES)
-    return [], "strict" if strict else "basic"
+    if "approver" in block:
+        if not approvers:
+            return ["principal_approver_without_approval"], None
+        if block["approver"]["subject"] not in approvers:
+            return ["principal_approver_not_an_approval_signer"], None
+    return [], "basic" if strict_shortfall(block, approvers) else "strict"
+
+
+def strict_shortfall(block: Mapping[str, Any], approvers: set[str] | None) -> str | None:
+    """What keeps a human-session block that passed from ``strict``: ``act-absent`` (the user credential names no
+    agent in ``act``), ``sponsor-absent``, or ``approver-absent`` (an approval admitted the call and the block does not
+    name who gave it); None when it is strict. The gateway writer applies the same rule."""
+    if "act" not in block.get("user", {}):
+        return "act-absent"
+    if "sponsor" not in block:
+        return "sponsor-absent"
+    if approvers and "approver" not in block:
+        return "approver-absent"
+    return None
 
 
 def act_grade(block: Mapping[str, Any]) -> str:

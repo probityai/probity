@@ -57,6 +57,9 @@ EXPECTED = {
     "ID35": ([f"principal_{r}:principal_key_not_pinned" for r in ("user", "agent", "sponsor", "approver")], None),
     "ID36": ([], "strict"),
     "ID37": ([], "strict"),
+    "ID38": ([], "strict"),
+    "ID39": (["principal_approver_without_approval"], None),
+    "ID40": ([], "basic"),
 }
 #: The vectors whose escrowed tokens are refused, by role (every other token verifies).
 TOKEN_REFUSALS = {"ID36": {"user": "token_type_mismatch:id-jag"}, "ID37": {"agent": "token_not_yet_valid"}}
@@ -95,6 +98,31 @@ def test_strict_needs_all_four_and_the_act_chain() -> None:
     assert check_principals(v["principals"], v["at"], pins, {"bob@example.com"}) == ([], "strict")
     no_act = {**v["principals"], "user": {k: x for k, x in v["principals"]["user"].items() if k != "act"}}
     assert check_principals(no_act, v["at"], pins, {"bob@example.com"}) == ([], "basic")
+
+
+def _without(block: dict, *roles: str) -> dict:
+    return {r: p for r, p in block.items() if r not in roles}
+
+
+def test_strict_names_the_approver_exactly_when_an_approval_admitted_the_call() -> None:
+    """The rule the gateway applies at the writer (B1 DESIGN.md): strict is user, agent and sponsor, the user's act
+    chain names the agent, and the approver present if and only if an approval admitted the call."""
+    v = base()
+    pins = {ISSUER: frozenset(v["pins"][ISSUER])}
+    block = v["principals"]
+    unapproved = _without(block, "approver")
+    # a call no human approved is strict without an approver (it was basic, so a strict writer refused it)
+    assert check_principals(unapproved, v["at"], pins, None) == ([], "strict")
+    # an approver no approval counts is a false statement, refused whatever the profile
+    assert check_principals(block, v["at"], pins, None) == (["principal_approver_without_approval"], None)
+    assert check_principals(block, v["at"], pins, set()) == (["principal_approver_without_approval"], None)
+    # an approval that admitted the call with its approver unnamed is basic, never strict
+    assert check_principals(unapproved, v["at"], pins, {"bob@example.com"}) == ([], "basic")
+    # sponsor and act chain stay required for strict on both sides of the approval
+    assert check_principals(_without(block, "sponsor", "approver"), v["at"], pins, None) == ([], "basic")
+    assert check_principals(_without(block, "sponsor"), v["at"], pins, {"bob@example.com"}) == ([], "basic")
+    no_act = {**unapproved, "user": {k: x for k, x in unapproved["user"].items() if k != "act"}}
+    assert check_principals(no_act, v["at"], pins, None) == ([], "basic")
 
 
 def test_journal_checks_principals_at_the_record_time(tmp_path) -> None:

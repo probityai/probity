@@ -747,7 +747,8 @@ def identity_case(directory: Path, records: list[dict]) -> Journal:
 
 
 def identity_rows() -> list[tuple[str, str, object]]:
-    block = identity_base()["principals"]
+    full = identity_base()["principals"]
+    block = {role: p for role, p in full.items() if role != "approver"}  # a call no human approved names no approver
     swapped = copy.deepcopy(block)
     swapped["agent"]["subject"] = "agent-payroll"
     swapped["user"]["act"] = {"sub": "agent-payroll"}
@@ -757,9 +758,12 @@ def identity_rows() -> list[tuple[str, str, object]]:
     def allow(principals: dict | None) -> dict:
         return identity_call("authorize", principals, decision="allow", reason="no_approval_required")
 
-    def approved(approver: str) -> dict:
-        named = copy.deepcopy(block)
-        named["approver"]["subject"] = WHO[approver]
+    def approved(approver: str | None) -> dict:
+        named = copy.deepcopy(full)
+        if approver is None:
+            del named["approver"]
+        else:
+            named["approver"]["subject"] = WHO[approver]
         return identity_call("authorize", named, decision="allow", reason="bound", threshold=1,
                              approval_policy="refunds1of2",
                              approval_bindings=[binding(OPS, WHO["ops"]),
@@ -775,6 +779,16 @@ def identity_rows() -> list[tuple[str, str, object]]:
          lambda d: identity_case(d, [approved("lead")])),
         ("IJ5", "the approver principal names the approver the allow counts",
          lambda d: identity_case(d, [approved("ops")])),
+        ("IJ6", "an allow no approval admitted names an approver: a person approved when none did",
+         lambda d: identity_case(d, [allow(full)])),
+        ("IJ7", "an allow an approval admitted does not name its approver: below strict",
+         lambda d: identity_case(d, [approved(None)])),
+        ("IJ8", "an unapproved allow names no sponsor: below strict",
+         lambda d: identity_case(d, [allow({r: p for r, p in block.items() if r != "sponsor"})])),
+        ("IJ9", "the intent of an approved allow names the approver that allow counted: identity holds",
+         lambda d: identity_case(d, [approved("ops"), identity_call("intent", approved("ops")["principals"])])),
+        ("IJ10", "the intent of an unapproved allow names an approver",
+         lambda d: identity_case(d, [allow(block), identity_call("intent", full)])),
     ]
 
 

@@ -814,8 +814,18 @@ export function checkPrincipals(block: J, at: string, pins: Record<string, strin
   if (problems.length) return [problems, null];
   const chain = "act" in block.user ? actSubjects(block.user.act) ?? [] : [];
   if (chain.length && ![block.agent.subject, block.agent.clientId].includes(chain[0])) return [["principal_act_names_another_agent"], null];
-  if ("approver" in block && approvers !== null && !approvers.has(block.approver.subject)) return [["principal_approver_not_an_approval_signer"], null];
-  return [[], chain.length && ROLES.every((r) => r in block) ? "strict" : "basic"];
+  if ("approver" in block && (approvers === null || approvers.size === 0)) return [["principal_approver_without_approval"], null];
+  if ("approver" in block && !approvers!.has(block.approver.subject)) return [["principal_approver_not_an_approval_signer"], null];
+  return [[], strictShortfall(block, approvers) === null ? "strict" : "basic"];
+}
+
+// What keeps a human-session block that passed from strict (identity.strict_shortfall): the user credential's act
+// chain, the sponsor, and the approver exactly when an approval admitted the call.
+export function strictShortfall(block: J, approvers: Set<string> | null): string | null {
+  if (!("act" in (block.user ?? {}))) return "act-absent";
+  if (!("sponsor" in block)) return "sponsor-absent";
+  if (approvers !== null && approvers.size > 0 && !("approver" in block)) return "approver-absent";
+  return null;
 }
 
 // ---------- journal ----------
@@ -1232,7 +1242,8 @@ function standingProblems(pred: J, block: J): string[] {
   return [];
 }
 
-function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null, seen: Record<string, J>): [J | null, string[]] {
+function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null, seen: Record<string, J>,
+                   counted: Map<string, Set<string> | null>): [J | null, string[]] {
   const where = `line_${i}`, problems: string[] = [];
   let body: J;
   try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
@@ -1243,7 +1254,14 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   // The approvals are judged first, because an approver principal may name only an approver this record counts; their
   // problems are reported after the identity's.
   const approvalProblems: string[] = [];
-  const approvers = body.predicateType === TOOL_CALL_RECORD && pred.phase === "authorize" ? checkApproval(pred, approvalProblems, where, trust) : null;
+  let approvers: Set<string> | null = null;
+  if (body.predicateType === TOOL_CALL_RECORD) {
+    const pid = String(pred.permitId);
+    if (pred.phase === "authorize") {
+      approvers = checkApproval(pred, approvalProblems, where, trust);
+      if (pred.decision === "allow" && !counted.has(pid)) counted.set(pid, approvers);
+    } else approvers = counted.get(pid) ?? null; // an intent or effect answers to the approvers its permit's allow counted
+  }
   if (body.predicateType === TOOL_CALL_RECORD && (pred.principals === undefined || pred.principals === null)
       && pred.phase === "authorize" && trust !== null && trust.identityProfile === "strict")
     problems.push(`${where}:principals_missing`);
@@ -1265,7 +1283,7 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
       problems.push(...found.map((p) => `${where}:${p}`));
       if (grade === "autonomous") problems.push(...standingProblems(pred, block).map((p) => `${where}:${p}`));
       if (grade !== null && trust.identityProfile === "strict" && grade !== "strict" && grade !== "autonomous")
-        problems.push(`${where}:principals_below_strict:${"act" in (pred.principals.user ?? {}) ? "act-chain" : "act-absent"}`);
+        problems.push(`${where}:principals_below_strict:${strictShortfall(block, approvers)}`);
     }
   }
   // Keep the verified bodies of an allow's authority chain, so later intent and effect lines resolve the standing
@@ -1355,9 +1373,10 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   const failures: string[] = [], bodies: [number, J][] = [];
   lines = lines.filter((l) => l.trim());
   const seen: Record<string, J> = {}; // grant bodies of the authority chains verified so far, by digest
+  const counted = new Map<string, Set<string> | null>(); // permit id -> the approvers its first allow counted
   lines.forEach((line, n) => {
     const i = n + 1;
-    const [body, problems] = checkLine(i, line, keys, prev, trust, seen);
+    const [body, problems] = checkLine(i, line, keys, prev, trust, seen, counted);
     prev = sha256Hex(Buffer.from(line, "utf8"));
     failures.push(...problems);
     if (body === null) return;
