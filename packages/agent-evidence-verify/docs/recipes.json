@@ -97,15 +97,14 @@
       "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
     },
     {
-<<<<<<< save/p6-347
-      "path": "src/agent_evidence_verify/adapters/a2a_signed_card.py",
-      "bytes": 17714,
-      "sha256": "b6e0cbe099e656e80f078b06aa6ccb71e1653b4f4a604708c939288f6a434673"
-=======
       "path": "src/agent_evidence_verify/adapters/_audit_record_reader.py",
       "bytes": 109005,
       "sha256": "c3022933195dd7fe0c500fbde8aaf3fe27d585f204c14720e415743948eb42f4"
->>>>>>> save/p6-358
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/a2a_signed_card.py",
+      "bytes": 17714,
+      "sha256": "b6e0cbe099e656e80f078b06aa6ccb71e1653b4f4a604708c939288f6a434673"
     },
     {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
@@ -304,13 +303,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-<<<<<<< save/p6-347
-      "bytes": 11996,
-      "sha256": "d5bbe54816df7cca862b543bc35b3463026093e4c2d6780dcb5a5f9bdf69b042"
-=======
-      "bytes": 11816,
-      "sha256": "dff4b15529fd2379a6c760604d3967613b77bfdeaf349530d57c21dd7c9789e4"
->>>>>>> save/p6-358
+      "bytes": 12068,
+      "sha256": "6c66a61daeeb1a1ddd8fadfc32520ccce5f4c8e60e2bd358e0f28ced766dbd47"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
