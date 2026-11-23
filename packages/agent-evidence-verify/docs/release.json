@@ -1,11 +1,11 @@
 {
   "package": "agent-evidence-verify",
-  "version": "0.8.0",
-  "tag": "agent-evidence-verify-v0.8.0",
-  "commit": "e66bc7ab4cbb16d72aac9cad9894188c93139bb3",
-  "uploaded": "2026-11-21",
+  "version": "0.9.0",
+  "tag": "agent-evidence-verify-v0.9.0",
+  "commit": "d17c97fd6cc076edd1f36e7cdd932231009b0a50",
+  "uploaded": "2026-11-23",
   "files": [
-    {"name": "agent_evidence_verify-0.8.0-py3-none-any.whl", "sha256": "4011dca19786f05ee0a79f36660cc0dbb5d1d5b6e845e21216b9d8485081a1f5"},
-    {"name": "agent_evidence_verify-0.8.0.tar.gz", "sha256": "770356bd129cb0e5aae7533b7dbce92f7563f613863ba1468abaa2c72be8bdf0"}
+    {"name": "agent_evidence_verify-0.9.0-py3-none-any.whl", "sha256": "9e1b2cf581e6f26160ac89ae0911380f726218480d0e1ade9871c67b3e7ba0a7"},
+    {"name": "agent_evidence_verify-0.9.0.tar.gz", "sha256": "1fcfe5b7efc7bc75f66973e861fea428aa80795b46a3169cbab7c66c4257c18f"}
   ]
 }
