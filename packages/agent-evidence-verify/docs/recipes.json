@@ -408,8 +408,8 @@
     },
     {
       "path": "src/agent_evidence_verify/key_authority.py",
-      "bytes": 32646,
-      "sha256": "66f6012e315bfa035ca05630d1477b32d064ee8206c536f7d02bd2be2578bdee"
+      "bytes": 33927,
+      "sha256": "a982041a8a551848807d43aee244675c61803362ba765fe8a7fe81ad4f99941b"
     },
     {
       "path": "src/agent_evidence_verify/ocsf_decision.py",
