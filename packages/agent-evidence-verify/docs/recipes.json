@@ -308,13 +308,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-<<<<<<< save/p6-358
-      "bytes": 11816,
-      "sha256": "dff4b15529fd2379a6c760604d3967613b77bfdeaf349530d57c21dd7c9789e4"
-=======
-      "bytes": 12137,
-      "sha256": "aad3d656e53db755f3ccf23e91891c7771e11cdf60cc7d10a303b1be452e05b9"
->>>>>>> origin/main
+      "bytes": 12209,
+      "sha256": "2f957d5c77eb2be8abaf974e42348201df2e732357f178d32ba4c04e1aebe98e"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
