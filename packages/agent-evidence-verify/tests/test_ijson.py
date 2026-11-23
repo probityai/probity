@@ -199,7 +199,12 @@ def test_audit_principal_keeps_its_pinned_codes() -> None:
 #: numbers under the target's codes (the bounded profile is in the 0.6.0 release); proof_of_control's
 #: ``parse`` feeds a token check that reports ``duplicate-key`` and ``parse`` codes the PoC corpus pins
 #: and runs its own surrogate and canonical-number scan; verdict_codes.py reads the package's own file.
-PRIVATE_PARSERS = {"jcs_canonical.py": 1, "proof_of_control.py": 1, "verdict_codes.py": 1}
+#: _audit_record_reader.py is a rule-for-rule port of the agent audit record corpus's reference reader,
+#: whose parse order and refusal codes the corpus pins member by member; its Statement parser refuses a
+#: repeated name, an unsafe integer, a non-integer number, NaN and Infinity, a lone surrogate and nesting
+#: past 128 under that corpus's codes, which tests/test_audit_record.py holds it to.
+PRIVATE_PARSERS = {"jcs_canonical.py": 1, "proof_of_control.py": 1, "verdict_codes.py": 1,
+                   "_audit_record_reader.py": 4}
 
 
 def test_no_adapter_keeps_a_private_last_member_wins_parser() -> None:

@@ -97,6 +97,11 @@
       "sha256": "45cab0c7b01954d230539f2dbefdb15e571f542ea8b56ed7d25386beb964a20b"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/_audit_record_reader.py",
+      "bytes": 109005,
+      "sha256": "c3022933195dd7fe0c500fbde8aaf3fe27d585f204c14720e415743948eb42f4"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/acceptance_observed.py",
       "bytes": 11849,
       "sha256": "e35e29b6c8bc8ff8a6713132d4cf428e8c644eebc307d91edc7d202d9fcbd849"
@@ -115,6 +120,11 @@
       "path": "src/agent_evidence_verify/adapters/audit_principal.py",
       "bytes": 13886,
       "sha256": "268616ce121ab4ad9e5a6c7326c1caa7a1f7864141d19477731ed678c89b2877"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/audit_record.py",
+      "bytes": 8682,
+      "sha256": "19062d8cf7b278474bc29f8a24796ebd8495a41297a1a8d3bc2d8a513b3f47ce"
     },
     {
       "path": "src/agent_evidence_verify/adapters/authority_anchor.py",
@@ -298,8 +308,8 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 12137,
-      "sha256": "aad3d656e53db755f3ccf23e91891c7771e11cdf60cc7d10a303b1be452e05b9"
+      "bytes": 12209,
+      "sha256": "2f957d5c77eb2be8abaf974e42348201df2e732357f178d32ba4c04e1aebe98e"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -1898,6 +1908,47 @@
           "path": "examples/corpus-routes/audit-principal/envelope.json",
           "bytes": 5895,
           "sha256": "25048425b3cf423555642e030cd5f617931c2094353a65d2edaad18cb6436174"
+        }
+      ]
+    },
+    {
+      "task": "Check an agent audit record, its retention entry and its dating",
+      "claim_type": "agent_audit_record/v1",
+      "case": "examples/corpus-routes/audit-record/case.json",
+      "policy": "examples/corpus-routes/audit-record/policy.json",
+      "documentation": "docs/corpus-routes.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic corpus member (R17 of vectors-agent-audit-record); signed with a published test key that carries no trust outside the corpus.",
+      "case_id": "audit-record-r17",
+      "expected_reason": "record_conforms",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/corpus-routes/audit-record/case.json",
+        "--policy",
+        "examples/corpus-routes/audit-record/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/corpus-routes/audit-record/case.json",
+          "bytes": 417,
+          "sha256": "46447d03d7d5d746fd61cdbbf41c836958c7e50eb8e00837ec1723686899a958"
+        },
+        {
+          "path": "examples/corpus-routes/audit-record/policy.json",
+          "bytes": 221,
+          "sha256": "81751a571b97ec46349b855547d5e95af29802694f3e12be81e537df186a10a0"
+        },
+        {
+          "path": "examples/corpus-routes/audit-record/retained-record.json",
+          "bytes": 6133,
+          "sha256": "ee8be250abf867cd978dda0f3a1f1443842b9cbe5daa0aa4858a77a183a6c618"
+        },
+        {
+          "path": "examples/corpus-routes/audit-record/trust.json",
+          "bytes": 4921,
+          "sha256": "512fa833e874c75301f5837e706e88ba85b43df3cae72d6c3ad7ca912628f398"
         }
       ]
     },

@@ -2,7 +2,7 @@
 
 ## 0.9.0 (unreleased)
 
-A minor release: six new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
+A minor release: seven new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
@@ -40,6 +40,17 @@ A minor release: six new claim types and three more suites in corpus mode; the d
   one key under two ids, the issuer's own key as cosigner, a threshold of one authority, a short count), and a spent
   use limit (`uses_exhausted`), each with its own code; a `revocation_ref` outside the consumer's `revocation_sources`
   and a use limit with no recorded count are `not_established`. Doc: `docs/capability-credential.md`.
+- `agent_audit_record/v1`: judges an agent audit record, a retained record with its dating check, or a set of records,
+  under the consumer's trust document, and carries every field a member of `vectors-agent-audit-record` declares
+  (verdict and first code, recomputed tier, `withinLimit`, dating, joint set result). Each time bound is kept apart
+  (skew only on the future side, `maxAge` on the past, the OpenTimestamps allowance on both anchor bounds) and every
+  integer is range-checked before arithmetic. All 235 corpus members agree, so the Action's reference stage can read
+  M of M on that corpus. The assessment names the `shape` it holds (`envelope`, `retained` or `set`), never read off the
+  record, so a retained record stripped of a failing retention entry cannot pass as an envelope. A time value is an
+  RFC 3339 date-time only, and no input, signed or not, makes the reader raise: a lone surrogate, nesting past the
+  stack, a 4300-digit integer, an `anchorWithin` no timedelta holds and an `issuedAt` in year 1 are each judged. A
+  trust document the reader cannot read is refused as the consumer's error. Route and example:
+  `docs/corpus-routes.md`, `examples/corpus-routes/audit-record/`.
 
 Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
 reason each corpus declares.
