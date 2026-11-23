@@ -21,14 +21,13 @@ from datetime import UTC, datetime, timedelta
 from functools import cache
 from typing import Any
 
+from agent_evidence_verify import structured_fields as sf
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.x509.oid import NameOID
-
-from agent_evidence_verify import structured_fields as sf
 
 from .canonical_identity import CanonicalIdentity, Ref
 from .digests import act_chain_digest
@@ -291,7 +290,7 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(headers=stamp()))),
         ("VI13", "the stamp's field names in another case are the same fields",
          c({}, request=request(headers=stamp(names=("PROBITY-PRINCIPALS", "content-digest", "SIGNATURE-input",
-                                                    "signature"))))),  # fmt: skip
+                                                    "signature"))))),
         ("VI14", "another signer's Signature and Signature-Input are not a stamp: the tokens decide",
          c({"user": user, "agent": agent},
            request=request(headers=[["Signature-Input", 'sig1=("@method");created=1'], ["Signature", "sig1=:AAAA:"]]))),
@@ -378,7 +377,7 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(headers=stamp(covered=("@method", "@target-uri", "@authority", PRINCIPALS_HEADER))))),
         ("VS16", "a stamp covering the components in another order",
          c({}, request=request(headers=stamp(covered=("@target-uri", "@method", "@authority", CONTENT_DIGEST_HEADER,
-                                                      PRINCIPALS_HEADER))))),  # fmt: skip
+                                                      PRINCIPALS_HEADER))))),
         ("VS17", "a stamp with another tag", c({}, request=request(headers=stamp(params={"tag": "web-bot-auth"})))),
         ("VS18", "a stamp naming another algorithm", c({}, request=request(headers=stamp(params={"alg": "hmac-sha256"})))),
         ("VS19", "a stamp with no expires", c({}, request=request(headers=stamp(params={"expires": None})))),
