@@ -13,6 +13,17 @@
   floor is agent-evidence-verify 0.9.0.
 - The refusal registry holds the gateway's outbound credential codes (`exchange_*`, `outbound_*`,
   `release_unrecorded`).
+- Record envelope v2 (`probity_records.erasure`) closes a length channel and gains two helpers. A schema may fix the
+  plaintext size of a class (`Schema.fixed`, `Schema.size`); every ciphertext of that class is padded to exactly
+  that size and a larger plaintext is refused (`payload_over_fixed_size`). With padding to a multiple of 256 alone,
+  an approver whose name and principal crossed a boundary was re-linked across its votes from the ciphertext length
+  after its key was destroyed. The lint refuses a malformed, duplicated or partial fixed size (`fixed_size_malformed`,
+  `fixed_size_duplicate`, `fixed_size_partial`). A schema's JSON form now requires `fixed` (`{}` when nothing is
+  fixed); a schema document written before this version without it is refused as `schema_malformed`. `open_sealed` refuses a signed
+  ciphertext length that is not the blob's (`ciphertext_length_mismatch`) and `check_block` refuses a `bytes` that is
+  not an integer of at least 28. New: `check_padding` (a keyless check that a writer padded), `reference` (a keyed
+  per-leaf handle for a value inside a body its subject signs) and `personal_traces` (the canary lint over signed
+  bytes). Shared vectors `erasure.json` gain S8 to S10, O12, P1 to P4, L4, L5, R1 to R3, T1 and T2.
 
 ## 0.5.0
 
