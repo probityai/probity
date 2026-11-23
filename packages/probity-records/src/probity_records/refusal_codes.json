@@ -207,6 +207,24 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/budget_exhausted"
   },
   {
+   "code": "cel_expression_empty",
+   "check": "grants.constraint",
+   "meaning": "a CEL expression is not a string, or holds only whitespace",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/cel_expression_empty"
+  },
+  {
+   "code": "cel_syntax_invalid",
+   "check": "grants.constraint",
+   "meaning": "a CEL expression does not parse",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/cel_syntax_invalid"
+  },
+  {
+   "code": "cel_type_check_failed",
+   "check": "grants.issue",
+   "meaning": "a CEL expression parses but does not type-check, so the issuer refuses to sign it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/cel_type_check_failed"
+  },
+  {
    "code": "chain_broken",
    "check": "journal.verify",
    "meaning": "a record does not name its predecessor's digest",
@@ -397,6 +415,42 @@
    "check": "grants.call",
    "meaning": "the call fails a condition of the grant",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/condition_violation"
+  },
+  {
+   "code": "constraint_cidr_invalid",
+   "check": "grants.constraint",
+   "meaning": "a cidr constraint names no network, or one with host bits set",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/constraint_cidr_invalid"
+  },
+  {
+   "code": "constraint_member_invalid",
+   "check": "grants.constraint",
+   "meaning": "a constraint member has the wrong JSON type",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/constraint_member_invalid"
+  },
+  {
+   "code": "constraint_member_missing",
+   "check": "grants.constraint",
+   "meaning": "a constraint lacks a member its type requires",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/constraint_member_missing"
+  },
+  {
+   "code": "constraint_range_unbounded",
+   "check": "grants.constraint",
+   "meaning": "a range constraint names neither min nor max",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/constraint_range_unbounded"
+  },
+  {
+   "code": "constraint_regex_invalid",
+   "check": "grants.constraint",
+   "meaning": "a regex constraint does not compile",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/constraint_regex_invalid"
+  },
+  {
+   "code": "constraint_unknown",
+   "check": "grants.constraint",
+   "meaning": "a constraint is not an object, or names no known type",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/constraint_unknown"
   },
   {
    "code": "constraint_violation",
@@ -1131,6 +1185,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_approval_level"
   },
   {
+   "code": "grant_arg_constraint_invalid",
+   "check": "grants.chain",
+   "meaning": "a grant's argument constraint is not well formed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_arg_constraint_invalid"
+  },
+  {
    "code": "grant_budget_exceeded",
    "check": "grants.call",
    "meaning": "the recorded calls under a grant exceed its use budget",
@@ -1173,6 +1233,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_chain_header_malformed"
   },
   {
+   "code": "grant_context_constraint_invalid",
+   "check": "grants.chain",
+   "meaning": "a grant's context constraint is not well formed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_context_constraint_invalid"
+  },
+  {
    "code": "grant_context_shape",
    "check": "grants.chain",
    "meaning": "a grant's context constraints are not well formed",
@@ -1209,6 +1275,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_invalid"
   },
   {
+   "code": "grant_issuer_key_invalid",
+   "check": "grants.chain",
+   "meaning": "a grant's issuer key is not the canonical base64 of a raw Ed25519 public key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_issuer_key_invalid"
+  },
+  {
    "code": "grant_issuer_key_revoked",
    "check": "grants.chain",
    "meaning": "a grant link's issuer key is revoked",
@@ -1237,6 +1309,12 @@
    "check": "grants.chain",
    "meaning": "a grant link does not name the link before it as its parent",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_parent_mismatch"
+  },
+  {
+   "code": "grant_quorum_invalid",
+   "check": "grants.chain",
+   "meaning": "a grant's quorum policy is not well formed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_quorum_invalid"
   },
   {
    "code": "grant_quorum_must_bind_proposer",
@@ -1339,6 +1417,12 @@
    "check": "grants.chain",
    "meaning": "the time a grant chain is judged at is not an RFC 3339 date-time with an offset",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_use_time_invalid"
+  },
+  {
+   "code": "grant_when_invalid",
+   "check": "grants.chain",
+   "meaning": "a grant's condition is not a CEL expression that parses",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_when_invalid"
   },
   {
    "code": "grant_when_shape",
@@ -2289,6 +2373,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/purpose_out_of_scope"
   },
   {
+   "code": "quorum_approver_key_shape",
+   "check": "quorum.policy",
+   "meaning": "a quorum approver's key is neither key text nor a key object",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_approver_key_shape"
+  },
+  {
    "code": "quorum_for_another_request",
    "check": "approval.quorum",
    "meaning": "the quorum evidence is for another request",
@@ -2311,6 +2401,12 @@
    "check": "approval.quorum",
    "meaning": "the quorum names a policy the verifier did not pin",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_policy_not_pinned"
+  },
+  {
+   "code": "quorum_policy_shape",
+   "check": "quorum.policy",
+   "meaning": "a quorum policy is not an object",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/quorum_policy_shape"
   },
   {
    "code": "quorum_proposer_unbound",

@@ -7,7 +7,8 @@ principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``
 grant chains, ``identities.json`` journals whose records name the parties to a call (the strict profile, the parties
 a permit's later records name, the approver an allow counts), ``canonical_identity.json`` the canonical identity
 strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
-``digests_vectors``, ``erasure.json`` the record envelope v2 cases of ``erasure_vectors``. ``canonical.json`` holds bytes and the canonical
+``digests_vectors``, ``erasure.json`` the record envelope v2 cases of ``erasure_vectors``, ``grant_bodies.json`` and
+``grant_calls.json`` the grant body grammar and per-call cases of ``grant_body_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
 scripts/gen_shared_vectors.py vectors/shared``.
@@ -64,6 +65,8 @@ from probity_records.core import (
 )
 from probity_records.digests_vectors import vectors as digest_vectors
 from probity_records.erasure_vectors import vectors as erasure_vectors
+from probity_records.grant_body_vectors import bodies as grant_bodies
+from probity_records.grant_body_vectors import calls as grant_calls
 from probity_records.grants import GRANT_DOMAIN, grant_digest
 from probity_records.identity_vectors import (
     autonomous_record_parts,
@@ -184,8 +187,14 @@ def forged_times(depth: int, **times: str) -> list[dict]:
     """The two-grant chain with grant ``depth`` re-signed by its own issuer over the given ``notBefore`` /
     ``expiresAt``: a time outside the one RFC 3339 grammar (no offset, a field out of range) that no issuing check
     saw. Every verifier refuses it as a grant defect; none throws or reads it in its own zone."""
+    return forged(depth, **times)
+
+
+def forged(depth: int, **members: object) -> list[dict]:
+    """The two-grant chain with grant ``depth`` re-signed by its own issuer over the given members, a body no issuing
+    check saw: every verifier refuses it with the same grant defect."""
     grants = chain()
-    body = {**grants[depth]["body"], **times}
+    body = {**grants[depth]["body"], **members}
     signer = ROOT if depth == 0 else AGENT
     grants[depth] = {"body": body, "sig": _b64(signer.sign(GRANT_DOMAIN + canonical(body)))}
     if depth == 0:
@@ -835,6 +844,11 @@ def main(out: Path) -> None:
              lambda d: grant_case(d, forged_times(1, expiresAt=EXP.removesuffix("Z")), [usd])),
             ("GV13", "the child grant's expiresAt names month 13, which a lenient parser rolls into January",
              lambda d: grant_case(d, forged_times(1, expiresAt="2026-13-01T00:00:00Z"), [usd])),
+            ("GV14", "the child grant's argument constraint is a range with neither bound",
+             lambda d: grant_case(d, forged(1, tools={"refund": {**TOOLS["refund"], "args": {
+                 **TOOLS["refund"]["args"], "amount_cents": {"type": "range"}}}}), [usd])),
+            ("GV15", "the root grant's budget names a null spend",
+             lambda d: grant_case(d, forged(0, budget={"spend": None}), [usd])),
         ],
         "quorum": [
             ("QV1", "two approvers fill the two roles; the proposer does not vote",
@@ -882,6 +896,8 @@ def main(out: Path) -> None:
                                                                  "checkpoint")}})
         (out / f"{family}.json").write_text(json.dumps(out_rows, indent=2, sort_keys=True) + "\n")
     (out / "identity.json").write_text(json.dumps(identity_vectors(), indent=2, sort_keys=True) + "\n")
+    (out / "grant_bodies.json").write_text(json.dumps(grant_bodies(), indent=2, sort_keys=True) + "\n")
+    (out / "grant_calls.json").write_text(json.dumps(grant_calls(), indent=2, sort_keys=True) + "\n")
     (out / "standing_grants.json").write_text(json.dumps(standing_grant_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")

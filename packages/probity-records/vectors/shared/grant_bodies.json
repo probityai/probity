@@ -1,0 +1,3089 @@
+[
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a well-formed body",
+    "expected": null,
+    "id": "GB01"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null
+    },
+    "description": "no tools member",
+    "expected": "grant_tools_empty",
+    "id": "GB02"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {}
+    },
+    "description": "an empty tools object",
+    "expected": "grant_tools_empty",
+    "id": "GB03"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": [
+          "args"
+        ]
+      }
+    },
+    "description": "a tool entry that is not an object",
+    "expected": "grant_tool_shape:refund",
+    "id": "GB04"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a tool entry with no args object",
+    "expected": "grant_tool_shape:refund",
+    "id": "GB05"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "maybe",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "an approval level outside none and required",
+    "expected": "grant_approval_level:refund",
+    "id": "GB06"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": null,
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a null approval level, which a reader that defaults null to none would admit",
+    "expected": "grant_approval_level:refund",
+    "id": "GB07"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "type": "money"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "an argument constraint of unknown type",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_unknown",
+    "id": "GB08"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "min": 1,
+              "type": [
+                "range"
+              ]
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a constraint type written as a one-element list, which JavaScript's in operator reads as its text",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_unknown",
+    "id": "GB09"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "type": "toString"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a constraint type that names an inherited JavaScript property",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_unknown",
+    "id": "GB10"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "type": "exact"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "an exact constraint with no value",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_member_missing:exact.value",
+    "id": "GB11"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a range with neither bound",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_range_unbounded",
+    "id": "GB12"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "min": "1",
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a range whose min is text",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_member_invalid:range.min",
+    "id": "GB13"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "type": "one_of",
+              "values": "USD"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a one_of whose values is text, which Python would search as a substring",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_member_invalid:one_of.values",
+    "id": "GB14"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "regex": "(",
+              "type": "regex"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a regex that does not compile",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_regex_invalid",
+    "id": "GB15"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "network": "10.0.0.1/8",
+              "type": "cidr"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a cidr network with host bits set",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_cidr_invalid",
+    "id": "GB16"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "network": 5,
+              "type": "cidr"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a cidr network written as a number, which Python's ip_network reads as an address",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_member_invalid:cidr.network",
+    "id": "GB17"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "expr": "value ==",
+              "type": "cel"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a cel constraint that does not parse",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:cel_syntax_invalid",
+    "id": "GB18"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "of": [
+                {
+                  "min": 1,
+                  "type": "range"
+                },
+                {
+                  "type": "range"
+                }
+              ],
+              "type": "all"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a defect inside an all constraint",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_range_unbounded",
+    "id": "GB19"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "of": [],
+              "type": "all"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "an all constraint over an empty list",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_member_invalid:all.of",
+    "id": "GB20"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "hosts": [
+                443
+              ],
+              "schemes": [
+                "https"
+              ],
+              "type": "url_pattern"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a url_pattern whose hosts list holds a number",
+    "expected": "grant_arg_constraint_invalid:refund.amount_cents:constraint_member_invalid:url_pattern.hosts",
+    "id": "GB21"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": "args.amount_cents < 3000"
+        }
+      }
+    },
+    "description": "conditions that are not a list",
+    "expected": "grant_when_shape:refund",
+    "id": "GB22"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents <"
+          ]
+        }
+      }
+    },
+    "description": "a condition that does not parse",
+    "expected": "grant_when_invalid:refund.0:cel_syntax_invalid",
+    "id": "GB23"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            " \t\n"
+          ]
+        }
+      }
+    },
+    "description": "a condition of only whitespace",
+    "expected": "grant_when_invalid:refund.0:cel_expression_empty",
+    "id": "GB24"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "has(args)"
+          ]
+        }
+      }
+    },
+    "description": "a has() over a variable, not a field: cel-cpp's parser refuses it",
+    "expected": "grant_when_invalid:refund.0:cel_syntax_invalid",
+    "id": "GB25"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 9223372036854775808"
+          ]
+        }
+      }
+    },
+    "description": "an integer literal beyond the signed 64-bit range",
+    "expected": "grant_when_invalid:refund.0:cel_syntax_invalid",
+    "id": "GB26"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.currency == '\\z'"
+          ]
+        }
+      }
+    },
+    "description": "an unknown string escape",
+    "expected": "grant_when_invalid:refund.0:cel_syntax_invalid",
+    "id": "GB27"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.currency == '\\0'"
+          ]
+        }
+      }
+    },
+    "description": "a one-digit octal escape",
+    "expected": "grant_when_invalid:refund.0:cel_syntax_invalid",
+    "id": "GB28"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "b'\\u00e9' == b''"
+          ]
+        }
+      }
+    },
+    "description": "a \\u escape inside a bytes literal",
+    "expected": "grant_when_invalid:refund.0:cel_syntax_invalid",
+    "id": "GB29"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 // cap"
+          ]
+        }
+      }
+    },
+    "description": "a condition that ends in a comment with no newline: it parses",
+    "expected": null,
+    "id": "GB30"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "1 + 'a' == 2"
+          ]
+        }
+      }
+    },
+    "description": "a condition that parses but does not type-check: a verifier judges syntax only, and it never holds",
+    "expected": null,
+    "id": "GB31"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.currency == r'\\z'"
+          ]
+        }
+      }
+    },
+    "description": "a raw string keeps its backslash: it parses",
+    "expected": null,
+    "id": "GB32"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.currency == '\ud800'"
+          ]
+        }
+      }
+    },
+    "description": "a condition holding a lone surrogate, which has no UTF-8 form",
+    "expected": "grant_when_invalid:refund.0:cel_syntax_invalid",
+    "id": "GB62"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "required",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "quorum": [
+            "ops"
+          ],
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a quorum that is not an object",
+    "expected": "grant_quorum_invalid:refund:quorum_policy_shape",
+    "id": "GB33"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "required",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "quorum": {
+            "approvers": {
+              "ops": "OkRCEeZoo0LHhvSY2vySuu0RsHtggvSc4zaNRjhIiZM="
+            },
+            "policyId": "pay",
+            "proposerBound": true,
+            "threshold": 2
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a quorum threshold above its approver count",
+    "expected": "grant_quorum_invalid:refund:quorum_threshold_out_of_range",
+    "id": "GB34"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "required",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "quorum": {
+            "approvers": {
+              "ops": "OkRCEeZoo0LHhvSY2vySuu0RsHtggvSc4zaNRjhIiZM="
+            },
+            "policyId": "pay",
+            "proposerBound": true,
+            "roles": {
+              "finance": [
+                "ops"
+              ]
+            },
+            "threshold": 1
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a quorum role written as a list",
+    "expected": "grant_quorum_invalid:refund:quorum_role_invalid:finance",
+    "id": "GB35"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "required",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "quorum": {
+            "approvers": {
+              "ops": 7
+            },
+            "policyId": "pay",
+            "proposerBound": true,
+            "threshold": 1
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a quorum approver whose key is a number",
+    "expected": "grant_quorum_invalid:refund:quorum_approver_key_shape",
+    "id": "GB36"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "required",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "quorum": {
+            "approvers": {
+              "ops": "OkRCEeZoo0LHhvSY2vySuu0RsHtggvSc4zaNRjhIiZM="
+            },
+            "policyId": "pay",
+            "threshold": 1
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a quorum that does not bind the proposer",
+    "expected": "grant_quorum_must_bind_proposer:refund",
+    "id": "GB37"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "quorum": {
+            "approvers": {
+              "ops": "OkRCEeZoo0LHhvSY2vySuu0RsHtggvSc4zaNRjhIiZM="
+            },
+            "policyId": "pay",
+            "proposerBound": true,
+            "threshold": 1
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a quorum on a tool that requires no approval",
+    "expected": "grant_quorum_without_required_approval:refund",
+    "id": "GB38"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "alpha": [
+          "x"
+        ],
+        "zeta": [
+          "x"
+        ]
+      }
+    },
+    "description": "two malformed tools written z before a: the first in code point order is named",
+    "expected": "grant_tool_shape:alpha",
+    "id": "GB39"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "\uffff": [
+          "x"
+        ],
+        "\ud83d\ude00": [
+          "x"
+        ]
+      }
+    },
+    "description": "two malformed tools, U+FFFF and U+1F600: code point order, not UTF-16 order, names U+FFFF first",
+    "expected": "grant_tool_shape:\uffff",
+    "id": "GB40"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "alpha": {
+              "type": "money"
+            },
+            "zeta": {
+              "type": "range"
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "two malformed arguments written z before a",
+    "expected": "grant_arg_constraint_invalid:refund.alpha:constraint_unknown",
+    "id": "GB41"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "no maxDepth",
+    "expected": "grant_max_depth",
+    "id": "GB42"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": -1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a negative maxDepth",
+    "expected": "grant_max_depth",
+    "id": "GB43"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1.0,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a maxDepth written as a float",
+    "expected": "grant_max_depth",
+    "id": "GB44"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": true,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a maxDepth that is a boolean",
+    "expected": "grant_max_depth",
+    "id": "GB45"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "no context member",
+    "expected": "grant_context_shape",
+    "id": "GB46"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": [],
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a context that is a list",
+    "expected": "grant_context_shape",
+    "id": "GB47"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "type": "glob"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a malformed context constraint",
+    "expected": "grant_context_constraint_invalid:workflowId:constraint_unknown",
+    "id": "GB48"
+  },
+  {
+    "body": {
+      "budget": {},
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "an empty budget",
+    "expected": "grant_budget_shape",
+    "id": "GB49"
+  },
+  {
+    "body": {
+      "budget": {
+        "calls": 1,
+        "uses": 2
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a budget with a member outside uses and spend",
+    "expected": "grant_budget_shape",
+    "id": "GB50"
+  },
+  {
+    "body": {
+      "budget": {
+        "uses": -1
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a negative use count",
+    "expected": "grant_budget_uses",
+    "id": "GB51"
+  },
+  {
+    "body": {
+      "budget": {
+        "uses": 2.0
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a use count written as a float",
+    "expected": "grant_budget_uses",
+    "id": "GB52"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents"
+        }
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a spend with no max",
+    "expected": "grant_budget_spend",
+    "id": "GB53"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": null
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a null spend, which narrowing and spend counting would read as an object",
+    "expected": "grant_budget_spend",
+    "id": "GB54"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": true
+        }
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a spend max that is a boolean",
+    "expected": "grant_budget_spend",
+    "id": "GB55"
+  },
+  {
+    "body": {
+      "budget": null,
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a null budget is no budget",
+    "expected": null,
+    "id": "GB56"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "no issuerKey",
+    "expected": "grant_issuer_key_invalid",
+    "id": "GB57"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdB=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "an issuerKey in non-canonical base64",
+    "expected": "grant_issuer_key_invalid",
+    "id": "GB58"
+  },
+  {
+    "body": {
+      "budget": {
+        "spend": {
+          "arg": "amount_cents",
+          "max": 10000
+        },
+        "uses": 5
+      },
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "an issuerKey of 31 bytes",
+    "expected": "grant_issuer_key_invalid",
+    "id": "GB59"
+  },
+  {
+    "body": {
+      "budget": {},
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "sponsor": {
+        "issuer": "https://idp.example.com",
+        "subject": "ops"
+      },
+      "tools": {
+        "refund": {
+          "approval": "none",
+          "args": {
+            "amount_cents": {
+              "max": 4000,
+              "min": 1,
+              "type": "range"
+            },
+            "currency": {
+              "type": "one_of",
+              "values": [
+                "USD",
+                "EUR"
+              ]
+            }
+          },
+          "when": [
+            "args.amount_cents < 3000 || args.currency == 'USD'"
+          ]
+        }
+      }
+    },
+    "description": "a malformed budget and a sponsor with no review date: the budget is judged first",
+    "expected": "grant_budget_shape",
+    "id": "GB60"
+  },
+  {
+    "body": {
+      "budget": {},
+      "cnf": {
+        "jkt": "SHwcxjJBBWfT-vCZepDt8jWnZKNUQAXCUh5JUNFBDXE"
+      },
+      "context": {
+        "workflowId": {
+          "pattern": "refunds-*",
+          "type": "pattern"
+        }
+      },
+      "expiresAt": "2099-12-31T00:00:00Z",
+      "grantId": "g-root",
+      "holderKey": "HW8uZUMclfvNCItCNQgBIaH+QhM5igoVy2UsIKM6UMo=",
+      "issuerKey": "AtdNw4t3pXmEjCGCMj5H3+UbZSnxqD+BnB7/wFZMOdw=",
+      "maxDepth": 1,
+      "notBefore": "2026-01-01T00:00:00Z",
+      "parent": null,
+      "tools": {
+        "refund": []
+      }
+    },
+    "description": "a malformed tool and a malformed budget: the tools are judged first",
+    "expected": "grant_tool_shape:refund",
+    "id": "GB61"
+  }
+]
