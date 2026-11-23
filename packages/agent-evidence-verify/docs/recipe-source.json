@@ -359,6 +359,51 @@
       "documentation": "docs/corpus-routes.md",
       "expected_decision": "supported",
       "scope": "Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus."
+    },
+    {
+      "task": "Check that the copy a consumer read matches its published digests",
+      "claim_type": "evidence_digest/v1",
+      "case": "examples/telemetry-evidence/digest/case.json",
+      "policy": "examples/telemetry-evidence/digest/policy.json",
+      "documentation": "docs/telemetry-evidence.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example."
+    },
+    {
+      "task": "Check that an event log is complete against its retained head",
+      "claim_type": "event_log_completeness/v1",
+      "case": "examples/telemetry-evidence/log/case.json",
+      "policy": "examples/telemetry-evidence/log/policy.json",
+      "documentation": "docs/telemetry-evidence.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example."
+    },
+    {
+      "task": "Check that the action an authority released is the action that ran",
+      "claim_type": "lifecycle_binding/v1",
+      "case": "examples/lifecycle-binding/case.json",
+      "policy": "examples/lifecycle-binding/policy.json",
+      "documentation": "docs/lifecycle-binding.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example."
+    },
+    {
+      "task": "Check an action evidence package layer by layer",
+      "claim_type": "aep_package/v1",
+      "case": "examples/aep-package/case.json",
+      "policy": "examples/aep-package/policy.json",
+      "documentation": "docs/aep-package.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example."
+    },
+    {
+      "task": "Check that an agent capability credential is valid and not exhausted",
+      "claim_type": "capability_credential/v1",
+      "case": "examples/capability-credential/case.json",
+      "policy": "examples/capability-credential/policy.json",
+      "documentation": "docs/capability-credential.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example."
     }
   ]
 }

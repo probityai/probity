@@ -45,6 +45,11 @@ All examples are authored synthetic records. They do not establish independent o
 | [Check that an evaluation claim record is admitted under my acceptance rule](evaluation-claim.md) | `evaluation_claim/v1` | `supported` | Record, profile and case set from the agent-evidence-vectors claim_record corpus; the implementation and verifier digests name example bytes. |
 | [Decide what a signed Observed Effect record lets a verifier conclude](adapters.md) | `evidence_sufficiency/v1` | `supported` | Authored synthetic corpus member and a stipulated consumer context; it does not establish who holds the observer key. |
 | [Check that no credential is reachable from the agent's environment](corpus-routes.md) | `credential_reachability/v1` | `supported` | Authored synthetic corpus member; signed with a published test key that carries no trust outside the corpus. |
+| [Check that the copy a consumer read matches its published digests](telemetry-evidence.md) | `evidence_digest/v1` | `supported` | Authored synthetic record signed or built with test keys that carry no trust outside this example. |
+| [Check that an event log is complete against its retained head](telemetry-evidence.md) | `event_log_completeness/v1` | `supported` | Authored synthetic record signed or built with test keys that carry no trust outside this example. |
+| [Check that the action an authority released is the action that ran](lifecycle-binding.md) | `lifecycle_binding/v1` | `supported` | Authored synthetic record signed or built with test keys that carry no trust outside this example. |
+| [Check an action evidence package layer by layer](aep-package.md) | `aep_package/v1` | `supported` | Authored synthetic record signed or built with test keys that carry no trust outside this example. |
+| [Check that an agent capability credential is valid and not exhausted](capability-credential.md) | `capability_credential/v1` | `supported` | Authored synthetic record signed or built with test keys that carry no trust outside this example. |
 
 ## Retrieve a command
 

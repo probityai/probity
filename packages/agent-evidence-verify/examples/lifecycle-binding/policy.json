@@ -1,0 +1,11 @@
+{
+  "assessments": {
+    "lifecycle-binding-example": {
+      "bindings": "bindings.json",
+      "claim_type": "lifecycle_binding/v1",
+      "records": "records.json",
+      "revocation": "revocation.json"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

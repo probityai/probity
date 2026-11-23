@@ -1,5 +1,5 @@
 recursive-include src *.py *.json
-recursive-include examples *.json *.txt *.py *.jsonl *.md *.html *.pub *.err *.bin
+recursive-include examples *.json *.txt *.py *.jsonl *.md *.html *.pub *.err *.bin *.aep
 graft examples/brokered-file-write/retained
 recursive-include tests *.py *.json *.zip *.bin *.md *.jcs
 recursive-include scripts *.py *.sh
