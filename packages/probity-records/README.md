@@ -6,19 +6,23 @@ exact call arguments, the human approval it rests on, and what the call did, inc
 It is for framework integrations (Temporal, Pydantic AI) that write those records, and for the
 auditor who verifies them without access to the system that ran the agent.
 
-Install: `pip install probity-records==0.2.0`
+Install: `pip install probity-records`
 
 ```python
 from probity_records import Journal, Signer, verify_journal
+from probity_records.clock import SystemClock
 
 signer = Signer.generate()
-journal = Journal("records", signer)
+journal = Journal("records", signer, clock=SystemClock())
 journal.append("https://example.org/predicate/v1/note", "note", "00" * 32, {"text": "hello"})
 report = verify_journal("records", [signer.public_pem()], journal.checkpoint())
 print(report["verdict"], report["verified"], "of", report["records"])
 ```
 
 It prints `PASS 1 of 1`.
+
+Every producer takes its time from a `probity_records.clock.Clock` passed in at construction; a test or a
+verifier passes a `FixedClock`, and `python -m probity_records.clock_lint SRC` refuses any direct clock read.
 
 Each tool-call record carries two published contracts, and their published readers judge them:
 `approval-binding/v1` by `agent_evidence_vectors.approvalbinding`, and `uncertain_effect/v1` by

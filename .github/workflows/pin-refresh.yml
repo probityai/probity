@@ -67,6 +67,7 @@ jobs:
             version-pins.toml
             packages/agent-evidence-mcp/version-pins.toml
             packages/agent-evidence-replay/version-pins.toml
+            packages/agent-evidence-a2a/version-pins.toml
             harnesses/agent-evidence-plugins/version-pins.toml
           ci: ci.yml
           app-client-id: ${{ vars.PIN_REFRESH_APP_CLIENT_ID }}

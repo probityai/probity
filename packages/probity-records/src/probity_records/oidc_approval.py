@@ -74,7 +74,7 @@ def verify_oidc_approval(embedded: Mapping[str, Any], pinned: Any, pins: Mapping
         return "approval_principal_not_an_id_token"
     problem = check_principal(principal, str(record.get("decisionTime")), {k: list(v) for k, v in pins.items()})
     if problem is None:
-        problem = verify_token(principal, token, jwks)
+        problem = verify_token(principal, token, jwks, at=str(record.get("decisionTime")))
     if problem is not None:
         return problem
     if approval.get("keyId") != principal_id(str(pinned["issuer"]), str(pinned["subject"])):

@@ -20,6 +20,7 @@ from probity_records import (
     RevocationState,
     Signer,
     Trust,
+    check_subject_id,
     grant_digest,
     issue_grant,
     list_digest,
@@ -30,9 +31,12 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.core import canonical, sha256_hex
 from probity_records.possession import cnf_for_signer
 from test_records import _approval, _trust, _write_run
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 PAST = "2000-01-01T00:00:00Z"
 ROOT = Path(__file__).resolve().parents[1]
@@ -271,7 +275,7 @@ def test_revoked_approver_approval_is_refused() -> None:
 
 def test_records_signed_after_revocation_fail_offline(tmp_path) -> None:
     root, gate, approver = Signer.generate(), Signer.generate(), Signer.generate()
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     _write_run(journal, approver, "committed", "confirmed")
     lists = [_list(root, 1, [_entry("key", gate.key_id, reason="compromised")])]
     trust = Trust(revocations=RevocationState.from_lists(lists, {root.key_id}))
@@ -349,3 +353,22 @@ def test_every_shared_vector_holds_under_this_reader() -> None:
                 break
         else:
             assert expected.get("state") == state.summary(), row["id"]
+
+
+@pytest.mark.parametrize(("kind", "ident"), [
+    ("grant", "a" * 64), ("key", "0" * 64), ("permit", "f" * 64),
+    ("agent", "agent://tenant/a"), ("stream", "s"), ("sponsor", "issuer#subject"), ("build", "x" * 512),
+])
+def test_check_subject_id_admits_every_id_a_list_can_name(kind: str, ident: str) -> None:
+    check_subject_id(kind, ident)
+
+
+@pytest.mark.parametrize(("kind", "ident", "why"), [
+    ("grant", "A" * 64, "entry_id_form:grant"), ("key", "a" * 63, "entry_id_form:key"),
+    ("agent", "", "entry_id_form:agent"), ("agent", "caf\u00e9", "entry_id_form:agent"),
+    ("stream", "x" * 513, "entry_id_form:stream"), ("sponsor", 7, "entry_id_form:sponsor"),
+    ("user", "u", "entry_kind_unknown"),
+])
+def test_check_subject_id_refuses_what_no_list_can_name(kind: str, ident: object, why: str) -> None:
+    with pytest.raises(RevocationError, match=f"^revocation_list_shape:{why}$"):
+        check_subject_id(kind, ident)

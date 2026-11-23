@@ -21,10 +21,13 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.core import _b64, canonical, verify_permit
 from probity_records.grants import GRANT_DOMAIN
 from probity_records.possession import cnf_for_signer
 from probity_records.walk import grant_walk, mint_grant_permit
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 AT = "2026-06-01T00:00:00Z"
 NB, EXP = "2026-01-01T00:00:00Z", "2099-12-31T00:00:00Z"
@@ -122,7 +125,7 @@ def _effect(args: dict) -> dict:
 
 
 def _journal(tmp_path, gate: Signer, chain: list, calls: list, effect_grant=None) -> Journal:
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     for n, args in enumerate(calls):
         pid = permit_id("p", f"c{n}", args_sha256(args))
         common = {"run_id": "r1", "tool_call_id": f"c{n}", "tool": "refund", "args_sha256_hex": args_sha256(args),
@@ -163,8 +166,8 @@ def test_grant_to_effect_walk_passes_offline_and_a_swapped_grant_fails(tmp_path)
     assert claims["grantDigest"] == walk["grantDigest"] and claims["grantChain"] == walk["grantChain"]
     swapped = _journal(tmp_path / "bad", gate, chain, [CALL], effect_grant="ab" * 32)
     bad = verify_journal(tmp_path / "bad", [gate.public_pem()], swapped.checkpoint(), trust=trust)
-    assert "line_3:effect_grant_differs_from_permit" in bad["failures"]
-    assert "effect_names_another_grant" in grant_walk(bad["statements"], pid)["problems"]
+    assert "line_3:grant_differs_from_permit:effect" in bad["failures"]
+    assert "hop_names_another_grant:effect" in grant_walk(bad["statements"], pid)["problems"]
 
 
 def test_verifier_recounts_budget_from_the_journal(tmp_path) -> None:

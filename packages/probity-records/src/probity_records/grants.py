@@ -16,7 +16,16 @@ Grant body::
      "budget": {"uses": int, "spend": {"arg": name, "max": number}},   # optional, both parts optional
      "tools": {tool: {"args": {name: constraint}, "approval": "none" | "required",
                       "when": [CEL expression over args, tool, ctx],
-                      "quorum": approval policy (see quorum.py)}}}
+                      "quorum": approval policy (see quorum.py)}},
+     "sponsor": {"issuer": https URL, "subject": str},   # optional, with reviewBy: a standing grant
+     "reviewBy": iso}                                    # notBefore < reviewBy <= expiresAt
+
+A standing grant is the authority an agent holds with no person in its session: it names the ``sponsor`` who
+answers for it and the instant (``reviewBy``) by which a person must review it. The two members come together or
+not at all. From ``reviewBy`` on, the grant and every grant delegated under it admit nothing
+(``grant_review_overdue``); a review is a fresh issue with a later ``reviewBy``. A child of a standing grant keeps
+its sponsor and reviews no later; a child of a plain grant never becomes one (``child_adds_sponsor``): who answers
+for a standing grant is named by the pinned root that issues it, never by a delegate.
 
 ``holderKey`` signs the child grants its holder delegates. ``cnf`` names the key that presents the grant on a
 request (a DPoP key or a TLS client certificate, possibly the same key as ``holderKey``); the verifier accepts
@@ -24,7 +33,7 @@ a presentation only with proof of possession of that key (``possession.check_pos
 carries the proof it rested on (``grant_evidence(..., possession=...)``). A grant without ``cnf`` would be a
 bearer token, so none can be issued or verified.
 
-Every axis narrows down a chain: tools, arguments, constraints, window, depth, context, budget,
+Every axis narrows down a chain: tools, arguments, constraints, window, review date, sponsor, depth, context, budget,
 ``when`` conditions (a child keeps every parent condition and may add more) and the approval
 requirement (a child keeps every parent approver and threshold and may add more: add-only).
 
@@ -111,13 +120,37 @@ def _validate_tools(tools: Any) -> None:
                 raise ValueError(f"grant_quorum_without_required_approval:{tool}")
 
 
+def _validate_standing(body: Mapping[str, Any]) -> None:
+    if ("sponsor" in body) != ("reviewBy" in body):
+        raise ValueError("grant_standing_incomplete")
+    if "sponsor" not in body:
+        return
+    sponsor = body["sponsor"]
+    if (not isinstance(sponsor, dict) or set(sponsor) != {"issuer", "subject"}
+            or not all(isinstance(v, str) and v for v in sponsor.values())):  # fmt: skip
+        raise ValueError("grant_sponsor_invalid")
+    from .identity import sponsor_id
+
+    try:
+        sponsor_id(sponsor["issuer"], sponsor["subject"])
+    except ValueError:
+        raise ValueError("grant_sponsor_invalid") from None
+    try:
+        review, start, end = ts(body["reviewBy"]), ts(body["notBefore"]), ts(body["expiresAt"])
+        inside = start < review <= end  # TypeError when one instant names a zone and another does not
+    except (TypeError, ValueError, KeyError):
+        raise ValueError("grant_review_invalid") from None
+    if not inside:
+        raise ValueError("grant_review_invalid")
+
+
 def validate_body(body: Mapping[str, Any]) -> None:
     """Shape of a grant body on every axis; ValueError naming the first defect."""
     from .possession import cnf_problem
 
     problem = cnf_problem(body.get("cnf"))
     if problem:
-        raise ValueError(f"grant_{problem}")
+        raise ValueError(problem)
     _validate_tools(body.get("tools"))
     if not _int(body.get("maxDepth")):
         raise ValueError("grant_max_depth")
@@ -127,23 +160,35 @@ def validate_body(body: Mapping[str, Any]) -> None:
     for c in ctx.values():
         constraints.validate(c)
     _validate_budget(body.get("budget"))
+    _validate_standing(body)
+
+
+def is_standing(body: Mapping[str, Any]) -> bool:
+    """Whether a grant body is a standing grant: it names a sponsor and a review date."""
+    return "sponsor" in body and "reviewBy" in body
 
 
 def issue_grant(issuer: Signer, *, grant_id: str, holder_key: str, cnf: Mapping[str, str], tools: Mapping[str, Any],
                 not_before: str, expires_at: str, parent: Mapping[str, Any] | None = None,
                 max_depth: int | None = None, context: Mapping[str, Any] | None = None,
-                budget: Mapping[str, Any] | None = None) -> dict[str, Any]:
+                budget: Mapping[str, Any] | None = None, sponsor: Mapping[str, str] | None = None,
+                review_by: str | None = None) -> dict[str, Any]:
     """Sign a grant held by ``holder_key`` and presented by the key ``cnf`` confirms (see
     ``possession.cnf_for_jwk``, ``cnf_for_certificate``, ``cnf_for_signer``). With ``parent`` (a signed grant),
     ``issuer`` must be the parent's holder and the
     new grant must narrow it; both are checked here and again by every verifier. ``max_depth``
-    defaults to 0 (no further delegation) for a child, and to 0 for a root unless given."""
+    defaults to 0 (no further delegation) for a child, and to 0 for a root unless given. ``sponsor`` and
+    ``review_by`` together make it a standing grant (see the module docstring)."""
     body = {"cnf": dict(cnf), "context": dict(context or {}), "expiresAt": expires_at, "grantId": grant_id,
             "holderKey": holder_key, "issuerKey": raw_public(issuer),
             "maxDepth": 0 if max_depth is None else max_depth, "notBefore": not_before,
             "parent": grant_digest(parent["body"]) if parent else None, "tools": dict(tools)}
     if budget is not None:
         body["budget"] = dict(budget)
+    if sponsor is not None:
+        body["sponsor"] = dict(sponsor)
+    if review_by is not None:
+        body["reviewBy"] = review_by
     validate_body(body)
     if parent is not None:
         problem = narrowing_problem(body, parent["body"])
@@ -158,6 +203,13 @@ def narrowing_problem(child: Mapping[str, Any], parent: Mapping[str, Any]) -> st
         return "child_not_issued_by_parent_holder"
     if ts(child["notBefore"]) < ts(parent["notBefore"]) or ts(child["expiresAt"]) > ts(parent["expiresAt"]):
         return "child_window_wider_than_parent"
+    if "sponsor" in parent:
+        if child.get("sponsor") != parent["sponsor"]:
+            return "child_changes_sponsor"
+        if ts(child["reviewBy"]) > ts(parent["reviewBy"]):
+            return "child_review_later_than_parent"
+    elif "sponsor" in child:
+        return "child_adds_sponsor"
     if parent.get("maxDepth", 0) < 1:
         return "parent_forbids_delegation"
     if child.get("maxDepth", 0) > parent["maxDepth"] - 1:
@@ -299,9 +351,31 @@ def verify_chain(chain: list[Mapping[str, Any]], root_key_ids: set[str], at: str
         body = chain[depth]["body"]
         if not ts(body["notBefore"]) <= when <= ts(body["expiresAt"]):
             return None, f"grant_outside_window:{depth}"
+        if "reviewBy" in body and when >= ts(body["reviewBy"]):
+            return None, f"grant_review_overdue:{depth}"
     if result != "ok":
         return None, result
     return dict(chain[-1]["body"]), "ok"
+
+
+def chain_problem(chain: list[Mapping[str, Any]], root_key_ids: set[str] | frozenset[str]) -> str | None:
+    """None when ``chain`` is a well-formed chain rooted in a pinned issuer whose every link verifies and narrows
+    its parent; otherwise the first defect. Time-independent: the window, the review date and revocation are
+    judged per use (``verify_chain``)."""
+    if not chain:
+        return "grant_chain_empty"
+    _, _, result = _structure(chain, frozenset(root_key_ids))
+    return None if result == "ok" else result
+
+
+def chain_digests(chain: list[Mapping[str, Any]], root_key_ids: set[str] | frozenset[str]) -> dict[str, dict[str, Any]]:
+    """Every grant body of a structurally verified chain, by digest; empty when the chain does not verify."""
+    if not chain:
+        return {}
+    _, digests, result = _structure(chain, frozenset(root_key_ids))
+    if result != "ok":
+        return {}
+    return {d: dict(signed["body"]) for d, signed in zip(digests, chain, strict=True)}
 
 
 def verify_call_under_grant(leaf: Mapping[str, Any], tool: str, args: Any, ctx: Mapping[str, Any] | None = None) -> str:

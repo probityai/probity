@@ -270,8 +270,8 @@ def test_a_bearer_grant_cannot_be_issued_or_verified() -> None:
     with pytest.raises(TypeError):
         issue_grant(ROOT, grant_id="g", holder_key=raw_public(HOLDER), tools=TOOLS,  # type: ignore[call-arg]
                     not_before="2026-11-01T00:00:00Z", expires_at="2026-12-01T00:00:00Z")
-    for bad, code in ((None, "grant_cnf_missing"), ({**DPOP_CNF, **MTLS_CNF}, "grant_cnf_invalid"),
-                      ({"jwk": public_jwk(DPOP_KEY)}, "grant_cnf_invalid"), ({"jkt": "short"}, "grant_cnf_invalid")):
+    for bad, code in ((None, "cnf_missing"), ({**DPOP_CNF, **MTLS_CNF}, "cnf_invalid"),
+                      ({"jwk": public_jwk(DPOP_KEY)}, "cnf_invalid"), ({"jkt": "short"}, "cnf_invalid")):
         body = {k: v for k, v in CHAIN[0]["body"].items() if k != "cnf"}
         if bad is not None:
             body["cnf"] = bad

@@ -3,9 +3,9 @@
 <p>
 <a href="https://github.com/probityai/probity/actions/workflows/ci.yml"><img height="16" alt="CI" src="https://github.com/probityai/probity/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://pypi.org/project/agent-evidence-verify/"><img height="16" alt="Version" src="https://img.shields.io/pypi/v/agent-evidence-verify?style=flat-square&color=blue&label=&logo=pypi&logoColor=white&cacheSeconds=3600"></a>
-<a href="https://pepy.tech/projects/agent-evidence-verify"><img height="16" alt="Downloads" src="assets/badges/dl-pypi-agent-evidence-verify.svg"></a>
-<a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="assets/badges/license.svg"></a>
-<a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="assets/badges/stars.svg"></a>
+<a href="https://pepy.tech/projects/agent-evidence-verify"><img height="16" alt="Downloads" src="https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-agent-evidence-verify.svg"></a>
+<a href="https://github.com/probityai/probity/blob/main/LICENSE"><img height="16" alt="License" src="https://raw.githubusercontent.com/probityai/probity/main/assets/badges/license.svg"></a>
+<a href="https://github.com/probityai/probity/stargazers"><img height="16" alt="Stars" src="https://raw.githubusercontent.com/probityai/probity/main/assets/badges/stars.svg"></a>
 </p>
 
 Open tools that check claims about AI agents against evidence you pinned: an offline verifier, an observer that records agent runs, and the tools around them. The conformance corpus, vocabulary and admission rules live in https://github.com/probityai/agent-evidence-vectors.
@@ -14,17 +14,17 @@ Open tools that check claims about AI agents against evidence you pinned: an off
 
 It's for auditors, incident reviewers and relying parties who need a decision they can replay, and for tool authors who want their records checked the same way.
 
-Install the released verifier: `uv add agent-evidence-verify==0.8.0`, or `pip install agent-evidence-verify==0.8.0`.
+Install the released verifier: `uv add agent-evidence-verify`, or `pip install agent-evidence-verify`.
 
-Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai==0.1.1`, or `pip install probityai==0.1.1`.
+Verified by Probity (github.com/probityai/probity). The `probityai` command line is released: `uv add probityai`, or `pip install probityai`.
 
 ## Quick start
 
 Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); there is nothing to clone:
 
 ```sh
-samples="$(uvx --from agent-evidence-verify==0.8.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
-uvx agent-evidence-verify==0.8.0 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from agent-evidence-verify python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
+uvx agent-evidence-verify "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -47,8 +47,8 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 
 | package | registry | version | downloads |
 | --- | --- | :---: | :---: |
-| [agent&#8209;evidence&#8209;mcp](packages/agent-evidence-mcp/README.md) | PyPI | **0.2.5** | [![agent-evidence-mcp downloads](assets/badges/dl-pypi-agent-evidence-mcp.svg)](https://pepy.tech/projects/agent-evidence-mcp) |
-| [agent&#8209;evidence&#8209;observer](packages/agent-evidence-observer/README.md) | PyPI | **0.2.0** | [![agent-evidence-observer downloads](assets/badges/dl-pypi-agent-evidence-observer.svg)](https://pepy.tech/projects/agent-evidence-observer) |
+| [agent&#8209;evidence&#8209;mcp](https://github.com/probityai/probity/blob/main/packages/agent-evidence-mcp/README.md) | PyPI | <img alt="agent-evidence-mcp PyPI version" src="https://img.shields.io/pypi/v/agent-evidence-mcp?label="> | [![agent-evidence-mcp downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-agent-evidence-mcp.svg)](https://pepy.tech/projects/agent-evidence-mcp) |
+| [agent&#8209;evidence&#8209;observer](https://github.com/probityai/probity/blob/main/packages/agent-evidence-observer/README.md) | PyPI | <img alt="agent-evidence-observer PyPI version" src="https://img.shields.io/pypi/v/agent-evidence-observer?label="> | [![agent-evidence-observer downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-agent-evidence-observer.svg)](https://pepy.tech/projects/agent-evidence-observer) |
 
 - `agent-evidence-mcp`: offline, read-only MCP server: checks a claim against evidence bytes and replays the conformance vectors
 - `agent-evidence-observer`: records what an agent run did as pinned evidence
@@ -57,13 +57,14 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 
 | package | registry | version | downloads |
 | --- | --- | :---: | :---: |
-| [probityai](packages/probityai/README.md) | PyPI | **0.1.1** | [![probityai downloads](assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
-| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | PyPI | **0.8.0** | [![agent-evidence-verify downloads](assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |
-| [probity&#8209;verify](packages/probity-verify/README.md) | PyPI | **0.5.1** | [![probity-verify downloads](assets/badges/dl-pypi-probity-verify.svg)](https://pepy.tech/projects/probity-verify) |
-| [probity&#8209;ratchet](packages/probity-ratchet/README.md) | PyPI | **0.4.0** | [![probity-ratchet downloads](assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
-| [probity&#8209;ratchet&#8209;cases](packages/probity-ratchet-cases/README.md) | PyPI | **0.2.0** | [![probity-ratchet-cases downloads](assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
-| [probity&#8209;effects](packages/probity-effects/README.md) | PyPI | **0.2.0** | - |
-| [agent&#8209;evidence&#8209;replay](packages/agent-evidence-replay/README.md) | PyPI | **0.1.0** | - |
+| [probityai](https://github.com/probityai/probity/blob/main/packages/probityai/README.md) | PyPI | <img alt="probityai PyPI version" src="https://img.shields.io/pypi/v/probityai?label="> | [![probityai downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-probityai.svg)](https://pepy.tech/projects/probityai) |
+| [agent&#8209;evidence&#8209;verify](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/README.md) | PyPI | <img alt="agent-evidence-verify PyPI version" src="https://img.shields.io/pypi/v/agent-evidence-verify?label="> | [![agent-evidence-verify downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-agent-evidence-verify.svg)](https://pepy.tech/projects/agent-evidence-verify) |
+| [probity&#8209;verify](https://github.com/probityai/probity/blob/main/packages/probity-verify/README.md) | PyPI | <img alt="probity-verify PyPI version" src="https://img.shields.io/pypi/v/probity-verify?label="> | [![probity-verify downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-probity-verify.svg)](https://pepy.tech/projects/probity-verify) |
+| [probity&#8209;ratchet](https://github.com/probityai/probity/blob/main/packages/probity-ratchet/README.md) | PyPI | <img alt="probity-ratchet PyPI version" src="https://img.shields.io/pypi/v/probity-ratchet?label="> | [![probity-ratchet downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-probity-ratchet.svg)](https://pepy.tech/projects/probity-ratchet) |
+| [probity&#8209;ratchet&#8209;cases](https://github.com/probityai/probity/blob/main/packages/probity-ratchet-cases/README.md) | PyPI | <img alt="probity-ratchet-cases PyPI version" src="https://img.shields.io/pypi/v/probity-ratchet-cases?label="> | [![probity-ratchet-cases downloads](https://raw.githubusercontent.com/probityai/probity/main/assets/badges/dl-pypi-probity-ratchet-cases.svg)](https://pepy.tech/projects/probity-ratchet-cases) |
+| [probity&#8209;effects](https://github.com/probityai/probity/blob/main/packages/probity-effects/README.md) | PyPI | <img alt="probity-effects PyPI version" src="https://img.shields.io/pypi/v/probity-effects?label="> | - |
+| [agent&#8209;evidence&#8209;replay](https://github.com/probityai/probity/blob/main/packages/agent-evidence-replay/README.md) | PyPI | <img alt="agent-evidence-replay PyPI version" src="https://img.shields.io/pypi/v/agent-evidence-replay?label="> | - |
+| [agent&#8209;evidence&#8209;a2a](https://github.com/probityai/probity/blob/main/packages/agent-evidence-a2a/README.md) | PyPI | - | - |
 
 - `probityai`: the `probityai` command; `probityai verify` today
 - `agent-evidence-verify`: offline verifier: supported, contradicted or not established
@@ -72,10 +73,11 @@ Two name families, on purpose. `agent-evidence-*` is the neutral evidence layer:
 - `probity-ratchet-cases`: agent task cases graded on final state: a simulated company, tool faults, exact graders
 - `probity-effects`: keeps one effect per agent tool call when its reply is lost, records the trail, tests it against lost-reply scenarios
 - `agent-evidence-replay`: replays a lab's agent action record and flags a changed or missing step
+- `agent-evidence-a2a`: verifies A2A agent card signatures over the served bytes, with corpora that score any card verifier, canonicaliser or webhook SSRF judge
 
-Install any of them pinned to the version shown: `pip install <package>==<version>`.
+Install any of them with `pip install <package>`; your lock file records the exact version.
 
-The Claude Code and Cursor plugins ship from [harnesses/agent-evidence-plugins](harnesses/agent-evidence-plugins/README.md).
+The Claude Code and Cursor plugins ship from [harnesses/agent-evidence-plugins](https://github.com/probityai/probity/blob/main/harnesses/agent-evidence-plugins/README.md).
 
 ## Work on the repository
 
@@ -88,10 +90,10 @@ uv run python -m pytest
 
 | page | read it for |
 | --- | --- |
-| [agent&#8209;evidence&#8209;verify](packages/agent-evidence-verify/README.md) | the verifier, its adapters and its recipes |
-| [Repository layout](docs/architecture/MONOREPO.md) | the workspace, the `probityai` command seam, CI and releases |
-| [Agent instructions](AGENTS.md) | commands to run before a change |
-| [Contributing](CONTRIBUTING.md) | reporting a problem and opening a pull request |
+| [agent&#8209;evidence&#8209;verify](https://github.com/probityai/probity/blob/main/packages/agent-evidence-verify/README.md) | the verifier, its adapters and its recipes |
+| [Repository layout](https://github.com/probityai/probity/blob/main/docs/architecture/MONOREPO.md) | the workspace, the `probityai` command seam, CI and releases |
+| [Agent instructions](https://github.com/probityai/probity/blob/main/AGENTS.md) | commands to run before a change |
+| [Contributing](https://github.com/probityai/probity/blob/main/CONTRIBUTING.md) | reporting a problem and opening a pull request |
 
 ## License
 

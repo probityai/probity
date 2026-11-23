@@ -91,7 +91,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:outcome_settled_without_authority"
+        "line_3:uncertain_effect_not_supported:contradicted:outcome_settled_without_authority"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -247,7 +247,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:duplicate_effect"
+        "line_3:uncertain_effect_not_supported:contradicted:duplicate_effect"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -326,7 +326,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:duplicate_effect"
+        "line_3:uncertain_effect_not_supported:contradicted:duplicate_effect"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -405,7 +405,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:retry_after_unknown"
+        "line_3:uncertain_effect_not_supported:contradicted:retry_after_unknown"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -561,7 +561,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:retry_after_unknown"
+        "line_3:uncertain_effect_not_supported:contradicted:retry_after_unknown"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -794,7 +794,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:outcome_disagrees_with_authority"
+        "line_3:uncertain_effect_not_supported:contradicted:outcome_disagrees_with_authority"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1110,7 +1110,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:dispatch_beyond_lease"
+        "line_3:uncertain_effect_not_supported:contradicted:dispatch_beyond_lease"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1266,7 +1266,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:dispatch_beyond_lease"
+        "line_3:uncertain_effect_not_supported:contradicted:dispatch_beyond_lease"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1345,7 +1345,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:unknown_released"
+        "line_3:uncertain_effect_not_supported:contradicted:unknown_released"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1501,7 +1501,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:effect_after_stop_reported_quiescent"
+        "line_3:uncertain_effect_not_supported:contradicted:effect_after_stop_reported_quiescent"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1580,7 +1580,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:stop_straddle_reported_settled"
+        "line_3:uncertain_effect_not_supported:contradicted:stop_straddle_reported_settled"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1659,7 +1659,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:authority_used_after_revocation"
+        "line_3:uncertain_effect_not_supported:contradicted:authority_used_after_revocation"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1738,7 +1738,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:contract_id_unknown"
+        "line_3:uncertain_effect_not_supported:contradicted:contract_id_unknown"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1817,7 +1817,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:operation_identity_missing"
+        "line_3:uncertain_effect_not_supported:contradicted:operation_identity_missing"
       ],
       "records": 3,
       "verdict": "FAIL",
@@ -1896,7 +1896,7 @@
     "expected": {
       "checkpoint": "matches",
       "failures": [
-        "line_3:uncertain_effect_contradicted:idempotency_key_args_changed"
+        "line_3:uncertain_effect_not_supported:contradicted:idempotency_key_args_changed"
       ],
       "records": 3,
       "verdict": "FAIL",

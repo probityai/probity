@@ -18,6 +18,7 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
     count,
@@ -26,6 +27,8 @@ from probity_records.quorum import (
     sign_vote,
     widening_problem,
 )
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 AT = "2026-06-01T00:00:00Z"
 W = {"issued_at": "2026-05-01T00:00:00Z", "expires_at": "2099-01-01T00:00:00Z"}
@@ -122,7 +125,7 @@ def test_grant_carried_quorum_verifies_offline_and_widening_delegation_is_refuse
         quorum = result.evidence(policy, req, proposer=proposer, history="ab" * 32)
         quorum["votes"] = list(votes)  # what a dishonest authority would write: every vote it got
         evidence = {**grant_evidence(chain, ARGS), "quorum": quorum}
-        j = Journal(directory, gate)
+        j = Journal(directory, gate, clock=SYSTEM_CLOCK)
         j.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(ARGS), tool_call_predicate(
             phase="authorize", decision="allow", reason=GRANT_ALLOW, authority=evidence,
             grant_digest=evidence["grantDigest"], run_id="r", tool_call_id="c1", tool="pay",
@@ -133,9 +136,9 @@ def test_grant_carried_quorum_verifies_offline_and_widening_delegation_is_refuse
     passed = record(tmp_path / "ok", [_v(keys, "bob", req), _v(keys, "carol", req)])
     assert passed["verdict"] == "PASS", passed["failures"]
     under = record(tmp_path / "under", [_v(keys, "bob", req)])
-    assert any("grant_approval_quorum_pending" in f for f in under["failures"]), under["failures"]
+    assert any("grant_approval_failed:quorum_pending" in f for f in under["failures"]), under["failures"]
     own = record(tmp_path / "own", [_v(keys, "alice", req), _v(keys, "bob", req)])
-    assert any("grant_approval_quorum_vote_invalid:vote_by_proposer" in f for f in own["failures"]), own["failures"]
+    assert any("grant_approval_failed:quorum_vote_invalid:vote_by_proposer" in f for f in own["failures"]), own["failures"]
     # a record that drops the proposer changes the request hash, so the votes no longer match
     dropped = record(tmp_path / "dropped", [_v(keys, "bob", req), _v(keys, "carol", req)], proposer=None)
     assert dropped["verdict"] == "FAIL", dropped["failures"]

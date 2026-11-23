@@ -33,8 +33,11 @@ from probity_records import (
     delegate,
     verify_journal,
 )
+from probity_records.clock import SystemClock, to_datetime
 from probity_records.core import key_id
 from test_signing import FakeAwsKms, FakeGcpKms, FakeVault
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 
 @dataclass
@@ -89,7 +92,7 @@ def _delegated() -> Backend:
     root = AwsKmsKey("root", client=FakeAwsKms())
     return Backend(
         "delegated",
-        delegate(root),
+        delegate(root, now=to_datetime(SYSTEM_CLOCK.now())),
         "delegated",
         root.public_pem(),
         {root.key_id: "aws-kms"},
@@ -221,7 +224,7 @@ def test_an_answer_with_no_readable_signature_raises_signing_error(service: str,
 def test_a_journal_signed_through_it_verifies_under_its_pins(
     backend: Backend, tmp_path
 ) -> None:
-    journal = Journal(tmp_path, backend.key)
+    journal = Journal(tmp_path, backend.key, clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     trust = Trust(key_custody=backend.custody_pin) if backend.custody_pin else None
     out = verify_journal(

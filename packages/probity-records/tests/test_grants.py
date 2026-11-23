@@ -20,7 +20,10 @@ from probity_records import (
     verify_grant_allow,
     verify_journal,
 )
+from probity_records.clock import SystemClock
 from probity_records.possession import cnf_for_signer
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 AT = "2026-06-01T00:00:00Z"
 TOOLS = {"refund_payment": {"approval": "none", "args": {
@@ -126,7 +129,7 @@ def test_child_narrows_and_widening_child_is_refused() -> None:
 def test_grant_allow_record_verifies_offline_and_a_tampered_one_fails(tmp_path) -> None:
     gate, root, agent = Signer.generate(), Signer.generate(), Signer.generate()
     chain = [_root(root, agent)]
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     verdict = verify_grant_allow(chain, "refund_payment", CALL, AT, {root.key_id})
     common = {"run_id": "run", "tool_call_id": "c1", "tool": "refund_payment",
               "args_sha256_hex": args_sha256(CALL), "permit_id": permit_id("p", "c1", args_sha256(CALL))}
@@ -139,7 +142,7 @@ def test_grant_allow_record_verifies_offline_and_a_tampered_one_fails(tmp_path) 
     assert verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint())["verdict"] == "FAIL"
     other = Trust(grant_root_key_ids=frozenset({Signer.generate().key_id}))
     assert verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=other)["verdict"] == "FAIL"
-    bad = Journal(tmp_path / "bad", gate)
+    bad = Journal(tmp_path / "bad", gate, clock=SYSTEM_CLOCK)
     over = {**CALL, "amount_cents": 400000}
     bad.append(TOOL_CALL_RECORD, "tool-call:c2", args_sha256(over), tool_call_predicate(
         phase="authorize", decision="allow", reason=GRANT_ALLOW, authority=grant_evidence(chain, over),
