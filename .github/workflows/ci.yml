@@ -833,8 +833,14 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
+      # The version comes from PINNED in the gate script, the one line pin-refresh moves. A literal
+      # here drifted: pin-refresh moved PINNED to 0.7.0 and this step kept installing 0.5.1, so
+      # test_environment_runs_the_pinned_verifier failed on every bump pull request.
       - name: Install the pinned verifier and the test runner
-        run: python -m pip install "agent-evidence-verify==0.5.1" "pytest>=8,<10"
+        run: |
+          pin=$(sed -n 's/^PINNED = "\(agent-evidence-verify==[0-9][0-9.]*\)"$/\1/p' plugins/verdict-bundle-gate/scripts/verify_bundle.py)
+          test -n "$pin" || { echo "no PINNED line in verify_bundle.py" >&2; exit 1; }
+          python -m pip install "$pin" "pytest>=8,<10"
       - name: Tests
         run: python -m pytest -q
 
@@ -923,6 +929,69 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
+  package-agent-evidence-a2a-tests:
+    name: "package-agent-evidence-a2a / tests"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-a2a'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/agent-evidence-a2a
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install ".[test]"
+      - name: Tests
+        run: python -m pytest -q
+      - name: the shipped schema table matches the installed a2a-sdk
+        run: python scripts/agent_card_schema.py --check
+      - name: README commands run as written
+        run: |
+          agent-evidence-a2a canonicaliser
+          agent-evidence-a2a corpus
+          agent-evidence-a2a ssrf
+          if agent-evidence-a2a canonicaliser --impl agent_evidence_a2a.vectors:broken_ascii_escaping; then
+            echo "a broken canonicaliser passed the vectors"; exit 1
+          fi
+
+  package-agent-evidence-a2a-hygiene:
+    name: "package-agent-evidence-a2a / hygiene"
+    needs: [changes]
+    if: ${{ fromJSON(needs.changes.outputs.members)['agent-evidence-a2a'] }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: fetch the version-pins script at its pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: probityai/.github
+          ref: 254c480fa2f8fe086de36fcee1b8d17df731b6b9
+          path: .github-scripts
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: every version a page names equals its manifest or the family lock
+        run: python3 -B .github-scripts/scripts/version-pins.py check --root . --config packages/agent-evidence-a2a/version-pins.toml
+
+  agent-evidence-a2a-distribution:
+    needs: changes
+    if: fromJSON(needs.changes.outputs.members)['agent-evidence-a2a']
+    uses: ./.github/workflows/python-build.yml
+    with:
+      distribution: agent-evidence-a2a
+    secrets:
+      DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
+
   package-probity-effects-tests:
     name: "package-probity-effects / tests"
     needs: [changes]
@@ -972,7 +1041,7 @@ jobs:
           python-version: '3.12'
       # tests/test_otel.py runs a real collector with the stock contrib verifyprocessor and fails, never skips,
       # without one; build it from the pinned builder config (collector v0.165.0 needs go 1.26).
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: '1.26.x'
           cache-dependency-path: packages/probity-records/scripts/otelcol/builder-config.yaml
@@ -982,6 +1051,8 @@ jobs:
           test -x "$bin"
           echo "PROBITY_OTELCOL=$bin" >> "$GITHUB_ENV"
       # The package keeps its own lock beside it, outside the root workspace; scripts/test.sh is its one test entry.
+      # test.sh syncs --frozen, which installs a stale lock without a word, so the lock is held to the pyproject first.
+      - run: uv lock --check
       - run: sh scripts/test.sh
 
   package-probity-verify-tests:
@@ -1267,7 +1338,12 @@ jobs:
         working-directory: packages/agent-evidence-observer/selected-adk
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/adk-tox/bin/uv" lock 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
+          # The selected ADK commit ships no lock and asks for daytona>=0.191 with no ceiling, so an
+          # unbounded lock follows PyPI. The daytona 2.x SDK removed root exports the e94 tests import
+          # (2.1.0 reached this lock on 2026-11-20). Hold daytona at 0.233.0, the version in the last
+          # green run's retained lock (run 44677148481). A pin by -P is not a lock setting, so tox's
+          # `uv sync --locked` accepts the lock; a global --exclude-newer is, and was refused there.
+          "$RUNNER_TEMP/adk-tox/bin/uv" lock --upgrade-package 'daytona==0.233.0' 2>&1 | tee "$RUNNER_TEMP/full-lock-${{ matrix.tox }}.log"
       - name: Run unchanged tox on the recorded patched ADK source and sample
         working-directory: packages/agent-evidence-observer/selected-adk
         run: |
@@ -3492,8 +3568,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      # A change can fix the tree's windows, which the lint checks. It cannot change what PyPI
+      # serves, so the resolve of the published releases runs in family-resolves.yml (daily and
+      # on demand) and never gates a merge: a published break would otherwise block its own fix.
       - run: python3 scripts/family_resolves.py lint
-      - run: python3 scripts/family_resolves.py resolve
 
   pypi-upload-selftest:
     name: "pypi-upload-selftest"
@@ -3587,7 +3665,7 @@ jobs:
 
   ci-ok:
     if: ${{ (github.event_name != 'pull_request' || startsWith(github.head_ref, 'merge-train/')) && (always()) }}
-    needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-python-floor, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, package-probity-records-tests, package-probity-verify-tests, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, records-verify-tests, observer-witness, observer-witnessed-run-selection, family-resolves, integration-keycloak-evidence-hook, pypi-upload-selftest, version-pins]
+    needs: [changes, lint, agent-evidence-verify-conformance, agent-evidence-verify-witness-scope, agent-evidence-verify-a2a-transport, agent-evidence-verify-python-floor, agent-evidence-verify-published-vectors, agent-evidence-verify-brokered-file-write, agent-evidence-verify-distribution, probityai, probityai-distribution, checkout-runner, rust, package-ratchet-lint, package-ratchet-refusal-example, package-ratchet-cases, package-ratchet-cases-agentdojo, package-ratchet-cases-tau2, package-ratchet-test, package-ratchet-demo-image, observer-distribution, package-agent-evidence-mcp-tests, package-agent-evidence-mcp-family, package-agent-evidence-mcp-image, package-agent-evidence-mcp-hygiene, agent-evidence-mcp-distribution, package-agent-evidence-plugins-tests, package-agent-evidence-plugins-hygiene, package-agent-evidence-replay-tests, package-agent-evidence-replay-hygiene, agent-evidence-replay-distribution, package-probity-effects-tests, probity-effects-distribution, package-probity-records-tests, package-probity-verify-tests, observer-a2a-history-boundary, observer-a2a-native, observer-adk-a2a-failed-task, observer-adk-current-consumer-retained-consumer, observer-adk-current-consumer-upstream-full-tox, observer-adk-nested-compaction, observer-adk-ticket, observer-adk-user-responses, observer-ag2-push-authority, observer-aps-durable-refund, observer-atomic-native-reader, observer-authority-unreachable, observer-boundary-probe-boundary, observer-boundary-probe-aae, observer-consumer-host-gate, observer-control-arena-native-reader, observer-crewai-job-fences, observer-eight-component-host, observer-evaluation-contract, observer-evaluation-history, observer-execsurface-native-state, observer-five-tier-breadth, observer-haystack-native, observer-inspect-current-consumer, observer-inspect-sealed-manifest, observer-installed-framework-readers, observer-joint-recovery, observer-langgraph-crash-window, observer-langgraph-native-ticket, observer-langgraph-recovery-authority, observer-local-model-contract, observer-local-model-tool-arguments-offline-controls, observer-local-model-tool-arguments-retained-native-reader, observer-local-model-vocabulary-offline-controls, observer-local-model-vocabulary-retained-native-reader, observer-model-consumer-gate, observer-native-consumer, observer-openai-agents-ticket, observer-pic-aps-refund-evidence, observer-protected-action-operator, observer-pydantic-ai-native, observer-pydantic-recovery, observer-readme, observer-refund-handoff-conformance, observer-smolagents-native, observer-target-recovery, observer-tool-manifest-effect, observer-witness-operator, records-verify-tests, observer-witness, observer-witnessed-run-selection, family-resolves, integration-keycloak-evidence-hook, pypi-upload-selftest, version-pins, package-agent-evidence-a2a-tests, package-agent-evidence-a2a-hygiene, agent-evidence-a2a-distribution]
     runs-on: ubuntu-24.04
     steps:
       - name: every needed job passed or was not needed

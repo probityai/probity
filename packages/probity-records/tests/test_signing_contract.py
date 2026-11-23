@@ -9,8 +9,11 @@ key, and the fake can be told to answer with a key the backend never pinned.
 
 from __future__ import annotations
 
+import io
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -30,8 +33,11 @@ from probity_records import (
     delegate,
     verify_journal,
 )
+from probity_records.clock import SystemClock, to_datetime
 from probity_records.core import key_id
 from test_signing import FakeAwsKms, FakeGcpKms, FakeVault
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 
 @dataclass
@@ -86,7 +92,7 @@ def _delegated() -> Backend:
     root = AwsKmsKey("root", client=FakeAwsKms())
     return Backend(
         "delegated",
-        delegate(root),
+        delegate(root, now=to_datetime(SYSTEM_CLOCK.now())),
         "delegated",
         root.public_pem(),
         {root.key_id: "aws-kms"},
@@ -148,10 +154,77 @@ def test_a_signature_from_a_key_never_pinned_never_leaves_sign(service: str) -> 
         key.sign(b"m")
 
 
+class _GarbledVault(FakeVault):
+    """Transit answering each sign request with ``answer`` as the response body."""
+
+    def __init__(self, answer: object) -> None:
+        super().__init__()
+        self.answer = answer
+
+    def __call__(self, req, timeout=None):
+        if req.get_method() == "GET":
+            return super().__call__(req, timeout)
+        return io.BytesIO(json.dumps(self.answer).encode())
+
+
+class _GarbledAws(FakeAwsKms):
+    def __init__(self, answer: object) -> None:
+        super().__init__()
+        self.answer = answer
+
+    def sign(self, **kw):
+        return self.answer
+
+
+class _GarbledGcp(FakeGcpKms):
+    def __init__(self, answer: object) -> None:
+        super().__init__()
+        self.answer = answer
+
+    def asymmetric_sign(self, request):
+        return self.answer
+
+
+def _garbled(service: str, answer: object) -> SigningKey:
+    if service == "vault-transit":
+        opener = _GarbledVault(answer)
+        return VaultTransitKey("http://vault:8200", "authority", token="t", opener=opener)
+    if service == "aws-kms":
+        return AwsKmsKey("k1", client=_GarbledAws(answer))
+    name = "projects/p/locations/global/keyRings/r/cryptoKeys/a/cryptoKeyVersions/1"
+    return GcpKmsKey(name, client=_GarbledGcp(answer))
+
+
+GARBLED = [
+    ("vault-transit", {"data": {"signature": "garbage"}}),
+    ("vault-transit", {"data": {"signature": None}}),
+    ("vault-transit", {"data": {}}),
+    ("vault-transit", {"errors": ["permission denied"]}),
+    ("vault-transit", {"data": {"signature": "vault:v1:not base64!"}}),
+    ("aws-kms", {}),
+    ("aws-kms", {"Signature": None}),
+    ("aws-kms", {"Signature": "c2lnbmF0dXJl"}),
+    ("aws-kms", {"Signature": 64}),
+    ("gcp-kms", object()),
+    ("gcp-kms", SimpleNamespace(signature=None)),
+    ("gcp-kms", SimpleNamespace(signature="c2lnbmF0dXJl")),
+]
+
+
+@pytest.mark.parametrize(("service", "answer"), GARBLED, ids=[f"{s}-{i}" for i, (s, _) in enumerate(GARBLED)])
+def test_an_answer_with_no_readable_signature_raises_signing_error(service: str, answer: object) -> None:
+    # The break: these answers escaped sign() as IndexError, KeyError, TypeError and
+    # AttributeError, so a caller handling SigningError crashed instead of refusing; and
+    # ``bytes(64)`` turned a number into 64 zero bytes before the check.
+    key = _garbled(service, answer)
+    with pytest.raises(SigningError):
+        key.sign(b"m")
+
+
 def test_a_journal_signed_through_it_verifies_under_its_pins(
     backend: Backend, tmp_path
 ) -> None:
-    journal = Journal(tmp_path, backend.key)
+    journal = Journal(tmp_path, backend.key, clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     trust = Trust(key_custody=backend.custody_pin) if backend.custody_pin else None
     out = verify_journal(

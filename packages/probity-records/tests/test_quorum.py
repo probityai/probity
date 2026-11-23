@@ -20,6 +20,10 @@ from probity_records import (
     tool_call_predicate,
     verify_journal,
 )
+from probity_records.clock import SystemClock
+from probity_records.possession import cnf_for_signer
+
+SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
 AT = "2026-06-01T00:00:00Z"
 ARGS = {"amount_cents": 90000, "customer_id": "cust-alice"}
@@ -67,7 +71,7 @@ def test_quorum_record_verifies_offline_against_the_pinned_policy(tmp_path) -> N
     result = count_votes(policy, req, [_vote(keys, "ops", req), _vote(keys, "legal", req)], AT)
     common = {"run_id": "run", "tool_call_id": "c1", "tool": "refund_payment",
               "args_sha256_hex": args_sha256(ARGS), "permit_id": pid}
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     journal.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(ARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=result.evidence(policy, req), **common))
     trust = Trust(quorum_policies={"refund-large": policy})
@@ -78,7 +82,7 @@ def test_quorum_record_verifies_offline_against_the_pinned_policy(tmp_path) -> N
                          trust=Trust(quorum_policies={"refund-large": weaker}))
     assert any("quorum_policy_differs_from_pinned" in f for f in lax["failures"])
     one = count_votes(policy, req, [_vote(keys, "ops", req)], AT)
-    short = Journal(tmp_path / "short", gate)
+    short = Journal(tmp_path / "short", gate, clock=SYSTEM_CLOCK)
     short.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(ARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=one.evidence(policy, req), **common))
     failures = verify_journal(tmp_path / "short", [gate.public_pem()], short.checkpoint(), trust=trust)["failures"]
@@ -90,12 +94,12 @@ def test_grant_that_requires_approval_is_satisfied_by_a_quorum(tmp_path) -> None
     root, agent, gate = Signer.generate(), Signer.generate(), Signer.generate()
     tools = {"refund_payment": {"approval": "required", "args": {
         "amount_cents": {"type": "range", "min": 1, "max": 100000}, "customer_id": {"type": "wildcard"}}}}
-    chain = [issue_grant(root, grant_id="g", holder_key=raw_public(agent), tools=tools,
+    chain = [issue_grant(root, grant_id="g", holder_key=raw_public(agent), cnf=cnf_for_signer(agent), tools=tools,
                          not_before="2026-01-01T00:00:00Z", expires_at="2099-12-31T00:00:00Z")]
     evidence = {**grant_evidence(chain, ARGS),
                 "quorum": count_votes(policy, req, [_vote(keys, "ops", req), _vote(keys, "finance", req)],
                                       AT).evidence(policy, req)}
-    journal = Journal(tmp_path, gate)
+    journal = Journal(tmp_path, gate, clock=SYSTEM_CLOCK)
     journal.append(TOOL_CALL_RECORD, "tool-call:c1", args_sha256(ARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason=GRANT_ALLOW, authority=evidence,
         grant_digest=evidence["grantDigest"], run_id="run", tool_call_id="c1", tool="refund_payment",

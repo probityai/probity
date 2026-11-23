@@ -1,0 +1,807 @@
+{
+ "badKeys": [
+  {
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "permit": "",
+   "stage": "execute",
+   "why": "empty permit id"
+  },
+  {
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "permit": "ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+   "stage": "execute",
+   "why": "permit id over 256 bytes"
+  },
+  {
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "permit": "p\n1",
+   "stage": "execute",
+   "why": "control character in permit id"
+  },
+  {
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "permit": "p1",
+   "stage": "refund",
+   "why": "stage outside the four"
+  },
+  {
+   "issuer": "ababababababababababababababababababababababababababababababab",
+   "permit": "p1",
+   "stage": "execute",
+   "why": "issuer is not a 32-byte key id"
+  }
+ ],
+ "cases": [
+  {
+   "expect": "member",
+   "holds": {
+    "index": 0,
+    "leafHash": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad"
+   },
+   "name": "member 0",
+   "proof": {
+    "key": "9556597ad8178d0c4820e9d429636150406f4e62f6cdd7dbe8699e65b9b29e61",
+    "siblings": [
+     "sw6UWi9TD9YijtLFmT2ylpEbHeJUwTcAtb/EDAS6ElQ=",
+     "/Z2OzV4KbwbO42EZ+sw4ag2SGmlo2M730fViX433Wpc=",
+     "aoOHzFGEBbKt8jQj4bTiqbfbx1zhXoJsfDHSB9ohNkM=",
+     "rs/jsw2wXe5vl8lOPh6u6Sr9zKsDmSuJS6+3zc2mT64=",
+     "wCaIgV3ERhb1kdZ4p/SHvmtKsvpJ1Ih8BagB0wL6jSY=",
+     "eKZPagzav9t+zjQrnxd4VeXl6Z3x5Bv5xC0KTBkv+C4=",
+     null,
+     null,
+     null,
+     "+kesN3dCGPk5FK81c3EEm5rUcoNxQ+4IA1uQ5kubKpg="
+    ],
+    "terminal": {
+     "index": 0,
+     "key": "9556597ad8178d0c4820e9d429636150406f4e62f6cdd7dbe8699e65b9b29e61",
+     "leafHash": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "member",
+   "holds": {
+    "index": 14,
+    "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+   },
+   "name": "member 7",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "4U6BNP5AjzIzFXZU6JQPrTQuCTVRKmzUwLmLAzfMSwU="
+    ],
+    "terminal": {
+     "index": 14,
+     "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+     "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "member",
+   "holds": {
+    "index": 46,
+    "leafHash": "4ca121556c6a10d85264cc4124d5fbf9d1c690665e6b4b10d9d6dba12a03cee4"
+   },
+   "name": "member 23",
+   "proof": {
+    "key": "a2368681d865635902fd64ffb1305cf3db7567bdbb47e1ea8829e887bd027105",
+    "siblings": [
+     "sw6UWi9TD9YijtLFmT2ylpEbHeJUwTcAtb/EDAS6ElQ=",
+     "/Z2OzV4KbwbO42EZ+sw4ag2SGmlo2M730fViX433Wpc=",
+     "P6VNDbQ09vVvwqE5Cjdp2BkaPcuxz+Ndmb1gCQJP9F4=",
+     "831b3F/qcWaW9TA6eC/fOwOzm86iG4Ue+ecLEUQ23SA=",
+     "fP409A6nUDHCYGrdSjZihywMaWcR+VwD0EpuZHtpPYs="
+    ],
+    "terminal": {
+     "index": 46,
+     "key": "a2368681d865635902fd64ffb1305cf3db7567bdbb47e1ea8829e887bd027105",
+     "leafHash": "4ca121556c6a10d85264cc4124d5fbf9d1c690665e6b4b10d9d6dba12a03cee4"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "absent",
+   "holds": null,
+   "name": "absent, path ends in an empty subtree",
+   "proof": {
+    "key": "3c2cacd47ae3a3c2f3dda7bcfe463a59477f3f31c6836d4d4108d3a02b123927",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "l6hDW0lIOb1jEaL5p9YSOvBZG7/5j/3EdTa0cqKMw58=",
+     "FQieGU/1zBhBfQH+h0c0ljNFH6nm1NedafyhMlx7Uew=",
+     "YuoW8NsiUfd7J1TCzZCVEJifKL93bgYs8SZ4OonXEG0="
+    ],
+    "terminal": null
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "absent",
+   "holds": null,
+   "name": "absent, path ends in another key's entry",
+   "proof": {
+    "key": "a9248e8db0d5fdb7bdf9cff4496fa857ce820c5a3ce3814002f924dcc032db9b",
+    "siblings": [
+     "sw6UWi9TD9YijtLFmT2ylpEbHeJUwTcAtb/EDAS6ElQ=",
+     "/Z2OzV4KbwbO42EZ+sw4ag2SGmlo2M730fViX433Wpc=",
+     "P6VNDbQ09vVvwqE5Cjdp2BkaPcuxz+Ndmb1gCQJP9F4=",
+     "831b3F/qcWaW9TA6eC/fOwOzm86iG4Ue+ecLEUQ23SA=",
+     "jf2ZSqx5D2yRHCUpgGH9xsoACONEUlQQcZULbavwvZA="
+    ],
+    "terminal": {
+     "index": 30,
+     "key": "ae3a2b6c1760cc52c75aa2a3e22b7bdc5ef64792d116c4d1bc77261969974d9f",
+     "leafHash": "1be319e2fd427f0cbd74b55c7d37fb35cdcea45c465ff032d15661e9ea0555cb"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "absent",
+   "holds": null,
+   "name": "absent from the empty map",
+   "proof": {
+    "key": "ee0874170b7f6f32b8c2ac9573c428d35b575270a66b757c2c0185d2bd09718d",
+    "siblings": [],
+    "terminal": null
+   },
+   "root": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  {
+   "expect": "absent",
+   "holds": null,
+   "name": "another issuer's receipt for the same permit and stage is another key",
+   "proof": {
+    "key": "576460569d7d2e7c017e500b6f0066e815f565f28f096eb6bc84dffc71b91fad",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "qwV/2fSh45VeolaeNIBivGAKqle+BO7zDODSeEkQm5w=",
+     "Jpxxzqcjs8kKWGOL4MtIahO0YKJ//4idrqo0EQ+a0Ao=",
+     "QDWIPAS7AuT1Axrxot5bnuScVp+vljI5CiE6HaXcgOk="
+    ],
+    "terminal": {
+     "index": 32,
+     "key": "5030b6c22ada2237a29226dc15541d4a9f3e8bf5dbe768e3392d9b12142b65e9",
+     "leafHash": "0c1ae137a673f354717976904f66c5c16c16f57b7159d1e3747f0211ac920227"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "refused",
+   "holds": null,
+   "name": "refused: path extended with an empty sibling",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "4U6BNP5AjzIzFXZU6JQPrTQuCTVRKmzUwLmLAzfMSwU=",
+     null
+    ],
+    "terminal": {
+     "index": 14,
+     "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+     "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "refused",
+   "holds": null,
+   "name": "refused: path cut one level short",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA="
+    ],
+    "terminal": {
+     "index": 14,
+     "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+     "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "refused",
+   "holds": null,
+   "name": "refused: proof for another root",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "4U6BNP5AjzIzFXZU6JQPrTQuCTVRKmzUwLmLAzfMSwU="
+    ],
+    "terminal": {
+     "index": 14,
+     "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+     "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+    }
+   },
+   "root": "47240e1016c810dcf48166891a385f464ad02af3f99cb3405fa00827c6715359"
+  },
+  {
+   "expect": "refused",
+   "holds": null,
+   "name": "refused: terminal entry not on the key's path",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "4U6BNP5AjzIzFXZU6JQPrTQuCTVRKmzUwLmLAzfMSwU="
+    ],
+    "terminal": {
+     "index": 0,
+     "key": "9556597ad8178d0c4820e9d429636150406f4e62f6cdd7dbe8699e65b9b29e61",
+     "leafHash": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "refused",
+   "holds": null,
+   "name": "refused: membership claimed for an absent key",
+   "proof": {
+    "key": "3c2cacd47ae3a3c2f3dda7bcfe463a59477f3f31c6836d4d4108d3a02b123927",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "l6hDW0lIOb1jEaL5p9YSOvBZG7/5j/3EdTa0cqKMw58=",
+     "FQieGU/1zBhBfQH+h0c0ljNFH6nm1NedafyhMlx7Uew=",
+     "YuoW8NsiUfd7J1TCzZCVEJifKL93bgYs8SZ4OonXEG0="
+    ],
+    "terminal": {
+     "index": 0,
+     "key": "3c2cacd47ae3a3c2f3dda7bcfe463a59477f3f31c6836d4d4108d3a02b123927",
+     "leafHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "refused",
+   "holds": null,
+   "name": "refused: empty-path proof presented for a present key",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "4U6BNP5AjzIzFXZU6JQPrTQuCTVRKmzUwLmLAzfMSwU="
+    ],
+    "terminal": null
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "malformed",
+   "holds": null,
+   "name": "malformed: a sibling of 31 bytes",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "AAAA"
+    ],
+    "terminal": {
+     "index": 14,
+     "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+     "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "malformed",
+   "holds": null,
+   "name": "malformed: 257 siblings",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "terminal": {
+     "index": 14,
+     "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+     "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  },
+  {
+   "expect": "malformed",
+   "holds": null,
+   "name": "malformed: leaf index is not an integer",
+   "proof": {
+    "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+    "siblings": [
+     "aCu4Orj4weXbKw/pyl2kdCsH39FfcxuBooKLyrp5b5Q=",
+     "nGkPIeXxO6yqoyhTd+g7v7JX0224G7r1K4oO5PLgAnA=",
+     "4U6BNP5AjzIzFXZU6JQPrTQuCTVRKmzUwLmLAzfMSwU="
+    ],
+    "terminal": {
+     "index": true,
+     "key": "1ec8d4272e7a006cc6938932efed94afe1c2444a758bc63069863c19c0d4a8f3",
+     "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2"
+    }
+   },
+   "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160"
+  }
+ ],
+ "entries": [
+  {
+   "index": 0,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+   "permit": "permit.000",
+   "stage": "accept"
+  },
+  {
+   "index": 2,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+   "permit": "permit.001",
+   "stage": "execute"
+  },
+  {
+   "index": 4,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+   "permit": "permit.002",
+   "stage": "settle"
+  },
+  {
+   "index": 6,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+   "permit": "permit.003",
+   "stage": "final"
+  },
+  {
+   "index": 8,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+   "permit": "permit.004",
+   "stage": "accept"
+  },
+  {
+   "index": 10,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "5df183a7928a0b9a8a923c39009e89847ab5f53d07547a362bd2b30e26ee2e16",
+   "permit": "permit.005",
+   "stage": "execute"
+  },
+  {
+   "index": 12,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "e94f5850717db06bc4e0bd7444389dd11eb57caf8e60502cc633081a636510d0",
+   "permit": "permit.006",
+   "stage": "settle"
+  },
+  {
+   "index": 14,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2",
+   "permit": "permit.007",
+   "stage": "final"
+  },
+  {
+   "index": 16,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "3779790b00cf4dd355ba895adf36838158baa398f0e70fce7018503dbade253d",
+   "permit": "permit.008",
+   "stage": "accept"
+  },
+  {
+   "index": 18,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "3327cf579337d5d2469ca9960f066abf8073645ce487d2a350f7bd7e44b7d52d",
+   "permit": "permit.009",
+   "stage": "execute"
+  },
+  {
+   "index": 20,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "b789e63ed0a8dd152a5b020b53e0c9d7a2522b93702c255d2847575ebea98a92",
+   "permit": "permit.010",
+   "stage": "settle"
+  },
+  {
+   "index": 22,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "5d61bd1b0b8f883e09601dffb3bdd10393a05ee4315b5ffd5369e062ca3b5cca",
+   "permit": "permit.011",
+   "stage": "final"
+  },
+  {
+   "index": 24,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "29f490d1ebc8f6c9420c8ed96e118584f77f92b705fbb9fc8269967b4768efbe",
+   "permit": "permit.012",
+   "stage": "accept"
+  },
+  {
+   "index": 26,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "b91137035670e87737d52bada60db567e836f928e4aac2467cd4630164d07f9e",
+   "permit": "permit.013",
+   "stage": "execute"
+  },
+  {
+   "index": 28,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "ec23c4e2f524c6fffb83ad9654431261197cbdea40ff20032b4a0100ba83d4ca",
+   "permit": "permit.014",
+   "stage": "settle"
+  },
+  {
+   "index": 30,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "1be319e2fd427f0cbd74b55c7d37fb35cdcea45c465ff032d15661e9ea0555cb",
+   "permit": "permit.015",
+   "stage": "final"
+  },
+  {
+   "index": 32,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "0c1ae137a673f354717976904f66c5c16c16f57b7159d1e3747f0211ac920227",
+   "permit": "permit.016",
+   "stage": "accept"
+  },
+  {
+   "index": 34,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "29a873fe7aa2874d9eb761738c2fcbdf87b0111d4dce56a5852fcb95abb78d66",
+   "permit": "permit.017",
+   "stage": "execute"
+  },
+  {
+   "index": 36,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "faf3d0924045d784eb6c7ceb36493dcd98316fa95ba050d70c8ec1176c979866",
+   "permit": "permit.018",
+   "stage": "settle"
+  },
+  {
+   "index": 38,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "84d754ad7833f85b8b92daf26e11d7aa0b9d28cab978c457bfe27b8612d00473",
+   "permit": "permit.019",
+   "stage": "final"
+  },
+  {
+   "index": 40,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "dd09d34b17f4420c788faeb69729e131d0b37e260265653f41f452045b3c49a0",
+   "permit": "permit.020",
+   "stage": "accept"
+  },
+  {
+   "index": 42,
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "leafHash": "45fe39a4b7b8e3c5c64d4fc4209c90805658a7d801078bbbd6c651a6f2775105",
+   "permit": "permit.021",
+   "stage": "execute"
+  },
+  {
+   "index": 44,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "e4113ccf9c2e1a3d99e74064e9cc024f482904864dda7270bfec0f2231918e55",
+   "permit": "permit.022",
+   "stage": "settle"
+  },
+  {
+   "index": 46,
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "leafHash": "4ca121556c6a10d85264cc4124d5fbf9d1c690665e6b4b10d9d6dba12a03cee4",
+   "permit": "permit.023",
+   "stage": "final"
+  }
+ ],
+ "format": "probity-receipt-map/v1 vectors",
+ "keys": [
+  {
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "key": "9556597ad8178d0c4820e9d429636150406f4e62f6cdd7dbe8699e65b9b29e61",
+   "permit": "permit.000",
+   "stage": "accept"
+  },
+  {
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "key": "c83c8fab4deb9d729d0b00a90f415e5a97908aa28b111699e78e765d5112ab7f",
+   "permit": "permit.001",
+   "stage": "execute"
+  },
+  {
+   "issuer": "c6199a35dff2240bbd3b56ebb32e07b2863ba04f1d2ac39caa8e61b635774060",
+   "key": "baf412c93e278a3c7d8ef215ec56da22f009bace0008c593227043573e56c57a",
+   "permit": "permit.002",
+   "stage": "settle"
+  },
+  {
+   "issuer": "d6eb2f53bcbe48e3c582113dbf16a657a4948b5e9ec7bc7a0c132b7550ed5bb8",
+   "key": "b9c8928e3c7ccba45f7e3d498157db5c9daa395a366f2b24990b2d80fcab0a67",
+   "permit": "permit.003",
+   "stage": "final"
+  }
+ ],
+ "root": "878843efe6fe7cb344933f364627386eaeb38597ca1c4264fd4d606fb2a39160",
+ "stages": [
+  "accept",
+  "execute",
+  "settle",
+  "final"
+ ]
+}
