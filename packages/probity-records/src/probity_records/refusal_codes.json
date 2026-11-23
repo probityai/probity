@@ -2337,6 +2337,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/received_not_sent"
   },
   {
+   "code": "receiver_agent_rule_missing",
+   "check": "receiver.policy",
+   "meaning": "the route admits the caller only by a rule that names no agent condition, and an agent or a caller with no verified agent is held to an agent rule",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/receiver_agent_rule_missing"
+  },
+  {
+   "code": "receiver_policy_denied",
+   "check": "receiver.policy",
+   "meaning": "a deny rule or the route default of the receiver policy refuses an identity the request presents",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/receiver_policy_denied"
+  },
+  {
    "code": "reconciled_retry_without_final_absent_answer",
    "check": "journal.verify",
    "meaning": "a reconciled retry lacks the final absent answer",
