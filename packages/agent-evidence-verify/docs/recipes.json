@@ -314,7 +314,7 @@
     {
       "path": "src/agent_evidence_verify/adapters/web_bot_auth.py",
       "bytes": 34487,
-      "sha256": "25f5a866dea37b704569704fae462994af6fd43e9a7c20d353520ac49b114fd0"
+      "sha256": "e842fa0ab25cdf106487c0a740cc711ca800f2b0f529087859132c17c379535f"
     },
     {
       "path": "src/agent_evidence_verify/adapters/witnessed.py",
