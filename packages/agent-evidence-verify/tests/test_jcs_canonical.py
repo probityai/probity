@@ -10,10 +10,13 @@ import json
 from pathlib import Path
 
 import pytest
-
 from agent_evidence_verify import adjudicate
 from agent_evidence_verify.adapters import jcs_canonical
-from agent_evidence_verify.adapters.jcs_canonical import Refusal, canonical, canonical_bounded
+from agent_evidence_verify.adapters.jcs_canonical import (
+    Refusal,
+    canonical,
+    canonical_bounded,
+)
 
 
 def _judge(tmp_path: Path, text: str, claimed: bytes, target: str) -> dict:
