@@ -1,0 +1,303 @@
+[
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "alg-none",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "only ES256 is allowed",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "dup-member-fqdn",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "PROFILE PROPOSAL: signed payload must be I-JSON (RFC 7493), duplicate member names refused; a last-wins parser and a first-wins parser bind different fqdn values to one signature",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "endpoint-only",
+  "expected": "not_established",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "valid, but no svcb claim: cap, cap-sha256, policy, realm are not attested",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "endpoint-tamper-target",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "served target differs from signed target",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "expired",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "exp is before the check time",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "full-coverage-valid",
+  "expected": "supported",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "ES256 valid, unexpired, endpoint and svcb1 digest match",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "iat-future",
+  "expected": "not_established",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "PROFILE PROPOSAL: iat a day after the check time (beyond 300 s skew) is not yet attested",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "param-tamper-cap-sha256",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "served cap-sha256 differs from the signed svcb1 digest",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "port-float",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "PROFILE PROPOSAL: port must be a JSON integer; 443.0 is not 443 in a strict reader",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "sig-bitflip",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "one signature bit flipped",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "svcb1-field-boundary",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "signed {cap:u, realm:t}; served cap='u\\nrealm=t' with no realm must not bind",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "wrong-key",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "signature does not verify under the published key",
+  "source": "pinned"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce1-foreign-key-no-provenance",
+  "expected": "not_established",
+  "key_authority": null,
+  "rule": "KEY AUTHORITY: the JWKS travels with the evidence and nothing ties it to the zone owner; their live path fetches the key from dns-aid.<zone> (jwks.py JWKS_HOST_PREFIX, discoverer sig_zone = agent.domain), an offline triple cannot",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce1-foreign-key-pinned-owner",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "KEY AUTHORITY: the supplied JWKS fingerprint differs from the consumer's pin for the zone",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce1-foreign-key-wrong-host",
+  "expected": "contradicted",
+  "key_authority": null,
+  "rule": "KEY AUTHORITY: jwks_url host is not dns-aid.<zone> or the deprecated apex (jwks_urls())",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce1-owner-key-pinned-control",
+  "expected": "supported",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "control: owner key, derived host, pin matches, full svcb1 coverage",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce2-crit-unknown-extension",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "RFC 7515 4.1.11: a crit extension the recipient does not understand makes the JWS invalid (MUST)",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce3-dawn00-alpn-transport-proto-a2a",
+  "expected": "supported",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "dawn-00 section 3.1.1 and Table 1: alpn=h2,h3 proto=a2a; their discoverer binds payload.alpn to agent.protocol.value, not to the served alpn string",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce4-malformed-header-b64",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "not a decodable compact JWS: contradicted, never a crash",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:47:35Z",
+  "case": "ce6-empty-realm-injected",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "their own svcb_digest docstring: a param the publisher never set cannot be injected as \"\" without breaking the claim",
+  "source": "new"
+ },
+ {
+  "at": "2026-11-15T20:18:43Z",
+  "case": "r3-noncanonical-signature-b64",
+  "expected": "contradicted",
+  "key_authority": {
+   "keys": [
+    {
+     "public_key_sha256": "dfcfce1826ee25d2bdf0bb49442b16ca727e181387186fcd6694c9021b3a805e"
+    }
+   ],
+   "kind": "pin"
+  },
+  "rule": "RFC 4648 section 3.5 and RFC 7515 section 2: the signature part is base64url with non-zero trailing bits; a lenient decoder reads the same 64 bytes and the signature verifies, so only canonical-form checking refuses it",
+  "source": "derived"
+ }
+]

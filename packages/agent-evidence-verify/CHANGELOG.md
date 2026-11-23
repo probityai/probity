@@ -3,6 +3,8 @@
 ## 0.9.0 (unreleased)
 
 A minor release: six new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
+A minor release: four new claim types (`credential_reachability/v1`, `dns_aid_sig/v1`, `dnssec_rrset/v1` and
+`declared_versus_acted/v1`) and three more suites in corpus mode.
 
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
@@ -40,6 +42,25 @@ A minor release: six new claim types and three more suites in corpus mode; the d
   one key under two ids, the issuer's own key as cosigner, a threshold of one authority, a short count), and a spent
   use limit (`uses_exhausted`), each with its own code; a `revocation_ref` outside the consumer's `revocation_sources`
   and a use limit with no recorded count are `not_established`. Doc: `docs/capability-credential.md`.
+- `dns_aid_sig/v1`: checks a DNS-AID discovery record's `sig` (compact JWS, ES256) against the served record
+  under the `dns-aid-sig-binding/v1` profile (strict canonical base64url, I-JSON header and payload, `crit`
+  refused, integer `port`/`iat`/`exp`, protocol bound from `proto` then `alpn`, `svcb1` over RFC 8785 with
+  empty distinct from absent) and agrees only when the consumer's key authority authorises the key for the
+  zone. A `jwks_url` is read as every common client reads it (a backslash, userinfo, control character or
+  non-hostname host is refused), a `port` is 0 to 65535, and an inverted window is refused. Every verdict names
+  the key-set fingerprint it read and the `fqdn` and `zone` the record claimed; malformed record input is a
+  verdict, never an exception. Page: `docs/dns-aid.md`, example: `examples/dns-aid-sig/`.
+- `dnssec_rrset/v1` and the `dnssec-chain` key-authority kind: offline DNSSEC validation (RFC 4034, RFC 4035;
+  RSA, ECDSA, EdDSA; SHA-256 and SHA-384 DS) of an RRset from a pinned trust anchor, from a chain in DNS wire
+  format. A missing record reads `not_established`, never validated; a key with the REVOKE bit validates no
+  zone data, and the authority holds only when the zone that signed the key record contains the record's zone,
+  so a delegated child zone never vouches for its parent. Example: `examples/dnssec-rrset/` (a real chain from
+  the IANA root).
+- `declared_versus_acted/v1`: joins an agent-evidence-observer trajectory of resolution and call events,
+  verified against its witnessed head, with the bindings it relied on; a call to an undeclared endpoint, to an
+  endpoint clients read differently, before the resolution it names, after `exp` or under an unauthorised key is
+  `contradicted`, and the scope carries the call denominator. Lines end at `\n` only and the head signature is
+  canonical base64. Example: `examples/declared-versus-acted/`.
 
 Corpus mode (`agent-evidence-verify corpus`) answers three more suites of agent-evidence-vectors with the verdict and
 reason each corpus declares.

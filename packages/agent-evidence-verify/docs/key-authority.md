@@ -15,14 +15,15 @@ after the signature check, and a verdict agrees only when the key is authorised.
 | `did-web` | `{"kind": "did-web", "did": "did:web:...", "document": "<artifact>", "document_sha256": "<hex>"}` | the pinned DID document lists a signing method carrying the key under `assertionMethod`, and, when the record names a key id, it is that method's id (absolute, or `#fragment` of this DID) |
 | `registry` | `{"kind": "registry", "bindings": [{"subject", "public_key_sha256", "not_before", "not_after", "revoked_at"}]}` | a binding of the record's subject and key covers the record's time, and no binding of that subject and key was revoked at or before it |
 | `kt-inclusion` | `{"kind": "kt-inclusion", "tree_size": n, "root_sha256": "<hex>", "inclusion_proof": "<artifact>"}` | an RFC 6962 inclusion proof the case supplies reaches the pinned root for the leaf `RFC 8785({"key_sha256", "subject"})` |
+| `dnssec-chain` | `{"kind": "dnssec-chain", "trust_anchor": {"zone": ".", "ds": ["<DS>"]}, "name": "<owner>", "chain": "<artifact>"}` | the TXT RRset at `name` validates under DNSSEC from the pinned trust anchor at the record's instant, and one of its records reads `key-sha256=<hex>` for the key; when the record's subject is a DNS name, `name` is inside it and the zone whose key signed the TXT RRset is that name or an ancestor of it, so a delegated child zone's key never vouches for its parent |
 
 Outcomes:
 
 | Outcome | Adapter decision | Examples of the reason |
 |---|---|---|
-| `authorized` | the adapter's own verdict stands | `key_pinned`, `key_in_assertion_method`, `key_bound_at_time`, `key_in_log` |
-| `unauthorized` | `contradicted` | `key_not_pinned`, `key_id_mismatch`, `record_subject_not_did`, `key_not_in_assertion_method`, `key_not_for_signing`, `did_document_not_pinned`, `did_document_malformed`, `inclusion_proof_malformed`, `key_revoked`, `key_outside_validity`, `key_not_bound_to_subject`, `key_not_in_log` |
-| `unknown` | `not_established` | `no_key_authority_in_policy`, `did_document_unavailable`, `record_subject_unknown`, `inclusion_proof_unavailable` |
+| `authorized` | the adapter's own verdict stands | `key_pinned`, `key_in_assertion_method`, `key_bound_at_time`, `key_in_log`, `key_in_dnssec_record` |
+| `unauthorized` | `contradicted` | `key_not_pinned`, `key_id_mismatch`, `record_subject_not_did`, `key_not_in_assertion_method`, `key_not_for_signing`, `did_document_not_pinned`, `did_document_malformed`, `inclusion_proof_malformed`, `key_revoked`, `key_outside_validity`, `key_not_bound_to_subject`, `key_not_in_log`, `key_not_in_dnssec_record`, `key_record_outside_subject`, `key_record_signed_by_another_zone`, `dnssec_<reason>` for a chain that fails |
+| `unknown` | `not_established` | `no_key_authority_in_policy`, `did_document_unavailable`, `record_subject_unknown`, `inclusion_proof_unavailable`, `dnssec_chain_unavailable`, `dnssec_<reason>` for a chain missing a record |
 
 Rules a second reader of the same policy and evidence must apply the same way:
 
@@ -62,5 +63,7 @@ into that form; a JWK that carries a private member is refused.
 
 `proof_of_control/v1` is the first adapter that requires it. It asks once per signed statement (the token, or
 every record of a chain) with that statement's `iss` as the subject and its `iat` as the instant, and the least
-favourable answer decides. `document` (did-web) and `inclusion_proof` (kt-inclusion) name case artifacts; the
-decision's scope records the binding of each one it read. A DNSSEC chain authority is not built yet.
+favourable answer decides. `document` (did-web), `inclusion_proof` (kt-inclusion) and `chain` (dnssec-chain) name
+case artifacts; the decision's scope records the binding of each one it read. `dns_aid_sig/v1` and
+`declared_versus_acted/v1` ask it with the record's zone as the subject (`did:web:<zone>` for did-web). The
+DNSSEC rules are those of [dns-aid.md](dns-aid.md#dnssec_rrsetv1).

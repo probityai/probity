@@ -855,7 +855,7 @@ def judge(inputs: dict[str, Any]) -> tuple[str, str, list[tuple[str, Any, Any, d
 
 def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     """Judge the bound catalog object, then ask the consumer's key authority about every signer."""
-    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authority_evidence, authorize
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authorize, evidence
     case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, _REQUIRED, _OPTIONAL)
     construction, role, at = _context(assessment)
     scope: dict[str, Any] = {"construction": construction, "role": role, "limit": LIMIT}
@@ -899,9 +899,8 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
         return decision(case_id, CLAIM_TYPE, scope, "not_established", reason, [check])
     check["signers"] = [{"role": who, "kid": kid} for who, kid, _, _ in signers]
     config = assessment.get("key_authority")
-    document, proof = authority_evidence(config, artifacts, artifact_root, scope)
-    answers = [authorize(config, key_bytes(method), kid=kid, subject=did, at=assessment["at"],
-                         did_document=document, inclusion_proof=proof)
+    supplied = evidence(config, artifacts, artifact_root, scope)
+    answers = [authorize(config, key_bytes(method), kid=kid, subject=did, at=assessment["at"], **supplied)
                for _, kid, did, method in signers]
     authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
     checks = [check, authority.check()]

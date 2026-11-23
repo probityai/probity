@@ -1,0 +1,24 @@
+{
+  "assessments": {
+    "declared-versus-acted-undeclared-call": {
+      "claim_type": "declared_versus_acted/v1",
+      "evidence": [
+        "jwks.json"
+      ],
+      "head": "head.json",
+      "key_authority": {
+        "keys": [
+          {
+            "public_key_sha256": "eb1af8d504a0d54be80d0a90277fda2de25942b5c4b690bf2cdac41a6f7e3d2b"
+          }
+        ],
+        "kind": "pin"
+      },
+      "trajectory": "trajectory.jsonl",
+      "trajectory_id": "dva-planted-undeclared-call",
+      "witness_key": "63dfe33436eef991e3741c3436a93d23b6fc4b61906fdc068fb6ed6e236c9f4c",
+      "zone": "example.com"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

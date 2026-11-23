@@ -573,7 +573,7 @@ def judge(case: dict) -> str | None:
 def adjudicate(case, policy, artifact_root):
     """Verify the bound Proof-of-Control artifact."""
     from ..common import CaseError
-    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authority_evidence, authorize
+    from ..key_authority import AUTHORIZED, UNAUTHORIZED, authorize, evidence
     from .bound_records import assessment_for, bound, decision
     case_id, artifacts, assessment = assessment_for(case, policy, CLAIM_TYPE, {"input"},
                                                     {"key_authority"})
@@ -601,9 +601,8 @@ def adjudicate(case, policy, artifact_root):
     except ValueError:
         return decision(case_id, CLAIM_TYPE, scope, "contradicted", "signature_key_malformed", [check])
     config = assessment.get("key_authority")
-    document, proof = authority_evidence(config, artifacts, artifact_root, scope)
-    answers = [authorize(config, key, subject=subject, at=at, did_document=document,
-                         inclusion_proof=proof)
+    supplied = evidence(config, artifacts, artifact_root, scope)
+    answers = [authorize(config, key, subject=subject, at=at, **supplied)
                for subject, at in _signed_statements(artifact) or [(None, None)]]
     authority = max(answers, key=lambda answer: _SEVERITY[answer.outcome])
     checks = [check, authority.check()]

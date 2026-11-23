@@ -51,6 +51,19 @@ Authority kinds, each a JSON object in the consumer policy:
     proof reaches the pinned root. ``index`` and ``tree_size`` are JSON integers, never ``true`` or
     ``2.0``. Inclusion shows the binding was logged; it does not show a later log entry did not
     revoke it.
+``dnssec-chain``
+    ``{"kind": "dnssec-chain", "trust_anchor": {"zone": "<name>", "ds": ["<DS presentation>"]},
+    "name": "<owner name>", "chain": "<artifact, optional>"}``. The consumer pins a DNSSEC trust
+    anchor (for the DNS root, IANA's DS records) and the owner name of a TXT RRset the zone owner
+    publishes; the case artifact the policy names supplies the chain in DNS wire format
+    (:mod:`agent_evidence_verify.dnssec`). The key is authorised when the TXT RRset validates from
+    the anchor at the record's instant and one of its records reads ``key-sha256=<hex>`` with the
+    SHA-256 of the key bytes. A record whose subject is a DNS name is judged only under a TXT owner
+    inside that name, and only when the zone whose key signed the TXT RRset is that name or an
+    ancestor of it: a delegated child zone (``tenant.example.com.`` under ``example.com.``) signs its
+    own TXT, and its keys never vouch for the parent's records, nor one zone's for another's. A chain
+    that fails validation is ``unauthorized``; a chain that is missing a record it needs is
+    ``unknown``.
 
 Each kind reads only the members named above; any other member is the consumer's error and is
 refused, because a restriction the consumer wrote under a name this module does not read (a
@@ -78,18 +91,20 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
 
+from . import dnssec
 from .adapters import jcs_canonical
 from .adapters.proof_of_control import check_inclusion, leaf_hash
 from .common import CaseError
 from .ijson import IJSONError, parse_ijson
 
-KINDS = ("pin", "did-web", "registry", "kt-inclusion")
+KINDS = ("pin", "did-web", "registry", "kt-inclusion", "dnssec-chain")
 AUTHORIZED, UNAUTHORIZED, UNKNOWN = "authorized", "unauthorized", "unknown"
 _HEX64 = re.compile(r"[0-9a-f]{64}")
 #: The members each kind reads; any other member of the consumer's authority is refused.
 _MEMBERS = {"pin": {"kind", "keys"}, "did-web": {"kind", "did", "document", "document_sha256"},
             "registry": {"kind", "bindings"},
-            "kt-inclusion": {"kind", "tree_size", "root_sha256", "inclusion_proof"}}
+            "kt-inclusion": {"kind", "tree_size", "root_sha256", "inclusion_proof"},
+            "dnssec-chain": {"kind", "trust_anchor", "name", "chain"}}
 #: The curve and point length of each JWK key type this module turns into raw key bytes.
 _EC_CURVES = {"P-256": 32, "P-384": 48}
 _OKP_CURVES = {"Ed25519": 32, "Ed448": 57}
@@ -478,14 +493,111 @@ def _kt_inclusion(config: dict, key: bytes, subject: str | None, proof: Any,
     return AUTHORIZED, "key_in_log", [key_sha256(key)]
 
 
+_KEY_RECORD = re.compile(r"key-sha256=([0-9a-f]{64})")
+
+
+def posix_seconds(instant: Instant) -> int:
+    """The whole POSIX second an exact :data:`Instant` falls in (a leap second reads as the next day's first)."""
+    day = math.floor(instant / (_DAY + 1))
+    return (day - _EPOCH_ORDINAL) * _DAY + math.floor(instant - day * (_DAY + 1))
+
+
+def dnssec_anchor(config: Any, label: str = "authority") -> tuple[str, list[str]]:
+    """The consumer's trust anchor ``(zone, ds)``, checked for shape; :class:`CaseError` otherwise."""
+    anchor = config.get("trust_anchor") if isinstance(config, dict) else None
+    if not isinstance(anchor, dict) or set(anchor) != {"zone", "ds"}:
+        raise CaseError(f"{label}.trust_anchor: expected exactly zone and ds")
+    try:
+        dnssec.name_labels(anchor["zone"], f"{label}.trust_anchor.zone")
+        if not isinstance(anchor["ds"], list) or not anchor["ds"]:
+            raise ValueError(f"{label}.trust_anchor.ds: expected a non-empty list")
+        for index, text in enumerate(anchor["ds"]):
+            dnssec.parse_ds_text(text, f"{label}.trust_anchor.ds[{index}]")
+    except ValueError as exc:
+        raise CaseError(str(exc)) from exc
+    return anchor["zone"], anchor["ds"]
+
+
+def _dnssec_chain(config: dict, key: bytes, subject: str | None, at: Instant | None,
+                  chain: bytes | None) -> tuple[str, str, list[str]]:
+    zone, ds = dnssec_anchor(config)
+    try:
+        owner = dnssec.name_labels(config.get("name"), "authority.name")
+    except ValueError as exc:
+        raise CaseError(str(exc)) from exc
+    subject_labels = None
+    if subject is not None:
+        try:
+            subject_labels = dnssec.name_labels(subject)
+        except ValueError:
+            subject_labels = None
+        if subject_labels is None or not dnssec.is_within(owner, subject_labels):
+            return UNAUTHORIZED, "key_record_outside_subject", []
+    if at is None:
+        return UNKNOWN, "record_time_unknown", []
+    if chain is None:
+        return UNKNOWN, "dnssec_chain_unavailable", []
+    result = dnssec.validate(chain, config["name"], dnssec.TYPES["TXT"], zone, ds, posix_seconds(at))
+    if result.outcome == dnssec.BOGUS:
+        return UNAUTHORIZED, "dnssec_" + result.reason, []
+    if result.outcome == dnssec.INDETERMINATE:
+        return UNKNOWN, "dnssec_" + result.reason, []
+    if subject_labels is not None and (result.zone is None
+                                       or not dnssec.is_within(subject_labels, result.zone)):
+        return UNAUTHORIZED, "key_record_signed_by_another_zone", []
+    trusted = sorted({m.group(1) for m in (_KEY_RECORD.fullmatch(dnssec.txt_strings(r))
+                                           for r in result.records) if m})
+    if key_sha256(key) in trusted:
+        return AUTHORIZED, "key_in_dnssec_record", trusted
+    return UNAUTHORIZED, "key_not_in_dnssec_record", trusted
+
+
+#: The member of each kind that names a case artifact, and the ``authorize`` argument it feeds.
+_EVIDENCE = {"did-web": ("document", "did_document"), "kt-inclusion": ("inclusion_proof", "inclusion_proof"),
+             "dnssec-chain": ("chain", "dnssec_chain")}
+
+
+def evidence(authority: Any, artifacts: dict, artifact_root: Any, scope: dict) -> dict[str, Any]:
+    """The case artifacts the consumer's authority names, as ``authorize`` keyword arguments.
+
+    Each binding is recorded in ``scope`` (``key_authority_<member>``). A missing artifact is passed
+    as absent, so :func:`authorize` answers ``unknown``; an inclusion proof that is not I-JSON is
+    passed as ``"malformed"``, which ``authorize`` answers as ``inclusion_proof_malformed``. Naming
+    an artifact under a kind that reads none is the consumer's error.
+    """
+    from .adapters.bound_records import bound
+    if not isinstance(authority, dict):
+        return {}
+    kind = authority.get("kind")
+    named = [member for member, _ in _EVIDENCE.values() if member in authority]
+    if kind not in _EVIDENCE:
+        if named:
+            raise CaseError("assessment.key_authority: evidence named for a kind that reads none")
+        return {}
+    member, argument = _EVIDENCE[kind]
+    if member not in authority:
+        if kind == "did-web":  # a did-web authority always reads its document
+            raise CaseError("assessment.key_authority.document: names no case artifact")
+        return {}
+    raw, scope[f"key_authority_{member}"] = bound(artifacts, artifact_root, authority[member],
+                                                  f"assessment.key_authority.{member}")
+    if kind == "kt-inclusion" and raw is not None:
+        try:
+            return {argument: parse_ijson(raw)}
+        except IJSONError:
+            return {argument: "malformed"}
+    return {argument: raw}
+
+
 def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: str | None = None,
               at: datetime.datetime | float | None = None, did_document: bytes | None = None,
-              inclusion_proof: Any = None) -> Authority:
+              inclusion_proof: Any = None, dnssec_chain: bytes | None = None) -> Authority:
     """Decide whether ``key`` may speak for a record, under the consumer's ``authority``.
 
     ``kid``, ``subject`` and ``at`` are what the record says about its own signer and time; they
-    select among the consumer's bindings and never extend them. ``did_document`` and
-    ``inclusion_proof`` are evidence bytes the case supplies, checked against the consumer's pins.
+    select among the consumer's bindings and never extend them. ``did_document``,
+    ``inclusion_proof`` and ``dnssec_chain`` are evidence bytes the case supplies, checked against
+    the consumer's pins.
     A malformed ``authority`` raises :class:`CaseError`: it is the consumer's own input.
     """
     if authority is None:
@@ -505,33 +617,10 @@ def authorize(authority: Any, key: bytes, *, kid: str | None = None, subject: st
     elif kind == "registry":
         outcome, reason, trusted = _registry(authority, key, subject,
                                              None if at is None else record_instant(at))
-    else:
-        outcome, reason, trusted = _kt_inclusion(authority, key, subject, inclusion_proof)
-    return Authority(outcome, reason, kind, key_set_fingerprint(trusted))
-
-
-def authority_evidence(authority: Any, artifacts: dict, artifact_root: Any,
-                       scope: dict) -> tuple[bytes | None, Any]:
-    """The DID document bytes and the inclusion proof the consumer's authority names as case
-    artifacts, each bound and recorded in ``scope``; ``(None, None)`` when the kind reads neither."""
-    from .adapters.bound_records import bound
-    document = proof = None
-    if not isinstance(authority, dict):
-        return document, proof
-    kind = authority.get("kind")
-    if kind == "did-web":
-        document, scope["key_authority_document"] = bound(
-            artifacts, artifact_root, authority.get("document"), "assessment.key_authority.document")
     elif kind == "kt-inclusion":
-        if "inclusion_proof" in authority:
-            raw, scope["key_authority_inclusion_proof"] = bound(
-                artifacts, artifact_root, authority["inclusion_proof"],
-                "assessment.key_authority.inclusion_proof")
-            if raw is not None:
-                try:
-                    proof = parse_ijson(raw)
-                except IJSONError:
-                    proof = "malformed"  # authorize() answers inclusion_proof_malformed
-    elif "document" in authority or "inclusion_proof" in authority:
-        raise CaseError("assessment.key_authority: evidence named for a kind that reads none")
-    return document, proof
+        outcome, reason, trusted = _kt_inclusion(authority, key, subject, inclusion_proof)
+    else:
+        outcome, reason, trusted = _dnssec_chain(authority, key, subject,
+                                                 None if at is None else record_instant(at),
+                                                 dnssec_chain)
+    return Authority(outcome, reason, kind, key_set_fingerprint(trusted))
