@@ -6,15 +6,15 @@ The `probityai` command checks a claim about an AI agent against evidence bytes 
 
 It's for platform and security engineers, auditors and incident reviewers who receive a claim about an agent run and need a decision, not a report to trust.
 
-Install the released package: `pip install probityai==0.1.0`.
+Install the released package: `pip install probityai`.
 
 ## Quick start
 
 You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). Nothing to clone: the sample case and policies ship inside the wheel.
 
 ```sh
-samples="$(uvx --from probityai==0.1.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
-uvx --from probityai==0.1.0 probityai verify "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from probityai python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
+uvx --from probityai probityai verify "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:

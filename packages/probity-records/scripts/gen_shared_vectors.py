@@ -4,7 +4,8 @@ Each journal case is ``{"id", "description", "journal": [line, ...], "checkpoint
 "trust": {...}, "expected": {"verdict", "records", "verified", "failures", "checkpoint"}}``; the
 expected block is this package's own ``verify_journal`` result. ``identity.json`` holds the
 principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``standing_grants.json`` its standing
-grant chains, ``canonical_identity.json`` the canonical identity
+grant chains, ``identities.json`` journals whose records name the parties to a call (the strict profile, the parties
+a permit's later records name, the approver an allow counts), ``canonical_identity.json`` the canonical identity
 strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
 ``digests_vectors``, ``erasure.json`` the record envelope v2 cases of ``erasure_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
@@ -15,6 +16,7 @@ scripts/gen_shared_vectors.py vectors/shared``.
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import json
 import sys
@@ -67,6 +69,7 @@ from probity_records.identity_vectors import (
     autonomous_record_parts,
     standing_grant_vectors,
 )
+from probity_records.identity_vectors import base as identity_base
 from probity_records.identity_vectors import vectors as identity_vectors
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
@@ -699,6 +702,68 @@ def revocation_rows() -> list[dict]:
     return rows
 
 
+# ---- the parties a journal's records name ----
+
+APPROVAL_IDP_POLICY = approval_policy("refunds1of2", {WHO["ops"]: OPS.public_pem(), WHO["lead"]: LEAD.public_pem()}, 1)
+
+
+def identity_trust() -> tuple[Trust, dict]:
+    """The auditor of the identities family: the identity vectors' issuer pins, the strict profile, a 1-of-2 approval
+    policy."""
+    pins = identity_base()["pins"]
+    policies = {"refunds1of2": APPROVAL_IDP_POLICY}
+    trust = Trust(identity_profile="strict", identity_issuers={url: frozenset(t) for url, t in pins.items()},
+                  quorum_policies=policies)
+    return trust, {"identityProfile": "strict", "identityIssuers": pins, "quorumPolicies": policies}
+
+
+def identity_call(phase: str, principals: dict | None, **kw) -> dict:
+    digest = args_sha256(AARGS)
+    return tool_call_predicate(phase=phase, run_id="run", tool_call_id="i1", tool="refund_payment",
+                               args_sha256_hex=digest, permit_id=permit_id("pause", "i1", digest), principals=principals,
+                               **kw)  # fmt: skip
+
+
+def identity_case(directory: Path, records: list[dict]) -> Journal:
+    """The records at the identity vectors' instant, when their credentials are live."""
+    j = Journal(directory, GATE, clock=FixedClock(from_datetime(datetime.fromisoformat(identity_base()["at"]))))
+    for record in records:
+        j.append(TOOL_CALL_RECORD, "tool-call:i1", args_sha256(AARGS), record)
+    return j
+
+
+def identity_rows() -> list[tuple[str, str, object]]:
+    block = identity_base()["principals"]
+    swapped = copy.deepcopy(block)
+    swapped["agent"]["subject"] = "agent-payroll"
+    swapped["user"]["act"] = {"sub": "agent-payroll"}
+    refreshed = copy.deepcopy(block)
+    refreshed["agent"]["tokenDigest"] = "ab" * 32
+
+    def allow(principals: dict | None) -> dict:
+        return identity_call("authorize", principals, decision="allow", reason="no_approval_required")
+
+    def approved(approver: str) -> dict:
+        named = copy.deepcopy(block)
+        named["approver"]["subject"] = WHO[approver]
+        return identity_call("authorize", named, decision="allow", reason="bound", threshold=1,
+                             approval_policy="refunds1of2",
+                             approval_bindings=[binding(OPS, WHO["ops"]),
+                                                binding(LEAD, WHO["lead"], consumed=("appr-1",))])  # fmt: skip
+
+    return [
+        ("IJ1", "an allow that carries no principals, under the strict profile", lambda d: identity_case(d, [allow(None)])),
+        ("IJ2", "an allow and its intent name the same parties, the agent's credential refreshed: identity holds",
+         lambda d: identity_case(d, [allow(block), identity_call("intent", refreshed)])),
+        ("IJ3", "the intent names another agent than the allow its permit rests on",
+         lambda d: identity_case(d, [allow(block), identity_call("intent", swapped)])),
+        ("IJ4", "the approver principal names an approver whose approval was a replay; the allow holds on the other",
+         lambda d: identity_case(d, [approved("lead")])),
+        ("IJ5", "the approver principal names the approver the allow counts",
+         lambda d: identity_case(d, [approved("ops")])),
+    ]
+
+
 def trust_doc() -> dict:
     return {"grantRootKeyIds": [ROOT.key_id], "quorumPolicies": {"pay": POLICY, **APOL}}
 
@@ -761,9 +826,10 @@ def main(out: Path) -> None:
     ]
     cases["constraints"] = constraint_rows()
     cases["approvals"] = approval_rows()
+    cases["identities"] = identity_rows()
     cases["effects"] = effect_rows()
     trust = Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
-    family_trust = {"autonomous": autonomous_trust()}
+    family_trust = {"autonomous": autonomous_trust(), "identities": identity_trust()}
     for family, rows in cases.items():
         out_rows = []
         auditor, auditor_doc = family_trust.get(family, (trust, trust_doc()))

@@ -12,6 +12,8 @@ Refused: a missing or unknown member, a thumbprint that does not recompute from 
 mismatch, a credential not valid at the record's time, an issuer the auditor did not pin or a key
 whose thumbprint the auditor did not pin for that issuer, an ``act`` chain that names an agent other
 than the agent principal, and an approver principal who is not among the approvals the record counts.
+An issuer's pins are a collection of thumbprints (a set, list or tuple); a pin written as one string is
+refused rather than searched, so a string that merely contains a thumbprint pins nothing.
 
 Graded, never refused, on delegation: ``act-chain`` when the user's credential names the agent in
 ``act``, ``act-absent`` when it carries no ``act``. ``strict`` conformance needs all four principals
@@ -30,7 +32,9 @@ strict-equivalent: an auditor that requires ``strict`` accepts it.
 
 When the auditor holds the token itself and the JWKS snapshot, ``verify_token`` re-verifies the JWS
 signature and every claim the principal states, closing the gap the audit-record member leaves open
-(that the signature verified).
+(that the signature verified). It also refuses a token whose ``typ`` names another credential type than
+the principal's ``source`` (an identity assertion grant presented as an access token, or the reverse), and,
+given the record's time, a token whose ``nbf`` is after it (RFC 7519, section 4.1.5).
 """
 
 from __future__ import annotations
@@ -61,6 +65,12 @@ OPTIONAL = ("tenant", "act", "cnf")
 SOURCES = ("jwt-access-token", "id-token", "jwt-assertion", "id-jag")
 AUTH_METHODS = ("none", "client_secret_post", "client_secret_basic", "client_secret_jwt", "private_key_jwt",
                 "tls_client_auth", "self_signed_tls_client_auth")
+#: The JOSE ``typ`` values that name one credential type (``application/`` prefix and case ignored, RFC 7515
+#: section 4.1.9): an identity assertion grant (draft-ietf-oauth-identity-assertion-authz-grant) and an RFC 9068
+#: access token. A token whose ``typ`` names another source than the principal states is refused.
+TYP_SOURCES = {"oauth-id-jag+jwt": "id-jag", "at+jwt": "jwt-access-token"}
+#: The containers an issuer's pinned thumbprints may come in; a string is never one (``in`` would search it).
+PIN_SETS = (set, frozenset, list, tuple)
 THUMBPRINT_MEMBERS = {"RSA": ("e", "kty", "n"), "EC": ("crv", "kty", "x", "y"), "OKP": ("crv", "kty", "x")}
 
 
@@ -150,7 +160,7 @@ def check_principal(p: Any, at: str, pins: Mapping[str, Any]) -> str | None:
     pinned = pins.get(p["issuer"])
     if pinned is None:
         return "principal_issuer_untrusted"
-    if thumb not in pinned:
+    if not isinstance(pinned, PIN_SETS) or thumb not in pinned:
         return "principal_key_not_pinned"
     if "act" in p and _act_subjects(p["act"]) is None:
         return "principal_act_malformed"
@@ -313,9 +323,11 @@ def _iso(seconds: Any) -> str:
     return datetime.fromtimestamp(int(seconds), UTC).isoformat().replace("+00:00", "Z")
 
 
-def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> str | None:
+def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: str | None = None) -> str | None:
     """None when ``token`` is the credential ``p`` names, its JWS verifies under the key ``p`` names,
-    that key is in the JWKS snapshot whose digest ``p`` carries, and every stated claim matches."""
+    that key is in the JWKS snapshot whose digest ``p`` carries, its ``typ`` names no other credential
+    type than ``p``'s ``source``, and every stated claim matches. With ``at`` (the record's time), a token
+    whose ``nbf`` is after ``at`` is refused as not yet valid."""
     if sha256_hex(token.encode("ascii")) != p.get("tokenDigest"):
         return "token_digest_mismatch"
     if jwks_digest(jwks) != p.get("jwksDigest"):
@@ -331,6 +343,9 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> s
         return "token_kid_mismatch"
     if p.get("source") == "id-jag" and header.get("typ") != "oauth-id-jag+jwt":
         return "token_typ_not_id_jag"
+    named = TYP_SOURCES.get(str(header.get("typ", "")).lower().removeprefix("application/"))
+    if named is not None and named != p.get("source"):
+        return f"token_type_mismatch:{named}"
     if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), unb64url(sig_b64)):
         return "token_signature_unverified"
     aud = claims.get("aud")
@@ -346,6 +361,12 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any]) -> s
         return "token_claim_mismatch:act"
     if claims.get("cnf") != p.get("cnf"):
         return "token_claim_mismatch:cnf"
+    if at is not None and "nbf" in claims:
+        nbf = claims["nbf"]
+        if isinstance(nbf, bool) or not isinstance(nbf, int):
+            return "token_malformed"
+        if nbf > ts(at).timestamp():
+            return "token_not_yet_valid"
     return None
 
 
