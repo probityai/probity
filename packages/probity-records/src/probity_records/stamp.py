@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any, Final
 from urllib.parse import urlsplit
@@ -241,14 +241,21 @@ def sign_stamp(stamp: Stamp, *, seed: bytes, method: str, target_uri: str, body:
             SIGNATURE_HEADER: sf.serialize_dictionary({LABEL: sf.Item(key.sign(base))})}  # fmt: skip
 
 
-def stamp_fields(headers: Mapping[str, str]) -> dict[str, str] | None:
-    """The stamp fields of a request's headers (lower-case names), None when it carries no stamp at all.
+Headers = Mapping[str, str] | Iterable[tuple[str, str]]
 
-    StampRefused ``stamp_repeated`` when a stamp field is given more than once; ``stamp_malformed`` when some but not
-    all of a stamp's fields are present. A ``Signature`` or ``Signature-Input`` with no ``probity`` member belongs to
-    another signer and is not a stamp."""
+
+def _pairs(headers: Headers) -> list[tuple[str, str]]:
+    return list(headers.items()) if isinstance(headers, Mapping) else [(n, v) for n, v in headers]
+
+
+def stamp_fields(headers: Headers) -> dict[str, str] | None:
+    """The stamp fields of a request's header lines (name, value pairs), None when it carries no stamp at all.
+
+    StampRefused ``stamp_repeated`` when a stamp field is given more than once, in any case; ``stamp_malformed`` when
+    some but not all of a stamp's fields are present. A ``Signature`` or ``Signature-Input`` with no ``probity``
+    member belongs to another signer and is not a stamp."""
     found: dict[str, list[str]] = {}
-    for name, value in headers.items():
+    for name, value in _pairs(headers):
         if name.lower() in STAMP_HEADERS:
             found.setdefault(name.lower(), []).append(value)
     repeated = sorted(name for name, values in found.items() if len(values) > 1)
@@ -298,21 +305,33 @@ def _params(member: Any) -> tuple[int, int, str, str]:
     return p["created"], p["expires"], p["nonce"], p["keyid"]
 
 
-def verify_stamp(headers: Mapping[str, str], *, method: str, target_uri: str, body: bytes | None, public_raw: bytes,
+def _dictionaries(fields: Mapping[str, str]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    try:
+        return (sf.parse_dictionary(fields[SIGNATURE_INPUT_HEADER]), sf.parse_dictionary(fields[SIGNATURE_HEADER]),
+                sf.parse_dictionary(fields[CONTENT_DIGEST_HEADER]))  # fmt: skip
+    except sf.SFError as exc:
+        raise StampRefused("stamp_malformed", f"a stamp field is not an RFC 8941 dictionary: {exc}") from exc
+
+
+def presented_key_id(headers: Headers) -> str:
+    """The ``keyid`` a request's stamp names, after the structural checks; a verifier compares it with the keys it
+    pins and never uses it to fetch one. StampRefused ``stamp_dropped`` when the request carries no stamp."""
+    fields = stamp_fields(headers)
+    if fields is None:
+        raise StampRefused("stamp_dropped", "the request carries no stamp")
+    return _params(_dictionaries(fields)[0][LABEL])[3]
+
+
+def verify_stamp(headers: Headers, *, method: str, target_uri: str, body: bytes | None, public_raw: bytes,
                  now: int) -> VerifiedStamp:  # fmt: skip
-    """The stamp a request's headers carry, checked under the pinned key ``public_raw``; StampRefused otherwise.
+    """The stamp a request's header lines carry, checked under the pinned key ``public_raw``; StampRefused otherwise.
 
     ``method``, ``target_uri`` and ``body`` are the request the verifier received; ``now`` is its time in nanoseconds
     since the epoch."""
     fields = stamp_fields(headers)
     if fields is None:
         raise StampRefused("stamp_dropped", "the request carries no stamp")
-    try:
-        inputs = sf.parse_dictionary(fields[SIGNATURE_INPUT_HEADER])
-        signatures = sf.parse_dictionary(fields[SIGNATURE_HEADER])
-        digests = sf.parse_dictionary(fields[CONTENT_DIGEST_HEADER])
-    except sf.SFError as exc:
-        raise StampRefused("stamp_malformed", f"a stamp field is not an RFC 8941 dictionary: {exc}") from exc
+    inputs, signatures, digests = _dictionaries(fields)
     created, expires, nonce, keyid = _params(inputs[LABEL])
     if keyid != stamp_key_id(public_raw):
         raise StampRefused("stamp_key_mismatch", "the stamp names a key other than the pinned one")

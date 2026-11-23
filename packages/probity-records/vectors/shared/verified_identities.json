@@ -80,7 +80,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI1",
     "request": null,
@@ -178,7 +178,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI2",
     "request": null,
@@ -268,7 +268,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI3",
     "request": null,
@@ -349,7 +349,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI4",
     "request": null,
@@ -516,7 +516,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI6",
     "request": null,
@@ -630,7 +630,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI7",
     "request": null,
@@ -743,7 +743,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI8",
     "request": null,
@@ -834,19 +834,375 @@
         }
       ],
       "proof": null,
-      "stampJti": "stamp-0001"
+      "stamp": {
+        "expires": 1795435250,
+        "nonce": "stamp-0001"
+      }
     },
     "id": "VI9",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the stamp's field names in another case are the same fields",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stamp": {
+        "expires": 1795435250,
+        "nonce": "stamp-0001"
+      }
+    },
+    "id": "VI13",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "PROBITY-PRINCIPALS",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "content-digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "SIGNATURE-input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "another signer's Signature and Signature-Input are not a stamp: the tokens decide",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stamp": null
+    },
+    "id": "VI14",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Signature-Input",
+          "sig1=(\"@method\");created=1"
+        ],
+        [
+          "Signature",
+          "sig1=:AAAA:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
     "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
     },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp over a request with no body binds the digest of no bytes",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stamp": {
+        "expires": 1795435250,
+        "nonce": "stamp-0001"
+      }
+    },
+    "id": "VI15",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": null,
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:04BLJHGYvPwBpULCABW291PYo4KSXDs8vHBBZEc7MJhOUWFDCrgj28nkuxeJSQcXJhtJPmGybbyUMnYiFSgWCg==:"
+        ]
+      ],
+      "method": "GET",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -930,13 +1286,14 @@
         }
       ],
       "proof": "dpop",
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI10",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6InlwT3NGd1VZY0hIV2U0UEhfdzctZ1FqbzdFVXdWMTEzSm9lVE05dmF2bncifSwidHlwIjoiZHBvcCtqd3QifQ.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcC9yZWZ1bmQiLCJpYXQiOjE3OTU0MzUyMDAsImp0aSI6ImRwb3AtMDAwMSIsImF0aCI6IlNkZm1LUVF6ekhkZ0JsWGdBYng0ZU1SYjJhUHRYak15Vk0tUl95eTRwa3ciLCJhbnNfY29udGVudF9kaWdlc3QiOiJQejNLVlZLWmcySWRxSGQxUnpXN2RfdXJlcGhpeWZHZ19DOHJ4SVZBaWJFIn0.fCtlThrccHxkdNUKQwTuqfqBQLA5xFU5woavr9TXZ1bYhGXbrxpxfgC-rJt-juAiYi5oYMT2533a5JebovPUDQ",
+      "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
@@ -1027,13 +1384,14 @@
         }
       ],
       "proof": "mtls",
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI11",
     "request": {
       "clientCertificateB64": "MIHfMIGSoAMCAQICBAE1KQMwBQYDK2VwMBgxFjAUBgNVBAMMDWFnZW50LXJlZnVuZHMwHhcNMjYxMTAxMDAwMDAwWhcNMjYxMjMxMDAwMDAwWjAYMRYwFAYDVQQDDA1hZ2VudC1yZWZ1bmRzMCowBQYDK2VwAyEA6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iwwBQYDK2VwA0EAKS0qFe2+ys7v49SRoH8jrEcsloTCRhshOYZGb6IdI4oXtPeWoHSrjiLB/IaB73NrryBz6ZfdNCCCLYjodS7LDA==",
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
@@ -1124,7 +1482,7 @@
         }
       ],
       "proof": null,
-      "stampJti": null
+      "stamp": null
     },
     "id": "VI12",
     "request": null,
@@ -2741,6 +3099,7 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
@@ -2813,6 +3172,7 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6InlwT3NGd1VZY0hIV2U0UEhfdzctZ1FqbzdFVXdWMTEzSm9lVE05dmF2bncifSwidHlwIjoiZHBvcCtqd3QifQ.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcC9yZWZ1bmQiLCJpYXQiOjE3OTU0MzUyMDAsImp0aSI6ImRwb3AtMDAwMSIsImF0aCI6IlNkZm1LUVF6ekhkZ0JsWGdBYng0ZU1SYjJhUHRYak15Vk0tUl95eTRwa3ciLCJhbnNfY29udGVudF9kaWdlc3QiOiJQejNLVlZLWmcySWRxSGQxUnpXN2RfdXJlcGhpeWZHZ19DOHJ4SVZBaWJFIn0.fCtlThrccHxkdNUKQwTuqfqBQLA5xFU5woavr9TXZ1bYhGXbrxpxfgC-rJt-juAiYi5oYMT2533a5JebovPUDQ",
+      "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/payout"
     },
@@ -2885,6 +3245,7 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6ImJub2MzU213dDRfUk92VEZXWV92OU84cWx4WnVQS2J5NVB2OHpZQlFXX0UifSwidHlwIjoiZHBvcCtqd3QifQ.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcC9yZWZ1bmQiLCJpYXQiOjE3OTU0MzUyMDAsImp0aSI6ImRwb3AtMDAwMSIsImF0aCI6IlNkZm1LUVF6ekhkZ0JsWGdBYng0ZU1SYjJhUHRYak15Vk0tUl95eTRwa3ciLCJhbnNfY29udGVudF9kaWdlc3QiOiJQejNLVlZLWmcySWRxSGQxUnpXN2RfdXJlcGhpeWZHZ19DOHJ4SVZBaWJFIn0.TOXSuEj0LeRAcmeHYI1auo_GZK_s06vc471vSKA9BhHQzx7QOQTml046P0y8hoigG9VP8t_B9rru4kq_uAiLBQ",
+      "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
@@ -2957,6 +3318,7 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
@@ -3029,12 +3391,29 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
     "tokens": {
-      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw"
     },
     "transport": null
   },
@@ -3092,7 +3471,7 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a forged stamp",
+    "description": "a forged stamp: the signature bytes changed",
     "expected": {
       "refused": "stamp_forged"
     },
@@ -3101,12 +3480,28 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL290aGVyLmV4YW1wbGUiLCJleHAiOjE3OTU0MzUyNTAsImlhdCI6MTc5NTQzNTE5MCwiaXNzIjoiZ2F0ZXdheS5leGFtcGxlLmNvbS90L2FjbWUiLCJqdGkiOiJzdGFtcC0wMDAxIiwicmVxdWVzdF9zaGEyNTYiOiIzZjNkY2E1NTUyOTk4MzYyMWRhODc3NzU0NzM1YmI3N2ZiYWI3YTk4NjJjOWYxYTBmYzJmMmJjNDg1NDA4OWIxIiwic3RhbXAiOnsiYWN0Ijoic2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJhZ2VudCI6eyJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifSwiZ3JhbnRzIjpudWxsLCJpZGVudGl0eSI6ImFpZDEhYWdlbnQ7dXNlcj11c2VyOnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWxpY2UlNDBleGFtcGxlLmNvbTtjaGFpbj1hZ2VudDpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FnZW50LXJlZnVuZHM7YWN0PXNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwicHJpbmNpcGFscyI6InNoYTI1NjplNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1IiwidXNlciI6eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifX19.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3163,7 +3558,7 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a stamp signed by an unpinned key",
+    "description": "a stamp signed by a key the bundle does not list",
     "expected": {
       "refused": "stamp_key_mismatch"
     },
@@ -3172,12 +3567,28 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"72456720412037a6b339f884ce6d91bb4cc163a7dc3e4c58c658e6c2097b92a2\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:50nTZp5AoBl6Wa5JrnXFbIwYCLP2Efxm1co/fvUT0Yjb7zN7uPiDBedYOLuS0MDi4LEUXxtzMiZpN10YHIAFAQ==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6IjcyNDU2NzIwNDEyMDM3YTZiMzM5Zjg4NGNlNmQ5MWJiNGNjMTYzYTdkYzNlNGM1OGM2NThlNmMyMDk3YjkyYTIiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.9HYAPPHb1ayEqURnvzlPzdcnI64sEvTT77iM15ryXXLJcCd6BQeXFgDXWE3689RmcvYBTlQ6-sZertMJcQXxBw"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3234,21 +3645,37 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a stamp for another audience",
+    "description": "a stamp naming the pinned key but signed by another (swapped key)",
     "expected": {
-      "refused": "stamp_wrong_audience"
+      "refused": "stamp_forged"
     },
     "id": "VS4",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:WOFWe1DSCH80y3GkoiJRoM/qysiea0O9WGBup7fmLdnIPfbak8BqkXsTst0xRjKbXDZnWOXeEETVDTQUSgzuAw==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL290aGVyLmV4YW1wbGUiLCJleHAiOjE3OTU0MzUyNTAsImlhdCI6MTc5NTQzNTE5MCwiaXNzIjoiZ2F0ZXdheS5leGFtcGxlLmNvbS90L2FjbWUiLCJqdGkiOiJzdGFtcC0wMDAxIiwicmVxdWVzdF9zaGEyNTYiOiIzZjNkY2E1NTUyOTk4MzYyMWRhODc3NzU0NzM1YmI3N2ZiYWI3YTk4NjJjOWYxYTBmYzJmMmJjNDg1NDA4OWIxIiwic3RhbXAiOnsiYWN0Ijoic2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJhZ2VudCI6eyJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifSwiZ3JhbnRzIjpudWxsLCJpZGVudGl0eSI6ImFpZDEhYWdlbnQ7dXNlcj11c2VyOnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWxpY2UlNDBleGFtcGxlLmNvbTtjaGFpbj1hZ2VudDpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FnZW50LXJlZnVuZHM7YWN0PXNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwicHJpbmNpcGFscyI6InNoYTI1NjplNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1IiwidXNlciI6eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifX19.1SLbma-ni6oUshbiT-GjWVwvp7oGxgYUqVieXliF6P1cQrbIotWr-4Cp3GUEGOyjrTLo6eAW5rMk4Gtohu00AA"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3314,12 +3741,28 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435100;expires=1795435199;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:zzobc2Gq/0QqDPQ5LqGe8t+eU4IHVgjMKsAgAljYiP2Ybw2M3Ay8on0LPdlcptK34fOpXIHFGnJrxvAeT4iPCA==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MTk5LCJpYXQiOjE3OTU0MzUxMDAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.dDzPDuXKZ2KPvku6Q2xHlEjgkCvCgcmUmIVEEdVTHE01nJFgn6gaS3vi-unIgO9sRynbi8PDl5t1F9lEmdJcAw"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3376,7 +3819,7 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a stamp bound to other request bytes",
+    "description": "a stamp for other body bytes",
     "expected": {
       "refused": "stamp_request_mismatch"
     },
@@ -3385,12 +3828,28 @@
       "clientCertificateB64": null,
       "contentB64": "e30=",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3447,21 +3906,37 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a stamp with an unknown claim",
+    "description": "a stamp whose body and content digest were both replaced",
     "expected": {
-      "refused": "stamp_malformed"
+      "refused": "stamp_forged"
     },
     "id": "VS7",
     "request": {
       "clientCertificateB64": null,
-      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "contentB64": "e30=",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:RBNvo1WzZ4oRRq0W9+hknpT7T8If536DEMBg9hyq/4o=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInNjb3BlIjoiYWRtaW4iLCJzdGFtcCI6eyJhY3QiOiJzaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsImFnZW50Ijp7ImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJncmFudHMiOm51bGwsImlkZW50aXR5IjoiYWlkMSFhZ2VudDt1c2VyPXVzZXI6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hbGljZSU0MGV4YW1wbGUuY29tO2NoYWluPWFnZW50OnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWdlbnQtcmVmdW5kczthY3Q9c2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJwcmluY2lwYWxzIjoic2hhMjU2OmU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTUiLCJ1c2VyIjp7ImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9fX0.CT5IZKOEgq8-g_gxzG7yNuL2rc_adYtzF8hFKM3pdv8_2HU6UXK4AFwrLUJ33p1R-P_1-SuIlDD3KjeKtBTbDA"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3518,21 +3993,37 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a stamp whose identity names another agent",
+    "description": "a stamp signed for another target, replayed on this one",
     "expected": {
-      "refused": "stamp_identity_mismatch"
+      "refused": "stamp_forged"
     },
     "id": "VS8",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Jy9R+YXablDSfjjjN7yHS2+7P60j7hGfWsYsW4GkxeiEvdq1ZxBZ91K1E9cUwAHsgvu4J53TmEZDoK7hJDEVCw==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1wYXlvdXRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.8muYAowaveCekJ_4uVJtgUOoHFOV6p_k4GWAWs7n5e5m2zLcQBY8hBu-lQSjItIMvitkLrfrKW9wU3y167h-CA"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3589,21 +4080,903 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a stamp from staging read in prod",
+    "description": "a stamp signed for another method",
     "expected": {
-      "refused": "identity_environment_mismatch"
+      "refused": "stamp_forged"
     },
     "id": "VS9",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:2tCFfwh3LSt6/7oJiSOXsTts7A1bBsR+uFCkMxeWvsCSbuNAsiXg/eJTLNx7L4gT4XIDGVvejjLq7S152K2lBQ==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpzdGFnaW5nL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6c3RhZ2luZy9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.93LThcIbIBbzxUpyuimSF7NTBtxCprhiVFFwn9u7sSiRJ9LRwIZrcyXDniLZk_gk8WgVCqmLEbvLRt1Ib4TFBQ"
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
     },
+    "description": "a stamp signed for another authority",
+    "expected": {
+      "refused": "stamp_forged"
+    },
+    "id": "VS10",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:6CaG2sVSw/9aA32IWBmef1jfWVdhGkU61N5GgSthsnFsnmy17RBkm72LwB4hDogl5foYV87PjZmEjF2CzgwaAA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp whose principals were swapped for another user's after signing",
+    "expected": {
+      "refused": "stamp_forged"
+    },
+    "id": "VS11",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/mallory%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp field given twice",
+    "expected": {
+      "refused": "stamp_repeated"
+    },
+    "id": "VS12",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ],
+        [
+          "probity-principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp with no Signature line",
+    "expected": {
+      "refused": "stamp_malformed"
+    },
+    "id": "VS13",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp with no principals field",
+    "expected": {
+      "refused": "stamp_malformed"
+    },
+    "id": "VS14",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp that does not cover the content digest",
+    "expected": {
+      "refused": "stamp_header_invalid"
+    },
+    "id": "VS15",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:rDUnBv9+tPYkm6wLf8pxYcOmszj1UhMnhGLO3Fa+I3XFFz9mP296nhMFd85PTO+RtOICD58itqOQjopZ8vCUAw==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp covering the components in another order",
+    "expected": {
+      "refused": "stamp_header_invalid"
+    },
+    "id": "VS16",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@target-uri\" \"@method\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:wQkn8ae9K7baOwHJt2sKbuM9JRIq6ra6YqVQXxY4SueRE6jeC7iVobUAmUat8Pyb611xo20SqKpVTBvXoN0ODQ==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp with another tag",
+    "expected": {
+      "refused": "stamp_header_invalid"
+    },
+    "id": "VS17",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"web-bot-auth\""
+        ],
+        [
+          "Signature",
+          "probity=:ZrV1jp9i97Js5JC0jl1FgoYeLNChgVk1dmrPkTO+MJXOE0z7exS+G7mRQCUbo12VInfqYsuw1YVnIhWP+NiTDg==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp naming another algorithm",
+    "expected": {
+      "refused": "stamp_header_invalid"
+    },
+    "id": "VS18",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"hmac-sha256\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:LYiOZoNUxTJb7Pk5ScuxXOXyvng4tQ035IrJzx3oGUXFUfIJOvGa5EZcJ/goTxSWddtgMz/81q6dS4P8nYZNAQ==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp with no expires",
+    "expected": {
+      "refused": "stamp_header_invalid"
+    },
+    "id": "VS19",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:P1iuoxlwzxIU7CtXKtKnbBpqZ/MDC3+RuNd+Lu3eoAxsQlKU3dkjqcV7Kf4KynS16X8qWYE4TS6tDyzQQQGzCw==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3664,17 +5037,33 @@
     "expected": {
       "refused": "stamp_lifetime_too_long"
     },
-    "id": "VS10",
+    "id": "VS20",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435800;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:tBy6zrvjA6kDd6IgN05PbGPf+XAYxjuWh9g2350ehSnHYx4STrycKGxjuBELZUVh+L/B6p5O06Kj5DV0GU/xBw==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1ODAwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.Zx6Yz7l3ceHy6B3hrC2tdw4em9w4p1i7jUviyjeBkqBMgvop0kVtbvMz2bFOgqwozi7d2kYDcDcWs468DsVWDw"
-    },
+    "tokens": {},
     "transport": null
   },
   {
@@ -3731,20 +5120,978 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "a stamp naming the user acting alone",
+    "description": "a stamp not yet valid",
+    "expected": {
+      "refused": "stamp_not_yet_valid"
+    },
+    "id": "VS21",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435260;expires=1795435320;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:3LY6kUEGZYNRk1E/PW2TxBA8XMlvDLnOCHIiTpoauzqstOgDUtmlbwZ4CsvaqzPLc7FFkl21U7ya/btyThC+CA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp whose principals field is not a structured dictionary",
+    "expected": {
+      "refused": "stamp_malformed"
+    },
+    "id": "VS22",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "alice for agent-refunds"
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:JYzkL3UeCTJSTIH5RcTjaPm41X9t4Zh1wbR5rffztUHWK99XDYSquLhfY796mnmKnfQYpprLVRzRf9OJXCHiBQ==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp whose principals field carries another member",
+    "expected": {
+      "refused": "stamp_malformed"
+    },
+    "id": "VS23",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\", scope=\"admin\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Bplb9bpVsqH+RFrwXU+ZZXfWOsp4U3np4T+Ji8Xx2JGbCSj6SJ6a6bY7iTsR4zN0wznqOvwbDYe2dr3RtN92AQ==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp whose identity is not a canonical string",
+    "expected": {
+      "refused": "stamp_identity_mismatch"
+    },
+    "id": "VS24",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"alice acting through agent-refunds\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:NWr1myOHyjdA32TingqupqNHRHY2bKK6VNbBLK0j2BizlsJg9SyK498n7R99H1gTgYIVCkiDmAKzETj6m429Bw==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp naming the user acting alone (downgraded)",
     "expected": {
       "refused": "stamp_downgraded"
     },
-    "id": "VS11",
+    "id": "VS25",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:p3J1Xz6qre+d+dFPdJcKfbByPw3WNC8bhLu/ZneCuQs5qXfIi8BDHo9zL0jzMUzExK3p494F3CZbJzQEJUZqDQ==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp naming an agent acting for no user",
+    "expected": {
+      "refused": "stamp_no_user"
+    },
+    "id": "VS26",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:64guzejOU2vif1JYV7cE32EZcLmssXk56l/CPD68g0fXv51JNIe+LdVE4vagp6D7hvwTxvoLsJLD6xHhVlCiAQ==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp whose principals digest is not an identity digest",
+    "expected": {
+      "refused": "stamp_malformed"
+    },
+    "id": "VS27",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:gfeW7+TdCD6sy8Ia7jivqKDs31In3F/+oyO5empAhw2bf9jQolma7RfuNWLJb89qzjzOwju8nPWe/wLu89W7Cw==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp from staging read in prod",
+    "expected": {
+      "refused": "identity_environment_mismatch"
+    },
+    "id": "VS28",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:staging/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:abV94Ur45X0171eF3iNMwlV+XIw40/gC3oDh9P7XyjukOK3oZml/U9j7fBB/Ec3E6/6BaJmAJ3+WDbORHay/Dg==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an identity provider's key signs a stamp",
+    "expected": {
+      "refused": "principal_key_not_pinned"
+    },
+    "id": "VS29",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"34750f98bd59fcfc946da45aaabe933be154a4b5094e1c4abf42866505f3c97e\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:WQ+k7IgssKQMQFBffe+yzk/kGLZuPT9rRLGrD3b2h2b3KIUHu0zIgTUbAinEIqKIagPrP1JWFUfT0hF0hK1HCg==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "globex"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp key pinned for another tenant",
+    "expected": {
+      "refused": "principal_key_not_pinned"
+    },
+    "id": "VS30",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp whose nonce is an Integer, not a String",
+    "expected": {
+      "refused": "stamp_header_invalid"
+    },
+    "id": "VS31",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=7;keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:L3YIznBUU1gJuCN2x0zki/UySITdlSqaz2Yfrvkvl3mFQYoI1IvoDSh5HypQFXR188x0shm+O9FHLvN3/cELCQ==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp presented as a token role",
+    "expected": {
+      "refused": "principal_role_not_configured"
+    },
+    "id": "VS32",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
     "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9LCJncmFudHMiOm51bGwsImlkZW50aXR5IjoiYWlkMSFhZ2VudDt1c2VyPXVzZXI6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hbGljZSU0MGV4YW1wbGUuY29tO2NoYWluPWFnZW50OnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWdlbnQtcmVmdW5kczthY3Q9c2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJwcmluY2lwYWxzIjoic2hhMjU2OmU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTUiLCJ1c2VyIjp7ImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9fX0.YK53rd53cawXs5oKQWz2XRt90stdJpNPG-4CQqGUpq9BNfUh2gd1TaZhSUH9PljnU2nrhFN92egHucrrkJoSBg"
+      "stamp": "not-a-token"
     },
     "transport": null
   },
@@ -3802,21 +6149,124 @@
       "tenant": "acme",
       "version": 1
     },
-    "description": "an identity provider's key signs a stamp under the provider's name",
+    "description": "a content digest carrying a second algorithm",
     "expected": {
-      "refused": "principal_key_not_pinned"
+      "refused": "stamp_malformed"
     },
-    "id": "VS12",
+    "id": "VS33",
     "request": {
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:, sha-512=:AAAA:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-principals\");created=1795435190;expires=1795435250;nonce=\"stamp-0001\";keyid=\"b62e867fa2f33afe62d5d6b1642e1621d543307846b2a57b897e710919b76709\";alg=\"ed25519\";tag=\"probity-principals/v1\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
     },
-    "tokens": {
-      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6IjM0NzUwZjk4YmQ1OWZjZmM5NDZkYTQ1YWFhYmU5MzNiZTE1NGE0YjUwOTRlMWM0YWJmNDI4NjY1MDVmM2M5N2UiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJqdGkiOiJzdGFtcC0wMDAxIiwicmVxdWVzdF9zaGEyNTYiOiIzZjNkY2E1NTUyOTk4MzYyMWRhODc3NzU0NzM1YmI3N2ZiYWI3YTk4NjJjOWYxYTBmYzJmMmJjNDg1NDA4OWIxIiwic3RhbXAiOnsiYWN0Ijoic2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJhZ2VudCI6eyJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifSwiZ3JhbnRzIjpudWxsLCJpZGVudGl0eSI6ImFpZDEhYWdlbnQ7dXNlcj11c2VyOnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWxpY2UlNDBleGFtcGxlLmNvbTtjaGFpbj1hZ2VudDpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FnZW50LXJlZnVuZHM7YWN0PXNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwicHJpbmNpcGFscyI6InNoYTI1NjplNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1IiwidXNlciI6eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifX19.09PbhmM_BfAFWNa5XLE7jrjcxbhJqqFJVvTzaxUe1tD1uBmK_zNcimS39_vsSV2ZEEBAGj9fqix3ZYu51WPkAw"
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
     },
+    "description": "a Signature-Input that is not a structured dictionary",
+    "expected": {
+      "refused": "stamp_malformed"
+    },
+    "id": "VS34",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "headers": [
+        [
+          "Probity-Principals",
+          "id=\"aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748\", client=\"agent-refunds\", principals=\"sha256:e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5\""
+        ],
+        [
+          "Content-Digest",
+          "sha-256=:Pz3KVVKZg2IdqHd1RzW7d/urephiyfGg/C8rxIVAibE=:"
+        ],
+        [
+          "Signature-Input",
+          "probity=(\"@method\""
+        ],
+        [
+          "Signature",
+          "probity=:Alv/nmDoXcS2ycgQXXJlzHSDlHT3mGKbXHkAMElgL7NNy79jKtm6lUYlxYELxmP6KxKywFAbnkiuSUgkOGcfDA==:"
+        ]
+      ],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {},
     "transport": null
   },
   {
