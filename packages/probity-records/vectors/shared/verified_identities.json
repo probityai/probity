@@ -1,0 +1,3820 @@
+[
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an agent acts for a user: kind agent, the act claim's digest",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI1",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a sub-agent acts: the chain shows its parent, root first",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:2ecc1d10b35bf06d01e4acae36424ce6c7021903b00fcc93669de5e3a5b0e2e3",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator",
+              "subject": "orchestrator",
+              "type": "agent"
+            },
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:2ecc1d10b35bf06d01e4acae36424ce6c7021903b00fcc93669de5e3a5b0e2e3",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI2",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsiYWN0Ijp7InN1YiI6Im9yY2hlc3RyYXRvciJ9LCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImF1ZCI6Imh0dHBzOi8vYmlsbGluZy5leGFtcGxlLmNvbS9tY3AiLCJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiZXhwIjoxNzk1NDM1NTAwLCJpYXQiOjE3OTU0MzUxNDAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9.2W7WI6FSjtozhcWMQKTy2yETH7f88E3nAaL9fbtbK_as0AAeuOrSOPG_xeKRnTYW50hoVPvvRX4jeJU9oMqDCQ"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an agent acting for no user names its sponsor",
+    "expected": {
+      "identities": [
+        {
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "kind": "agent",
+          "sponsor": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI3",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiYXpwIjoiY29uc29sZSIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoib3duZXJAZXhhbXBsZS5jb20ifQ.pZ-O1THamDiZXeDm4B96lT-LmRkS06tGSqXPectoxCOX9TC20VjIgwMTf401cDJokgir0OVB1GxAs_DEY-jHDg"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a user's credential with no agent credential: kind unknown, never a human acting",
+    "expected": {
+      "identities": [
+        {
+          "id": "aid1!unknown;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "kind": "unknown",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI4",
+    "request": null,
+    "tokens": {
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.YCKwstXCsyCtkcKJPArSvgZ9rcUf7zGBSp4OAoUKsavqtP2X7BDTcCEiQS3kbvCzqfAuFMqNQwhp2iEHvvV8BA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "strict",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the same under the strict profile is refused",
+    "expected": {
+      "refused": "identity_actor_unknown"
+    },
+    "id": "VI5",
+    "request": null,
+    "tokens": {
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.YCKwstXCsyCtkcKJPArSvgZ9rcUf7zGBSp4OAoUKsavqtP2X7BDTcCEiQS3kbvCzqfAuFMqNQwhp2iEHvvV8BA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the transport identity is returned beside the request identity",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        },
+        {
+          "id": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing-gw",
+          "kind": "transport",
+          "service": {
+            "domain": "spiffe://mesh.example.org",
+            "environment": "prod",
+            "id": "service:prod/spiffe%3A%2F%2Fmesh.example.org/billing-gw",
+            "subject": "billing-gw",
+            "type": "service"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI6",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing-gw"
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        },
+        "https://login.example.org/tenant-b": {
+          "keys": [
+            {
+              "crv": "P-256",
+              "kid": "ec-1",
+              "kty": "EC",
+              "x": "eZNiJ64S5dE6QjSh-YR5dXBY1R_NJBHjvqtRgyZJDWk",
+              "y": "MqKU7zBOP0EL-IkMFZQ7_wJu7Ze780uAdezdVCGTpxM"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "he-65L6yZWjiqFRT7wGOGglzvJaefpVzr6EBn2Q3QOc"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an ES256 identity provider",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://login.example.org/tenant-b",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com;chain=agent:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://login.example.org/tenant-b",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Flogin.example.org%2Ftenant-b/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI7",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImVjLTEiLCJ0eXAiOiJhdCtqd3QifQ.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2xvZ2luLmV4YW1wbGUub3JnL3RlbmFudC1iIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.1wUzlAvKFrLQgyQI2n4NrRBlAdxTUaN5XpToE9h9EOo2Y9cSojY4640R9LLKKR1r-sW7Fe-fFi_QN6JLRblqdg",
+      "user": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImVjLTEiLCJ0eXAiOiJhdCtqd3QifQ.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2xvZ2luLmV4YW1wbGUub3JnL3RlbmFudC1iIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.GL336bb7NXjEuRwxC3xAd4bQSRawQC1B_TF2PM9r9n_WUOoW6MDAwnGM79QVOJjAqtFoITM-zJuTXIXHCEbeGA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        },
+        "https://sso.example.net": {
+          "keys": [
+            {
+              "e": "AQAB",
+              "kid": "rsa-1",
+              "kty": "RSA",
+              "n": "7n4-anXXh4dGRzZas2Q0Scl7bDj9CVxwFhlHDSN1wg0_GoZkcWsSAe0mmt_U0Mg5JYvB0iRiEAV7DejWdEaaGQj3d9PDhYpAdsnOr0-z3qry8XtvD9CQxi17flIEJhDn9hyJMoCiSgHoB5TytmGI1reUoO2AP3ySoHiUIyKspUwKHwvIrDoH1ZZ6rYF5DaEbOeRD_oxxJvwA-gfcEbRu65_24LSo8ENG7_jMzT8l8GZjOckd3InTEEmkS8Bq_GxU-prTXBQeL2CJPmu2J_7joDUUP8n1Cu5739EtP7vcIeH3FCiwvXUAxr7At4gWUkmxs5gVN4XqopyJVKkWOVTKLw"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "ZTT3LND4rGJvIqtHj7ZuYRE7d8L2_NXTsdrae_r6aR0"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an RS256 identity provider",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://sso.example.net",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fsso.example.net/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fsso.example.net/alice%40example.com;chain=agent:prod/https%3A%2F%2Fsso.example.net/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://sso.example.net",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fsso.example.net/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI8",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL3Nzby5leGFtcGxlLm5ldCIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.aY585o3Py5-OYDw727mOUWtp_iZIWAsXe9LHvFD6kAgUPzq6YvlQBHPOsWUMMALUqxXG0BfSx8A2QVyiB0Fou3-uWCDHqI2YzdEGwvyj6JVbLEUhxvLN3QqJ9NDRaFYJqJ1YBuQyPcAdTiRIAoWJWGxcC3j8NuMbvRh305jY05CdxLq6PekKshFUQzTRRsFrnN7HT4WMq9gT8or0iwQxKaGEKq3FzV_cwzcKlt9EIDfGSWiY9Zk21E7GpSxvpd4EWKhHQqDjjeUpsE1aT40AQWodOnDLTSZ70LYZUfaKQPGPujRv5pINS7lWDSXGLalZaisYBrDQLx7Gn6zpXjYd9w",
+      "user": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL3Nzby5leGFtcGxlLm5ldCIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn0.HyHOFY0vdQ724R4j_KcbYtOqwHPGz_aZDaH-q1m2P_K56OoC9_fWTH9UR4qDS-M6Kqsfg2Bigp0sYZ95mtEkkRpIKmSP7PG2EKm8n06rzxzY4hPwm3o4i2DkdqJCuHZfPF-LoLu_mhS0DeMXJmhEh9z0S5_FgK4VvCaqdgf3IJXMxrXgMjfCTFLYf-ojw8tetgzIg9aucZhNNor80RO6FFY3Iy0O-i8f_qsrOMM4uRY3wRULtGX631bnRHPCCa6h4tV9c1shDDtI4cBUwpJIi_DXKa81nOGfVXCKEGG8iT0e9IsoAawXWKRdmnrbX-4XBBvcIfzsxv095RI4-2Eslw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp from the pinned gateway names the identity the gateway verified",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": "stamp-0001"
+    },
+    "id": "VI9",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a key-bound agent token with a DPoP proof for this request",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": "dpop",
+      "stampJti": null
+    },
+    "id": "VI10",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6InlwT3NGd1VZY0hIV2U0UEhfdzctZ1FqbzdFVXdWMTEzSm9lVE05dmF2bncifSwidHlwIjoiZHBvcCtqd3QifQ.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcC9yZWZ1bmQiLCJpYXQiOjE3OTU0MzUyMDAsImp0aSI6ImRwb3AtMDAwMSIsImF0aCI6IlNkZm1LUVF6ekhkZ0JsWGdBYng0ZU1SYjJhUHRYak15Vk0tUl95eTRwa3ciLCJhbnNfY29udGVudF9kaWdlc3QiOiJQejNLVlZLWmcySWRxSGQxUnpXN2RfdXJlcGhpeWZHZ19DOHJ4SVZBaWJFIn0.fCtlThrccHxkdNUKQwTuqfqBQLA5xFU5woavr9TXZ1bYhGXbrxpxfgC-rJt-juAiYi5oYMT2533a5JebovPUDQ",
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImNuZiI6eyJqa3QiOiJkOE1lM3VKODJqaGRzQ3N0V3lWTXIzX0kydWVlVFlHNWFnTTEtMnIxX2JZIn0sImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.e6ILla-3oxo3v9CWVrhgNn9pAtdxzJanzRnzGMsXw9eBh4-_5liApld7ctL3EvqZhHTt2HPkX42BAaIR4VFnAg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a certificate-bound agent token with the confirmed client certificate",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": "mtls",
+      "stampJti": null
+    },
+    "id": "VI11",
+    "request": {
+      "clientCertificateB64": "MIHfMIGSoAMCAQICBAE1KQMwBQYDK2VwMBgxFjAUBgNVBAMMDWFnZW50LXJlZnVuZHMwHhcNMjYxMTAxMDAwMDAwWhcNMjYxMjMxMDAwMDAwWjAYMRYwFAYDVQQDDA1hZ2VudC1yZWZ1bmRzMCowBQYDK2VwAyEA6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iwwBQYDK2VwA0EAKS0qFe2+ys7v49SRoH8jrEcsloTCRhshOYZGb6IdI4oXtPeWoHSrjiLB/IaB73NrryBz6ZfdNCCCLYjodS7LDA==",
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImNuZiI6eyJ4NXQjUzI1NiI6Ik5EZ0VTSjFxNFZYcjRGeFdQQktNYndVNTN0Uy1jelQ0SzlEYXJrMUVmeE0ifSwiZXhwIjoxNzk1NDM1NTAwLCJpYXQiOjE3OTU0MzUxNDAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0.-cG6Fk_bCtdMdF7y-_7i9F6j8QQMeo2baYw_pano071octbIE3BOEuq0RjVdQFf8-pHB68POKfmr5eZ3xfgsBQ",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an identity assertion grant as the user's credential",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": null,
+      "stampJti": null
+    },
+    "id": "VI12",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoib2F1dGgtaWQtamFnK2p3dCJ9.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.R61kKOMYdhPmZyZXFt4d6gAThd_QnS9FKzCgxMoxHnXKNfoUrpcCiwlngdhh-L3WpcwSkJLWvemnjfwwuhhCBA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a forged token: the claims changed after signing",
+    "expected": {
+      "refused": "token_signature_unverified"
+    },
+    "id": "VR1",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcGF5b3V0cyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a rogue key signs under the pinned kid",
+    "expected": {
+      "refused": "token_signature_unverified"
+    },
+    "id": "VR2",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.M0vXqCjxZ5nvXK35DHNVA1D_dRXtCsZWw-A6z25oPzRH3Iz4OyIdNXgFBtFWxWBaUB-04gQmNOSyuD7BYQE_AQ",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the token names its own key in jwk",
+    "expected": {
+      "refused": "token_header_names_a_key"
+    },
+    "id": "VR3",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia2lkIjoiaWRwLTEiLCJrdHkiOiJPS1AiLCJ4IjoiZ1RsM0RxaDlGMTlXbzFSbXcweC16TXVOaXBHMDdqZWlYZllQVzRfSnM1USJ9LCJraWQiOiJpZHAtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.Ge4lBrBLyYtI0NNEQDbJ58AZ3X3DixP9FdBipDhaLueqNJgqjbOqNUdccar5N6HVK7utHr8oQ08Zp3Fa2xNzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the token names a key URL in jku",
+    "expected": {
+      "refused": "token_header_names_a_key"
+    },
+    "id": "VR4",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImprdSI6Imh0dHBzOi8vZXZpbC5leGFtcGxlL2p3a3MiLCJraWQiOiJpZHAtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.X0AwoK-ctfOar4YuDBJDD_ggpmbTD9Ua2g0ypT1bFa_oHXOKme-aqsTl5HdJpH3EFjH9pIAMK-4ImUZV-LFSCw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an unknown critical extension",
+    "expected": {
+      "refused": "token_critical_unsupported"
+    },
+    "id": "VR5",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImNyaXQiOlsiZXhwMiJdLCJleHAyIjoxLCJraWQiOiJpZHAtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.N29EoFl1ZDrsFCGb0NOFlws-7hHQw45DEYoWdQqi9VE0uhtR6TZT6oLd97S5HAnR_C58X9q5razDtWvVeFpeAg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a token for another audience",
+    "expected": {
+      "refused": "token_wrong_audience"
+    },
+    "id": "VR6",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL290aGVyLmV4YW1wbGUiLCJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiZXhwIjoxNzk1NDM1NTAwLCJpYXQiOjE3OTU0MzUxNDAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0.nc0HkDoWOXDoQDdHF60tJS08H-os-40QDKJjGifQrrgj6_Llll6oQqUwpOEPzaVJnbeHpMbDiCHUfGIl9SIVBQ",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an expired token",
+    "expected": {
+      "refused": "principal_expired"
+    },
+    "id": "VR7",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTE5OSwiaWF0IjoxNzk1NDM0NjAwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.3DlePerc8GGBJ1VavpvJANg9-hsG0SnU0kGS_fpB8a1ioAfOvjUtmMfOx3q7RjogBVaiEI7NEPOmAHPScel3Cw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a token not yet valid by nbf",
+    "expected": {
+      "refused": "token_not_yet_valid"
+    },
+    "id": "VR8",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwibmJmIjoxNzk1NDM1MjYwLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0.VRwHzfXvgMjGb8BxcvZjSiSYSmY8NyzwphS92R3ZadrWh2R0oQ0tcMH-neXKP1hety68TRcKGcjQUtq0ggAMAQ",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an issuer the bundle does not pin",
+    "expected": {
+      "refused": "principal_issuer_untrusted"
+    },
+    "id": "VR9",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL3guZXhhbXBsZSIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ._dIeDQ-OQej6D2hOKXUQXh4lzBjl69rahNheE06N5OiKHjyjAxMGytP32oItl7RLfRI04V7Fj0HswLNaYeYtCA",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a kid that selects no pinned key",
+    "expected": {
+      "refused": "token_kid_unknown"
+    },
+    "id": "VR10",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC05IiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.-x6xmnM1zEPpkvBZhsJXnkKRKzRJNfmgQNyqOV6Uv-XK9FRAWOPdgEJOxKpyRSNlDU4driOgEh5KmYGk5Ck4Aw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            },
+            {
+              "crv": "Ed25519",
+              "kid": "idp-2",
+              "kty": "OKP",
+              "x": "gTl3Dqh9F19Wo1Rmw0x-zMuNipG07jeiXfYPW4_Js5Q"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            },
+            {
+              "roles": [
+                "user"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a key pinned for users only signs an agent token",
+    "expected": {
+      "refused": "principal_key_not_pinned"
+    },
+    "id": "VR11",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0yIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.x53LEdYT7GZ_ti7RhEQybq9YvVkf39Dg22NXmSK1gMh15FbXK4UevBayykhI47OgtR2HqfY1UFYLWDogPELMDA",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            },
+            {
+              "crv": "Ed25519",
+              "kid": "idp-3",
+              "kty": "OKP",
+              "x": "gTl3Dqh9F19Wo1Rmw0x-zMuNipG07jeiXfYPW4_Js5Q"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            },
+            {
+              "roles": [
+                "user",
+                "agent"
+              ],
+              "tenants": [
+                "globex"
+              ],
+              "thumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a key pinned for another tenant",
+    "expected": {
+      "refused": "principal_key_not_pinned"
+    },
+    "id": "VR12",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0zIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.eIRoQVg9vcpTX65xc88ezR9-n8v2-v1msVp0BVAjT-OYDzzEmoe4hRDB5IPdS0suZmECWvcWLm-VjZHmkSatDg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "alg none",
+    "expected": {
+      "refused": "token_signature_unverified"
+    },
+    "id": "VR13",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJub25lIiwia2lkIjoiaWRwLTEiLCJ0eXAiOiJhdCtqd3QifQ.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.AA",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an ID token presented as the agent's access token",
+    "expected": {
+      "refused": "token_type_mismatch"
+    },
+    "id": "VR14",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9._QAw2yyl79sSR2ZUMjp9OfBD1q6oEm64IUkZTCp9dwesKjUU9yRP_4iqaLqA00V55KhW_ylw5YQD24ufA4dKAg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the user's act claim names another agent",
+    "expected": {
+      "refused": "principal_act_names_another_agent"
+    },
+    "id": "VR15",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcGF5b3V0cyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.K7RiYNGWSkGKg3C_RcOIUHcc918AdDl8qRgJ1K7BeQ8QacKxG3P7m-taNZiKnfKanEElfmpKxgySi0WKvKr_Dw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the user's credential was issued to another client",
+    "expected": {
+      "refused": "principal_user_token_not_issued_to_agent"
+    },
+    "id": "VR16",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoib3RoZXItYXBwIiwiZXhwIjoxNzk1NDM1NTAwLCJpYXQiOjE3OTU0MzUxNDAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9.dq8VHCiU2Izzveto6-TOs4DpszcYU-NKmbDrl1ZvrYvyGSI-usxJOjbK99zlDin6BjRviMpHS4jR_TVGZdeHBw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an agent marker only in a header: the agent value is not a credential",
+    "expected": {
+      "refused": "token_malformed"
+    },
+    "id": "VR17",
+    "request": null,
+    "tokens": {
+      "agent": "aid1!agent;chain=agent:prod/x/agent-refunds",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "the user's credential names an agent that presented no credential",
+    "expected": {
+      "refused": "principal_credential_missing"
+    },
+    "id": "VR18",
+    "request": null,
+    "tokens": {
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "no credential at all",
+    "expected": {
+      "refused": "principal_credential_missing"
+    },
+    "id": "VR19",
+    "request": null,
+    "tokens": {},
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a role this verifier does not take",
+    "expected": {
+      "refused": "principal_role_not_configured"
+    },
+    "id": "VR20",
+    "request": null,
+    "tokens": {
+      "approver": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiYXpwIjoiY29uc29sZSIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoib3duZXJAZXhhbXBsZS5jb20ifQ.pZ-O1THamDiZXeDm4B96lT-LmRkS06tGSqXPectoxCOX9TC20VjIgwMTf401cDJokgir0OVB1GxAs_DEY-jHDg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a sponsor with no agent",
+    "expected": {
+      "refused": "principals_need_agent"
+    },
+    "id": "VR21",
+    "request": null,
+    "tokens": {
+      "sponsor": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiYXpwIjoiY29uc29sZSIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoib3duZXJAZXhhbXBsZS5jb20ifQ.pZ-O1THamDiZXeDm4B96lT-LmRkS06tGSqXPectoxCOX9TC20VjIgwMTf401cDJokgir0OVB1GxAs_DEY-jHDg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.YCKwstXCsyCtkcKJPArSvgZ9rcUf7zGBSp4OAoUKsavqtP2X7BDTcCEiQS3kbvCzqfAuFMqNQwhp2iEHvvV8BA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a key-bound agent token with no proof",
+    "expected": {
+      "refused": "dpop_proof_missing"
+    },
+    "id": "VR22",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImNuZiI6eyJqa3QiOiJkOE1lM3VKODJqaGRzQ3N0V3lWTXIzX0kydWVlVFlHNWFnTTEtMnIxX2JZIn0sImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.e6ILla-3oxo3v9CWVrhgNn9pAtdxzJanzRnzGMsXw9eBh4-_5liApld7ctL3EvqZhHTt2HPkX42BAaIR4VFnAg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a key-bound agent token and its proof for one route, replayed on another route",
+    "expected": {
+      "refused": "dpop_htu_mismatch"
+    },
+    "id": "VR23",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6InlwT3NGd1VZY0hIV2U0UEhfdzctZ1FqbzdFVXdWMTEzSm9lVE05dmF2bncifSwidHlwIjoiZHBvcCtqd3QifQ.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcC9yZWZ1bmQiLCJpYXQiOjE3OTU0MzUyMDAsImp0aSI6ImRwb3AtMDAwMSIsImF0aCI6IlNkZm1LUVF6ekhkZ0JsWGdBYng0ZU1SYjJhUHRYak15Vk0tUl95eTRwa3ciLCJhbnNfY29udGVudF9kaWdlc3QiOiJQejNLVlZLWmcySWRxSGQxUnpXN2RfdXJlcGhpeWZHZ19DOHJ4SVZBaWJFIn0.fCtlThrccHxkdNUKQwTuqfqBQLA5xFU5woavr9TXZ1bYhGXbrxpxfgC-rJt-juAiYi5oYMT2533a5JebovPUDQ",
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/payout"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImNuZiI6eyJqa3QiOiJkOE1lM3VKODJqaGRzQ3N0V3lWTXIzX0kydWVlVFlHNWFnTTEtMnIxX2JZIn0sImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.e6ILla-3oxo3v9CWVrhgNn9pAtdxzJanzRnzGMsXw9eBh4-_5liApld7ctL3EvqZhHTt2HPkX42BAaIR4VFnAg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a proof by another key",
+    "expected": {
+      "refused": "dpop_key_not_confirmed"
+    },
+    "id": "VR24",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6ImJub2MzU213dDRfUk92VEZXWV92OU84cWx4WnVQS2J5NVB2OHpZQlFXX0UifSwidHlwIjoiZHBvcCtqd3QifQ.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcC9yZWZ1bmQiLCJpYXQiOjE3OTU0MzUyMDAsImp0aSI6ImRwb3AtMDAwMSIsImF0aCI6IlNkZm1LUVF6ekhkZ0JsWGdBYng0ZU1SYjJhUHRYak15Vk0tUl95eTRwa3ciLCJhbnNfY29udGVudF9kaWdlc3QiOiJQejNLVlZLWmcySWRxSGQxUnpXN2RfdXJlcGhpeWZHZ19DOHJ4SVZBaWJFIn0.TOXSuEj0LeRAcmeHYI1auo_GZK_s06vc471vSKA9BhHQzx7QOQTml046P0y8hoigG9VP8t_B9rru4kq_uAiLBQ",
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImNuZiI6eyJqa3QiOiJkOE1lM3VKODJqaGRzQ3N0V3lWTXIzX0kydWVlVFlHNWFnTTEtMnIxX2JZIn0sImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.e6ILla-3oxo3v9CWVrhgNn9pAtdxzJanzRnzGMsXw9eBh4-_5liApld7ctL3EvqZhHTt2HPkX42BAaIR4VFnAg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a certificate-bound agent token with no certificate",
+    "expected": {
+      "refused": "mtls_certificate_missing"
+    },
+    "id": "VR25",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImNuZiI6eyJ4NXQjUzI1NiI6Ik5EZ0VTSjFxNFZYcjRGeFdQQktNYndVNTN0Uy1jelQ0SzlEYXJrMUVmeE0ifSwiZXhwIjoxNzk1NDM1NTAwLCJpYXQiOjE3OTU0MzUxNDAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0.-cG6Fk_bCtdMdF7y-_7i9F6j8QQMeo2baYw_pano071octbIE3BOEuq0RjVdQFf8-pHB68POKfmr5eZ3xfgsBQ",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp beside the tokens it replaces",
+    "expected": {
+      "refused": "identity_sources_mixed"
+    },
+    "id": "VS1",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a forged stamp",
+    "expected": {
+      "refused": "stamp_forged"
+    },
+    "id": "VS2",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL290aGVyLmV4YW1wbGUiLCJleHAiOjE3OTU0MzUyNTAsImlhdCI6MTc5NTQzNTE5MCwiaXNzIjoiZ2F0ZXdheS5leGFtcGxlLmNvbS90L2FjbWUiLCJqdGkiOiJzdGFtcC0wMDAxIiwicmVxdWVzdF9zaGEyNTYiOiIzZjNkY2E1NTUyOTk4MzYyMWRhODc3NzU0NzM1YmI3N2ZiYWI3YTk4NjJjOWYxYTBmYzJmMmJjNDg1NDA4OWIxIiwic3RhbXAiOnsiYWN0Ijoic2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJhZ2VudCI6eyJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifSwiZ3JhbnRzIjpudWxsLCJpZGVudGl0eSI6ImFpZDEhYWdlbnQ7dXNlcj11c2VyOnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWxpY2UlNDBleGFtcGxlLmNvbTtjaGFpbj1hZ2VudDpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FnZW50LXJlZnVuZHM7YWN0PXNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwicHJpbmNpcGFscyI6InNoYTI1NjplNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1IiwidXNlciI6eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifX19.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp signed by an unpinned key",
+    "expected": {
+      "refused": "stamp_key_mismatch"
+    },
+    "id": "VS3",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6IjcyNDU2NzIwNDEyMDM3YTZiMzM5Zjg4NGNlNmQ5MWJiNGNjMTYzYTdkYzNlNGM1OGM2NThlNmMyMDk3YjkyYTIiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.9HYAPPHb1ayEqURnvzlPzdcnI64sEvTT77iM15ryXXLJcCd6BQeXFgDXWE3689RmcvYBTlQ6-sZertMJcQXxBw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp for another audience",
+    "expected": {
+      "refused": "stamp_wrong_audience"
+    },
+    "id": "VS4",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL290aGVyLmV4YW1wbGUiLCJleHAiOjE3OTU0MzUyNTAsImlhdCI6MTc5NTQzNTE5MCwiaXNzIjoiZ2F0ZXdheS5leGFtcGxlLmNvbS90L2FjbWUiLCJqdGkiOiJzdGFtcC0wMDAxIiwicmVxdWVzdF9zaGEyNTYiOiIzZjNkY2E1NTUyOTk4MzYyMWRhODc3NzU0NzM1YmI3N2ZiYWI3YTk4NjJjOWYxYTBmYzJmMmJjNDg1NDA4OWIxIiwic3RhbXAiOnsiYWN0Ijoic2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJhZ2VudCI6eyJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifSwiZ3JhbnRzIjpudWxsLCJpZGVudGl0eSI6ImFpZDEhYWdlbnQ7dXNlcj11c2VyOnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWxpY2UlNDBleGFtcGxlLmNvbTtjaGFpbj1hZ2VudDpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FnZW50LXJlZnVuZHM7YWN0PXNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwicHJpbmNpcGFscyI6InNoYTI1NjplNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1IiwidXNlciI6eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifX19.1SLbma-ni6oUshbiT-GjWVwvp7oGxgYUqVieXliF6P1cQrbIotWr-4Cp3GUEGOyjrTLo6eAW5rMk4Gtohu00AA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an expired stamp",
+    "expected": {
+      "refused": "stamp_expired"
+    },
+    "id": "VS5",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MTk5LCJpYXQiOjE3OTU0MzUxMDAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.dDzPDuXKZ2KPvku6Q2xHlEjgkCvCgcmUmIVEEdVTHE01nJFgn6gaS3vi-unIgO9sRynbi8PDl5t1F9lEmdJcAw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp bound to other request bytes",
+    "expected": {
+      "refused": "stamp_request_mismatch"
+    },
+    "id": "VS6",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "e30=",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.w9eeN6TFrwgu94e6HY4rYgwDhV58n6znNu3CELEjWFO5A7A9yQnRPblj6A0bmN6NsLUB9dZXgNOOsIXQyWK4CA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp with an unknown claim",
+    "expected": {
+      "refused": "stamp_malformed"
+    },
+    "id": "VS7",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInNjb3BlIjoiYWRtaW4iLCJzdGFtcCI6eyJhY3QiOiJzaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsImFnZW50Ijp7ImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJncmFudHMiOm51bGwsImlkZW50aXR5IjoiYWlkMSFhZ2VudDt1c2VyPXVzZXI6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hbGljZSU0MGV4YW1wbGUuY29tO2NoYWluPWFnZW50OnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWdlbnQtcmVmdW5kczthY3Q9c2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJwcmluY2lwYWxzIjoic2hhMjU2OmU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTUiLCJ1c2VyIjp7ImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9fX0.CT5IZKOEgq8-g_gxzG7yNuL2rc_adYtzF8hFKM3pdv8_2HU6UXK4AFwrLUJ33p1R-P_1-SuIlDD3KjeKtBTbDA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp whose identity names another agent",
+    "expected": {
+      "refused": "stamp_identity_mismatch"
+    },
+    "id": "VS8",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1wYXlvdXRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.8muYAowaveCekJ_4uVJtgUOoHFOV6p_k4GWAWs7n5e5m2zLcQBY8hBu-lQSjItIMvitkLrfrKW9wU3y167h-CA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp from staging read in prod",
+    "expected": {
+      "refused": "identity_environment_mismatch"
+    },
+    "id": "VS9",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpzdGFnaW5nL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6c3RhZ2luZy9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.93LThcIbIBbzxUpyuimSF7NTBtxCprhiVFFwn9u7sSiRJ9LRwIZrcyXDniLZk_gk8WgVCqmLEbvLRt1Ib4TFBQ"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp living longer than five minutes",
+    "expected": {
+      "refused": "stamp_lifetime_too_long"
+    },
+    "id": "VS10",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1ODAwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhZ2VudC1yZWZ1bmRzIn0sImdyYW50cyI6bnVsbCwiaWRlbnRpdHkiOiJhaWQxIWFnZW50O3VzZXI9dXNlcjpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FsaWNlJTQwZXhhbXBsZS5jb207Y2hhaW49YWdlbnQ6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hZ2VudC1yZWZ1bmRzO2FjdD1zaGEyNTY6ZjE4Njc5YWRlNWFlYWFhNmU1YjBlN2JhOTlmODE3ODIzNDE5ZTM5ZjNjMDU3MjZkMDJiZGMwNmJiYWM0NTc0OCIsInByaW5jaXBhbHMiOiJzaGEyNTY6ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNSIsInVzZXIiOnsiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn19fQ.Zx6Yz7l3ceHy6B3hrC2tdw4em9w4p1i7jUviyjeBkqBMgvop0kVtbvMz2bFOgqwozi7d2kYDcDcWs468DsVWDw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a stamp naming the user acting alone",
+    "expected": {
+      "refused": "stamp_downgraded"
+    },
+    "id": "VS11",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6ImI2MmU4NjdmYTJmMzNhZmU2MmQ1ZDZiMTY0MmUxNjIxZDU0MzMwNzg0NmIyYTU3Yjg5N2U3MTA5MTliNzY3MDkiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6ImdhdGV3YXkuZXhhbXBsZS5jb20vdC9hY21lIiwianRpIjoic3RhbXAtMDAwMSIsInJlcXVlc3Rfc2hhMjU2IjoiM2YzZGNhNTU1Mjk5ODM2MjFkYTg3Nzc1NDczNWJiNzdmYmFiN2E5ODYyYzlmMWEwZmMyZjJiYzQ4NTQwODliMSIsInN0YW1wIjp7ImFjdCI6InNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwiYWdlbnQiOnsiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9LCJncmFudHMiOm51bGwsImlkZW50aXR5IjoiYWlkMSFhZ2VudDt1c2VyPXVzZXI6cHJvZC9odHRwcyUzQSUyRiUyRmlkcC5leGFtcGxlLmNvbSUyRnJlYWxtcyUyRmFnZW50cy9hbGljZSU0MGV4YW1wbGUuY29tO2NoYWluPWFnZW50OnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWdlbnQtcmVmdW5kczthY3Q9c2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJwcmluY2lwYWxzIjoic2hhMjU2OmU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTUiLCJ1c2VyIjp7ImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSJ9fX0.YK53rd53cawXs5oKQWz2XRt90stdJpNPG-4CQqGUpq9BNfUh2gd1TaZhSUH9PljnU2nrhFN92egHucrrkJoSBg"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "an identity provider's key signs a stamp under the provider's name",
+    "expected": {
+      "refused": "principal_key_not_pinned"
+    },
+    "id": "VS12",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": null,
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "stamp": "eyJhbGciOiJFZERTQSIsImtpZCI6IjM0NzUwZjk4YmQ1OWZjZmM5NDZkYTQ1YWFhYmU5MzNiZTE1NGE0YjUwOTRlMWM0YWJmNDI4NjY1MDVmM2M5N2UiLCJ0eXAiOiJwcm9iaXR5LWFnZW50LXN0YW1wK2p3dCJ9.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiZXhwIjoxNzk1NDM1MjUwLCJpYXQiOjE3OTU0MzUxOTAsImlzcyI6Imh0dHBzOi8vaWRwLmV4YW1wbGUuY29tL3JlYWxtcy9hZ2VudHMiLCJqdGkiOiJzdGFtcC0wMDAxIiwicmVxdWVzdF9zaGEyNTYiOiIzZjNkY2E1NTUyOTk4MzYyMWRhODc3NzU0NzM1YmI3N2ZiYWI3YTk4NjJjOWYxYTBmYzJmMmJjNDg1NDA4OWIxIiwic3RhbXAiOnsiYWN0Ijoic2hhMjU2OmYxODY3OWFkZTVhZWFhYTZlNWIwZTdiYTk5ZjgxNzgyMzQxOWUzOWYzYzA1NzI2ZDAyYmRjMDZiYmFjNDU3NDgiLCJhZ2VudCI6eyJjbGllbnRfaWQiOiJhZ2VudC1yZWZ1bmRzIiwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifSwiZ3JhbnRzIjpudWxsLCJpZGVudGl0eSI6ImFpZDEhYWdlbnQ7dXNlcj11c2VyOnByb2QvaHR0cHMlM0ElMkYlMkZpZHAuZXhhbXBsZS5jb20lMkZyZWFsbXMlMkZhZ2VudHMvYWxpY2UlNDBleGFtcGxlLmNvbTtjaGFpbj1hZ2VudDpwcm9kL2h0dHBzJTNBJTJGJTJGaWRwLmV4YW1wbGUuY29tJTJGcmVhbG1zJTJGYWdlbnRzL2FnZW50LXJlZnVuZHM7YWN0PXNoYTI1NjpmMTg2NzlhZGU1YWVhYWE2ZTViMGU3YmE5OWY4MTc4MjM0MTllMzlmM2MwNTcyNmQwMmJkYzA2YmJhYzQ1NzQ4IiwicHJpbmNpcGFscyI6InNoYTI1NjplNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1ZTVlNWU1IiwidXNlciI6eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifX19.09PbhmM_BfAFWNa5XLE7jrjcxbhJqqFJVvTzaxUe1tD1uBmK_zNcimS39_vsSV2ZEEBAGj9fqix3ZYu51WPkAw"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "aVBtapLd11SUVKIMGJfPzOEDuN0sXcmzJQNVT-_sKEU"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a bundle pin naming no listed key",
+    "expected": {
+      "refused": "trust_bundle_malformed"
+    },
+    "id": "VB1",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "d": "AA",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a bundle carrying a private key",
+    "expected": {
+      "refused": "trust_bundle_malformed"
+    },
+    "id": "VB2",
+    "request": null,
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWdlbnQtcmVmdW5kcyJ9.wpDSbajhPSifmJtjwbOinZnYn036O5YqsciBY5MlPfPw1KKj-AymtqPi1L75nhPQWmR4GYgYkQyqyIkfp0BzDw",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.eyJhY3QiOnsic3ViIjoiYWdlbnQtcmVmdW5kcyJ9LCJhdWQiOiJodHRwczovL2JpbGxpbmcuZXhhbXBsZS5jb20vbWNwIiwiY2xpZW50X2lkIjoiYWdlbnQtcmVmdW5kcyIsImV4cCI6MTc5NTQzNTUwMCwiaWF0IjoxNzk1NDM1MTQwLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWdlbnRzIiwic3ViIjoiYWxpY2VAZXhhbXBsZS5jb20ifQ.u0L19IWwOFzEFU2sz0iCapMaisZYRQmkjQJK9IQWdMwiWZyCeFBIXsu-BQLrR2bkldXt5RtE-gzun_RZl0ABAA"
+    },
+    "transport": null
+  }
+]
