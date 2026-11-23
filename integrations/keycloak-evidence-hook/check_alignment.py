@@ -36,6 +36,7 @@ IMAGE = re.compile(
     r"^\s*image:\s*quay\.io/keycloak/keycloak:(?P<tag>[^@\s]+)@sha256:[0-9a-f]{64}\s*$",
     re.MULTILINE,
 )
+REBUILD = re.compile(r"-\d+$")
 PROPERTY = re.compile(r"\$\{([^}]+)\}")
 MAX_POMS = 50
 
@@ -192,7 +193,9 @@ def compose_problems(hook: Path, version: str) -> list[str]:
         return [
             f"{compose_path.name}: expected one digest-pinned quay.io/keycloak/keycloak image, found {len(tags)}"
         ]
-    if tags[0] != version:
+    # quay.io tags a rebuild of one release <release>-<n> (26.8.2-3 is a rebuild of 26.8.2): the
+    # release is what must agree with the pom, and e2e/run.sh holds the jars the digest ships.
+    if REBUILD.sub("", tags[0]) != version:
         return [
             f"{compose_path.name}: image tag {tags[0]} != pom keycloak.version {version}"
         ]
