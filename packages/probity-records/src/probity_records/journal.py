@@ -220,16 +220,22 @@ NOT_RUN_RETRY = "not_run_retry"
 RETRY_REASONS = (RECONCILED_RETRY, NOT_RUN_RETRY)
 
 
-def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> None:
-    if pred.get("decision") == "allow" and check_authority(pred, trust, problems, where):
-        return
+def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> set[str] | None:
+    """Check the approvals an authorize record rests on, and return the approvers it COUNTS: the only people an
+    approver principal may name. For an allow that is the approvers whose binding the reader allowed and whose
+    signature verified under the pinned policy, or the approving voters of a quorum that held; for a deny, every
+    approver whose binding it carries. None when no approval admitted the call (no approval, or none that holds)."""
+    if pred.get("decision") == "allow":
+        before = len(problems)
+        if check_authority(pred, trust, problems, where):
+            return (_vote_signers(pred) or None) if len(problems) == before else None
     bindings = pred.get("approvalBindings") or []
     if not bindings:
         # An allow with no approval is accepted only as the authority's signed statement that its
         # policy required none for this call; verify_journal counts these apart (policyAllows).
         if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, *RETRY_REASONS):
             problems.append(f"{where}:allow_without_approval_binding")
-        return
+        return None
     reader_allowed: set[str] = set()
     for n, embedded in enumerate(bindings):
         payload = base64.b64decode(embedded["payloadB64"])
@@ -241,16 +247,17 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
         elif pred.get("decision") == "deny" and verdict["reason"] != pred.get("reason") and len(bindings) == 1:
             problems.append(f"{where}:deny_reason_mismatch:{pred.get('reason')}:{verdict['reason']}")
     if pred.get("decision") != "allow":
-        return
+        # A deny counts nobody; its approver principal may name any approver whose binding it carries.
+        return {str((b.get("record") or {}).get("approval", {}).get("approver")) for b in bindings}
     # The M of N is re-counted under the quorum policy the AUDITOR pinned: the approver keys and the
     # threshold come from Trust, never from the record the authority wrote.
     if trust is None:
         problems.append(f"{where}:authority_trust_not_pinned:approval")
-        return
+        return None
     policy = trust.quorum_policies.get(str(pred.get("approvalPolicyId")))
     if policy is None:
         problems.append(f"{where}:approval_policy_not_pinned")
-        return
+        return None
     if pred.get("threshold") != policy["threshold"]:
         problems.append(f"{where}:threshold_not_pinned:{pred.get('threshold')}:{policy['threshold']}")
     signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked,
@@ -259,6 +266,7 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
     counted = signed & reader_allowed
     if len(counted) < policy["threshold"]:
         problems.append(f"{where}:approvals_below_threshold:{len(counted)}:{policy['threshold']}")
+    return counted or None
 
 
 def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str | None:
@@ -286,12 +294,13 @@ def _check_revocations(pred: dict[str, Any], signer_id: str, trust: Trust, probl
         problems.append(f"{where}:permit_revoked")
 
 
-def _approval_signers(pred: dict[str, Any]) -> set[str] | None:
-    names = {str((b.get("record") or {}).get("approval", {}).get("approver")) for b in pred.get("approvalBindings") or []}
+def _vote_signers(pred: dict[str, Any]) -> set[str]:
+    """The approving voters of the quorum an allow's authority carries (a deputy votes on behalf of its delegator).
+    Called only once that quorum held, and a quorum with an invalid vote does not hold, so each was counted."""
     quorum = (pred.get("authority") or {}).get("quorum") or (pred.get("authority") or {})
-    names |= {str(v.get("body", {}).get("onBehalfOf", v.get("body", {}).get("approver")))
-              for v in quorum.get("votes") or [] if isinstance(v, dict)}
-    return names or None
+    return {str(v.get("body", {}).get("onBehalfOf", v.get("body", {}).get("approver")))
+            for v in quorum.get("votes") or []
+            if isinstance(v, dict) and v.get("body", {}).get("decision") == "approve"}
 
 
 def _authority_chain(pred: Mapping[str, Any]) -> list[Any] | None:
@@ -345,24 +354,26 @@ def _standing_problems(pred: Mapping[str, Any], block: Mapping[str, Any]) -> lis
 
 def _revocation_problems(block: Mapping[str, Any], grade: str, at: str, trust: Trust) -> list[str]:
     """A record answering to a subject the auditor's revocation list revoked at or before the record's time: its
-    agent (kind ``agent``, its client id), and for an autonomous block its sponsor and standing grant."""
+    agent (kind ``agent``, its client id), its sponsor (kind ``sponsor``) whenever the block names one, and for an
+    autonomous block its standing grant. A suspended sponsor answers for nothing, with or without a person in the
+    session."""
     revocations = trust.revocations
     if revocations is None:
         return []
     problems = []
     if revocations.revoked_at("agent", str(block["agent"]["clientId"]), at):
         problems.append("principals_agent_revoked")
-    if grade == "autonomous":
+    if "sponsor" in block:
         sponsor = block["sponsor"]
         if revocations.revoked_at("sponsor", sponsor_id(sponsor["issuer"], sponsor["subject"]), at):
             problems.append("principals_sponsor_revoked")
-        if revocations.revoked_at("grant", str(block["standingGrant"]), at):
-            problems.append("principals_standing_grant_revoked")
+    if grade == "autonomous" and revocations.revoked_at("grant", str(block["standingGrant"]), at):
+        problems.append("principals_standing_grant_revoked")
     return problems
 
 
 def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str,
-                    seen: dict[str, dict[str, Any]]) -> None:  # fmt: skip
+                    seen: dict[str, dict[str, Any]], approvers: set[str] | None) -> None:  # fmt: skip
     if trust is None:
         problems.append(f"{where}:principals_but_no_trust_pinned")
         return
@@ -370,7 +381,7 @@ def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[st
     at = str(pred.get("at"))
     autonomous = isinstance(block, dict) and bool(set(block) & set(AUTONOMOUS))
     grants = _standing_grants(pred, trust, seen) if autonomous else None
-    found, grade = check_principals(block, at, trust.identity_issuers, _approval_signers(pred),
+    found, grade = check_principals(block, at, trust.identity_issuers, approvers,
                                     sponsors=trust.agent_sponsors or None, standing_grants=grants)
     problems.extend(f"{where}:{p}" for p in found)
     if grade == "autonomous":
@@ -411,14 +422,19 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         problems.append(f"{where}:seq_mismatch:{pred.get('seq')}:{i}")
     if pred.get("prev") != prev:
         problems.append(f"{where}:chain_broken")
-    if body.get("predicateType") == TOOL_CALL_RECORD and pred.get("principals") is not None:
-        _check_identity(pred, trust, problems, where, seen)
     if body.get("predicateType") == TOOL_CALL_RECORD:
+        # The approvals are judged first, because an approver principal may name only an approver this record
+        # counts; their problems are reported after the identity's, as before.
+        approval_problems: list[str] = []
+        approvers = _check_approval(pred, approval_problems, where, trust) if pred.get("phase") == "authorize" else None
+        if pred.get("principals") is not None:
+            _check_identity(pred, trust, problems, where, seen, approvers)
+        elif pred.get("phase") == "authorize" and trust is not None and trust.identity_profile == "strict":
+            # An auditor that requires strict identity is never satisfied by a decision that omits it.
+            problems.append(f"{where}:principals_missing")
         _remember_standing(pred, trust, seen)
-    if body.get("predicateType") == TOOL_CALL_RECORD:
-        if pred.get("phase") == "authorize":
-            _check_approval(pred, problems, where, trust)
-        elif pred.get("phase") == "effect":
+        problems.extend(approval_problems)
+        if pred.get("phase") == "effect":
             _check_effect(pred, problems, where)
     elif body.get("predicateType") == GOVERNANCE_STEP:
         policies = trust.quorum_policies if trust else None
@@ -478,17 +494,26 @@ def _retry_problem(pred: dict[str, Any], since_allow: list[str], last_effect: st
     return "not_run_retry_but_an_effect_may_have_happened"
 
 
+def _parties(block: Any) -> dict[str, Any] | None:
+    """Who a principals block names, role by role (issuer and subject). A credential may be refreshed between a
+    permit's records; the parties may not change."""
+    if not isinstance(block, dict):
+        return None
+    return {role: (p.get("issuer"), p.get("subject")) if isinstance(p, dict) else p for role, p in block.items()}
+
+
 def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[str]:
     """Run-level rules: an effect needs an earlier allow for its permit; a re-issued permit needs an
     earlier allow and the journal's own evidence that the earlier call did not take effect; a permit
     whose outcome settled (committed or unknown) gets no later effect record; an intent with no effect
     record is an open operation, reported, never read as success; an intent or effect names the same
-    grant as the allow its permit rests on; grant budgets hold; no DPoP proof is spent by two permits inside its
-    lifetime."""
+    grant, and the same parties (issuer and subject per role), as the allow its permit rests on; grant budgets hold;
+    no DPoP proof is spent by two permits inside its lifetime."""
     problems: list[str] = _budget_problems(bodies)
     tool_calls = [(i, b) for i, b in bodies if b.get("predicateType") == TOOL_CALL_RECORD]
     problems.extend(f"line_{i}:{reason}" for i, reason in duplicate_proofs(tool_calls, skew=skew))
     grant_of: dict[str, Any] = {}
+    parties_of: dict[str, Any] = {}  # pid -> who its first allow names, role by role
     allowed: set[str] = set()
     effects: dict[str, str | None] = {}  # pid -> outcome of its latest effect record
     since_allow: dict[str, list[str]] = {}  # pid -> phases journalled since its latest allow
@@ -499,6 +524,12 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[s
         pred = body["predicate"]
         pid = pred.get("permitId")
         phase = pred.get("phase")
+        later = phase in ("intent", "effect") or (phase == "authorize" and pred.get("decision") == "allow")
+        if (later and pid in parties_of and pred.get("principals") is not None
+                and _parties(pred["principals"]) != parties_of[pid]):  # fmt: skip
+            # A credential may be refreshed between a permit's records; the parties they name may not change. A record
+            # that names no parties claims none (the identity profile decides whether it must).
+            problems.append(f"line_{i}:principals_differ_from_permit:{phase}")
         if phase == "authorize" and pred.get("decision") == "allow":
             if pred.get("reason") in RETRY_REASONS:
                 if pid not in allowed:
@@ -510,6 +541,7 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[s
             allowed.add(pid)
             since_allow[pid] = []
             grant_of.setdefault(pid, pred.get("grantDigest"))
+            parties_of.setdefault(pid, _parties(pred.get("principals")))
         elif phase in ("intent", "effect") and pid in grant_of and pred.get("grantDigest") != grant_of[pid]:
             problems.append(f"line_{i}:grant_differs_from_permit:{phase}")
         if phase == "intent":

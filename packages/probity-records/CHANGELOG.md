@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Identity records that name the wrong party are refused. An issuer's pins written as one string pin nothing (a
+  string that contained a thumbprint used to match it). `verify_token` refuses a token whose `typ` names another
+  credential type than the principal's `source` (`token_type_mismatch`), and takes the record's time `at=` to refuse
+  a token whose `nbf` is after it (`token_not_yet_valid`; the OIDC approval check passes its decision time). Under the
+  strict profile an allow with no principals is refused (`principals_missing`). An intent, effect or re-issued allow
+  that names other parties than the allow its permit rests on is refused (`principals_differ_from_permit`); a
+  refreshed credential for the same parties is not. A revoked sponsor is refused for every block that names one, not
+  only autonomous ones. An approver principal must name an approver the allow counts, not merely one whose binding
+  it carries (a replayed approval no longer qualifies).
 - Record envelope v2 (`probity_records.erasure`): a record whose fields are kept, pseudonymized or encrypted per
   data subject by a closed schema, so its signed bytes, its chain and its log proofs stay verifiable after a
   subject's key is destroyed. Seal, open, one-field disclosure, the schema lint and the erasability label a

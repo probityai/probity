@@ -7,15 +7,15 @@ An offline verifier that decides whether a claim holds against evidence bytes th
 
 It's for auditors, incident reviewers and relying parties who receive a claim about an AI system and need a decision they can replay, not a report they have to trust.
 
-Install the released package: `pip install agent-evidence-verify==0.8.0`.
+Install the released package: `pip install agent-evidence-verify`.
 
 ## Quick start
 
 Check a sample claim with the released package. You need Python 3.12 or newer and [uv](https://docs.astral.sh/uv/); nothing to clone. Version 0.8.0 ships the sample case and policies inside the wheel:
 
 ```sh
-samples="$(uvx --from agent-evidence-verify==0.8.0 python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
-uvx agent-evidence-verify==0.8.0 "$samples/case.json" --policy "$samples/policy-june.json"
+samples="$(uvx --from agent-evidence-verify python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
+uvx agent-evidence-verify "$samples/case.json" --policy "$samples/policy-june.json"
 ```
 
 It prints a decision packet that opens:
@@ -36,7 +36,7 @@ A selected passage is in the source capture but missing from the stored report. 
 All valid decisions exit 0, including `contradicted` and `not_established`. Exit 2 reports invalid input without a verdict. Require support for this claim by reading `decision`:
 
 ```sh
-uvx agent-evidence-verify==0.8.0 "$samples/case.json" \
+uvx agent-evidence-verify "$samples/case.json" \
   --policy "$samples/policy-june.json" --json > decision.json &&
 python3 - <<'PY'
 import json
