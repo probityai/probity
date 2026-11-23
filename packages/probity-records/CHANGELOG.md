@@ -1,24 +1,41 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
+Breaking changes from 0.4.0; callers change as each item says.
+
+- **Breaking: the agent stamp has a new required `identity` member.** The `stamp` claim is now exactly `user`, `agent`,
+  `principals`, `act`, `grants` and `identity`; `identity` is the canonical identity string of the request and must name the
+  same user, agent, act digest and grant digest as the other members. A signer that builds a stamp without it produces a
+  stamp this version refuses (`stamp_malformed`); a stamp whose `identity` names another user, agent, act claim or grant
+  chain is refused as `stamp_identity_mismatch`. `Stamp` takes a sixth field, `identity`, and `Stamp.canonical_identity()`
+  returns the parsed identity. Every stamp signer adds the member.
+- **Breaking: the strict grade follows the gateway writer's rule.** A call no human approved is now strict without an
+  approver (it was basic, so a strict writer refused the record that answers a pending approval). An approver principal
+  that no approval counts is refused under every profile (`principal_approver_without_approval`); an approved call that
+  does not name its approver is basic. `principals_below_strict` names what is missing (`act-absent`, `sponsor-absent`,
+  `approver-absent`); `identity.strict_shortfall` returns it.
+- **Breaking: grant times need a UTC offset.** `notBefore`, `expiresAt` and `reviewBy` parse in one RFC 3339 grammar in both
+  verifiers. A grant time with no offset is refused (`grant_timestamp_offset_missing:<member>`) instead of raising
+  TypeError out of `verify_chain`; any other form, an out-of-range field included, is refused
+  (`grant_timestamp_invalid:<member>`), and a use time that names no instant is refused (`grant_use_time_invalid`). The
+  TypeScript verifier no longer rolls a month 13 forward. Grants written without an offset must be rewritten.
+- New: `probity_records.verified_identities` (`verified_identities`, `verify_request`, `RequestFacts`) turns the
+  credentials a request presented, a pinned trust bundle and the time into canonical identities. The trust bundle is a
+  new pinned document (`trust_bundle_malformed` when it is not exactly the bundle format); the public stamp format and
+  the bundle are described in `docs/verified-identities.md`, with 53 shared vectors in
+  `vectors/shared/verified_identities.json`.
 - Eight refusal codes are registered for key-bound agent tokens and presented grant chains:
   `agent_cnf_not_the_registered_key`, `agent_credential_is_bearer`, `principal_issuer_not_scoped_for_role`,
   `principal_issuer_not_scoped_for_tenant` and `principal_lifetime_exceeds_ceiling` (identity.principals),
   `grant_holder_is_not_the_agent` (possession.proof), `grant_chain_header_malformed` (grants.chain) and
   `delegation_root_not_the_entry_agent` (delegation.hop).
-- The strict grade follows the gateway writer's rule: user, agent and sponsor, the user credential's `act` chain
-  naming the agent, and the approver present exactly when an approval admitted the call. A call no human approved is
-  now strict without an approver (it was basic, so a strict writer refused the record that answers a pending
-  approval). An approver principal no approval counts is refused under every profile
-  (`principal_approver_without_approval`); an approved call that does not name its approver is basic. An intent or
-  effect record answers to the approvers its permit's allow counted. `principals_below_strict` names what is missing
-  (`act-absent`, `sponsor-absent`, `approver-absent`); `identity.strict_shortfall` returns it.
-- Grant times parse in one RFC 3339 grammar with an explicit offset, in both verifiers. A grant whose `notBefore`,
-  `expiresAt` or `reviewBy` has no offset is refused (`grant_timestamp_offset_missing:<member>`) instead of raising
-  TypeError out of `verify_chain`; any other form, an out-of-range field included, is refused
-  (`grant_timestamp_invalid:<member>`), and a use time that names no instant is refused (`grant_use_time_invalid`).
-  The TypeScript verifier no longer rolls a month 13 forward.
+- New refusal codes (the registry in `refusal_codes.json` lists each with its check and meaning): `grant_timestamp_invalid`,
+  `grant_timestamp_offset_missing`, `grant_tool_shape`, `grant_use_time_invalid`, `grant_when_shape`,
+  `identity_environment_mismatch`, `identity_evidence_malformed`, `identity_sources_mixed`, `identity_string_malformed`,
+  `principal_user_token_not_issued_to_agent`, `principals_agent_revoked`, `stamp_identity_mismatch`, `stamp_key_mismatch`,
+  `token_critical_unsupported`, `token_digest_mismatch`, `trust_bundle_malformed` and `unauthenticated_tenant`.
+- Shared vectors for approvals, constraints, effects, grants, identities and quorum are regenerated with the new rules.
 
 ## 0.4.0
 
