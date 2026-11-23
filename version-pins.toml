@@ -55,9 +55,16 @@ manifest = "packages/agent-evidence-replay/pyproject.toml"
 publisher = "probityai/probity"
 tag = "agent-evidence-replay-v{version}"
 
+# Its own pages keep their version in packages/agent-evidence-a2a/version-pins.toml.
+[[own]]
+key = "pypi:agent-evidence-a2a"
+manifest = "packages/agent-evidence-a2a/pyproject.toml"
+publisher = "probityai/probity"
+tag = "agent-evidence-a2a-v{version}"
+
 [family]
-"pypi:agent-evidence-vectors" = "0.36.3"
-"pypi:agent-evidence-admission" = "0.2.0"
+"pypi:agent-evidence-vectors" = "0.38.0"
+"pypi:agent-evidence-admission" = "0.3.0"
 "pypi:agent-evidence-vocabulary" = "0.9.0"
 
 [scan]

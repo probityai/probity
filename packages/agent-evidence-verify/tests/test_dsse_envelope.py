@@ -14,6 +14,7 @@ import pytest
 from agent_evidence_verify import dsse
 from agent_evidence_verify.cli import main
 from agent_evidence_verify.common import CaseError
+from agent_evidence_verify.identity import placeholder_release_detail
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
@@ -56,8 +57,8 @@ def test_vector_output_is_byte_exact(capsysbinary, name):
     code, decision, reason = EXPECTED[name]
     assert status == code == row["exit"]
     shown = out if code == 0 else err
-    assert shown.replace(str(VECTORS).encode(), b"<vectors>") == (
-        VECTORS / row["expected"]).read_bytes()
+    shown = placeholder_release_detail(shown.replace(str(VECTORS).encode(), b"<vectors>"))
+    assert shown == (VECTORS / row["expected"]).read_bytes()
     if code == 0:
         result = json.loads(out)
         assert (result["decision"], result["reason"]) == (decision, reason)

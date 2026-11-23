@@ -9,7 +9,7 @@ record, and tests your tools against eight lost-reply scenarios in CI.
 It's for teams whose LangGraph, OpenAI Agents SDK or AG2 agents create orders, move money or open
 tickets, and who cannot afford a retry policy, a resumed thread or a model calling again to repeat the write.
 
-Install the released package: `pip install probity-effects==0.2.0`.
+Install the released package: `pip install probity-effects`.
 
 ## Quick start
 

@@ -36,7 +36,6 @@ tail leaves a valid prefix); a required effect with no effect member gives ``not
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +43,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import CaseError, _object, _string
+from ..ijson import JSON_WHITESPACE, IJSONError, decode_utf8, describe, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "cbor_receipt_chain/v1"
@@ -136,9 +136,9 @@ def _profile(raw: bytes | None) -> dict:
     if raw is None:
         raise CaseError("profile: the artifact is unavailable")
     try:
-        value = json.loads(raw)
-    except ValueError as exc:
-        raise CaseError("profile: not JSON") from exc
+        value = parse_ijson(raw)
+    except IJSONError as exc:
+        raise CaseError(f"profile: not JSON ({describe(exc)})") from exc
     profile = _object(value, "profile", {"schema_version", "profile_id", "line_member",
                                          "signature_context_hex", "outer", "key_form", "fields",
                                          "allow_outcome"})
@@ -197,15 +197,20 @@ def _spec(assessment: dict) -> dict:
 
 
 def _lines(data: bytes, profile: dict) -> list[str]:
+    """One receipt per LF-delimited line; bytes that are not UTF-8 are refused, never replaced."""
+    try:
+        whole = decode_utf8(data)
+    except IJSONError as exc:
+        raise Malformed(f"records: {describe(exc)}") from exc
     out = []
-    for number, raw in enumerate(data.decode("ascii", "replace").splitlines(), 1):
-        text = raw.strip()
+    for number, raw in enumerate(whole.split("\n"), 1):
+        text = raw.strip(JSON_WHITESPACE)
         if not text:
             continue
         if profile["line_member"] is not None:
             try:
-                text = json.loads(text)[profile["line_member"]]
-            except (ValueError, KeyError, TypeError) as exc:
+                text = parse_ijson(text)[profile["line_member"]]
+            except (IJSONError, KeyError, TypeError) as exc:
                 raise Malformed(f"line {number}: no {profile['line_member']} member") from exc
         if not isinstance(text, str):
             raise Malformed(f"line {number}: receipt is not a string")

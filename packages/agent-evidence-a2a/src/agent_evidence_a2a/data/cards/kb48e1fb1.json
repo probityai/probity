@@ -1,0 +1,43 @@
+{
+ "name": "Atlas",
+ "name": "Atlas Mirror",
+ "description": "Answers questions about the catalogue.",
+ "version": "1.0.0",
+ "supportedInterfaces": [
+  {
+   "url": "https://agent.example.com/a2a",
+   "protocolBinding": "JSONRPC",
+   "protocolVersion": "1.0"
+  }
+ ],
+ "provider": {
+  "organization": "Example Org",
+  "url": "https://example.com"
+ },
+ "capabilities": {
+  "streaming": true,
+  "pushNotifications": false
+ },
+ "defaultInputModes": [
+  "text/plain"
+ ],
+ "defaultOutputModes": [
+  "text/plain"
+ ],
+ "skills": [
+  {
+   "id": "s1",
+   "name": "Ask",
+   "description": "Ask things",
+   "tags": [
+    "qa"
+   ]
+  }
+ ],
+ "signatures": [
+  {
+   "protected": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpPU0UiLCJraWQiOiJrQSJ9",
+   "signature": "ePIZkUb_MSYUw_Sn_rOQZYLu1I6vXCFT1a93-j0egiLaWf9I6qSHOFT5MtxBhA0YdytDNlx0T-GJFH6vErkOhQ"
+  }
+ ]
+}

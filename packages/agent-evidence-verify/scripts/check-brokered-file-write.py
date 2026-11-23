@@ -15,6 +15,8 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
+from agent_evidence_verify.identity import without_release_detail
+
 ORIGINAL_SHA = "2b4f04dcc0c0d5e7c1a4a68288fd92457676db50da3da631a348ba0d4940605e"
 ROOT = Path(__file__).resolve().parents[1]
 RETAINED = ROOT / "examples/brokered-file-write/retained"
@@ -189,9 +191,11 @@ def replay_mode(retained, output, verifier, mode):
         expected = ("supported" if completion else "contradicted") if sealed else "not_established"
         answer = json.loads(replayed) if code == 0 else None
         # The retained answers were written by probity-verify 0.4.x, which named the verifier by the
-        # predecessor identifier; the only byte that differs in this release's answer is that identifier.
+        # predecessor identifier alone; the only bytes that differ in this release's answer are that
+        # identifier and the release detail (version, package digest) it now carries beside it.
         same = (code == recorded["exit"] and
-                replayed.replace(CURRENT_ID, PREDECESSOR_ID) == (root / (label + ".stdout")).read_bytes())
+                without_release_detail(replayed).replace(CURRENT_ID, PREDECESSOR_ID)
+                == (root / (label + ".stdout")).read_bytes())
         rows.append({"assertion": completion, "expected": expected, "exit": code,
                      "actual": answer["decision"] if answer else None,
                      "valid": same and code == 0 and answer["decision"] == expected

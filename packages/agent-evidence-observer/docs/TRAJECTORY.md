@@ -11,6 +11,9 @@ id). Each event is written as one JSONL entry `{"seq", "prev", "event"}`:
   `{"format": "probity-trajectory-genesis-v1", "trajectory": <id>}`;
 - `event` is the caller's JSON object, unchanged.
 
+Each entry is its canonical bytes followed by one LF (`0x0A`); the file ends
+with an LF and holds no other bytes, so CR, CRLF and blank lines are refused.
+
 No digest has a domain prefix, so any RFC 8785 library recomputes every link. The bytes follow the observer's JSON profile: integers below 2^53,
 no floats, ASCII member names. That is the `jcs_integer_only_v1` value of the
 agent-evidence vocabulary term
@@ -20,23 +23,44 @@ accepted and every other value is refused.
 
 ```python
 from pathlib import Path
-from probity_observer import SigningKey, TrajectoryRecorder, verify_trajectory
+from probity_observer import TrajectoryRecorder, TrajectoryWitness, verify_trajectory
 
-recorder = TrajectoryRecorder(Path("trajectory.jsonl"), trajectory_id="run-42")
+witness = TrajectoryWitness(witness_key, Path("witness-registry"))   # runs where the agent cannot reach either
+recorder = TrajectoryRecorder(Path("trajectory.jsonl"), trajectory_id="run-42", witness=witness)
 recorder.emit({"type": "tool.call", "tool": "lookup", "status": "ok"})
-head = recorder.close(witness_key)          # witness_key is held outside the agent
+head = recorder.close()
 verify_trajectory(Path("trajectory.jsonl"), head, pinned_witness_public_hex, trajectory_id="run-42")
 ```
 
-`close(witness)` writes a head in the `probity-trajectory-head-v1` format:
+The witness counts the trajectory itself. `TrajectoryWitness.open(id)`
+registers an identifier once and never again, `observe(id, entry)` takes each
+entry as the recorder writes it and checks `seq` and `prev` against the
+witness's own count and last digest, and `close(id, claimed)` signs the head
+the witness counted, refusing a claim whose identifier, count or last digest
+differs. A producer that drops the tail, swaps or rewrites an entry the witness
+already saw, or opens the identifier again to start over, gets no head for it.
+The witness records each identifier it opens as a file in its registry
+directory, created exclusively, so the refusal holds across a restart and
+across every witness instance that shares the directory. A registry records
+the public key it belongs to and refuses a witness under another key. Every
+instance of one witness key must use the same registry: a second registry
+under the same key would let an identifier open twice. The recorder hands each
+entry to the witness before it writes it, so an entry the witness refuses never
+reaches the file, and a write that fails after the witness counted the entry
+leaves the recorder broken, with no head to be had.
+That holds against the producer only when the witness runs in a process or
+account the producer cannot reach; in the agent's own process it holds against
+a third party who edits storage.
+
+`close()` returns a head in the `probity-trajectory-head-v1` format:
 `format`, `trajectory` (the identifier), `count`, `head` (the last entry's
 digest, or the genesis for an empty trajectory), `keyid` and an Ed25519
 `signature` over the first four, in the `probity-trajectory-head-v1` signing
 domain. The domain is not the [witness ledger](WITNESS-LEDGER.md)'s
 `probity-witness-ledger-head-v0`, so a witness that signs both never has a
 ledger head read as a trajectory head. The recorder never holds the witness
-key; `head_payload()` gives the unsigned payload when the signer lives in
-another process.
+key; `head_payload()` is only its claim, which the witness compares and never
+signs.
 
 `verify_trajectory(path, retained_head, pinned_witness_key, trajectory_id=..., canonicalization=...)`
 takes the identifier from the consumer, never from the producer's files, and
@@ -54,6 +78,7 @@ refuses, each with a named reason:
 | another trajectory's file and head handed over | head names another trajectory, or (relabelled) the signature does not verify |
 | another trajectory's entries under a head for this one | entry 1: prev does not link |
 | a witness-ledger head offered as a trajectory head | invalid fields, unsupported format, or the signature does not verify |
+| entries separated by CR or CRLF, or a blank line | invalid JSON document, or JSON document is not canonical |
 
 The chain alone fixes the start and the middle of a trajectory. Only the
 witnessed head fixes the end, and only when the consumer pins a witness key

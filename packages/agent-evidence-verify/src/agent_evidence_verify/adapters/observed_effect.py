@@ -34,6 +34,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import CaseError, _digest
+from ..ijson import IJSONError, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "observed_effect/v1"
@@ -217,26 +218,6 @@ class _State:
 # Shared readings. Each is a rule's predicate, pulled out only where more than
 # one rule states it.
 # --------------------------------------------------------------------------
-
-
-def _no_constant(token: str) -> Any:
-    """NaN, Infinity and -Infinity are not JSON; Python's parser accepts them unless told not to."""
-    raise Malformed("not-parseable")
-
-
-def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    """Refuse a repeated member name at any depth.
-
-    Nothing in the json module refuses one: the last spelling of a repeated key
-    wins silently, so two rails reading one set of bytes can disagree about what
-    the record says while both report a clean parse.
-    """
-    seen: set[str] = set()
-    for key, _ in pairs:
-        if key in seen:
-            raise Malformed("duplicate-member")
-        seen.add(key)
-    return dict(pairs)
 
 
 def _required(obj: Any, *names: str) -> None:
@@ -1120,18 +1101,16 @@ RULES: tuple[tuple[str, Rule], ...] = (
 def verify(raw: bytes, policy: Policy) -> Report:
     """Judge one DSSE envelope carrying an Observed Effect statement."""
     try:
-        envelope = json.loads(
-            raw, object_pairs_hook=_no_duplicates, parse_constant=_no_constant
-        )
+        envelope = parse_ijson(raw)
         payload = base64.b64decode(envelope["payload"], validate=True)
-        statement = json.loads(
-            payload,
-            object_pairs_hook=_no_duplicates,
-            parse_constant=_no_constant,
-            parse_float=Decimal,
-        )
-    except Malformed as exc:
-        return Report("malformed", [exc.code])
+        # Numbers stay exact (Decimal, int) so _rule_ijson_integers decides the bound under the
+        # code the corpus pins; every other I-JSON rule is the shared reader's.
+        statement = parse_ijson(payload, parse_float=Decimal, parse_int=int)
+    except IJSONError as exc:
+        if exc.code == "nesting-too-deep":  # too deep to walk: no verdict, never a refusal
+            raise CaseError("an input is nested too deeply to judge") from exc
+        code = "duplicate-member" if exc.code == "duplicate-member" else "not-parseable"
+        return Report("malformed", [code])
     except (KeyError, TypeError, ValueError, ArithmeticError):
         return Report("malformed", ["not-parseable"])
     if not isinstance(statement, dict):

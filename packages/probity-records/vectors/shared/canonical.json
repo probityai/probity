@@ -1,0 +1,191 @@
+[
+  {
+    "description": "A3-REJECT-011: lone high surrogate escape in a key",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV1",
+    "inputB64": "eyJiXHVkODAwa2V5IjogMSwgImEiOiAyfQ==",
+    "path": "received"
+  },
+  {
+    "description": "A3-REJECT-012: lone low surrogate escape in a key",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV2",
+    "inputB64": "eyJiXHVkYzAwa2V5IjogMSwgImEiOiAyfQ==",
+    "path": "received"
+  },
+  {
+    "description": "A4-REJECT-013: lone low surrogate escape in a value",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV3",
+    "inputB64": "eyJuYW1lIjogImJyb2tlbiBcdWRjMDAgdmFsdWUifQ==",
+    "path": "received"
+  },
+  {
+    "description": "A4-REJECT-014: lone low surrogate escape mid-value",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV4",
+    "inputB64": "eyJuYW1lIjogImJlZm9yZVx1ZGMwMGFmdGVyIn0=",
+    "path": "received"
+  },
+  {
+    "description": "A4-REJECT-015: high surrogate escape then a plain letter",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV5",
+    "inputB64": "eyJuYW1lIjogIlx1ZDgwMHgifQ==",
+    "path": "received"
+  },
+  {
+    "description": "A3-REJECT-011 parsed first, then canonicalized",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV6",
+    "inputB64": "eyJiXHVkODAwa2V5IjogMSwgImEiOiAyfQ==",
+    "path": "value"
+  },
+  {
+    "description": "A3-REJECT-012 parsed first, then canonicalized",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV7",
+    "inputB64": "eyJiXHVkYzAwa2V5IjogMSwgImEiOiAyfQ==",
+    "path": "value"
+  },
+  {
+    "description": "A4-REJECT-013 parsed first, then canonicalized",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV8",
+    "inputB64": "eyJuYW1lIjogImJyb2tlbiBcdWRjMDAgdmFsdWUifQ==",
+    "path": "value"
+  },
+  {
+    "description": "A4-REJECT-014 parsed first, then canonicalized",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV9",
+    "inputB64": "eyJuYW1lIjogImJlZm9yZVx1ZGMwMGFmdGVyIn0=",
+    "path": "value"
+  },
+  {
+    "description": "A4-REJECT-015 parsed first, then canonicalized",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV10",
+    "inputB64": "eyJuYW1lIjogIlx1ZDgwMHgifQ==",
+    "path": "value"
+  },
+  {
+    "description": "a duplicate member",
+    "expected": {
+      "refused": "jcs_refused:DuplicateMember"
+    },
+    "id": "CV11",
+    "inputB64": "eyJhIjoxLCJhIjoyfQ==",
+    "path": "received"
+  },
+  {
+    "description": "a duplicate member a first-wins reader would read differently",
+    "expected": {
+      "refused": "jcs_refused:DuplicateMember"
+    },
+    "id": "CV12",
+    "inputB64": "eyJuYW1lIjoiR29vZCIsIm5hbWUiOiJFdmlsIn0=",
+    "path": "received"
+  },
+  {
+    "description": "a surrogate encoded as UTF-8 bytes",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV13",
+    "inputB64": "eyJhIjoi7aCAIn0=",
+    "path": "received"
+  },
+  {
+    "description": "a byte that is never UTF-8",
+    "expected": {
+      "refused": "jcs_refused:StringNotScalar"
+    },
+    "id": "CV14",
+    "inputB64": "eyJhIjoi/yJ9",
+    "path": "received"
+  },
+  {
+    "description": "an integer past 2**53 that rounds onto 2**53",
+    "expected": {
+      "refused": "integer_beyond_exact_json_range:9007199254740993"
+    },
+    "id": "CV15",
+    "inputB64": "eyJuIjo5MDA3MTk5MjU0NzQwOTkzfQ==",
+    "path": "received"
+  },
+  {
+    "description": "2**53 itself, parsed first",
+    "expected": {
+      "refused": "integer_beyond_exact_json_range:9007199254740992"
+    },
+    "id": "CV16",
+    "inputB64": "eyJuIjo5MDA3MTk5MjU0NzQwOTkyfQ==",
+    "path": "value"
+  },
+  {
+    "description": "minus 2**53",
+    "expected": {
+      "refused": "integer_beyond_exact_json_range:-9007199254740992"
+    },
+    "id": "CV17",
+    "inputB64": "eyJuIjotOTAwNzE5OTI1NDc0MDk5Mn0=",
+    "path": "received"
+  },
+  {
+    "description": "the largest exact integer",
+    "expected": {
+      "canonicalHex": "7b226e223a393030373139393235343734303939317d"
+    },
+    "id": "CV18",
+    "inputB64": "eyJuIjo5MDA3MTk5MjU0NzQwOTkxfQ==",
+    "path": "received"
+  },
+  {
+    "description": "an integral float past 2**53 stays a float",
+    "expected": {
+      "canonicalHex": "7b226e223a31652b32317d"
+    },
+    "id": "CV19",
+    "inputB64": "eyJuIjoxZTIxfQ==",
+    "path": "received"
+  },
+  {
+    "description": "a surrogate pair",
+    "expected": {
+      "canonicalHex": "7b2261223a22f09f9880227d"
+    },
+    "id": "CV20",
+    "inputB64": "eyJhIjoiXHVkODNkXHVkZTAwIn0=",
+    "path": "received"
+  },
+  {
+    "description": "keys sorted, escapes and raw UTF-8 normalized",
+    "expected": {
+      "canonicalHex": "7b2261223a22c3a9c3a9222c2262223a312c2263223a5b312c312e35652d372c305d7d"
+    },
+    "id": "CV21",
+    "inputB64": "eyJiIjoxLCJhIjoiw6lcdTAwZTkiLCJjIjpbMS4wLDEuNWUtNywtMF19",
+    "path": "received"
+  }
+]

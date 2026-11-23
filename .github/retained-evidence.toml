@@ -1,0 +1,19 @@
+# Retained evidence: paths whose bytes record a past run and must never be bumped.
+#
+# Dependabot raises security alerts on every manifest it finds, including a lock file
+# that is evidence of a run (a crewai source tree carries its own uv.lock; an interop
+# reader carries the exact requirements it ran with). Bumping one rewrites the record, and
+# no dependabot.yml setting stops an alert: ignore and exclude-paths govern version-update
+# pull requests, not alerts. So an alert under one of these prefixes is dismissed with a
+# reason, by scripts/retained_alerts.py, and never fixed in place. A live manifest is not
+# listed here; its alert is fixed by bumping it.
+#
+#   python3 scripts/retained_alerts.py check   # exit 1 while an open alert sits under a prefix
+#   python3 scripts/retained_alerts.py apply   # dismiss them, with the reason below
+#
+# Renaming the lock files was considered and refused: the file digests are recorded in the
+# selection manifests, so a rename changes the evidence instead of hiding an alert.
+
+[[retained]]
+prefix = "packages/agent-evidence-observer/interop/"
+reason = "Frozen interop experiment: its manifests and locks are kept byte for byte against recorded digests (root pyproject.toml, tool.ruff note), so they are never bumped."

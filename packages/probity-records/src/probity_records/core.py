@@ -55,11 +55,41 @@ def _refuse_inexact_ints(value: Any, depth: int = 0) -> None:
             _refuse_inexact_ints(item, depth + 1)
 
 
+def _jcs(raw: bytes) -> bytes:
+    """jcs-admit over ``raw``; a refusal is ``ValueError("jcs_refused:<native variant>")``, the code
+    the TypeScript twin reports for the same input."""
+    try:
+        return jcs_admit.admit(raw)
+    except jcs_admit.JcsError as exc:
+        raise ValueError(f"jcs_refused:{exc.variant}") from exc
+
+
 def canonical(value: Any) -> bytes:
-    """The RFC 8785 bytes of a JSON value; an integer JCS cannot print exactly is refused."""
+    """The RFC 8785 bytes of a JSON value; an integer JCS cannot print exactly is refused.
+
+    The value is serialized with ASCII escapes, so a lone surrogate reaches jcs-admit as an escape
+    and is refused there with the same typed code as in the TypeScript twin.
+    """
     _refuse_inexact_ints(value)
-    raw = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
-    return jcs_admit.admit(raw.encode("utf-8"))
+    raw = json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(",", ":"))
+    return _jcs(raw.encode("ascii"))
+
+
+def admitted_loads(raw: bytes | str) -> Any:
+    """Parse RECEIVED bytes after jcs-admit has read them raw.
+
+    A duplicate member, invalid UTF-8 and a lone surrogate (raw or escaped) are refused before
+    ``json.loads`` can keep the last duplicate or decode the bytes into something other than what
+    was signed. The TypeScript twin's ``parseReceived`` does the same.
+    """
+    data = raw.encode("utf-8", "surrogatepass") if isinstance(raw, str) else bytes(raw)
+    _jcs(data)
+    return json.loads(data)
+
+
+def canonical_of_received(raw: bytes) -> bytes:
+    """The RFC 8785 bytes of received bytes: admitted, parsed, then canonicalized."""
+    return canonical(admitted_loads(raw))
 
 
 def sha256_hex(data: bytes) -> str:

@@ -53,6 +53,30 @@ scripts, styles, and templates. It does not evaluate CSS or infer what a
 browser displayed. Text matching does not establish that the selected
 passages are material or that the report is otherwise complete.
 
+### Which verifier bytes decided
+
+Every decision names the verifier that produced it as `reference.verifier`: the stable
+`id` (`https://probityai.github.io/probity/verifiers/agent-evidence-verify`), the installed
+`version`, and `package_sha256`, a digest of the files of the running
+`agent_evidence_verify` package. The digest is SHA-256 over one `sha256sum`-style line per
+file (`<file sha256>  agent_evidence_verify/<path>`), sorted, with bytecode left out. A relying
+party that holds the wheel recomputes it and compares:
+
+```bash
+python -m agent_evidence_verify.identity agent_evidence_verify-0.6.1-py3-none-any.whl
+```
+
+A decision whose `package_sha256` differs from the wheel's says it came from other bytes, whatever its
+`id` and `version` say. A match is the producer's own statement, not an authentication: any program can
+print any digest, and the digest does not cover dependencies, `sitecustomize`, a `.pth` hook or
+`__pycache__` bytecode. Read it as evidence of the bytes that ran only when the runner is one you trust to
+report its own runtime, such as your own CI. `version` is named only when the running package is the
+installed release's own files or an editable install's source tree; a checkout imported ahead of an
+installed wheel names no version. Bundles written by releases that named the verifier by `id` alone (0.5.1 and
+earlier) still replay: their decision must match in every other field. A bundle from a later release whose
+decision lacks the version and digest has been altered and is refused. A bundle whose decision differs only in
+`package_sha256` was written by other files of the same release, and the refusal says so.
+
 ## Signed bundles
 
 `probityai verify` reads its first argument as a probity case or as a DSSE

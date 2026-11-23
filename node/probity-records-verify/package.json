@@ -5,10 +5,34 @@
   "type": "module",
   "license": "Apache-2.0",
   "author": "Sankalp Gilda",
-  "repository": {"type": "git", "url": "git+https://github.com/probityai/probity.git", "directory": "node/probity-records-verify"},
-  "exports": {".": "./src/verify.ts"},
-  "bin": {"probity-records-verify": "./src/cli.ts"},
-  "engines": {"node": ">=22.18"},
-  "scripts": {"test": "node --test test/"},
-  "dependencies": {"@bufbuild/cel": "0.6.0"}
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/probityai/probity.git",
+    "directory": "node/probity-records-verify"
+  },
+  "exports": {
+    ".": "./dist/verify.js",
+    "./revocation": "./dist/revocation.js"
+  },
+  "bin": {
+    "probity-records-verify": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "@bufbuild/cel": "0.6.0",
+    "jcs-admit": "0.1.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

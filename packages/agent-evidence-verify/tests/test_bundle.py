@@ -292,3 +292,42 @@ class TestReleaseSkew(TestBundle):
         _rewrite_bundle(bundle, {"bundle.json": json.dumps(_producer(bundle), indent=1).encode()})
         with pytest.raises(CaseError, match="bundle.json: must use canonical JSON"):
             replay_bundle(bundle)
+
+
+def _decision_of(bundle: Path) -> dict:
+    with zipfile.ZipFile(bundle) as archive:
+        return json.loads(archive.read("decision.json"))
+
+
+class TestReleaseDetail(TestBundle):
+    """Break-it counter-examples for the verifier detail a decision carries."""
+
+    def test_detail_removed_under_a_release_that_writes_it_is_altered(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A bundle of a release that writes version and digest, with both stripped, replayed.
+
+        The id-only shape was accepted for every producer, so the stripped decision passed under
+        the release that wrote it, against the docstring's own rule that a mismatch under the same
+        release means the bundle was altered.
+        """
+        from agent_evidence_verify import bundle as module
+
+        bundle = self.create(tmp_path)
+        decision = _decision_of(bundle)
+        decision["reference"] = {"verifier": {"id": decision["reference"]["verifier"]["id"]}}
+        _rewrite_bundle(bundle, {"decision.json": canonical_json(decision)})
+        tree = tuple(int(part) for part in module._release().split("."))
+        monkeypatch.setattr(module, "_LAST_ID_ONLY_RELEASE", tree)
+        assert replay_bundle(bundle)["decision"] == "contradicted"  # the last release allowed to write id only
+        monkeypatch.setattr(module, "_LAST_ID_ONLY_RELEASE", (0, 0, 0))
+        with pytest.raises(CaseError, match=r"^bundled decision differs from replay$"):
+            replay_bundle(bundle)
+
+    def test_other_files_of_the_same_release_are_named_not_called_altered(self, tmp_path: Path) -> None:
+        bundle = self.create(tmp_path)
+        decision = _decision_of(bundle)
+        decision["reference"]["verifier"]["package_sha256"] = "0" * 64
+        _rewrite_bundle(bundle, {"decision.json": canonical_json(decision)})
+        with pytest.raises(CaseError, match="only in the verifier's package digest"):
+            replay_bundle(bundle)

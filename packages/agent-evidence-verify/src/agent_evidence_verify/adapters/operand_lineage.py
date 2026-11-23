@@ -7,7 +7,6 @@ independent observer must establish the trace's authority outside this adapter.
 
 from __future__ import annotations
 
-import json
 import re
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
@@ -15,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _artifact, _digest, _object, _string
+from ..ijson import IJSONError, describe, parse_ijson
 
 DECIMAL = re.compile(r"^-?(?:0|[1-9][0-9]{0,38})(?:\.[0-9]{1,18})?$")
 OPERATIONS = {"add", "subtract", "multiply", "divide"}
@@ -32,19 +32,10 @@ def _number(value: Any, label: str) -> Fraction:
 
 def _json_object(data: bytes, label: str) -> dict:
     """Decode a bound artifact and reject duplicate keys and non-JSON numbers."""
-    def unique(pairs: list[tuple[str, Any]]) -> dict:
-        result: dict = {}
-        for key, value in pairs:
-            if key in result:
-                raise CaseError(f"{label}: duplicate JSON key {key}")
-            result[key] = value
-        return result
-
     try:
-        value = json.loads(data.decode("utf-8"), object_pairs_hook=unique,
-                           parse_constant=lambda _: (_ for _ in ()).throw(ValueError()))
-    except (UnicodeDecodeError, ValueError) as exc:
-        raise CaseError(f"{label}: invalid UTF-8 JSON") from exc
+        value = parse_ijson(data)
+    except IJSONError as exc:
+        raise CaseError(f"{label}: invalid UTF-8 JSON ({describe(exc)})") from exc
     if not isinstance(value, dict):
         raise CaseError(f"{label}: expected JSON object")
     return value
