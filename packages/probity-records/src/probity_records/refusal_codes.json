@@ -1047,6 +1047,72 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exception_tool_mismatch"
   },
   {
+   "code": "exchange_actor_mismatch",
+   "check": "gateway.outbound",
+   "meaning": "the token the identity provider minted names another agent as its actor",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_actor_mismatch"
+  },
+  {
+   "code": "exchange_actor_missing",
+   "check": "gateway.outbound",
+   "meaning": "the token the identity provider minted names no actor",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_actor_missing"
+  },
+  {
+   "code": "exchange_failed",
+   "check": "gateway.outbound",
+   "meaning": "the token exchange with the identity provider did not complete",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_failed"
+  },
+  {
+   "code": "exchange_lifetime_too_long",
+   "check": "gateway.outbound",
+   "meaning": "the token the identity provider minted lives longer than the limit",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_lifetime_too_long"
+  },
+  {
+   "code": "exchange_minted_from_raw_session",
+   "check": "gateway.outbound",
+   "meaning": "a call token was asked for from the user's own session instead of the marked replacement",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_minted_from_raw_session"
+  },
+  {
+   "code": "exchange_no_grant",
+   "check": "gateway.outbound",
+   "meaning": "no grant lets this agent mint a token for this user toward this destination",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_no_grant"
+  },
+  {
+   "code": "exchange_revoked",
+   "check": "gateway.outbound",
+   "meaning": "the agent, its sponsor or the user is revoked, so no token is exchanged",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_revoked"
+  },
+  {
+   "code": "exchange_scope_wider",
+   "check": "gateway.outbound",
+   "meaning": "the minted token or the destination asks for more scope than the grant holds",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_scope_wider"
+  },
+  {
+   "code": "exchange_subject_mismatch",
+   "check": "gateway.outbound",
+   "meaning": "the token the identity provider minted names another user",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_subject_mismatch"
+  },
+  {
+   "code": "exchange_token_unverified",
+   "check": "gateway.outbound",
+   "meaning": "a token the identity provider returned does not verify under the pinned issuer key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_token_unverified"
+  },
+  {
+   "code": "exchange_wrong_audience",
+   "check": "gateway.outbound",
+   "meaning": "the token the identity provider minted is not for the destination alone",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/exchange_wrong_audience"
+  },
+  {
    "code": "executor_refused",
    "check": "mesh.permit",
    "meaning": "the executor refused the work after the permit checks",
@@ -1701,6 +1767,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/operational_record_carries_principals"
   },
   {
+   "code": "outbound_destination_off_list",
+   "check": "gateway.outbound",
+   "meaning": "the upstream is not on the reviewed destination allowlist",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/outbound_destination_off_list"
+  },
+  {
+   "code": "outbound_session_mismatch",
+   "check": "gateway.outbound",
+   "meaning": "the tokens presented for an exchange are not the verified principals' tokens",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/outbound_session_mismatch"
+  },
+  {
    "code": "outcome_field_differs_from_record",
    "check": "journal.verify",
    "meaning": "an outcome field differs from the record it settles",
@@ -2295,6 +2373,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/record_time_unknown"
   },
   {
+   "code": "release_unrecorded",
+   "check": "gateway.outbound",
+   "meaning": "the credential release record could not be written, so nothing was forwarded",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/release_unrecorded"
+  },
+  {
    "code": "retry_without_earlier_permit",
    "check": "journal.verify",
    "meaning": "a retry names no earlier permit",
@@ -2573,7 +2657,7 @@
   {
    "code": "stamp_header_invalid",
    "check": "gateway.stamp",
-   "meaning": "the stamp header is not well formed",
+   "meaning": "the stamp's covered components, parameters, algorithm or tag are not the format",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_header_invalid"
   },
   {
@@ -2603,7 +2687,7 @@
   {
    "code": "stamp_malformed",
    "check": "gateway.stamp",
-   "meaning": "the stamp is not a well-formed token",
+   "meaning": "a stamp field is missing or not its structured type",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_malformed"
   },
   {
@@ -2639,7 +2723,7 @@
   {
    "code": "stamp_repeated",
    "check": "gateway.stamp",
-   "meaning": "a release carries more than one stamp",
+   "meaning": "a stamp field is given more than once",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_repeated"
   },
   {
