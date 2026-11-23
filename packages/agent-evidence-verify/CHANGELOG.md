@@ -2,7 +2,7 @@
 
 ## 0.9.0 (unreleased)
 
-A minor release: two new claim types, `credential_reachability/v1` and `agent_audit_record/v1`, and three more suites in corpus mode.
+A minor release: seven new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
@@ -10,6 +10,36 @@ A minor release: two new claim types, `credential_reachability/v1` and `agent_au
   26 rules of the Credential Reachability predicate under the consumer's pinned signer keys, agent keys, environment,
   audience, challenge and time, and recomputes each class verdict and the result from the attempts. See
   [reference routes](docs/corpus-routes.md).
+- `evidence_digest/v1`: checks that a manifest of digests binds the copies the consumer reads, N of N, under a
+  declared canonical form (`rfc8785`, `cbor-deterministic`, `raw`). Refuses a repeated member, a digest that binds
+  a copy the consumer does not read, a removed reference (`0 of N`) and a manifest signed by a key the consumer's
+  key authority does not admit, and a `null` signature member; zero consumed items is `empty_denominator`. Doc:
+  `docs/telemetry-evidence.md`.
+- `event_log_completeness/v1`: checks that a session log is one contiguous, linked sequence inside the consumer's
+  coverage boundary, ending at a retained signed head in the observer's ledger head format. Each of drop, swap,
+  status flip, link rewrite, body edit and tail truncation fails with a named reason. Shares check order and reason
+  codes with `cbor_receipt_chain/v1`.
+- `lifecycle_binding/v1`: groups decision, control and execution records by (decision, instruction) and reports
+  whether the authenticated execution names the action the authenticated control authorized, as one of five states
+  per group; a duplicate identity is `indeterminate` in any order, a revoked binding is `not_evaluated`, a group
+  with only a receiver-side control or with named action bytes unavailable is `missing`, an issuer-side control signed
+  by an executing key is `failure` (`self_authorized`), and absent evidence is never `satisfied`. Pre-images use the six-tag `agent-evidence/lifecycle-binding/v1` registry. Doc:
+  `docs/lifecycle-binding.md`.
+- `aep_package/v1`: checks an action evidence package layer by layer (hash, canonical form, full-block RSA
+  DigestInfo, receipt, ML-DSA-65, RFC 3161 time stamp), reporting every check after the first failure as
+  `not_evaluated`. The RSA block is compared whole, so four blocks ending in the right digest (garbage prefix, bytes
+  after the legacy prefix, SHA-512 OID, short padding) are refused; signer and time-stamp keys are admitted only under
+  the consumer's authorities. The legacy response-only form leaves `metadata.json` unsigned and is `not_established`
+  / `metadata_unbound`; an archive with bytes before, between or after its entries, a case-variant or path entry name,
+  an RSA modulus under 2048 bits, a receipt field of another type, and a TSA signature over content that is not a
+  TSTInfo are refused. Doc: `docs/aep-package.md`.
+- `capability_credential/v1`: one verifier input for every agent capability credential format, under the consumer's
+  trusted issuers, cosigner authorities, pinned clock and revocation list. Refuses a case-variant member, an escaped,
+  non-ASCII or newline-terminated time, a non-canonical number such as `-0`, tamper after signing, expiry, revocation
+  by the consumer's list, an untrusted issuer, and the signer-distinctness classes (a named key that does not sign,
+  one key under two ids, the issuer's own key as cosigner, a threshold of one authority, a short count), and a spent
+  use limit (`uses_exhausted`), each with its own code; a `revocation_ref` outside the consumer's `revocation_sources`
+  and a use limit with no recorded count are `not_established`. Doc: `docs/capability-credential.md`.
 - `agent_audit_record/v1`: judges an agent audit record, a retained record with its dating check, or a set of records,
   under the consumer's trust document, and carries every field a member of `vectors-agent-audit-record` declares
   (verdict and first code, recomputed tier, `withinLimit`, dating, joint set result). Each time bound is kept apart

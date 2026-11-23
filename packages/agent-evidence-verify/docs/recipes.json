@@ -107,6 +107,11 @@
       "sha256": "e35e29b6c8bc8ff8a6713132d4cf428e8c644eebc307d91edc7d202d9fcbd849"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/aep_package.py",
+      "bytes": 25278,
+      "sha256": "e7a0a091a4f61d942a6397dfa8e2ed6730931b6254475084460c32e54bec0897"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/approval_binding.py",
       "bytes": 6405,
       "sha256": "0f772244a598c5dacbb64f05644793af4cbdce2bbc0d726afa10b66eef4ac7a5"
@@ -135,6 +140,11 @@
       "path": "src/agent_evidence_verify/adapters/brokered_file_write.py",
       "bytes": 11098,
       "sha256": "9a0b45b24fb366d4f207c09dd74cbb94d0b3ee0eb84ce6ba1bf572cd2323edad"
+    },
+    {
+      "path": "src/agent_evidence_verify/adapters/capability_credential.py",
+      "bytes": 18144,
+      "sha256": "37a04492ce057aae92599b7f5f5561a7872d42d8264d15ed7bbd06887d976b7d"
     },
     {
       "path": "src/agent_evidence_verify/adapters/cbor_receipt_chain.py",
@@ -197,6 +207,11 @@
       "sha256": "3cc43add7bc2e9d7d938ce1031fe4422457383572ed24a2f9d2b0c39c8757d58"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/lifecycle_binding.py",
+      "bytes": 21174,
+      "sha256": "f7e5b5deb90c1e54018e01b3f0b648a38ba4e5462887f1a2901f766518e53d21"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/observed_effect.py",
       "bytes": 54268,
       "sha256": "cad8d48f2c33644fdb54f287b4269e0549bc59005d0e9d2f6845986e60aa9332"
@@ -247,6 +262,11 @@
       "sha256": "e5ad8e1196c8034e3192c7f9b271ecb8a8c39e0bdeaae9cce5faa865e1067099"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/telemetry_evidence.py",
+      "bytes": 24064,
+      "sha256": "281744c8af5ab5650f16e3ccdab98ba7db2a34fc9a3aea25b35138fe8f8ce88d"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/token_grant_receipt.py",
       "bytes": 16254,
       "sha256": "c237a20bc1dbce60bf124d6ed0936155f8e833a8036b8dd2d7efba1d32d61b92"
@@ -288,8 +308,13 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
+<<<<<<< save/p6-358
       "bytes": 11816,
       "sha256": "dff4b15529fd2379a6c760604d3967613b77bfdeaf349530d57c21dd7c9789e4"
+=======
+      "bytes": 12137,
+      "sha256": "aad3d656e53db755f3ccf23e91891c7771e11cdf60cc7d10a303b1be452e05b9"
+>>>>>>> origin/main
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
@@ -2211,6 +2236,226 @@
           "path": "examples/corpus-routes/credential-reachability/envelope.json",
           "bytes": 4796,
           "sha256": "050b0bb3688d734aefdaf19c99c1e69687512d9bcbc39c4c95a8690ab24337c2"
+        }
+      ]
+    },
+    {
+      "task": "Check that the copy a consumer read matches its published digests",
+      "claim_type": "evidence_digest/v1",
+      "case": "examples/telemetry-evidence/digest/case.json",
+      "policy": "examples/telemetry-evidence/digest/policy.json",
+      "documentation": "docs/telemetry-evidence.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example.",
+      "case_id": "evidence-digest-example",
+      "expected_reason": "digests_bind_consumed_copy",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/telemetry-evidence/digest/case.json",
+        "--policy",
+        "examples/telemetry-evidence/digest/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/telemetry-evidence/digest/case.json",
+          "bytes": 1048,
+          "sha256": "14b31e1ccf1eeb32b1921e023161f7537c17394257e695abe78fe608e98a56bc"
+        },
+        {
+          "path": "examples/telemetry-evidence/digest/policy.json",
+          "bytes": 356,
+          "sha256": "5db79b882e5ec3c62aad9d571b7356b002d762f10f6d1dc97ec0d0e4ffc4bfcf"
+        },
+        {
+          "path": "examples/telemetry-evidence/digest/e001.json",
+          "bytes": 41,
+          "sha256": "9ab177ad646cda06239e203c9bf9f78497429506ffe4525b0cfd856067e92103"
+        },
+        {
+          "path": "examples/telemetry-evidence/digest/e002.json",
+          "bytes": 41,
+          "sha256": "a1918a0e222afcee6c9a21519c355022ac1927fa357656e4fb2465158d200c34"
+        },
+        {
+          "path": "examples/telemetry-evidence/digest/e003.json",
+          "bytes": 41,
+          "sha256": "7d9b32464f4d68fa39fc7003e3357efee6aeda900af2be04e18dc995cadfef44"
+        },
+        {
+          "path": "examples/telemetry-evidence/digest/e004.json",
+          "bytes": 41,
+          "sha256": "4e9d6d30fab3ab734a565f6b23fb5fff01191bb1650d2573b3bb7d4c8a96fee0"
+        },
+        {
+          "path": "examples/telemetry-evidence/digest/e005.json",
+          "bytes": 41,
+          "sha256": "0e45070b09196e62871d11791523ffcba00247561cace4de95d57c0c1e56dab4"
+        },
+        {
+          "path": "examples/telemetry-evidence/digest/manifest.json",
+          "bytes": 799,
+          "sha256": "6ff7a618a172437afc8af5c8ae6253d02f47421a3ed570b7092f34f3be591b7e"
+        }
+      ]
+    },
+    {
+      "task": "Check that an event log is complete against its retained head",
+      "claim_type": "event_log_completeness/v1",
+      "case": "examples/telemetry-evidence/log/case.json",
+      "policy": "examples/telemetry-evidence/log/policy.json",
+      "documentation": "docs/telemetry-evidence.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example.",
+      "case_id": "event-log-example",
+      "expected_reason": "event_log_complete",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/telemetry-evidence/log/case.json",
+        "--policy",
+        "examples/telemetry-evidence/log/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/telemetry-evidence/log/case.json",
+          "bytes": 417,
+          "sha256": "26b47a7a20bf328355325e4645783363e2f9a14545ae081a0c4a2930d2a42a76"
+        },
+        {
+          "path": "examples/telemetry-evidence/log/policy.json",
+          "bytes": 579,
+          "sha256": "c03cbee2103e8d8222fc02e2fde95c833e7223954e30a13bcd965514791404e6"
+        },
+        {
+          "path": "examples/telemetry-evidence/log/events.jsonl",
+          "bytes": 828,
+          "sha256": "0583664909332d0b18396556cb51900b1554c2561b72e8abca34458f3ef3a17c"
+        },
+        {
+          "path": "examples/telemetry-evidence/log/head.json",
+          "bytes": 314,
+          "sha256": "333d82b28921f51ae2f1f9cb39b7aa6fb519e4bb51426a7e43080a27df982472"
+        }
+      ]
+    },
+    {
+      "task": "Check that the action an authority released is the action that ran",
+      "claim_type": "lifecycle_binding/v1",
+      "case": "examples/lifecycle-binding/case.json",
+      "policy": "examples/lifecycle-binding/policy.json",
+      "documentation": "docs/lifecycle-binding.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example.",
+      "case_id": "lifecycle-binding-example",
+      "expected_reason": "satisfied",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/lifecycle-binding/case.json",
+        "--policy",
+        "examples/lifecycle-binding/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/lifecycle-binding/case.json",
+          "bytes": 602,
+          "sha256": "9faf31b3ed82be9e0e903c41dee385f2a7834f6478c5cc8766435f7165fb3dda"
+        },
+        {
+          "path": "examples/lifecycle-binding/policy.json",
+          "bytes": 259,
+          "sha256": "9089c6ce0a52488ead8b45f02cb64293f4cc6d5b3241d03e1148302519e99371"
+        },
+        {
+          "path": "examples/lifecycle-binding/bindings.json",
+          "bytes": 240,
+          "sha256": "cb64ca4b4996b07add5044d9ae83944797bfbe708e2dad89a3a617c20239a203"
+        },
+        {
+          "path": "examples/lifecycle-binding/records.json",
+          "bytes": 2102,
+          "sha256": "852caf767252bc0c3993e522c66789d1c1f1db477561087aed6f016e78bfea82"
+        },
+        {
+          "path": "examples/lifecycle-binding/revocation.json",
+          "bytes": 66,
+          "sha256": "57368251124b506cdbe210b80008e4786b14e7339cf8ee141d8299ffb55f7e12"
+        }
+      ]
+    },
+    {
+      "task": "Check an action evidence package layer by layer",
+      "claim_type": "aep_package/v1",
+      "case": "examples/aep-package/case.json",
+      "policy": "examples/aep-package/policy.json",
+      "documentation": "docs/aep-package.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example.",
+      "case_id": "aep-package-example",
+      "expected_reason": "package_verifies",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/aep-package/case.json",
+        "--policy",
+        "examples/aep-package/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/aep-package/case.json",
+          "bytes": 261,
+          "sha256": "9c3bce1ba7232a3f376b77bc0767a2619daddbf431a57c1548789a710cb30301"
+        },
+        {
+          "path": "examples/aep-package/policy.json",
+          "bytes": 586,
+          "sha256": "12a7f2de2dbb101b3676e094ef309376a2e48c5453db7d2b7e80395856d1116e"
+        },
+        {
+          "path": "examples/aep-package/package.aep",
+          "bytes": 3771,
+          "sha256": "3f8a97cb62a9ae571527f704e6f3b6cbf15b06d3e1bf1fb42ec7be17b3b96fa1"
+        }
+      ]
+    },
+    {
+      "task": "Check that an agent capability credential is valid and not exhausted",
+      "claim_type": "capability_credential/v1",
+      "case": "examples/capability-credential/case.json",
+      "policy": "examples/capability-credential/policy.json",
+      "documentation": "docs/capability-credential.md",
+      "expected_decision": "supported",
+      "scope": "Authored synthetic record signed or built with test keys that carry no trust outside this example.",
+      "case_id": "capability-credential-example",
+      "expected_reason": "credential_valid",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/capability-credential/case.json",
+        "--policy",
+        "examples/capability-credential/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/capability-credential/case.json",
+          "bytes": 278,
+          "sha256": "3fff25e7bbe1f0797bc28cac5dee74e2d31f9c01a3fc91d04a5054602eb55d6e"
+        },
+        {
+          "path": "examples/capability-credential/policy.json",
+          "bytes": 1186,
+          "sha256": "6a630b8ab9bc0668b6aa59d7474779c7e399a7d4c871565d24ff612e8e9f42a4"
+        },
+        {
+          "path": "examples/capability-credential/credential.json",
+          "bytes": 357,
+          "sha256": "033edd8f093395999e685660cbd853f25bf09e665da1a760dadab17cc3770756"
         }
       ]
     }
