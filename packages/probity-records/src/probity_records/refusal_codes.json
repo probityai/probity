@@ -1215,6 +1215,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_standing_incomplete"
   },
   {
+   "code": "grant_timestamp_invalid",
+   "check": "grants.chain",
+   "meaning": "a grant time (notBefore, expiresAt, reviewBy) is missing or is not an RFC 3339 date-time",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_timestamp_invalid"
+  },
+  {
+   "code": "grant_timestamp_offset_missing",
+   "check": "grants.chain",
+   "meaning": "a grant time has no UTC offset, so it names no instant",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_timestamp_offset_missing"
+  },
+  {
    "code": "grant_tool_shape",
    "check": "grants.chain",
    "meaning": "a grant's tool entry is not well formed",
@@ -1225,6 +1237,12 @@
    "check": "grants.chain",
    "meaning": "a grant allows no tool",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_tools_empty"
+  },
+  {
+   "code": "grant_use_time_invalid",
+   "check": "grants.chain",
+   "meaning": "the time a grant chain is judged at is not an RFC 3339 date-time with an offset",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/grant_use_time_invalid"
   },
   {
    "code": "grant_when_shape",
@@ -1353,6 +1371,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_environment_malformed"
   },
   {
+   "code": "identity_environment_mismatch",
+   "check": "identity.principals",
+   "meaning": "an identity names an environment other than the one the verifier serves",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_environment_mismatch"
+  },
+  {
    "code": "identity_evidence_malformed",
    "check": "identity.string",
    "meaning": "an identity's evidence lacks method or digest",
@@ -1417,6 +1441,12 @@
    "check": "identity.string",
    "meaning": "an identity ref names a type the grammar does not define",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_ref_type_unknown"
+  },
+  {
+   "code": "identity_sources_mixed",
+   "check": "identity.principals",
+   "meaning": "a request presents an agent stamp beside the credentials it replaces",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/identity_sources_mixed"
   },
   {
    "code": "identity_string_malformed",
@@ -1945,6 +1975,12 @@
    "check": "identity.principals",
    "meaning": "the principal's key thumbprint does not recompute from its key",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_thumbprint_mismatch"
+  },
+  {
+   "code": "principal_user_token_not_issued_to_agent",
+   "check": "identity.principals",
+   "meaning": "the user credential was issued to a client other than the agent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_user_token_not_issued_to_agent"
   },
   {
    "code": "principals_agent_revoked",
@@ -2493,6 +2529,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_header_invalid"
   },
   {
+   "code": "stamp_identity_mismatch",
+   "check": "gateway.stamp",
+   "meaning": "the stamp names a canonical identity of another user, agent, act claim or grant chain",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_identity_mismatch"
+  },
+  {
    "code": "stamp_key_mismatch",
    "check": "gateway.stamp",
    "meaning": "the stamp is signed by another key than the gateway's",
@@ -2649,6 +2691,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/token_claim_mismatch"
   },
   {
+   "code": "token_critical_unsupported",
+   "check": "identity.principals",
+   "meaning": "the token header marks an extension critical that the verifier does not implement",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/token_critical_unsupported"
+  },
+  {
    "code": "token_digest_mismatch",
    "check": "identity.principals",
    "meaning": "the token's digest differs from the digest the record names",
@@ -2713,6 +2761,12 @@
    "check": "grants.call",
    "meaning": "the grant does not allow this tool",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/tool_not_granted"
+  },
+  {
+   "code": "trust_bundle_malformed",
+   "check": "identity.principals",
+   "meaning": "the trust bundle a verifier pins is not exactly the bundle format",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/trust_bundle_malformed"
   },
   {
    "code": "unauthenticated_tenant",

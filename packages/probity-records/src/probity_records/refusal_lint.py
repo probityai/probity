@@ -365,12 +365,13 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
 PACKAGE_CONFIG = Config(
     raisers=frozenset({"RevocationError", "IdentityStringError", "IdentityDigestError@0", "_JwkRefused",
                        "grants.py::ValueError"}),
-    exempt_functions=frozenset({"act_grade", "possession_grade"}),  # they return grades, never refusals
+    exempt_functions=frozenset({"act_grade", "possession_grade", "strict_shortfall"}),  # grades, never refusals
     located_lists=frozenset({"problems", "found", "ignored", "failures"}),
     assigned=frozenset({"result", "problem", "verdict", "outcome"}))
 #: The modules whose refusals the registry holds: identity, possession, authority, approval, revocation, journal.
 PACKAGE_MODULES = ("authority", "canonical_identity", "celexpr", "constraints", "digests", "governance", "grants",
-                   "identity", "journal", "oidc_approval", "possession", "quorum", "revocation", "walk")
+                   "identity", "journal", "oidc_approval", "possession", "quorum", "revocation", "stamp",
+                   "verified_identities", "walk")
 #: Every other module of the package, with the reason it holds no identity or authority refusal. A module named in
 #: neither tuple fails ``test_every_module_is_linted_or_excluded_with_a_reason``, so a new check cannot escape the lint
 #: by being added under a new name.
@@ -392,6 +393,7 @@ NOT_LINTED = {
     "records": "record builders; the readers they call are linted where they live",
     "refusal_codes": "the registry itself",
     "refusal_lint": "this lint",
+    "verified_identities_vectors": "generates vectors from the checks",
     "signing": "signing backends; a session-key delegation refusal reaches a record only as the detail of "
                "session_key_delegation_invalid",
     "witness": "the witness note format, a log check outside identity and authority",

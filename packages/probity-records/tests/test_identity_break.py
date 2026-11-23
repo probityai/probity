@@ -42,6 +42,11 @@ import gen_shared_vectors as g
 PINS = {ISSUER: frozenset(base()["pins"][ISSUER])}
 
 
+def _unapproved() -> dict:
+    """The fixture block of a call no human approved: every principal but the approver."""
+    return {role: p for role, p in base()["principals"].items() if role != "approver"}
+
+
 def _now_block(principals: dict) -> dict:
     """The fixture principals with a validity window around now (the journal stamps its own clock)."""
     t = datetime.now(UTC)
@@ -74,7 +79,7 @@ def _revocations(*entries: dict) -> RevocationState:
 
 
 def test_a_suspended_sponsor_is_refused_when_a_person_is_in_the_session(tmp_path) -> None:
-    block = _now_block(base()["principals"])
+    block = _now_block(_unapproved())
     allow = _call("authorize", block, decision="allow", reason="no_approval_required")
     state = _revocations({"kind": "sponsor", "id": sponsor_id(ISSUER, "owner@example.com"),
                           "revokedAt": "2026-01-01T00:00:00Z"})
@@ -89,7 +94,7 @@ def test_strict_refuses_an_authorize_record_with_no_principals(tmp_path) -> None
     failures = _failures(tmp_path, [_call("authorize", None, decision="allow", reason="no_approval_required")],
                          Trust(identity_issuers=PINS, identity_profile="strict"))
     assert failures == ["line_1:principals_missing"]
-    named = _failures(tmp_path / "s", [_call("authorize", _now_block(base()["principals"]), decision="allow",
+    named = _failures(tmp_path / "s", [_call("authorize", _now_block(_unapproved()), decision="allow",
                                              reason="no_approval_required")],
                       Trust(identity_issuers=PINS, identity_profile="strict"))
     assert named == []
@@ -99,7 +104,7 @@ def test_strict_refuses_an_authorize_record_with_no_principals(tmp_path) -> None
 
 
 def test_an_intent_naming_another_agent_than_its_allow_is_refused(tmp_path) -> None:
-    good = _now_block(base()["principals"])
+    good = _now_block(_unapproved())
     swapped = copy.deepcopy(good)
     swapped["agent"]["subject"] = "agent-payroll"
     swapped["user"]["act"] = {"sub": "agent-payroll"}
@@ -114,6 +119,9 @@ def test_an_intent_naming_another_agent_than_its_allow_is_refused(tmp_path) -> N
     assert "line_2:principals_differ_from_permit:authorize" in _failures(tmp_path / "r", [allow, retry], trust)
     # a later record that names no parties claims none
     assert not [f for f in _failures(tmp_path / "n", [allow, _call("intent", None)], trust) if "principal" in f]
+    # an intent answers to the approvals its allow counted: naming an approver the allow did not count is refused
+    claimed = _call("intent", _now_block(base()["principals"]))
+    assert "line_2:principal_approver_without_approval" in _failures(tmp_path / "a", [allow, claimed], trust)
 
 
 def test_the_approver_principal_must_be_a_counted_approver(tmp_path) -> None:
@@ -133,6 +141,20 @@ def test_the_approver_principal_must_be_a_counted_approver(tmp_path) -> None:
     # lead's approval is a replay: the reader refuses it, the allow holds on ops alone
     assert journal(tmp_path / "lead", g.WHO["lead"]) == ["line_1:principal_approver_not_an_approval_signer"]
     assert journal(tmp_path / "ops", g.WHO["ops"]) == []
+
+
+def test_an_intent_of_an_approved_allow_may_name_the_approver_that_allow_counted(tmp_path) -> None:
+    policy = approval_policy("refunds1of2", {g.WHO["ops"]: g.OPS.public_pem(), g.WHO["lead"]: g.LEAD.public_pem()}, 1)
+    trust = Trust(identity_issuers=PINS, quorum_policies={"refunds1of2": policy}, identity_profile="strict")
+    block = _now_block(base()["principals"])
+    block["approver"]["subject"] = g.WHO["ops"]
+    common = {"run_id": "run", "tool_call_id": "a1", "tool": "refund_payment", "args_sha256_hex": args_sha256(g.AARGS),
+              "permit_id": permit_id("pause", "a1", args_sha256(g.AARGS)), "principals": block}
+    allow = tool_call_predicate(phase="authorize", decision="allow", reason="bound", threshold=1,
+                                approval_policy="refunds1of2", approval_bindings=[g.binding(g.OPS, g.WHO["ops"])],
+                                **common)  # fmt: skip
+    failures = _failures(tmp_path, [allow, tool_call_predicate(phase="intent", **common)], trust)
+    assert [f for f in failures if "principal" in f] == []
 
 
 def test_a_pin_written_as_a_string_is_not_a_substring_match() -> None:
