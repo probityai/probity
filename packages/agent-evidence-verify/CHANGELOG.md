@@ -4,6 +4,13 @@
 
 A minor release: fourteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
 
+- `agent_evidence_verify.structured_fields` is a public module: the strict RFC 8941 Structured Field reader and
+  serialiser the Web Bot Auth adapter already used (`parse_dictionary`, `parse_item`, `parse_inner_list`,
+  `reserialize`, the `serialize_*` functions, `SFError`, `Token`, `Item`, `InnerList`). A package that signs or checks
+  HTTP message signatures can pin `agent-evidence-verify>=0.9.0` and read its signature fields through the same code
+  instead of carrying a second reader. A repeated Dictionary key or parameter name and a number spelled with another
+  script's digits are refused, and a re-serialised value is, byte for byte, what another conformant implementation
+  writes. The module moved from the adapters package unchanged apart from one docstring sentence.
 - `credential_reachability/v1` checks a signed probe record that says which ambient credential classes an agent's
   environment let it reach (SSH agents and key files, cloud metadata and configuration, registry files, browser
   cookie stores, environment tokens, cluster service-account tokens, git credentials, host keyrings). It applies the
