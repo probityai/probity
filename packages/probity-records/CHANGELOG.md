@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The refusal registry holds the receiver policy's codes (check `receiver.policy`): `receiver_policy_denied` (a
+  deny rule or the route default refuses an identity the request presents) and `receiver_agent_rule_missing` (an
+  agent caller, or a caller with no verified agent, matched only a rule that names no agent condition).
+
 ## 0.6.0
 
 - Breaking: the agent stamp is an RFC 9421 HTTP message signature, label `probity`, in place of the
