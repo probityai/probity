@@ -36,6 +36,11 @@ from .signing import Delegation, verify_delegation
 
 GENESIS = "0" * 64
 CHECKPOINT_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-checkpoint")
+#: A producer's signed statement that ``dropped`` records it made never reached the journal, after line ``afterSeq``.
+GAP_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-gap")
+#: A writer's signed statement that it removed a torn last line (``bytes`` long, ``tornSha256``) after ``afterSeq``.
+TORN_TAIL_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-torn-tail")
+JOURNAL_SUBJECT = "tool-call-journal"
 JOURNAL_FILE = "journal.jsonl"
 #: Root-signed certificates for the session keys that signed lines of the journal (``signing.delegate``).
 KEYS_FILE = "keys.jsonl"
@@ -73,8 +78,10 @@ class Journal:
     whose bytes an earlier fsync already covered does not fsync again.
     """
 
-    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock) -> None:
+    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock, run: str | None = None) -> None:
         self.directory = Path(directory)
+        self.run = run
+        self._torn: bytes | None = None
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / JOURNAL_FILE
         self.signer = signer
@@ -114,12 +121,14 @@ class Journal:
         size = self.path.stat().st_size if self.path.exists() else 0
         if size < self._offset:  # the file was replaced or truncated under us: rescan from the start
             self._offset, self._seq, self._head, self._last_at = 0, 0, GENESIS, 0
+        self._torn = None
         if size > self._offset:
             with self.path.open("rb") as fh:
                 fh.seek(self._offset)
                 for line in fh:
                     if not line.endswith(b"\n"):
-                        break  # a torn tail from a crashed writer is not a line
+                        self._torn = line  # a torn tail from a crashed writer is not a line; append removes it
+                        break
                     self._offset += len(line)
                     body = line.rstrip(b"\n")
                     if body.strip():
@@ -154,12 +163,11 @@ class Journal:
         with lock.open("a") as guard:
             fcntl.flock(guard, fcntl.LOCK_EX)
             seq, head = self._refresh()
-            body = statement(subject_name, subject_digest, predicate_type,
-                             {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
-            envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
-            line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
             try:
+                if self._torn is not None:
+                    seq, head = self._remove_torn_tail(fd, seq)
+                envelope, line = self._line(predicate_type, subject_name, subject_digest, predicate, seq, head)
                 os.write(fd, line)
                 self._offset += len(line)
                 self._seq, self._head = seq + 1, _line_hash(line.rstrip(b"\n"))
@@ -170,18 +178,60 @@ class Journal:
                 os.close(fd)
         return envelope
 
+    def _line(self, predicate_type: str, subject_name: str, subject_digest: str, predicate: Mapping[str, Any],
+              seq: int, head: str) -> tuple[dict[str, Any], bytes]:
+        body = statement(subject_name, subject_digest, predicate_type,
+                         {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
+        envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
+        return envelope, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+
+    def _remove_torn_tail(self, fd: int, seq: int) -> tuple[int, str]:
+        """Cut the torn bytes a crashed writer left and append the signed line that says so, durable before the
+        caller's line: a torn tail leaves the file only with a statement of its length and digest."""
+        torn = self._torn or b""
+        os.ftruncate(fd, self._offset)
+        os.fsync(fd)
+        _, line = self._line(TORN_TAIL_TYPE, JOURNAL_SUBJECT, hashlib.sha256(torn).hexdigest(),
+                             {"afterSeq": seq, "bytes": len(torn), "tornSha256": hashlib.sha256(torn).hexdigest()},
+                             seq, self._head)
+        os.write(fd, line)
+        os.fsync(fd)
+        self._offset += len(line)
+        self._synced = max(self._synced, self._offset)
+        self._seq, self._head, self._torn = seq + 1, _line_hash(line.rstrip(b"\n")), None
+        return self._seq, self._head
+
+    def gap(self, *, dropped: int, after_seq: int, reason: str) -> dict[str, Any]:
+        """Append the signed statement that ``dropped`` records the producer made never reached the journal, lost
+        after line ``after_seq``. The producer states the loss it knows of; the journal never infers one."""
+        seq, _ = self._refresh()
+        if (isinstance(dropped, bool) or not isinstance(dropped, int) or dropped < 1
+                or isinstance(after_seq, bool) or not isinstance(after_seq, int) or not 0 <= after_seq <= seq
+                or not isinstance(reason, str) or not reason):  # fmt: skip
+            raise ValueError("journal_gap_invalid: dropped >= 1, 0 <= afterSeq <= the last line, a reason")
+        return self.append(GAP_TYPE, JOURNAL_SUBJECT, hashlib.sha256(reason.encode()).hexdigest(),
+                           {"afterSeq": after_seq, "dropped": dropped, "reason": reason})
+
     def statements(self) -> list[dict[str, Any]]:
         if not self.path.exists():
             return []
-        return [_payload(json.loads(line)) for line in self.path.read_text().splitlines() if line.strip()]
+        return [_payload(json.loads(line)) for line in _whole_lines(self.path.read_bytes())[0]]
 
     def checkpoint(self) -> dict[str, Any]:
         """A signed statement of the line count and head, for an outsider to pin."""
         seq, head = self._refresh()
-        body = statement("tool-call-journal", head, CHECKPOINT_TYPE,
-                         {"at": self._stamp(), "count": seq, "head": head,
-                          "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))})
+        predicate = {"at": self._stamp(), "count": seq, "head": head,
+                     "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))}
+        if self.run is not None:
+            predicate["run"] = self.run
+        body = statement(JOURNAL_SUBJECT, head, CHECKPOINT_TYPE, predicate)
         return sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
+
+
+def _whole_lines(data: bytes) -> tuple[list[str], bytes]:
+    """The journal's whole lines (each ended by a newline, blank ones skipped) and the torn bytes after the last."""
+    cut = data.rfind(b"\n") + 1
+    return [line for line in data[:cut].decode().splitlines() if line.strip()], data[cut:]
 
 
 def _keys(public_pems: Iterable[bytes]) -> list[Any]:
