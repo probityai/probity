@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Session-key certificates are `probity-key-delegation/v2` ([docs/key-delegation.md](docs/key-delegation.md)). The
+  root now signs the window key's scope as explicit members of the certificate body: `hierarchy` (`identity`,
+  `authority` or `record`), `custody` (`ours`, `customer` or `custodian`; a record root is never `customer`), `tenant`
+  and `windowS` (the declared window, which `[notBefore, notAfter)` may not exceed). `delegate(root, scope, now=...,
+  lifetime=None)` takes a `DelegationScope`; `Delegation` carries `scope`. A deployment that carried the scope inside
+  `rootProvenance` reads it from these members instead.
+- `Delegation.covers` is half-open, `notBefore <= t < notAfter`: an instant at `notAfter` is outside. Version 0.8.0
+  counted `notAfter` inside. A journal line or a permit stamped at `notAfter` now fails with
+  `session_key_used_outside_its_certified_window` or does not verify.
+- A v1 certificate is refused with `delegation_format_retired`; `verify_delegation` reports sixteen codes in one order
+  (`DELEGATION_CODES`). The TypeScript twin `@probityai/records-verify/delegation` (`verifyDelegation`, `covers`)
+  returns the same verdicts on the 31 cases of `vectors/shared/delegation.json`.
 - The shared vectors in `vectors/shared/verified_identities.json` now carry what a receiver spends for a possession
   proof, not only its method. An accepted case's `proof` was the string `dpop` or `mtls`; it is now
   `possession_record` of the proof and, for DPoP, its single-use `key` (`proof_key(jkt, jti)`) and `expires` (the

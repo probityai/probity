@@ -30,6 +30,7 @@ from probity_records import (
     SigningKey,
     Trust,
     VaultTransitKey,
+    DelegationScope,
     delegate,
     verify_journal,
 )
@@ -92,7 +93,7 @@ def _delegated() -> Backend:
     root = AwsKmsKey("root", client=FakeAwsKms())
     return Backend(
         "delegated",
-        delegate(root, now=to_datetime(SYSTEM_CLOCK.now())),
+        delegate(root, DelegationScope("record", "ours", "t1", 3600), now=to_datetime(SYSTEM_CLOCK.now())),
         "delegated",
         root.public_pem(),
         {root.key_id: "aws-kms"},

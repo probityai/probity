@@ -30,7 +30,7 @@ Each tool-call record carries two published contracts, and their published reade
 
 ## Key custody and the customer-held witness key
 
-The signing key can live in Vault transit, AWS KMS or Cloud KMS, and the customer runs the witness key. [Key custody and the witness](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/key-custody.md) has the details.
+The signing key can live in Vault transit, AWS KMS or Cloud KMS, and the customer runs the witness key. [Key custody and the witness](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/key-custody.md) has the details. A root certifies short-lived session keys for one hierarchy, custody, tenant and half-open window; [the certificate format](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/key-delegation.md) is `probity-key-delegation/v2`.
 
 ## Authority beyond one approval
 

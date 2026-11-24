@@ -382,6 +382,7 @@ NOT_LINTED = {
     "clock": "the clock protocol; it refuses nothing",
     "clock_lint": "a source lint with its own findings, not a record check",
     "clock_tripwire": "a test tripwire, not a record check",
+    "delegation_vectors": "generates vectors from the checks",
     "core": "envelope and canonical JSON primitives; their errors reach a record check only as a detail",
     "digests_vectors": "generates vectors from the checks",
     "erasure": "record envelope v2, a record format check outside identity and authority",

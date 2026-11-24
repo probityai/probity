@@ -12,6 +12,7 @@
   },
   "exports": {
     ".": "./dist/verify.js",
+    "./delegation": "./dist/delegation.js",
     "./revocation": "./dist/revocation.js",
     "./verified": "./dist/verified.js"
   },

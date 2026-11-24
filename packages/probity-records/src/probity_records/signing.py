@@ -8,8 +8,10 @@ same public key with any Ed25519 verifier (Python, Rust, Go, TypeScript) and not
 - ``AwsKmsKey``: AWS KMS, key spec ``ECC_NIST_EDWARDS25519``, algorithm ``ED25519_SHA_512``.
 - ``GcpKmsKey``: Google Cloud KMS, algorithm ``EC_SIGN_ED25519``.
 - ``delegate``: a short-lived session key in the signing process's memory, certified by any of the
-  above. A KMS round trip per permit costs a network call and a fee, and AWS caps a raw Ed25519
-  message at 4096 bytes; the session key signs the hot path and the root signs once per window.
+  above for one scope (``DelegationScope``: hierarchy, custody, tenant, declared window). A KMS round
+  trip per permit costs a network call and a fee, and AWS caps a raw Ed25519 message at 4096 bytes; the
+  session key signs the hot path and the root signs once per window. The certificate format is
+  ``probity-key-delegation/v2`` (docs/key-delegation.md); its window is half-open, [notBefore, notAfter).
 
 Each backend checks every signature it is handed under the public key it pinned at construction, so a
 backend that answers with another key's signature (a swapped key version, a misrouted request) fails
@@ -40,9 +42,29 @@ from cryptography.hazmat.primitives.serialization import (
 )
 
 from .core import _b64, _unb64, canonical, key_id, load_public
+from .grants import ts as _instant
 
-DELEGATION_DOMAIN = b"probity-key-delegation-v1\x00"
-DELEGATION_FORMAT = "probity-key-delegation/v1"
+DELEGATION_DOMAIN = b"probity-key-delegation-v2\x00"
+DELEGATION_FORMAT = "probity-key-delegation/v2"
+#: Formats this version refuses by name (``delegation_format_retired``): a v1 certificate states no hierarchy,
+#: custody or tenant, and its readers counted the notAfter instant inside the window.
+RETIRED_DELEGATION_FORMATS = ("probity-key-delegation/v1",)
+#: The three disjoint root hierarchies a window key is certified in.
+HIERARCHIES = ("authority", "identity", "record")
+#: Who holds the root: the party that runs the records service ("ours"), the tenant ("customer"), or a party that
+#: is neither ("custodian").
+CUSTODIES = ("custodian", "customer", "ours")
+DELEGATION_MEMBERS = frozenset({"custody", "format", "hierarchy", "notAfter", "notBefore", "rootKeyId",
+                                "rootProvenance", "sessionKey", "tenant", "windowS"})
+TENANT_MAX = 256
+#: Every refusal ``verify_delegation`` raises, in the order a reader checks for them (docs/key-delegation.md).
+DELEGATION_CODES = ("delegation_shape", "delegation_format_retired", "delegation_format_unknown",
+                    "delegation_members_invalid", "delegation_hierarchy_invalid", "delegation_custody_invalid",
+                    "delegation_record_root_customer_custody", "delegation_tenant_invalid", "delegation_window_invalid",
+                    "delegation_time_invalid", "delegation_window_empty", "delegation_window_exceeds_declared",
+                    "delegation_root_provenance_invalid", "delegation_session_key_invalid", "delegation_unverified",
+                    "delegation_root_key_id_mismatch")
+WINDOW_MAX_S = 2**53 - 1
 AWS_RAW_LIMIT = 4096
 
 
@@ -250,9 +272,52 @@ def _ts(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 
+_PRINTABLE = frozenset(chr(c) for c in range(0x21, 0x7F))
+
+
+def scope_problem(hierarchy: Any, custody: Any, tenant: Any, window_s: Any) -> str | None:
+    """The refusal code for a scope a root may not certify, or ``None``. The same checks run at issuance and in every
+    reader, in this order, so the TypeScript twin names the same first problem."""
+    if not isinstance(hierarchy, str) or hierarchy not in HIERARCHIES:
+        return "delegation_hierarchy_invalid"
+    if not isinstance(custody, str) or custody not in CUSTODIES:
+        return "delegation_custody_invalid"
+    if hierarchy == "record" and custody == "customer":
+        return "delegation_record_root_customer_custody"
+    if not isinstance(tenant, str) or not 1 <= len(tenant) <= TENANT_MAX or not set(tenant) <= _PRINTABLE:
+        return "delegation_tenant_invalid"
+    if type(window_s) is not int or not 1 <= window_s <= WINDOW_MAX_S:
+        return "delegation_window_invalid"
+    return None
+
+
+@dataclass(frozen=True)
+class DelegationScope:
+    """What a root certifies a window key for: one hierarchy, the root's custody, one tenant, the declared window.
+
+    ``hierarchy`` is ``identity``, ``authority`` or ``record`` (three disjoint hierarchies); ``custody`` is who holds the
+    root (``ours``, ``customer`` or ``custodian``; a record root is never ``customer``); ``tenant`` is printable ASCII,
+    1 to 256 characters; ``window_s`` is the deployment's declared window in whole seconds, and a certificate's
+    [notBefore, notAfter) is never longer. ``ValueError`` names the first problem."""
+
+    hierarchy: str
+    custody: str
+    tenant: str
+    window_s: int
+
+    def __post_init__(self) -> None:
+        problem = scope_problem(self.hierarchy, self.custody, self.tenant, self.window_s)
+        if problem is not None:
+            raise ValueError(problem)
+
+    def members(self) -> dict[str, Any]:
+        """The scope as the certificate body states it."""
+        return {"custody": self.custody, "hierarchy": self.hierarchy, "tenant": self.tenant, "windowS": self.window_s}
+
+
 @dataclass
 class DelegatedKey:
-    """A session key held only in this process's memory, certified by ``root`` for one window.
+    """A session key held only in this process's memory, certified by ``root`` for one scope and one window.
 
     ``key_id`` is the session key's; ``certificate`` is what a verifier needs, with the root's public
     key pinned, to accept the session key (``verify_delegation``).
@@ -283,14 +348,20 @@ class DelegatedKey:
         return self._key.sign(data)
 
 
-def delegate(root: SigningKey, lifetime: timedelta = timedelta(hours=1), *,
-             now: datetime) -> DelegatedKey:
-    """A fresh session key and the root's signed certificate for it, valid from ``now`` for ``lifetime``."""
-    start = now
+def delegate(root: SigningKey, scope: DelegationScope, *, now: datetime,
+             lifetime: timedelta | None = None) -> DelegatedKey:
+    """A fresh session key and the root's signed ``probity-key-delegation/v2`` certificate for it, valid in
+    [now, now + lifetime); ``lifetime`` defaults to the scope's declared window and may not exceed it."""
+    life = timedelta(seconds=scope.window_s) if lifetime is None else lifetime
+    if not timedelta(0) < life <= timedelta(seconds=scope.window_s):
+        raise SigningError(f"a delegation lives more than 0 s and at most its declared window of {scope.window_s} s")
     session = Ed25519PrivateKey.generate()
-    body = {"format": DELEGATION_FORMAT, "notAfter": _ts(start + lifetime), "notBefore": _ts(start),
+    body = {"format": DELEGATION_FORMAT, **scope.members(), "notAfter": _ts(now + life), "notBefore": _ts(now),
             "rootKeyId": root.key_id, "rootProvenance": dict(root.provenance),
             "sessionKey": _b64(session.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw))}
+    problem = _body_problem(body)
+    if problem is not None:  # a root provenance that is not a JSON object, or a window rounded to nothing
+        raise SigningError(problem)
     sig = root.sign(DELEGATION_DOMAIN + canonical(body))
     try:
         root.public.verify(sig, DELEGATION_DOMAIN + canonical(body))
@@ -301,39 +372,81 @@ def delegate(root: SigningKey, lifetime: timedelta = timedelta(hours=1), *,
 
 @dataclass(frozen=True)
 class Delegation:
-    """A verified delegation: the session key, its window, and the root key that certified it."""
+    """A verified delegation: the session key, its scope, its window, and the root key that certified it."""
 
     session: Ed25519PublicKey
     session_key_id: str
     root_key_id: str
+    scope: DelegationScope
     not_before: str
     not_after: str
 
     def covers(self, at: str) -> bool:
-        """Whether a record time ``at`` (RFC 3339, UTC ``Z``) falls inside the window."""
+        """Whether an instant ``at`` (RFC 3339 with an offset) falls in the half-open window [notBefore, notAfter):
+        an instant at notAfter is outside (TERMS "Validity window")."""
         try:
-            moment = _parse(at)
+            moment = _instant(at)
         except ValueError:
             return False
-        return _parse(self.not_before) <= moment <= _parse(self.not_after)
+        return _instant(self.not_before) <= moment < _instant(self.not_after)
 
 
-def _parse(text: str) -> datetime:
+def _utc(text: Any) -> datetime:
+    """A certificate time: the shared timestamp grammar, in UTC (``Z``)."""
     if not isinstance(text, str) or not text.endswith("Z"):
-        raise ValueError("expected an RFC 3339 UTC time ending in Z")
-    return datetime.fromisoformat(text)
+        raise ValueError("delegation_time_invalid")
+    try:
+        return _instant(text)
+    except ValueError:
+        raise ValueError("delegation_time_invalid") from None
+
+
+def _body_problem(body: Mapping[str, Any]) -> str | None:
+    """The first refusal code for a v2 body's content, in the order both readers check it; ``None`` when it holds."""
+    if set(body) != DELEGATION_MEMBERS:
+        return "delegation_members_invalid"
+    problem = scope_problem(body["hierarchy"], body["custody"], body["tenant"], body["windowS"])
+    if problem is not None:
+        return problem
+    try:
+        start, end = _utc(body["notBefore"]), _utc(body["notAfter"])
+    except ValueError as exc:
+        return str(exc)
+    if end <= start:
+        return "delegation_window_empty"
+    if end - start > timedelta(seconds=body["windowS"]):
+        return "delegation_window_exceeds_declared"
+    if not isinstance(body["rootProvenance"], Mapping):
+        return "delegation_root_provenance_invalid"
+    try:
+        _raw_public(_unb64(body["sessionKey"]))
+    except (ValueError, SigningError):
+        return "delegation_session_key_invalid"
+    if not isinstance(body["rootKeyId"], str):
+        return "delegation_root_key_id_mismatch"
+    return None
 
 
 def verify_delegation(certificate: Any, roots: list[Ed25519PublicKey]) -> Delegation:
-    """The delegation when one pinned root signed it; ``ValueError`` otherwise. Nothing in the
-    certificate selects its root: every pinned root is tried."""
-    if not isinstance(certificate, Mapping) or not isinstance(certificate.get("body"), Mapping):
+    """The delegation when one pinned root signed a well-formed v2 certificate; ``ValueError`` naming the first
+    refusal otherwise. Nothing in the certificate selects its root: every pinned root is tried. A v1 certificate is
+    refused (``delegation_format_retired``)."""
+    if not isinstance(certificate, Mapping) or not isinstance(certificate.get("body"), Mapping) \
+            or set(certificate) != {"body", "sig"}:
         raise ValueError("delegation_shape")
     body = dict(certificate["body"])
-    if body.get("format") != DELEGATION_FORMAT or not {"notAfter", "notBefore", "rootKeyId", "sessionKey"} <= body.keys():
-        raise ValueError("delegation_shape")
+    if body.get("format") in RETIRED_DELEGATION_FORMATS:
+        raise ValueError("delegation_format_retired")
+    if body.get("format") != DELEGATION_FORMAT:
+        raise ValueError("delegation_format_unknown")
+    problem = _body_problem(body)
+    if problem is not None:
+        raise ValueError(problem)
+    try:
+        sig = _unb64(certificate["sig"])
+    except ValueError:
+        raise ValueError("delegation_shape") from None
     message = DELEGATION_DOMAIN + canonical(body)
-    sig = _unb64(certificate.get("sig"))
     for root in roots:
         try:
             root.verify(sig, message)
@@ -342,6 +455,6 @@ def verify_delegation(certificate: Any, roots: list[Ed25519PublicKey]) -> Delega
         if key_id(root) != body["rootKeyId"]:
             raise ValueError("delegation_root_key_id_mismatch")
         session = _raw_public(_unb64(body["sessionKey"]))
-        _parse(body["notBefore"]), _parse(body["notAfter"])
-        return Delegation(session, key_id(session), body["rootKeyId"], body["notBefore"], body["notAfter"])
+        scope = DelegationScope(body["hierarchy"], body["custody"], body["tenant"], body["windowS"])
+        return Delegation(session, key_id(session), body["rootKeyId"], scope, body["notBefore"], body["notAfter"])
     raise ValueError("delegation_unverified")

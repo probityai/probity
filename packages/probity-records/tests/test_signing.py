@@ -32,6 +32,10 @@ from probity_records import (
 )
 from probity_records.clock import SystemClock, to_datetime
 from probity_records.journal import KEYS_FILE
+from probity_records.signing import DelegationScope
+
+RECORD = DelegationScope("record", "ours", "t1", 3600)
+AUTHORITY = DelegationScope("authority", "customer", "t1", 3600)
 
 SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
@@ -156,7 +160,7 @@ def test_a_journal_signed_through_a_kms_backend_verifies_and_names_its_custody(t
 
 def test_delegated_session_key_signs_large_records_under_a_kms_root(tmp_path) -> None:
     root = AwsKmsKey("k1", client=FakeAwsKms())
-    session = delegate(root, timedelta(hours=1), now=to_datetime(SYSTEM_CLOCK.now()))
+    session = delegate(root, RECORD, now=to_datetime(SYSTEM_CLOCK.now()))
     assert session.key_id != root.key_id and session.provenance["root"]["backend"] == "aws-kms"
     journal = Journal(tmp_path, session, clock=SYSTEM_CLOCK)
     big = {"phase": "note", "blob": "x" * 20000}  # far past the 4096-byte raw KMS cap
@@ -171,25 +175,29 @@ def test_delegated_session_key_signs_large_records_under_a_kms_root(tmp_path) ->
 
 def test_a_session_key_outside_its_window_or_from_an_unpinned_root_is_refused(tmp_path) -> None:
     root = Signer.generate()
-    past = delegate(root, timedelta(minutes=5), now=datetime.now(UTC) - timedelta(hours=2))
+    past = delegate(root, RECORD, lifetime=timedelta(minutes=5), now=datetime.now(UTC) - timedelta(hours=2))
     journal = Journal(tmp_path, past, clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     out = verify_journal(tmp_path, [root.public_pem()], journal.checkpoint())
     assert any("outside_its_certified_window" in f for f in out["failures"])
-    rogue = delegate(Signer.generate(), now=to_datetime(SYSTEM_CLOCK.now()))
+    rogue = delegate(Signer.generate(), RECORD, now=to_datetime(SYSTEM_CLOCK.now()))
     with pytest.raises(ValueError, match="delegation_unverified"):
         verify_delegation(rogue.certificate, [root.public])
     forged = json.loads(json.dumps(past.certificate))
     forged["body"]["notAfter"] = "2999-01-01T00:00:00.000000Z"
+    with pytest.raises(ValueError, match="delegation_window_exceeds_declared"):
+        verify_delegation(forged, [root.public])
+    forged["body"]["notAfter"] = past.certificate["body"]["notAfter"]
+    forged["body"]["tenant"] = "t2"
     with pytest.raises(ValueError, match="delegation_unverified"):
         verify_delegation(forged, [root.public])
 
 
 def test_rotation_records_each_certificate_once(tmp_path) -> None:
     root = Signer.generate()
-    journal = Journal(tmp_path, delegate(root, now=to_datetime(SYSTEM_CLOCK.now())), clock=SYSTEM_CLOCK)
+    journal = Journal(tmp_path, delegate(root, RECORD, now=to_datetime(SYSTEM_CLOCK.now())), clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
-    journal.rotate(delegate(root, now=to_datetime(SYSTEM_CLOCK.now())))
+    journal.rotate(delegate(root, RECORD, now=to_datetime(SYSTEM_CLOCK.now())))
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     Journal(tmp_path, journal.signer, clock=SYSTEM_CLOCK)  # reopening with the same key adds nothing
     assert len((tmp_path / KEYS_FILE).read_text().splitlines()) == 2
@@ -198,7 +206,7 @@ def test_rotation_records_each_certificate_once(tmp_path) -> None:
 
 def test_permits_carry_custody_and_a_delegated_permit_verifies_under_the_root_only() -> None:
     root = Signer.generate()
-    session = delegate(root, now=to_datetime(SYSTEM_CLOCK.now()))
+    session = delegate(root, AUTHORITY, now=to_datetime(SYSTEM_CLOCK.now()))
     now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # issued inside the window
     permit = sign_permit(session, {"issuedAt": now, "permitId": "p"})
     claims = verify_permit(permit, root.public_pem())
