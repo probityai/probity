@@ -698,10 +698,10 @@ mod over_http {
 
     /// Serves one HTTP request with `status` and `body`, and sends back the
     /// request's Content-Type, Authorization and body.
-    fn serve_once(
-        status: u16,
-        body: &'static str,
-    ) -> TestResult<(String, mpsc::Receiver<(String, String, String)>)> {
+    /// The Content-Type, Authorization and body of a request the server saw.
+    type Seen = mpsc::Receiver<(String, String, String)>;
+
+    fn serve_once(status: u16, body: &'static str) -> TestResult<(String, Seen)> {
         let listener = TcpListener::bind("127.0.0.1:0")?;
         let url = format!("http://{}/poll", listener.local_addr()?);
         let (tx, rx) = mpsc::channel();

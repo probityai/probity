@@ -2,7 +2,8 @@
   "description": "An SSF stream verification event, which carries no evidence and needs none.",
   "expect": {
     "accept": true,
-    "event_type": "https://schemas.openid.net/secevent/ssf/event-type/verification"
+    "event_type": "https://schemas.openid.net/secevent/ssf/event-type/verification",
+    "revocation": null
   },
   "id": "accept-stream-verification",
   "served": {},

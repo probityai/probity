@@ -4,7 +4,7 @@
 use std::cell::RefCell;
 
 use dsse::{Ed25519Signer, Signer};
-use serde_json::{Value, json};
+use serde_json::json;
 use ssf_evidence::delivery::{Entry, transition};
 use ssf_evidence::evidence::{IN_TOTO_PAYLOAD_TYPE, STATEMENT_TYPE};
 use ssf_evidence::transmitter::JtiSource;
@@ -422,7 +422,7 @@ mod over_http {
             other => return Err(format!("expected a refusal, got {other:?}").into()),
         }
         let (_, verification) = seen.recv_timeout(Duration::from_secs(5))?;
-        let claims: Value = serde_json::from_slice(&base64::Engine::decode(
+        let claims: serde_json::Value = serde_json::from_slice(&base64::Engine::decode(
             &base64::engine::general_purpose::URL_SAFE_NO_PAD,
             verification.split('.').nth(1).ok_or("payload")?,
         )?)?;

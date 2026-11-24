@@ -2,7 +2,8 @@
   "description": "A risk-level-change signed with Ed25519 (RFC 9864).",
   "expect": {
     "accept": true,
-    "event_type": "https://schemas.openid.net/secevent/caep/event-type/risk-level-change"
+    "event_type": "https://schemas.openid.net/secevent/caep/event-type/risk-level-change",
+    "revocation": null
   },
   "id": "accept-risk-level-change-ed25519",
   "served": {
