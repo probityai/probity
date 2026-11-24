@@ -1,0 +1,34 @@
+{
+  "headers": [
+    [
+      "Host",
+      "mail.example"
+    ],
+    [
+      "Accept-Encoding",
+      "identity"
+    ],
+    [
+      "Signature-Agent",
+      "agent=\"https://agent.example/.well-known/http-message-signatures-directory\""
+    ],
+    [
+      "Content-Digest",
+      "sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:"
+    ],
+    [
+      "Probity-Stamp-Digest",
+      "\"sha256:003593df87d73e02920dcb4b6bd0a4c65ebac27f72080f1f356590b3087437a1\""
+    ],
+    [
+      "Signature-Input",
+      "agent=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-stamp-digest\" \"signature-agent\";key=\"agent\");created=1795435200;expires=1795435260;nonce=\"browser-0001\";keyid=\"en5aKw6hUB-r6U1v6G8cvOpy9jk0-hsKzwSLty2UAXg\";alg=\"ed25519\";tag=\"web-bot-auth\""
+    ],
+    [
+      "Signature",
+      "agent=:M4mk4BPPacroNCAEWHUIDWbBZFIjrGns7hb773pf9TeflA/B+otMhCSsX/hNln4onVgbRZt7w1s+4UIsD3kRCw==:"
+    ]
+  ],
+  "method": "GET",
+  "url": "https://mail.example/inbox?page=2"
+}

@@ -201,6 +201,90 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/authority_trust_not_pinned"
   },
   {
+   "code": "browser_answer_unscrubbable",
+   "check": "browser.session",
+   "meaning": "an answer is encoded in a way the scrubber cannot decode, so it is not returned to the browser",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_answer_unscrubbable"
+  },
+  {
+   "code": "browser_body_too_large",
+   "check": "browser.proxy",
+   "meaning": "a request body is over the size the proxy reads whole before signing, so nothing is sent",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_body_too_large"
+  },
+  {
+   "code": "browser_host_mismatch",
+   "check": "browser.session",
+   "meaning": "the Host field the browser sent does not name the request's target",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_host_mismatch"
+  },
+  {
+   "code": "browser_release_unrecorded",
+   "check": "browser.session",
+   "meaning": "the credential release record could not be written, so the request was not forwarded",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_release_unrecorded"
+  },
+  {
+   "code": "browser_session_cookie_foreign",
+   "check": "browser.session",
+   "meaning": "a cookie of a released credential carries a value the session did not issue, or is sent twice",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_session_cookie_foreign"
+  },
+  {
+   "code": "browser_session_expired",
+   "check": "browser.session",
+   "meaning": "the browser session's lifetime has passed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_session_expired"
+  },
+  {
+   "code": "browser_session_no_grant",
+   "check": "browser.session",
+   "meaning": "no current grant names this user, this agent and this host, so the login is not released",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_session_no_grant"
+  },
+  {
+   "code": "browser_session_revoked",
+   "check": "browser.session",
+   "meaning": "the agent, the user or the session is revoked",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_session_revoked"
+  },
+  {
+   "code": "browser_session_value_in_request",
+   "check": "browser.session",
+   "meaning": "the request carries a credential value the session holds, which the browser can only have by a leak",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_session_value_in_request"
+  },
+  {
+   "code": "browser_stamp_missing",
+   "check": "browser.signer",
+   "meaning": "the request has no stamp digest of verified principals to sign",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_stamp_missing"
+  },
+  {
+   "code": "browser_target_unsignable",
+   "check": "browser.signer",
+   "meaning": "the method, the target or the request form cannot be signed as it would leave",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_target_unsignable"
+  },
+  {
+   "code": "browser_tunnel_refused",
+   "check": "browser.proxy",
+   "meaning": "a tunnel the proxy cannot terminate with the session's own certificate is closed",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_tunnel_refused"
+  },
+  {
+   "code": "browser_upgrade_refused",
+   "check": "browser.proxy",
+   "meaning": "a protocol upgrade is refused, because the frames after it are not requests a signature covers",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_upgrade_refused"
+  },
+  {
+   "code": "browser_upstream_failed",
+   "check": "browser.proxy",
+   "meaning": "the site could not be reached over verified TLS, or its answer is over the limit or unreadable",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/browser_upstream_failed"
+  },
+  {
    "code": "budget_exhausted",
    "check": "mesh.route",
    "meaning": "the sender's budget is spent",

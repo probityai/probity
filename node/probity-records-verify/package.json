@@ -13,7 +13,8 @@
   "exports": {
     ".": "./dist/verify.js",
     "./revocation": "./dist/revocation.js",
-    "./verified": "./dist/verified.js"
+    "./verified": "./dist/verified.js",
+    "./web-bot-auth": "./dist/webbotauth.js"
   },
   "bin": {
     "probity-records-verify": "./dist/cli.js"

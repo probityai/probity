@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- `web_bot_auth/v1` takes `pinned_fields`: a field the consumer pins must be covered as a whole field and carry exactly
+  the pinned value, else `component_not_covered` or `pinned_field_mismatch`. A consumer that holds the record a request
+  names (the stamp digest of the agent browser profile, an intent) binds the request to it this way.
+- A null `max_age_seconds` or `max_validity_seconds` is invalid input. Before, a null `max_validity_seconds` crashed
+  the time check and a null `max_age_seconds` was read as no limit.
+- `vectors-web-bot-auth/`: twelve cases signed in the agent browser profile (label `agent`, covering `@method`,
+  `@target-uri`, `@authority`, `content-digest`, `probity-stamp-digest` and the `signature-agent` member, valid for 60
+  seconds), with a generator, a checker that drives any verifier through the CLI contract, and tests. The profile is
+  in `docs/web-bot-auth.md`.
+
 ## 0.9.0 (2026-11-23)
 
 A minor release: fourteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.
