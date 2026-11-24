@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.10.0 (2026-11-24)
+
+- `build_approval_binding` writes the members the agent-evidence-vectors 0.38 approval-binding reader judges, each from
+  the party that holds it: `issued=` (keyword, required) is the server's issuance register, written as
+  `issuedApprovalIds`; `enforcement=` (keyword, required, one of `ENFORCEMENT_MODES`: `enforce`, `observe`, `monitor`)
+  is the mode the gate ran in. The approval body carries its own `outcome` (`approved`, `approved-with-corrections` or
+  a refusal) and `requestId`, which the approver signs; an approval with no `requestId` is refused with
+  `approval_request_id_missing`. Nothing is defaulted: an approval the server never issued is denied
+  `approval_not_issued`, a refused one `approval_not_granted`, and one taken in observe or monitor mode
+  `approval_not_enforced`. Every caller passes the two new keywords.
+- `judge_approval_binding` denies a record the reader cannot read (a missing or mistyped member) with
+  `approval_binding_malformed` (`BINDING_MALFORMED`), so one malformed binding is a failure of its line instead of an
+  exception that ends `verify_journal`.
+- The dependency range of `agent-evidence-vectors` is `>=0.38.0,<0.40`.
+- The TypeScript twin `@probityai/records-verify` judges approval bindings with the 0.38 reader's twenty-two checks in
+  its order. `vectors/shared/approvals.json` adds AV29 to AV37 (not issued, refused, approved with corrections,
+  observe and monitor modes, one request answered twice, a lost request identifier, a retired key and a key used
+  before its retirement), and every approval vector was regenerated under the 0.38 reader.
+
 ## 0.9.0 (2026-11-24)
 
 - The revocation list names an identity provider's token-signing key with kind `idp-key`. Its id is the key's RFC 7638
