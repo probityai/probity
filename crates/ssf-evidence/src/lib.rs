@@ -10,6 +10,12 @@
 //! different subject. The receiving identity provider then acts on evidence
 //! anyone can check, not on the transmitter's word.
 //!
+//! [`verify_set`] also types the revocation a token carries
+//! ([`Revocation`]: session revoked, a CAEP credential revoke or delete, or an update that rotates the
+//! credential without revoking the principal), and records each issuer's `jti` in a [`JtiLedger`] so a
+//! replayed token is refused. [`PushReceiver`] answers RFC 8935 push requests
+//! and [`poll_once`] runs one RFC 8936 poll.
+//!
 //! The transmitter starts in monitor mode, where events are computed, signed
 //! and logged but never sent; gates session revocation on a capability the
 //! receiver granted; and delivers live events at least once through an
@@ -21,6 +27,8 @@ pub mod evidence;
 #[cfg(feature = "http")]
 pub mod http;
 pub mod jws;
+pub mod poll;
+pub mod push;
 pub mod receiver;
 pub mod subject;
 pub mod transmitter;
@@ -32,8 +40,11 @@ pub use evidence::{
     subject_descriptor, subject_digest, verify_evidence,
 };
 pub use jws::{Alg, SigningKey, VerifyingKey};
+pub use poll::{PollOutcome, PollRequest, PollResponse, PollTransport, SetErr, poll_once};
+pub use push::{PushReceiver, PushResponse, SECEVENT_MEDIA_TYPE};
 pub use receiver::{
-    EvidencePolicy, RISK_LEVEL_CHANGE, ReceiverConfig, SESSION_REVOKED, VERIFICATION, VerifiedSet,
+    CREDENTIAL_CHANGE, CredentialChange, EvidencePolicy, JtiLedger, JtiSeen, MemoryJtiLedger,
+    RISK_LEVEL_CHANGE, ReceiverConfig, Revocation, SESSION_REVOKED, VERIFICATION, VerifiedSet,
     verify_set,
 };
 pub use subject::{Principal, RiskLevel, Subject, SubjectId};

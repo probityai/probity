@@ -1,8 +1,9 @@
 {
-  "description": "The same revocation from a transmitter without the capability goes out as a HIGH risk-level-change.",
+  "description": "The same revocation from a transmitter without the capability goes out as a HIGH risk-level-change, which carries no revocation.",
   "expect": {
     "accept": true,
-    "event_type": "https://schemas.openid.net/secevent/caep/event-type/risk-level-change"
+    "event_type": "https://schemas.openid.net/secevent/caep/event-type/risk-level-change",
+    "revocation": null
   },
   "id": "accept-revocation-downgraded-rs256",
   "served": {

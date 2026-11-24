@@ -14,10 +14,11 @@ use serde_json::{Map, Value, json};
 use ssf_evidence::evidence::{IN_TOTO_PAYLOAD_TYPE, STATEMENT_TYPE};
 use ssf_evidence::transmitter::JtiSource;
 use ssf_evidence::{
-    Action, Capabilities, EVIDENCE_REF_CLAIM, EvidencePolicy, EvidenceRef, EvidenceTrust,
-    MapResolver, Mode, Principal, RISK_LEVEL_CHANGE, ReceiverConfig, RiskLevel, SESSION_REVOKED,
-    Signal, SigningKey, Stream, Subject, SubjectId, Transmitter, VerifyingKey, subject_descriptor,
-    verify_set,
+    Action, CREDENTIAL_CHANGE, Capabilities, EVIDENCE_REF_CLAIM, EvidencePolicy, EvidenceRef,
+    EvidenceTrust, MapResolver, MemoryJtiLedger, Mode, PollRequest, PollTransport, Principal,
+    PushReceiver, PushResponse, RISK_LEVEL_CHANGE, ReceiverConfig, Refusal, Revocation, RiskLevel,
+    SESSION_REVOKED, Signal, SigningKey, Stream, Subject, SubjectId, Transmitter, VerifiedSet,
+    VerifyingKey, poll_once, subject_descriptor, verify_set,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -105,6 +106,55 @@ struct Case {
     accept: bool,
     code: Option<&'static str>,
     event_type: Option<&'static str>,
+    /// For an accepted case, the revocation the token carries, as
+    /// [`revocation_json`] writes it.
+    revocation: Option<Value>,
+    /// Tokens the receiver accepted before this case's token.
+    prior: Vec<String>,
+    /// The token arrives as an RFC 8935 push with this `Content-Type`.
+    push_content_type: Option<&'static str>,
+    /// The case is an RFC 8936 poll answered with this body, and has no token.
+    poll_response: Option<String>,
+}
+
+fn accept(
+    id: &'static str,
+    description: &'static str,
+    token: String,
+    served: BTreeMap<String, Vec<u8>>,
+    event_type: &'static str,
+    revocation: Value,
+) -> Case {
+    Case {
+        id,
+        description,
+        token,
+        served,
+        accept: true,
+        code: None,
+        event_type: Some(event_type),
+        revocation: Some(revocation),
+        prior: Vec::new(),
+        push_content_type: None,
+        poll_response: None,
+    }
+}
+
+/// The `expect.revocation` form of a verified token's revocation.
+fn revocation_json(revocation: Option<&Revocation>) -> TestResult<Value> {
+    Ok(match revocation {
+        None => Value::Null,
+        Some(Revocation::Session) => json!({"kind": "session"}),
+        Some(Revocation::Credential {
+            credential_type,
+            change,
+        }) => json!({"kind": "credential", "credential_type": credential_type,
+                     "change_type": change.as_str()}),
+        Some(Revocation::CredentialRotated { credential_type }) => {
+            json!({"kind": "credential-rotated", "credential_type": credential_type})
+        }
+        Some(other) => return Err(format!("no vector form for {other:?}").into()),
+    })
 }
 
 /// A valid evidence envelope for `user`, served at the case's URI.
@@ -173,6 +223,28 @@ fn claims(evidence: Option<&EvidenceRef>) -> TestResult<Map<String, Value>> {
     }
 }
 
+/// A credential-change claim set with `change_type`, for cases built by hand.
+fn credential_change_claims(
+    change_type: &str,
+    evidence: &EvidenceRef,
+) -> TestResult<Map<String, Value>> {
+    let event = json!({
+        "credential_type": "x509", "change_type": change_type,
+        "x509_issuer": "CN=Example Agent CA", "x509_serial": "0e:1f:2a",
+        "initiating_entity": "admin", "event_timestamp": NOW - 5,
+        EVIDENCE_REF_CLAIM: evidence.to_value(),
+    });
+    let value = json!({
+        "iss": ISSUER, "aud": AUDIENCE, "iat": NOW, "jti": format!("vector-cc-{change_type}"),
+        "sub_id": subject("user-123").to_sub_id()?,
+        "events": {CREDENTIAL_CHANGE: event},
+    });
+    match value {
+        Value::Object(map) => Ok(map),
+        _ => Err("claims are not an object".into()),
+    }
+}
+
 fn sign(claims: &Map<String, Value>) -> TestResult<String> {
     Ok(rsa_key()?.sign_compact(&serde_json::to_vec(claims)?)?)
 }
@@ -204,6 +276,10 @@ fn refuse(
         accept: false,
         code: Some(code),
         event_type: None,
+        revocation: None,
+        prior: Vec::new(),
+        push_content_type: None,
+        poll_response: None,
     }
 }
 
@@ -212,12 +288,17 @@ fn cases() -> TestResult<Vec<Case>> {
     let mut out = Vec::new();
 
     let (r, served) = good_evidence("accept-rlc-rs256", "user-123")?;
-    out.push(Case {
-        id: "accept-risk-level-change-rs256",
-        description: "A risk-level-change about a user, agent, tenant and session, signed RS256, whose evidence resolves, hashes to its digest, verifies and names the same subject.",
-        token: emitted(rsa_key()?, Capabilities::default(), &risk_signal("user-123", r))?,
-        served, accept: true, code: None, event_type: Some(RISK_LEVEL_CHANGE),
-    });
+    let rlc_token = emitted(
+        rsa_key()?,
+        Capabilities::default(),
+        &risk_signal("user-123", r),
+    )?;
+    let rlc_served = served.clone();
+    out.push(accept(
+        "accept-risk-level-change-rs256",
+        "A risk-level-change about a user, agent, tenant and session, signed RS256, whose evidence resolves, hashes to its digest, verifies and names the same subject.",
+        rlc_token.clone(), served, RISK_LEVEL_CHANGE, Value::Null,
+    ));
 
     let (r, served) = good_evidence("accept-revoked-rs256", "user-123")?;
     let revoke = Signal {
@@ -226,44 +307,122 @@ fn cases() -> TestResult<Vec<Case>> {
         },
         ..risk_signal("user-123", r)
     };
-    out.push(Case {
-        id: "accept-session-revoked-rs256",
-        description: "A session-revoked from a transmitter the receiver granted the session_revoke capability.",
-        token: emitted(rsa_key()?, Capabilities { session_revoke: true }, &revoke)?,
-        served: served.clone(), accept: true, code: None, event_type: Some(SESSION_REVOKED),
-    });
-    out.push(Case {
-        id: "accept-revocation-downgraded-rs256",
-        description: "The same revocation from a transmitter without the capability goes out as a HIGH risk-level-change.",
-        token: emitted(rsa_key()?, Capabilities::default(), &revoke)?,
-        served, accept: true, code: None, event_type: Some(RISK_LEVEL_CHANGE),
-    });
+    out.push(accept(
+        "accept-session-revoked-rs256",
+        "A session-revoked from a transmitter the receiver granted the session_revoke capability.",
+        emitted(
+            rsa_key()?,
+            Capabilities {
+                session_revoke: true,
+            },
+            &revoke,
+        )?,
+        served.clone(),
+        SESSION_REVOKED,
+        json!({"kind": "session"}),
+    ));
+    out.push(accept(
+        "accept-revocation-downgraded-rs256",
+        "The same revocation from a transmitter without the capability goes out as a HIGH risk-level-change, which carries no revocation.",
+        emitted(rsa_key()?, Capabilities::default(), &revoke)?,
+        served, RISK_LEVEL_CHANGE, Value::Null,
+    ));
 
     let (r, served) = good_evidence("accept-rlc-ed25519", "user-123")?;
-    out.push(Case {
-        id: "accept-risk-level-change-ed25519",
-        description: "A risk-level-change signed with Ed25519 (RFC 9864).",
-        token: emitted(
+    out.push(accept(
+        "accept-risk-level-change-ed25519",
+        "A risk-level-change signed with Ed25519 (RFC 9864).",
+        emitted(
             ed_key()?,
             Capabilities::default(),
             &risk_signal("user-123", r),
         )?,
         served,
-        accept: true,
-        code: None,
-        event_type: Some(RISK_LEVEL_CHANGE),
-    });
+        RISK_LEVEL_CHANGE,
+        Value::Null,
+    ));
 
     let mut tx =
         Transmitter::new(ISSUER, rsa_key()?, stream()).with_jti_source(Box::new(Counter(0)));
+    out.push(accept(
+        "accept-stream-verification",
+        "An SSF stream verification event, which carries no evidence and needs none.",
+        tx.verification_token("c3RhdGU", NOW)?,
+        BTreeMap::new(),
+        ssf_evidence::VERIFICATION,
+        Value::Null,
+    ));
+
+    let (r, served) = good_evidence("accept-cc-revoke", "user-123")?;
+    out.push(accept(
+        "accept-credential-change-revoke-rs256",
+        "A CAEP credential-change revoking an X.509 credential, whose evidence verifies; it carries a credential revocation.",
+        sign(&credential_change_claims("revoke", &r)?)?,
+        served,
+        CREDENTIAL_CHANGE,
+        json!({"kind": "credential", "credential_type": "x509", "change_type": "revoke"}),
+    ));
+    let (r, served) = good_evidence("accept-cc-update", "user-123")?;
+    out.push(accept(
+        "accept-credential-change-update-rs256",
+        "A CAEP credential-change with change_type update, a password reset: the credential was rotated, so it carries a credential rotation and no revocation.",
+        sign(&credential_change_claims("update", &r)?)?,
+        served,
+        CREDENTIAL_CHANGE,
+        json!({"kind": "credential-rotated", "credential_type": "x509"}),
+    ));
+    let (r, served) = good_evidence("cc-change-type", "user-123")?;
+    out.push(refuse(
+        "refuse-credential-change-change-type",
+        "A credential-change whose change_type is rotate, which CAEP 1.0 does not define.",
+        sign(&credential_change_claims("rotate", &r)?)?,
+        served,
+        "set.event_payload",
+    ));
+
     out.push(Case {
-        id: "accept-stream-verification",
-        description: "An SSF stream verification event, which carries no evidence and needs none.",
-        token: tx.verification_token("c3RhdGU", NOW)?,
-        served: BTreeMap::new(),
-        accept: true,
-        code: None,
-        event_type: Some(ssf_evidence::VERIFICATION),
+        prior: vec![rlc_token.clone()],
+        ..refuse(
+            "refuse-set-jti-replayed",
+            "A token the receiver already accepted, delivered again byte for byte; the receiver does not act on it twice.",
+            rlc_token.clone(),
+            rlc_served.clone(),
+            "set.jti_replayed",
+        )
+    });
+    let mut reused: Map<String, Value> = serde_json::from_slice(
+        &URL_SAFE_NO_PAD.decode(rlc_token.split('.').nth(1).ok_or("payload")?)?,
+    )?;
+    reused.insert("txn".into(), json!("txn-reused"));
+    out.push(Case {
+        prior: vec![rlc_token.clone()],
+        ..refuse(
+            "refuse-set-jti-reused",
+            "A different token from the same issuer under a jti the receiver already accepted.",
+            sign(&reused)?,
+            rlc_served.clone(),
+            "set.jti_reused",
+        )
+    });
+    out.push(Case {
+        push_content_type: Some("application/jwt"),
+        ..refuse(
+            "refuse-push-content-type",
+            "A valid token pushed with Content-Type application/jwt; RFC 8935 requires application/secevent+jwt, so the answer is 400 invalid_request.",
+            rlc_token,
+            rlc_served,
+            "push.content_type",
+        )
+    });
+    out.push(Case {
+        poll_response: Some(r#"{"moreAvailable":true}"#.into()),
+        ..refuse(
+            "refuse-poll-response-malformed",
+            "An RFC 8936 poll response without its required sets member.",
+            String::new(),
+            BTreeMap::new(),
+            "poll.response_malformed",
+        )
     });
 
     let (r, _) = good_evidence("unresolved", "user-123")?;
@@ -564,9 +723,98 @@ fn case_json(case: &Case) -> Value {
         if let Some(t) = case.event_type {
             obj.insert("event_type".into(), json!(t));
         }
+        if let Some(r) = &case.revocation {
+            obj.insert("revocation".into(), r.clone());
+        }
+        if case.push_content_type.is_some() {
+            obj.insert("http_status".into(), json!(400));
+            obj.insert("err".into(), json!("invalid_request"));
+        }
     }
-    json!({"id": case.id, "description": case.description, "token": case.token,
-           "served": served, "expect": expect})
+    let mut out = json!({"id": case.id, "description": case.description,
+                         "served": served, "expect": expect});
+    if let Some(obj) = out.as_object_mut() {
+        match &case.poll_response {
+            Some(body) => obj.insert("poll_response".into(), json!(body)),
+            None => obj.insert("token".into(), json!(case.token)),
+        };
+        if !case.prior.is_empty() {
+            obj.insert("prior".into(), json!(case.prior));
+        }
+        if let Some(ct) = case.push_content_type {
+            obj.insert("push".into(), json!({"content_type": ct}));
+        }
+    }
+    out
+}
+
+/// A poll transport that answers every poll with one fixed body.
+struct FixedPoll(Vec<u8>);
+
+impl PollTransport for FixedPoll {
+    fn poll(&self, _: &PollRequest) -> Result<Vec<u8>, String> {
+        Ok(self.0.clone())
+    }
+}
+
+/// Runs one committed case the way its fields say it was delivered.
+fn deliver(
+    case: &Value,
+    config: &ReceiverConfig,
+    resolver: &MapResolver,
+) -> TestResult<Result<VerifiedSet, Refusal>> {
+    let ledger = MemoryJtiLedger::new();
+    for prior in case
+        .get("prior")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        verify_set(prior.as_str().ok_or("prior")?, config, resolver, &ledger)?;
+    }
+    if let Some(body) = case.get("poll_response").and_then(Value::as_str) {
+        let transport = FixedPoll(body.as_bytes().to_vec());
+        return match poll_once(
+            &transport,
+            &PollRequest::default(),
+            config,
+            resolver,
+            &ledger,
+        ) {
+            Ok(outcome) => Ok(Ok(outcome
+                .verified
+                .into_iter()
+                .next()
+                .ok_or("the poll returned no verified token")?)),
+            Err(r) => Ok(Err(r)),
+        };
+    }
+    let token = case.get("token").and_then(Value::as_str).ok_or("token")?;
+    if let Some(push) = case.get("push") {
+        let receiver = PushReceiver {
+            config,
+            resolver,
+            ledger: &ledger,
+            authorization: None,
+        };
+        let content_type = push.get("content_type").and_then(Value::as_str);
+        let response = receiver.receive(content_type, None, token.as_bytes());
+        let expect = case.get("expect").ok_or("expect")?;
+        if let Some(status) = expect.get("http_status").and_then(Value::as_u64) {
+            assert_eq!(u64::from(response.status()), status);
+        }
+        if let Some(err) = expect.get("err") {
+            let body: Value = serde_json::from_str(&response.body())?;
+            assert_eq!(body.get("err"), Some(err));
+        }
+        return Ok(match response {
+            PushResponse::Accepted(set) => Ok(*set),
+            PushResponse::AlreadyReceived(r)
+            | PushResponse::Refused(r)
+            | PushResponse::Unavailable(r) => Err(r),
+        });
+    }
+    Ok(verify_set(token, config, resolver, &ledger))
 }
 
 fn render(value: &Value) -> TestResult<String> {
@@ -685,17 +933,21 @@ fn every_committed_case_gets_its_expected_verdict() -> TestResult {
         {
             resolver.insert(uri.clone(), STANDARD.decode(b64.as_str().ok_or("b64")?)?);
         }
-        let token = case.get("token").and_then(Value::as_str).ok_or("token")?;
         let expect = case.get("expect").ok_or("expect")?;
         let id = case.get("id").and_then(Value::as_str).ok_or("id")?;
         match (
-            verify_set(token, &config, &resolver),
+            deliver(&case, &config, &resolver)?,
             expect.get("accept").and_then(Value::as_bool),
         ) {
             (Ok(v), Some(true)) => {
                 assert_eq!(
                     Some(v.event_type.as_str()),
                     expect.get("event_type").and_then(Value::as_str),
+                    "{id}"
+                );
+                assert_eq!(
+                    Some(&revocation_json(v.revocation.as_ref())?),
+                    expect.get("revocation"),
                     "{id}"
                 );
                 accepted += 1;
@@ -711,7 +963,7 @@ fn every_committed_case_gets_its_expected_verdict() -> TestResult {
             (got, _) => return Err(format!("{id}: unexpected verdict {got:?}").into()),
         }
     }
-    assert_eq!((accepted, refused), (5, 22));
+    assert_eq!((accepted, refused), (7, 27));
     Ok(())
 }
 

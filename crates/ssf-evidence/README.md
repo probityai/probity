@@ -9,16 +9,19 @@ cargo add ssf-evidence
 ```
 
 ```rust
-use ssf_evidence::{verify_set, MapResolver, ReceiverConfig};
+use ssf_evidence::{MapResolver, MemoryJtiLedger, PushReceiver, PushResponse, ReceiverConfig};
 
-fn on_push(token: &str, config: &ReceiverConfig, resolver: &MapResolver) {
-    match verify_set(token, config, resolver) {
-        // The signature, the SSF profile and the evidence all held.
-        Ok(event) => println!("act on {} for {}", event.event_type, event.sub_id),
-        // A stable code, such as evidence.digest_mismatch, and the RFC 8935
-        // error code to answer with.
-        Err(refusal) => println!("400 {}: {refusal}", refusal.code.set_error_code()),
+fn on_push(config: &ReceiverConfig, resolver: &MapResolver, ledger: &MemoryJtiLedger,
+           content_type: Option<&str>, body: &[u8]) -> (u16, String) {
+    let receiver = PushReceiver { config, resolver, ledger, authorization: None };
+    let response = receiver.receive(content_type, None, body);
+    if let PushResponse::Accepted(event) = &response {
+        // Signature, SSF profile, evidence and replay all held. A session
+        // revocation or a credential change arrives typed, never as a string.
+        println!("{} revokes {:?}", event.event_type, event.revocation);
     }
+    // 202, 400 with the RFC 8935 error object, or 503 for the transmitter to retry.
+    (response.status(), response.body())
 }
 ```
 
@@ -29,11 +32,12 @@ fn on_push(token: &str, config: &ReceiverConfig, resolver: &MapResolver) {
 - **Monitor mode first.** A transmitter starts in monitor mode: events are decided, signed and logged, and nothing is sent. Switching to live never sends what monitor mode logged.
 - **Revocation needs a grant.** `session-revoked` is sent only when the receiver granted the `session_revoke` capability and the stream delivers it; otherwise the same decision goes out as a `HIGH` risk level.
 - **At-least-once delivery.** RFC 8935 push with an outbox: retries with capped exponential backoff, a dead-letter state, replay of the same bytes under the same `jti`, and a JSON form that survives a restart. A Test Connection call sends an SSF verification event at once.
+- **A receiver that ends work on a verified revocation.** CAEP `session-revoked` and `credential-change` (CAEP 1.0 section 3.3) come out of the verifier as a typed `Revocation` (`revoke` and `delete` are revocations; `update`, such as a password reset, is `CredentialRotated`: sessions bound to the old credential end, no permanent revocation entry is written); a `HIGH` risk level, which a transmitter without the capability sends instead of a revocation, carries none. A `JtiLedger` refuses a token whose issuer and `jti` were accepted before. `PushReceiver` answers RFC 8935 pushes (an exact retransmission gets the 202 the first delivery got, and is not acted on again), and `poll_once` runs one RFC 8936 poll with strict parsing and returns the acknowledgements and `setErrs` for the next one.
 - **Strict tokens.** `RS256` with keys of at least 2048 bits (the CAEP interoperability profile) or `Ed25519`; `typ` must be `secevent+jwt`; the key fixes the algorithm; `crit`, `sub`, `exp` and repeated JSON members are refused.
 
 ## Conformance vectors
 
-[`vectors/`](https://github.com/probityai/probity/tree/main/crates/ssf-evidence/vectors) holds 27 cases (5 accepted, 22 refused, each with its expected code) and the public keys they verify under. The test `tests/vectors.rs` regenerates them byte for byte and runs each one from the files alone.
+[`vectors/`](https://github.com/probityai/probity/tree/main/crates/ssf-evidence/vectors) holds 34 cases (7 accepted, each with the revocation it carries, and 27 refused, each with its expected code; replay, push and poll cases among them) and the public keys they verify under. The test `tests/vectors.rs` regenerates them byte for byte and runs each one from the files alone.
 
 ## Status
 

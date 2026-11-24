@@ -2,7 +2,10 @@
   "description": "A session-revoked from a transmitter the receiver granted the session_revoke capability.",
   "expect": {
     "accept": true,
-    "event_type": "https://schemas.openid.net/secevent/caep/event-type/session-revoked"
+    "event_type": "https://schemas.openid.net/secevent/caep/event-type/session-revoked",
+    "revocation": {
+      "kind": "session"
+    }
   },
   "id": "accept-session-revoked-rs256",
   "served": {

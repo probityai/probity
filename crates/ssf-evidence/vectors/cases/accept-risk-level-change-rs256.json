@@ -2,7 +2,8 @@
   "description": "A risk-level-change about a user, agent, tenant and session, signed RS256, whose evidence resolves, hashes to its digest, verifies and names the same subject.",
   "expect": {
     "accept": true,
-    "event_type": "https://schemas.openid.net/secevent/caep/event-type/risk-level-change"
+    "event_type": "https://schemas.openid.net/secevent/caep/event-type/risk-level-change",
+    "revocation": null
   },
   "id": "accept-risk-level-change-rs256",
   "served": {

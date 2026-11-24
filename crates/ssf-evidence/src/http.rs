@@ -1,4 +1,5 @@
-//! Push delivery over HTTP (RFC 8935) and evidence retrieval over HTTP.
+//! Push delivery (RFC 8935), poll delivery (RFC 8936) and evidence retrieval
+//! over HTTP.
 
 use std::time::Duration;
 
@@ -6,8 +7,12 @@ use serde_json::Value;
 
 use crate::delivery::{Push, PushOutcome};
 use crate::evidence::{MAX_ENVELOPE_BYTES, Resolver};
+use crate::poll::{PollRequest, PollTransport};
 
 const MAX_ERROR_BODY: u64 = 64 * 1024;
+
+/// The largest poll response read, in bytes.
+pub const MAX_POLL_BODY: u64 = 16 * 1024 * 1024;
 
 fn agent(timeout: Duration) -> ureq::Agent {
     ureq::Agent::config_builder()
@@ -90,6 +95,61 @@ impl Push for HttpPush {
             status: Some(status),
             detail: body,
         }
+    }
+}
+
+/// Polls a transmitter's poll endpoint (RFC 8936).
+///
+/// The timeout bounds the whole request, so a long poll
+/// (`returnImmediately` false) needs a timeout longer than the wait the
+/// transmitter and receiver agreed.
+#[derive(Debug, Clone)]
+pub struct HttpPoll {
+    endpoint: String,
+    authorization: Option<String>,
+    agent: ureq::Agent,
+}
+
+impl HttpPoll {
+    /// A poller of `endpoint`, with a per-request timeout.
+    pub fn new(endpoint: impl Into<String>, timeout: Duration) -> Self {
+        Self {
+            endpoint: endpoint.into(),
+            authorization: None,
+            agent: agent(timeout),
+        }
+    }
+
+    /// Sends this `Authorization` header value with every poll.
+    #[must_use]
+    pub fn with_authorization(mut self, value: impl Into<String>) -> Self {
+        self.authorization = Some(value.into());
+        self
+    }
+}
+
+impl PollTransport for HttpPoll {
+    fn poll(&self, request: &PollRequest) -> Result<Vec<u8>, String> {
+        let body = request.to_json().map_err(|e| e.to_string())?;
+        let mut call = self
+            .agent
+            .post(&self.endpoint)
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json");
+        if let Some(auth) = &self.authorization {
+            call = call.header("Authorization", auth);
+        }
+        let mut response = call.send(body.as_str()).map_err(|e| e.to_string())?;
+        let status = response.status().as_u16();
+        if status != 200 {
+            return Err(format!("{} answered HTTP {status}", self.endpoint));
+        }
+        response
+            .body_mut()
+            .with_config()
+            .limit(MAX_POLL_BODY)
+            .read_to_vec()
+            .map_err(|e| e.to_string())
     }
 }
 

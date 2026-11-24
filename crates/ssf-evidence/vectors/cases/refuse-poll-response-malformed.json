@@ -1,0 +1,10 @@
+{
+  "description": "An RFC 8936 poll response without its required sets member.",
+  "expect": {
+    "accept": false,
+    "code": "poll.response_malformed"
+  },
+  "id": "refuse-poll-response-malformed",
+  "poll_response": "{\"moreAvailable\":true}",
+  "served": {}
+}
