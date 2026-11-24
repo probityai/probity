@@ -14,7 +14,9 @@
    `probityai`, repository `probity`, workflow `release.yml`, environment `pypi`) when PyPI has one, else the
    `PYPI_API_TOKEN` secret of the `pypi` environment, then a digest read-back of every file. Once PyPI is published it pushes
    `ghcr.io/probityai/agent-evidence-mcp:<version>`, signs it by digest with cosign and attaches build provenance, and
-   publishes `server.json` to the official MCP Registry.
+   publishes `server.json` to the official MCP Registry as `org.probityai/agent-evidence-mcp`, authenticated by the
+   Ed25519 key in the apex TXT record of probityai.org (repository secret `MCP_REGISTRY_DNS_KEY`), then marks the earlier
+   `io.github.probityai/agent-evidence-mcp` listing deprecated while any of its versions is still active.
 5. Confirm the PyPI file list shows a provenance file for each distribution, run `uvx agent-evidence-mcp@<version>`,
    and `docker run --rm -i ghcr.io/probityai/agent-evidence-mcp:<version>`.
 

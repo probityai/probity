@@ -1,5 +1,6 @@
 # agent-evidence-mcp
 
+<!-- mcp-name: org.probityai/agent-evidence-mcp -->
 <!-- mcp-name: io.github.probityai/agent-evidence-mcp -->
 
 An offline, read-only MCP server that decides whether a claim about an AI system holds against evidence bytes you supply, and replays the agent-evidence conformance vectors.

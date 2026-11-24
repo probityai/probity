@@ -778,7 +778,7 @@ jobs:
       - name: the container image builds and answers over stdio
         run: |
           docker build -t agent-evidence-mcp:ci .
-          docker inspect agent-evidence-mcp:ci --format '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}' | grep -qx 'io.github.probityai/agent-evidence-mcp'
+          docker inspect agent-evidence-mcp:ci --format '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}' | grep -qx 'org.probityai/agent-evidence-mcp'
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: a real MCP client gets the contradicted sample from the image
         run: |
