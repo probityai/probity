@@ -1,6 +1,6 @@
 {
   "name": "@probityai/records-verify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Offline verifier for probity-records journals: the same verdicts as the Python verifier, byte for byte, on the shared vectors",
   "type": "module",
   "license": "Apache-2.0",
