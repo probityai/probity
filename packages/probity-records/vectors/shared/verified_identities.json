@@ -2,6 +2,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -51,7 +52,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an agent acts for a user: kind agent, the act claim's digest",
     "expected": {
@@ -93,6 +94,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -142,7 +144,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a sub-agent acts: the chain shows its parent, root first",
     "expected": {
@@ -191,6 +193,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -240,7 +243,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an agent acting for no user names its sponsor",
     "expected": {
@@ -281,6 +284,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -330,7 +334,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a user's credential with no agent credential: kind unknown, never a human acting",
     "expected": {
@@ -361,6 +365,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -410,7 +415,7 @@
       },
       "profile": "strict",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the same under the strict profile is refused",
     "expected": {
@@ -426,6 +431,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -475,7 +481,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the transport identity is returned beside the request identity",
     "expected": {
@@ -529,6 +535,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -601,7 +608,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an ES256 identity provider",
     "expected": {
@@ -643,6 +650,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -714,7 +722,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an RS256 identity provider",
     "expected": {
@@ -756,6 +764,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -805,7 +814,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp from the pinned gateway names the identity the gateway verified",
     "expected": {
@@ -871,6 +880,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -920,7 +930,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the stamp's field names in another case are the same fields",
     "expected": {
@@ -986,6 +996,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1035,7 +1046,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "another signer's Signature and Signature-Input are not a stamp: the tokens decide",
     "expected": {
@@ -1093,6 +1104,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1142,7 +1154,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp over a request with no body binds the digest of no bytes",
     "expected": {
@@ -1208,6 +1220,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1257,7 +1270,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a key-bound agent token with a DPoP proof for this request",
     "expected": {
@@ -1313,6 +1326,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1362,7 +1376,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a DPoP proof at the oldest iat the freshness check accepts: it is remembered past the skew",
     "expected": {
@@ -1418,6 +1432,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1467,7 +1482,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a DPoP proof whose jti is not ASCII: the single-use key hashes the jti's UTF-8 bytes",
     "expected": {
@@ -1523,6 +1538,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1572,7 +1588,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a certificate-bound agent token with the confirmed client certificate",
     "expected": {
@@ -1624,6 +1640,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1673,7 +1690,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an identity assertion grant as the user's credential",
     "expected": {
@@ -1715,6 +1732,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1764,7 +1782,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a forged token: the claims changed after signing",
     "expected": {
@@ -1781,6 +1799,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1830,7 +1849,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a rogue key signs under the pinned kid",
     "expected": {
@@ -1847,6 +1866,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1896,7 +1916,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the token names its own key in jwk",
     "expected": {
@@ -1913,6 +1933,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -1962,7 +1983,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the token names a key URL in jku",
     "expected": {
@@ -1979,6 +2000,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2028,7 +2050,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an unknown critical extension",
     "expected": {
@@ -2045,6 +2067,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2094,7 +2117,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a token for another audience",
     "expected": {
@@ -2111,6 +2134,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2160,7 +2184,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an expired token",
     "expected": {
@@ -2177,6 +2201,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2226,7 +2251,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a token not yet valid by nbf",
     "expected": {
@@ -2243,6 +2268,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2292,7 +2318,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an issuer the bundle does not pin",
     "expected": {
@@ -2309,6 +2335,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2358,7 +2385,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a kid that selects no pinned key",
     "expected": {
@@ -2375,6 +2402,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2439,7 +2467,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a key pinned for users only signs an agent token",
     "expected": {
@@ -2456,6 +2484,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2521,7 +2550,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a key pinned for another tenant",
     "expected": {
@@ -2538,6 +2567,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2587,7 +2617,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "alg none",
     "expected": {
@@ -2604,6 +2634,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2653,7 +2684,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an ID token presented as the agent's access token",
     "expected": {
@@ -2670,6 +2701,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2719,7 +2751,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the user's act claim names another agent",
     "expected": {
@@ -2736,6 +2768,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2785,7 +2818,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the user's credential was issued to another client",
     "expected": {
@@ -2802,6 +2835,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2851,7 +2885,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an agent marker only in a header: the agent value is not a credential",
     "expected": {
@@ -2868,6 +2902,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2917,7 +2952,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the user's credential names an agent that presented no credential",
     "expected": {
@@ -2933,6 +2968,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -2982,7 +3018,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "no credential at all",
     "expected": {
@@ -2996,6 +3032,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3045,7 +3082,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a role this verifier does not take",
     "expected": {
@@ -3062,6 +3099,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3111,7 +3149,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a sponsor with no agent",
     "expected": {
@@ -3128,6 +3166,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3177,7 +3216,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an agent acting for no user and naming no sponsor",
     "expected": {
@@ -3193,6 +3232,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3242,7 +3282,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "the act claim names the acting agent as its own parent",
     "expected": {
@@ -3259,6 +3299,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3308,7 +3349,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a key-bound agent token with no proof",
     "expected": {
@@ -3332,6 +3373,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3381,7 +3423,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a key-bound agent token and its proof for one route, replayed on another route",
     "expected": {
@@ -3405,6 +3447,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3454,7 +3497,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a proof by another key",
     "expected": {
@@ -3478,6 +3521,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3527,7 +3571,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a certificate-bound agent token with no certificate",
     "expected": {
@@ -3551,6 +3595,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3600,7 +3645,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp beside the tokens it replaces",
     "expected": {
@@ -3640,6 +3685,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3689,7 +3735,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a forged stamp: the signature bytes changed",
     "expected": {
@@ -3727,6 +3773,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3776,7 +3823,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp signed by a key the bundle does not list",
     "expected": {
@@ -3814,6 +3861,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3863,7 +3911,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp naming the pinned key but signed by another (swapped key)",
     "expected": {
@@ -3901,6 +3949,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -3950,7 +3999,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an expired stamp",
     "expected": {
@@ -3988,6 +4037,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4037,7 +4087,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp for other body bytes",
     "expected": {
@@ -4075,6 +4125,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4124,7 +4175,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp whose body and content digest were both replaced",
     "expected": {
@@ -4162,6 +4213,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4211,7 +4263,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp signed for another target, replayed on this one",
     "expected": {
@@ -4249,6 +4301,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4298,7 +4351,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp signed for another method",
     "expected": {
@@ -4336,6 +4389,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4385,7 +4439,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp signed for another authority",
     "expected": {
@@ -4423,6 +4477,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4472,7 +4527,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp whose principals were swapped for another user's after signing",
     "expected": {
@@ -4510,6 +4565,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4559,7 +4615,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp field given twice",
     "expected": {
@@ -4601,6 +4657,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4650,7 +4707,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp with no Signature line",
     "expected": {
@@ -4684,6 +4741,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4733,7 +4791,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp with no principals field",
     "expected": {
@@ -4767,6 +4825,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4816,7 +4875,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp that does not cover the content digest",
     "expected": {
@@ -4854,6 +4913,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4903,7 +4963,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp covering the components in another order",
     "expected": {
@@ -4941,6 +5001,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -4990,7 +5051,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp with another tag",
     "expected": {
@@ -5028,6 +5089,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5077,7 +5139,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp naming another algorithm",
     "expected": {
@@ -5115,6 +5177,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5164,7 +5227,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp with no expires",
     "expected": {
@@ -5202,6 +5265,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5251,7 +5315,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp living longer than five minutes",
     "expected": {
@@ -5289,6 +5353,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5338,7 +5403,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp not yet valid",
     "expected": {
@@ -5376,6 +5441,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5425,7 +5491,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp whose principals field is not a structured dictionary",
     "expected": {
@@ -5463,6 +5529,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5512,7 +5579,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp whose principals field carries another member",
     "expected": {
@@ -5550,6 +5617,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5599,7 +5667,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp whose identity is not a canonical string",
     "expected": {
@@ -5637,6 +5705,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5686,7 +5755,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp naming the user acting alone (downgraded)",
     "expected": {
@@ -5724,6 +5793,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5773,7 +5843,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp naming an agent acting for no user",
     "expected": {
@@ -5811,6 +5881,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5860,7 +5931,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp whose principals digest is not an identity digest",
     "expected": {
@@ -5898,6 +5969,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -5947,7 +6019,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp from staging read in prod",
     "expected": {
@@ -5985,6 +6057,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6034,7 +6107,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "an identity provider's key signs a stamp",
     "expected": {
@@ -6072,6 +6145,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6121,7 +6195,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp key pinned for another tenant",
     "expected": {
@@ -6159,6 +6233,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6208,7 +6283,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp whose nonce is an Integer, not a String",
     "expected": {
@@ -6246,6 +6321,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6295,7 +6371,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a stamp presented as a token role",
     "expected": {
@@ -6318,6 +6394,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6367,7 +6444,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a content digest carrying a second algorithm",
     "expected": {
@@ -6405,6 +6482,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6454,7 +6532,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a Signature-Input that is not a structured dictionary",
     "expected": {
@@ -6492,6 +6570,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6539,7 +6618,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a bundle pin naming no listed key",
     "expected": {
@@ -6556,6 +6635,7 @@
   {
     "at": "2026-11-23T12:00:00+00:00",
     "bundle": {
+      "anchors": [],
       "audience": "https://billing.example.com/mcp",
       "environment": "prod",
       "issuers": {
@@ -6604,7 +6684,7 @@
       },
       "profile": "basic",
       "tenant": "acme",
-      "version": 1
+      "version": 2
     },
     "description": "a bundle carrying a private key",
     "expected": {

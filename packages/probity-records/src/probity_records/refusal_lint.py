@@ -364,14 +364,14 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
 #: Where this package's own checks put refusal codes.
 PACKAGE_CONFIG = Config(
     raisers=frozenset({"RevocationError", "IdentityStringError", "IdentityDigestError@0", "_JwkRefused",
-                       "grants.py::ValueError"}),
+                       "AnchorRefused@0", "grants.py::ValueError"}),
     exempt_functions=frozenset({"act_grade", "possession_grade", "strict_shortfall"}),  # grades, never refusals
     located_lists=frozenset({"problems", "found", "ignored", "failures"}),
     assigned=frozenset({"result", "problem", "verdict", "outcome"}))
 #: The modules whose refusals the registry holds: identity, possession, authority, approval, revocation, journal.
 PACKAGE_MODULES = ("authority", "canonical_identity", "celexpr", "constraints", "digests", "governance", "grants",
                    "identity", "journal", "oidc_approval", "possession", "quorum", "revocation", "stamp",
-                   "verified_identities", "walk")
+                   "trust_bundle", "verified_identities", "walk")
 #: Every other module of the package, with the reason it holds no identity or authority refusal. A module named in
 #: neither tuple fails ``test_every_module_is_linted_or_excluded_with_a_reason``, so a new check cannot escape the lint
 #: by being added under a new name.

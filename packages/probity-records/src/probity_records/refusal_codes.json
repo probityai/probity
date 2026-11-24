@@ -63,6 +63,30 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/allow_without_approval_binding"
   },
   {
+   "code": "anchor_predicate_not_authorized",
+   "check": "key.anchor",
+   "meaning": "the anchor that signed the statement may not sign its predicate type",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_predicate_not_authorized"
+  },
+  {
+   "code": "anchor_signed_outside_window",
+   "check": "key.anchor",
+   "meaning": "a witnessed tree head shows the statement was signed outside the anchor's window",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_signed_outside_window"
+  },
+  {
+   "code": "anchor_signing_time_unbound",
+   "check": "key.anchor",
+   "meaning": "the anchor's window or a revocation needs a signing time, and no witnessed tree head holding the statement gives one",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_signing_time_unbound"
+  },
+  {
+   "code": "anchor_unknown",
+   "check": "key.anchor",
+   "meaning": "no signing anchor the pinned trust bundle lists signed the statement",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_unknown"
+  },
+  {
    "code": "approval_auth_not_fresh",
    "check": "approval.oidc",
    "meaning": "the approver's authentication is older than the policy allows",

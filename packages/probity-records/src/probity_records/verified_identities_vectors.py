@@ -183,8 +183,8 @@ def bundle(profile: str = "basic", **issuers: Any) -> dict[str, Any]:
     user_jwk, user_pin = pin(USER_KEY, ["user", "agent", "sponsor"])
     stamp_jwk, stamp_pin = pin(STAMP_KEY, ["stamp"], kid=None)
     base = {IDP: {"keys": [user_jwk], "pins": [user_pin]}, GATEWAY: {"keys": [stamp_jwk], "pins": [stamp_pin]}}
-    return {"version": 1, "environment": ENV, "tenant": TENANT, "audience": AUDIENCE, "profile": profile,
-            "issuers": {**base, **issuers}}  # fmt: skip
+    return {"version": 2, "environment": ENV, "tenant": TENANT, "audience": AUDIENCE, "profile": profile,
+            "issuers": {**base, **issuers}, "anchors": []}  # fmt: skip
 
 
 STAMP_ACT = act_chain_digest({"sub": "agent-refunds"})
