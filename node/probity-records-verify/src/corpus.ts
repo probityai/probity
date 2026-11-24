@@ -4,9 +4,10 @@
 // any other suite is answered not-applicable, so the output always covers the whole manifest.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { identifier } from "./identifiers.ts";
 import { judgeApprovalBinding, judgeUncertainEffect, parseReceived } from "./verify.ts";
 
-const SCHEMA_ID = "https://probityai.github.io/agent-evidence-vectors/schema/verdict-line/v1";
+const SCHEMA_ID = identifier("agent-evidence-vectors/schema/verdict-line/v1");
 const APPROVAL_SUITE = "approval-binding/v1";
 const UNCERTAIN_SUITE = "uncertain-effect/v1";
 const ACCEPTED_EFFECT = "effect_held";
