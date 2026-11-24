@@ -41,7 +41,7 @@ fn on_push(config: &ReceiverConfig, resolver: &MapResolver, ledger: &MemoryJtiLe
 
 ## Status
 
-Version 0.1.0. Built on the published [`dsse`](https://crates.io/crates/dsse) and [`jcs-admit`](https://crates.io/crates/jcs-admit) crates.
+Version 0.2.0. It adds the receiver and changes `verify_set`, which now takes a `JtiLedger` as its fourth argument and refuses a `jti` the ledger accepted before; a caller of 0.1.0 passes `&MemoryJtiLedger::new()` or its own ledger. Built on the published [`dsse`](https://crates.io/crates/dsse) and [`jcs-admit`](https://crates.io/crates/jcs-admit) crates.
 
 | Document | What it covers |
 | --- | --- |

@@ -10,6 +10,7 @@
           "agent": [],
           "build": [],
           "grant": [],
+          "idp-key": [],
           "key": [],
           "permit": [],
           "sponsor": [],
@@ -44,7 +45,7 @@
     "description": "a chain of three lists naming every kind",
     "expected": {
       "state": {
-        "head": "sha256:5362028615e46a0b3d9286daacf21f7529b3b1db41b90106c6cbac70f4e67998",
+        "head": "sha256:8efe2d9cde92745b5f89fa007d7a0ae95a91b268bee465f30de9a6052aebb7d6",
         "issuedAt": "2026-06-03T00:00:00Z",
         "listId": "probity-revocations",
         "revoked": {
@@ -57,6 +58,9 @@
           ],
           "grant": [
             "1362c039c94e673a9abbf8b742aca7c0b7224e81772949ba38991962ecb20e32"
+          ],
+          "idp-key": [
+            "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
           ],
           "key": [
             "1362c039c94e673a9abbf8b742aca7c0b7224e81772949ba38991962ecb20e32"
@@ -142,6 +146,12 @@
               "revokedAt": "2026-06-03T00:00:00Z"
             },
             {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+              "kind": "idp-key",
+              "reason": "test",
+              "revokedAt": "2026-06-03T00:00:00Z"
+            },
+            {
               "id": "1362c039c94e673a9abbf8b742aca7c0b7224e81772949ba38991962ecb20e32",
               "kind": "key",
               "reason": "test",
@@ -178,7 +188,7 @@
           "seq": 3,
           "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
         },
-        "sig": "PDOj2zAvB9km76kwWSGTXJCdK3JrP1287vuYBh/WnlhP4ysGrgYh/tGWIR94o8nSteCZUQZZH5aWJay/17uwDw=="
+        "sig": "O7Rf298Al2WHlaZYrplJAEJkDbuQtn9VZnBucz/weFPjpdZD8/Nnk0LnuynL1tN197wyN+yqhlOABK2wf7s0Cg=="
       }
     ],
     "roots": [
@@ -196,6 +206,7 @@
           "agent": [],
           "build": [],
           "grant": [],
+          "idp-key": [],
           "key": [
             "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
           ],
@@ -267,6 +278,7 @@
           "agent": [],
           "build": [],
           "grant": [],
+          "idp-key": [],
           "key": [],
           "permit": [],
           "sponsor": [
@@ -1107,6 +1119,12 @@
               "revokedAt": "2026-06-03T00:00:00Z"
             },
             {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+              "kind": "idp-key",
+              "reason": "test",
+              "revokedAt": "2026-06-03T00:00:00Z"
+            },
+            {
               "id": "1362c039c94e673a9abbf8b742aca7c0b7224e81772949ba38991962ecb20e32",
               "kind": "key",
               "reason": "test",
@@ -1143,7 +1161,7 @@
           "seq": 3,
           "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
         },
-        "sig": "PDOj2zAvB9km76kwWSGTXJCdK3JrP1287vuYBh/WnlhP4ysGrgYh/tGWIR94o8nSteCZUQZZH5aWJay/17uwDw=="
+        "sig": "O7Rf298Al2WHlaZYrplJAEJkDbuQtn9VZnBucz/weFPjpdZD8/Nnk0LnuynL1tN197wyN+yqhlOABK2wf7s0Cg=="
       }
     ],
     "roots": [
@@ -1719,6 +1737,275 @@
           "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
         },
         "sig": "dPnkDeF//RVVvsi05kcsfBkn2nwbsunJSGzuSneOfCufjvDRZrwdScXOQFZ84Wwz52KgTswfv3pSCewIxk/kDQ=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "an identity provider key is revoked by its RFC 7638 thumbprint",
+    "expected": {
+      "state": {
+        "head": "sha256:7731baa1213a50bd2c907a10801803d77b602fc095be887ec34cce1a18b6d069",
+        "issuedAt": "2026-06-01T00:00:00Z",
+        "listId": "probity-revocations",
+        "revoked": {
+          "agent": [],
+          "build": [],
+          "grant": [],
+          "idp-key": [
+            "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+          ],
+          "key": [],
+          "permit": [],
+          "sponsor": [],
+          "stream": []
+        },
+        "roots": [
+          "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+        ],
+        "seq": 1
+      }
+    },
+    "id": "RL40",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+              "kind": "idp-key",
+              "reason": "signing key leaked",
+              "revokedAt": "2026-06-01T00:00:00Z"
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "JM4EGW7jLSzPbkUgdqVcMMJe1SSHL9rTQLM7pn7yitMrEVU0DnWacdgspO7MWY/taxgyPA5skbgaCTzPp+RxBQ=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "an idp-key id of 42 characters is refused",
+    "expected": {
+      "index": 0,
+      "refused": "revocation_list_shape"
+    },
+    "id": "RL41",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4",
+              "kind": "idp-key",
+              "revokedAt": "2026-06-01T00:00:00Z"
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "IzoxTzkPYu0tuGYiiXu2REwsRqAJx1CiNypQCv9BzoNWhDw7tqRtg93tX0FDbPPcQdEK8GOyUVX2rSAPor7/DA=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "a padded idp-key id is refused",
+    "expected": {
+      "index": 0,
+      "refused": "revocation_list_shape"
+    },
+    "id": "RL42",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k=",
+              "kind": "idp-key",
+              "revokedAt": "2026-06-01T00:00:00Z"
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "zXuNP84qk3HiSC6s11OeohR73LRLhDl2SbU+dfWyeT3hDAWPSmi7buir0X1dQUlw9Z15legswis2tsbD/eXhDw=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "a 64-hex key id under idp-key is refused",
+    "expected": {
+      "index": 0,
+      "refused": "revocation_list_shape"
+    },
+    "id": "RL43",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2",
+              "kind": "idp-key",
+              "revokedAt": "2026-06-01T00:00:00Z"
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "pOcqCPpQqf0JqoVJXulLCs71e/N4B/LrNnaioyvYpi/miBK4syYm9AsotvUQItnElH415ykO+TQkwmjV/bnQAQ=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "an idp-key id whose last digit sets an unused bit (a second spelling) is refused",
+    "expected": {
+      "index": 0,
+      "refused": "revocation_list_shape"
+    },
+    "id": "RL44",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4l",
+              "kind": "idp-key",
+              "revokedAt": "2026-06-01T00:00:00Z"
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "eQlTL3vlfEypsTn+cPjXj3hD8Yl/17BNJp9vDZ83KStfYAQYgeKt6yDjnj0VJu5N7stBu8eVlgV86byF+k/CBg=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "an idp-key id in the standard base64 alphabet is refused",
+    "expected": {
+      "index": 0,
+      "refused": "revocation_list_shape"
+    },
+    "id": "RL45",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "kPrK/qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+              "kind": "idp-key",
+              "revokedAt": "2026-06-01T00:00:00Z"
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "kE0146hCHs4aZq0eRTTbvqc5ZeKapJTAwdoZ8KcBXZ3O1KDM+13cBtVtciXrFOG6fWNUT8sji9h4x30Y/mQWDg=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "a successor on an idp-key entry is refused",
+    "expected": {
+      "index": 0,
+      "refused": "revocation_list_shape"
+    },
+    "id": "RL46",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+              "kind": "idp-key",
+              "revokedAt": "2026-06-01T00:00:00Z",
+              "successor": "I9dejgXrb7a7eFLkgHTJdJE9EecCR936q+7+pt0qEUM="
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "qZDgMtVT5AsqEVMadu/8mWMBeJAOuVezIbE1Xnup8PzH41kKX1BXG47eXL7TjL5Sj/o1sscn+qVcS/c3T9erDQ=="
+      }
+    ],
+    "roots": [
+      "66e0964922229d08455f3b8961827ac11e766a0cba43ee5a5b5dc2cd78870bf2"
+    ]
+  },
+  {
+    "description": "a thumbprint under kind key is refused",
+    "expected": {
+      "index": 0,
+      "refused": "revocation_list_shape"
+    },
+    "id": "RL47",
+    "lists": [
+      {
+        "body": {
+          "entries": [
+            {
+              "id": "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k",
+              "kind": "key",
+              "revokedAt": "2026-06-01T00:00:00Z"
+            }
+          ],
+          "issuedAt": "2026-06-01T00:00:00Z",
+          "issuerKey": "31J9Yt30rIbYE7BUMeLJwD+WxLxznqGNkbouuyOQwwk=",
+          "listId": "probity-revocations",
+          "previous": null,
+          "seq": 1,
+          "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+        },
+        "sig": "79WFbjY6joUcOkS3Vq0tAaHm9E9GFr2i5Q2FotUS/7BkWI5gXcodGJcXFSsxrdXttFxKyPl3dJ4tL8w3ImwDCw=="
       }
     ],
     "roots": [

@@ -1,7 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (2026-11-24)
 
+- The revocation list names an identity provider's token-signing key with kind `idp-key`. Its id is the key's RFC 7638
+  SHA-256 JWK thumbprint, exactly 43 characters of `[A-Za-z0-9_-]` with the two unused bits of the last character
+  zero, so one key has one spelling; any other id is refused as `revocation_list_shape:entry_id_form:idp-key`. Kind
+  `key` keeps its 64-hex ids and is still the only kind that may carry a `successor`. `RevocationState.idp_key_revoked`
+  and the TypeScript `idpKeyRevoked` hold from the entry's `revokedAt` on; the TypeScript reader also gains
+  `revokedAt(state, kind, id, at)`. The shared vectors in `vectors/shared/revocation.json` add RL40 to RL47, and RL02
+  now names an `idp-key` entry, so its head digest changed: a reader that has not learned the kind refuses RL02.
+- The dependency range of `agent-evidence-vectors` stays `>=0.36.3,<0.38`. The approval-binding reader in 0.38.0 also
+  requires an issuance register, the approval's outcome and the enforcement mode, which `build_approval_binding` does
+  not write, so it denies a record built here; the cap rises when the builder writes them. The range of
+  `agent-evidence-verify` is `>=0.9.0,<0.12`.
 - Session-key certificates are `probity-key-delegation/v2` ([docs/key-delegation.md](docs/key-delegation.md)). The
   root now signs the window key's scope as explicit members of the certificate body: `hierarchy` (`identity`,
   `authority` or `record`), `custody` (`ours`, `customer` or `custodian`; a record root is never `customer`), `tenant`

@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.10.0
+
+A minor release: `web_bot_auth/v1` can pin a covered field, a null time limit is invalid input, and a new corpus holds the agent browser profile.
 
 - `agent_identity_statement/v1` checks a past decision against an agent's issuer-signed identity history (predicate
   `https://w3id.org/agent-evidence/predicate/v1/agent-identity-statement`): the versions form one chain under the
