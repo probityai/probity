@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- The refusal registry holds the agent browser's codes. Check `browser.signer`: `browser_target_unsignable` and
+  `browser_stamp_missing`. Check `browser.session`: `browser_host_mismatch`, `browser_session_expired`,
+  `browser_session_revoked`, `browser_session_value_in_request`, `browser_session_cookie_foreign`,
+  `browser_session_no_grant`, `browser_release_unrecorded` and `browser_answer_unscrubbable`. Check `browser.proxy`:
+  `browser_body_too_large`, `browser_upgrade_refused`, `browser_tunnel_refused` and `browser_upstream_failed`.
+- `docs/verified-identities.md` describes the agent browser's signature: the `Probity-Stamp-Digest` field (an RFC 8941
+  String holding `digests.stamp_digest`) and the Web Bot Auth profile that covers it.
+
 ## 0.8.0 (2026-11-23)
 
 - A grant body now has one grammar, checked the same way by the Python verifier and the TypeScript verifier. Before
