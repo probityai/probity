@@ -118,13 +118,14 @@ impl PushReceiver<'_> {
     ) -> Result<VerifiedSet, Refusal> {
         if let Some(expected) = self.authorization {
             let given = authorization.unwrap_or_default();
-            if false && !same_bytes(expected.as_bytes(), given.as_bytes()) {
+            if !same_bytes(expected.as_bytes(), given.as_bytes()) {
                 return Err(Refusal::new(
                     Code::PushAuthentication,
                     "the Authorization header does not carry the transmitter's credential",
                 ));
             }
         }
+        check_content_type(content_type)?;
         let token = std::str::from_utf8(body)
             .map_err(|_| Refusal::new(Code::SetMalformed, "the body is not UTF-8"))?;
         verify_set(token, self.config, self.resolver, self.ledger)

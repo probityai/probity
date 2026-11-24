@@ -304,8 +304,9 @@ pub(crate) fn verify_delivered(
         }
     };
 
+    check_replay(ledger, &config.issuer, &jti, token)?;
     Ok(VerifiedSet {
-        revocation: None,
+        revocation: revocation_of(event_type, &event),
         jti,
         event_type: event_type.clone(),
         event,
@@ -416,7 +417,7 @@ fn check_event_payload(event_type: &str, event: &Map<String, Value>) -> Result<(
             }
             Ok(())
         }
-        CREDENTIAL_CHANGE => Ok(()),
+        CREDENTIAL_CHANGE => check_credential_change(event),
         VERIFICATION if event.get("state").is_some_and(|s| !s.is_string()) => {
             refuse(Code::SetEventPayload, "state is not a string")
         }

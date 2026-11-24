@@ -62,7 +62,6 @@ impl PollRequest {
 pub struct PollResponse {
     /// Each token returned, keyed by its `jti`. Required: a response with
     /// nothing to deliver carries an empty object.
-    #[serde(default)]
     pub sets: BTreeMap<String, String>,
     /// Whether more tokens are waiting; absent means `false`.
     #[serde(default)]
@@ -140,7 +139,7 @@ pub fn poll_once(
         more_available: response.more_available,
     };
     for (jti, token) in &response.sets {
-        match verify_delivered(token, None, config, resolver, ledger) {
+        match verify_delivered(token, Some(jti), config, resolver, ledger) {
             Ok(set) => {
                 outcome.next.ack.push(jti.clone());
                 outcome.verified.push(set);
