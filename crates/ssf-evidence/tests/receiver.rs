@@ -143,12 +143,11 @@ fn credential_change_without_a_credential_type_string_is_refused() -> TestResult
 }
 
 #[test]
-fn credential_change_revoke_delete_and_update_carry_a_credential_revocation() -> TestResult {
+fn credential_change_revoke_and_delete_carry_a_credential_revocation() -> TestResult {
     let (r, resolver) = evidence()?;
     for (change_type, change) in [
         ("revoke", CredentialChange::Revoke),
         ("delete", CredentialChange::Delete),
-        ("update", CredentialChange::Update),
     ] {
         let t = credential_change(&format!("cc-{change_type}"), change_type, &r)?;
         let set = verify_set(&t, &config()?, &resolver, &MemoryJtiLedger::new())?;
@@ -161,6 +160,20 @@ fn credential_change_revoke_delete_and_update_carry_a_credential_revocation() ->
             })
         );
     }
+    Ok(())
+}
+
+#[test]
+fn credential_change_update_is_a_rotation_and_not_a_revocation() -> TestResult {
+    let (r, resolver) = evidence()?;
+    let t = credential_change("cc-update", "update", &r)?;
+    let set = verify_set(&t, &config()?, &resolver, &MemoryJtiLedger::new())?;
+    assert_eq!(
+        set.revocation,
+        Some(Revocation::CredentialRotated {
+            credential_type: "password".into(),
+        })
+    );
     Ok(())
 }
 

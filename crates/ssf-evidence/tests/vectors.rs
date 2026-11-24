@@ -150,6 +150,9 @@ fn revocation_json(revocation: Option<&Revocation>) -> TestResult<Value> {
             change,
         }) => json!({"kind": "credential", "credential_type": credential_type,
                      "change_type": change.as_str()}),
+        Some(Revocation::CredentialRotated { credential_type }) => {
+            json!({"kind": "credential-rotated", "credential_type": credential_type})
+        }
         Some(other) => return Err(format!("no vector form for {other:?}").into()),
     })
 }
@@ -358,6 +361,15 @@ fn cases() -> TestResult<Vec<Case>> {
         served,
         CREDENTIAL_CHANGE,
         json!({"kind": "credential", "credential_type": "x509", "change_type": "revoke"}),
+    ));
+    let (r, served) = good_evidence("accept-cc-update", "user-123")?;
+    out.push(accept(
+        "accept-credential-change-update-rs256",
+        "A CAEP credential-change with change_type update, a password reset: the credential was rotated, so it carries a credential rotation and no revocation.",
+        sign(&credential_change_claims("update", &r)?)?,
+        served,
+        CREDENTIAL_CHANGE,
+        json!({"kind": "credential-rotated", "credential_type": "x509"}),
     ));
     let (r, served) = good_evidence("cc-change-type", "user-123")?;
     out.push(refuse(
