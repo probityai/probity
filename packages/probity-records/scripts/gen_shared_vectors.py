@@ -586,6 +586,15 @@ RL_ROOT, RL_NEXT, RL_OUTSIDER = key("revocation-root"), key("revocation-successo
 RL_NEXT_LATE = key("revocation-successor-1")
 T0, T1, T2, T3 = "2026-06-01T00:00:00Z", "2026-06-02T00:00:00Z", "2026-06-03T00:00:00Z", "2026-06-04T00:00:00Z"
 DIGEST_A = hashlib.sha256(b"grant-a").hexdigest()
+#: The RFC 7638 thumbprint of the RFC 8037 appendix A Ed25519 key (RFC 8037 A.3), the id of an idp-key entry.
+IDP_THUMBPRINT = "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
+
+
+def rl_subject(kind: str) -> str:
+    """An id a list can name under ``kind``."""
+    if kind == "idp-key":
+        return IDP_THUMBPRINT
+    return DIGEST_A if kind in DIGEST_KINDS else f"{kind}:one"
 
 
 def rl(seq: int, entries: list, previous: dict | None = None, *, at: str = T0, signer: Signer = RL_ROOT,
@@ -606,9 +615,8 @@ def rl_resign(body: dict, signer: Signer = RL_ROOT) -> dict:
     return {"body": body, "sig": _b64(signer.sign(message))}
 
 
-def loosen(char: str) -> str:
+def loosen(char: str, alphabet: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/") -> str:
     """The same base64 digit with its lowest (unused, so non-canonical) bit set."""
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     return alphabet[alphabet.index(char) | 1]
 
 
@@ -620,7 +628,7 @@ def revocation_rows() -> list[dict]:
     """Cases every reader of the one revocation list must agree on."""
     one = rl(1, [])
     two = rl(2, [rl_entry("agent", "agent:alpha", T1), rl_entry("stream", "stream-7", T1)], one, at=T1)
-    every = [rl_entry(k, DIGEST_A if k in DIGEST_KINDS else f"{k}:one", T2, reason="test") for k in REVOCATION_KINDS]
+    every = [rl_entry(k, rl_subject(k), T2, reason="test") for k in REVOCATION_KINDS]
     three = rl(3, sorted(two["body"]["entries"] + every, key=lambda e: (e["kind"], e["id"])), two, at=T2)
     rotate = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT))])
     by_next = rl(2, rotate["body"]["entries"], rotate, at=T1, signer=RL_NEXT)
@@ -633,6 +641,7 @@ def revocation_rows() -> list[dict]:
     sig = base64.b64decode(one["sig"])
     loose_sig = one["sig"][:-3] + loosen(one["sig"][-3]) + "=="
     loose_key = one["body"]["issuerKey"][:-2] + loosen(one["body"]["issuerKey"][-2]) + "="
+    url_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
     accept, refuse = "accept", "refuse"
     cases: list[tuple[str, str, list, str, str | None, int | None]] = [
         ("RL01", "an empty first list is in force", [one], accept, None, None),
@@ -713,6 +722,25 @@ def revocation_rows() -> list[dict]:
         ("RL39", "a root revoked with a successor that the same list revokes ends the chain (successor id sorts after)",
          [both_late, rl(2, both_late["body"]["entries"], both_late, at=T1, signer=RL_NEXT_LATE)], refuse,
          "revocation_list_signer_not_a_root", 1),
+        ("RL40", "an identity provider key is revoked by its RFC 7638 thumbprint",
+         [rl(1, [rl_entry("idp-key", IDP_THUMBPRINT, reason="signing key leaked")])], accept, None, None),
+        ("RL41", "an idp-key id of 42 characters is refused",
+         [rl_edit(one, entries=[rl_entry("idp-key", IDP_THUMBPRINT[:-1])])], refuse, "revocation_list_shape", 0),
+        ("RL42", "a padded idp-key id is refused",
+         [rl_edit(one, entries=[rl_entry("idp-key", IDP_THUMBPRINT + "=")])], refuse, "revocation_list_shape", 0),
+        ("RL43", "a 64-hex key id under idp-key is refused",
+         [rl_edit(one, entries=[rl_entry("idp-key", RL_ROOT.key_id)])], refuse, "revocation_list_shape", 0),
+        ("RL44", "an idp-key id whose last digit sets an unused bit (a second spelling) is refused",
+         [rl_edit(one, entries=[rl_entry("idp-key", IDP_THUMBPRINT[:-1] + loosen(IDP_THUMBPRINT[-1], url_alphabet))])],
+         refuse, "revocation_list_shape", 0),
+        ("RL45", "an idp-key id in the standard base64 alphabet is refused",
+         [rl_edit(one, entries=[rl_entry("idp-key", IDP_THUMBPRINT.replace("_", "/"))])], refuse,
+         "revocation_list_shape", 0),
+        ("RL46", "a successor on an idp-key entry is refused",
+         [rl_edit(one, entries=[rl_entry("idp-key", IDP_THUMBPRINT, successor=raw_public(RL_NEXT))])], refuse,
+         "revocation_list_shape", 0),
+        ("RL47", "a thumbprint under kind key is refused",
+         [rl_edit(one, entries=[rl_entry("key", IDP_THUMBPRINT)])], refuse, "revocation_list_shape", 0),
     ]
     rows = []
     for vid, description, lists, verdict, code, index in cases:
