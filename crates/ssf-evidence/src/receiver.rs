@@ -75,18 +75,24 @@ impl CredentialChange {
 pub enum Revocation {
     /// CAEP `session-revoked`: the session the token's `sub_id` names ends.
     Session,
-    /// CAEP `credential-change` with `change_type` `revoke`, `delete` or
-    /// `update`: authority derived from the prior credential ends. `update`
-    /// counts because CAEP lists password resets and certificate renewals
-    /// under it, which replace the prior credential; a receiver that ends a
-    /// session on a harmless update costs a sign-in, one that keeps it after a
-    /// compromise reset costs the account. `create` revokes nothing and gives
-    /// no revocation.
+    /// CAEP `credential-change` with `change_type` `revoke` or `delete`: the
+    /// credential is gone for good, so authority derived from it ends and the
+    /// receiver records a permanent revocation. `create` gives no revocation.
     Credential {
         /// The `credential_type`, such as `password` or `fido2-roaming`.
         credential_type: String,
         /// The `change_type`.
         change: CredentialChange,
+    },
+    /// CAEP `credential-change` with `change_type` `update`, such as a password
+    /// reset: the credential was replaced, not withdrawn. Every session, grant
+    /// and lease bound to the old credential ends at once, and the receiver
+    /// writes no permanent revocation entry for the principal or its sponsor,
+    /// because a valid principal would be revoked on every reset and anyone
+    /// who can trigger a reset could deny it service.
+    CredentialRotated {
+        /// The `credential_type`, such as `password`.
+        credential_type: String,
     },
 }
 
@@ -345,10 +351,17 @@ fn revocation_of(event_type: &str, event: &Map<String, Value>) -> Option<Revocat
                 .and_then(Value::as_str)
                 .and_then(CredentialChange::parse)?;
             let credential_type = event.get("credential_type").and_then(Value::as_str)?;
-            (change != CredentialChange::Create).then(|| Revocation::Credential {
-                credential_type: credential_type.to_string(),
-                change,
-            })
+            let credential_type = credential_type.to_string();
+            match change {
+                CredentialChange::Create => None,
+                CredentialChange::Update => Some(Revocation::CredentialRotated { credential_type }),
+                CredentialChange::Revoke | CredentialChange::Delete => {
+                    Some(Revocation::Credential {
+                        credential_type,
+                        change,
+                    })
+                }
+            }
         }
         _ => None,
     }

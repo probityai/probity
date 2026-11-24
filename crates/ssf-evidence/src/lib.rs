@@ -11,8 +11,8 @@
 //! anyone can check, not on the transmitter's word.
 //!
 //! [`verify_set`] also types the revocation a token carries
-//! ([`Revocation`]: session revoked, or a CAEP credential change that ends the
-//! prior credential), and records each issuer's `jti` in a [`JtiLedger`] so a
+//! ([`Revocation`]: session revoked, a CAEP credential revoke or delete, or an update that rotates the
+//! credential without revoking the principal), and records each issuer's `jti` in a [`JtiLedger`] so a
 //! replayed token is refused. [`PushReceiver`] answers RFC 8935 push requests
 //! and [`poll_once`] runs one RFC 8936 poll.
 //!
