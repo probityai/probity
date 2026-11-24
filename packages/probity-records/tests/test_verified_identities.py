@@ -116,13 +116,18 @@ def test_the_spend_window_covers_every_second_the_freshness_check_still_accepts_
     oldest = _proof_of("VI16")
     assert oldest["iat"] == NOW - DEFAULT_SKEW
     assert oldest["expires"] == NOW + REPLAY_GRACE
-    assert oldest["key"] != _proof_of("VI10")["key"]
+
+
+def test_a_proof_signed_again_with_the_same_jti_is_the_same_spend_whatever_its_iat() -> None:
+    assert _proof_of("VI16")["iat"] != _proof_of("VI10")["iat"]
+    assert _proof_of("VI16")["key"] == _proof_of("VI10")["key"]
+    assert _proof_of("VI17")["key"] != _proof_of("VI10")["key"]
 
 
 def test_the_single_use_key_hashes_the_jti_as_utf8() -> None:
     proof = _proof_of("VI17")
     assert proof["jti"] == "dpop-\u00e9-0002"
-    assert proof["key"] == b64url(hashlib.sha256(f"{proof['jkt']}.{proof['jti']}".encode("utf-8")).digest())
+    assert proof["key"] == b64url(hashlib.sha256(f"{proof['jkt']}.{proof['jti']}".encode()).digest())
 
 
 def test_a_certificate_proof_names_the_confirmed_thumbprint_and_has_nothing_to_spend() -> None:

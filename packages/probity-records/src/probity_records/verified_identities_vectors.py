@@ -304,8 +304,8 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(method="GET", content=None, headers=stamp(method="GET", body=None)))),
         ("VI10", "a key-bound agent token with a DPoP proof for this request",
          c({"user": user, "agent": bound}, request=request(dpop=_proof(bound)))),
-        ("VI16", "a DPoP proof at the oldest iat the freshness check accepts: it is remembered until five seconds "
-                 "past the skew", c({"user": user, "agent": bound}, request=request(dpop=_proof(bound, iat=NOW - 120)))),
+        ("VI16", "a DPoP proof at the oldest iat the freshness check accepts: it is remembered past the skew",
+         c({"user": user, "agent": bound}, request=request(dpop=_proof(bound, iat=NOW - 120)))),
         ("VI17", "a DPoP proof whose jti is not ASCII: the single-use key hashes the jti's UTF-8 bytes",
          c({"user": user, "agent": bound}, request=request(dpop=_proof(bound, jti="dpop-\u00e9-0002")))),
         ("VI11", "a certificate-bound agent token with the confirmed client certificate",
