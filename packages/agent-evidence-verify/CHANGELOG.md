@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.0 (2026-11-23)
+## 0.10.0
 
 A minor release: `web_bot_auth/v1` can pin a covered field, a null time limit is invalid input, and a new corpus holds the agent browser profile.
 
