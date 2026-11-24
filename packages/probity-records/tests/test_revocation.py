@@ -1,4 +1,4 @@
-"""The one signed revocation list: seven subject kinds, a hash chain, cumulative entries, root rotation.
+"""The one signed revocation list: eight subject kinds, a hash chain, cumulative entries, root rotation.
 
 Every reader of revocations (records audit, the TypeScript twin, the Go reader and any other) applies this format
 and must agree with these refusals.
@@ -33,6 +33,7 @@ from probity_records import (
 )
 from probity_records.clock import SystemClock
 from probity_records.core import canonical, sha256_hex
+from probity_records.identity import jwk_thumbprint
 from probity_records.possession import cnf_for_signer
 from test_records import _approval, _trust, _write_run
 
@@ -41,6 +42,9 @@ SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's tim
 PAST = "2000-01-01T00:00:00Z"
 ROOT = Path(__file__).resolve().parents[1]
 H = "ab" * 32
+#: The RFC 7638 thumbprint of the RFC 8037 appendix A Ed25519 key, as RFC 8037 A.3 states it.
+RFC8037_JWK = {"kty": "OKP", "crv": "Ed25519", "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}
+THUMBPRINT = "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
 
 
 def _list(root: Signer, seq: int, entries: list, previous=None, *, issued_at: str = PAST, list_id: str = "rl") -> dict:
@@ -241,12 +245,16 @@ def test_an_entry_revoked_after_the_list_was_issued_is_refused() -> None:
     assert _code(exc) == "revocation_entry_from_future"
 
 
+def _some_id(kind: str) -> str:
+    return {"grant": H, "key": H, "permit": H, "idp-key": THUMBPRINT}.get(kind, f"{kind}:x")
+
+
 def test_the_issuer_sorts_entries_and_every_kind_is_listed() -> None:
     root = Signer.generate()
-    entries = [_entry(k, H if k in ("key", "permit", "grant") else f"{k}:x") for k in reversed(REVOCATION_KINDS)]
+    entries = [_entry(k, _some_id(k)) for k in reversed(REVOCATION_KINDS)]
     state = RevocationState.from_lists([_list(root, 1, entries)], {root.key_id})
     assert [e["kind"] for e in _list(root, 1, entries)["body"]["entries"]] == sorted(REVOCATION_KINDS)
-    assert all(state.revoked(k, H if k in ("key", "permit", "grant") else f"{k}:x") for k in REVOCATION_KINDS)
+    assert all(state.revoked(k, _some_id(k)) for k in REVOCATION_KINDS)
     assert state.revokes([("sponsor", "sponsor:x"), ("agent", "agent:none")])
     assert not state.revokes([("agent", "sponsor:x")])
     assert set(REFUSAL_CODES) >= {"revocation_list_shape", "revocation_list_rollback", "revocation_list_gap"}
@@ -372,3 +380,82 @@ def test_check_subject_id_admits_every_id_a_list_can_name(kind: str, ident: str)
 def test_check_subject_id_refuses_what_no_list_can_name(kind: str, ident: object, why: str) -> None:
     with pytest.raises(RevocationError, match=f"^revocation_list_shape:{why}$"):
         check_subject_id(kind, ident)
+
+
+# -- identity provider signing keys (kind "idp-key", named by RFC 7638 thumbprint) ---------------------------------
+
+
+def _loosen(char: str) -> str:
+    """The same base64url digit with its lowest bit set: unused in a thumbprint's last digit, so a second spelling."""
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    return alphabet[alphabet.index(char) | 1]
+
+
+#: Each id an idp-key entry must refuse, with what is wrong with it.
+BAD_THUMBPRINTS = {
+    "42 characters": THUMBPRINT[:-1],
+    "44 characters": THUMBPRINT + "A",
+    "padded": THUMBPRINT + "=",
+    "padding inside 43 characters": THUMBPRINT[:-1] + "=",
+    "a 64-hex key id": "ab" * 32,
+    "the standard base64 alphabet": THUMBPRINT.replace("_", "/"),
+    "nonzero unused bits in the last digit": THUMBPRINT[:-1] + _loosen(THUMBPRINT[-1]),
+    "empty": "",
+}
+
+
+def test_the_thumbprint_constant_is_rfc8037s() -> None:
+    assert jwk_thumbprint(RFC8037_JWK) == THUMBPRINT
+
+
+def test_an_idp_key_entry_is_read_by_its_thumbprint() -> None:
+    root = Signer.generate()
+    state = RevocationState.from_lists(
+        [_list(root, 1, [_entry("idp-key", THUMBPRINT, "2026-05-01T00:00:00Z", reason="signing key leaked")],
+               issued_at="2026-05-02T00:00:00Z")], {root.key_id})
+    assert state.revoked("idp-key", THUMBPRINT) and state.revoked_ids("idp-key") == frozenset({THUMBPRINT})
+    assert not state.revoked("key", THUMBPRINT)
+    assert state.summary()["revoked"]["idp-key"] == [THUMBPRINT]
+    check_subject_id("idp-key", THUMBPRINT)
+
+
+def test_idp_key_revoked_holds_at_and_after_revoked_at_only() -> None:
+    root = Signer.generate()
+    state = RevocationState.from_lists(
+        [_list(root, 1, [_entry("idp-key", THUMBPRINT, "2026-05-01T00:00:00Z")], issued_at="2026-05-02T00:00:00Z")],
+        {root.key_id})
+    assert not state.idp_key_revoked(THUMBPRINT, "2026-04-30T23:59:59Z")
+    assert state.idp_key_revoked(THUMBPRINT, "2026-05-01T00:00:00Z")
+    assert state.idp_key_revoked(THUMBPRINT, "2026-05-01T01:00:00+01:00")
+    assert state.idp_key_revoked(THUMBPRINT, "2026-06-01T00:00:00Z")
+    assert not state.idp_key_revoked(THUMBPRINT[:-1] + "A", "2026-06-01T00:00:00Z")
+    assert not state.key_revoked(THUMBPRINT, "2026-06-01T00:00:00Z")
+
+
+@pytest.mark.parametrize("ident", list(BAD_THUMBPRINTS.values()), ids=list(BAD_THUMBPRINTS))
+def test_an_idp_key_id_that_is_not_one_thumbprint_spelling_is_refused(ident: str) -> None:
+    with pytest.raises(RevocationError, match="^revocation_list_shape:entry_id_form:idp-key$"):
+        check_subject_id("idp-key", ident)
+    root = Signer.generate()
+    with pytest.raises(RevocationError, match="^revocation_list_shape:entry_id_form:idp-key$"):
+        RevocationState.from_lists([_resign(root, _body(root, [_entry("idp-key", ident)]))], {root.key_id})
+
+
+def test_a_thumbprint_never_names_a_key_entry() -> None:
+    with pytest.raises(RevocationError, match="^revocation_list_shape:entry_id_form:key$"):
+        check_subject_id("key", THUMBPRINT)
+
+
+def test_an_idp_key_entry_carries_no_successor() -> None:
+    root = Signer.generate()
+    body = _body(root, [_entry("idp-key", THUMBPRINT, successor=raw_public(Signer.generate()))])
+    with pytest.raises(RevocationError, match="^revocation_list_shape:successor_on_non_key_entry$"):
+        RevocationState.from_lists([_resign(root, body)], {root.key_id})
+
+
+def test_the_shared_vectors_hold_idp_key_lists() -> None:
+    rows = {row["id"]: row for row in json.loads((ROOT / "vectors" / "shared" / "revocation.json").read_text())}
+    accepted = [r for r in rows.values() if r["expected"].get("state", {}).get("revoked", {}).get("idp-key")]
+    refused = [r for r in rows.values() if "refused" in r["expected"]
+               and any(e.get("kind") == "idp-key" for signed in r["lists"] for e in signed["body"].get("entries", []))]
+    assert accepted and len(refused) >= 5
