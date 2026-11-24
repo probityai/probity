@@ -60,9 +60,11 @@ from cryptography.exceptions import InvalidSignature
 
 from . import celexpr, constraints
 from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
+from .identifiers import identifier
+
 
 GRANT_DOMAIN = b"probity-grant-v1\x00"
-CAPABILITY_GRANT = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/capability-grant"
+CAPABILITY_GRANT = identifier("agent-evidence-vectors/predicate/v1/capability-grant")
 APPROVAL_LEVELS = ("none", "required")
 
 

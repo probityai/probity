@@ -21,9 +21,11 @@ from typing import Any
 from . import constraints, quorum
 from .core import canonical, sha256_hex
 from .grants import ts
+from .identifiers import identifier
 
-GOVERNANCE_EXCEPTION = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/governance-exception"
-GOVERNANCE_STEP = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/governance-step"
+
+GOVERNANCE_EXCEPTION = identifier("agent-evidence-vectors/predicate/v1/governance-exception")
+GOVERNANCE_STEP = identifier("agent-evidence-vectors/predicate/v1/governance-step")
 EXCEPTION_ALLOW = "exception"
 STEPS = ("intake", "risk_route", "approval", "attestation", "signoff", "exception")
 STEP_FIELDS = ("actor", "kind", "subjectDigest")

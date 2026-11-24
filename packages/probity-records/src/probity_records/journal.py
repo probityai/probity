@@ -27,6 +27,7 @@ from .clock import Clock, from_datetime, to_datetime
 from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
 from .governance import GOVERNANCE_STEP, check_step
 from .grants import body_problem, chain_digests, grant_digest, spend_of
+from .identifiers import identifier, same_identifier
 from .identity import AUTONOMOUS, check_principals, sponsor_id, strict_shortfall
 from .possession import DEFAULT_SKEW, duplicate_proofs
 from .quorum import count_bindings
@@ -34,7 +35,7 @@ from .records import TOOL_CALL_RECORD, judge_approval_binding, judge_uncertain_e
 from .signing import Delegation, verify_delegation
 
 GENESIS = "0" * 64
-CHECKPOINT_TYPE = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/tool-call-journal-checkpoint"
+CHECKPOINT_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-checkpoint")
 JOURNAL_FILE = "journal.jsonl"
 #: Root-signed certificates for the session keys that signed lines of the journal (``signing.delegate``).
 KEYS_FILE = "keys.jsonl"
@@ -422,7 +423,7 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         problems.append(f"{where}:seq_mismatch:{pred.get('seq')}:{i}")
     if pred.get("prev") != prev:
         problems.append(f"{where}:chain_broken")
-    if body.get("predicateType") == TOOL_CALL_RECORD:
+    if same_identifier(body.get("predicateType"), TOOL_CALL_RECORD):
         # The approvals are judged first, because an approver principal may name only an approver this record
         # counts; their problems are reported after the identity's, as before.
         approval_problems: list[str] = []
@@ -443,7 +444,7 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         problems.extend(approval_problems)
         if pred.get("phase") == "effect":
             _check_effect(pred, problems, where)
-    elif body.get("predicateType") == GOVERNANCE_STEP:
+    elif same_identifier(body.get("predicateType"), GOVERNANCE_STEP):
         policies = trust.quorum_policies if trust else None
         revoked = trust.key_revoked if trust else None
         problems.extend(f"{where}:{p}" for p in check_step(pred, policies, str(pred.get("at")), revoked))
@@ -472,7 +473,8 @@ def _budget_problems(bodies: list[tuple[int, dict[str, Any]]]) -> list[str]:
     charged: set[str] = set()
     for i, body in bodies:
         pred = body.get("predicate", {})
-        if (body.get("predicateType") != TOOL_CALL_RECORD or pred.get("phase") != "authorize"
+        if (not same_identifier(body.get("predicateType"), TOOL_CALL_RECORD)
+                or pred.get("phase") != "authorize"
                 or pred.get("decision") != "allow" or pred.get("permitId") in charged):
             continue
         charges = _grant_charges(pred)
@@ -519,7 +521,7 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[s
     grant, and the same parties (issuer and subject per role), as the allow its permit rests on; grant budgets hold;
     no DPoP proof is spent by two permits inside its lifetime."""
     problems: list[str] = _budget_problems(bodies)
-    tool_calls = [(i, b) for i, b in bodies if b.get("predicateType") == TOOL_CALL_RECORD]
+    tool_calls = [(i, b) for i, b in bodies if same_identifier(b.get("predicateType"), TOOL_CALL_RECORD)]
     problems.extend(f"line_{i}:{reason}" for i, reason in duplicate_proofs(tool_calls, skew=skew))
     grant_of: dict[str, Any] = {}
     parties_of: dict[str, Any] = {}  # pid -> who its first allow names, role by role
@@ -528,7 +530,8 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[s
     since_allow: dict[str, list[str]] = {}  # pid -> phases journalled since its latest allow
     intents: dict[str, int] = {}
     for i, body in bodies:
-        if body.get("predicateType") != TOOL_CALL_RECORD:
+        if not same_identifier(body.get("predicateType"), TOOL_CALL_RECORD):
+
             continue
         pred = body["predicate"]
         pid = pred.get("permitId")

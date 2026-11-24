@@ -23,11 +23,10 @@ from pathlib import Path
 from typing import Any
 
 from .crypto import VerificationError, canonical, digest, strict_loads, verify_signature
+from .identifiers import identifier, same_identifier
 from .refund_handoff_reasons import lookup_reason_contract
 
-CONTRACT_ID = (
-    "https://probityai.github.io/agent-evidence-observer/contract/refund-handoff/0.1"
-)
+CONTRACT_ID = identifier("agent-evidence-observer/contract/refund-handoff/0.1")
 SCHEMA = "refund-handoff/0.1"
 
 INPUT_DOMAIN = "probity-refund-handoff-input-v0.1"
@@ -429,7 +428,8 @@ def _refund(value: Any, reason: str = "refund arguments") -> dict[str, Any]:
 
 
 def _profile(payload: dict[str, Any], kind: str) -> None:
-    if payload["profile"] != CONTRACT_ID or payload["schema"] != SCHEMA:
+    if not same_identifier(payload["profile"], CONTRACT_ID) or payload["schema"] != SCHEMA:
+
         raise VerificationError(kind + " selects a different contract profile")
     if payload["kind"] != kind:
         raise VerificationError(kind + " has a different signed kind")
@@ -631,7 +631,7 @@ def check_trust_snapshot(
         },
         "trust snapshot",
     )
-    if root["profile"] != CONTRACT_ID or root["schema"] != SCHEMA:
+    if not same_identifier(root["profile"], CONTRACT_ID) or root["schema"] != SCHEMA:
         raise VerificationError("trust snapshot selects a different profile")
     _identifier(root["snapshot_id"], "trust snapshot id")
     valid_from = _stamp(root["valid_from"], "trust snapshot valid_from")
@@ -1381,7 +1381,7 @@ def _prepare_evidence(bundle: Any, trust_snapshot: Any) -> _PreparedEvidence:
         },
         "refund handoff bundle",
     )
-    if root["profile"] != CONTRACT_ID or root["schema"] != SCHEMA:
+    if not same_identifier(root["profile"], CONTRACT_ID) or root["schema"] != SCHEMA:
         raise VerificationError("bundle selects a different contract profile")
     cutoff = _stamp(root["cutoff"], "bundle cutoff")
     target = _object(root["target"], TARGET_FIELDS, "bundle target")

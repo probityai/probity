@@ -19,10 +19,12 @@ from pathlib import Path
 from typing import Any
 
 from .core import canonical, sha256_hex
+from .identifiers import identifier
 
-APPROVAL_BINDING_CONTRACT = "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1"
-UNCERTAIN_EFFECT_CONTRACT = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/uncertain-effect"
-TOOL_CALL_RECORD = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/tool-call-record"
+
+APPROVAL_BINDING_CONTRACT = identifier("agent-evidence-vectors/contract/approval-binding/v1")
+UNCERTAIN_EFFECT_CONTRACT = identifier("agent-evidence-vectors/predicate/v1/uncertain-effect")
+TOOL_CALL_RECORD = identifier("agent-evidence-vectors/predicate/v1/tool-call-record")
 PAYLOAD_FILE = "payload.bin"
 OUTCOMES = ("committed", "not_run", "unknown")
 REPLIES = ("confirmed", "no_effect", "timeout", "connection_lost")

@@ -42,10 +42,12 @@ from cryptography.exceptions import InvalidSignature
 
 from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
 from .grants import ts
+from .identifiers import identifier
+
 
 VOTE_DOMAIN = b"probity-quorum-vote-v1\x00"
 DEPUTY_DOMAIN = b"probity-quorum-deputy-v1\x00"
-APPROVAL_QUORUM = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/approval-quorum"
+APPROVAL_QUORUM = identifier("agent-evidence-vectors/predicate/v1/approval-quorum")
 APPROVED, REFUSED, PENDING = "approved", "refused", "pending"
 
 
