@@ -4,12 +4,13 @@
 // (packages/probity-records/vectors/shared/revocation.json) hold the two to the same verdict. A refused list
 // throws an Error whose message is the code, `<code>` or `<code>:<detail>`, and leaves the state unchanged.
 
+import { identifier, sameIdentifier } from "./identifiers.ts";
 import { canonicalBytes, edOk, rawKey, sha256Hex } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const REVOCATION_DOMAIN = Buffer.from("probity-revocation-v1\u0000", "latin1");
-export const REVOCATION_LIST = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list";
+export const REVOCATION_LIST = identifier("agent-evidence-vectors/predicate/v1/revocation-list");
 /** Every subject kind a list names. A digest kind's id is 64 lowercase hex; the rest are identifiers. */
 export const REVOCATION_KINDS = ["agent", "build", "grant", "key", "permit", "sponsor", "stream"] as const;
 const DIGEST_KINDS = new Set(["grant", "key", "permit"]);
@@ -106,7 +107,7 @@ function checkEntry(entry: J): [string, string] {
 /** Throw revocation_list_shape unless body is exactly the format (signature and order against a chain not checked). */
 function checkBody(body: J): void {
   if (!isObj(body) || !sameMembers(body, BODY_MEMBERS)) throw shape("body_members");
-  if (body.type !== REVOCATION_LIST) throw shape("type");
+  if (!sameIdentifier(body.type, REVOCATION_LIST)) throw shape("type");
   if (typeof body.listId !== "string" || !IDENTIFIER.test(body.listId)) throw shape("list_id_form");
   const { seq, previous } = body;
   if (typeof seq !== "number" || !Number.isSafeInteger(seq) || seq < 1) throw shape("seq_not_a_positive_exact_integer");
