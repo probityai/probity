@@ -3,11 +3,21 @@ refused for every forged, swapped-key, replayed, expired, wrong-audience and dow
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
 import pytest
 from probity_records.canonical_identity import CanonicalIdentity
+from probity_records.identity import b64url
+from probity_records.possession import (
+    DEFAULT_SKEW,
+    REPLAY_GRACE,
+    cnf_for_certificate,
+    cnf_for_jwk,
+    proof_key,
+    public_jwk,
+)
 from probity_records.verified_identities import (
     RequestFacts,
     TrustBundle,
@@ -18,8 +28,10 @@ from probity_records.verified_identities import (
 from probity_records.verified_identities_vectors import (
     AT,
     EXPECTED_REFUSALS,
+    HOLDER_KEY,
     NOW,
     bundle,
+    certificate,
     check,
     judge,
     request,
@@ -88,11 +100,33 @@ def test_a_key_the_token_names_is_never_used_even_when_it_is_the_pinned_key() ->
     assert err.value.code == "token_header_names_a_key"
 
 
+def _proof_of(vid: str) -> dict:
+    return next(r for r in ROWS if r["id"] == vid)["expected"]["proof"]
+
+
 def test_the_proof_and_the_stamp_nonce_are_returned_for_a_store_to_spend() -> None:
-    row = next(r for r in ROWS if r["id"] == "VI10")
-    assert row["expected"]["proof"] == "dpop"
+    holder = cnf_for_jwk(public_jwk(HOLDER_KEY))["jkt"]
+    assert _proof_of("VI10") == {"method": "dpop", "iat": NOW, "jkt": holder, "jti": "dpop-0001",
+                                 "key": proof_key(holder, "dpop-0001"), "expires": NOW + DEFAULT_SKEW + REPLAY_GRACE}
     assert next(r for r in ROWS if r["id"] == "VI9")["expected"]["stamp"] == {"nonce": "stamp-0001",
                                                                                "expires": NOW + 50}
+
+
+def test_the_spend_window_covers_every_second_the_freshness_check_still_accepts_the_proof() -> None:
+    oldest = _proof_of("VI16")
+    assert oldest["iat"] == NOW - DEFAULT_SKEW
+    assert oldest["expires"] == NOW + REPLAY_GRACE
+    assert oldest["key"] != _proof_of("VI10")["key"]
+
+
+def test_the_single_use_key_hashes_the_jti_as_utf8() -> None:
+    proof = _proof_of("VI17")
+    assert proof["jti"] == "dpop-\u00e9-0002"
+    assert proof["key"] == b64url(hashlib.sha256(f"{proof['jkt']}.{proof['jti']}".encode("utf-8")).digest())
+
+
+def test_a_certificate_proof_names_the_confirmed_thumbprint_and_has_nothing_to_spend() -> None:
+    assert _proof_of("VI11") == {"method": "mtls", "x5t#S256": cnf_for_certificate(certificate())["x5t#S256"]}
 
 
 def test_a_stamped_request_is_verified_from_its_header_lines_and_never_from_tokens() -> None:
