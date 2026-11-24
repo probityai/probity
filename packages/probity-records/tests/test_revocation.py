@@ -397,6 +397,7 @@ BAD_THUMBPRINTS = {
     "44 characters": THUMBPRINT + "A",
     "padded": THUMBPRINT + "=",
     "padding inside 43 characters": THUMBPRINT[:-1] + "=",
+    "a padding character among the digits": THUMBPRINT[:20] + "=" + THUMBPRINT[21:],
     "a 64-hex key id": "ab" * 32,
     "the standard base64 alphabet": THUMBPRINT.replace("_", "/"),
     "nonzero unused bits in the last digit": THUMBPRINT[:-1] + _loosen(THUMBPRINT[-1]),

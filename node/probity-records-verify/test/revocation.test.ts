@@ -55,6 +55,7 @@ const BAD_THUMBPRINTS: Record<string, string> = {
   "44 characters": THUMBPRINT + "A",
   padded: THUMBPRINT + "=",
   "padding inside 43 characters": THUMBPRINT.slice(0, -1) + "=",
+  "a padding character among the digits": THUMBPRINT.slice(0, 20) + "=" + THUMBPRINT.slice(21),
   "a 64-hex key id": "ab".repeat(32),
   "the standard base64 alphabet": THUMBPRINT.replace("_", "/"),
   "nonzero unused bits in the last digit": THUMBPRINT.slice(0, -1) + B64URL[B64URL.indexOf(THUMBPRINT.slice(-1)) | 1],
