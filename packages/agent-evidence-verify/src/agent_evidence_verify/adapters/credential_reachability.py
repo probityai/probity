@@ -38,12 +38,12 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from .. import strictb64
 from ..common import CaseError, _digest, _instant, _string
+from ..identifiers import identifier, same_identifier
 from ..ijson import IJSONError, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "credential_reachability/v1"
-PREDICATE_TYPE = ("https://probityai.github.io/agent-evidence-vectors/predicate/v1/"
-                  "credential-reachability")
+PREDICATE_TYPE = identifier("agent-evidence-vectors/predicate/v1/credential-reachability")
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 CLASS_SET = "credential-reachability/v1"
 LIMIT = ("Checks the record against the consumer's pinned keys, environment, audience, challenge and "
@@ -269,7 +269,8 @@ def _statement(payload: bytes, trust: _Trust) -> dict[str, Any]:
         raise _unestablished("payload_not_json_object")
     if statement.get("_type") != STATEMENT_TYPE:
         raise _unestablished("unsupported_statement_type")
-    if statement.get("predicateType") != PREDICATE_TYPE:
+    if not same_identifier(statement.get("predicateType"), PREDICATE_TYPE):
+
         raise _unestablished("unsupported_predicate")
     subjects = statement.get("subject")
     one: Any = subjects[0] if isinstance(subjects, list) and len(subjects) == 1 else None

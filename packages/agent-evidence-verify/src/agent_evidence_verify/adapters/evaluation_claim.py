@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError
+from ..identifiers import identifier, same_identifier
 from ..ijson import IJSONError, parse_ijson
 from . import jcs_canonical
 from .bound_records import assessment_for, bound, decision
@@ -72,7 +73,7 @@ def parse_strict(data: bytes) -> Any:
 
 #: The identifier a record carries, as ``claim_type`` and as the in-toto
 #: ``predicateType`` when the record rides in a Statement. It never moves.
-PREDICATE_TYPE = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/evaluation-claim"
+PREDICATE_TYPE = identifier("agent-evidence-vectors/predicate/v1/evaluation-claim")
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PROFILE_SCHEMA = "aev-claim-profile/v1"
 RULE_SCHEMA = "aev-claim-acceptance-rule/v1"
@@ -663,7 +664,8 @@ def _has_later_transition(epoch: dict[str, Any], ids: list[str]) -> dict[str, bo
 def unwrap(doc: Any) -> tuple[Any, str | None]:
     """Accept a bare record, or one riding as the predicate of an in-toto Statement v1."""
     if isinstance(doc, dict) and "_type" in doc:
-        if doc["_type"] != STATEMENT_TYPE or doc.get("predicateType") != PREDICATE_TYPE:
+        if doc["_type"] != STATEMENT_TYPE or not same_identifier(doc.get("predicateType"),
+                                                                 PREDICATE_TYPE):
             raise MalformedInput("a Statement carrying a claim names this claim type")
         subject = doc.get("subject")
         if (
@@ -683,7 +685,8 @@ def check_envelope(record: Any) -> dict[str, Any]:
         raise MalformedInput("the record is a JSON object")
     if set(record) != {"claim_type", "profile", "verdict", "coordinates"}:
         raise MalformedInput("the record carries claim_type, profile, verdict and coordinates")
-    if record["claim_type"] != PREDICATE_TYPE:
+    if not same_identifier(record["claim_type"], PREDICATE_TYPE):
+
         raise MalformedInput(f"claim_type is {PREDICATE_TYPE}")
     if record["verdict"] not in VERDICTS:
         raise MalformedInput(f"verdict is one of {list(VERDICTS)}")

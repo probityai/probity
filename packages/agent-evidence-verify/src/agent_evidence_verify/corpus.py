@@ -44,10 +44,13 @@ from .adapters import (
     status_receipt_binding,
     uncertain_effect,
 )
+from .identifiers import identifier
 from .ijson import parse_ijson
 from .json_input import parse_json
 
-SCHEMA_ID = "https://probityai.github.io/agent-evidence-vectors/schema/verdict-line/v1"
+
+SCHEMA_ID = identifier("agent-evidence-vectors/schema/verdict-line/v1")
+
 AEE_SUITE = "adversarial-execution-evidence-conformance"
 UNCERTAIN_SUITE = "uncertain-effect/v1"
 NAME = "agent-evidence-verify"

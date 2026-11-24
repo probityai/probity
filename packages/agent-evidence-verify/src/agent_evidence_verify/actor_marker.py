@@ -35,10 +35,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from .adapters.jcs_canonical import Refusal, canonical
 from .common import CaseError
+from .identifiers import identifier, same_identifier
 from .json_input import parse_json
 
 SUITE = "actor-marker-survival/v1"
-CONTRACT_ID = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/actor-marker-survival"
+CONTRACT_ID = identifier("agent-evidence-vectors/predicate/v1/actor-marker-survival")
 ACCEPTED = "marker_survives"
 MAX_RECORD_BYTES = 1 << 20
 MAX_DEPTH = 64
@@ -249,7 +250,7 @@ def load_trust(raw: bytes) -> dict[str, Any]:
         bundle = _strict(raw)
     except CaseError as exc:
         raise ValueError(f"trust bundle: {exc}") from exc
-    if not isinstance(bundle, dict) or bundle.get("contractId") != CONTRACT_ID:
+    if not isinstance(bundle, dict) or not same_identifier(bundle.get("contractId"), CONTRACT_ID):
         raise ValueError("trust bundle: contractId is not actor-marker-survival/v1")
     writers = bundle.get("writers")
     if not isinstance(writers, dict) or not writers:
@@ -276,7 +277,8 @@ def judge(record_bytes: bytes, trust: dict[str, Any]) -> tuple[str, str]:
         return "reject", "record_malformed"
     if "contractId" not in record:
         return "reject", "contract_id_missing"
-    if record["contractId"] != CONTRACT_ID:
+    if not same_identifier(record["contractId"], CONTRACT_ID):
+
         return "reject", "contract_id_unknown"
     try:
         entries = _check_shape(record)

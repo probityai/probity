@@ -34,11 +34,12 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import CaseError, _digest
+from ..identifiers import identifier, same_identifier
 from ..ijson import IJSONError, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "observed_effect/v1"
-PREDICATE_TYPE = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/observed-effect"
+PREDICATE_TYPE = identifier("agent-evidence-vectors/predicate/v1/observed-effect")
 LIMIT = ("Checks the record's rules and signatures under the pinned observer key. It does not "
          "establish who holds that key, that the observer saw everything it claims, or that the "
          "commitment is joined to any invocation: evidence_sufficiency/v1 decides those.")
@@ -401,7 +402,8 @@ def _rule_predicate_type(state: _State) -> None:
     checking which predicate it is reading.
     """
     expected = state.policy.predicate_type
-    if not expected or state.statement.get("predicateType") != expected:
+    if not expected or not same_identifier(state.statement.get("predicateType"), expected):
+
         raise Malformed("predicate-type-unexpected")
 
 

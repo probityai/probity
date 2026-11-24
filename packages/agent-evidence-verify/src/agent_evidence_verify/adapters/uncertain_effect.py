@@ -24,11 +24,12 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError
+from ..identifiers import identifier, same_identifier
 from ..json_input import parse_json
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "uncertain_effect/v1"
-CONTRACT_ID = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/uncertain-effect"
+CONTRACT_ID = identifier("agent-evidence-vectors/predicate/v1/uncertain-effect")
 ACCEPTED = "effect_held"
 UNKNOWN_REPLIES = ("timeout", "connection_lost", "worker_crashed")
 # What set an attempt off when it is not a first dispatch or a plain retry: the engine redelivered
@@ -206,7 +207,9 @@ def first_failure(record: Record) -> str | None:
     """The first check in ``CHECKS`` the record fails, or None when it passes every one."""
     failures: dict[str, Callable[[], bool]] = {
         "contract_id_missing": lambda: "contractId" not in record,
-        "contract_id_unknown": lambda: record.get("contractId", CONTRACT_ID) != CONTRACT_ID,
+        "contract_id_unknown": lambda: not same_identifier(record.get("contractId", CONTRACT_ID),
+                                                           CONTRACT_ID),
+
         "operation_identity_missing": lambda: _identity_missing(record),
         "idempotency_key_args_changed": lambda: _key_args_changed(record),
         "idempotency_key_follows_trigger": lambda: _key_ignores_trigger(record),
