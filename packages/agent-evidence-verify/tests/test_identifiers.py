@@ -1,7 +1,6 @@
 """The identifier host rule: one host written, two hosts read as ours, nothing else recognised."""
 
 import pytest
-
 from agent_evidence_verify.identifiers import (
     IDENTIFIER_HOST,
     RECOGNISED_HOSTS,

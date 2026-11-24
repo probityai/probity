@@ -48,7 +48,6 @@ from .identifiers import identifier
 from .ijson import parse_ijson
 from .json_input import parse_json
 
-
 SCHEMA_ID = identifier("agent-evidence-vectors/schema/verdict-line/v1")
 
 AEE_SUITE = "adversarial-execution-evidence-conformance"

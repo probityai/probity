@@ -346,8 +346,7 @@ def test_either_host_spelling_of_the_predicate_type_is_the_same_type(
     before_dir = tmp_path / "before"
     before_dir.mkdir()
     before = _decide_bytes(_signed(statement), "envelope", before_dir)
-    configured
- = _rehost(MANIFEST["predicateType"], trust_host)
+    configured = _rehost(MANIFEST["predicateType"], trust_host)
     statement["predicateType"] = _rehost(statement["predicateType"], statement_host)
     after_dir = tmp_path / "after"
     after_dir.mkdir()

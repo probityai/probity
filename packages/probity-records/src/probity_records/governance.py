@@ -23,7 +23,6 @@ from .core import canonical, sha256_hex
 from .grants import ts
 from .identifiers import identifier
 
-
 GOVERNANCE_EXCEPTION = identifier("agent-evidence-vectors/predicate/v1/governance-exception")
 GOVERNANCE_STEP = identifier("agent-evidence-vectors/predicate/v1/governance-step")
 EXCEPTION_ALLOW = "exception"

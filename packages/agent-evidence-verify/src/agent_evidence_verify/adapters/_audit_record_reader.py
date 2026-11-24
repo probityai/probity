@@ -79,7 +79,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..identifiers import identifier, same_identifier
 
-
 SUITE = "agent-audit-record-conformance"
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PAYLOAD_TYPE = "application/vnd.in-toto+json"

@@ -27,7 +27,6 @@ from agent_evidence_verify.adapters import (
 )
 from agent_evidence_verify.common import CaseError
 from agent_evidence_verify.core import REFERENCE_VERIFIER_ID, canonical_json
-
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 TESTS = Path(__file__).resolve().parent
