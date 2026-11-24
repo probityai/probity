@@ -1,4 +1,4 @@
-"""The one signed revocation list: keys, permits, grants, agents, streams, sponsors and builds.
+"""The one signed revocation list: keys, identity provider keys, permits, grants, agents, streams, sponsors, builds.
 
 A revocation root signs a chain of lists. ``seq`` rises by one (it is the list's epoch), ``previous`` is the digest
 of the prior body, and the list is cumulative: an entry, once published, stays in every later list byte for byte,
@@ -18,6 +18,11 @@ the roots held plus the successors of the roots it revokes, minus every key id i
 root, in whatever order the entries come). Revoking a grant revokes every
 grant delegated under it (the chain check refuses any chain containing it); revoking an agent or a sponsor reaches
 every piece of work answering to it wherever the enforcement point derives that from a chain it verified.
+
+An identity provider's token-signing key is kind ``idp-key``, named by its RFC 7638 JWK thumbprint (SHA-256,
+base64url, no padding: one spelling per key). It is never kind ``key``, whose ids are this format's own 64-hex key ids,
+and it carries no ``successor``: an identity provider rotates through its JWKS, not through this list. A token it
+signed is refused from the entry's ``revokedAt`` on (``RevocationState.idp_key_revoked``).
 """
 
 from __future__ import annotations
@@ -46,8 +51,9 @@ from .grants import raw_public, ts
 
 REVOCATION_DOMAIN = b"probity-revocation-v1\x00"
 REVOCATION_LIST = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
-#: Every subject kind a list names. A digest kind's id is 64 lowercase hex; the rest are identifiers.
-REVOCATION_KINDS = ("agent", "build", "grant", "key", "permit", "sponsor", "stream")
+#: Every subject kind a list names. A digest kind's id is 64 lowercase hex, an ``idp-key`` id is an RFC 7638
+#: thumbprint, the rest are identifiers.
+REVOCATION_KINDS = ("agent", "build", "grant", "idp-key", "key", "permit", "sponsor", "stream")
 DIGEST_KINDS = frozenset({"grant", "key", "permit"})
 #: Every refusal ``RevocationState.apply`` reports, in the order it checks them.
 REFUSAL_CODES = (
@@ -68,6 +74,10 @@ _ENTRY_REQUIRED = frozenset({"kind", "id", "revokedAt"})
 _ENTRY_OPTIONAL = frozenset({"reason", "successor"})
 _IDENTIFIER = re.compile(r"[\x21-\x7e]{1,512}")
 _HEX64 = re.compile(r"[0-9a-f]{64}")
+#: A SHA-256 thumbprint in base64url without padding: 43 digits, the last carrying two zero bits, so each key has one
+#: spelling and a lookup by the thumbprint a reader computes cannot miss an entry written another way.
+_THUMBPRINT = re.compile(r"[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]")
+_ID_FORMS = {**dict.fromkeys(DIGEST_KINDS, _HEX64), "idp-key": _THUMBPRINT}
 _LIST_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 _TIME = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 
@@ -111,12 +121,12 @@ def check_subject_id(kind: Any, ident: Any) -> None:
     """Raise ``revocation_list_shape`` unless a list entry can name ``ident`` under ``kind``.
 
     An enforcement point admits work only under subjects some list could revoke; this is the entry check a list
-    reader applies, so the two can never disagree. A digest kind's id is 64 lowercase hex, any other kind's is 1 to
-    512 printable ASCII characters.
+    reader applies, so the two can never disagree. A digest kind's id is 64 lowercase hex, an ``idp-key`` id is a
+    canonical RFC 7638 thumbprint (43 base64url digits), any other kind's is 1 to 512 printable ASCII characters.
     """
     if kind not in REVOCATION_KINDS:
         raise _shape("entry_kind_unknown")
-    pattern = _HEX64 if kind in DIGEST_KINDS else _IDENTIFIER
+    pattern = _ID_FORMS.get(kind, _IDENTIFIER)
     if not isinstance(ident, str) or not pattern.fullmatch(ident):
         raise _shape(f"entry_id_form:{kind}")
 
@@ -268,6 +278,10 @@ class RevocationState:
 
     def key_revoked(self, kid: str, at: str) -> bool:
         return self.revoked_at("key", kid, at)
+
+    def idp_key_revoked(self, thumbprint: str, at: str) -> bool:
+        """Whether the identity provider key with RFC 7638 ``thumbprint`` was revoked at or before ``at``."""
+        return self.revoked_at("idp-key", thumbprint, at)
 
     def permit_revoked(self, pid: str, at: str) -> bool:
         return self.revoked_at("permit", pid, at)

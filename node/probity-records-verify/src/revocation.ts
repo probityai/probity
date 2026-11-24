@@ -3,16 +3,16 @@
 // The format, the order of checks and the ten refusal codes are the Python reader's; the shared vectors
 // (packages/probity-records/vectors/shared/revocation.json) hold the two to the same verdict. A refused list
 // throws an Error whose message is the code, `<code>` or `<code>:<detail>`, and leaves the state unchanged.
+// An identity provider's token-signing key is kind "idp-key", named by its RFC 7638 thumbprint, never kind "key".
 
-import { canonicalBytes, edOk, rawKey, sha256Hex } from "./verify.ts";
+import { canonicalBytes, edOk, rawKey, sha256Hex, ts } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const REVOCATION_DOMAIN = Buffer.from("probity-revocation-v1\u0000", "latin1");
 export const REVOCATION_LIST = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list";
-/** Every subject kind a list names. A digest kind's id is 64 lowercase hex; the rest are identifiers. */
-export const REVOCATION_KINDS = ["agent", "build", "grant", "key", "permit", "sponsor", "stream"] as const;
-const DIGEST_KINDS = new Set(["grant", "key", "permit"]);
+/** Every subject kind a list names. A digest kind's id is 64 lowercase hex, an idp-key id an RFC 7638 thumbprint, the rest identifiers. */
+export const REVOCATION_KINDS = ["agent", "build", "grant", "idp-key", "key", "permit", "sponsor", "stream"] as const;
 /** Every refusal applyRevocationList reports, in the order it checks them. */
 export const REFUSAL_CODES = [
   "revocation_list_shape",
@@ -32,6 +32,9 @@ const ENTRY_REQUIRED = ["kind", "id", "revokedAt"];
 const ENTRY_OPTIONAL = ["reason", "successor"];
 const IDENTIFIER = /^[\x21-\x7e]{1,512}$/;
 const HEX64 = /^[0-9a-f]{64}$/;
+// A SHA-256 thumbprint in base64url without padding: 43 digits, the last carrying two zero bits (one spelling per key).
+const THUMBPRINT = /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
+const ID_FORMS: ReadonlyMap<string, RegExp> = new Map([["grant", HEX64], ["key", HEX64], ["permit", HEX64], ["idp-key", THUMBPRINT]]);
 const LIST_DIGEST = /^sha256:[0-9a-f]{64}$/;
 const TIME = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$/;
 
@@ -92,7 +95,7 @@ function checkEntry(entry: J): [string, string] {
   }
   const { kind, id } = entry;
   if (!(REVOCATION_KINDS as readonly string[]).includes(kind)) throw shape("entry_kind_unknown");
-  const pattern = DIGEST_KINDS.has(kind) ? HEX64 : IDENTIFIER;
+  const pattern = ID_FORMS.get(kind) ?? IDENTIFIER;
   if (typeof id !== "string" || !pattern.test(id)) throw shape(`entry_id_form:${kind}`);
   checkTime(entry.revokedAt, "revokedAt");
   if ("reason" in entry && typeof entry.reason !== "string") throw shape("entry_reason_not_text");
@@ -172,6 +175,17 @@ export function applyRevocationList(state: RevocationState, signed: J): Revocati
 export function revoked(state: RevocationState, kind: string, id: string): boolean {
   if (!(REVOCATION_KINDS as readonly string[]).includes(kind)) throw new Error(`unknown_revocation_kind:${kind}`);
   return state.entries.has(`${kind}\u0000${id}`);
+}
+
+/** Whether `id` was revoked at or before `at`: anything it signs or authorises from then on is refused. */
+export function revokedAt(state: RevocationState, kind: string, id: string, at: string): boolean {
+  if (!revoked(state, kind, id)) return false;
+  return ts(state.entries.get(`${kind}\u0000${id}`).revokedAt) <= ts(at);
+}
+
+/** Whether the identity provider key with RFC 7638 `thumbprint` was revoked at or before `at`. */
+export function idpKeyRevoked(state: RevocationState, thumbprint: string, at: string): boolean {
+  return revokedAt(state, "idp-key", thumbprint, at);
 }
 
 /** The state as the shared vectors state it. */
