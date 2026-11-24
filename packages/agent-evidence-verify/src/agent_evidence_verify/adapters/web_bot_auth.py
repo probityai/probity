@@ -22,7 +22,9 @@ The checks run in this order, and the first that fails names the reason:
 2. The covered components include ``signature-agent`` (as a Dictionary member) and ``@authority`` or
    ``@target-uri``, plus every component the consumer requires. The covered ``Signature-Agent`` member is
    the URL the consumer pinned in ``signature_agent``, and the request was for the authority the consumer
-   serves (``authority``): a signature made for another host or another signer is ``contradicted``.
+   serves (``authority``): a signature made for another host or another signer is ``contradicted``. Each field
+   the consumer pins in ``pinned_fields`` is covered whole and carries exactly the pinned value: a field that
+   binds the request to a record the consumer holds (a stamp digest, an intent) is read as that record's.
 3. The signature is current at the consumer's instant ``at`` (``expires`` ahead, ``created`` not ahead of it by
    more than 60 s), within the consumer's ``max_age_seconds`` and ``max_validity_seconds`` when pinned.
 4. A body is covered. When the request has a body, the signature must cover ``content-digest`` and the header
@@ -94,7 +96,8 @@ LIMIT = ("Checks that the pinned directory's key signed the components the signa
          "is the signer's own.")
 
 REQUIRED = {"request", "directory", "directory_sha256", "signature_agent", "authority", "at"}
-OPTIONAL = {"body", "label", "required_components", "max_age_seconds", "max_validity_seconds", "allow_test_keys"}
+OPTIONAL = {"body", "label", "required_components", "pinned_fields", "max_age_seconds", "max_validity_seconds",
+            "allow_test_keys"}
 
 
 class _Fail(Exception):
@@ -403,6 +406,17 @@ def _check_components(sig: _Signature, required: list[str]) -> None:
             raise _contradicted("component_not_covered", f"the signature does not cover {name}, which the consumer requires")
 
 
+def _check_pinned_fields(request: Request, sig: _Signature, pinned: dict[str, str]) -> list[str]:
+    """Each pinned field is covered as a whole field and its RFC 9421 component value is the pinned one."""
+    whole = {str(i.value) for i in sig.inner.items if not i.params}
+    for name, expected in pinned.items():
+        if name not in whole:
+            raise _contradicted("component_not_covered", f"the signature does not cover the pinned field {name}")
+        if request.field_value(name) != expected:
+            raise _contradicted("pinned_field_mismatch", f"{name} is not the value the consumer pinned")
+    return sorted(pinned)
+
+
 def _check_agent(request: Request, sig: _Signature, pinned: str) -> str:
     member = _dictionary(request, "signature-agent", "signature_agent_mismatch").get(sig.agent_member)
     if (not isinstance(member, sf.Item) or not isinstance(member.value, str) or isinstance(member.value, sf.Token)
@@ -540,6 +554,13 @@ def _policy(assessment: dict) -> int:
         raise CaseError("assessment.allow_test_keys: expected a boolean")
     if "label" in assessment:
         _string(assessment["label"], "assessment.label")
+    pinned = assessment.get("pinned_fields", {})
+    if (not isinstance(pinned, dict) or "pinned_fields" in assessment and not pinned
+            or not all(isinstance(n, str) and n and set(n) <= _TCHAR and n == n.lower() for n in pinned)
+            or not all(isinstance(v, str) for v in pinned.values())):
+        raise CaseError("assessment.pinned_fields: expected a non-empty object of lowercase field names to values")
+    for name, value in pinned.items():
+        _field_text(value, f"assessment.pinned_fields.{name}")
     return at
 
 
@@ -621,6 +642,9 @@ def _judge_one(request: Request, chosen: str, inner: sf.InnerList, keys: dict[st
         names_pinned = True
         checks.append({"id": "signature_agent", "status": "met", "observed": agent})
         checks.append({"id": "authority", "status": "met", "observed": _check_authority(request, assessment["authority"])})
+        if "pinned_fields" in assessment:
+            checks.append({"id": "pinned_fields", "status": "met",
+                           "fields": _check_pinned_fields(request, sig, assessment["pinned_fields"])})
         _check_time(sig, at, assessment)
         checks.append({"id": "validity", "status": "met", "created": _iso(sig.created), "expires": _iso(sig.expires)})
         checks.append(_check_body(request, sig, body))

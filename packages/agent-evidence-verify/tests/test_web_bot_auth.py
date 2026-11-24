@@ -373,6 +373,60 @@ def test_query_param_component(tmp_path: Path) -> None:
     assert verdict(judge(tmp_path, moved, body=None)) == ("contradicted", "signature_invalid")
 
 
+# -- pinned fields: a covered field the consumer holds the value of (a stamp digest naming a release record) -------
+
+STAMP = '"sha256:' + "ab" * 32 + '"'
+
+
+def stamped_request(*, value: str = STAMP, covered: str = '"probity-stamp-digest"', sent: str | None = None) -> dict:
+    """A request whose signature covers a Probity-Stamp-Digest field; ``sent`` replaces the field after signing."""
+    components = ('"@method"', '"@authority"', covered, '"signature-agent";key="agent1"')
+    params = (f'({" ".join(components)});created={NOW - 30};expires={NOW + 30};keyid="{JWK["kid"]}";'
+              f'alg="ed25519";nonce="n-1";tag="web-bot-auth"')
+    base = "\n".join(['"@method": GET', '"@authority": api.example', f"{covered}: {value}",
+                      f'"signature-agent";key="agent1": "{AGENT}"', f'"@signature-params": {params}'])
+    return {"method": "GET", "url": URL, "headers": [
+        ["Signature-Agent", f'agent1="{AGENT}"'], ["Probity-Stamp-Digest", value if sent is None else sent],
+        ["Signature-Input", f"sig1={params}"],
+        ["Signature", f"sig1=:{base64.b64encode(KEY.sign(base.encode())).decode()}:"]]}
+
+
+def test_a_pinned_field_covered_with_the_pinned_value_is_supported(tmp_path: Path) -> None:
+    result = judge(tmp_path, stamped_request(), body=None, pinned_fields={"probity-stamp-digest": STAMP})
+    assert verdict(result) == ("supported", "request_signed_by_pinned_agent")
+    assert {"id": "pinned_fields", "status": "met", "fields": ["probity-stamp-digest"]} in result["checks"]
+
+
+def test_a_pinned_field_signed_with_another_value_is_contradicted(tmp_path: Path) -> None:
+    other = '"sha256:' + "cd" * 32 + '"'
+    result = judge(tmp_path, stamped_request(value=other), body=None, pinned_fields={"probity-stamp-digest": STAMP})
+    assert verdict(result) == ("contradicted", "pinned_field_mismatch")
+    assert verdict(judge(tmp_path, stamped_request(value=other), body=None)) == (
+        "supported", "request_signed_by_pinned_agent")
+
+
+def test_a_pinned_field_swapped_after_signing_is_contradicted_with_or_without_the_pin(tmp_path: Path) -> None:
+    swapped = stamped_request(sent='"sha256:' + "cd" * 32 + '"')
+    assert verdict(judge(tmp_path, swapped, body=None, pinned_fields={"probity-stamp-digest": STAMP})) == (
+        "contradicted", "pinned_field_mismatch")
+    assert verdict(judge(tmp_path, swapped, body=None)) == ("contradicted", "signature_invalid")
+
+
+@pytest.mark.parametrize("covered", ['"probity-stamp-digest";sf', '"content-type"'])
+def test_a_pinned_field_must_be_covered_whole(tmp_path: Path, covered: str) -> None:
+    request = stamped_request(covered=covered)
+    request["headers"].append(["Content-Type", STAMP])
+    result = judge(tmp_path, request, body=None, pinned_fields={"probity-stamp-digest": STAMP})
+    assert verdict(result) == ("contradicted", "component_not_covered")
+
+
+@pytest.mark.parametrize("pinned", [{}, {"Probity-Stamp-Digest": STAMP}, {"@method": "GET"}, {"x": 1},
+                                    {"x": "a\nb"}, ["probity-stamp-digest"]])
+def test_malformed_pinned_fields_raise(tmp_path: Path, pinned: Any) -> None:
+    with pytest.raises(CaseError):
+        judge(tmp_path, stamped_request(), body=None, pinned_fields=pinned)
+
+
 def test_changed_method_breaks_the_signature(tmp_path: Path) -> None:
     request = signed_request()
     assert verdict(judge(tmp_path, {**request, "method": "PUT"})) == ("contradicted", "signature_invalid")
