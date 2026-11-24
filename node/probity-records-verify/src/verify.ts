@@ -7,8 +7,8 @@
 // deputies) and the four-principal identity block. Failure codes are the Python verifier's,
 // character for character; test/shared.test.ts holds the two to the shared vectors.
 //
-// The two published per-record readers are ported too: approval-binding/v1 (the sixteen ordered
-// checks of agent_evidence_vectors.approvalbinding, with the M-of-N recount under the quorum policy
+// The two published per-record readers are ported too: approval-binding/v1 (the twenty-two ordered
+// checks of agent_evidence_vectors.approvalbinding 0.38, with the M-of-N recount under the quorum policy
 // the auditor pinned) and uncertain_effect/v1 (the thirteen ordered checks of agent-evidence-verify's
 // built-in adapter). A governance-step record is still reported as not ported, never passed.
 
@@ -1091,12 +1091,18 @@ function voteSigners(pred: J): Set<string> {
 // ---------- approval-binding/v1 reader ----------
 
 const APPROVAL_BINDING_CONTRACT = identifier("agent-evidence-vectors/contract/approval-binding/v1");
-const APPROVAL_CHECKS = ["contract_id_missing", "contract_id_unknown", "approval_not_cited", "approval_id_ambiguous",
-  "approval_replayed", "approval_superseded", "renewal_transition_missing", "renewal_binding_invalid", "key_not_bound",
-  "principal_mismatch", "event_phase_mismatch", "payload_mismatch", "approval_outside_validity", "effect_already_closed",
-  "comparison_unavailable", "release_not_served_at_decision"] as const;
+const APPROVAL_CHECKS = ["contract_id_missing", "contract_id_unknown", "approval_not_cited", "approval_not_issued",
+  "approval_id_ambiguous", "approval_request_completed_twice", "approval_not_granted", "approval_not_enforced",
+  "approval_replayed", "transition_status_unknown", "approval_superseded", "renewal_transition_missing",
+  "renewal_binding_invalid", "key_not_bound", "key_retired", "principal_mismatch", "event_phase_mismatch",
+  "payload_mismatch", "approval_outside_validity", "effect_already_closed", "comparison_unavailable",
+  "release_not_served_at_decision"] as const;
 const BOUND_FIELDS = ["event", "payloadSha256", "phase", "principal", "target", "tool"];
 const CLOSED_EFFECT_STATES = ["CONSUMED", "UNCERTAIN_CLOSE"];
+const GRANTS = ["approved", "approved-with-corrections"];
+const TRANSITION_STATUSES = ["proposed", "accepted"];
+/** The reason a record the reader cannot read is denied with (records.BINDING_MALFORMED). */
+export const BINDING_MALFORMED = "approval_binding_malformed";
 
 /** Python's `==` on parsed JSON: 1 == 1.0 == True, dicts by members, lists by position. */
 function pyEq(a: J, b: J): boolean {
@@ -1122,10 +1128,40 @@ function req(obj: J, key: string): J {
 }
 const getOr = (obj: J, key: string, dflt: J): J => (isObj(obj) && key in obj ? obj[key] : dflt);
 const instant = (text: J): number => ts(text);
+/** Python's `x in container` on parsed JSON: a list by `==`, a string by substring, an object by key; a TypeError
+ *  where Python raises one (a non-string in a string, an unhashable key, a number or null container). */
+function pyIn(x: J, container: J): boolean {
+  if (Array.isArray(container)) return container.some((e: J) => pyEq(x, e));
+  if (typeof container === "string") { if (typeof x !== "string") throw new TypeError("in <string> needs a string"); return container.includes(x); }
+  if (isObj(container)) { if (Array.isArray(x) || isObj(x)) throw new TypeError("unhashable type"); return typeof x === "string" && Object.hasOwn(container, x); }
+  throw new TypeError("argument of this type is not iterable");
+}
+/** Python's `record.get(key, default)`: an AttributeError where the record is not an object. */
+function pyGet(obj: J, key: string, dflt: J): J {
+  if (!isObj(obj)) throw new TypeError("not a mapping");
+  return key in obj ? obj[key] : dflt;
+}
 
 function approvalAmbiguous(record: J): boolean {
   const approval = req(record, "approval");
   return getOr(record, "presentedApprovals", []).some((o: J) => pyEq(req(o, "approvalId"), req(approval, "approvalId")) && !pyEq(o, approval));
+}
+function requestCompletedTwice(record: J): boolean {
+  const approval = req(record, "approval");
+  return getOr(record, "presentedApprovals", []).some((o: J) => pyEq(req(o, "requestId"), req(approval, "requestId")) &&
+    !pyEq(req(o, "approvalId"), req(approval, "approvalId")));
+}
+function transitionStatusUnknown(record: J): boolean {
+  const id = req(req(record, "approval"), "approvalId");
+  return getOr(record, "transitions", []).some((t: J) => !TRANSITION_STATUSES.some((s) => pyEq(req(t, "status"), s)) &&
+    [req(t, "predecessorApprovalId"), req(t, "successorApprovalId")].some((x: J) => pyEq(id, x)));
+}
+/** The earliest instant any `retiredKeys` entry retires the approval's key, or null; every entry naming it is read. */
+function retiredAt(record: J): number | null {
+  const approval = req(record, "approval");
+  const entries = pyGet(pyGet(record, "retiredKeys", {}), String(req(approval, "approver")), []);
+  const instants = entries.filter((e: J) => pyEq(req(e, "keyId"), req(approval, "keyId"))).map((e: J) => instant(req(e, "retiredAt")));
+  return instants.length ? Math.min(...instants) : null;
 }
 function approvalSuperseded(record: J): boolean {
   const approval = req(record, "approval"), used = instant(req(req(record, "use"), "usedAt"));
@@ -1163,17 +1199,28 @@ function useMatchesApproval(record: J, used: Buffer): boolean {
 export function judgeApprovalBinding(record: J, payload: Buffer): { decision: string; reason: string } {
   const name = String(getOr(getOr(record, "use", {}), "payloadFile", "payload.bin"));
   if (name.includes("/") || ["", ".", ".."].includes(name)) return { decision: "deny", reason: "payload_file_unsafe" };
+  try { return approvalVerdict(record, payload); } catch { return { decision: "deny", reason: BINDING_MALFORMED }; }
+}
+
+function approvalVerdict(record: J, payload: Buffer): { decision: string; reason: string } {
   const approval = req(record, "approval"), use = req(record, "use");
   const failures: Record<string, () => boolean> = {
     contract_id_missing: () => !("contractId" in record),
     contract_id_unknown: () => !pyEq(canonicalIdentifier(getOr(record, "contractId", APPROVAL_BINDING_CONTRACT)), APPROVAL_BINDING_CONTRACT),
     approval_not_cited: () => !pyEq(getOr(use, "approvalId", null), req(approval, "approvalId")),
+    approval_not_issued: () => !pyIn(req(approval, "approvalId"), pyGet(record, "issuedApprovalIds", [])),
     approval_id_ambiguous: () => approvalAmbiguous(record),
-    approval_replayed: () => getOr(record, "consumedApprovalIds", []).some((x: J) => pyEq(x, req(approval, "approvalId"))),
+    approval_request_completed_twice: () => requestCompletedTwice(record),
+    approval_not_granted: () => !GRANTS.some((g) => pyEq(pyGet(approval, "outcome", null), g)),
+    approval_not_enforced: () => !pyEq(pyGet(record, "enforcement", null), "enforce"),
+    approval_replayed: () => pyIn(req(approval, "approvalId"), pyGet(record, "consumedApprovalIds", [])),
+    transition_status_unknown: () => transitionStatusUnknown(record),
     approval_superseded: () => approvalSuperseded(record),
     renewal_transition_missing: () => renewed(record) && acceptedInto(record).length === 0,
     renewal_binding_invalid: () => renewalInvalid(record),
-    key_not_bound: () => !pyEq(getOr(req(record, "trustedKeys"), String(req(approval, "approver")), null), req(approval, "keyId")),
+    key_not_bound: () => !pyEq(pyGet(req(record, "trustedKeys"), String(req(approval, "approver")), null), req(approval, "keyId")) &&
+      retiredAt(record) === null,
+    key_retired: () => { const r = retiredAt(record); return r !== null && instant(req(approval, "issuedAt")) >= r; },
     principal_mismatch: () => !pyEq(req(use, "principal"), req(approval, "principal")),
     event_phase_mismatch: () => !(pyEq(req(use, "event"), req(approval, "event")) && pyEq(req(use, "phase"), req(approval, "phase"))),
     payload_mismatch: () => !useMatchesApproval(record, payload),
