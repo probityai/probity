@@ -15,10 +15,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from ..identifiers import identifier, same_identifier
 from ..json_input import parse_json
 
 SUITE = "approval-binding/v1"
-CONTRACT_ID = "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1"
+CONTRACT_ID = identifier("agent-evidence-vectors/contract/approval-binding/v1")
 ALLOW, DENY = "allow", "deny"
 ACCEPTED = "bound"
 MAX_RECORD_BYTES = 1 << 20
@@ -92,7 +93,8 @@ def first_failure(record: dict[str, Any], used: bytes) -> str | None:
     approval, use = record["approval"], record["use"]
     failures: dict[str, Callable[[], bool]] = {
         "contract_id_missing": lambda: "contractId" not in record,
-        "contract_id_unknown": lambda: record.get("contractId", CONTRACT_ID) != CONTRACT_ID,
+        "contract_id_unknown": lambda: not same_identifier(record.get("contractId", CONTRACT_ID),
+                                                           CONTRACT_ID),
         "approval_not_cited": lambda: use.get("approvalId") != approval["approvalId"],
         "approval_id_ambiguous": lambda: any(
             o["approvalId"] == approval["approvalId"] and o != approval

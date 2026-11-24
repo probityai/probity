@@ -389,6 +389,7 @@ NOT_LINTED = {
     "erasure_vectors": "generates vectors from the checks",
     "exports": "the export seal, a record format check outside identity and authority",
     "grant_body_vectors": "generates vectors from the checks",
+    "identifiers": "the host constant and the identifier comparison rule; it builds and compares names and refuses nothing",
     "identity_vectors": "generates vectors from the checks",
     "otel": "the audit-log stream, a record format check outside identity and authority",
     "receipt_map": "the receipt map's proofs, a log check outside identity and authority",

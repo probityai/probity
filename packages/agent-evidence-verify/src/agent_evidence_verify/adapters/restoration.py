@@ -19,10 +19,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from ..common import CaseError
+from ..identifiers import canonical_identifier, identifier, same_identifier
 from ..ijson import IJSONError, parse_ijson
 from .bound_records import assessment_for, bound, decision
 
-HOST = "https://probityai.github.io/agent-evidence-vectors"
+HOST = identifier("agent-evidence-vectors")
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 
 R1 = "incident-action-authorization"
@@ -215,7 +216,7 @@ def _statement(statement: Json) -> str | None:
         return None
     if statement["_type"] != STATEMENT_TYPE:
         return None
-    name = NAME_OF_TYPE.get(statement["predicateType"]) if _string(
+    name = NAME_OF_TYPE.get(canonical_identifier(statement["predicateType"])) if _string(
         statement["predicateType"]) else None
     subject_ok = _list(statement["subject"], lambda s: _exact(s, ("digest",), ("name",))
                        and _sha(s["digest"]) and ("name" not in s or _text(s["name"])),
@@ -240,8 +241,10 @@ def _common(p: dict[str, Any]) -> bool:
 
 def _predecessors(value: Json, *, needs: str | None = None) -> bool:
     ok = _list(value, lambda r: _exact(r, ("predicateType", "digest"))
-               and _one_of(r["predicateType"], NAME_OF_TYPE) and _sha(r["digest"]), min_items=1)
-    return ok and (needs is None or any(r["predicateType"] == TYPE[needs] for r in value))
+               and _one_of(canonical_identifier(r["predicateType"]), NAME_OF_TYPE)
+               and _sha(r["digest"]), min_items=1)
+    return ok and (needs is None or any(
+        canonical_identifier(r["predicateType"]) == TYPE[needs] for r in value))
 
 
 # --------------------------------------------------------------------------
@@ -580,7 +583,7 @@ class _Bundle:
     def __init__(self, files: dict[str, bytes]) -> None:
         self.names = sorted(files)
         self.statements = {name: strict_json(files[name]) for name in self.names}
-        self.kind = {name: NAME_OF_TYPE[s["predicateType"]]
+        self.kind = {name: NAME_OF_TYPE[canonical_identifier(s["predicateType"])]
                      for name, s in self.statements.items()}
         self.decisions = [name for name in self.names if self.kind[name] == R3]
         if len(self.decisions) != 1:
@@ -605,7 +608,7 @@ class _Bundle:
         return True
 
     def b3_types(self) -> bool:
-        return all(self.statements[target]["predicateType"] == ref["predicateType"]
+        return all(same_identifier(self.statements[target]["predicateType"], ref["predicateType"])
                    for name in self.names
                    for ref, target in zip(self.refs[name], self.resolved[name], strict=True))
 

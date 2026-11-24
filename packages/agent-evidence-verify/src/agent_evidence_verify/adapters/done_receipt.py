@@ -57,6 +57,7 @@ from pathlib import Path
 from typing import Any
 
 from ..common import CaseError, _digest, _object, _string
+from ..identifiers import same_identifier
 from ..vocabulary import EXTERNAL, PEER
 from . import (
     acceptance_observed,
@@ -311,7 +312,8 @@ def adjudicate(case: Any, policy: Any, artifact_root: Path) -> dict:
     result["verifier_id"] = predicate["verifier"]["id"]
     if predicate["claim_id"] != case_id or predicate["invocation_id"] != invocation:
         return decide("not_established", "receipt_context_mismatch")
-    pinned = accepted_ids is None or result["verifier_id"] in accepted_ids
+    pinned = accepted_ids is None or any(same_identifier(result["verifier_id"], item)
+                                         for item in accepted_ids)
     checks.append({"id": "verifier", "status": "met" if pinned else "unavailable",
                    "verifier_id": result["verifier_id"]})
     if not pinned:

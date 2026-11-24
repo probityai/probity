@@ -36,6 +36,7 @@ from .core import (
     canonical_json,
     render_packet,
 )
+from .identifiers import same_identifier
 from .identity import running_release
 from .json_input import parse_json
 
@@ -49,6 +50,9 @@ _RELEASE = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
 #: The last release whose decisions named the verifier by id alone. A later release always writes
 #: the version and package digest, so its decision with the detail removed has been altered.
 _LAST_ID_ONLY_RELEASE = (0, 5, 1)
+#: The identifier those releases wrote. It is the bytes they wrote, so it stays spelled out under the
+#: host they used whatever host this release writes.
+_ID_ONLY_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/agent-evidence-verify"
 
 
 def _names_verifier_by_id_only(producer: str | None) -> bool:
@@ -286,7 +290,8 @@ def _producer_release(entries: dict[str, bytes]) -> str | None:
             record["schema_version"] != _PRODUCER_SCHEMA or
             not isinstance(verifier, dict) or set(verifier) != {"id", "version"}):
         raise CaseError(f"{_PRODUCER}: expected {_PRODUCER_SCHEMA} with verifier id and version")
-    if verifier["id"] not in {REFERENCE_VERIFIER_ID, PREDECESSOR_VERIFIER_ID}:
+    if not any(same_identifier(verifier["id"], ours)
+               for ours in (REFERENCE_VERIFIER_ID, PREDECESSOR_VERIFIER_ID)):
         raise CaseError(f"{_PRODUCER}: written by another verifier, {verifier['id']!r}")
     release = verifier["version"]
     if not isinstance(release, str) or not _RELEASE.fullmatch(release):
@@ -310,7 +315,7 @@ def _check_decision(stored: bytes, result: dict, producer: str | None) -> None:
     if _names_verifier_by_id_only(producer):
         # A decision written before the rename names the predecessor identifier and nothing else
         # differs; releases up to 0.5.1 named the verifier by id alone. Every other field must match.
-        id_only = {**result, "reference": {"verifier": {"id": REFERENCE_VERIFIER_ID}}}
+        id_only = {**result, "reference": {"verifier": {"id": _ID_ONLY_VERIFIER_ID}}}
         if stored in (canonical_json(predecessor), canonical_json(id_only)):
             return
     if producer is None:

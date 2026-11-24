@@ -13,8 +13,10 @@ from typing import Any
 
 import jcs_admit
 
+from probity_effects.identifiers import identifier
+
 #: The contract a record names, and the predicate type a producer writes when it signs one.
-CONTRACT_ID = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/uncertain-effect"
+CONTRACT_ID = identifier("agent-evidence-vectors/predicate/v1/uncertain-effect")
 OUTCOMES = ("committed", "not_run", "unknown")
 
 
