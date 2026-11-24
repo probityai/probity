@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- `agent_identity_statement/v1` checks a past decision against an agent's issuer-signed identity history (predicate
+  `https://w3id.org/agent-evidence/predicate/v1/agent-identity-statement`): the versions form one chain under the
+  pinned issuer keys ending at the pinned head, and at the decision's instant the version in force lists the key and
+  has not suspended or revoked the agent. The key is named by its SHA-256 or by its RFC 7638 JWK thumbprint, the
+  `keyid` a Web Bot Auth signature carries, and a decision envelope, when held, must carry its signature. The 25
+  checks are the corpus reader's, in its order. Corpus mode answers `agent-identity-statement/v1`
+  (`vectors-agent-identity-statement`, 46 members) with the same checks. Doc: `docs/agent-identity-statement.md`.
+
 ## 0.9.0 (2026-11-23)
 
 A minor release: fourteen new claim types and three more suites in corpus mode; the decisions for every existing claim type are unchanged.

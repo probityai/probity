@@ -19,6 +19,7 @@ from .adapters import (
     a2a_signed_card,
     acceptance_observed,
     aep_package,
+    agent_identity_statement,
     audit_principal,
     audit_record,
     authority_anchor,
@@ -108,6 +109,7 @@ ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {
     "a2a_signed_card/v1": a2a_signed_card.adjudicate,
     "co_signed_receipt/v1": co_signed_receipt.adjudicate,
     "web_bot_auth/v1": web_bot_auth.adjudicate,
+    "agent_identity_statement/v1": agent_identity_statement.adjudicate,
 }
 _BUILTIN_CLAIM_TYPES = frozenset(ADAPTERS)
 _ADAPTER_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*/v[1-9][0-9]*")

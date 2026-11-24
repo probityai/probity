@@ -17,6 +17,7 @@ Suites answered here by this package's own implementations:
 * ``ocsf-decision/v1``, by the OCSF decision-record reader under the profile each member names;
 * ``agent-payment-mandate/v1``, by the payment-mandate adapter (card-side and x402 records);
 * ``status-receipt-binding/v1``, by the status-receipt-binding adapter;
+* ``agent-identity-statement/v1``, by the agent-identity-statement adapter's 25 ordered checks;
 * ``actor-marker-survival/v1``, by the actor-marker reader under the corpus's ``TRUST.json``,
   read only when its SHA-256 is the manifest's ``trustSha256``.
 
@@ -37,6 +38,7 @@ from typing import Any
 from . import actor_marker, decision_record, ocsf_decision
 from . import execution_evidence as aee
 from .adapters import (
+    agent_identity_statement,
     approval_binding,
     payment_mandate,
     status_receipt_binding,
@@ -106,6 +108,9 @@ def _answer(suite: str, root: Path, entry: dict[str, Any],
     if suite == status_receipt_binding.SUITE:
         decision, reason = status_receipt_binding.judge(root / entry["path"] / "case.json")
         return ("accept" if decision == status_receipt_binding.ACCEPT else "reject"), reason, None
+    if suite == agent_identity_statement.SUITE:
+        decision, reason = agent_identity_statement.judge(root / entry["path"])
+        return ("accept" if decision == agent_identity_statement.ACCEPT else "reject"), reason, None
     if suite == actor_marker.SUITE and trust is not None:
         verdict, reason = actor_marker.judge((root / entry["path"] / "record.json").read_bytes(), trust)
         return verdict, reason, None

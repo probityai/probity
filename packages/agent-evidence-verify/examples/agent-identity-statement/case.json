@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "decision": {
+      "length": 459,
+      "path": "decision.json",
+      "sha256": "b7582af370b99c1a7530d98bfca2c481b3bcd71b1217ae91de260f3a4bd9082c"
+    },
+    "history": {
+      "length": 2351,
+      "path": "history.json",
+      "sha256": "1a21f9f8cfb3c7a463bdc283955d86707995addee05cc8739caaf2245d44e92b"
+    }
+  },
+  "case_id": "agent-identity-rotated-key-in-force",
+  "schema_version": "probity-case/v1"
+}
