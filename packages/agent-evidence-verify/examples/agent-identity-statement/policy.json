@@ -1,0 +1,20 @@
+{
+  "assessments": {
+    "agent-identity-rotated-key-in-force": {
+      "agent": {
+        "issuer": "https://idp.example.com/realms/agents",
+        "subject": "travel-agent"
+      },
+      "at": "2026-11-12T00:00:00Z",
+      "claim_type": "agent_identity_statement/v1",
+      "decision": "decision",
+      "head_sha256": "18990c2e22033e99dec0f41466799d54372ff4968a58de3e99aaee2c21a3e784",
+      "history": "history",
+      "issuer_keys": [
+        "d7ee1b3f591e38cc59bf8910f9c7a30211591d29b63d034ebbe10248673739a5"
+      ],
+      "key_sha256": "a6f067f0a1d430207e78ce39cc60f6a67cdd011316d5bdaebb7a7d26e6086c09"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}

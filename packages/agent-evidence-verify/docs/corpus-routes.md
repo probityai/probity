@@ -214,6 +214,17 @@ corpus's refusal code.
 A member whose bytes the strict reader refuses (a repeated member, an integer outside the double range) is an `error`
 line, never an accept.
 
+### `agent-identity-statement/v1` (`vectors-agent-identity-statement`, 46 members)
+
+Each member is a directory: `context.json` (the issuer's keys, the agent and the head of the history the consumer
+pins), `history.json` (the issuer-signed versions of the agent's identity document, in any order) and
+`decision.json` (the instant the relying party acted and the DSSE envelope the agent signed, whose one signature
+names its key). The 25 checks run in the corpus's order, `history_malformed` to `key_not_in_force`, and a member
+that passes them all is `accept` / `key_in_force`. The same checks serve the `agent_identity_statement/v1` claim
+type, where the pins, the instant and the key come from the consumer's policy and the key may be named by its
+RFC 7638 JWK thumbprint; the tests judge every member both ways and show that every check is the reason of some
+member. See [agent identity statement](agent-identity-statement.md).
+
 ### `actor-marker-survival/v1` (`vectors-actor-marker-survival`, 30 members)
 
 Each member is `cases/<id>/record.json`: a chain of signed statements in which an origin issuer states the token it

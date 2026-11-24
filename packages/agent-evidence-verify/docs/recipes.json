@@ -117,6 +117,11 @@
       "sha256": "e7a0a091a4f61d942a6397dfa8e2ed6730931b6254475084460c32e54bec0897"
     },
     {
+      "path": "src/agent_evidence_verify/adapters/agent_identity_statement.py",
+      "bytes": 26474,
+      "sha256": "ca2e33465ae9fede80a0744ca24fff38767acee4cb9225fa40eb1ad69de84bad"
+    },
+    {
       "path": "src/agent_evidence_verify/adapters/approval_binding.py",
       "bytes": 6405,
       "sha256": "0f772244a598c5dacbb64f05644793af4cbdce2bbc0d726afa10b66eef4ac7a5"
@@ -343,13 +348,13 @@
     },
     {
       "path": "src/agent_evidence_verify/core.py",
-      "bytes": 12749,
-      "sha256": "db23090729df3f3017f8d2f4338ef3409dec51aebbae4a8c312ea92034efd40c"
+      "bytes": 12851,
+      "sha256": "18b8ea81f5bfab1e214e67e6e9d8063b065ed71be60a6fdc435f113af1fc37f9"
     },
     {
       "path": "src/agent_evidence_verify/corpus.py",
-      "bytes": 7364,
-      "sha256": "a4fbf64cd01f87ee1fd778cfa7d9d82befed6f4561fee17de0e7f57eb9b433b2"
+      "bytes": 7719,
+      "sha256": "5ba3f33b76421387045e0be8301188e4c5f113da6da4f3de67d44d24d04d8ae2"
     },
     {
       "path": "src/agent_evidence_verify/decision_record.py",
@@ -2803,6 +2808,47 @@
           "path": "examples/co-signed-receipt/receipt.json",
           "bytes": 713,
           "sha256": "626fe4eef435a91c2e1b445c1ee8ebb9ab81d978f387c02f8205fc42969f227f"
+        }
+      ]
+    },
+    {
+      "task": "Check that the key a past decision was signed with was in force, and the agent active, in the issuer's signed history",
+      "claim_type": "agent_identity_statement/v1",
+      "case": "examples/agent-identity-statement/case.json",
+      "policy": "examples/agent-identity-statement/policy.json",
+      "documentation": "docs/agent-identity-statement.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic issuer history with a key rotation and fixture keys; pinned issuer keys and head; no revocation list, no live fetch.",
+      "case_id": "agent-identity-rotated-key-in-force",
+      "expected_reason": "key_in_force",
+      "exit_code": 0,
+      "argv": [
+        "agent-evidence-verify",
+        "examples/agent-identity-statement/case.json",
+        "--policy",
+        "examples/agent-identity-statement/policy.json",
+        "--json"
+      ],
+      "bindings": [
+        {
+          "path": "examples/agent-identity-statement/case.json",
+          "bytes": 434,
+          "sha256": "f1dd25f53feddda8619a84ee96aad3b15af91680c5fa95a03d0a6c397102c54f"
+        },
+        {
+          "path": "examples/agent-identity-statement/policy.json",
+          "bytes": 666,
+          "sha256": "4a07baa2812e09373b6979f20339682d9aa5d8527d45e2647302506f8d9c1a3a"
+        },
+        {
+          "path": "examples/agent-identity-statement/decision.json",
+          "bytes": 459,
+          "sha256": "b7582af370b99c1a7530d98bfca2c481b3bcd71b1217ae91de260f3a4bd9082c"
+        },
+        {
+          "path": "examples/agent-identity-statement/history.json",
+          "bytes": 2351,
+          "sha256": "1a21f9f8cfb3c7a463bdc283955d86707995addee05cc8739caaf2245d44e92b"
         }
       ]
     }

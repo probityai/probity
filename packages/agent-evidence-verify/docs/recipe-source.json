@@ -476,6 +476,15 @@
       "documentation": "docs/co-signed-receipt.md",
       "expected_decision": "supported",
       "scope": "The valid-co-signed receipt of tests/data/co-signed-receipt; the consumer pins the agent's and the caller's Ed25519 keys, so the verdict says both parties signed the same bytes, not that the receipt is true or that the parties are independent."
+    },
+    {
+      "task": "Check that the key a past decision was signed with was in force, and the agent active, in the issuer's signed history",
+      "claim_type": "agent_identity_statement/v1",
+      "case": "examples/agent-identity-statement/case.json",
+      "policy": "examples/agent-identity-statement/policy.json",
+      "documentation": "docs/agent-identity-statement.md",
+      "expected_decision": "supported",
+      "scope": "Synthetic issuer history with a key rotation and fixture keys; pinned issuer keys and head; no revocation list, no live fetch."
     }
   ]
 }

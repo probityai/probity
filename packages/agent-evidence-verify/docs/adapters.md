@@ -198,3 +198,9 @@ signature and any co-signature, then each party's key under its own key authorit
 evidence attribution once key authority decides it, `co_signed`, `single_signed` or
 `unattributed_evidence`.
 
+## Agent identity history
+
+[`agent_identity_statement/v1`](agent-identity-statement.md) judges a past decision against an agent's
+issuer-signed identity history: the history is one chain under the pinned issuer keys ending at the pinned head,
+and at the decision's instant the version in force listed the key and had not suspended or revoked the agent. The
+key may be named by its SHA-256 or by the RFC 7638 thumbprint a Web Bot Auth signature carries.
