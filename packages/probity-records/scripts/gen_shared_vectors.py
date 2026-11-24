@@ -311,16 +311,18 @@ RELEASE = {"releaseId": "r1", "lookup": "ok", "graceSeconds": 300, "firstServedA
 
 def binding(signer: Signer, who: str, *, payload: dict | None = None, consumed: tuple = (), approval: dict | None = None,
             use: dict | None = None, record: dict | None = None, trusted_key: str | None = None,
-            release: dict | None = None, payload_file: str | None = None) -> dict:
+            release: dict | None = None, payload_file: str | None = None, issued: tuple = ("appr-0", "appr-1"),
+            enforcement: str = "enforce") -> dict:
     approval_body = {"approvalId": "appr-1", "approver": who, "event": "tools/call", "expiresAt": "2099-01-01T00:00:00Z",
-                     "issuedAt": "2026-01-01T00:00:00Z", "keyId": signer.key_id, "payloadSha256": args_sha256(AARGS),
-                     "phase": "pre-execution", "principal": "customer:alice", "target": "acct-alice",
-                     "tool": "refund_payment", **(approval or {})}
+                     "issuedAt": "2026-01-01T00:00:00Z", "keyId": signer.key_id, "outcome": "approved",
+                     "payloadSha256": args_sha256(AARGS), "phase": "pre-execution", "principal": "customer:alice",
+                     "requestId": "req-1", "target": "acct-alice", "tool": "refund_payment", **(approval or {})}
     use_body = {k: approval_body[k] for k in ("approvalId", "event", "phase", "principal", "target", "tool")}
     use_body["usedAt"] = "2026-06-01T00:00:00Z"
     use_body.update(use or {})
     rec, raw = build_approval_binding(approval_body, use_body, jcs(payload if payload is not None else AARGS), list(consumed),
-                                      {who: trusted_key or signer.key_id}, "2026-06-01T00:00:00Z", release or RELEASE)
+                                      {who: trusted_key or signer.key_id}, "2026-06-01T00:00:00Z", release or RELEASE,
+                                      issued=list(issued), enforcement=enforcement)
     rec.update(record or {})
     if payload_file is not None:
         rec["use"]["payloadFile"] = payload_file
@@ -348,7 +350,7 @@ def approval_rows() -> list[tuple[str, str, object]]:
     old = {"approvalId": "appr-0", "approver": WHO["ops"], "event": "tools/call", "expiresAt": "2099-01-01T00:00:00Z",
            "issuedAt": "2026-01-01T00:00:00Z", "keyId": OPS.key_id, "payloadSha256": args_sha256(AARGS),
            "phase": "pre-execution", "principal": "customer:alice", "target": "acct-alice", "tool": "refund_payment",
-           "decisionId": "d0"}
+           "decisionId": "d0", "outcome": "approved", "requestId": "req-0"}
     return [
         ("AV1", "one approval under a 1-of-1 policy", lambda d: approval_case(d, [ops()])),
         ("AV2", "two distinct approvers under a 2-of-2 policy", lambda d: approval_case(d, [ops(), lead()], **two)),
@@ -405,7 +407,33 @@ def approval_rows() -> list[tuple[str, str, object]]:
          lambda d: approval_case(d, [ops(record={"contractId": "https://example.invalid/other"})])),
         ("AV28", "the approving principal is not the user who made the call",
          lambda d: approval_case(d, [ops(use={"principal": "customer:mallory"})])),
+        ("AV29", "an approval the server never issued, presented by the client",
+         lambda d: approval_case(d, [ops(issued=("appr-0",))])),
+        ("AV30", "a refused request recorded as an allow", lambda d: approval_case(d, [ops(approval={"outcome": "denied"})])),
+        ("AV31", "an approval with corrections binds the corrected payload",
+         lambda d: approval_case(d, [ops(approval={"outcome": "approved-with-corrections",
+                                                   "requestedPayloadSha256": args_sha256({**AARGS, "amount_cents": 9000})})])),
+        ("AV32", "an approval gathered while the gate only observed", lambda d: approval_case(d, [ops(enforcement="observe")])),
+        ("AV33", "an approval gathered in monitor mode, recorded as a deny with the reader's reason",
+         lambda d: approval_case(d, [ops(enforcement="monitor")], decision="deny", reason="approval_not_enforced")),
+        ("AV34", "one request answered twice under two approval identifiers",
+         lambda d: approval_case(d, [ops(record={"presentedApprovals": [
+             approval_body_of(ops()), {**approval_body_of(ops()), "approvalId": "appr-2"}]})])),
+        ("AV35", "the embedded record lost the approval's request identifier",
+         lambda d: approval_case(d, [ops(record={"approval": approval_body_of(ops(), drop="requestId"),
+                                                 "presentedApprovals": [approval_body_of(ops(), drop="requestId")]})])),
+        ("AV36", "the approver key was retired before the approval was issued",
+         lambda d: approval_case(d, [ops(trusted_key="ff" * 32, record={"retiredKeys": {WHO["ops"]: [
+             {"keyId": OPS.key_id, "retiredAt": "2025-12-31T00:00:00Z"}]}})])),
+        ("AV37", "the approval was issued under the approver's previous key before its retirement",
+         lambda d: approval_case(d, [ops(trusted_key="ff" * 32, record={"retiredKeys": {WHO["ops"]: [
+             {"keyId": OPS.key_id, "retiredAt": "2026-02-01T00:00:00Z"}]}})])),
     ]
+
+
+def approval_body_of(embedded: dict, drop: str | None = None) -> dict:
+    """The approval body an embedded binding carries, without the member ``drop``."""
+    return {k: v for k, v in embedded["record"]["approval"].items() if k != drop}
 
 
 E_ARGS = {"amount_cents": 1200, "customer_id": "bob"}

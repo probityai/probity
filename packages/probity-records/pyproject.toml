@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-records"
-version = "0.9.0"
+version = "0.10.0"
 description = "Signed, offline-verifiable records of agent tool calls: single-use permits, approval binding and lost-reply outcomes"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -16,7 +16,7 @@ dependencies = [
     "cryptography>=50,<51",
     "jcs-admit~=0.1.1",
     "agent-evidence-verify>=0.9.0,<0.12",
-    "agent-evidence-vectors>=0.36.3,<0.38",
+    "agent-evidence-vectors>=0.38.0,<0.40",
 ]
 keywords = ["ai-agents", "dsse", "in-toto", "approvals", "tool-calls", "audit"]
 
