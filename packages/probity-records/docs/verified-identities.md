@@ -15,7 +15,7 @@ identities = verified_identities(
 )
 ```
 
-`verify_request` takes the same arguments and also returns what a service that keeps state spends once: the possession proof, and the stamp's `nonce` until its `expires`.
+`verify_request` takes the same arguments and also returns what a service that keeps state spends once: the possession proof, and the stamp's `nonce` until its `expires`. A DPoP proof (`possession.DpopProof`) is spent under `possession.proof_key(jkt, jti)` until its `replay_exp`, which is `iat` plus the freshness skew plus `possession.REPLAY_GRACE`, the last second at which the same proof could still pass; a certificate proof (`possession.CertificateProof`) names the confirmed thumbprint and has nothing to spend. The TypeScript `verifyRequest` returns the same values (`proof.jkt`, `proof.jti`, `proof.iat`, `proof.replayExp`, and `proofKey`), so a receiver in either language spends the same key for the same window.
 
 ## The trust bundle
 
@@ -99,4 +99,4 @@ For tokens: kind `agent`; the user ref is the user token's `iss` and `sub`; the 
 
 ## Vectors
 
-`vectors/shared/verified_identities.json` holds 78 cases, written by `scripts/gen_shared_vectors.py` from `verified_identities_vectors.py` with fixed keys and deterministic signatures. The TypeScript verifier (`node/probity-records-verify/src/verified.ts`) reports the same identities or the same refusal code for each.
+`vectors/shared/verified_identities.json` holds 80 cases, written by `scripts/gen_shared_vectors.py` from `verified_identities_vectors.py` with fixed keys and deterministic signatures. The TypeScript verifier (`node/probity-records-verify/src/verified.ts`) reports the same identities, the same proof and stamp spend values, or the same refusal code for each. An accepted case's `proof` is `possession.possession_record` of the proof and, for DPoP, its single-use `key` and the `expires` a store must remember it until: `{"method": "dpop", "iat", "jkt", "jti", "key", "expires"}` or `{"method": "mtls", "x5t#S256"}`. VI16 holds the window at the oldest accepted `iat`, and VI17 holds the key to the UTF-8 bytes of a `jti` that is not ASCII.
