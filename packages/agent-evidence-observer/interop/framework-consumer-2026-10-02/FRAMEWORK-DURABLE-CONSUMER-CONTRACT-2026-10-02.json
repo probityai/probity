@@ -154,12 +154,12 @@
       "sha256": "dc1c02e71a7879cdbe4f8b9bbedeb23c176e35123095ed40b52a139de19f80ed"
     },
     "src/probity_observer/refund_handoff.py": {
-      "git_blob_sha1": "c9378987ddb62a6f3546dd0d1a75ce00257643a9",
-      "sha256": "8effa6309ffd80c14746b6330dd496a3b0fdcd7341c5a5fa375d5fde3ba456fb"
+      "git_blob_sha1": "396932100a5e5ba46c7869ea6ef907c5cc281706",
+      "sha256": "7e0baaf9833e30b77482f6cb54d60c64e2bbf223dd8c9692a91d4a7a50f53326"
     },
     "src/probity_observer/refund_handoff_reasons.py": {
-      "git_blob_sha1": "2fb3cbc0fb9f4ce725e070939a3ae352ff1d587a",
-      "sha256": "57a38fbe22585949753b82b6aa5951fcf85a113aee6b551f196b21c9de5f4450"
+      "git_blob_sha1": "aeb216f792265e5f7e5f593599e020f23b21c5c9",
+      "sha256": "fa463b267dc491ed8e55c9b079ef497531b289a373565258da216f856ad19aea"
     },
     "src/probity_observer/replay.py": {
       "git_blob_sha1": "3056a80498d8daf0c0e1c16b04f8c9785b0a87c0",
