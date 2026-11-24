@@ -963,7 +963,7 @@ fn every_committed_case_gets_its_expected_verdict() -> TestResult {
             (got, _) => return Err(format!("{id}: unexpected verdict {got:?}").into()),
         }
     }
-    assert_eq!((accepted, refused), (6, 27));
+    assert_eq!((accepted, refused), (7, 27));
     Ok(())
 }
 
