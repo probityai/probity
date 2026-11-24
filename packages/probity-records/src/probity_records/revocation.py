@@ -145,7 +145,6 @@ def _check_body(body: Any) -> None:
     if not isinstance(body, dict) or set(body) != _BODY_MEMBERS:
         raise _shape("body_members")
     if not same_identifier(body["type"], REVOCATION_LIST):
-
         raise _shape("type")
     if not isinstance(body["listId"], str) or not _IDENTIFIER.fullmatch(body["listId"]):
         raise _shape("list_id_form")

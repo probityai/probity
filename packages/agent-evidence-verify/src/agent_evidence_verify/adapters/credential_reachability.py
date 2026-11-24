@@ -270,7 +270,6 @@ def _statement(payload: bytes, trust: _Trust) -> dict[str, Any]:
     if statement.get("_type") != STATEMENT_TYPE:
         raise _unestablished("unsupported_statement_type")
     if not same_identifier(statement.get("predicateType"), PREDICATE_TYPE):
-
         raise _unestablished("unsupported_predicate")
     subjects = statement.get("subject")
     one: Any = subjects[0] if isinstance(subjects, list) and len(subjects) == 1 else None

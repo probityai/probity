@@ -609,7 +609,6 @@ class _Bundle:
 
     def b3_types(self) -> bool:
         return all(same_identifier(self.statements[target]["predicateType"], ref["predicateType"])
-
                    for name in self.names
                    for ref, target in zip(self.refs[name], self.resolved[name], strict=True))
 

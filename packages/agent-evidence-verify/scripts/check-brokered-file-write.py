@@ -171,7 +171,6 @@ CURRENT_ID = REFERENCE_VERIFIER_ID.encode("ascii")
 PREDECESSOR_ID = b"https://probityai.github.io/probity/verifiers/probity-verify"
 
 
-
 def replay_mode(retained, output, verifier, mode):
     """Run the installed CLI on each retained assertion and compare with the retained answer."""
     native = retained / "native"

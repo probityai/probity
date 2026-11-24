@@ -102,7 +102,12 @@ def test_actor_marker_reads_the_new_host(entry: dict[str, Any]) -> None:
 
 def test_evaluation_claim_reads_the_new_host() -> None:
     record = json.loads((EXAMPLES / "evaluation-claim" / "record.json").read_bytes())
-    assert evaluation_claim.check_envelope(rehost(record, NEW)) == evaluation_claim.check_envelope(record)
+    rewritten = rehost(record, NEW)
+    found, original = evaluation_claim.check_envelope(rewritten), evaluation_claim.check_envelope(record)
+    # The verdict reports the record's own bytes: only the comparison is canonical.
+    assert found["claim_type"] == rewritten["claim_type"] and original["claim_type"] == record["claim_type"]
+    assert {k: v for k, v in found.items() if k != "claim_type"} == {
+        k: v for k, v in original.items() if k != "claim_type"}
     with pytest.raises(evaluation_claim.MalformedInput):
         evaluation_claim.check_envelope({**record, "claim_type": PLAIN + record["claim_type"][len(OLD):]})
     statement = {"_type": evaluation_claim.STATEMENT_TYPE, "predicateType": NEW + record["claim_type"][len(OLD):],

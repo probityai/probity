@@ -44,7 +44,6 @@ def grant_walk(statements: Iterable[Mapping[str, Any]], permit: str) -> dict[str
     hops: dict[str, Mapping[str, Any]] = {}
     for body in statements:
         if not same_identifier(body.get("predicateType"), TOOL_CALL_RECORD):
-
             continue
         pred = body.get("predicate", {})
         if pred.get("permitId") != permit:

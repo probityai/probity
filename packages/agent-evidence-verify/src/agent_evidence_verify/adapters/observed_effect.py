@@ -403,7 +403,6 @@ def _rule_predicate_type(state: _State) -> None:
     """
     expected = state.policy.predicate_type
     if not expected or not same_identifier(state.statement.get("predicateType"), expected):
-
         raise Malformed("predicate-type-unexpected")
 
 

@@ -209,7 +209,6 @@ def first_failure(record: Record) -> str | None:
         "contract_id_missing": lambda: "contractId" not in record,
         "contract_id_unknown": lambda: not same_identifier(record.get("contractId", CONTRACT_ID),
                                                            CONTRACT_ID),
-
         "operation_identity_missing": lambda: _identity_missing(record),
         "idempotency_key_args_changed": lambda: _key_args_changed(record),
         "idempotency_key_follows_trigger": lambda: _key_ignores_trigger(record),

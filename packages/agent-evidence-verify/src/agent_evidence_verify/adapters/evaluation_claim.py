@@ -686,7 +686,6 @@ def check_envelope(record: Any) -> dict[str, Any]:
     if set(record) != {"claim_type", "profile", "verdict", "coordinates"}:
         raise MalformedInput("the record carries claim_type, profile, verdict and coordinates")
     if not same_identifier(record["claim_type"], PREDICATE_TYPE):
-
         raise MalformedInput(f"claim_type is {PREDICATE_TYPE}")
     if record["verdict"] not in VERDICTS:
         raise MalformedInput(f"verdict is one of {list(VERDICTS)}")

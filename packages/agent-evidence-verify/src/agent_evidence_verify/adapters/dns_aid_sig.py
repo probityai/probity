@@ -71,7 +71,6 @@ from . import jcs_canonical
 
 CLAIM_TYPE = "dns_aid_sig/v1"
 PROFILE = identifier("agent-evidence-vectors/profile/dns-aid-sig-binding/v1")
-
 SIGNATURE_COVERAGE_TERM = "https://w3id.org/agent-evidence/vocab/v1/signature_coverage"
 SKEW_SECONDS = 300
 #: The DNS-AID parameters ``svcb`` covers: every DNS-AID SvcParam except ``sig`` itself.

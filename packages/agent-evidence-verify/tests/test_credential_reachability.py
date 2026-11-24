@@ -347,9 +347,8 @@ def test_the_new_host_spelling_of_the_predicate_type_is_the_same_type(member: st
         k: v for k, v in before.items() if k != "scope"}
 
 
-
 def test_the_plain_http_spelling_stays_an_unsupported_predicate() -> None:
     _, statement = _statement(CONTAINED)
     statement["predicateType"] = PLAIN_HOST + statement["predicateType"][len(OLD_HOST):]
     assert _decision(_judge(CONTAINED, _signed(statement, (HOST, None)))) == (
-        "contradicted", "unsupported_predicate")
+        "not_established", "unsupported_predicate")

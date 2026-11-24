@@ -706,7 +706,6 @@ def _rule_statement(state: _State) -> None:
     if st.get("_type") != STATEMENT_TYPE:
         raise Malformed("statement-type-unexpected")
     if not same_identifier(st.get("predicateType"), state.policy.predicate_type):
-
         raise Malformed("predicate-type-mismatch")
 
 

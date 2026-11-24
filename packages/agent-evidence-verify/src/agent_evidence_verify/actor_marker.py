@@ -278,7 +278,6 @@ def judge(record_bytes: bytes, trust: dict[str, Any]) -> tuple[str, str]:
     if "contractId" not in record:
         return "reject", "contract_id_missing"
     if not same_identifier(record["contractId"], CONTRACT_ID):
-
         return "reject", "contract_id_unknown"
     try:
         entries = _check_shape(record)

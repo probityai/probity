@@ -531,7 +531,6 @@ def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[s
     intents: dict[str, int] = {}
     for i, body in bodies:
         if not same_identifier(body.get("predicateType"), TOOL_CALL_RECORD):
-
             continue
         pred = body["predicate"]
         pid = pred.get("permitId")

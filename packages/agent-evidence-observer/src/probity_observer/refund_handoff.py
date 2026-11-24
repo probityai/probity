@@ -429,7 +429,6 @@ def _refund(value: Any, reason: str = "refund arguments") -> dict[str, Any]:
 
 def _profile(payload: dict[str, Any], kind: str) -> None:
     if not same_identifier(payload["profile"], CONTRACT_ID) or payload["schema"] != SCHEMA:
-
         raise VerificationError(kind + " selects a different contract profile")
     if payload["kind"] != kind:
         raise VerificationError(kind + " has a different signed kind")

@@ -68,7 +68,6 @@ def parse(data: Any) -> Mapping[str, RefusalCode]:
         if code <= previous:
             raise RegistryError(f"{code!r} is out of order or repeated")
         if not same_identifier(entry["uri"], f"{REGISTRY}/{code}"):
-
             raise RegistryError(f"{code!r} has the identifier {entry['uri']!r}, not {REGISTRY}/{code}")
         if not _CHECK.fullmatch(entry["check"]):
             raise RegistryError(f"{code!r} names the check {entry['check']!r}, not a dotted lowercase name")

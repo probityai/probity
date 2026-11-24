@@ -249,7 +249,6 @@ def verify(raw: bytes, observer_public_key: str) -> Report:
         if statement.get("_type") != STATEMENT_TYPE:
             raise Malformed("statement-type-unexpected")
         if not same_identifier(statement.get("predicateType"), PREDICATE_TYPE):
-
             raise Malformed("predicate-type-unexpected")
         predicate = statement.get("predicate")
         if not isinstance(predicate, dict):

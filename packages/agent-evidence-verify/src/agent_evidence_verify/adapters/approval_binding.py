@@ -95,7 +95,6 @@ def first_failure(record: dict[str, Any], used: bytes) -> str | None:
         "contract_id_missing": lambda: "contractId" not in record,
         "contract_id_unknown": lambda: not same_identifier(record.get("contractId", CONTRACT_ID),
                                                            CONTRACT_ID),
-
         "approval_not_cited": lambda: use.get("approvalId") != approval["approvalId"],
         "approval_id_ambiguous": lambda: any(
             o["approvalId"] == approval["approvalId"] and o != approval

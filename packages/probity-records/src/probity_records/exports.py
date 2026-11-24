@@ -119,7 +119,6 @@ def verify_export_seal(envelope: Mapping[str, Any], data: bytes, public_pems: It
         return {"verdict": "FAIL", "failures": [f"seal:{exc}"], "census": None}
     pred = body.get("predicate", {})
     if not same_identifier(body.get("predicateType"), EXPORT_SEAL):
-
         failures.append("seal_predicate_type_unexpected")
     if body.get("subject", [{}])[0].get("digest", {}).get("sha256") != sha256_hex(data):
         failures.append("export_bytes_differ_from_seal")

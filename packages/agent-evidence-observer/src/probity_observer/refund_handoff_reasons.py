@@ -12,7 +12,6 @@ type EvidenceState = Literal["CONTRADICTED", "NOT_ESTABLISHED"]
 type ReasonContract = tuple[tuple[str, ...], EvidenceState]
 
 _PROFILE = identifier("agent-evidence-observer/contract/refund-handoff/0.1")
-
 _REGISTRY_SCHEMA_URI = _PROFILE + "/reason-codes.schema.json"
 _REGISTRY_SCHEMA = "refund-handoff-reason-codes/0.1"
 _REASON_NAMESPACE = _PROFILE + "#reason-"
