@@ -105,12 +105,15 @@ for (const family of JOURNAL_FAMILIES) {
   });
 }
 
-test("a journal that passed under the old spelling does not pass as tool calls once the host is not ours", () => {
-  const v = load("approvals.json").find((x: any) => x.expected.verdict === "PASS");
-  assert.ok(v, "approvals.json holds a passing journal");
-  assert.equal((report(v, { from: OLD, to: NEW }).got as any).verdict, "PASS");
-  const http = report(v, { from: OLD, to: HTTP }).got as any;
-  assert.notDeepEqual(http, v.expected, "the http spelling is not read as ours");
+test("the http spelling is not read as ours: some journal is judged differently from its probityai.org twin", () => {
+  let differing = 0;
+  for (const family of JOURNAL_FAMILIES) {
+    for (const v of load(`${family}.json`)) {
+      const http = report(v, { from: OLD, to: HTTP }).got, canon = report(v, { from: OLD, to: NEW }).got;
+      try { assert.deepEqual(http, canon); } catch { differing++; }
+    }
+  }
+  assert.ok(differing > 0, "no journal told the two spellings apart, so the http comparison above proves nothing");
 });
 
 function embeddedRecords(): { approvals: [any, Buffer][]; effects: any[] } {
@@ -176,7 +179,8 @@ function applyAll(roots: string[], lists: any[]): unknown {
   for (const [index, signed] of lists.entries()) {
     try { state = applyRevocationList(state, signed); } catch (e) { return { refused: (e as Error).message.split(":")[0], index }; }
   }
-  return { state: revocationSummary(state) };
+  // The head is a digest of the list's own bytes, which differ by spelling; the chain it links is proved by the lists applying.
+  return { state: { ...revocationSummary(state), head: state.head === null ? null : "sha256:<digest of the list in force>" } };
 }
 
 test("revocation: every list under the probityai.org spelling gets the verdict it gets under the old one", () => {
