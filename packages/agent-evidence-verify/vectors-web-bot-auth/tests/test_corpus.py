@@ -15,6 +15,7 @@ def _module(name: str, file: str):  # type: ignore[no-untyped-def]
     spec = importlib.util.spec_from_file_location(name, ROOT / file)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module  # dataclasses read the defining module from sys.modules
     spec.loader.exec_module(module)
     return module
 
