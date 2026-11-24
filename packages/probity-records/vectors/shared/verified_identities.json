@@ -1285,7 +1285,14 @@
           "version": 1
         }
       ],
-      "proof": "dpop",
+      "proof": {
+        "expires": 1795435325,
+        "iat": 1795435200,
+        "jkt": "d8Me3uJ82jhdsCstWyVMr3_I2ueeTYG5agM1-2r1_bY",
+        "jti": "dpop-0001",
+        "key": "M7il5GtyoSd6kvXSIe7PCjjR_SMPNKucruVAbLB_UhU",
+        "method": "dpop"
+      },
       "stamp": null
     },
     "id": "VI10",
@@ -1293,6 +1300,216 @@
       "clientCertificateB64": null,
       "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
       "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6InlwT3NGd1VZY0hIV2U0UEhfdzctZ1FqbzdFVXdWMTEzSm9lVE05dmF2bncifSwidHlwIjoiZHBvcCtqd3QifQ.ewoiaHRtIjoiUE9TVCIsImh0dSI6Imh0dHBzOi8vYmlsbGluZy5leGFtcGxlLmNvbS9tY3AvcmVmdW5kIiwiaWF0IjoxNzk1NDM1MjAwLCJqdGkiOiJkcG9wLTAwMDEiLCJhdGgiOiJfdklXUG82X0N4WHc2OXhRbEpDVEpfUU96Q2daUEcxU2JTN2Fkdmo3Z1JFIiwiYW5zX2NvbnRlbnRfZGlnZXN0IjoiUHozS1ZWS1pnMklkcUhkMVJ6VzdkX3VyZXBoaXlmR2dfQzhyeElWQWliRSJ9.Pzcx_A9kIY8mvBhIwuStopRX-6m17A2EjQQSAU6Gts-SazcxQaxVAHQfWIPh_XXkL1oiog72ZVaGUeH37b3gBA",
+      "headers": [],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.ewoiYXVkIjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcCIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJjbmYiOnsiamt0IjoiZDhNZTN1Sjgyamhkc0NzdFd5Vk1yM19JMnVlZVRZRzVhZ00xLTJyMV9iWSJ9LCJleHAiOjE3OTU0MzU1MDAsImlhdCI6MTc5NTQzNTE0MCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.ly1KzgPW5gkbvouQ0JBd8NIFMukKzTu124vemnnJ_58Pf-IMNDTbQXtZwBsQ3fBVOygVLHljXYv0lZtWfFLgCg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.ewoiYWN0Ijp7InN1YiI6ImFnZW50LXJlZnVuZHMifSwiYXVkIjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcCIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTU0MzU1MDAsImlhdCI6MTc5NTQzNTE0MCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn0.RyZ3FQCCYhH9smHeIgD-_roWkgr6_0IDs2dCDiBKjRuwcgXOitQ2_m8I0YnZ7USbttxdsPmwfUjyLPTO0d7YAQ"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a DPoP proof at the oldest iat the freshness check accepts: it is remembered past the skew",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": {
+        "expires": 1795435205,
+        "iat": 1795435080,
+        "jkt": "d8Me3uJ82jhdsCstWyVMr3_I2ueeTYG5agM1-2r1_bY",
+        "jti": "dpop-0001",
+        "key": "M7il5GtyoSd6kvXSIe7PCjjR_SMPNKucruVAbLB_UhU",
+        "method": "dpop"
+      },
+      "stamp": null
+    },
+    "id": "VI16",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6InlwT3NGd1VZY0hIV2U0UEhfdzctZ1FqbzdFVXdWMTEzSm9lVE05dmF2bncifSwidHlwIjoiZHBvcCtqd3QifQ.ewoiaHRtIjoiUE9TVCIsImh0dSI6Imh0dHBzOi8vYmlsbGluZy5leGFtcGxlLmNvbS9tY3AvcmVmdW5kIiwiaWF0IjoxNzk1NDM1MDgwLCJqdGkiOiJkcG9wLTAwMDEiLCJhdGgiOiJfdklXUG82X0N4WHc2OXhRbEpDVEpfUU96Q2daUEcxU2JTN2Fkdmo3Z1JFIiwiYW5zX2NvbnRlbnRfZGlnZXN0IjoiUHozS1ZWS1pnMklkcUhkMVJ6VzdkX3VyZXBoaXlmR2dfQzhyeElWQWliRSJ9.JXN0e0qJdut1nKXaV68AtAxdDZI4aTE2K1hkxCGiTIfZvHaXLjCGB0M9dzKBOg8SzIkTKftkRgbpZhcRcNMQDw",
+      "headers": [],
+      "method": "POST",
+      "url": "https://billing.example.com/mcp/refund"
+    },
+    "tokens": {
+      "agent": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.ewoiYXVkIjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcCIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJjbmYiOnsiamt0IjoiZDhNZTN1Sjgyamhkc0NzdFd5Vk1yM19JMnVlZVRZRzVhZ00xLTJyMV9iWSJ9LCJleHAiOjE3OTU0MzU1MDAsImlhdCI6MTc5NTQzNTE0MCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFnZW50LXJlZnVuZHMifQ.ly1KzgPW5gkbvouQ0JBd8NIFMukKzTu124vemnnJ_58Pf-IMNDTbQXtZwBsQ3fBVOygVLHljXYv0lZtWfFLgCg",
+      "user": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiYXQrand0In0.ewoiYWN0Ijp7InN1YiI6ImFnZW50LXJlZnVuZHMifSwiYXVkIjoiaHR0cHM6Ly9iaWxsaW5nLmV4YW1wbGUuY29tL21jcCIsImNsaWVudF9pZCI6ImFnZW50LXJlZnVuZHMiLCJleHAiOjE3OTU0MzU1MDAsImlhdCI6MTc5NTQzNTE0MCwiaXNzIjoiaHR0cHM6Ly9pZHAuZXhhbXBsZS5jb20vcmVhbG1zL2FnZW50cyIsInN1YiI6ImFsaWNlQGV4YW1wbGUuY29tIn0.RyZ3FQCCYhH9smHeIgD-_roWkgr6_0IDs2dCDiBKjRuwcgXOitQ2_m8I0YnZ7USbttxdsPmwfUjyLPTO0d7YAQ"
+    },
+    "transport": null
+  },
+  {
+    "at": "2026-11-23T12:00:00+00:00",
+    "bundle": {
+      "audience": "https://billing.example.com/mcp",
+      "environment": "prod",
+      "issuers": {
+        "gateway.example.com/t/acme": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY_k2NsFGFKyHN9E"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "stamp"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "nRIE2VmKdMjL1JD7tbV7fXVgXxmv0GKnMFWRUJMTf9Q"
+            }
+          ]
+        },
+        "https://idp.example.com/realms/agents": {
+          "keys": [
+            {
+              "crv": "Ed25519",
+              "kid": "idp-1",
+              "kty": "OKP",
+              "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          ],
+          "pins": [
+            {
+              "roles": [
+                "user",
+                "agent",
+                "sponsor"
+              ],
+              "tenants": [
+                "acme"
+              ],
+              "thumbprint": "UDDReOZl1ipXAfp9wYsm13sDBMK5og--QWdBjzuf6o4"
+            }
+          ]
+        }
+      },
+      "profile": "basic",
+      "tenant": "acme",
+      "version": 1
+    },
+    "description": "a DPoP proof whose jti is not ASCII: the single-use key hashes the jti's UTF-8 bytes",
+    "expected": {
+      "identities": [
+        {
+          "act": "sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "chain": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+              "subject": "agent-refunds",
+              "type": "agent"
+            }
+          ],
+          "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;act=sha256:f18679ade5aeaaa6e5b0e7ba99f817823419e39f3c05726d02bdc06bbac45748",
+          "kind": "agent",
+          "user": {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+            "subject": "alice@example.com",
+            "type": "user"
+          },
+          "version": 1
+        }
+      ],
+      "proof": {
+        "expires": 1795435325,
+        "iat": 1795435200,
+        "jkt": "d8Me3uJ82jhdsCstWyVMr3_I2ueeTYG5agM1-2r1_bY",
+        "jti": "dpop-\u00e9-0002",
+        "key": "rDDhlX84m4dgj44HDlzRND7ASSOpRQDII2sd0QTjqXg",
+        "method": "dpop"
+      },
+      "stamp": null
+    },
+    "id": "VI17",
+    "request": {
+      "clientCertificateB64": null,
+      "contentB64": "eyJqc29ucnBjIjoiMi4wIiwibWV0aG9kIjoidG9vbHMvY2FsbCIsImlkIjoxfQ==",
+      "dpop": "eyJhbGciOiJFZERTQSIsImp3ayI6eyJjcnYiOiJFZDI1NTE5Iiwia3R5IjoiT0tQIiwieCI6InlwT3NGd1VZY0hIV2U0UEhfdzctZ1FqbzdFVXdWMTEzSm9lVE05dmF2bncifSwidHlwIjoiZHBvcCtqd3QifQ.ewoiaHRtIjoiUE9TVCIsImh0dSI6Imh0dHBzOi8vYmlsbGluZy5leGFtcGxlLmNvbS9tY3AvcmVmdW5kIiwiaWF0IjoxNzk1NDM1MjAwLCJqdGkiOiJkcG9wLVx1MDBlOS0wMDAyIiwiYXRoIjoiX3ZJV1BvNl9DeFh3Njl4UWxKQ1RKX1FPekNnWlBHMVNiUzdhZHZqN2dSRSIsImFuc19jb250ZW50X2RpZ2VzdCI6IlB6M0tWVktaZzJJZHFIZDFSelc3ZF91cmVwaGl5ZkdnX0M4cnhJVkFpYkUifQ.90CeaNP0HAwJvXYB8bx332Zi5ZDfSQy8ZU9o0wvyaLTV8gaHDPw_fIbQIXFVGrkqYdmyC2tl4pXRTDNkCtPmCw",
       "headers": [],
       "method": "POST",
       "url": "https://billing.example.com/mcp/refund"
@@ -1383,7 +1600,10 @@
           "version": 1
         }
       ],
-      "proof": "mtls",
+      "proof": {
+        "method": "mtls",
+        "x5t#S256": "NDgESJ1q4VXr4FxWPBKMbwU53tS-czT4K9Dark1EfxM"
+      },
       "stamp": null
     },
     "id": "VI11",

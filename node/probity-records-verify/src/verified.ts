@@ -245,6 +245,21 @@ const DPOP_HEADER = ["alg", "jwk", "typ", "x5c"];
 const DPOP_JWK: Record<string, string[]> = { ES256: ["crv", "kty", "x", "y"], EdDSA: ["crv", "kty", "x"] };
 const DPOP_CURVE: Record<string, [string, string]> = { ES256: ["EC", "P-256"], EdDSA: ["OKP", "Ed25519"] };
 const MAX_PROOF_BYTES = 8 << 10, MAX_JTI_BYTES = 128, DEFAULT_SKEW = 120;
+/** possession.REPLAY_GRACE: seconds past the freshness window that a spent proof is still remembered. */
+export const REPLAY_GRACE = 5;
+
+/** possession.DpopProof: a DPoP proof that passed every RFC 9449 section 4.3 check. It stays single-use:
+ * proofKey(jkt, jti) names it, and replayExp is the last second at which it could still pass the freshness check. */
+export interface DpopProof { readonly method: "dpop"; readonly jkt: string; readonly jti: string; readonly iat: number; readonly replayExp: number }
+/** possession.CertificateProof: the client certificate the TLS endpoint authenticated, with the confirmed thumbprint. */
+export interface CertificateProof { readonly method: "mtls"; readonly x5t: string }
+export type PossessionProof = DpopProof | CertificateProof;
+
+/** possession.proof_key: the single-use key of a DPoP proof, SHA-256 over the confirmed key's thumbprint and the
+ * proof's jti (UTF-8), so a store's entries are bounded in bytes whatever the proof carried. */
+export function proofKey(jkt: string, jti: string): string {
+  return b64u(createHash("sha256").update(`${jkt}.${jti}`, "utf8").digest());
+}
 
 export interface RequestFacts { method: string; url: string; content: Buffer | null; dpop: string | null; clientCertificate: Buffer | null; headers: [string, string][] }
 
@@ -332,25 +347,27 @@ function dpopClaims(p: J, method: string, url: string, now: number, skew: number
   return null;
 }
 
-/** possession.check_dpop: the proof's method on success, or the refusal code. */
-export function checkDpop(proof: J, method: string, url: string, at: string, expectedJkt: string, accessToken: string | null, content: Buffer): string {
-  if (typeof proof !== "string") return "dpop_malformed";
-  if (proof.length > MAX_PROOF_BYTES) return "dpop_too_large";
+/** possession.check_dpop: the verified proof and "ok", or null and the refusal code. */
+export function checkDpop(proof: J, method: string, url: string, at: string, expectedJkt: string, accessToken: string | null, content: Buffer): [DpopProof | null, string] {
+  if (typeof proof !== "string") return [null, "dpop_malformed"];
+  if (proof.length > MAX_PROOF_BYTES) return [null, "dpop_too_large"];
   const parts = proof.split(".");
-  if (parts.length !== 3 || parts.some((p) => p === "")) return "dpop_malformed";
+  if (parts.length !== 3 || parts.some((p) => p === "")) return [null, "dpop_malformed"];
   const [alg, key, problem] = dpopHeader(parts[0], expectedJkt);
-  if (problem) return problem;
+  if (problem) return [null, problem];
   const sig = Buffer.from(parts[2], "base64url");
   const data = Buffer.from(`${parts[0]}.${parts[1]}`, "ascii");
   const ok = alg === "EdDSA" ? cryptoVerify(null, data, key!, sig)
     : sig.length === 64 && cryptoVerify("sha256", data, { key: key!, dsaEncoding: "ieee-p1363" }, sig);
-  if (!ok) return "dpop_signature_unverified";
+  if (!ok) return [null, "dpop_signature_unverified"];
   let claims: J;
   try {
-    if (b64u(Buffer.from(parts[1], "base64url")) !== parts[1]) return "dpop_malformed";
+    if (b64u(Buffer.from(parts[1], "base64url")) !== parts[1]) return [null, "dpop_malformed"];
     claims = segmentJson(parts[1]);
-  } catch (e) { return e instanceof Duplicate ? "dpop_duplicate_member" : "dpop_malformed"; }
-  return dpopClaims(claims, method, url, Math.floor(ts(at) / 1e6), DEFAULT_SKEW, accessToken, content) ?? "ok";
+  } catch (e) { return [null, e instanceof Duplicate ? "dpop_duplicate_member" : "dpop_malformed"]; }
+  const refused = dpopClaims(claims, method, url, Math.floor(ts(at) / 1e6), DEFAULT_SKEW, accessToken, content);
+  if (refused) return [null, refused];
+  return [{ method: "dpop", jkt: expectedJkt, jti: claims.jti, iat: claims.iat, replayExp: claims.iat + DEFAULT_SKEW + REPLAY_GRACE }, "ok"];
 }
 
 /** possession.check_client_certificate. */
@@ -365,7 +382,7 @@ export function checkClientCertificate(der: Buffer | null, expected: string, at:
   return "ok";
 }
 
-function possession(tokens: Token[], request: RequestFacts | null, at: string): string | null {
+function possession(tokens: Token[], request: RequestFacts | null, at: string): PossessionProof | null {
   const bound = tokens.filter((t) => "cnf" in t.claims);
   if (!bound.length) return null;
   const cnf = bound[0].claims.cnf;
@@ -377,16 +394,13 @@ function possession(tokens: Token[], request: RequestFacts | null, at: string): 
   const presented = [...bound].sort((a, b) => ["agent", "user", "sponsor"].indexOf(a.role) - ["agent", "user", "sponsor"].indexOf(b.role))[0];
   const problem = cnfProblem(cnf);
   if (problem) refuse(problem);
-  let reason: string;
   if ("jkt" in cnf) {
-    reason = facts.dpop === null ? "dpop_proof_missing"
-      : checkDpop(facts.dpop, facts.method, facts.url, at, cnf.jkt, presented.raw, facts.content ?? Buffer.alloc(0));
-    if (reason === "ok") return "dpop";
-  } else {
-    reason = checkClientCertificate(facts.clientCertificate, cnf["x5t#S256"], at);
-    if (reason === "ok") return "mtls";
+    if (facts.dpop === null) return refuse("dpop_proof_missing");
+    const [proof, reason] = checkDpop(facts.dpop, facts.method, facts.url, at, cnf.jkt, presented.raw, facts.content ?? Buffer.alloc(0));
+    return proof ?? refuse(reason);
   }
-  return refuse(reason);
+  const reason = checkClientCertificate(facts.clientCertificate, cnf["x5t#S256"], at);
+  return reason === "ok" ? { method: "mtls", x5t: cnf["x5t#S256"] } : refuse(reason);
 }
 
 // --- the stamp: probity_records.stamp -------------------------------------------------------------------------------
@@ -501,7 +515,10 @@ function verifyStampOf(fields: Map<string, string>, bundle: TrustBundle, request
 
 // --- the request --------------------------------------------------------------------------------------------------
 
-export interface VerifiedRequest { identities: CanonicalIdentity[]; proof: string | null; stamp: { nonce: string; expires: number } | null }
+/** What verifyRequest returns: the identities, and what a service that keeps state spends once. A DPoP proof is
+ * spent under proofKey(proof.jkt, proof.jti) until proof.replayExp; a stamp under its nonce until its expires. A
+ * certificate proof has nothing to spend. */
+export interface VerifiedRequest { identities: CanonicalIdentity[]; proof: PossessionProof | null; stamp: { nonce: string; expires: number } | null }
 
 function checkEnvironment(identity: CanonicalIdentity, bundle: TrustBundle): void {
   const refs = [identity.user, ...identity.chain, identity.sponsor, identity.approver, identity.service];
@@ -517,7 +534,7 @@ export function verifyRequest(tokens: Record<string, J>, bundleDoc: J, at: strin
   const fields = request === null ? null : stampFields(request.headers);
   if (Object.keys(tokens).length === 0 && fields === null) refuse("principal_credential_missing");
   const when = ts(at) / 1e6;
-  let identity: CanonicalIdentity, proof: string | null = null, stamp: { nonce: string; expires: number } | null = null;
+  let identity: CanonicalIdentity, proof: PossessionProof | null = null, stamp: { nonce: string; expires: number } | null = null;
   if (fields !== null && request !== null) {
     if (Object.keys(tokens).length !== 0) refuse("identity_sources_mixed");
     const found = verifyStampOf(fields, bundle, request, at);
@@ -542,6 +559,14 @@ export function verifiedIdentities(tokens: Record<string, J>, bundle: J, at: str
   return verifyRequest(tokens, bundle, at, transport, request).identities;
 }
 
+/** The proof as the shared vectors write it: possession.possession_record's members, and for a DPoP proof the
+ * single-use key and the last second it must be remembered. */
+export function proofDocument(proof: PossessionProof | null): J {
+  if (proof === null) return null;
+  if (proof.method === "mtls") return { method: "mtls", "x5t#S256": proof.x5t };
+  return { method: "dpop", iat: proof.iat, jkt: proof.jkt, jti: proof.jti, key: proofKey(proof.jkt, proof.jti), expires: proof.replayExp };
+}
+
 /** One shared vector, judged: the identities and spend values, or the refusal code. */
 export function judgeVerified(v: J): J {
   const r = v.request;
@@ -553,7 +578,7 @@ export function judgeVerified(v: J): J {
   const transport = v.transport === null ? null : CanonicalIdentity.parse(v.transport);
   try {
     const found = verifyRequest(v.tokens, v.bundle, v.at, transport, facts);
-    return { identities: found.identities.map((i) => i.document()), proof: found.proof, stamp: found.stamp };
+    return { identities: found.identities.map((i) => i.document()), proof: proofDocument(found.proof), stamp: found.stamp };
   } catch (e) {
     if (e instanceof VerifiedIdentitiesRefused) return { refused: e.code };
     throw e;

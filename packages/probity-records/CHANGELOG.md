@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- The shared vectors in `vectors/shared/verified_identities.json` now carry what a receiver spends for a possession
+  proof, not only its method. An accepted case's `proof` was the string `dpop` or `mtls`; it is now
+  `possession_record` of the proof and, for DPoP, its single-use `key` (`proof_key(jkt, jti)`) and `expires` (the
+  proof's `replay_exp`): `{"method": "dpop", "iat", "jkt", "jti", "key", "expires"}` or
+  `{"method": "mtls", "x5t#S256"}`. A verifier that reported only the method no longer conforms. The TypeScript
+  twin `@probityai/records-verify/verified` returns the same values from `verifyRequest` (`DpopProof`,
+  `CertificateProof`, `proofKey`, `REPLAY_GRACE`), so a Node receiver spends the same key for the same window as a
+  Python one. Two new cases: VI16 (a proof at the oldest accepted `iat`) and VI17 (a `jti` that is not ASCII).
+
 ## 0.8.0 (2026-11-23)
 
 - A grant body now has one grammar, checked the same way by the Python verifier and the TypeScript verifier. Before

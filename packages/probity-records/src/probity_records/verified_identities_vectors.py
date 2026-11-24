@@ -4,8 +4,11 @@ Each vector is ``{"id", "description", "tokens", "bundle", "at", "transport", "r
 role to a compact JWS; ``transport`` is a canonical identity string or null; ``request`` is null or
 ``{"method", "url", "contentB64", "dpop", "clientCertificateB64", "headers"}`` (absent values null; ``headers`` is the
 list of ``[name, value]`` header lines, where an agent stamp travels). ``expected`` is ``{"refused": code}`` or
-``{"identities": [documents], "proof": "dpop" | "mtls" | null, "stamp": {"nonce", "expires"} | null}``. A conforming
-verifier reports exactly these.
+``{"identities": [documents], "proof": proof | null, "stamp": {"nonce", "expires"} | null}``, where ``proof`` is
+``possession_record`` of the proof and, for a DPoP proof, its single-use ``key`` (``proof_key(jkt, jti)``) and the
+last second ``expires`` (the proof's ``replay_exp``) a store must remember it: ``{"method": "dpop", "iat", "jkt",
+"jti", "key", "expires"}`` or ``{"method": "mtls", "x5t#S256"}``. A service that keeps state spends the proof's
+``key`` and the stamp's ``nonce`` once, each until its ``expires``. A conforming verifier reports exactly these.
 
 Every key here is derived from a fixed seed and every signature is deterministic (Ed25519, RFC 6979 ECDSA, RSA PKCS #1
 v1.5), so the file regenerates byte for byte.
@@ -37,6 +40,8 @@ from .possession import (
     DpopProof,
     cnf_for_certificate,
     cnf_for_jwk,
+    possession_record,
+    proof_key,
     public_jwk,
     sign_dpop,
 )
@@ -243,9 +248,10 @@ def request(*, dpop: str | None = None, cert: bytes | None = None, content: byte
             "headers": headers or []}  # fmt: skip
 
 
-def _proof(access: str, *, key: Ed25519PrivateKey = HOLDER_KEY, url: str = URL, jti: str = "dpop-0001") -> str:
+def _proof(access: str, *, key: Ed25519PrivateKey = HOLDER_KEY, url: str = URL, jti: str = "dpop-0001",
+           iat: int = NOW) -> str:
     """A DPoP proof, re-signed with the claims segment shaped as in ``_segment``."""
-    head, body, _ = sign_dpop(key, "POST", url, iat=NOW, jti=jti, access_token=access, content=BODY).split(".")
+    head, body, _ = sign_dpop(key, "POST", url, iat=iat, jti=jti, access_token=access, content=BODY).split(".")
     claims = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
     shaped = _segment(claims, sort_keys=False)
     return f"{head}.{shaped}.{b64url(key.sign(f'{head}.{shaped}'.encode('ascii')))}"
@@ -298,6 +304,10 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(method="GET", content=None, headers=stamp(method="GET", body=None)))),
         ("VI10", "a key-bound agent token with a DPoP proof for this request",
          c({"user": user, "agent": bound}, request=request(dpop=_proof(bound)))),
+        ("VI16", "a DPoP proof at the oldest iat the freshness check accepts: it is remembered past the skew",
+         c({"user": user, "agent": bound}, request=request(dpop=_proof(bound, iat=NOW - 120)))),
+        ("VI17", "a DPoP proof whose jti is not ASCII: the single-use key hashes the jti's UTF-8 bytes",
+         c({"user": user, "agent": bound}, request=request(dpop=_proof(bound, jti="dpop-\u00e9-0002")))),
         ("VI11", "a certificate-bound agent token with the confirmed client certificate",
          c({"user": user, "agent": cert_bound}, request=request(cert=certificate()))),
         ("VI12", "an identity assertion grant as the user's credential",
@@ -447,10 +457,17 @@ def judge(case: dict[str, Any]) -> dict[str, Any]:
         found = verify_request(case["tokens"], case["bundle"], case["at"], transport, request=facts)
     except VerifiedIdentitiesRefused as exc:
         return {"refused": exc.code}
-    proof = "dpop" if isinstance(found.proof, DpopProof) else "mtls" if isinstance(found.proof, CertificateProof) \
-        else None
-    return {"identities": [i.document() for i in found.identities], "proof": proof,
+    return {"identities": [i.document() for i in found.identities], "proof": proof_document(found.proof),
             "stamp": None if found.stamp is None else {"nonce": found.stamp.nonce, "expires": found.stamp.expires}}
+
+
+def proof_document(proof: DpopProof | CertificateProof | None) -> dict[str, Any] | None:
+    """The proof as the vectors write it: what a service that keeps state spends once, and until when."""
+    if proof is None:
+        return None
+    if isinstance(proof, DpopProof):
+        return {**possession_record(proof), "key": proof_key(proof.jkt, proof.jti), "expires": proof.replay_exp}
+    return possession_record(proof)
 
 
 def vectors() -> list[dict[str, Any]]:
