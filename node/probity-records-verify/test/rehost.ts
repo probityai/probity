@@ -112,7 +112,7 @@ export function rehostRevocations(lists: J[], from: string, to: string): { lists
         const moved = rehost(body, from, to);
         if (moved.previous === oldPrev) moved.previous = newPrev;
         const resigned = edSign(null, Buffer.concat([REVOCATION_DOMAIN, canonicalBytes(moved)]), key.priv);
-        next = { body: moved, sig: resigned.toString("base64") };
+        next = { ...signed, body: moved, sig: resigned.toString("base64") }; // an extra top-level member stays, so a shape refusal stays
         if (JSON.stringify(next) !== JSON.stringify(signed)) rewritten++;
       }
     } catch { next = signed; }
