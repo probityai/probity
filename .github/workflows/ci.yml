@@ -3433,6 +3433,8 @@ jobs:
           node-version: '22.18'
       - run: npm ci
       - run: node --test test/*.test.ts
+      # The twin as an external verifier under the Web Bot Auth corpus's own checker: 12 of 12 cases.
+      - run: python3 ../../packages/agent-evidence-verify/vectors-web-bot-auth/check_vectors.py --verifier 'node src/cli.ts web-bot-auth'
       # The published tarball ships plain JavaScript built from src/ (Node will not run TypeScript from node_modules).
       - run: npm pack --dry-run
       # The twin as an external verifier under agent-evidence-vectors' own a2a-jcs harness, from a
