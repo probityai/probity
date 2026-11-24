@@ -179,7 +179,8 @@ class VaultTransitKey(_PinnedKey):
         req = urllib.request.Request(f"{self.address.rstrip('/')}/v1/{self.mount}/{path}", data=data,
                                      headers=headers, method=method)
         with self.opener(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read())
+            answer: dict[str, Any] = json.loads(resp.read())
+        return answer
 
     @property
     def provenance(self) -> Mapping[str, Any]:
@@ -216,7 +217,7 @@ class AwsKmsKey(_PinnedKey):
 
     def __post_init__(self) -> None:
         if self.client is None:
-            import boto3
+            import boto3  # type: ignore[import-not-found]  # only when no client is passed; boto3 is not a dependency
 
             self.client = boto3.client("kms", region_name=self.region)
         out = self.client.get_public_key(KeyId=self.key)
@@ -250,7 +251,7 @@ class GcpKmsKey(_PinnedKey):
 
     def __post_init__(self) -> None:
         if self.client is None:
-            from google.cloud import kms
+            from google.cloud import kms  # type: ignore[import-not-found]  # only when no client is passed; not a dependency
 
             self.client = kms.KeyManagementServiceClient()
         out = self.client.get_public_key(request={"name": self.name})

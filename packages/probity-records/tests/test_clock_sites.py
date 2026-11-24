@@ -6,7 +6,7 @@ The clocks here stand in 2001, far from the host's time, so a site that read the
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 from probity_records import Journal, Signer

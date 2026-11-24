@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from probity_records import (
     AwsKmsKey,
+    DelegationScope,
     GcpKmsKey,
     Journal,
     Signer,
@@ -30,7 +31,6 @@ from probity_records import (
     SigningKey,
     Trust,
     VaultTransitKey,
-    DelegationScope,
     delegate,
     verify_journal,
 )
