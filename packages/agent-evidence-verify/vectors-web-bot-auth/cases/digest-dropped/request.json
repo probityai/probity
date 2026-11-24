@@ -1,0 +1,38 @@
+{
+  "headers": [
+    [
+      "Host",
+      "mail.example"
+    ],
+    [
+      "Accept-Encoding",
+      "identity"
+    ],
+    [
+      "Signature-Agent",
+      "agent=\"https://agent.example/.well-known/http-message-signatures-directory\""
+    ],
+    [
+      "Probity-Stamp-Digest",
+      "\"sha256:003593df87d73e02920dcb4b6bd0a4c65ebac27f72080f1f356590b3087437a1\""
+    ],
+    [
+      "Signature-Input",
+      "agent=(\"@method\" \"@target-uri\" \"@authority\" \"content-digest\" \"probity-stamp-digest\" \"signature-agent\";key=\"agent\");created=1795435200;expires=1795435260;nonce=\"browser-0001\";keyid=\"en5aKw6hUB-r6U1v6G8cvOpy9jk0-hsKzwSLty2UAXg\";alg=\"ed25519\";tag=\"web-bot-auth\""
+    ],
+    [
+      "Signature",
+      "agent=:ikGbR6d0PcIEWZQ7TXfbX5QYUOsVNSIQr1oaonmPvMdkUsclXahz/yGCfNoBQXL2vzHTzSY/0wg2F0DSKkRoDg==:"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Content-Length",
+      "43"
+    ]
+  ],
+  "method": "POST",
+  "url": "https://mail.example/api/drafts?folder=outbox"
+}

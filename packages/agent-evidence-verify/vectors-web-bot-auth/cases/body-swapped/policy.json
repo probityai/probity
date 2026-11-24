@@ -1,0 +1,29 @@
+{
+  "assessments": {
+    "web-bot-auth-browser-body-swapped": {
+      "at": "2026-11-23T12:00:10Z",
+      "authority": "mail.example",
+      "body": "body.bin",
+      "claim_type": "web_bot_auth/v1",
+      "directory": "directory.json",
+      "directory_sha256": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+      "label": "agent",
+      "max_age_seconds": 60,
+      "max_validity_seconds": 60,
+      "pinned_fields": {
+        "probity-stamp-digest": "\"sha256:003593df87d73e02920dcb4b6bd0a4c65ebac27f72080f1f356590b3087437a1\""
+      },
+      "request": "request.json",
+      "required_components": [
+        "@authority",
+        "@method",
+        "@target-uri",
+        "content-digest",
+        "probity-stamp-digest",
+        "signature-agent"
+      ],
+      "signature_agent": "https://agent.example/.well-known/http-message-signatures-directory"
+    }
+  },
+  "schema_version": "probity-policy/v1"
+}
