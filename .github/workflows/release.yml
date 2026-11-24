@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   resolve:
-    if: ${{ !github.event.release.prerelease }}
+    if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'records-verify-v') }}
     runs-on: ubuntu-24.04
     outputs:
       distribution: ${{ steps.target.outputs.distribution }}
