@@ -6,7 +6,7 @@ The clocks here stand in 2001, far from the host's time, so a site that read the
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 from probity_records import Journal, Signer
@@ -14,7 +14,7 @@ from probity_records import witness as w
 from probity_records.clock import NS_PER_S, FixedClock, from_datetime
 from probity_records.journal import timestamp
 from probity_records.otel import AuditStream
-from probity_records.signing import delegate
+from probity_records.signing import DelegationScope, delegate
 
 T2001 = from_datetime(datetime(2001, 9, 9, 1, 46, 40, tzinfo=UTC))
 
@@ -75,6 +75,6 @@ def test_witness_cosigns_at_the_injected_time() -> None:
 
 def test_delegate_is_valid_from_the_time_it_is_given() -> None:
     start = datetime(2001, 9, 9, tzinfo=UTC)
-    session = delegate(Signer.generate(), timedelta(minutes=5), now=start)
+    session = delegate(Signer.generate(), DelegationScope("record", "ours", "t1", 300), now=start)
     body = session.certificate["body"]
     assert body["notBefore"].startswith("2001-09-09T00:00:00") and body["notAfter"].startswith("2001-09-09T00:05:00")

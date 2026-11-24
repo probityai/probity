@@ -7,7 +7,7 @@ principal-level vectors of ``identity_vectors`` (autonomous blocks included), ``
 grant chains, ``identities.json`` journals whose records name the parties to a call (the strict profile, the parties
 a permit's later records name, the approver an allow counts), ``canonical_identity.json`` the canonical identity
 strings of ``canonical_identity_vectors``, ``identity_digests.json`` the identity digests of
-``digests_vectors``, ``erasure.json`` the record envelope v2 cases of ``erasure_vectors``, ``grant_bodies.json`` and
+``digests_vectors``, ``delegation.json`` the session-key certificates of ``delegation_vectors``, ``erasure.json`` the record envelope v2 cases of ``erasure_vectors``, ``grant_bodies.json`` and
 ``grant_calls.json`` the grant body grammar and per-call cases of ``grant_body_vectors``. ``canonical.json`` holds bytes and the canonical
 bytes or typed refusal both twins must report for them; ``received.json`` holds journals whose
 signed bytes have no canonical form. Run from the package: ``uv run python
@@ -63,6 +63,7 @@ from probity_records.core import (
     canonical_of_received,
     pae,
 )
+from probity_records.delegation_vectors import vectors as delegation_vectors
 from probity_records.digests_vectors import vectors as digest_vectors
 from probity_records.erasure_vectors import vectors as erasure_vectors
 from probity_records.grant_body_vectors import bodies as grant_bodies
@@ -901,6 +902,7 @@ def main(out: Path) -> None:
     (out / "standing_grants.json").write_text(json.dumps(standing_grant_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical_identity.json").write_text(json.dumps(canonical_identity_vectors(), indent=2, sort_keys=True)
                                                  + "\n")
+    (out / "delegation.json").write_text(json.dumps(delegation_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "identity_digests.json").write_text(json.dumps(digest_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "erasure.json").write_text(json.dumps(erasure_vectors(), indent=2, sort_keys=True) + "\n")
     (out / "canonical.json").write_text(json.dumps(canonical_rows(), indent=2, sort_keys=True) + "\n")

@@ -1,0 +1,988 @@
+[
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "Md4cus0vEHX27d0R7MZ8MAawuqpynCmff6xZfEuTeKN1B2NuJqT9kLk2Sirs+mNm9sX9ixb+2ns6IfzCDu6GBA=="
+    },
+    "covers": [
+      {
+        "at": "2026-11-23T12:00:00.000000Z",
+        "description": "the notBefore instant is inside",
+        "expected": true
+      },
+      {
+        "at": "2026-11-23T11:59:59.999999Z",
+        "description": "one microsecond before notBefore is outside",
+        "expected": false
+      },
+      {
+        "at": "2026-11-23T12:09:59.999999Z",
+        "description": "one microsecond before notAfter is inside",
+        "expected": true
+      },
+      {
+        "at": "2026-11-23T12:10:00.000000Z",
+        "description": "the notAfter instant is outside (half-open)",
+        "expected": false
+      },
+      {
+        "at": "2026-11-23T13:05:00+01:00",
+        "description": "an explicit offset names the same instant: inside",
+        "expected": true
+      },
+      {
+        "at": "2026-11-23T13:10:00+01:00",
+        "description": "notAfter written with an offset is still outside",
+        "expected": false
+      },
+      {
+        "at": "2026-11-23T12:05:00",
+        "description": "an instant with no offset names no instant: outside",
+        "expected": false
+      },
+      {
+        "at": "2026-11-23 12:05:00Z",
+        "description": "outside the timestamp grammar: outside",
+        "expected": false
+      }
+    ],
+    "description": "a record window key under a root in our custody",
+    "expected": {
+      "delegation": {
+        "custody": "ours",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "sessionKeyId": "5d285dad22528d05329795c3a511a7f074fa15a2fafda860a5a12eff2a462406",
+        "tenant": "tenant-a",
+        "windowS": 600
+      }
+    },
+    "id": "DG01",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "customer",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "authority",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "92094b1b078045c82f64782b5cac2b1a65ddecd3635a0f599d1ea3d7c073d127",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "acme",
+        "windowS": 600
+      },
+      "sig": "zUD9gaqXZ8UDiXnY4ypb8sQH3TWm3U1pxLU2AZB/60LijABMAbgxFAbRyZJ8VOY2zNuBV8R1CSb+tmRTH2NDCg=="
+    },
+    "covers": [
+      {
+        "at": "2026-11-23T12:00:00.000000Z",
+        "description": "the notBefore instant is inside",
+        "expected": true
+      },
+      {
+        "at": "2026-11-23T11:59:59.999999Z",
+        "description": "one microsecond before notBefore is outside",
+        "expected": false
+      },
+      {
+        "at": "2026-11-23T12:09:59.999999Z",
+        "description": "one microsecond before notAfter is inside",
+        "expected": true
+      },
+      {
+        "at": "2026-11-23T12:10:00.000000Z",
+        "description": "the notAfter instant is outside (half-open)",
+        "expected": false
+      }
+    ],
+    "description": "an authority window key under a customer-held root, the second of two pinned roots",
+    "expected": {
+      "delegation": {
+        "custody": "customer",
+        "hierarchy": "authority",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "92094b1b078045c82f64782b5cac2b1a65ddecd3635a0f599d1ea3d7c073d127",
+        "sessionKeyId": "5d285dad22528d05329795c3a511a7f074fa15a2fafda860a5a12eff2a462406",
+        "tenant": "acme",
+        "windowS": 600
+      }
+    },
+    "id": "DG02",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ=",
+      "omFvl9rh0NC5S7KToxC8+t///V2ZGUfOZ54V5EXe0w4="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "custodian",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "identity",
+        "notAfter": "2026-11-23T12:10:00Z",
+        "notBefore": "2026-11-23T12:00:00Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "HjTQ+Zc9jwr+La9yJ1GpfWBckzuVxkiRM09jvBGftPJd4FRhz2skVDO5GuCGzk9Eh10oyotVJ2mf6S5QGp0MCQ=="
+    },
+    "covers": [
+      {
+        "at": "2026-11-23T12:00:00.000000Z",
+        "description": "the notBefore instant is inside",
+        "expected": true
+      },
+      {
+        "at": "2026-11-23T11:59:59.999999Z",
+        "description": "one microsecond before notBefore is outside",
+        "expected": false
+      },
+      {
+        "at": "2026-11-23T12:09:59.999999Z",
+        "description": "one microsecond before notAfter is inside",
+        "expected": true
+      },
+      {
+        "at": "2026-11-23T12:10:00.000000Z",
+        "description": "the notAfter instant is outside (half-open)",
+        "expected": false
+      }
+    ],
+    "description": "an identity window key under a custodian's root, whole-second times, the window exactly as declared",
+    "expected": {
+      "delegation": {
+        "custody": "custodian",
+        "hierarchy": "identity",
+        "notAfter": "2026-11-23T12:10:00Z",
+        "notBefore": "2026-11-23T12:00:00Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "sessionKeyId": "5d285dad22528d05329795c3a511a7f074fa15a2fafda860a5a12eff2a462406",
+        "tenant": "tenant-a",
+        "windowS": 600
+      }
+    },
+    "id": "DG03",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "format": "probity-key-delegation/v1",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local",
+          "probityScope": {
+            "custody": "ours",
+            "hierarchy": "record",
+            "tenant": "tenant-a",
+            "windowS": 600
+          }
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8="
+      },
+      "sig": "6Xv5S/2gbnLdrAKgYbAZuI6om7jjMV01e1moJEAlch7EPcZuR2FHtZLanKyr2TI3UyDPdud1TGLu5sCD7qpDAg=="
+    },
+    "covers": [],
+    "description": "a v1 certificate, scope inside rootProvenance: refused by name",
+    "expected": {
+      "refused": "delegation_format_retired"
+    },
+    "id": "DG04",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v3",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "Prh2aDK7groJr4UQy+K9ruTWm5WbPwGjhxc+cmQkDmpV5yQ1jtN2qD7kp0v6mSglxVIHU6GgyxhaLUipWfryCQ=="
+    },
+    "covers": [],
+    "description": "an unknown format",
+    "expected": {
+      "refused": "delegation_format_unknown"
+    },
+    "id": "DG05",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "note": "x",
+      "sig": "Md4cus0vEHX27d0R7MZ8MAawuqpynCmff6xZfEuTeKN1B2NuJqT9kLk2Sirs+mNm9sX9ixb+2ns6IfzCDu6GBA=="
+    },
+    "covers": [],
+    "description": "the certificate carries a member beside body and sig",
+    "expected": {
+      "refused": "delegation_shape"
+    },
+    "id": "DG06",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": [
+        {
+          "custody": "ours",
+          "format": "probity-key-delegation/v2",
+          "hierarchy": "record",
+          "notAfter": "2026-11-23T12:10:00.000000Z",
+          "notBefore": "2026-11-23T12:00:00.000000Z",
+          "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+          "rootProvenance": {
+            "backend": "local"
+          },
+          "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+          "tenant": "tenant-a",
+          "windowS": 600
+        }
+      ],
+      "sig": "Md4cus0vEHX27d0R7MZ8MAawuqpynCmff6xZfEuTeKN1B2NuJqT9kLk2Sirs+mNm9sX9ixb+2ns6IfzCDu6GBA=="
+    },
+    "covers": [],
+    "description": "the body is not an object",
+    "expected": {
+      "refused": "delegation_shape"
+    },
+    "id": "DG07",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "Md4cus0vEHX27d0R7MZ8MAawuqpynCmff6xZfEuTeKN1B2NuJqT9kLk2Sirs+mNm9sX9ixb+2ns6IfzCDu6GBA"
+    },
+    "covers": [],
+    "description": "the signature is not canonical base64",
+    "expected": {
+      "refused": "delegation_shape"
+    },
+    "id": "DG08",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "probityScope": {
+          "tenant": "tenant-a"
+        },
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "wRjwLCDrrpZhtCSc/c15e7RmuWaIEZPnqwa1NzFhEsWtPoKs9JC7h2UY5BabpOJEVEuZVRQxaMxP0j3AR3XXBg=="
+    },
+    "covers": [],
+    "description": "a member the format does not define",
+    "expected": {
+      "refused": "delegation_members_invalid"
+    },
+    "id": "DG09",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "windowS": 600
+      },
+      "sig": "Mr1i9uzCIOScPsfawbusQh+W8SlQAThBpCXsTTr61U7it6vDI9kK1UOSl4+rGWJwJHRo1PGzfv/ME+Xbc0STDg=="
+    },
+    "covers": [],
+    "description": "no tenant member",
+    "expected": {
+      "refused": "delegation_members_invalid"
+    },
+    "id": "DG10",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "witness",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "3GE/vaS5jM+Hdrh5vlhWJVqb6ZL7kCE57FcpjyGGaEMADC/00Bs0thz/spkqsGklyI31zlOY5uO4ZCH1l+HbAA=="
+    },
+    "covers": [],
+    "description": "a hierarchy the format does not define",
+    "expected": {
+      "refused": "delegation_hierarchy_invalid"
+    },
+    "id": "DG11",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "tenant",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "AemJmnU5FpPqbyUoPA8DG1VH6WPct3dz8n+3O9p78as5OPCj1yGL8NiMZnwpcE4lvGFNYk0gBTxNiSGdhIXXCQ=="
+    },
+    "covers": [],
+    "description": "custody named by a word the format does not define",
+    "expected": {
+      "refused": "delegation_custody_invalid"
+    },
+    "id": "DG12",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "customer",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "7ZWaTMkeEYZT5CL5xB5DuH2VvGF/LMnDtexNnBrA9uKIN52kY1kiQSoF91qRcR1nkxZUMQVareKFE645ryO4Cg=="
+    },
+    "covers": [],
+    "description": "a record root the customer holds",
+    "expected": {
+      "refused": "delegation_record_root_customer_custody"
+    },
+    "id": "DG13",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant a",
+        "windowS": 600
+      },
+      "sig": "44jSPRZ7L5FbZ2ENXcBc1Qydv1JgRCyN/v1F0LyKVL5e7XsUx8sBaLA3uiEJ9HB7E+nBwo4/4SOEFM2RlnkqBQ=="
+    },
+    "covers": [],
+    "description": "a tenant with a space",
+    "expected": {
+      "refused": "delegation_tenant_invalid"
+    },
+    "id": "DG14",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "",
+        "windowS": 600
+      },
+      "sig": "fb3r0rg/liz2FLwGblBfiHayhw67Jmy9i4g7LcD9SJqe/x4Jo2j6v6rxSuFlJqXTZCLvpkhJ/ATMVPNcsk10Ag=="
+    },
+    "covers": [],
+    "description": "an empty tenant",
+    "expected": {
+      "refused": "delegation_tenant_invalid"
+    },
+    "id": "DG15",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+        "windowS": 600
+      },
+      "sig": "xdwF/4IWOJNMZIRg5QUipz7cgRGFzOurP+0PBoiJQcXBuQx53lDR8b0s+NYA7xcdse3CC/r4VuDFpQYI729ZCA=="
+    },
+    "covers": [],
+    "description": "a tenant of 257 characters",
+    "expected": {
+      "refused": "delegation_tenant_invalid"
+    },
+    "id": "DG16",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-\u00e9",
+        "windowS": 600
+      },
+      "sig": "9FqsgaafbFFwFSFSX+zJIRE1pE0Xn1ZSqZFd72y6ypJt1bNf6HgPch4KLFkPXHPkMXtY2JfPWcZAm9ZEBsfHBg=="
+    },
+    "covers": [],
+    "description": "a tenant outside printable ASCII",
+    "expected": {
+      "refused": "delegation_tenant_invalid"
+    },
+    "id": "DG17",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 0
+      },
+      "sig": "EcK0rrjHfo1u5pJs/s4yJHzStfGNhaBW5Wt4w0U+KtcUyO0s23kIBIn/9ONNjgqg4EFH2EFX+URjnOginuHYBQ=="
+    },
+    "covers": [],
+    "description": "a declared window of zero seconds",
+    "expected": {
+      "refused": "delegation_window_invalid"
+    },
+    "id": "DG18",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600.0
+      },
+      "sig": "Md4cus0vEHX27d0R7MZ8MAawuqpynCmff6xZfEuTeKN1B2NuJqT9kLk2Sirs+mNm9sX9ixb+2ns6IfzCDu6GBA=="
+    },
+    "covers": [],
+    "description": "a declared window written as a float",
+    "expected": {
+      "refused": "delegation_window_invalid"
+    },
+    "id": "DG19",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": true
+      },
+      "sig": "OPdacZ8Q9ROlRykvi9oFfSf+ksbY2jUBCQYL+kyV2hiN8VrWf8v64vnnpfJFnPMgsLPamJ+/5RvlEFWurOOXAw=="
+    },
+    "covers": [],
+    "description": "a declared window written as true",
+    "expected": {
+      "refused": "delegation_window_invalid"
+    },
+    "id": "DG20",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": "600"
+      },
+      "sig": "DbTkVltZNr88QBSZn86g1iix6r0T+nwlGPinAtRpGcZQ+JFC4OBRiP3W/TFN/C3POqOvTd96GumUeXvVf6EkAQ=="
+    },
+    "covers": [],
+    "description": "a declared window written as text",
+    "expected": {
+      "refused": "delegation_window_invalid"
+    },
+    "id": "DG21",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00+00:00",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "m5gJB/9Mki7Gff1b6kT11HbklRr/V3ETWxn8ZWxdnMSW+RjBwKtF8YziUq0SQNuotbMqhsMEYQvNR1pphLqCAw=="
+    },
+    "covers": [],
+    "description": "notAfter with a +00:00 offset rather than Z",
+    "expected": {
+      "refused": "delegation_time_invalid"
+    },
+    "id": "DG22",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.0000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "rfF1Cvhfg+qd+A8h5ff+XGVTM3CsoYwuXM9boq2plMcT0Hcw6I4Mt3RKt2HdTVXUVlwjwce6z2VQYWxAsaoVBQ=="
+    },
+    "covers": [],
+    "description": "notBefore with seven fraction digits",
+    "expected": {
+      "refused": "delegation_time_invalid"
+    },
+    "id": "DG23",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:00:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "5zMpqxkoa3vOwQmrVSbRfq5P7Pqnpmwb5rtiJYGbHRUM04tSnUTJ9jgHNLleaefEtQyTjsIVbsVYoVetIZueAg=="
+    },
+    "covers": [],
+    "description": "notAfter equal to notBefore",
+    "expected": {
+      "refused": "delegation_window_empty"
+    },
+    "id": "DG24",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000001Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "6CCmmURLnvOTeydvP9L7z7/nGCD1N4YN4wtjSAyhdxQApcR7vGbFCHVeuWINcbg3Gsggg9NHsnqukYcztglABQ=="
+    },
+    "covers": [],
+    "description": "a window one microsecond longer than declared",
+    "expected": {
+      "refused": "delegation_window_exceeds_declared"
+    },
+    "id": "DG25",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": [
+          "local"
+        ],
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "XHQHL4p4y2b/4OrLlVjyp9J51WwuQxfQ61qnaRfj5R5ZhHJTqNdd8NJDHYK+iTKUucfl8TXqA+DZ1c2wSydGAg=="
+    },
+    "covers": [],
+    "description": "rootProvenance is a list",
+    "expected": {
+      "refused": "delegation_root_provenance_invalid"
+    },
+    "id": "DG26",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/A==",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "5MYioPvfCcyURTtRbR4ZjxI0R9PCagA+LapwrwfoWtxK0gLPeAlQFlvN2rGSa11wI92h81ZioDulLrZ77sMkCw=="
+    },
+    "covers": [],
+    "description": "a session key of 31 bytes",
+    "expected": {
+      "refused": "delegation_session_key_invalid"
+    },
+    "id": "DG27",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-b",
+        "windowS": 600
+      },
+      "sig": "Md4cus0vEHX27d0R7MZ8MAawuqpynCmff6xZfEuTeKN1B2NuJqT9kLk2Sirs+mNm9sX9ixb+2ns6IfzCDu6GBA=="
+    },
+    "covers": [],
+    "description": "the tenant changed after the root signed",
+    "expected": {
+      "refused": "delegation_unverified"
+    },
+    "id": "DG28",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "authority",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "8d2f223ebff372e528049d60c9ba15eec1866bc0c953c3446c5b7c274786e932",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "Md4cus0vEHX27d0R7MZ8MAawuqpynCmff6xZfEuTeKN1B2NuJqT9kLk2Sirs+mNm9sX9ixb+2ns6IfzCDu6GBA=="
+    },
+    "covers": [],
+    "description": "the hierarchy changed after the root signed",
+    "expected": {
+      "refused": "delegation_unverified"
+    },
+    "id": "DG29",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "53aeb5caec75615b7bda72c2cb585c4f38979b12f81bb203a511c5ee2d0a5299",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "Nqq/QDAq9zbCfLk6USGcPIovfjXMzMfTXvCrgB2pLys6zIEkRD7CX0K6YHLOrNiwhMiUkVkYoB36ChUb228BDg=="
+    },
+    "covers": [],
+    "description": "signed by a root nobody pinned",
+    "expected": {
+      "refused": "delegation_unverified"
+    },
+    "id": "DG30",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  },
+  {
+    "certificate": {
+      "body": {
+        "custody": "ours",
+        "format": "probity-key-delegation/v2",
+        "hierarchy": "record",
+        "notAfter": "2026-11-23T12:10:00.000000Z",
+        "notBefore": "2026-11-23T12:00:00.000000Z",
+        "rootKeyId": "92094b1b078045c82f64782b5cac2b1a65ddecd3635a0f599d1ea3d7c073d127",
+        "rootProvenance": {
+          "backend": "local"
+        },
+        "sessionKey": "nJcTaQCYYknRp5FT2XrtQ7/TlQHeUBSQfH32pGC+/L8=",
+        "tenant": "tenant-a",
+        "windowS": 600
+      },
+      "sig": "zMFm1ZeDn9SiEMGXzLViSKFl1C37F/HtmmYlpGNdZTsKqVJDN9HsfNBh4ALjK/uOgD06RiN8sQBH0vzctkS+Ag=="
+    },
+    "covers": [],
+    "description": "the pinned root signed a body naming another root key",
+    "expected": {
+      "refused": "delegation_root_key_id_mismatch"
+    },
+    "id": "DG31",
+    "roots": [
+      "nzdmq53++WPxmivHRetNJMzyexvGk8vjQnNDPZCp2zQ="
+    ]
+  }
+]

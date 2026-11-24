@@ -3,6 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { covers, verifyDelegation } from "../src/delegation.ts";
 import { judgeVerified } from "../src/verified.ts";
 import { bodyProblem, canonicalBytes, canonicalOfReceived, chainDigests, checkPrincipals, judgeDigest, judgeIdentity, parsePy, verifyGrantAllow, verifyJournal } from "../src/verify.ts";
 
@@ -87,3 +88,21 @@ for (const v of load("verified_identities.json")) {
 test("every family is non-empty", () => {
   for (const f of [...JOURNAL_FAMILIES.map((n) => `${n}.json`), "identity.json", "standing_grants.json", "grant_bodies.json", "grant_calls.json", "canonical.json", "canonical_identity.json", "identity_digests.json", "verified_identities.json"]) assert.ok(load(f).length > 0, f);
 });
+
+// Session-key certificates (probity-key-delegation/v2): the same scope and window, or the same refusal code, and the
+// same half-open answer for every instant. parsePy keeps windowS 600.0 a float, as Python does.
+for (const v of loadPy("delegation.json")) {
+  test(`${v.id} ${v.description}`, () => {
+    const roots = v.roots.map((r: string) => Buffer.from(r, "base64"));
+    let got: object;
+    let answers: boolean[] = [];
+    try {
+      const d = verifyDelegation(v.certificate, roots);
+      got = { delegation: { custody: d.custody, hierarchy: d.hierarchy, notAfter: d.notAfter, notBefore: d.notBefore,
+        rootKeyId: d.rootKeyId, sessionKeyId: d.sessionKeyId, tenant: d.tenant, windowS: d.windowS } };
+      answers = v.covers.map((c: { at: string }) => covers(d, c.at));
+    } catch (e) { got = { refused: (e as Error).message }; }
+    assert.deepEqual(got, v.expected);
+    assert.deepEqual(answers, v.covers.map((c: { expected: boolean }) => c.expected));
+  });
+}

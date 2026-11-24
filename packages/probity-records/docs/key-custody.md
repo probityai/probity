@@ -3,8 +3,8 @@
 The signing key does not have to live next to the agent. `VaultTransitKey`, `AwsKmsKey` and `GcpKmsKey` sign
 through HashiCorp Vault transit, AWS KMS or Cloud KMS Ed25519, so the private key never leaves the service.
 Each pins its public key at construction and refuses a service that answers with another one. `delegate`
-issues a short-lived session key signed by a root key, and `verify_delegation` re-checks the certificate
-offline. The key's provenance travels in every permit and checkpoint it signs.
+issues a short-lived session key signed by a root key for one scope, and `verify_delegation` re-checks the
+certificate offline ([probity-key-delegation/v2](key-delegation.md)). The key's provenance travels in every permit and checkpoint it signs.
 
 The witness key belongs to the customer. The journal publishes a C2SP tlog checkpoint feed. A witness the
 customer runs, with a key we never hold, cosigns each checkpoint over an RFC 9162 consistency proof and refuses a
