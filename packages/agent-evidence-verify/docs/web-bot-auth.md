@@ -15,6 +15,7 @@ The case binds the request as the verifier received it, its body when it had one
 - `body` (optional): the case artifact holding the received body bytes
 - `label` (optional): the signature label to read; without it, every signature whose `tag` is `web-bot-auth` is judged on its own (the draft's section 5.2.2) and the request is supported when one of them passes
 - `required_components` (optional): a sorted list of component names the signature must cover
+- `pinned_fields` (optional): a non-empty object from a lowercase field name to the exact value you expect, as the signature base carries it (the field's lines trimmed and joined with `, `); each pinned field must be covered as a whole field, with no `key` or `sf` parameter, and carry that value. Use it for a covered field that names a record you hold, such as the [stamp digest of the agent browser profile](#the-agent-browser-profile)
 - `max_age_seconds`, `max_validity_seconds` (optional): limits on `at - created` and `expires - created`; the window is 24 hours unless you pin another, because the check keeps no replay state and the draft recommends no more
 - `allow_test_keys` (optional): `true` only when you are testing with the published RFC 9421 test key
 
@@ -28,6 +29,7 @@ The verifying key comes only from the pinned directory. The request's `keyid` ch
 | `contradicted` | `signature_absent`, `signature_headers_malformed`, `signature_parameters_invalid` | no `web-bot-auth` signature, a header that is not a valid Structured Field, or missing or wrong `created`, `expires`, `keyid`, `tag` or `alg` |
 | `contradicted` | `component_not_covered`, `signature_base_invalid` | the signature leaves out `signature-agent` (as a Dictionary member), `@authority` or `@target-uri`, or a component you require, or names a component the request cannot supply |
 | `contradicted` | `signature_agent_mismatch`, `authority_mismatch` | the covered `Signature-Agent` member is not the signer you pinned, or the request was for another host |
+| `contradicted` | `pinned_field_mismatch` | a field you pinned is covered but carries another value: it was swapped on the way, or signed for another record |
 | `contradicted` | `signature_expired`, `signature_created_in_future`, `signature_too_old`, `validity_window_too_long` | the signature is not current at `at` (60 seconds of skew allowed), or breaks your limits |
 | `contradicted` | `body_not_covered`, `content_digest_mismatch`, `content_digest_unsupported` | the request has a body the signature does not cover, or the covered `Content-Digest` is not the digest of the received body |
 | `contradicted` | `key_not_yet_valid`, `key_expired`, `key_not_for_signing`, `key_private_published` | the pinned directory says the key is not current at `at` or at `created`, is not a signing key, or publishes its private part |
@@ -45,5 +47,41 @@ A valid signature over the headers alone says nothing about the body. Verifying 
 ## What it does not establish
 
 A supported decision means the key in your pinned directory signed the components the signature covers, for this authority, over this body, inside its validity. `scope.record.covered` lists them and `scope.record.uncovered` names the method, path or query the signature leaves open: a signature over `@authority` alone, the draft's minimum, holds for any method and path, so require `@method` and `@path` (or `@target-uri`) in `required_components` when the route matters. It does not establish that the request was not replayed inside that window: the check keeps no state, so a gateway that wants one-use admission records the signature's `nonce` or its digest. It does not establish who holds the key, or that the directory is the signer's own.
+
+## The agent browser profile
+
+A signing browser proxy marks every request an agent's browser sends with one Web Bot Auth signature. The browser holds no key and no login; the proxy signs each request as it leaves, under the agent's own Ed25519 key, and binds it to the record of the session it was sent under. Every request carries five fields:
+
+```
+Signature-Agent: agent="https://agent.example/.well-known/http-message-signatures-directory"
+Content-Digest: sha-256=:<base64 of the SHA-256 of the body>:
+Probity-Stamp-Digest: "sha256:<64 lowercase hex digits>"
+Signature-Input: agent=("@method" "@target-uri" "@authority" "content-digest" "probity-stamp-digest" "signature-agent";key="agent");created=1795435200;expires=1795435260;nonce="...";keyid="<RFC 7638 thumbprint>";alg="ed25519";tag="web-bot-auth"
+Signature: agent=:<Ed25519 signature over the RFC 9421 signature base>:
+```
+
+- The label is `agent` and the tag `web-bot-auth`. The `Signature-Agent` member is keyed by the label, as the draft's section 5.2.1 requires.
+- The covered components are exactly `@method`, `@target-uri`, `@authority`, `content-digest`, `probity-stamp-digest` and `"signature-agent";key="agent"`, in that order. `@target-uri` binds the path and the query, so no part of the request is left open (`scope.record.uncovered` is empty).
+- `Content-Digest` is always sent and covered, including for a request with no body, where it is the SHA-256 of no bytes. The draft leaves the body uncovered by default; this profile does not.
+- `Probity-Stamp-Digest` is an RFC 8941 String holding `probity_records.digests.stamp_digest` of the request's verified principals, act chain and grant chain ([identity-digests.md](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/identity-digests.md)). It binds the request to the record of the session that released it without naming the user to the site.
+- `expires` is at most 60 seconds after `created`, because the signature names one request and its window is the receiver's replay window. `nonce` is fresh per request.
+
+To read a request in this profile, pin:
+
+```json
+{
+  "claim_type": "web_bot_auth/v1",
+  "label": "agent",
+  "required_components": ["@authority", "@method", "@target-uri", "content-digest", "probity-stamp-digest", "signature-agent"],
+  "max_age_seconds": 60,
+  "max_validity_seconds": 60,
+  "pinned_fields": {"probity-stamp-digest": "\"sha256:<the stamp digest your record names>\""},
+  "body": "body.bin"
+}
+```
+
+with `request`, `directory`, `directory_sha256`, `signature_agent`, `authority` and `at` as above. Bind the body even when it is empty: the signature covers `content-digest`, so a case with no body is `body_unavailable`. Leave `pinned_fields` out when you hold no record of the session; the stamp digest is then still covered, so a digest swapped on the way fails as `signature_invalid`, but a request validly signed for another session is `supported`. Require `@target-uri`, not `@path`: the profile covers the path through `@target-uri`, and a policy that requires `@path` refuses it as `component_not_covered`.
+
+The [browser profile vectors](../vectors-web-bot-auth/README.md) hold twelve cases signed in this profile, and both the Python reader and the TypeScript reader (`probity-records-verify web-bot-auth`) decide each as the manifest says. A proxy that refuses a request it cannot sign reports one of the `browser_*` codes in the probity-records [refusal-code registry](https://github.com/probityai/probity/blob/main/packages/probity-records/src/probity_records/refusal_codes.json).
 
 The [worked example](../examples/web-bot-auth/case.json) is generated by [generate.py](../examples/web-bot-auth/generate.py), which writes the signature base by hand so the verifier is not the oracle for the request it judges; the unit tests also reproduce the draft's own signed example.

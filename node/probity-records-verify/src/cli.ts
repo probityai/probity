@@ -1,16 +1,20 @@
 #!/usr/bin/env node
 // probity-records-verify JOURNAL.jsonl --key PUB.pem [--key ...] [--checkpoint CP.json] [--trust TRUST.json]
 // probity-records-verify corpus DIR [DIR ...]
+// probity-records-verify web-bot-auth CASE.json --policy POLICY.json [--json]: the web_bot_auth/v1 twin under the
+//   agent-evidence-verify CLI contract (exit 0 with a decision, 2 for invalid input).
 // probity-records-verify jcs {rfc8785|card-signing-input} INPUT.json: the external-verifier contract of
 //   agent-evidence-vectors' a2a-jcs corpus (agent_evidence_vectors.a2ajcs): exit 0 with
 //   {"canonical_utf8_hex": ...} on the last line, exit 1 for a refusal, exit 2 when it cannot run.
 import { readFileSync } from "node:fs";
 import { canonicalBytes, canonicalOfReceived, parseReceived, verifyJournal } from "./verify.ts";
 import { main as corpusMain } from "./corpus.ts";
+import { main as webBotAuthMain } from "./webbotauth.ts";
 
 const argv = process.argv.slice(2);
 if (argv[0] === "corpus") process.exit(corpusMain(argv.slice(1)));
 if (argv[0] === "jcs") process.exit(jcsMain(argv[1], argv[2]));
+if (argv[0] === "web-bot-auth") process.exit(webBotAuthMain(argv.slice(1)));
 
 function jcsMain(target: string | undefined, path: string | undefined): number {
   if ((target !== "rfc8785" && target !== "card-signing-input") || !path) {

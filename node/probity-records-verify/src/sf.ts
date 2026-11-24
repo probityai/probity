@@ -1,5 +1,5 @@
-// Structured Field Values for HTTP (RFC 8941), the subset the agent stamp reads: the TypeScript twin of
-// agent_evidence_verify.structured_fields. Dictionaries, Items and Inner Lists; bare items of type String, Token,
+// Structured Field Values for HTTP (RFC 8941), the subset HTTP message signatures read: the TypeScript twin of
+// agent_evidence_verify.structured_fields, used by the agent stamp and the Web Bot Auth reader. Dictionaries, Items and Inner Lists; bare items of type String, Token,
 // Integer, Decimal, Byte Sequence and Boolean; parameters. It is as strict as the Python reader: a repeated
 // Dictionary key or parameter name is refused, numbers are read from the digits 0 to 9 only, and a Byte Sequence
 // accepts missing padding and non-zero pad bits as RFC 8941 section 4.2.7 says a parser SHOULD.
@@ -8,7 +8,7 @@ export class SFError extends Error {}
 
 /** A Token bare item, kept apart from Strings. */
 export class Token { readonly value: string; constructor(value: string) { this.value = value; } }
-/** A Decimal bare item, kept as its text: the stamp reads none, it only refuses one where an Integer belongs. */
+/** A Decimal bare item, kept as its text (at most 12 integer and 3 fraction digits, as parsed). */
 export class Decimal { readonly text: string; constructor(text: string) { this.text = text; } }
 
 export type BareItem = string | Token | number | Decimal | Buffer | boolean;
@@ -157,12 +157,35 @@ export function parseDictionary(text: string): Map<string, Member> {
   return out;
 }
 
-/** The strict RFC 8941 serialisation of a String, Token or Integer bare item (all the stamp re-serialises). */
+/** An Item field value, read strictly; SFError otherwise. */
+export function parseItem(text: string): Item {
+  const p = new Parser(text.replace(/^[ \t]+|[ \t]+$/g, ""));
+  const out = p.item();
+  if (!p.done()) throw p.fail("trailing characters");
+  return out;
+}
+
+/** An Inner List field value, read strictly; SFError otherwise. */
+export function parseInnerList(text: string): InnerList {
+  const p = new Parser(text.replace(/^[ \t]+|[ \t]+$/g, ""));
+  const out = p.innerList();
+  if (!p.done()) throw p.fail("trailing characters");
+  return out;
+}
+
+/** RFC 8941 section 4.1.5: a parsed Decimal has at most 3 fraction digits, so only zeros are trimmed. */
+function serializeDecimal(text: string): string {
+  const negative = text.startsWith("-");
+  const [whole, frac] = (negative ? text.slice(1) : text).split(".");
+  return `${negative ? "-" : ""}${whole.replace(/^0+(?=[0-9])/, "")}.${frac.replace(/0+$/, "") || "0"}`;
+}
+
+/** The strict RFC 8941 serialisation of a bare item. */
 export function serializeBareItem(value: BareItem): string {
   if (typeof value === "boolean") return value ? "?1" : "?0";
   if (value instanceof Token) return value.value;
   if (typeof value === "number") return String(value);
-  if (value instanceof Decimal) throw new SFError("the stamp re-serialises no Decimal");
+  if (value instanceof Decimal) return serializeDecimal(value.text);
   if (Buffer.isBuffer(value)) return `:${value.toString("base64")}:`;
   for (const c of value) if (c.charCodeAt(0) < 0x20 || c.charCodeAt(0) > 0x7e) throw new SFError("string contains a non-ASCII or control character");
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
@@ -174,7 +197,30 @@ function serializeParams(params: Map<string, BareItem>): string {
   return out;
 }
 
+/** An Item with its parameters. */
+export function serializeItem(item: Item): string { return serializeBareItem(item.value) + serializeParams(item.params); }
+
 /** An Inner List with its parameters, as the RFC 9421 `@signature-params` line carries it. */
 export function serializeInnerList(inner: InnerList): string {
-  return `(${inner.items.map((i) => serializeBareItem(i.value) + serializeParams(i.params)).join(" ")})${serializeParams(inner.params)}`;
+  return `(${inner.items.map(serializeItem).join(" ")})${serializeParams(inner.params)}`;
+}
+
+/** A Dictionary member's value with its parameters, without the key (RFC 9421 section 2.1.2). */
+export function serializeMember(member: Member): string {
+  return member.kind === "inner" ? serializeInnerList(member) : serializeItem(member);
+}
+
+/** A Dictionary, members in order; a Boolean true member is written as its key and parameters. */
+export function serializeDictionary(members: Map<string, Member>): string {
+  return [...members].map(([key, m]) => (m.kind === "item" && m.value === true ? key + serializeParams(m.params)
+    : `${key}=${serializeMember(m)}`)).join(", ");
+}
+
+/** RFC 9421 section 2.1.1: the strict serialisation of a field the sf flag marks, as an Item, an Inner List or a
+ *  Dictionary, whichever parses first. */
+export function reserialize(text: string): string {
+  for (const parse of [parseItem, parseInnerList]) {
+    try { return serializeMember(parse(text)); } catch (e) { if (!(e instanceof SFError)) throw e; }
+  }
+  return serializeDictionary(parseDictionary(text));
 }

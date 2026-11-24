@@ -123,6 +123,8 @@ jobs:
       - run: uv run --frozen --extra test python vectors-operand-lineage/check_vectors.py --verifier 'agent-evidence-verify'
       - run: uv run --frozen --extra test python vectors-done-checks/gen_vectors.py --check
       - run: uv run --frozen --extra test python vectors-done-checks/check_vectors.py --verifier 'agent-evidence-verify'
+      - run: uv run --frozen --extra test python vectors-web-bot-auth/gen_vectors.py --check
+      - run: uv run --frozen --extra test python vectors-web-bot-auth/check_vectors.py --verifier 'agent-evidence-verify'
 
   # EXTERNAL witness scope is earned only from a witness co-signature, checked by
   # agent-evidence-observer's witness module. That module needs the jcs-admit
@@ -3431,6 +3433,8 @@ jobs:
           node-version: '22.18'
       - run: npm ci
       - run: node --test test/*.test.ts
+      # The twin as an external verifier under the Web Bot Auth corpus's own checker: 12 of 12 cases.
+      - run: python3 ../../packages/agent-evidence-verify/vectors-web-bot-auth/check_vectors.py --verifier 'node src/cli.ts web-bot-auth'
       # The published tarball ships plain JavaScript built from src/ (Node will not run TypeScript from node_modules).
       - run: npm pack --dry-run
       # The twin as an external verifier under agent-evidence-vectors' own a2a-jcs harness, from a

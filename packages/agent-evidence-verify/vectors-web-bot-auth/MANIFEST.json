@@ -1,0 +1,199 @@
+{
+  "corpusDigest": "f7f2cea2af451d96d32b8a8d7f608aaa58bb3b4552164b5311d626ae72f06c07",
+  "suite": "web-bot-auth-browser-profile/v1",
+  "vectors": [
+    {
+      "expected": {
+        "decision": "supported",
+        "reason": "request_signed_by_pinned_agent"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "f048d70e30b07c3701492b0861db95998c8ca62a9484104df82e6cdd0f441115",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "ea20c37f8e6e1d37928dcbea331c2f3e38370699b83bac80f220b1f85e0bd21c",
+        "request.json": "536db09c40534ad3873386e9cf95b0f01505d6654eab25a3533bc6b282813ef2"
+      },
+      "id": "supported",
+      "note": "A POST signed in the profile, its body and the release record's stamp digest as they were sent.",
+      "path": "cases/supported"
+    },
+    {
+      "expected": {
+        "decision": "supported",
+        "reason": "request_signed_by_pinned_agent"
+      },
+      "files": {
+        "body.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "case.json": "474669681699ecd0485cedc8bdf724228b76b75ba95d23e078b05b3ac0e72795",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "627c8b00fafb6494afdab05fb69c25f66db7aaaca95dcb49c9c2d908f50b3312",
+        "request.json": "866381618ad6e6ec83d635b5bd586d41d56191d9d618a64b543427d751d89943"
+      },
+      "id": "supported-get-empty-body",
+      "note": "A GET covers the digest of no bytes; the consumer binds the empty body, else the body is not established.",
+      "path": "cases/supported-get-empty-body"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "content_digest_mismatch"
+      },
+      "files": {
+        "body.bin": "7d596d0136d501f24610e7cf67494162982012ed2d705ce32d453209be25d47d",
+        "case.json": "87cc449d1d650d038f82517ac6d769e4849c39c13c3e9d99b8776f109ce931c9",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "0b98a115bf0d2c36cebf0fd02b17efdc8759b96b72373f4f1947e713ba689db4",
+        "request.json": "536db09c40534ad3873386e9cf95b0f01505d6654eab25a3533bc6b282813ef2"
+      },
+      "id": "body-swapped",
+      "note": "An on-path party replaced the body; the covered Content-Digest names the body that was signed.",
+      "path": "cases/body-swapped"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "content_digest_mismatch"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "60deec8ddde02d584c98fdb6d7040bb6b0754706dd7b90673683484491c7c4b6",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "4b89e8d5bb330cdc520a2d80f14c573c648adae44b18ed14896a3630d09cfd0e",
+        "request.json": "532192481a1c1e50fac25c5d91368c99dc882a2782d3bc7c16bf00601963b9e8"
+      },
+      "id": "digest-dropped",
+      "note": "An on-path party dropped Content-Digest; the signature still lists it, so the body is bound to nothing.",
+      "path": "cases/digest-dropped"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "component_not_covered"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "ad4adaed00e0b5febc86ec70a1b4ca14d108a83606398f8dd80ecdb5bdb26fcb",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "202c4120189d262981abb56343fb7e412b5a7d17051834c768e55d203e25c0b9",
+        "request.json": "d0dcbf72728d9fc6b7ef3e610ac892df30cca4de4fcec56af8dee96957a6ba7e"
+      },
+      "id": "digest-not-covered",
+      "note": "A signature that leaves content-digest out is not the profile, whatever else it covers.",
+      "path": "cases/digest-not-covered"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "signature_expired"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "234bcb1492f1207bef6e518fc610850755af9bc379d4f92cbc1b60f6657faa84",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "daae7104bd0175c6abf9464fb67af2d411294137c7d015bfbe3bedc6f488fcce",
+        "request.json": "536db09c40534ad3873386e9cf95b0f01505d6654eab25a3533bc6b282813ef2"
+      },
+      "id": "stale",
+      "note": "Two minutes after created, past the 60 s the profile signs for.",
+      "path": "cases/stale"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "validity_window_too_long"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "b5257f94152a4212340c0ada981e00063fc3558d7620dcbc974d0b6643dd4815",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "4c7c87583afae9df274031824bf5f7f43970a1c78c3f3c8efea830f43d46fc45",
+        "request.json": "3e9e4e617fc61341a5fd41fa2fbedfb5bb62c8ad6197b9733f626c8b3943af66"
+      },
+      "id": "ttl-over-profile",
+      "note": "A signature valid for 300 s is longer than the 60 s the profile allows.",
+      "path": "cases/ttl-over-profile"
+    },
+    {
+      "expected": {
+        "decision": "not_established",
+        "reason": "key_not_in_directory"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "27d13e98cfe63441d7a9c3a76a1fbf68a7ea8139aec8b71abd33e4e85d867cd6",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "f0ef750394cb25c20052cbde7870f339195f7ebe6272510dc284f8a7a1584235",
+        "request.json": "613bf9d9de5ff6d2c0bc8b6ce89de3b06461abea296d851a9ad2286d8ec6531a"
+      },
+      "id": "key-not-in-directory",
+      "note": "Signed by a key the pinned directory does not list: a stale pin, not a forgery finding.",
+      "path": "cases/key-not-in-directory"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "component_not_covered"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "f43067004a3d85be6d9d7795fbf1f90486f96275005a92aaf5a25f99ed6ad873",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "35c9174e461e6551e9fcd6805396854ef3314a46eba03e55408c694548ba1230",
+        "request.json": "536db09c40534ad3873386e9cf95b0f01505d6654eab25a3533bc6b282813ef2"
+      },
+      "id": "path-required",
+      "note": "A consumer that requires @path refuses the profile, which covers the path through @target-uri.",
+      "path": "cases/path-required"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "pinned_field_mismatch"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "dc66ad0788df71b5310e4f22eddd10cf94afbddc26da804b2a17bc16a6520c75",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "9663c15e6a7b6475a8257ddcca6f8f87b3fde019807e2426ccaf253d50ed4fa2",
+        "request.json": "393e3ecd0d8cf4cf81ee02af4e2311391a83cad1e8ad69266ea4f8eb02f52f05"
+      },
+      "id": "stamp-digest-swapped",
+      "note": "An on-path party replaced the stamp digest; the consumer pins the one its release record names.",
+      "path": "cases/stamp-digest-swapped"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "signature_invalid"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "b9d363d5ca7b1cda55632a49988f9d74d9710055d549b0439372487107bf55a4",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "114cf5052a136cbcc9b8b53c449bd590e8db10313f2835d0a509c47329b0bac4",
+        "request.json": "393e3ecd0d8cf4cf81ee02af4e2311391a83cad1e8ad69266ea4f8eb02f52f05"
+      },
+      "id": "stamp-digest-swapped-unpinned",
+      "note": "The same swap, read by a consumer that holds no release record: the signature covers the field.",
+      "path": "cases/stamp-digest-swapped-unpinned"
+    },
+    {
+      "expected": {
+        "decision": "contradicted",
+        "reason": "pinned_field_mismatch"
+      },
+      "files": {
+        "body.bin": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd",
+        "case.json": "84b95e9cc45c9c19ba1713c6073d2c13b8c6eb0faf0f335a77786622dfd793a8",
+        "directory.json": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b",
+        "policy.json": "7dec8b88173aadb720b54dbcaad6033f030349c5101f1b8683c826247ab82890",
+        "request.json": "25e8f1d089b47c6b1ea9a221b4dc447205e8f7758ea71e6ff5e488863e114003"
+      },
+      "id": "stamp-digest-of-another-release",
+      "note": "A request validly signed for another release: only the pinned stamp digest tells them apart.",
+      "path": "cases/stamp-digest-of-another-release"
+    }
+  ],
+  "verifierContract": "agent-evidence-verify case.json --policy policy.json --json"
+}

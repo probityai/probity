@@ -22,6 +22,13 @@
   twin `@probityai/records-verify/verified` returns the same values from `verifyRequest` (`DpopProof`,
   `CertificateProof`, `proofKey`, `REPLAY_GRACE`), so a Node receiver spends the same key for the same window as a
   Python one. Two new cases: VI16 (a proof at the oldest accepted `iat`) and VI17 (a `jti` that is not ASCII).
+- The refusal registry holds the agent browser's codes. Check `browser.signer`: `browser_target_unsignable` and
+  `browser_stamp_missing`. Check `browser.session`: `browser_host_mismatch`, `browser_session_expired`,
+  `browser_session_revoked`, `browser_session_value_in_request`, `browser_session_cookie_foreign`,
+  `browser_session_no_grant`, `browser_release_unrecorded` and `browser_answer_unscrubbable`. Check `browser.proxy`:
+  `browser_body_too_large`, `browser_upgrade_refused`, `browser_tunnel_refused` and `browser_upstream_failed`.
+- `docs/verified-identities.md` describes the agent browser's signature: the `Probity-Stamp-Digest` field (an RFC 8941
+  String holding `digests.stamp_digest`) and the Web Bot Auth profile that covers it.
 
 ## 0.8.0 (2026-11-23)
 
