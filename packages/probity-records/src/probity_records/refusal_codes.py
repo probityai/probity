@@ -19,9 +19,10 @@ from importlib import resources
 from types import MappingProxyType
 from typing import Any
 
+from .identifiers import identifier, same_identifier
 from .refusal_lint import LOCATION, unlocated
 
-REGISTRY = "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1"
+REGISTRY = identifier("agent-evidence-vectors/refusal-code/v1")
 #: A code: lowercase words joined by single underscores, at least two words.
 CODE = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)+")
 _MEMBERS = frozenset({"code", "check", "meaning", "uri"})
@@ -49,7 +50,7 @@ def parse(data: Any) -> Mapping[str, RefusalCode]:
     """The codes of a registry document; ``RegistryError`` unless it is exactly the format, sorted and unique."""
     if not isinstance(data, dict) or set(data) != {"registry", "version", "codes"}:
         raise RegistryError("a registry has exactly registry, version and codes")
-    if data["registry"] != REGISTRY or data["version"] != 1:
+    if not same_identifier(data["registry"], REGISTRY) or data["version"] != 1:
         raise RegistryError("a registry names this registry, version 1")
     entries = data["codes"]
     if not isinstance(entries, list) or not entries:
@@ -66,7 +67,7 @@ def parse(data: Any) -> Mapping[str, RefusalCode]:
             raise RegistryError(f"{code!r} has the form of a location, which a verifier puts before a code")
         if code <= previous:
             raise RegistryError(f"{code!r} is out of order or repeated")
-        if entry["uri"] != f"{REGISTRY}/{code}":
+        if not same_identifier(entry["uri"], f"{REGISTRY}/{code}"):
             raise RegistryError(f"{code!r} has the identifier {entry['uri']!r}, not {REGISTRY}/{code}")
         if not _CHECK.fullmatch(entry["check"]):
             raise RegistryError(f"{code!r} names the check {entry['check']!r}, not a dotted lowercase name")

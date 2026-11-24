@@ -37,12 +37,13 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from ..common import _digest
+from ..identifiers import identifier, same_identifier
 from ..ijson import IJSONError, parse_ijson
 from . import jcs_canonical
 from .bound_records import assessment_for, bound, decision
 
 CLAIM_TYPE = "audit_principal/v1"
-PREDICATE_TYPE = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/agent-audit-record"
+PREDICATE_TYPE = identifier("agent-evidence-vectors/predicate/v1/agent-audit-record")
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 LIMIT = ("Checks the principal member's shape and bindings and the envelope signature under the "
          "pinned observer key. It does not establish that the identity provider issued the token, "
@@ -247,7 +248,7 @@ def verify(raw: bytes, observer_public_key: str) -> Report:
         envelope, payload, statement = _parse(raw)
         if statement.get("_type") != STATEMENT_TYPE:
             raise Malformed("statement-type-unexpected")
-        if statement.get("predicateType") != PREDICATE_TYPE:
+        if not same_identifier(statement.get("predicateType"), PREDICATE_TYPE):
             raise Malformed("predicate-type-unexpected")
         predicate = statement.get("predicate")
         if not isinstance(predicate, dict):

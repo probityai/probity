@@ -56,6 +56,7 @@ from .adapters import (
     web_bot_auth,
 )
 from .common import CaseError
+from .identifiers import identifier
 from .identity import verifier_reference
 from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_error
 
@@ -63,9 +64,10 @@ from .vocabulary import ACCEPTED_WITNESS_SCOPES, EXTERNAL, PEER, witness_scope_e
 #: conformance run that records the field carries this identifier in the bytes its
 #: own pipeline emits. The URI is the same in every release; ``reference.verifier`` also
 #: carries the installed ``version`` and ``package_sha256`` (see :mod:`.identity`).
-REFERENCE_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/agent-evidence-verify"
+REFERENCE_VERIFIER_ID = identifier("probity/verifiers/agent-evidence-verify")
 # The identifier releases 0.1.0 to 0.4.1 carried, when the distribution was named probity-verify.
 # Bundles and decisions those releases wrote keep it; this release reads them and never writes it.
+# It is the bytes those releases wrote, so it stays spelled out under the host they used.
 PREDECESSOR_VERIFIER_ID = "https://probityai.github.io/probity/verifiers/probity-verify"
 
 ADAPTERS: dict[str, Callable[[Any, Any, Path], dict]] = {

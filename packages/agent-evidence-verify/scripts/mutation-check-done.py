@@ -469,7 +469,8 @@ MUTATIONS = [
      '        found["class"] = REASON_CLASS[result["reason"]]',
      '        pass'),
     ("receipt: verifier pin ignored", *RECEIPT,
-     '    pinned = accepted_ids is None or result["verifier_id"] in accepted_ids',
+     ('    pinned = accepted_ids is None or any(same_identifier(result["verifier_id"], item)\n'
+      '                                         for item in accepted_ids)'),
      '    pinned = True'),
     ("receipt: records unbound", *RECEIPT,
      '    if unbound:\n        return decide("not_established", "receipt_records_mismatch")',

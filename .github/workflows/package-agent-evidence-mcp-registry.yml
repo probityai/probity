@@ -1,14 +1,20 @@
 # Moved from packages/agent-evidence-mcp/.github/workflows/publish-mcp-registry.yml when the
 # package was imported. Publishes packages/agent-evidence-mcp/server.json to the official MCP
-# Registry. The registry checks that the repository owner matches the io.github.probityai
-# namespace through this job's GitHub OIDC identity, and that the PyPI package's README carries
-# the mcp-name line. release.yml calls it after PyPI is published, so the registry cannot lag a
+# Registry under org.probityai/agent-evidence-mcp. The registry checks domain ownership through the
+# Ed25519 key published as the apex TXT record of probityai.org (v=MCPv1; k=ed25519; p=...), whose
+# private seed is the MCP_REGISTRY_DNS_KEY secret, and that the PyPI package's README carries the
+# mcp-name line. Registry names cannot be renamed, so the earlier GitHub-namespace listing
+# io.github.probityai/agent-evidence-mcp stays and is marked deprecated, through this job's GitHub
+# OIDC identity, while any of its versions is still active. release.yml calls it after PyPI is published, so the registry cannot lag a
 # release; it can still be run by hand.
 name: package-agent-evidence-mcp-registry
 
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      MCP_REGISTRY_DNS_KEY:
+        required: true
 
 permissions:
   contents: read
@@ -34,8 +40,28 @@ jobs:
           curl -fsSL -o publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
           echo "${MCP_PUBLISHER_SHA256}  publisher.tar.gz" | sha256sum -c -
           tar xzf publisher.tar.gz mcp-publisher
-      - name: validate, authenticate with OIDC, publish
+      - name: validate, authenticate with the probityai.org key, publish
+        env:
+          MCP_REGISTRY_DNS_KEY: ${{ secrets.MCP_REGISTRY_DNS_KEY }}
         run: |
+          set -euo pipefail
+          test -n "${MCP_REGISTRY_DNS_KEY}" || { echo "::error::MCP_REGISTRY_DNS_KEY is not set; nothing was published"; exit 1; }
           ./mcp-publisher validate
-          ./mcp-publisher login github-oidc
+          ./mcp-publisher login dns -algorithm ed25519 -domain probityai.org -private-key "${MCP_REGISTRY_DNS_KEY}"
           ./mcp-publisher publish
+      - name: deprecate the GitHub-namespace listing while any version of it is active
+        run: |
+          set -euo pipefail
+          old="io.github.probityai/agent-evidence-mcp"
+          curl -fsS --get "https://registry.modelcontextprotocol.io/v0/servers" \
+            --data-urlencode "search=${old}" --data-urlencode "version=latest" -o old.json
+          state="$(python3 -c 'import json,sys; s=[x for x in json.load(open("old.json")).get("servers",[]) if x.get("server",{}).get("name")==sys.argv[1]]; print(s[0].get("_meta",{}).get("io.modelcontextprotocol.registry/official",{}).get("status","unknown") if s else "absent")' "${old}")"
+          echo "${old}: ${state}"
+          if [ "${state}" = "active" ]; then
+            ./mcp-publisher login github-oidc
+            ./mcp-publisher status --status deprecated --all-versions --yes \
+              --message "Moved to org.probityai/agent-evidence-mcp" "${old}"
+          elif [ "${state}" != "deprecated" ]; then
+            echo "::error::could not read the status of ${old} (${state}); nothing was changed"
+            exit 1
+          fi

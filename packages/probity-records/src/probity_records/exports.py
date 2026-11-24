@@ -28,8 +28,9 @@ from .core import (
     sign_envelope,
     statement,
 )
+from .identifiers import identifier, same_identifier
 
-EXPORT_SEAL = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/export-seal"
+EXPORT_SEAL = identifier("agent-evidence-vectors/predicate/v1/export-seal")
 EXPORT_KINDS = ("entities", "stages", "activity")
 LIST_KEYS = ("content", "data", "entities", "items", "records", "results", "rows")
 
@@ -117,7 +118,7 @@ def verify_export_seal(envelope: Mapping[str, Any], data: bytes, public_pems: It
     except (ValueError, TypeError) as exc:
         return {"verdict": "FAIL", "failures": [f"seal:{exc}"], "census": None}
     pred = body.get("predicate", {})
-    if body.get("predicateType") != EXPORT_SEAL:
+    if not same_identifier(body.get("predicateType"), EXPORT_SEAL):
         failures.append("seal_predicate_type_unexpected")
     if body.get("subject", [{}])[0].get("digest", {}).get("sha256") != sha256_hex(data):
         failures.append("export_bytes_differ_from_seal")

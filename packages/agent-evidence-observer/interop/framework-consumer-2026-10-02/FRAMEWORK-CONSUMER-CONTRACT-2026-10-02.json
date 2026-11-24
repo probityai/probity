@@ -202,6 +202,10 @@
       "git_blob_sha1": "78b176155c4346ab2057cbc862399ae93291f966",
       "sha256": "9d4bd635ff3560fbf1458428d4e1c631e7ac9f85edaa4b45f3f176bc4f9a838f"
     },
+    "src/probity_observer/identifiers.py": {
+      "git_blob_sha1": "e330227e9818a99d6457337b44ba0dc4c1facc05",
+      "sha256": "18f67826544a0b483621d8fd2a4a336ae6447556bd66c781610782d6c8e2bb32"
+    },
     "src/probity_observer/inspect_binding.py": {
       "git_blob_sha1": "97908a753e6ff7169f67780a3c3e7bd010f7eab2",
       "sha256": "2d517fcb3f83970cc7f7d22458c4634fac0d00f4bcce5d2c471c12461ceebfa8"
@@ -231,12 +235,12 @@
       "sha256": "dc1c02e71a7879cdbe4f8b9bbedeb23c176e35123095ed40b52a139de19f80ed"
     },
     "src/probity_observer/refund_handoff.py": {
-      "git_blob_sha1": "64c53b73afb28a08f23dd96dcd47183bf88675ab",
-      "sha256": "8517b61958f80bdf7db86659518c672372502fda78a0f93c8e87672c99ec3607"
+      "git_blob_sha1": "396932100a5e5ba46c7869ea6ef907c5cc281706",
+      "sha256": "7e0baaf9833e30b77482f6cb54d60c64e2bbf223dd8c9692a91d4a7a50f53326"
     },
     "src/probity_observer/refund_handoff_reasons.py": {
-      "git_blob_sha1": "a896451f69b4975b7a2238f98ed2b7c3087eac74",
-      "sha256": "9047fd5ff44c6909ee2bf25d50704914e8dcaaca4d38f25ee67ebf61ffc8f2b3"
+      "git_blob_sha1": "aeb216f792265e5f7e5f593599e020f23b21c5c9",
+      "sha256": "fa463b267dc491ed8e55c9b079ef497531b289a373565258da216f856ad19aea"
     },
     "src/probity_observer/replay.py": {
       "git_blob_sha1": "3056a80498d8daf0c0e1c16b04f8c9785b0a87c0",

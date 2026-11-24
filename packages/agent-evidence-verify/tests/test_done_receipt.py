@@ -454,7 +454,25 @@ def test_a_verifier_the_consumer_did_not_pin(tmp_path, records):
     assert build(tmp_path, records, verifier_ids=[VERIFIER])["decision"] == "supported"
 
 
+def test_a_pinned_verifier_under_either_identifier_host(tmp_path, records):
+    ours = "https://probityai.github.io/probity/verifiers/agent-evidence-verify"
+
+    def named(verifier_id):
+        def change(predicate):
+            predicate["verifier"]["id"] = verifier_id
+        return change
+    for receipt_id, pinned in ((ours, ours), (ours, ours.replace("probityai.github.io", "probityai.org")),
+                               (ours.replace("probityai.github.io", "probityai.org"), ours)):
+        result = build(tmp_path, records, named(receipt_id), verifier_ids=[pinned])
+        assert outcome(result) == ("supported", build(tmp_path, records, named(ours))["reason"])
+        assert result["verifier_id"] == receipt_id
+    plain = ours.replace("https://probityai.github.io", "http://probityai.org")
+    result = build(tmp_path, records, named(ours), verifier_ids=[plain])
+    assert outcome(result) == ("not_established", "verifier_unpinned")
+
+
 def test_another_invocation(tmp_path, records):
+
     def change(predicate):
         predicate["invocation_id"] = "call-2"
     assert build(tmp_path, records, change)["reason"] == "receipt_context_mismatch"

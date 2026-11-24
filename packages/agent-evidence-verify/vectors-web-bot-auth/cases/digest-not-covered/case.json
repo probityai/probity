@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "body.bin": {
+      "length": 43,
+      "path": "body.bin",
+      "sha256": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd"
+    },
+    "directory.json": {
+      "length": 213,
+      "path": "directory.json",
+      "sha256": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b"
+    },
+    "request.json": {
+      "length": 1107,
+      "path": "request.json",
+      "sha256": "d0dcbf72728d9fc6b7ef3e610ac892df30cca4de4fcec56af8dee96957a6ba7e"
+    }
+  },
+  "case_id": "web-bot-auth-browser-digest-not-covered",
+  "schema_version": "probity-case/v1"
+}

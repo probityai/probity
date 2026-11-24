@@ -43,9 +43,10 @@ from .core import (
     verify_approval,
 )
 from .grants import raw_public, ts
+from .identifiers import identifier, same_identifier
 
 REVOCATION_DOMAIN = b"probity-revocation-v1\x00"
-REVOCATION_LIST = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/revocation-list"
+REVOCATION_LIST = identifier("agent-evidence-vectors/predicate/v1/revocation-list")
 #: Every subject kind a list names. A digest kind's id is 64 lowercase hex; the rest are identifiers.
 REVOCATION_KINDS = ("agent", "build", "grant", "key", "permit", "sponsor", "stream")
 DIGEST_KINDS = frozenset({"grant", "key", "permit"})
@@ -143,7 +144,7 @@ def _check_body(body: Any) -> None:
     """Raise ``revocation_list_shape`` unless ``body`` is exactly the format (signature and order not checked)."""
     if not isinstance(body, dict) or set(body) != _BODY_MEMBERS:
         raise _shape("body_members")
-    if body["type"] != REVOCATION_LIST:
+    if not same_identifier(body["type"], REVOCATION_LIST):
         raise _shape("type")
     if not isinstance(body["listId"], str) or not _IDENTIFIER.fullmatch(body["listId"]):
         raise _shape("list_id_form")

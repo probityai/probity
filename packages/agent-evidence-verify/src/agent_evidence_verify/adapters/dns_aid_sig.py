@@ -65,11 +65,12 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 
 from ..common import CaseError
+from ..identifiers import identifier
 from ..ijson import IJSONError, parse_ijson
 from . import jcs_canonical
 
 CLAIM_TYPE = "dns_aid_sig/v1"
-PROFILE = "https://probityai.github.io/agent-evidence-vectors/profile/dns-aid-sig-binding/v1"
+PROFILE = identifier("agent-evidence-vectors/profile/dns-aid-sig-binding/v1")
 SIGNATURE_COVERAGE_TERM = "https://w3id.org/agent-evidence/vocab/v1/signature_coverage"
 SKEW_SECONDS = 300
 #: The DNS-AID parameters ``svcb`` covers: every DNS-AID SvcParam except ``sig`` itself.

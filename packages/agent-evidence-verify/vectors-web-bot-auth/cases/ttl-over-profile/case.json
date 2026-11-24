@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "body.bin": {
+      "length": 43,
+      "path": "body.bin",
+      "sha256": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd"
+    },
+    "directory.json": {
+      "length": 213,
+      "path": "directory.json",
+      "sha256": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b"
+    },
+    "request.json": {
+      "length": 1126,
+      "path": "request.json",
+      "sha256": "3e9e4e617fc61341a5fd41fa2fbedfb5bb62c8ad6197b9733f626c8b3943af66"
+    }
+  },
+  "case_id": "web-bot-auth-browser-ttl-over-profile",
+  "schema_version": "probity-case/v1"
+}

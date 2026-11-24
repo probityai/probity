@@ -15,10 +15,13 @@
 import { createHash, createPublicKey, verify as edVerify, type KeyObject } from "node:crypto";
 import { celEnv, isCelError, parse as celParse, plan as celPlan } from "@bufbuild/cel";
 import { admit, JcsError } from "jcs-admit";
+import { canonicalIdentifier, identifier, sameIdentifier } from "./identifiers.ts";
 
 export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } from "./identity.ts";
 
-export const TOOL_CALL_RECORD = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/tool-call-record";
+export const TOOL_CALL_RECORD = identifier("agent-evidence-vectors/predicate/v1/tool-call-record");
+/** True when a signed body names the tool-call-record predicate under either recognised host spelling. */
+const isToolCall = (body: J): boolean => sameIdentifier(body.predicateType, TOOL_CALL_RECORD);
 const IN_TOTO = "application/vnd.in-toto+json";
 const GRANT_DOMAIN = "probity-grant-v1\u0000";
 const VOTE_DOMAIN = "probity-quorum-vote-v1\u0000";
@@ -1087,7 +1090,7 @@ function voteSigners(pred: J): Set<string> {
 
 // ---------- approval-binding/v1 reader ----------
 
-const APPROVAL_BINDING_CONTRACT = "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1";
+const APPROVAL_BINDING_CONTRACT = identifier("agent-evidence-vectors/contract/approval-binding/v1");
 const APPROVAL_CHECKS = ["contract_id_missing", "contract_id_unknown", "approval_not_cited", "approval_id_ambiguous",
   "approval_replayed", "approval_superseded", "renewal_transition_missing", "renewal_binding_invalid", "key_not_bound",
   "principal_mismatch", "event_phase_mismatch", "payload_mismatch", "approval_outside_validity", "effect_already_closed",
@@ -1163,7 +1166,7 @@ export function judgeApprovalBinding(record: J, payload: Buffer): { decision: st
   const approval = req(record, "approval"), use = req(record, "use");
   const failures: Record<string, () => boolean> = {
     contract_id_missing: () => !("contractId" in record),
-    contract_id_unknown: () => !pyEq(getOr(record, "contractId", APPROVAL_BINDING_CONTRACT), APPROVAL_BINDING_CONTRACT),
+    contract_id_unknown: () => !pyEq(canonicalIdentifier(getOr(record, "contractId", APPROVAL_BINDING_CONTRACT)), APPROVAL_BINDING_CONTRACT),
     approval_not_cited: () => !pyEq(getOr(use, "approvalId", null), req(approval, "approvalId")),
     approval_id_ambiguous: () => approvalAmbiguous(record),
     approval_replayed: () => getOr(record, "consumedApprovalIds", []).some((x: J) => pyEq(x, req(approval, "approvalId"))),
@@ -1194,7 +1197,7 @@ export function judgeApprovalBinding(record: J, payload: Buffer): { decision: st
 
 // ---------- uncertain_effect/v1 reader ----------
 
-const EFFECT_CONTRACT = "https://probityai.github.io/agent-evidence-vectors/predicate/v1/uncertain-effect";
+const EFFECT_CONTRACT = identifier("agent-evidence-vectors/predicate/v1/uncertain-effect");
 const UNKNOWN_REPLIES = ["timeout", "connection_lost"];
 const REPLIES = ["confirmed", "no_effect", ...UNKNOWN_REPLIES];
 const ANSWERS = ["present", "absent"];
@@ -1252,7 +1255,7 @@ function commitAfterAck(stop: J): boolean | null {
 function effectFirstFailure(record: J): string | null {
   const failures: Record<string, () => boolean> = {
     contract_id_missing: () => !("contractId" in record),
-    contract_id_unknown: () => !pyEq(getOr(record, "contractId", EFFECT_CONTRACT), EFFECT_CONTRACT),
+    contract_id_unknown: () => !pyEq(canonicalIdentifier(getOr(record, "contractId", EFFECT_CONTRACT)), EFFECT_CONTRACT),
     operation_identity_missing: () => [req(record, "operation"), ...req(record, "attempts")].some((item: J) =>
       ["idempotencyKey", "argsDigest"].some((k) => !truthy(getOr(item, k, null)))),
     idempotency_key_args_changed: () => { const op = req(record, "operation");
@@ -1437,17 +1440,17 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   // problems are reported after the identity's.
   const approvalProblems: string[] = [];
   let approvers: Set<string> | null = null;
-  if (body.predicateType === TOOL_CALL_RECORD) {
+  if (isToolCall(body)) {
     const pid = String(pred.permitId);
     if (pred.phase === "authorize") {
       approvers = checkApproval(pred, approvalProblems, where, trust);
       if (pred.decision === "allow" && !counted.has(pid)) counted.set(pid, approvers);
     } else approvers = counted.get(pid) ?? null; // an intent or effect answers to the approvers its permit's allow counted
   }
-  if (body.predicateType === TOOL_CALL_RECORD && (pred.principals === undefined || pred.principals === null)
+  if (isToolCall(body) && (pred.principals === undefined || pred.principals === null)
       && pred.phase === "authorize" && trust !== null && trust.identityProfile === "strict")
     problems.push(`${where}:principals_missing`);
-  if (body.predicateType === TOOL_CALL_RECORD && pred.principals !== undefined && pred.principals !== null) {
+  if (isToolCall(body) && pred.principals !== undefined && pred.principals !== null) {
     if (trust === null) problems.push(`${where}:principals_but_no_trust_pinned`);
     else {
       const block = pred.principals;
@@ -1470,13 +1473,13 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   }
   // Keep the verified bodies of an allow's authority chain, so later intent and effect lines resolve the standing
   // grant they name without the auditor pinning it.
-  if (body.predicateType === TOOL_CALL_RECORD && trust !== null && pred.phase === "authorize" && pred.decision === "allow"
+  if (isToolCall(body) && trust !== null && pred.phase === "authorize" && pred.decision === "allow"
       && isObj(pred.authority) && Array.isArray(pred.authority.chain))
     Object.assign(seen, chainDigests(pred.authority.chain, new Set(trust.grantRootKeyIds ?? [])));
-  if (body.predicateType === TOOL_CALL_RECORD) {
+  if (isToolCall(body)) {
     problems.push(...approvalProblems);
     if (pred.phase === "effect") checkEffect(pred, problems, where);
-  } else if (body.predicateType !== TOOL_CALL_RECORD && pred.phase === undefined && body.predicateType?.endsWith("/governance-step"))
+  } else if (!isToolCall(body) && pred.phase === undefined && body.predicateType?.endsWith("/governance-step"))
     problems.push(`${where}:governance_step_not_ported`);
   return [body, problems];
 }
@@ -1499,7 +1502,7 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
   const uses = new Map<string, number>(), spent = new Map<string, number>(), charged = new Set<J>();
   for (const [i, body] of bodies) {
     const pred = body.predicate ?? {};
-    if (body.predicateType !== TOOL_CALL_RECORD || pred.phase !== "authorize" || pred.decision !== "allow" || charged.has(pred.permitId)) continue;
+    if (!isToolCall(body) || pred.phase !== "authorize" || pred.decision !== "allow" || charged.has(pred.permitId)) continue;
     const ev = pred.authority;
     if (!isObj(ev) || ev.kind !== "grant") continue;
     let charges: [string, J, J][];
@@ -1518,11 +1521,11 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
       if ("spend" in budget && spent.get(d)! > budget.spend.max) problems.push(`line_${i}:grant_spend_exceeded:${d.slice(0, 12)}`);
     }
   }
-  problems.push(...duplicateProofs(bodies.filter(([, b]) => b.predicateType === TOOL_CALL_RECORD), skew));
+  problems.push(...duplicateProofs(bodies.filter(([, b]) => isToolCall(b)), skew));
   const grantOf = new Map<J, J>(), allowed = new Set<J>(), effects = new Map<J, number>(), intents = new Map<J, number>();
   const partiesOf = new Map<J, J>(); // pid -> who its first allow names, role by role (journal._parties)
   for (const [i, body] of bodies) {
-    if (body.predicateType !== TOOL_CALL_RECORD) continue;
+    if (!isToolCall(body)) continue;
     const pred = body.predicate, pid = pred.permitId ?? null, phase = pred.phase;
     const later = phase === "intent" || phase === "effect" || (phase === "authorize" && pred.decision === "allow");
     // a credential may be refreshed between a permit's records; the parties they name may not change

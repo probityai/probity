@@ -77,6 +77,8 @@ from typing import Any
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
+from ..identifiers import identifier, same_identifier
+
 SUITE = "agent-audit-record-conformance"
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PAYLOAD_TYPE = "application/vnd.in-toto+json"
@@ -165,12 +167,8 @@ UNAVAILABLE_INPUTS = EVALUATION_INPUTS
 #: revision 03 publishes for the extended set (Section 8). A closed set grows
 #: only under a new URI, so a verifier configured for the v1 URI never meets a
 #: value it is required to refuse there (rows PS1 and PS2).
-PREDICATE_TYPE_V1 = (
-    "https://probityai.github.io/agent-evidence-vectors/predicate/v1/agent-audit-record"
-)
-PREDICATE_TYPE_V2 = (
-    "https://probityai.github.io/agent-evidence-vectors/predicate/v2/agent-audit-record"
-)
+PREDICATE_TYPE_V1 = identifier("agent-evidence-vectors/predicate/v1/agent-audit-record")
+PREDICATE_TYPE_V2 = identifier("agent-evidence-vectors/predicate/v2/agent-audit-record")
 #: What the v2 URI adds to both input sets, and only under that URI: the source
 #: the principal's standing is established from, kept apart from
 #: ``standing-source``, which names the source of issuer standing.
@@ -181,14 +179,14 @@ def evaluation_inputs(predicate_type: str) -> frozenset[str]:
     """The inputs an evaluation entry may name under ``predicate_type``, the URI
     the verifier was configured to accept. Read at call time, so a sweep that
     narrows ``EVALUATION_INPUTS`` or ``V2_INPUTS`` narrows this too."""
-    if predicate_type == PREDICATE_TYPE_V2:
+    if same_identifier(predicate_type, PREDICATE_TYPE_V2):
         return EVALUATION_INPUTS | V2_INPUTS
     return EVALUATION_INPUTS
 
 
 def unavailable_inputs(predicate_type: str) -> frozenset[str]:
     """The inputs ``unavailableInput`` may name under ``predicate_type``."""
-    if predicate_type == PREDICATE_TYPE_V2:
+    if same_identifier(predicate_type, PREDICATE_TYPE_V2):
         return UNAVAILABLE_INPUTS | V2_INPUTS
     return UNAVAILABLE_INPUTS
 
@@ -707,7 +705,7 @@ def _rule_statement(state: _State) -> None:
     st = state.statement
     if st.get("_type") != STATEMENT_TYPE:
         raise Malformed("statement-type-unexpected")
-    if st.get("predicateType") != state.policy.predicate_type:
+    if not same_identifier(st.get("predicateType"), state.policy.predicate_type):
         raise Malformed("predicate-type-mismatch")
 
 

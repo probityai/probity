@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "body.bin": {
+      "length": 43,
+      "path": "body.bin",
+      "sha256": "0e5d652d911aecb23aa42bafaa67f29400484d9222339a83184f0c5a3f8c6bfd"
+    },
+    "directory.json": {
+      "length": 213,
+      "path": "directory.json",
+      "sha256": "ea3762c80937027926d798ca0bdd9e5327e4a4760aca8b1ff97898b04c6cdb8b"
+    },
+    "request.json": {
+      "length": 1126,
+      "path": "request.json",
+      "sha256": "393e3ecd0d8cf4cf81ee02af4e2311391a83cad1e8ad69266ea4f8eb02f52f05"
+    }
+  },
+  "case_id": "web-bot-auth-browser-stamp-digest-swapped",
+  "schema_version": "probity-case/v1"
+}
