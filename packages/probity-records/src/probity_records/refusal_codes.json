@@ -369,6 +369,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_invalid"
   },
   {
+   "code": "checkpoint_run_mismatch",
+   "check": "journal.verify",
+   "meaning": "the journal checkpoint names another run than the one the verifier pins, or none",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_run_mismatch"
+  },
+  {
    "code": "child_adds_argument",
    "check": "grants.chain",
    "meaning": "a delegated grant allows an argument its parent does not",
@@ -1795,6 +1801,18 @@
    "check": "journal.verify",
    "meaning": "the record's bytes are not admitted as canonical JSON (the detail names the defect)",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jcs_refused"
+  },
+  {
+   "code": "journal_gap_invalid",
+   "check": "journal.verify",
+   "meaning": "a gap line is not exactly its members: a dropped count of at least one, a reason, and a position before itself",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/journal_gap_invalid"
+  },
+  {
+   "code": "journal_torn_tail_invalid",
+   "check": "journal.verify",
+   "meaning": "a torn-tail line is not exactly its members: a byte count of at least one, the removed bytes' SHA-256, and a position before itself",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/journal_torn_tail_invalid"
   },
   {
    "code": "jwks_digest_mismatch",

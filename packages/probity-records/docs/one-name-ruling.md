@@ -53,21 +53,23 @@ predates the anchor's window.
 nothing; a torn last line (a crash mid-write) is skipped by the writer and counted as a line by the verifier; a
 checkpoint names no run, so a journal and checkpoint of another run under the same key verify.
 
-**Ruling.** Three line kinds join the journal, each a signed statement in the same chain, with structural fields only
-(record envelope v2 `kept` class: counts, positions and digests over our own bytes):
+**Ruling.** Two line kinds join the journal, each a signed statement in the same hash chain, with structural fields
+only (record envelope v2 `kept` class: counts, positions, a digest over our own bytes):
 
-- **gap** (`tool-call-journal-gap`): `dropped` records the producer made and never wrote, after `afterSeq`, with a
-  `reason`. The producer states the loss it knows of; the journal never infers one.
-- **torn tail** (`tool-call-journal-torn-tail`): the writer that opens a journal whose last bytes are not a whole
-  line truncates them under the lock and appends this statement first, with `bytes` and the `tornSha256` of what it
-  removed and `afterSeq`. A torn tail is removed only by a signed statement that says it was there.
-- **checkpoint**: gains `dropped` (the sum of every gap line), `gaps` (their `afterSeq` positions in order) and `run`,
-  the run the journal belongs to. The verifier recomputes both from the lines and fails a mismatch; a verifier that
-  pins a run fails a checkpoint for another.
+- **gap** (`tool-call-journal-gap`, `Journal.gap`): `dropped` records the producer made and never wrote, lost after
+  line `afterSeq`, with a `reason`. The producer states the loss it knows of; the journal never infers one.
+- **torn tail** (`tool-call-journal-torn-tail`): a writer that finds a last line with no newline cuts those bytes under
+  the lock and appends this statement first, with their `bytes` and `tornSha256` and `afterSeq`. A torn tail leaves
+  the file only with a signed statement that it was there.
 
-The verifier reads a torn tail as `tornTail` in its report and never as a record; the verdict is never `PASS` with a
-torn tail no checkpoint covers. A journal with gaps can pass: the loss is accounted for and reported (`dropped`), so a
-reader sees how much is missing instead of reading a short journal as complete.
+Both are lines of the chain, so the checkpoint's signed count and head already commit to them: stripping a gap line
+breaks the chain, and no checkpoint member is needed for them. The checkpoint gains one member, `run`, when the writer
+names its run; a verifier that pins a run (`verify_journal(..., run=...)`) fails a checkpoint that names another run or
+none (`checkpoint_run_mismatch`). The verifier reports `dropped` (the sum of valid gap lines), `gaps` and `tornTails`,
+and reads bytes after the last whole line as `tornTail`, never as a record, with the verdict held at `NOT_ESTABLISHED`.
+A journal with gaps can pass: its loss is signed and counted, so a reader sees how much is missing instead of reading a
+short journal as complete. The 100 signed checkpoints in the shared vectors and the TypeScript twin's journal verdicts
+are unchanged by this; the twin's reading of gap and torn-tail shapes and of `run` is listed for the twin-parity lane.
 
 ## 3. One grant model
 

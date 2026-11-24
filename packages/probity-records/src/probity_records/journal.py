@@ -494,11 +494,46 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         problems.extend(approval_problems)
         if pred.get("phase") == "effect":
             _check_effect(pred, problems, where)
+    elif same_identifier(body.get("predicateType"), GAP_TYPE) or same_identifier(body.get("predicateType"),
+                                                                                  TORN_TAIL_TYPE):
+        problems.extend(f"{where}:{p}" for p in _loss_problems(body, i))
     elif same_identifier(body.get("predicateType"), GOVERNANCE_STEP):
         policies = trust.quorum_policies if trust else None
         revoked = trust.key_revoked if trust else None
         problems.extend(f"{where}:{p}" for p in check_step(pred, policies, str(pred.get("at")), revoked))
     return body, problems
+
+
+def _count(value: Any, low: int) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= low
+
+
+def _loss_problems(body: Mapping[str, Any], line: int) -> list[str]:
+    """A gap or torn-tail line holds exactly its members: a count of at least one and a position before itself."""
+    pred = body.get("predicate", {})
+    if same_identifier(body.get("predicateType"), GAP_TYPE):
+        members, code = {"afterSeq", "dropped", "reason", "at", "prev", "seq"}, "journal_gap_invalid"
+        shape = _count(pred.get("dropped"), 1) and isinstance(pred.get("reason"), str) and bool(pred.get("reason"))
+    else:
+        members, code = {"afterSeq", "bytes", "tornSha256", "at", "prev", "seq"}, "journal_torn_tail_invalid"
+        digest = pred.get("tornSha256")
+        shape = (_count(pred.get("bytes"), 1) and isinstance(digest, str) and len(digest) == 64
+                 and all(c in "0123456789abcdef" for c in digest))  # fmt: skip
+    if set(pred) != members or not shape or not _count(pred.get("afterSeq"), 0) or pred["afterSeq"] >= line:
+        return [code]
+    return []
+
+
+def _loss_report(bodies: list[tuple[int, dict[str, Any]]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """The gap and torn-tail lines of a journal, in order, for the report."""
+    gaps, torn = [], []
+    for i, body in bodies:
+        pred = body.get("predicate", {})
+        if same_identifier(body.get("predicateType"), GAP_TYPE) and not _loss_problems(body, i):
+            gaps.append({"afterSeq": pred["afterSeq"], "dropped": pred["dropped"], "line": i, "reason": pred["reason"]})
+        elif same_identifier(body.get("predicateType"), TORN_TAIL_TYPE) and not _loss_problems(body, i):
+            torn.append({"afterSeq": pred["afterSeq"], "bytes": pred["bytes"], "line": i})
+    return gaps, torn
 
 
 def _grant_charges(pred: dict[str, Any]) -> list[tuple[str, dict[str, Any] | None, Any]]:
@@ -671,7 +706,8 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
 
 def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
                    checkpoint_env: Mapping[str, Any] | None = None,
-                   trust: Trust | None = None, witnessed_checkpoint: str | None = None) -> dict[str, Any]:
+                   trust: Trust | None = None, witnessed_checkpoint: str | None = None,
+                   run: str | None = None) -> dict[str, Any]:
     """Verify a journal offline: every signature, the chain, the checkpoint, and both published
     readers re-run on every embedded record. Reports the denominator (``verified`` of ``records``).
 
@@ -680,11 +716,15 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     custody of each signing key (``key_custody``), and the c2sp.org/tlog-policy whose witnesses must
     have cosigned ``witnessed_checkpoint`` (``witness_policy``): a journal the customer's witness did
     not cosign then fails, offline, whatever else holds.
+
+    Loss is reported, never inferred: ``dropped`` sums the signed gap lines, ``gaps`` and ``tornTails`` list them,
+    and ``tornTail`` names bytes after the last whole line (a crash mid-write), which are never read as a record and
+    keep the verdict from ``PASS``. ``run`` pins the run the checkpoint must name.
     """
     roots = _keys(public_pems)
     p = Path(path)
     p = p / JOURNAL_FILE if p.is_dir() else p
-    lines = [line for line in p.read_text().splitlines() if line.strip()] if p.exists() else []
+    lines, torn_bytes = _whole_lines(p.read_bytes()) if p.exists() else ([], b"")
     failures: list[str] = []
     delegations = _delegations(p.parent, roots, failures)
     keys = [*roots, *(d.session for d in delegations.values())]
@@ -724,6 +764,8 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
                 checkpoint = "mismatch"
             else:
                 checkpoint = "matches"
+            if run is not None and cp.get("run") != run:
+                failures.append(f"checkpoint_run_mismatch:{cp.get('run')}:{run}")
         except (ValueError, KeyError, TypeError) as exc:
             failures.append(f"checkpoint_invalid:{exc}")
             checkpoint = "invalid"
@@ -732,8 +774,12 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         witnessed = _check_witnessed(witnessed_checkpoint, lines, trust, failures)
     if trust is not None and trust.key_custody:
         _check_custody(checkpoint_env, signer_ids, delegations, trust, failures)
+    gaps, torn_lines = _loss_report(bodies)
+    torn_tail = {"afterSeq": len(lines), "bytes": len(torn_bytes)} if torn_bytes else None
     if failures:
         verdict = "FAIL"
+    elif torn_tail is not None:
+        verdict = "NOT_ESTABLISHED"  # a writer died mid-line: what it was writing is not in the journal
     elif witnessed is not None and witnessed["status"] != "verified":
         verdict = "NOT_ESTABLISHED"  # the tail past the witnessed size rests on the authority alone
     elif checkpoint != "matches":
@@ -742,4 +788,5 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         verdict = "PASS"
     return {"verdict": verdict, "records": len(lines), "verified": verified, "failures": failures,
             "checkpoint": checkpoint, "witnessed": witnessed, "outcomes": outcomes, "policyAllows": policy_allows,
+            "dropped": sum(g["dropped"] for g in gaps), "gaps": gaps, "tornTails": torn_lines, "tornTail": torn_tail,
             "statements": [body for _, body in bodies]}
