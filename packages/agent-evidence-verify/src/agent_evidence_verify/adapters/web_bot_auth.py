@@ -548,7 +548,7 @@ def _policy(assessment: dict) -> int:
         raise CaseError("assessment.required_components: expected a sorted list of distinct component names")
     for name in ("max_age_seconds", "max_validity_seconds"):
         value = assessment.get(name)
-        if value is not None and (type(value) is not int or value <= 0):
+        if name in assessment and (type(value) is not int or value <= 0):
             raise CaseError(f"assessment.{name}: expected a positive integer")
     if not isinstance(assessment.get("allow_test_keys", False), bool):
         raise CaseError("assessment.allow_test_keys: expected a boolean")

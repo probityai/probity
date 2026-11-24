@@ -84,8 +84,9 @@ def signed_request(*, method: str = "POST", url: str = URL, body: bytes | None =
 
 
 def judge(root: Path, request: dict | bytes | None, *, directory: dict | bytes | None = None,
-          body: bytes | None = BODY, **overrides: Any) -> dict:
-    """Write the bound artifacts and adjudicate. ``overrides`` replace assessment members; ``None`` drops one."""
+          body: bytes | None = BODY, nulls: tuple[str, ...] = (), **overrides: Any) -> dict:
+    """Write the bound artifacts and adjudicate. ``overrides`` replace assessment members; ``None`` drops one;
+    ``nulls`` sets members to JSON null."""
     artifacts: dict[str, dict] = {}
 
     def bind(name: str, data: bytes | None) -> str | None:
@@ -112,6 +113,7 @@ def judge(root: Path, request: dict | bytes | None, *, directory: dict | bytes |
             assessment.pop(name, None)
         else:
             assessment[name] = value
+    assessment.update(dict.fromkeys(nulls))
     case = {"schema_version": "probity-case/v1", "case_id": "c", "artifacts": artifacts}
     policy = {"schema_version": "probity-policy/v1", "assessments": {"c": assessment}}
     return adjudicate(case, policy, root)
@@ -492,6 +494,12 @@ def test_malformed_directory_raises(tmp_path: Path, directory: Any) -> None:
 def test_malformed_policy_raises(tmp_path: Path, name: str, value: Any) -> None:
     with pytest.raises(CaseError):
         judge(tmp_path, signed_request(), **{name: value})
+
+
+@pytest.mark.parametrize("name", ["max_age_seconds", "max_validity_seconds", "pinned_fields", "label"])
+def test_a_null_policy_member_is_invalid_input(tmp_path: Path, name: str) -> None:
+    with pytest.raises(CaseError):
+        judge(tmp_path, signed_request(), nulls=(name,))
 
 
 def test_unknown_assessment_member_raises(tmp_path: Path) -> None:
