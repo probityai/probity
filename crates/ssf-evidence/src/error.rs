@@ -60,6 +60,28 @@ pub enum Code {
     EvidencePredicateType,
     /// The statement names no subject whose digest is the token's `sub_id`.
     EvidenceSubjectMismatch,
+    /// This issuer's `jti` was accepted before, with the same token bytes: a
+    /// retransmission or a replay. The receiver does not act on it again.
+    SetJtiReplayed,
+    /// This issuer's `jti` was accepted before for a different token.
+    SetJtiReused,
+    /// The replay ledger could not record the `jti`, so the token was not
+    /// accepted. A later delivery of the same token can succeed.
+    SetJtiLedger,
+    /// A push request's `Content-Type` is not `application/secevent+jwt`.
+    PushContentType,
+    /// A push request does not carry the credential the receiver requires of
+    /// its transmitter.
+    PushAuthentication,
+    /// A poll request is not the RFC 8936 JSON document.
+    PollRequest,
+    /// A poll response is not the RFC 8936 JSON document.
+    PollResponse,
+    /// A token in a poll response sits under a member name other than its own
+    /// `jti`.
+    PollSetKey,
+    /// The poll request was not sent, or was not answered with HTTP 200.
+    PollTransport,
 }
 
 impl Code {
@@ -91,18 +113,42 @@ impl Code {
             Self::EvidenceStatement => "evidence.statement",
             Self::EvidencePredicateType => "evidence.predicate_type",
             Self::EvidenceSubjectMismatch => "evidence.subject_mismatch",
+            Self::SetJtiReplayed => "set.jti_replayed",
+            Self::SetJtiReused => "set.jti_reused",
+            Self::SetJtiLedger => "set.jti_ledger",
+            Self::PushContentType => "push.content_type",
+            Self::PushAuthentication => "push.authentication",
+            Self::PollRequest => "poll.request_malformed",
+            Self::PollResponse => "poll.response_malformed",
+            Self::PollSetKey => "poll.set_key",
+            Self::PollTransport => "poll.transport",
         }
     }
 
-    /// The RFC 8935 Security Event Token Error Code a push receiver answers
-    /// with when it refuses a token for this reason.
+    /// The RFC 8935 Security Event Token Error Code a receiver reports when
+    /// it refuses a token for this reason: the `err` of a push answer, or of
+    /// an RFC 8936 `setErrs` entry. Every code maps to exactly one value.
     pub fn set_error_code(self) -> &'static str {
         match self {
             Self::SetAlg | Self::SetUnknownKey | Self::SetSignature => "invalid_key",
             Self::SetIss => "invalid_issuer",
             Self::SetAud => "invalid_audience",
+            Self::PushAuthentication => "authentication_failed",
             _ => "invalid_request",
         }
+    }
+
+    /// Whether the refusal says nothing about the token itself: the receiver
+    /// could not finish validating it (the evidence did not resolve, the
+    /// replay ledger failed, the poll did not complete). A push receiver
+    /// answers such a refusal with HTTP 503 and a poll receiver neither
+    /// acknowledges nor reports the token, so the transmitter delivers it
+    /// again (RFC 8935 section 2, "potentially recoverable errors").
+    pub fn is_transient(self) -> bool {
+        matches!(
+            self,
+            Self::EvidenceUnresolved | Self::SetJtiLedger | Self::PollTransport
+        )
     }
 }
 

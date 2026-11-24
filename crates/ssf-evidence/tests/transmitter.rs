@@ -2,23 +2,17 @@
 //! state machine, and push delivery to a real local HTTP receiver.
 
 use std::cell::RefCell;
-use std::io::{BufRead, BufReader, Read, Write};
-use std::net::TcpListener;
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
 
 use dsse::{Ed25519Signer, Signer};
 use serde_json::{Value, json};
 use ssf_evidence::delivery::{Entry, transition};
 use ssf_evidence::evidence::{IN_TOTO_PAYLOAD_TYPE, STATEMENT_TYPE};
-use ssf_evidence::http::HttpPush;
 use ssf_evidence::transmitter::JtiSource;
 use ssf_evidence::{
     Action, Capabilities, DeadLetterReason, Decision, DeliveryState, Emission, Error,
-    EvidencePolicy, EvidenceRef, EvidenceTrust, MapResolver, Mode, Outbox, Principal, Push,
-    PushOutcome, RISK_LEVEL_CHANGE, ReceiverConfig, RetryPolicy, RiskLevel, SESSION_REVOKED,
-    Signal, SigningKey, Stream, Subject, SubjectId, Transmitter, verify_set,
+    EvidencePolicy, EvidenceRef, EvidenceTrust, MapResolver, MemoryJtiLedger, Mode, Outbox,
+    Principal, Push, PushOutcome, RISK_LEVEL_CHANGE, ReceiverConfig, RetryPolicy, RiskLevel,
+    SESSION_REVOKED, Signal, SigningKey, Stream, Subject, SubjectId, Transmitter, verify_set,
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -129,7 +123,7 @@ fn monitor_mode_signs_and_logs_but_queues_nothing() -> TestResult {
     // The logged token is exactly what live mode would send, and it verifies.
     let token = record.token.ok_or("no token")?;
     assert_eq!(
-        verify_set(&token, &receiver()?, &resolver)?.event_type,
+        verify_set(&token, &receiver()?, &resolver, &MemoryJtiLedger::new())?.event_type,
         RISK_LEVEL_CHANGE
     );
     tx.set_mode(Mode::Live);
@@ -320,104 +314,126 @@ fn outbox_retries_dead_letters_replays_and_survives_a_restart() -> TestResult {
     Ok(())
 }
 
-/// A one-thread HTTP receiver that answers each request with the next status
-/// in `script` (202 when it runs out), verifying the pushed token on 202.
-fn serve(script: Vec<u16>, count: usize) -> TestResult<(String, mpsc::Receiver<(String, String)>)> {
-    let listener = TcpListener::bind("127.0.0.1:0")?;
-    let url = format!("http://{}/ssf/push", listener.local_addr()?);
-    let (tx, rx) = mpsc::channel();
-    thread::spawn(move || {
-        let mut script = script.into_iter();
-        for stream in listener.incoming().take(count) {
-            let Ok(mut stream) = stream else { return };
-            let mut reader = BufReader::new(match stream.try_clone() {
-                Ok(s) => s,
-                Err(_) => return,
-            });
-            let (mut content_type, mut length) = (String::new(), 0usize);
-            loop {
-                let mut line = String::new();
-                if reader.read_line(&mut line).is_err() || line == "\r\n" || line.is_empty() {
-                    break;
-                }
-                let lower = line.to_ascii_lowercase();
-                if let Some(v) = lower.strip_prefix("content-type:") {
-                    content_type = v.trim().to_string();
-                }
-                if let Some(v) = lower.strip_prefix("content-length:") {
-                    length = v.trim().parse().unwrap_or(0);
-                }
-            }
-            let mut body = vec![0; length];
-            if reader.read_exact(&mut body).is_err() {
-                return;
-            }
-            let _ = tx.send((content_type, String::from_utf8_lossy(&body).into_owned()));
-            let status = script.next().unwrap_or(202);
-            let response = match status {
-                202 => "HTTP/1.1 202 Accepted\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-                    .to_string(),
-                400 => {
-                    let b = r#"{"err":"invalid_audience","description":"not for us"}"#;
-                    format!(
-                        "HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Language: en\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{b}",
-                        b.len()
-                    )
-                }
-                s => format!(
-                    "HTTP/1.1 {s} Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-                ),
-            };
-            let _ = stream.write_all(response.as_bytes());
-        }
-    });
-    Ok((url, rx))
-}
+/// Push delivery over a real local HTTP receiver.
+#[cfg(feature = "http")]
+mod over_http {
+    use std::io::{BufRead, BufReader, Read, Write};
+    use std::net::TcpListener;
+    use std::sync::mpsc;
+    use std::thread;
+    use std::time::Duration;
 
-#[test]
-fn live_delivery_over_http_retries_then_lands() -> TestResult {
-    let (r, resolver) = evidence(&EVIDENCE_SEED)?;
-    let (url, seen) = serve(vec![503, 202], 2)?;
-    let mut tx = transmitter(&[RISK_LEVEL_CHANGE])?.with_retry_policy(RetryPolicy {
-        max_attempts: 5,
-        base_delay_secs: 1,
-        max_delay_secs: 1,
-    });
-    tx.set_mode(Mode::Live);
-    tx.emit(&revoke(r), 1)?;
-    let push = HttpPush::new(url, Duration::from_secs(5));
-    assert_eq!(tx.outbox_mut().tick(1, &push).retrying.len(), 1);
-    assert_eq!(tx.outbox_mut().tick(2, &push).delivered.len(), 1);
-    let (content_type, first) = seen.recv_timeout(Duration::from_secs(5))?;
-    let (_, second) = seen.recv_timeout(Duration::from_secs(5))?;
-    assert_eq!(content_type, "application/secevent+jwt");
-    assert_eq!(first, second, "a retry sends the same bytes");
-    assert_eq!(verify_set(&second, &receiver()?, &resolver)?.jti, "jti-1");
-    Ok(())
-}
+    use ssf_evidence::http::HttpPush;
 
-#[test]
-fn test_connection_reports_a_refusal_and_queues_nothing() -> TestResult {
-    let (r, _) = evidence(&EVIDENCE_SEED)?;
-    let (url, seen) = serve(vec![400, 202], 2)?;
-    let mut tx = transmitter(&[RISK_LEVEL_CHANGE])?;
-    let push = HttpPush::new(url, Duration::from_secs(5));
-    match tx.test_connection(&push, "probe", 1)? {
-        PushOutcome::Rejected { err, .. } => assert_eq!(err, "invalid_audience"),
-        other => return Err(format!("expected a refusal, got {other:?}").into()),
+    use super::*;
+
+    /// A one-thread HTTP receiver that answers each request with the next status
+    /// in `script` (202 when it runs out), verifying the pushed token on 202.
+    fn serve(
+        script: Vec<u16>,
+        count: usize,
+    ) -> TestResult<(String, mpsc::Receiver<(String, String)>)> {
+        let listener = TcpListener::bind("127.0.0.1:0")?;
+        let url = format!("http://{}/ssf/push", listener.local_addr()?);
+        let (tx, rx) = mpsc::channel();
+        thread::spawn(move || {
+            let mut script = script.into_iter();
+            for stream in listener.incoming().take(count) {
+                let Ok(mut stream) = stream else { return };
+                let mut reader = BufReader::new(match stream.try_clone() {
+                    Ok(s) => s,
+                    Err(_) => return,
+                });
+                let (mut content_type, mut length) = (String::new(), 0usize);
+                loop {
+                    let mut line = String::new();
+                    if reader.read_line(&mut line).is_err() || line == "\r\n" || line.is_empty() {
+                        break;
+                    }
+                    let lower = line.to_ascii_lowercase();
+                    if let Some(v) = lower.strip_prefix("content-type:") {
+                        content_type = v.trim().to_string();
+                    }
+                    if let Some(v) = lower.strip_prefix("content-length:") {
+                        length = v.trim().parse().unwrap_or(0);
+                    }
+                }
+                let mut body = vec![0; length];
+                if reader.read_exact(&mut body).is_err() {
+                    return;
+                }
+                let _ = tx.send((content_type, String::from_utf8_lossy(&body).into_owned()));
+                let status = script.next().unwrap_or(202);
+                let response = match status {
+                    202 => {
+                        "HTTP/1.1 202 Accepted\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                            .to_string()
+                    }
+                    400 => {
+                        let b = r#"{"err":"invalid_audience","description":"not for us"}"#;
+                        format!(
+                            "HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Language: en\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{b}",
+                            b.len()
+                        )
+                    }
+                    s => format!(
+                        "HTTP/1.1 {s} Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    ),
+                };
+                let _ = stream.write_all(response.as_bytes());
+            }
+        });
+        Ok((url, rx))
     }
-    let (_, verification) = seen.recv_timeout(Duration::from_secs(5))?;
-    let claims: Value = serde_json::from_slice(&base64::Engine::decode(
-        &base64::engine::general_purpose::URL_SAFE_NO_PAD,
-        verification.split('.').nth(1).ok_or("payload")?,
-    )?)?;
-    assert_eq!(claims.pointer("/sub_id/id"), Some(&json!("stream-1")));
-    assert!(
-        tx.outbox().entries().is_empty(),
-        "test connection queues nothing"
-    );
-    tx.set_mode(Mode::Live);
-    tx.emit(&revoke(r), 2)?;
-    assert_eq!(tx.outbox_mut().tick(2, &push).delivered.len(), 1);
-    Ok(())
+
+    #[test]
+    fn live_delivery_over_http_retries_then_lands() -> TestResult {
+        let (r, resolver) = evidence(&EVIDENCE_SEED)?;
+        let (url, seen) = serve(vec![503, 202], 2)?;
+        let mut tx = transmitter(&[RISK_LEVEL_CHANGE])?.with_retry_policy(RetryPolicy {
+            max_attempts: 5,
+            base_delay_secs: 1,
+            max_delay_secs: 1,
+        });
+        tx.set_mode(Mode::Live);
+        tx.emit(&revoke(r), 1)?;
+        let push = HttpPush::new(url, Duration::from_secs(5));
+        assert_eq!(tx.outbox_mut().tick(1, &push).retrying.len(), 1);
+        assert_eq!(tx.outbox_mut().tick(2, &push).delivered.len(), 1);
+        let (content_type, first) = seen.recv_timeout(Duration::from_secs(5))?;
+        let (_, second) = seen.recv_timeout(Duration::from_secs(5))?;
+        assert_eq!(content_type, "application/secevent+jwt");
+        assert_eq!(first, second, "a retry sends the same bytes");
+        assert_eq!(
+            verify_set(&second, &receiver()?, &resolver, &MemoryJtiLedger::new())?.jti,
+            "jti-1"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_connection_reports_a_refusal_and_queues_nothing() -> TestResult {
+        let (r, _) = evidence(&EVIDENCE_SEED)?;
+        let (url, seen) = serve(vec![400, 202], 2)?;
+        let mut tx = transmitter(&[RISK_LEVEL_CHANGE])?;
+        let push = HttpPush::new(url, Duration::from_secs(5));
+        match tx.test_connection(&push, "probe", 1)? {
+            PushOutcome::Rejected { err, .. } => assert_eq!(err, "invalid_audience"),
+            other => return Err(format!("expected a refusal, got {other:?}").into()),
+        }
+        let (_, verification) = seen.recv_timeout(Duration::from_secs(5))?;
+        let claims: Value = serde_json::from_slice(&base64::Engine::decode(
+            &base64::engine::general_purpose::URL_SAFE_NO_PAD,
+            verification.split('.').nth(1).ok_or("payload")?,
+        )?)?;
+        assert_eq!(claims.pointer("/sub_id/id"), Some(&json!("stream-1")));
+        assert!(
+            tx.outbox().entries().is_empty(),
+            "test connection queues nothing"
+        );
+        tx.set_mode(Mode::Live);
+        tx.emit(&revoke(r), 2)?;
+        assert_eq!(tx.outbox_mut().tick(2, &push).delivered.len(), 1);
+        Ok(())
+    }
 }
