@@ -108,7 +108,8 @@ export function rehostRevocations(lists: J[], from: string, to: string): { lists
       const issuer = Buffer.from(body.issuerKey, "base64");
       const key = REVOCATION_KEYS.find((k) => k.raw.equals(issuer));
       const sig = Buffer.from(signed.sig, "base64");
-      if (key && edVerify(null, Buffer.concat([REVOCATION_DOMAIN, canonicalBytes(body)]), key.pub, sig)) {
+      const canonicalSig = sig.toString("base64") === signed.sig; // a signature written another way is kept as it was
+      if (key && canonicalSig && edVerify(null, Buffer.concat([REVOCATION_DOMAIN, canonicalBytes(body)]), key.pub, sig)) {
         const moved = rehost(body, from, to);
         if (moved.previous === oldPrev) moved.previous = newPrev;
         const resigned = edSign(null, Buffer.concat([REVOCATION_DOMAIN, canonicalBytes(moved)]), key.priv);
