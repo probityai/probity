@@ -15,6 +15,7 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
+from agent_evidence_verify.core import REFERENCE_VERIFIER_ID
 from agent_evidence_verify.identity import without_release_detail
 
 ORIGINAL_SHA = "2b4f04dcc0c0d5e7c1a4a68288fd92457676db50da3da631a348ba0d4940605e"
@@ -164,8 +165,11 @@ def bind_retained(retained):
     return len(listed), len(withheld)
 
 
-CURRENT_ID = b"https://probityai.github.io/probity/verifiers/agent-evidence-verify"
+#: What the installed verifier names itself, and the identifier the retained answers carry: they
+#: were written by probity-verify 0.4.x, so those bytes stay spelled out under the host it used.
+CURRENT_ID = REFERENCE_VERIFIER_ID.encode("ascii")
 PREDECESSOR_ID = b"https://probityai.github.io/probity/verifiers/probity-verify"
+
 
 
 def replay_mode(retained, output, verifier, mode):

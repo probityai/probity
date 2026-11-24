@@ -310,3 +310,64 @@ def test_a_wrongly_typed_member_takes_the_go_rails_code(change: Any, code: str, 
     change(statement["predicate"])
     found = _decide_bytes(_signed(statement), "envelope", tmp_path)
     assert (found["decision"], found["reason"]) == ("contradicted", code)
+
+
+# The two recognised identifier hosts ----------------------------------------------------------
+
+OLD_HOST, NEW_HOST, PLAIN_HOST = ("https://probityai.github.io/", "https://probityai.org/",
+                                  "http://probityai.org/")
+
+
+def _a1_statement() -> dict[str, Any]:
+    return json.loads(base64.b64decode(json.loads((DATA / MEMBERS["A1"]["file"]).read_bytes())["payload"]))
+
+
+def _rehost(value: str, host: str) -> str:
+    assert value.startswith(OLD_HOST)
+    return host + value[len(OLD_HOST):]
+
+
+def _trust_with_type(predicate_type: str) -> bytes:
+    trust = json.loads((DATA / "MANIFEST.json").read_bytes())
+    trust["predicateType"] = predicate_type
+    return json.dumps(trust).encode()
+
+
+def _outcome(found: dict) -> dict:
+    """The decision without the binding of the record bytes, which differ by the rewritten host."""
+    return {k: v for k, v in found.items() if k != "scope"}
+
+
+@pytest.mark.parametrize("statement_host, trust_host", [(NEW_HOST, OLD_HOST), (OLD_HOST, NEW_HOST),
+                                                        (NEW_HOST, NEW_HOST)])
+def test_either_host_spelling_of_the_predicate_type_is_the_same_type(
+        statement_host: str, trust_host: str, tmp_path: Path) -> None:
+    statement = _a1_statement()
+    before_dir = tmp_path / "before"
+    before_dir.mkdir()
+    before = _decide_bytes(_signed(statement), "envelope", before_dir)
+    configured
+ = _rehost(MANIFEST["predicateType"], trust_host)
+    statement["predicateType"] = _rehost(statement["predicateType"], statement_host)
+    after_dir = tmp_path / "after"
+    after_dir.mkdir()
+    after = _decide_bytes(_signed(statement), "envelope", after_dir, _trust_with_type(configured))
+    assert before["decision"] == "supported"
+    assert _outcome(after) == _outcome(before)
+
+
+def test_the_plain_http_spelling_stays_a_predicate_type_mismatch(tmp_path: Path) -> None:
+    statement = _a1_statement()
+    statement["predicateType"] = _rehost(statement["predicateType"], PLAIN_HOST)
+    found = _decide_bytes(_signed(statement), "envelope", tmp_path)
+    assert (found["decision"], found["reason"]) == ("contradicted", "predicate-type-mismatch")
+
+
+def test_the_v2_input_set_is_chosen_under_either_host() -> None:
+    reader = audit_record.reader
+    new_v2 = _rehost(reader.PREDICATE_TYPE_V2, NEW_HOST)
+    assert reader.evaluation_inputs(new_v2) == reader.evaluation_inputs(reader.PREDICATE_TYPE_V2)
+    assert reader.unavailable_inputs(new_v2) == reader.unavailable_inputs(reader.PREDICATE_TYPE_V2)
+    plain_v2 = _rehost(reader.PREDICATE_TYPE_V2, PLAIN_HOST)
+    assert reader.evaluation_inputs(plain_v2) == reader.EVALUATION_INPUTS
+    assert reader.unavailable_inputs(plain_v2) == reader.UNAVAILABLE_INPUTS

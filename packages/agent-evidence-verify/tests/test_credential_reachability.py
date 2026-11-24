@@ -324,3 +324,32 @@ def test_missing_envelope_artifact_is_not_established(tmp_path: Path) -> None:
     policy = {"schema_version": "probity-policy/v1", "assessments": {"c": assessment}}
     result = adjudicate(verdict, policy, tmp_path)
     assert _decision(result) == ("not_established", "envelope_unavailable")
+
+
+# The two recognised identifier hosts ----------------------------------------------------------
+
+OLD_HOST, NEW_HOST, PLAIN_HOST = ("https://probityai.github.io/", "https://probityai.org/",
+                                  "http://probityai.org/")
+
+
+@pytest.mark.parametrize("member", ["contained", "exposed"])
+def test_the_new_host_spelling_of_the_predicate_type_is_the_same_type(member: str) -> None:
+    """A member re-signed with ``probityai.org`` in its predicateType gets the same decision."""
+    directory = ROOT / "cases" / member
+    _, statement = _statement(directory)
+    assert statement["predicateType"].startswith(OLD_HOST)
+    before = _judge(directory, _signed(statement, (HOST, None)))
+    statement["predicateType"] = NEW_HOST + statement["predicateType"][len(OLD_HOST):]
+    after = _judge(directory, _signed(statement, (HOST, None)))
+    assert _decision(after) == _decision(before)
+    # Everything but the binding of the envelope bytes, which differ by the rewritten host.
+    assert {k: v for k, v in after.items() if k != "scope"} == {
+        k: v for k, v in before.items() if k != "scope"}
+
+
+
+def test_the_plain_http_spelling_stays_an_unsupported_predicate() -> None:
+    _, statement = _statement(CONTAINED)
+    statement["predicateType"] = PLAIN_HOST + statement["predicateType"][len(OLD_HOST):]
+    assert _decision(_judge(CONTAINED, _signed(statement, (HOST, None)))) == (
+        "contradicted", "unsupported_predicate")
