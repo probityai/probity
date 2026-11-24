@@ -52,7 +52,7 @@ def _binding(approver: Signer, payload_args: dict, consumed: list[str], who: str
                                   {"releaseId": "r1", "lookup": "ok", "graceSeconds": 300,
                                    "firstServedAt": "2026-01-01T00:00:00Z",
                                    "lastServedAt": "2099-01-01T00:00:00Z"},
-                                  issued=list(issued), enforcement=enforcement)
+                                  issued=issued, enforcement=enforcement)  # type: ignore[arg-type]
 
 
 def test_permit_id_is_stable_and_bound_to_each_input() -> None:
@@ -112,6 +112,11 @@ def test_builder_refuses_an_approval_without_a_request_or_an_unknown_mode() -> N
     for mode in ("enforced", "", "ENFORCE", "observe-only"):
         with pytest.raises(ValueError, match="^enforcement must be one of"):
             _binding(approver, ARGS, [], enforcement=mode)
+    for issued in ("appr-1", ("appr-1", 1), ("",)):
+        with pytest.raises(ValueError, match="^issued must be a list of approval identifiers$"):
+            _binding(approver, ARGS, [], issued=issued)
+    with pytest.raises(ValueError, match="^consumed must be a list of approval identifiers$"):
+        _binding(approver, ARGS, "appr-0")  # type: ignore[arg-type]
 
 
 def test_a_record_the_reader_cannot_read_is_a_deny_not_an_exception() -> None:

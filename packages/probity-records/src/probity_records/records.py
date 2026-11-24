@@ -58,6 +58,10 @@ def build_approval_binding(approval: Mapping[str, Any], use: Mapping[str, Any], 
         raise ValueError("approval_request_id_missing")
     if enforcement not in ENFORCEMENT_MODES:
         raise ValueError(f"enforcement must be one of {ENFORCEMENT_MODES}")
+    for register, ids in (("issued", issued), ("consumed", consumed)):
+        # a bare string would be written as its characters, and the reader matches a string by substring
+        if isinstance(ids, (str, bytes)) or not all(isinstance(i, str) and i for i in ids):
+            raise ValueError(f"{register} must be a list of approval identifiers")
     record = {
         "approval": dict(approval),
         "consumedApprovalIds": sorted(set(consumed)),
