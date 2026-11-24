@@ -25,7 +25,7 @@
         "build-backend": "setuptools.build_meta"
       },
       "project.name": "agent-evidence-verify",
-      "project.version": "0.9.0",
+      "project.version": "0.10.0",
       "project.requires-python": ">=3.11",
       "project.dependencies": [
         "cryptography>=50.0.0",
@@ -63,7 +63,7 @@
         }
       }
     },
-    "sha256": "d4cb375fd27e08ae2b06ea42057ed35e7db801d4233fdf0874672ab3d45d8a50"
+    "sha256": "fd2018443a987070ba40103ad32aa75297d35815a6a9b9b467fd5b200f328701"
   },
   "implementation": [
     {
@@ -313,8 +313,8 @@
     },
     {
       "path": "src/agent_evidence_verify/adapters/web_bot_auth.py",
-      "bytes": 34487,
-      "sha256": "e842fa0ab25cdf106487c0a740cc711ca800f2b0f529087859132c17c379535f"
+      "bytes": 36126,
+      "sha256": "a7dec1b82a0d941dfbc94897f5cc07e42b0ff11c2069ea9c89fda60809217f99"
     },
     {
       "path": "src/agent_evidence_verify/adapters/witnessed.py",

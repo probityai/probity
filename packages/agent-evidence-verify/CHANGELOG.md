@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 (2026-11-23)
+
+A minor release: `web_bot_auth/v1` can pin a covered field, a null time limit is invalid input, and a new corpus holds the agent browser profile.
 
 - `web_bot_auth/v1` takes `pinned_fields`: a field the consumer pins must be covered as a whole field and carry exactly
   the pinned value, else `component_not_covered` or `pinned_field_mismatch`. A consumer that holds the record a request
