@@ -45,7 +45,7 @@ from datetime import UTC, datetime
 from typing import Any, Final
 from urllib.parse import urlsplit
 
-from agent_evidence_verify import structured_fields as sf
+from agent_evidence_verify import structured_fields as sf  # type: ignore[import-untyped]
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,

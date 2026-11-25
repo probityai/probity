@@ -130,10 +130,27 @@ def _bad_constant(name: str) -> Any:
     raise RegistryError("jws_malformed", f"{name} is not JSON")
 
 
+MAX_JSON_DEPTH = 32
+
+
+def _depth(value: Any) -> int:
+    """Nesting depth of a parsed document, counted without recursion."""
+    deepest, stack = 0, [(value, 1)]
+    while stack:
+        item, level = stack.pop()
+        if isinstance(item, (dict, list)):
+            deepest = max(deepest, level)
+            stack.extend((child, level + 1) for child in (item.values() if isinstance(item, dict) else item))
+    return deepest
+
+
 def strict_json(data: bytes) -> Any:
     """JSON with repeated members, NaN and Infinity refused: two readers of one document must see one value."""
     try:
-        return json.loads(data.decode("utf-8"), object_pairs_hook=_no_duplicates, parse_constant=_bad_constant)
+        parsed = json.loads(data.decode("utf-8"), object_pairs_hook=_no_duplicates, parse_constant=_bad_constant)
+        if _depth(parsed) > MAX_JSON_DEPTH:
+            raise RegistryError("jws_malformed", "JSON nested too deep")
+        return parsed
     except RegistryError:
         raise
     except RecursionError as exc:

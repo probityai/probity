@@ -96,6 +96,8 @@ def test_the_window_field_is_present_and_the_canonical_base64_of_a_certificate()
                 base64.b64encode(canonical({"body": {}, "sig": "x"})[:-1]).decode()):
         assert code({**headers, WINDOW_FIELD: bad}, root) == "stamp_window_malformed"
     assert code({k: v for k, v in headers.items() if k.startswith("probity-p")}, root) == "stamp_malformed"
+    twice = [*headers.items(), (WINDOW_FIELD, headers[WINDOW_FIELD])]
+    assert code(twice, root) == "stamp_window_malformed"
 
 
 def test_a_request_with_no_stamp_is_dropped_and_the_ordinary_checks_still_run() -> None:

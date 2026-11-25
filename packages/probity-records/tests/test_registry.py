@@ -143,7 +143,8 @@ def test_claims_that_are_not_an_object_or_an_integer_are_refused() -> None:
 
 
 def validation(key: Ed25519PrivateKey, **over: Any) -> str:
-    claims = claims_of(domain="acme.example", tenant="acme", sub=AGENT, method="dns-01", jti="j1", **over)
+    base: dict[str, Any] = {"domain": "acme.example", "tenant": "acme", "sub": AGENT, "method": "dns-01", "jti": "j1"}
+    claims = claims_of(**{**base, **over})
     return sign({"alg": "EdDSA", "kid": "k1", "typ": registry.VALIDATION_TYP}, claims, key)
 
 
