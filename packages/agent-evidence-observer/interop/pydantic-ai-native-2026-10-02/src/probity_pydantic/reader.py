@@ -10,7 +10,7 @@ from typing import Any
 from uuid import UUID
 
 from probity_observer.crypto import VerificationError, digest
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     DOMAIN,
     checked_record,

@@ -12,7 +12,7 @@ from typing import Any
 
 import probity_observer
 from probity_observer.crypto import canonical, strict_loads
-from probity_observer.grant_records import (
+from probity_observer.retained_grants import (
     ActionRequest,
     GrantPolicy,
     verify_authorized_packet,

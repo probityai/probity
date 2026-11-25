@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from probity_observer.grant_records import (
+from probity_observer.retained_grants import (
     ActionRequest,
     GrantPolicy,
     verify_authorized_packet,

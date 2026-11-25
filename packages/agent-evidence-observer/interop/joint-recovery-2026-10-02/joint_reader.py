@@ -32,7 +32,7 @@ from joint_common import (
     withheld_sources,
 )
 from probity_observer.crypto import VerificationError, canonical, strict_loads
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     checked_record,
     load_ticket_capture,

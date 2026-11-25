@@ -21,7 +21,7 @@ from probity_observer.aae_ticket_records import (
 )
 from probity_observer.crypto import canonical
 from probity_observer.crypto import digest as domain_digest
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import DOMAIN, checked_record, state_schema
 
 PROFILE = "probity-inspect-aae-ticket-v0"

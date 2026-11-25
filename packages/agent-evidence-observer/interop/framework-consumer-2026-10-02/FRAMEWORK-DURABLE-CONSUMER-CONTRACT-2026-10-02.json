@@ -54,16 +54,16 @@
       "sha256": "82cca3f405c538c40d71f52157835f770fe001c896a545d809ef57f3eb9fa886"
     },
     "interop/langgraph-ticket-2026-10-02/durable_reader.py": {
-      "git_blob_sha1": "7fe2693859588be2d662bad364b9ffbbd231c580",
-      "sha256": "3503afd650fa19616d8ae9553fe0c262ae5e0a8c3d6e54e5b11fc3925685e120"
+      "git_blob_sha1": "5698c2adff6027658868949bbb3427e909ba0fe0",
+      "sha256": "5683c7126b8ddcc82aefb08ce1d7158cbdefe8ee946cc569621587eaff9600fa"
     },
     "interop/langgraph-ticket-2026-10-02/lg_common.py": {
       "git_blob_sha1": "2df34e46274fd012e5907f17267c72f993e59162",
       "sha256": "eab1c699e10c1ad9f8168346580657d81f8da6fdf49deb1e3431ae1171e43a77"
     },
     "interop/langgraph-ticket-2026-10-02/lg_reader.py": {
-      "git_blob_sha1": "b84de3d0bddc5da3eb92fcc854e7072c3a6d63ad",
-      "sha256": "36345bf98cc8bd7bd2de2a838cf7c675615dffb3be6cbcdf3b030c4fb4e84d2a"
+      "git_blob_sha1": "a628334288d592dade391a43f8d3a30293235d7e",
+      "sha256": "90f7378675b5b99191db087ee624e3d3825947237f17c8506ac8e06872643597"
     },
     "pyproject.toml": {
       "git_blob_sha1": "9055ebb19af43d2a55af547835ee68a769201223",

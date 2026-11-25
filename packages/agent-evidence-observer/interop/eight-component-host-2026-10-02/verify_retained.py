@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.retained_grants import ActionRequest, GrantPolicy
 from probity_observer.ticket_state import verify_ticket_result
 
 RETAINED = Path(__file__).resolve().parent / "retained" / "fresh-completed"

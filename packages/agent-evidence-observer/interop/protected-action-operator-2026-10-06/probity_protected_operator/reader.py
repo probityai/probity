@@ -9,7 +9,7 @@ from typing import Any
 
 from probity_observer.crypto import canonical, strict_loads
 from probity_observer.dispatch_records import verify_dispatch_bundle
-from probity_observer.grant_records import ActionRequest, GrantPolicy
+from probity_observer.retained_grants import ActionRequest, GrantPolicy
 from probity_observer.history import verify_checkpoint
 from probity_observer.ledger import verify_ledger_head
 from probity_witness_operator.protocol import history_entries, require

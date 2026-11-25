@@ -22,7 +22,7 @@ from probity_observer.crypto import (
     digest,
     strict_loads,
 )
-from probity_observer.grant_records import (
+from probity_observer.retained_grants import (
     ActionRequest,
     GrantPolicy,
     validate_utc_time,

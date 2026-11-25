@@ -20,7 +20,7 @@ from probity_observer.aae_ticket_records import (
     verify_aae_ticket_result,
 )
 from probity_observer.crypto import canonical, digest
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     DOMAIN,
     checked_record,

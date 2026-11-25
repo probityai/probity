@@ -131,8 +131,8 @@
       "sha256": "eab1c699e10c1ad9f8168346580657d81f8da6fdf49deb1e3431ae1171e43a77"
     },
     "interop/langgraph-ticket-2026-10-02/lg_reader.py": {
-      "git_blob_sha1": "b84de3d0bddc5da3eb92fcc854e7072c3a6d63ad",
-      "sha256": "36345bf98cc8bd7bd2de2a838cf7c675615dffb3be6cbcdf3b030c4fb4e84d2a"
+      "git_blob_sha1": "a628334288d592dade391a43f8d3a30293235d7e",
+      "sha256": "90f7378675b5b99191db087ee624e3d3825947237f17c8506ac8e06872643597"
     },
     "interop/pydantic-ai-native-2026-10-02/src/probity_pydantic/__init__.py": {
       "git_blob_sha1": "5f68962886f272d67f4de160577d78a421b5adf7",
@@ -143,8 +143,8 @@
       "sha256": "7470f8b7be432e54d0ecd0b5872c357743d185fac7f9437c2db1b4a3ca9acb2f"
     },
     "interop/pydantic-ai-native-2026-10-02/src/probity_pydantic/reader.py": {
-      "git_blob_sha1": "242eb7963e07ad6e4e8a2293e17300cf13ddfad8",
-      "sha256": "c3171e96c444882dfbe023fae323c7d5db29ed94c66d410f3db5d07eb6283eba"
+      "git_blob_sha1": "964489dd26ab80a998be6d30527a90e55733718e",
+      "sha256": "91bc81e40146a9db5f52b0b637b3b17212b48666af8750d8d9e43785604fff1a"
     },
     "pyproject.toml": {
       "git_blob_sha1": "9055ebb19af43d2a55af547835ee68a769201223",
