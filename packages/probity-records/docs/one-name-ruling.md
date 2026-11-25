@@ -86,3 +86,15 @@ whose one tool's arguments are each fixed by an `eq` constraint and whose contex
 ids, presented with a permit for the call. Every window is inclusive at both ends, as every records verifier already
 reads it. The observer's consumers move to `probity_records` (the observer pins it), and `grant_records.py`, its
 domain string and its profile name are removed with no alias.
+
+**Retained runs (measured 2026-11-24 at `02df093b`).** 355 files carry the old profile
+`probity-protected-action-reference-v0`: 349 of them in 20 retained interop experiments under
+`packages/agent-evidence-observer/interop/`, 5 in the observer's own test and example fixtures. 20 interop readers
+import `grant_records`. The retained packets pin `probity_observer/grant_records.py` by digest, and every pin (19)
+names `a51c74997d81af6a046cb8336aa683b047c1967cd760a2bf08806cb80c20c990`, the bytes at `d1e92ccb7`; the live module
+had already drifted to `680820e4...` (a docstring-only change at `eb1376ab4`), so the readers were re-verifying frozen
+evidence against code the evidence never named. A retained packet is a record of a past run: it is re-verified
+against the one source copy it pins, never the live module, and it is never re-signed. So the pinned bytes are kept
+once, byte for byte, as a retained verifier the interop readers load after checking its digest against the pin; the
+live API (`probity_observer.exact_grant` over `probity_records.grants`) is the only grant model for new records; the
+observer's own fixtures that sign fresh grants are regenerated in the new model.
