@@ -21,7 +21,7 @@ from probity_observer.attribution import (
     verify_consumption,
 )
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest
-from probity_observer.grant_records import (
+from probity_observer.retained_grants import (
     ActionRequest,
     GrantPolicy,
     verify_authorized_packet,

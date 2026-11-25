@@ -146,7 +146,7 @@ def _verify_packet_shape(packet: Any) -> None:
     """Refuse top-level fields no signature or check covers.
 
     ``authorizationBinding`` is optional here; the grant consumer that relies on
-    it verifies its observer signature (``grant_records``).
+    it verifies its observer signature (``exact_grant``).
     """
     if not isinstance(packet, dict) or packet.keys() - {"authorizationBinding"} != _PACKET_FIELDS:
         raise VerificationError("packet fields are unsupported")

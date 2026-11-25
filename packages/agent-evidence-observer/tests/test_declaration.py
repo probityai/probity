@@ -27,7 +27,7 @@ from probity_observer.declaration import (
     sha256_bytes,
     tool_catalog_digest,
 )
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.exact_grant import ActionRequest, GrantPolicy, verify_grant
 
 REFERENCE = RECORDS / "declaration-reference"
 

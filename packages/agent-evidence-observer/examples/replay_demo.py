@@ -15,6 +15,7 @@ import re
 import shutil
 from collections.abc import Callable
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ from probity_observer.attribution import (
     verify_consumption,
 )
 from probity_observer.crypto import SigningKey, VerificationError, canonical, digest
+from probity_observer import retained_grants
 from probity_observer.replay import (
     CHECKER_MODULES,
     MAX_INPUT_BYTES,
@@ -33,11 +35,16 @@ from probity_observer.replay import (
     checker_implementation_bytes,
     consumption_checks,
     load_replay_object,
-    replay_checks,
-    replay_consumption,
+    replay_checks as _replay_checks,
+    replay_consumption as _replay_consumption,
 )
 
 SOURCE = "https://github.com/probityai/probity"
+
+# The protected-action run these read was signed before the one grant model: its grants verify against the
+# retained module, never the live one.
+replay_checks = partial(_replay_checks, grant_verifier=retained_grants)
+replay_consumption = partial(_replay_consumption, grant_verifier=retained_grants)
 
 
 def _pin(raw: bytes, revision: str) -> ArtifactPin:

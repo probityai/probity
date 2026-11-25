@@ -20,12 +20,8 @@ from .crypto import (
     strict_loads,
     verify_signature,
 )
-from .grant_records import (
-    ActionRequest,
-    GrantPolicy,
-    verify_authorized_packet,
-    verify_grant,
-)
+from . import exact_grant
+from .exact_grant import ActionRequest, GrantPolicy
 from .history import read_history, verify_checkpoint
 from .ledger import verify_ledger_receipts
 
@@ -105,6 +101,7 @@ def _verify_prior(
     request: ActionRequest,
     policy: GrantPolicy,
     observer: str,
+    grant_verifier: Any,
 ) -> None:
     """Authenticate exact grant/native-begin ordering without upgrading custody."""
     prior = _authenticated(state["prior"], observer, PRIOR_DOMAIN)
@@ -120,7 +117,7 @@ def _verify_prior(
     if set(prior) != required or prior["profile"] != PRIOR_DOMAIN:
         _refuse("prior authorization has unexpected fields")
     reference = datetime.fromisoformat(prior["authorizedAt"].replace("Z", "+00:00"))
-    action = verify_grant(state["grant"], request, policy, now=reference)
+    action = grant_verifier.verify_grant(state["grant"], request, policy, now=reference)
     native = {key: packet["commitment"][key] for key in ("preimage", "committedAt")}
     expected = {
         "profile": PRIOR_DOMAIN,
@@ -147,6 +144,7 @@ def _verify_complete(
     observer: str,
     witness: str,
     workspace: Path | None,
+    grant_verifier: Any,
 ) -> dict[str, Any]:
     """Cross-check the completed authorization journal with the native packet."""
     packet = state["packet"]
@@ -173,7 +171,7 @@ def _verify_complete(
         or entries[-1]["event"] != expected
     ):
         _refuse("authorization journal differs from the completed result")
-    _verify_prior(state, packet, request, policy, observer)
+    _verify_prior(state, packet, request, policy, observer, grant_verifier)
     prior_checkpoint = {
         key: state["prior"]["payload"]["nativeStartCheckpoint"][key]
         for key in ("count", "head", "keyid", "signature")
@@ -190,7 +188,7 @@ def _verify_complete(
     dispatch = datetime.fromisoformat(
         packet["authorizationBinding"]["payload"]["authorizedAt"].replace("Z", "+00:00")
     )
-    verified = verify_authorized_packet(
+    verified = grant_verifier.verify_authorized_packet(
         state["grant"],
         request,
         policy,
@@ -224,6 +222,7 @@ def verify_dispatch_bundle(
     workspace: Path | None = None,
     execution_digest: str | None = None,
     decision_digest: str | None = None,
+    grant_verifier: Any = exact_grant,
 ) -> dict[str, Any]:
     """Verify the witnessed grant relation and exactly one completed native effect.
 
@@ -242,6 +241,9 @@ def verify_dispatch_bundle(
     execution_digest, decision_digest : str | None, optional
         Separately selected launch and decision bindings. A present decision
         digest must match; this generic verifier does not replay its semantics.
+    grant_verifier : object, optional
+        Object whose ``verify_grant`` and ``verify_authorized_packet`` read the retained grant: the one grant model
+        by default, ``probity_observer.retained_grants`` for a run signed before it.
 
     Returns
     -------
@@ -279,7 +281,7 @@ def verify_dispatch_bundle(
     if entries[0]["event"] != initial:
         _refuse("dispatch initialization differs from the retained journal")
     verified = _verify_complete(
-        directory, state, expected_request, policy, observer_key, witness_key, workspace
+        directory, state, expected_request, policy, observer_key, witness_key, workspace, grant_verifier
     )
     return {
         **verified,

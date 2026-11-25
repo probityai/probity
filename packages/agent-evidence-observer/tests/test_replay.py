@@ -10,6 +10,7 @@ import logging
 import re
 import sys
 from dataclasses import FrozenInstanceError, dataclass, replace
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from hypothesis import strategies as st
 
 from probity_observer.attribution import DOMAIN, sign_consumption, verify_consumption
 from probity_observer.crypto import SigningKey, VerificationError, canonical
+from probity_observer import retained_grants
 from probity_observer.replay import (
     MAX_DEPTH,
     MAX_INPUT_BYTES,
@@ -31,11 +33,16 @@ from probity_observer.replay import (
     ReplayPolicy,
     checker_implementation_bytes,
     consumption_checks,
-    replay_checks,
-    replay_consumption,
+    replay_checks as _replay_checks,
+    replay_consumption as _replay_consumption,
 )
 
 ROOT = Path(__file__).parents[1]
+
+# The protected-action run these read was signed before the one grant model: its grants verify against the
+# retained module, never the live one.
+replay_checks = partial(_replay_checks, grant_verifier=retained_grants)
+replay_consumption = partial(_replay_consumption, grant_verifier=retained_grants)
 sys.path.insert(0, str(ROOT / "examples"))
 SPEC = importlib.util.spec_from_file_location(
     "replay_demo", ROOT / "examples/replay_demo.py"

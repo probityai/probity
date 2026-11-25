@@ -22,12 +22,8 @@ from .crypto import (
     strict_loads,
     verify_signature,
 )
-from .grant_records import (
-    ActionRequest,
-    GrantPolicy,
-    validate_utc_time,
-    verify_grant,
-)
+from . import exact_grant
+from .exact_grant import ActionRequest, GrantPolicy, validate_utc_time
 
 DOMAIN = "probity-http-ticket-v0"
 
@@ -268,6 +264,7 @@ def verify_ticket_result(
     grant: Mapping[str, Any], *, now: datetime,
     decision_digest: str | None = None,
     time_precision: Literal["seconds", "milliseconds"] = "seconds",
+    grant_verifier: Any = exact_grant,
 ) -> dict[str, Any]:
     """Join signed completion with separately retrieved native bytes and policy.
 
@@ -277,7 +274,10 @@ def verify_ticket_result(
     or infer general containment from a local HTTP gate. A selected optional
     decision digest is a configuration binding; native decision recomputation
     belongs to the profile reader. Omitting it refuses records that carry it.
+    ``grant_verifier`` is the object whose ``verify_grant`` reads ``grant``: the one grant model by default,
+    ``probity_observer.retained_grants`` for a retained run signed before it.
     """
+    verify_grant = grant_verifier.verify_grant
     authorized = verify_grant(grant, request, policy, now=now, reference_precision=time_precision)
     if not isinstance(readback, Mapping) or set(readback) != READBACK_FIELDS or type(readback["revision"]) is not int:
         raise VerificationError("ticket native read-back fields or counter differ")
