@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from probity_observer.crypto import VerificationError, digest, strict_loads
+from probity_observer import retained_grants
 from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     DOMAIN,
@@ -195,7 +196,7 @@ def _completion(payload: dict[str, Any], pins: dict[str, str], native_state: dic
     try:
         verify_ticket_result(payload["readback"]["receipt"], payload["readback"],
                              ActionRequest(**payload["request"]), GrantPolicy(**payload["grantPolicy"]),
-                             pins["serviceKey"], payload["grant"], now=reference_time(payload["decisionAt"]))
+                             pins["serviceKey"], payload["grant"], now=reference_time(payload["decisionAt"]), grant_verifier=retained_grants)
     except VerificationError as error:
         return "incomplete-or-no-longer-admissible", str(error)
     return "verified-bounded-native-completion", None

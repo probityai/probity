@@ -28,7 +28,7 @@
     "package.json": "60346c4ea19bb54f995ae28de7412df6a3de47ab13d0acb6ee8481646d168744",
     "probity_aps_refund/__init__.py": "c7932b51c7259bcfd4f65e6a22a60859980bb59544692fdc7c6c2d20c53e7ccb",
     "probity_aps_refund/reader.py": "4e8b3eb354bf4180c97d3e28e341292b15170e9be74f67151f7e002fc5bd21b2",
-    "probity_aps_refund/verification.py": "b141ba34efbf4a90c43679f9a679bd7d80c707c5f2cb089968047a2859e761ab",
+    "probity_aps_refund/verification.py": "44550476ddaa92ffd976be920b0244c5730b86a9af61862c50f53d8738d7bc19",
     "pyproject.toml": "8bbf7500d274d2c06a7fefae492f45c22ca21b836cef8dc659041a5c96157d49",
     "requirements.in": "af7482f3f527deeaa1b501e03a3ce68cc499d5ddcd66042c689f1c225024ef48",
     "requirements.lock": "9a9531fca074a47507a3e0ce866035b6c5b5e9cd6a1bb2079421001fe5e76eae",

@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from probity_observer import retained_grants
 from probity_observer.retained_grants import ActionRequest, GrantPolicy
 from probity_observer.ticket_state import verify_ticket_result
 
@@ -45,7 +46,7 @@ def effect_report() -> bytes:
     now = datetime.fromisoformat(config["currentTime"].replace("Z", "+00:00"))
     result = verify_ticket_result(config["receipt"], config["readback"], ActionRequest(**selected["request"]),
                                   GrantPolicy(**selected["grantPolicy"]), config["policy"]["publicKeys"]["service"],
-                                  selected["grant"], now=now)
+                                  selected["grant"], now=now, grant_verifier=retained_grants)
     report = {"gate": "native-effect-readback", "admitted": True, "result": result,
               "doesNotAssert": config["policy"]["doesNotAssert"]}
     return (json.dumps(report, sort_keys=True) + "\n").encode("ascii")

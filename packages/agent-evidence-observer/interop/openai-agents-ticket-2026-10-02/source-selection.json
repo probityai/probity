@@ -4,6 +4,6 @@
     "probity_openai/__init__.py": "0cc24a1f601cb31ae3856193ef5c8672efc8427f2f32eb8ffafc9ce724829742",
     "probity_openai/contract.py": "44d4b4d401448ea3cc8b2e1aeb26585a5ce59e05ff56010d07991fdd3f958709",
     "probity_openai/processor.py": "b500f7e444f932c5d6535c13950fe35e558821183b6a135fdb70ab88f6933a98",
-    "probity_openai/reader.py": "fe8c035a8bb9486bf0aea3b253976469dd6fcfaa55b985725f63e02548a5db58"
+    "probity_openai/reader.py": "9545c165209953bdd39ca2a20e3a91eeb0544533d2188070076442157bbf1982"
   }
 }

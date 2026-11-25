@@ -143,8 +143,8 @@
       "sha256": "7470f8b7be432e54d0ecd0b5872c357743d185fac7f9437c2db1b4a3ca9acb2f"
     },
     "interop/pydantic-ai-native-2026-10-02/src/probity_pydantic/reader.py": {
-      "git_blob_sha1": "964489dd26ab80a998be6d30527a90e55733718e",
-      "sha256": "91bc81e40146a9db5f52b0b637b3b17212b48666af8750d8d9e43785604fff1a"
+      "git_blob_sha1": "69960f96196e95d0dab78f97d8cd3cbc8203f419",
+      "sha256": "920e98131dae6b20f1047f6a4bd8293fadaffca81ab8f28cd26fb796527e5b0e"
     },
     "pyproject.toml": {
       "git_blob_sha1": "9055ebb19af43d2a55af547835ee68a769201223",
