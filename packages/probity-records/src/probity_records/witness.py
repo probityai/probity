@@ -145,6 +145,37 @@ def verify_consistency(old: int, new: int, old_root: bytes, new_root: bytes, pro
     return fr == old_root and sr == new_root and sn == 0
 
 
+def inclusion_proof(index: int, leaves: Sequence[bytes]) -> list[bytes]:
+    """RFC 9162 section 2.1.3.1 PATH(index, leaves) over leaf HASHES; ``[]`` for an index outside the tree."""
+    n = len(leaves)
+    if not 0 <= index < n or n == 1:
+        return []
+    k = _split(n)
+    if index < k:
+        return inclusion_proof(index, leaves[:k]) + [root(leaves[k:])]
+    return inclusion_proof(index - k, leaves[k:]) + [root(leaves[:k])]
+
+
+def verify_inclusion(index: int, size: int, leaf: bytes, proof: Sequence[bytes], tree_root: bytes) -> bool:
+    """RFC 9162 section 2.1.3.2: ``leaf`` (a leaf HASH) is at ``index`` of the tree of ``size`` with ``tree_root``."""
+    if type(index) is not int or type(size) is not int or not 0 <= index < size:
+        return False
+    fn, sn, r = index, size - 1, leaf
+    for p in proof:
+        if sn == 0:
+            return False
+        if fn & 1 or fn == sn:
+            r = node_hash(p, r)
+            while not fn & 1 and fn != 0:
+                fn >>= 1
+                sn >>= 1
+        else:
+            r = node_hash(r, p)
+        fn >>= 1
+        sn >>= 1
+    return sn == 0 and r == tree_root
+
+
 # ---- signed notes ---------------------------------------------------------------------------------
 def b64decode_canonical(text: str) -> bytes:
     try:
