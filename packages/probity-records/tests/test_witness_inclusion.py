@@ -20,7 +20,7 @@ def test_a_proof_for_another_index_size_leaf_or_root_fails() -> None:
     leaves = _leaves(7)
     proof = inclusion_proof(3, leaves)
     assert not verify_inclusion(4, 7, leaves[3], proof, root(leaves))
-    assert not verify_inclusion(3, 8, leaves[3], proof, root(leaves))
+    assert not verify_inclusion(3, 8, leaves[3], proof, root(_leaves(8)))
     assert not verify_inclusion(3, 7, leaves[2], proof, root(leaves))
     assert not verify_inclusion(3, 7, leaves[3], proof, root(leaves[:6]))
     assert not verify_inclusion(3, 7, leaves[3], [*proof, leaves[0]], root(leaves))

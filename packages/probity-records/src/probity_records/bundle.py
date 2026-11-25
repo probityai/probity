@@ -254,7 +254,7 @@ class Verdict:
     externally_witnessed_at: int | None  # the moment the quorum was met, seconds
     admitted_at_ms: int
     receipt: tuple[str, str, str] | None  # (issuer key id, permit id, stage)
-    map_status: str  # "proven", "no-proof", "not-keyed"
+    map_status: str  # "proven", "unproven", "unkeyed"
     origin: str
     size: int
     cannot_infer: tuple[str, ...]
@@ -320,9 +320,9 @@ def _map_status(cp: witness.Checkpoint, doc: Any, entry: dict[str, Any], index: 
     if receipt is None:
         if doc is not None:
             raise BundleRefused("bundle_map_invalid", "a map proof for a record that answers no permit stage")
-        return "not-keyed"
+        return "unkeyed"
     if doc is None:
-        return "no-proof"
+        return "unproven"
     if not isinstance(doc, dict) or set(doc) != {"commitment", "proof"}:
         raise BundleRefused("bundle_malformed", "map is {commitment, proof}")
     commitment_index, commitment = _included(cp, doc["commitment"], "map commitment leaf")
@@ -377,8 +377,7 @@ def verify_bundle(bundle: Any, trust: ThirdPartyTrust, now: int,
     if claimed is not None and not isinstance(claimed, str):
         raise BundleRefused("bundle_malformed", "record.counterparty is a target id")
     pinned_pq = trust.log_pq.get(cp.origin)
-    log_pq = witness.SIG_MLDSA44 in verified.log_types and pinned_pq is not None \
-        and bundle["log"]["pqVkey"] == pinned_pq
+    log_pq = witness.SIG_MLDSA44 in verified.log_types and bundle["log"]["pqVkey"] == pinned_pq
     verdict = _grade(trust, verified, policy, entry, issuer, claimed, map_status, cp, log_pq)
     _check_claims(bundle.get("claims"), verdict)
     return verdict

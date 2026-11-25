@@ -11,7 +11,6 @@ from typing import Any
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA44PrivateKey
-
 from probity_records import witness as w
 from probity_records.bundle import (
     BUNDLE_FORMAT,
@@ -162,7 +161,7 @@ def test_staging_witnesses_grade_staging_and_stale_cosignatures_do_not_count() -
 
 def test_an_unkeyed_record_needs_no_map() -> None:
     world = World(keyed=False)
-    assert verify_bundle(world.bundle(), world.trust(), NOW).map_status == "not-keyed"
+    assert verify_bundle(world.bundle(), world.trust(), NOW).map_status == "unkeyed"
 
 
 def _tamper(name: str, bundle: dict[str, Any], world: World) -> None:
@@ -212,15 +211,11 @@ def test_every_broken_bundle_is_refused_with_its_registered_code(name: str, code
     assert is_registered(code)
 
 
-def test_a_map_that_holds_another_record_for_the_key_is_a_contradiction() -> None:
-    world = World()
-    bundle = world.bundle()
-    terminal = bundle["map"]["proof"]["terminal"]
-    assert terminal is not None
+def _map_holding(world: World, index: int, leaf: bytes) -> dict[str, Any]:
+    """A bundle whose committed map holds ``leaf`` at log ``index`` for the record's own permit stage."""
     m = ReceiptMap()
     key = map_key(world.source.key_id, "p-1", "execute")
-    forged_leaf = hashlib.sha256(b"another record").digest()
-    m.insert(key, 0, forged_leaf)
+    m.insert(key, index, leaf)
     commitment = copy.deepcopy(json.loads(world.leaves[1]))
     commitment["root"] = m.root().hex()
     leaves = [world.leaves[0], canonical(commitment)]
@@ -231,6 +226,20 @@ def test_a_map_that_holds_another_record_for_the_key_is_a_contradiction() -> Non
     bundle["map"] = {"commitment": {"index": 1, "bytes": _b64(leaves[1]),
                                     "inclusion": [_b64(h) for h in w.inclusion_proof(1, hashes)]},
                      "proof": m.prove(key).to_doc()}
+    return bundle
+
+
+def test_a_map_that_holds_another_record_for_the_key_is_a_contradiction() -> None:
+    world = World()
+    bundle = _map_holding(world, 0, hashlib.sha256(b"another record").digest())
+    with pytest.raises(BundleRefused) as raised:
+        verify_bundle(bundle, world.trust(), NOW)
+    assert raised.value.code == "bundle_map_contradiction"
+
+
+def test_a_map_that_holds_this_record_at_another_log_index_is_a_contradiction() -> None:
+    world = World()
+    bundle = _map_holding(world, 1, w.leaf_hash(world.leaves[0]))
     with pytest.raises(BundleRefused) as raised:
         verify_bundle(bundle, world.trust(), NOW)
     assert raised.value.code == "bundle_map_contradiction"
