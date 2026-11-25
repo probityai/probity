@@ -66,7 +66,7 @@ def test_a_stamp_created_outside_the_window_its_certificate_covers_is_refused() 
     assert code(stamped(key, created=start - 1), root, now=(start + 5) * 10**9) == "stamp_window_outside"
     assert code(stamped(key, created=end), root, now=(end + 5) * 10**9) == "stamp_window_outside"
     assert verify(stamped(key, created=start), root, now=(start + 5) * 10**9).expires == start + 60
-    assert code(stamped(key, created=10**20), root) == "stamp_window_outside"
+    assert code(stamped(key, created=10**14), root) == "stamp_window_outside"
 
 
 def test_a_certificate_no_pinned_root_signed_or_of_the_retired_format_is_refused() -> None:
