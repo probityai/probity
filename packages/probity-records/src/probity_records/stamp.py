@@ -34,10 +34,14 @@ verifier received. The format and its reasons are in ``docs/verified-identities.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
+import json
 import secrets
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any, Final
 from urllib.parse import urlsplit
 
@@ -50,8 +54,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 from .canonical_identity import CanonicalIdentity, IdentityStringError
 from .clock import NS_PER_S
-from .core import sha256_hex
+from .core import canonical, sha256_hex
 from .digests import is_digest, stamp_digest
+from .signing import verify_delegation
 
 #: The four request fields of a stamp (lower case: field names compare case-insensitively).
 PRINCIPALS_HEADER: Final = "probity-principals"
@@ -64,6 +69,8 @@ LABEL: Final = "probity"
 COVERED: Final = ("@method", "@target-uri", "@authority", CONTENT_DIGEST_HEADER, PRINCIPALS_HEADER)
 ALG: Final = "ed25519"
 TAG: Final = "probity-principals/v1"
+#: The field carrying the certificate of the window key the stamp was signed with (base64 of its canonical JSON).
+WINDOW_FIELD: Final = "probity-stamp-window"
 PARAMS: Final = ("created", "expires", "nonce", "keyid", "alg", "tag")
 PRINCIPALS_MEMBERS: Final = ("id", "client", "principals")
 #: The longest lifetime a stamp may carry; a stamp names one request, so it is never a standing credential.
@@ -364,3 +371,52 @@ def verify_stamp(headers: Headers, *, method: str, target_uri: str, body: bytes 
         raise StampRefused("stamp_expired", "expires has passed")
     return VerifiedStamp(Stamp.from_field(fields[PRINCIPALS_HEADER]), nonce, expires)
 
+
+
+def window_field(certificate: Mapping[str, Any]) -> str:
+    """The ``probity-stamp-window`` value: base64 of the certificate's canonical JSON."""
+    return base64.b64encode(canonical(dict(certificate))).decode("ascii")
+
+
+def window_certificate(headers: Headers) -> dict[str, Any]:
+    """The window certificate a request's ``probity-stamp-window`` field carries; StampRefused ``stamp_window_missing``
+    without the field, ``stamp_window_malformed`` unless it is base64 of the canonical JSON of an object."""
+    values = [value for name, value in _pairs(headers) if name.lower() == WINDOW_FIELD]
+    if not values:
+        raise StampRefused("stamp_window_missing", "the stamp carries no window certificate")
+    if len(values) > 1:
+        raise StampRefused("stamp_window_malformed", "the window field is given more than once")
+    try:
+        raw = base64.b64decode(values[0], validate=True)
+        certificate = json.loads(raw)
+        if not isinstance(certificate, dict) or canonical(certificate) != raw:
+            raise ValueError("not canonical")
+    except (binascii.Error, ValueError) as exc:
+        raise StampRefused("stamp_window_malformed", "the window field is base64 of a canonical certificate") from exc
+    return certificate
+
+
+def verify_stamp_in_window(headers: Headers, *, method: str, target_uri: str, body: bytes | None,
+                           roots: Sequence[Ed25519PublicKey], now: int) -> VerifiedStamp:  # fmt: skip
+    """A stamp signed by a window key: the certificate in ``probity-stamp-window`` must verify under one of the pinned
+    ``roots`` (a ``probity-key-delegation/v2`` certificate), the stamp's ``created`` must fall in the certificate's
+    half-open window [notBefore, notAfter), and the stamp must then verify under the certificate's session key: the
+    ``keyid`` a stamp names is compared with that key and never used to find one. ``now`` is in nanoseconds."""
+    fields = stamp_fields(headers)
+    if fields is None:
+        raise StampRefused("stamp_dropped", "the request carries no stamp")
+    certificate = window_certificate(headers)
+    created = _params(_dictionaries(fields)[0][LABEL])[0]
+    try:
+        window = verify_delegation(certificate, list(roots))
+    except ValueError as exc:
+        raise StampRefused("stamp_window_refused", str(exc)) from exc
+    try:
+        at = datetime.fromtimestamp(created, UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    except (OverflowError, OSError, ValueError):
+        at = ""
+    if not window.covers(at):
+        raise StampRefused("stamp_window_outside", f"created {created} is outside [{window.not_before}, "
+                           f"{window.not_after})")  # fmt: skip
+    return verify_stamp(headers, method=method, target_uri=target_uri, body=body,
+                        public_raw=window.session.public_bytes_raw(), now=now)  # fmt: skip

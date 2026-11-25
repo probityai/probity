@@ -3597,6 +3597,30 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_user_replaced"
   },
   {
+   "code": "stamp_window_malformed",
+   "check": "gateway.stamp",
+   "meaning": "the window field is not base64 of the canonical JSON of a certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_malformed"
+  },
+  {
+   "code": "stamp_window_missing",
+   "check": "gateway.stamp",
+   "meaning": "the stamp carries no window certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_missing"
+  },
+  {
+   "code": "stamp_window_outside",
+   "check": "gateway.stamp",
+   "meaning": "the stamp was created outside the half-open window its certificate covers",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_outside"
+  },
+  {
+   "code": "stamp_window_refused",
+   "check": "gateway.stamp",
+   "meaning": "the window certificate does not verify under a pinned root or is not a v2 certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/stamp_window_refused"
+  },
+  {
    "code": "stamp_wrong_audience",
    "check": "gateway.stamp",
    "meaning": "the stamp is for another upstream audience",
