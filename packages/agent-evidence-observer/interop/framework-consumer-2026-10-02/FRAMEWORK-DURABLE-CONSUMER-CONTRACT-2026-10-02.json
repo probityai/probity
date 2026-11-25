@@ -62,8 +62,8 @@
       "sha256": "eab1c699e10c1ad9f8168346580657d81f8da6fdf49deb1e3431ae1171e43a77"
     },
     "interop/langgraph-ticket-2026-10-02/lg_reader.py": {
-      "git_blob_sha1": "a628334288d592dade391a43f8d3a30293235d7e",
-      "sha256": "90f7378675b5b99191db087ee624e3d3825947237f17c8506ac8e06872643597"
+      "git_blob_sha1": "b45fd0b9191302c1cbd07c64aa6d7a2c0b402182",
+      "sha256": "744477a46f7590042a9fa7900d77a89fab807eef484bb4e9d7dccfe2f40f729b"
     },
     "pyproject.toml": {
       "git_blob_sha1": "9055ebb19af43d2a55af547835ee68a769201223",

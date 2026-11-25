@@ -178,9 +178,12 @@ PROFILE_RUNTIME_DRIVERS = {
 def test_each_interop_retained_driver_passes() -> None:
     drivers = sorted(path for path in PACKAGE.glob("interop/*/verify_retained.py")
                      if path.parent.name not in PROFILE_RUNTIME_DRIVERS)
+    failures = []
     for driver in drivers:
         result = child("path", str(driver))
-        assert result.returncode == 0, f"{driver}: {result.stdout}{result.stderr}"
+        if result.returncode != 0:
+            failures.append(f"{driver}: {result.stdout}{result.stderr}")
+    assert not failures, f"{len(failures)} of {len(drivers)} retained drivers failed:\n" + "\n".join(failures)
     print("interop retained drivers checked:", len(drivers))
 
 

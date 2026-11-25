@@ -10,6 +10,7 @@ from typing import Any
 from probity_observer.crypto import canonical, strict_loads
 from probity_observer.dispatch_records import verify_dispatch_bundle
 from probity_observer.retained_grants import ActionRequest, GrantPolicy
+from probity_observer import retained_grants
 from probity_observer.history import verify_checkpoint
 from probity_observer.ledger import verify_ledger_head
 from probity_witness_operator.protocol import history_entries, require
@@ -33,7 +34,7 @@ def _dispatch(directory: Path, config: dict[str, Any], retained: dict[str, Any])
             shutil.copyfile(directory / name, snapshot / name)
         verify_dispatch_bundle(snapshot, ActionRequest(**config["request"]), GrantPolicy(**config["policy"]),
                                config["observerKey"], config["witnessKey"], retained,
-                               execution_digest=config["executionDigest"], decision_digest=config.get("decisionDigest"))
+                               execution_digest=config["executionDigest"], decision_digest=config.get("decisionDigest"), grant_verifier=retained_grants)
 
 
 def _bundle(directory: Path, selection: dict[str, Any], admitted: bool, candidate: dict[str, Any]) -> dict[str, Any]:

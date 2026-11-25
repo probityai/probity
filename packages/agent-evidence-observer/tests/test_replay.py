@@ -459,7 +459,7 @@ class TestReplayChecks:
             def crash(*args: Any, **kwargs: Any) -> None:
                 raise RuntimeError("do not leak private diagnostic material")
 
-            monkeypatch.setattr("probity_observer.exact_grant.verify_grant", crash)
+            monkeypatch.setattr(retained_grants, "verify_grant", crash)
             caplog.clear()
             report = replay_checks(case.inputs, case.policy)
             assert results(report)["authorization"] == "error"

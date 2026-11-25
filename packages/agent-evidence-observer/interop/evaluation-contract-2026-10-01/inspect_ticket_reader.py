@@ -22,6 +22,7 @@ from probity_observer.aae_ticket_records import (
 from probity_observer.crypto import canonical
 from probity_observer.crypto import digest as domain_digest
 from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
+from probity_observer import retained_grants
 from probity_observer.ticket_state import DOMAIN, checked_record, state_schema
 
 PROFILE = "probity-inspect-aae-ticket-v0"
@@ -223,7 +224,7 @@ def verify_saved(output: Path, selected: dict, withheld: dict | None = None) -> 
             effect = "incomplete-no-automatic-replay"
         else:
             require(packet["postStatus"] == 200, "ticket_completion_response")
-            verify_aae_ticket_result(**decision, receipt=response, readback=readback, request=request, policy=policy, service_key=case["serviceKey"], grant=case["grant"], now=now)
+            verify_aae_ticket_result(**decision, receipt=response, readback=readback, request=request, policy=policy, service_key=case["serviceKey"], grant=case["grant"], now=now, grant_verifier=retained_grants)
             effect = "verified-local-ticket-update"
         records.append({"attemptId": name, "status": status, "taskOutcome": task_outcome, "kernelVerdict": actual["verdict"], "effectOutcome": effect, "effectId": state["effectId"]})
     return {"profile": PROFILE, "status": "verified", "plannedAttempts": len(records), "records": records, "providerCalls": "none-mock-provider", "taskScope": "controlled-native-match-score", "effectScope": "one-selected-local-ticket-per-attempt", "issuerAuthentication": "not-established", "independentCustody": "not-established", "priorSelection": "local-pre-run-plan-not-authenticated-witness", "coverage": "finite-declared-population-original-logs-and-retained-HTTP-bytes"}
