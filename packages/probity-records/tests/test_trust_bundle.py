@@ -10,7 +10,6 @@ from typing import Any
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-
 from probity_records import Signer, sign_revocations
 from probity_records import witness as w
 from probity_records.core import _b64, sign_envelope, statement

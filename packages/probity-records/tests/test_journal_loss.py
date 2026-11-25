@@ -7,7 +7,6 @@ import hashlib
 from pathlib import Path
 
 import pytest
-
 from probity_records import Journal, Signer, verify_journal
 from probity_records.clock import FixedClock
 from probity_records.journal import GAP_TYPE, JOURNAL_FILE, TORN_TAIL_TYPE
