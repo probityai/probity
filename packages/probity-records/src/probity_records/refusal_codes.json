@@ -2727,6 +2727,162 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/release_unrecorded"
   },
   {
+   "code": "renewal_authority_mismatch",
+   "check": "lifecycle.renewal",
+   "meaning": "the certificate or grant names an authority key other than the pinned root that signed it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_authority_mismatch"
+  },
+  {
+   "code": "renewal_base64_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal record's signature, key or successor is not canonical base64",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_base64_invalid"
+  },
+  {
+   "code": "renewal_certificate_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the instance certificate does not have exactly the certificate members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificate_members_invalid"
+  },
+  {
+   "code": "renewal_certificate_type_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the record is not an instance certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificate_type_invalid"
+  },
+  {
+   "code": "renewal_certificate_window_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the instance certificate's window does not end after it starts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificate_window_invalid"
+  },
+  {
+   "code": "renewal_certificates_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the certificates are not those of one instance with exactly one issuing certificate",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_certificates_invalid"
+  },
+  {
+   "code": "renewal_counter_gap",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal's counter is not one more than its predecessor's",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_counter_gap"
+  },
+  {
+   "code": "renewal_counter_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal request's counter is below 1, the first renewal",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_counter_invalid"
+  },
+  {
+   "code": "renewal_digest_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal member is not sha256: followed by 64 lowercase hex digits",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_digest_invalid"
+  },
+  {
+   "code": "renewal_grant_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the renewal grant does not have exactly the grant members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_grant_members_invalid"
+  },
+  {
+   "code": "renewal_grant_type_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the record is not a renewal grant",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_grant_type_invalid"
+  },
+  {
+   "code": "renewal_identity_changed",
+   "check": "lifecycle.renewal",
+   "meaning": "the certificates of one instance disagree on agent, build, model or session",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_identity_changed"
+  },
+  {
+   "code": "renewal_instance_mismatch",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal request names another instance than the certificates",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_instance_mismatch"
+  },
+  {
+   "code": "renewal_integer_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal member is not a non-negative integer below 2 to the 53",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_integer_invalid"
+  },
+  {
+   "code": "renewal_key_id_mismatch",
+   "check": "lifecycle.renewal",
+   "meaning": "the key id a renewal request names is not the key that verified it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_key_id_mismatch"
+  },
+  {
+   "code": "renewal_key_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the certified key is not a raw Ed25519 key or its key id is not that key's SHA-256",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_key_invalid"
+  },
+  {
+   "code": "renewal_lease_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the grant's lease is not an object with exactly the lease members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_lease_members_invalid"
+  },
+  {
+   "code": "renewal_lease_window_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the grant's lease does not end after it starts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_lease_window_invalid"
+  },
+  {
+   "code": "renewal_model_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the model is neither undeclared nor an id with an optional digest",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_model_invalid"
+  },
+  {
+   "code": "renewal_record_malformed",
+   "check": "lifecycle.renewal",
+   "meaning": "a signed renewal record is not exactly a body object and a signature",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_record_malformed"
+  },
+  {
+   "code": "renewal_request_members_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the renewal request does not have exactly the request members",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_request_members_invalid"
+  },
+  {
+   "code": "renewal_request_orphaned",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal request continues nothing the chain holds",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_request_orphaned"
+  },
+  {
+   "code": "renewal_request_type_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the record is not a renewal request",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_request_type_invalid"
+  },
+  {
+   "code": "renewal_signature_unverified",
+   "check": "lifecycle.renewal",
+   "meaning": "no pinned root or instance key verifies the renewal record's signature",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_signature_unverified"
+  },
+  {
+   "code": "renewal_successor_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "the successor key of a renewal request is not a raw Ed25519 key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_successor_invalid"
+  },
+  {
+   "code": "renewal_text_invalid",
+   "check": "lifecycle.renewal",
+   "meaning": "a renewal member is not 1 to 512 printable ASCII characters",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/renewal_text_invalid"
+  },
+  {
    "code": "retry_without_earlier_permit",
    "check": "journal.verify",
    "meaning": "a retry names no earlier permit",
