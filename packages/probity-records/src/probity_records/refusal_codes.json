@@ -315,6 +315,78 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/budget_exhausted"
   },
   {
+   "code": "bundle_checkpoint_refused",
+   "check": "record.bundle",
+   "meaning": "the bundle's checkpoint is not a signed note, or its log line or a pinned witness line does not verify",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_checkpoint_refused"
+  },
+  {
+   "code": "bundle_claim_overstated",
+   "check": "record.bundle",
+   "meaning": "the bundle claims a grade or post-quantum status above what the verifier computes",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_claim_overstated"
+  },
+  {
+   "code": "bundle_leaf_malformed",
+   "check": "record.bundle",
+   "meaning": "the bundle's leaf is not a canonical decision log leaf",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_leaf_malformed"
+  },
+  {
+   "code": "bundle_leaf_not_included",
+   "check": "record.bundle",
+   "meaning": "the bundle's leaf or map commitment is not in the checkpointed tree",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_leaf_not_included"
+  },
+  {
+   "code": "bundle_log_key_invalid",
+   "check": "record.bundle",
+   "meaning": "the bundle's log key is not an Ed25519 key, or its post-quantum key an ML-DSA-44 key, named after the origin",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_log_key_invalid"
+  },
+  {
+   "code": "bundle_malformed",
+   "check": "record.bundle",
+   "meaning": "the record bundle is not exactly the bundle format",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_malformed"
+  },
+  {
+   "code": "bundle_map_contradiction",
+   "check": "record.bundle",
+   "meaning": "the committed receipt map holds another record for this issuer, permit id and stage",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_map_contradiction"
+  },
+  {
+   "code": "bundle_map_invalid",
+   "check": "record.bundle",
+   "meaning": "the receipt map commitment or proof is malformed, for another key, or does not cover the record",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_map_invalid"
+  },
+  {
+   "code": "bundle_record_invalid",
+   "check": "record.bundle",
+   "meaning": "the bundled record does not verify under its source key or is not its predicate's format",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_record_invalid"
+  },
+  {
+   "code": "bundle_record_kind_unsupported",
+   "check": "record.bundle",
+   "meaning": "the verifier holds no reader for the bundled record's source kind",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_record_kind_unsupported"
+  },
+  {
+   "code": "bundle_record_mismatch",
+   "check": "record.bundle",
+   "meaning": "the bundled record does not state the leaf it is bundled with",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_record_mismatch"
+  },
+  {
+   "code": "bundle_trust_invalid",
+   "check": "record.bundle",
+   "meaning": "the verifier's pinned witnesses or quorum are not a valid trust",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/bundle_trust_invalid"
+  },
+  {
    "code": "cel_expression_empty",
    "check": "grants.constraint",
    "meaning": "a CEL expression is not a string, or holds only whitespace",
