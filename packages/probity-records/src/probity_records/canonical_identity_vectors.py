@@ -29,14 +29,15 @@ ALICE = ref("user", "alice@example.com")
 ORCH = ref("agent", "orchestrator")
 REFUNDS = ref("agent", "agent-refunds")
 OWNER = ref("sponsor", "owner@example.com")
+FINANCE = ref("sponsor", "finance-lead@example.com")
 BOB = ref("approver", "bob@example.com")
 
 ACCEPTED: list[tuple[str, str, CanonicalIdentity]] = [
     ("CI1", "an agent acts for a user, with sponsor, approver, act claim and grant chain",
-     CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsor=OWNER, approver=BOB, act=ACT,
+     CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsors=(OWNER,), approver=BOB, act=ACT,
                        grants=GRANTS)),
     ("CI2", "a sub-agent acts: the chain shows its parent, root first",
-     CanonicalIdentity(kind="agent", user=ALICE, chain=(ORCH, REFUNDS), sponsor=OWNER, act=ACT)),
+     CanonicalIdentity(kind="agent", user=ALICE, chain=(ORCH, REFUNDS), sponsors=(OWNER,), act=ACT)),
     ("CI3", "a human acted, attested by a fresh user-presence proof",
      CanonicalIdentity(kind="human-attested", user=ALICE, evidence=Evidence("presence", PRESENCE))),
     ("CI4", "a human acted, attested by the approval bound to the request",
@@ -46,7 +47,7 @@ ACCEPTED: list[tuple[str, str, CanonicalIdentity]] = [
     ("CI6", "the transport identity of a mutual-TLS peer under a pinned SPIFFE trust domain",
      CanonicalIdentity(kind="transport", service=ref("service", "billing", domain=SPIFFE))),
     ("CI7", "an agent acting for no user names its sponsor",
-     CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsor=OWNER)),
+     CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(OWNER,))),
     ("CI8", "the same names in staging are a different identity",
      CanonicalIdentity(kind="agent", user=ref("user", "alice@example.com", env="staging"),
                        chain=(ref("agent", "agent-refunds", env="staging"),))),
@@ -55,6 +56,11 @@ ACCEPTED: list[tuple[str, str, CanonicalIdentity]] = [
                        chain=(ref("agent", "agent-refunds", domain=OTHER_ISSUER),))),
     ("CI10", "non-ASCII and reserved characters are escaped once, uppercase hex",
      CanonicalIdentity(kind="agent", user=ref("user", "jörg/ops;x=y>z!"), chain=(ref("agent", "a b%c"),))),
+    ("CI11", "two sponsors answer for an agent acting for no user: both are named, sorted by their rendered refs",
+     CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(FINANCE, OWNER))),
+    ("CI12", "two sponsors beside a user, an approver and the act claim",
+     CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsors=(FINANCE, OWNER), approver=BOB,
+                       act=ACT)),
 ]
 
 PLAIN_USER = ALICE.render()
@@ -99,6 +105,15 @@ REFUSED_STRINGS: list[tuple[str, str, str]] = [
     ("CR27", "an empty attribute value", "aid1!unknown;user="),
     ("CR28", "a chain deeper than 32 agents", "aid1!agent;user=" + PLAIN_USER + ";chain="
      + ">".join(ref("agent", f"a{i}").render() for i in range(33))),
+    ("CR29", "sponsors out of sorted order",
+     "aid1!agent;chain=" + REFUNDS.render() + ";sponsor=" + OWNER.render() + "+" + FINANCE.render()),
+    ("CR30", "a sponsor named twice",
+     "aid1!agent;chain=" + REFUNDS.render() + ";sponsor=" + OWNER.render() + "+" + OWNER.render()),
+    ("CR31", "an empty sponsor entry", "aid1!agent;chain=" + REFUNDS.render() + ";sponsor=" + OWNER.render() + "+"),
+    ("CR32", "a second sponsor entry carrying a user ref",
+     "aid1!agent;chain=" + REFUNDS.render() + ";sponsor=" + OWNER.render() + "+" + PLAIN_USER),
+    ("CR33", "an empty sponsor list where the sponsor is required", "aid1!agent;chain=" + REFUNDS.render()
+     + ";sponsor="),
 ]
 
 EXPECTED_CODES = {
@@ -112,7 +127,9 @@ EXPECTED_CODES = {
     "CR19": "identity_attribute_missing", "CR20": "identity_attribute_missing", "CR21": "identity_chain_repeats_agent",
     "CR22": "identity_ref_malformed", "CR23": "identity_attribute_not_allowed",
     "CR24": "identity_attribute_not_allowed", "CR25": "identity_string_malformed", "CR26": "identity_too_long",
-    "CR27": "identity_attribute_empty", "CR28": "identity_chain_too_deep",
+    "CR27": "identity_attribute_empty", "CR28": "identity_chain_too_deep", "CR29": "identity_sponsor_order",
+    "CR30": "identity_sponsor_repeated", "CR31": "identity_ref_malformed", "CR32": "identity_ref_type_mismatch",
+    "CR33": "identity_attribute_empty",
 }  # fmt: skip
 
 
@@ -121,18 +138,29 @@ def _refused_documents() -> list[tuple[str, str, Any]]:
     swapped = {**doc, "user": ref("user", "mallory@example.com").document()}
     forged_ref = {**doc, "user": {**doc["user"], "subject": "mallory@example.com"}}
     unknown = {**doc, "tier": "gold"}
-    stale_ref_id = {**doc, "sponsor": {**doc["sponsor"], "id": ref("sponsor", "mallory@example.com").render()}}
+    stale_ref_id = {**doc, "sponsor": [{**doc["sponsor"][0], "id": ref("sponsor", "mallory@example.com").render()}]}
+    two = ACCEPTED[10][2].document()
+    unsorted = {**two, "sponsor": list(reversed(two["sponsor"]))}
+    repeated = {**two, "sponsor": [two["sponsor"][0], two["sponsor"][0]]}
+    no_sponsor = {**two, "sponsor": []}
+    single = {**two, "sponsor": two["sponsor"][0]}
     return [
         ("CD1", "the parts name mallory while the id names alice", swapped),
         ("CD2", "a ref whose id disagrees with its subject", forged_ref),
         ("CD3", "an unknown member", unknown),
         ("CD4", "version true is not version 1", {**doc, "version": True}),
         ("CD5", "a ref's own id names mallory while its parts and the identity id name the owner", stale_ref_id),
+        ("CD6", "sponsors out of sorted order", unsorted),
+        ("CD7", "a sponsor named twice", repeated),
+        ("CD8", "an empty sponsor list where the sponsor is required", no_sponsor),
+        ("CD9", "one sponsor written as a ref instead of a list of refs", single),
     ]
 
 
 DOCUMENT_CODES = {"CD1": "identity_document_id_mismatch", "CD2": "identity_document_id_mismatch",
-                  "CD3": "identity_attribute_unknown", "CD4": "identity_version_unknown", "CD5": "identity_document_id_mismatch"}  # fmt: skip
+                  "CD3": "identity_attribute_unknown", "CD4": "identity_version_unknown", "CD5": "identity_document_id_mismatch",
+                  "CD6": "identity_sponsor_order", "CD7": "identity_sponsor_repeated", "CD8": "identity_sponsor_malformed",
+                  "CD9": "identity_sponsor_malformed"}  # fmt: skip
 
 
 def outcome(identity: CanonicalIdentity) -> dict[str, Any]:

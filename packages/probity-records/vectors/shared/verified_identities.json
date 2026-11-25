@@ -257,13 +257,15 @@
           ],
           "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
           "kind": "agent",
-          "sponsor": {
-            "domain": "https://idp.example.com/realms/agents",
-            "environment": "prod",
-            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-            "subject": "owner@example.com",
-            "type": "sponsor"
-          },
+          "sponsor": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+              "subject": "owner@example.com",
+              "type": "sponsor"
+            }
+          ],
           "version": 1
         }
       ],

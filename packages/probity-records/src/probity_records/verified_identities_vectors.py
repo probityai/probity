@@ -405,7 +405,7 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
         ("VS26", "a stamp naming an agent acting for no user",
          c({}, request=request(headers=stamp(principals=principals_field(CanonicalIdentity(
              kind="agent", chain=(Ref("agent", ENV, IDP, "agent-refunds"),),
-             sponsor=Ref("sponsor", ENV, IDP, "owner@example.com")).render()))))),
+             sponsors=(Ref("sponsor", ENV, IDP, "owner@example.com"),)).render()))))),
         ("VS27", "a stamp whose principals digest is not an identity digest",
          c({}, request=request(headers=stamp(principals=principals_field(principals="e5" * 32))))),
         ("VS28", "a stamp from staging read in prod",

@@ -12,6 +12,7 @@ Version 1, in short::
     ref       = type ":" env "/" domain "/" subject      ; one typed, scoped principal
     type      = "user" / "agent" / "service" / "sponsor" / "approver"
     chain     = ref *( ">" ref )                         ; root first, the acting agent last
+    sponsor   = ref *( "+" ref )                         ; every sponsor, sorted, none twice
     evidence  = ( "presence" / "approval" ) ":" digest
     digest    = "sha256:" 64( DIGIT / %x61-66 )
 
@@ -38,6 +39,8 @@ TYPES: Final = ("user", "agent", "service", "sponsor", "approver")
 KEYS: Final = ("user", "chain", "sponsor", "approver", "service", "evidence", "act", "grants")
 EVIDENCE_METHODS: Final = ("presence", "approval")
 PROFILES: Final = ("basic", "strict")
+#: The attribute each key is held in, where the two differ: the ``sponsor`` key carries every sponsor.
+FIELDS: Final = {"sponsor": "sponsors"}
 #: The type every ref under a key carries.
 KEY_TYPES: Final = {"user": "user", "chain": "agent", "sponsor": "sponsor", "approver": "approver",
                     "service": "service"}  # fmt: skip
@@ -185,13 +188,15 @@ class CanonicalIdentity:
     """The verified identity of one request (or of its transport), as kind and typed, scoped principals.
 
     ``chain`` lists the agents of the delegation path, root first, the agent that acted last, so a sub-agent's
-    identity always shows its parent. ``act`` is the digest of the identity provider's signed RFC 8693 ``act`` claim
-    and ``grants`` the digest of the capability grant chain the request ran under."""
+    identity always shows its parent. ``sponsors`` lists every sponsor that answers for the agent, sorted by its
+    rendered ref with none twice, and is empty when no sponsor does; a reader checks every entry, so a rule that
+    denies one sponsor fires whichever others are named. ``act`` is the digest of the identity provider's signed
+    RFC 8693 ``act`` claim and ``grants`` the digest of the capability grant chain the request ran under."""
 
     kind: str
     user: Ref | None = None
     chain: tuple[Ref, ...] = ()
-    sponsor: Ref | None = None
+    sponsors: tuple[Ref, ...] = ()
     approver: Ref | None = None
     service: Ref | None = None
     evidence: Evidence | None = None
@@ -203,6 +208,8 @@ class CanonicalIdentity:
             raise IdentityStringError("identity_kind_unknown", repr(self.kind)[:40])
         if not isinstance(self.chain, tuple):
             raise IdentityStringError("identity_chain_malformed", "chain is a tuple of agent refs")
+        if not isinstance(self.sponsors, tuple):
+            raise IdentityStringError("identity_sponsor_malformed", "sponsors is a tuple of sponsor refs")
         present = [key for key in KEYS if self._value(key) not in (None, ())]
         for key in present:
             if key not in ALLOWED[self.kind]:
@@ -211,7 +218,8 @@ class CanonicalIdentity:
             if key not in present:
                 raise IdentityStringError("identity_attribute_missing", f"a {self.kind} identity needs {key}")
         for key, want in KEY_TYPES.items():
-            refs = self.chain if key == "chain" else (() if self._value(key) is None else (self._value(key),))
+            value = self._value(key)
+            refs = value if key in ("chain", "sponsor") else (() if value is None else (value,))
             for ref in refs:
                 if not isinstance(ref, Ref) or ref.type != want:
                     raise IdentityStringError("identity_ref_type_mismatch", f"{key} carries {want} refs")
@@ -219,11 +227,16 @@ class CanonicalIdentity:
             raise IdentityStringError("identity_chain_too_deep", f"more than {MAX_CHAIN} agents")
         if len(set(self.chain)) != len(self.chain):
             raise IdentityStringError("identity_chain_repeats_agent", "an agent appears twice in one chain")
+        sponsors = [ref.render() for ref in self.sponsors]
+        if len(set(sponsors)) != len(sponsors):
+            raise IdentityStringError("identity_sponsor_repeated", "a sponsor appears twice in one identity")
+        if sponsors != sorted(sponsors):
+            raise IdentityStringError("identity_sponsor_order", "sponsors are sorted by their rendered refs")
         if self.evidence is not None and not isinstance(self.evidence, Evidence):
             raise IdentityStringError("identity_evidence_malformed", "evidence is an Evidence")
         if self.evidence is not None and self.evidence.method == "approval" and self.approver is None:
             raise IdentityStringError("identity_attribute_missing", "approval evidence needs the approver")
-        if self.kind == "agent" and self.user is None and self.sponsor is None:
+        if self.kind == "agent" and self.user is None and not self.sponsors:
             raise IdentityStringError("identity_attribute_missing", "an agent acting for no user needs its sponsor")
         if self.act is not None and self.user is None:
             raise IdentityStringError("identity_attribute_missing", "act is a claim of the user's credential")
@@ -234,12 +247,14 @@ class CanonicalIdentity:
             raise IdentityStringError("identity_too_long", f"longer than {MAX_OCTETS} octets")
 
     def _value(self, key: str) -> Any:
-        return getattr(self, key)
+        return getattr(self, FIELDS.get(key, key))
 
     def _rendered(self, key: str) -> str:
         value = self._value(key)
         if key == "chain":
             return ">".join(ref.render() for ref in value)
+        if key == "sponsor":
+            return "+".join(ref.render() for ref in value)
         return value if isinstance(value, str) else value.render()
 
     def render(self) -> str:
@@ -301,6 +316,8 @@ class CanonicalIdentity:
                 raise IdentityStringError("identity_attribute_empty", key)
             if key == "chain":
                 fields[key] = tuple(Ref.parse(part) for part in value.split(">"))
+            elif key == "sponsor":
+                fields[FIELDS[key]] = tuple(Ref.parse(part) for part in value.split("+"))
             elif key == "evidence":
                 fields[key] = Evidence.parse(value)
             elif key in ("act", "grants"):
@@ -319,7 +336,7 @@ class CanonicalIdentity:
             value = self._value(key)
             if value in (None, ()):
                 continue
-            if key == "chain":
+            if key in ("chain", "sponsor"):
                 doc[key] = [ref.document() for ref in value]
             elif key == "evidence":
                 doc[key] = {"method": value.method, "digest": value.digest}
@@ -349,6 +366,10 @@ class CanonicalIdentity:
                 if not isinstance(value, list) or not value:
                     raise IdentityStringError("identity_chain_malformed", "chain is a non-empty list of refs")
                 fields[key] = tuple(Ref.from_document(item) for item in value)
+            elif key == "sponsor":
+                if not isinstance(value, list) or not value:
+                    raise IdentityStringError("identity_sponsor_malformed", "sponsor is a non-empty list of refs")
+                fields[FIELDS[key]] = tuple(Ref.from_document(item) for item in value)
             elif key == "evidence":
                 if not isinstance(value, Mapping) or set(value) != {"method", "digest"}:
                     raise IdentityStringError("identity_evidence_malformed", "evidence has method and digest")

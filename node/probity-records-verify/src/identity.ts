@@ -128,18 +128,22 @@ export class Evidence {
 }
 
 export interface IdentityParts {
-  kind: string; user?: Ref; chain?: Ref[]; sponsor?: Ref; approver?: Ref; service?: Ref; evidence?: Evidence;
+  kind: string; user?: Ref; chain?: Ref[]; sponsors?: Ref[]; approver?: Ref; service?: Ref; evidence?: Evidence;
   act?: string; grants?: string;
 }
 
-/** The verified identity of one request (or of its transport): kind and typed, scoped principals. */
+/** The verified identity of one request (or of its transport): kind and typed, scoped principals. `sponsors` lists
+ * every sponsor that answers for the agent, sorted by its rendered ref with none twice, empty when none does; a reader
+ * checks every entry, so a rule that denies one sponsor fires whichever others are named. */
 export class CanonicalIdentity {
-  readonly kind: string; readonly user?: Ref; readonly chain: Ref[]; readonly sponsor?: Ref; readonly approver?: Ref;
+  readonly kind: string; readonly user?: Ref; readonly chain: Ref[]; readonly sponsors: Ref[]; readonly approver?: Ref;
   readonly service?: Ref; readonly evidence?: Evidence; readonly act?: string; readonly grants?: string;
 
   constructor(parts: IdentityParts) {
     if (!has(KINDS, parts.kind)) throw new IdentityStringError("identity_kind_unknown");
-    this.kind = parts.kind; this.user = parts.user; this.chain = parts.chain ?? []; this.sponsor = parts.sponsor;
+    this.kind = parts.kind; this.user = parts.user; this.chain = parts.chain ?? [];
+    if (parts.sponsors !== undefined && !Array.isArray(parts.sponsors)) throw new IdentityStringError("identity_sponsor_malformed");
+    this.sponsors = parts.sponsors ?? [];
     this.approver = parts.approver; this.service = parts.service; this.evidence = parts.evidence; this.act = parts.act;
     this.grants = parts.grants;
     const present = KEYS.filter((k) => this.present(k));
@@ -150,8 +154,8 @@ export class CanonicalIdentity {
       if (!present.includes(key as typeof KEYS[number])) throw new IdentityStringError("identity_attribute_missing", key);
     }
     for (const [key, want] of Object.entries(KEY_TYPES)) {
-      const value = (this as J)[key];
-      const refs: J[] = key === "chain" ? this.chain : value === undefined ? [] : [value];
+      const value = this.value(key);
+      const refs: J[] = key === "chain" || key === "sponsor" ? value : value === undefined ? [] : [value];
       for (const ref of refs) {
         if (!(ref instanceof Ref) || ref.type !== want) throw new IdentityStringError("identity_ref_type_mismatch", key);
       }
@@ -160,10 +164,13 @@ export class CanonicalIdentity {
     if (new Set(this.chain.map((r) => r.render())).size !== this.chain.length) {
       throw new IdentityStringError("identity_chain_repeats_agent");
     }
+    const sponsors = this.sponsors.map((r) => r.render());
+    if (new Set(sponsors).size !== sponsors.length) throw new IdentityStringError("identity_sponsor_repeated");
+    if (sponsors.some((r, i) => i > 0 && sponsors[i - 1] > r)) throw new IdentityStringError("identity_sponsor_order");
     if (this.evidence?.method === "approval" && this.approver === undefined) {
       throw new IdentityStringError("identity_attribute_missing", "approver");
     }
-    if (this.kind === "agent" && this.user === undefined && this.sponsor === undefined) {
+    if (this.kind === "agent" && this.user === undefined && this.sponsors.length === 0) {
       throw new IdentityStringError("identity_attribute_missing", "sponsor");
     }
     if (this.act !== undefined && this.user === undefined) throw new IdentityStringError("identity_attribute_missing", "user");
@@ -172,13 +179,20 @@ export class CanonicalIdentity {
     if (this.render().length > MAX_OCTETS) throw new IdentityStringError("identity_too_long");
   }
 
+  /** The attribute a key is held in: the `sponsor` key carries every sponsor. */
+  private value(key: string): J {
+    return key === "sponsor" ? this.sponsors : (this as J)[key];
+  }
+
   private present(key: string): boolean {
-    return key === "chain" ? this.chain.length > 0 : (this as J)[key] !== undefined;
+    const value = this.value(key);
+    return Array.isArray(value) ? value.length > 0 : value !== undefined;
   }
 
   private rendered(key: string): string {
     if (key === "chain") return this.chain.map((r) => r.render()).join(">");
-    const value = (this as J)[key];
+    if (key === "sponsor") return this.sponsors.map((r) => r.render()).join("+");
+    const value = this.value(key);
     return typeof value === "string" ? value : value.render();
   }
 
@@ -224,6 +238,7 @@ export class CanonicalIdentity {
       position = index;
       if (!value) throw new IdentityStringError("identity_attribute_empty", key);
       if (key === "chain") parts.chain = value.split(">").map((p) => Ref.parse(p));
+      else if (key === "sponsor") parts.sponsors = value.split("+").map((p) => Ref.parse(p));
       else if (key === "evidence") parts.evidence = Evidence.parse(value);
       else if (key === "act" || key === "grants") parts[key] = digest(value);
       else parts[key] = Ref.parse(value);
@@ -238,8 +253,8 @@ export class CanonicalIdentity {
     const doc: J = { id: this.render(), version: VERSION, kind: this.kind };
     for (const key of KEYS) {
       if (!this.present(key)) continue;
-      const value = (this as J)[key];
-      if (key === "chain") doc.chain = this.chain.map((r) => r.document());
+      const value = this.value(key);
+      if (key === "chain" || key === "sponsor") doc[key] = value.map((r: Ref) => r.document());
       else if (key === "evidence") doc.evidence = { method: value.method, digest: value.digest };
       else doc[key] = value instanceof Ref ? value.document() : value;
     }
@@ -260,6 +275,9 @@ export class CanonicalIdentity {
       if (key === "chain") {
         if (!Array.isArray(value) || value.length === 0) throw new IdentityStringError("identity_chain_malformed");
         parts.chain = value.map((item) => Ref.fromDocument(item));
+      } else if (key === "sponsor") {
+        if (!Array.isArray(value) || value.length === 0) throw new IdentityStringError("identity_sponsor_malformed");
+        parts.sponsors = value.map((item) => Ref.fromDocument(item));
       } else if (key === "evidence") {
         if (!isObject(value) || Object.keys(value).sort().join() !== "digest,method") {
           throw new IdentityStringError("identity_evidence_malformed");

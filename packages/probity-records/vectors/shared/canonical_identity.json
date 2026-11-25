@@ -25,13 +25,15 @@
         "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
         "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
         "kind": "agent",
-        "sponsor": {
-          "domain": "https://idp.example.com/realms/agents",
-          "environment": "prod",
-          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-          "subject": "owner@example.com",
-          "type": "sponsor"
-        },
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
         "user": {
           "domain": "https://idp.example.com/realms/agents",
           "environment": "prod",
@@ -73,13 +75,15 @@
         "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
         "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
         "kind": "agent",
-        "sponsor": {
-          "domain": "https://idp.example.com/realms/agents",
-          "environment": "prod",
-          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-          "subject": "owner@example.com",
-          "type": "sponsor"
-        },
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
         "user": {
           "domain": "https://idp.example.com/realms/agents",
           "environment": "prod",
@@ -114,13 +118,15 @@
       "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "user": {
         "domain": "https://idp.example.com/realms/agents",
         "environment": "prod",
@@ -156,13 +162,15 @@
         ],
         "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
         "kind": "agent",
-        "sponsor": {
-          "domain": "https://idp.example.com/realms/agents",
-          "environment": "prod",
-          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-          "subject": "owner@example.com",
-          "type": "sponsor"
-        },
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
         "user": {
           "domain": "https://idp.example.com/realms/agents",
           "environment": "prod",
@@ -203,13 +211,15 @@
         ],
         "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
         "kind": "agent",
-        "sponsor": {
-          "domain": "https://idp.example.com/realms/agents",
-          "environment": "prod",
-          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-          "subject": "owner@example.com",
-          "type": "sponsor"
-        },
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
         "user": {
           "domain": "https://idp.example.com/realms/agents",
           "environment": "prod",
@@ -243,13 +253,15 @@
       ],
       "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/orchestrator>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "user": {
         "domain": "https://idp.example.com/realms/agents",
         "environment": "prod",
@@ -550,13 +562,15 @@
         ],
         "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
         "kind": "agent",
-        "sponsor": {
-          "domain": "https://idp.example.com/realms/agents",
-          "environment": "prod",
-          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-          "subject": "owner@example.com",
-          "type": "sponsor"
-        },
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
         "version": 1
       },
       "plainUser": null,
@@ -582,13 +596,15 @@
         ],
         "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
         "kind": "agent",
-        "sponsor": {
-          "domain": "https://idp.example.com/realms/agents",
-          "environment": "prod",
-          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-          "subject": "owner@example.com",
-          "type": "sponsor"
-        },
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
         "version": 1
       },
       "plainUser": null,
@@ -607,13 +623,15 @@
       ],
       "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "version": 1
     }
   },
@@ -864,6 +882,273 @@
         "environment": "prod",
         "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/j%C3%B6rg%2Fops%3Bx%3Dy%3Ez%21",
         "subject": "j\u00f6rg/ops;x=y>z!",
+        "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "two sponsors answer for an agent acting for no user: both are named, sorted by their rendered refs",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "kind": "agent",
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+            "subject": "finance-lead@example.com",
+            "type": "sponsor"
+          },
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI11",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com"
+  },
+  {
+    "description": "two sponsors answer for an agent acting for no user: both are named, sorted by their rendered refs (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "kind": "agent",
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+            "subject": "finance-lead@example.com",
+            "type": "sponsor"
+          },
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI11D",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+          "subject": "finance-lead@example.com",
+          "type": "sponsor"
+        },
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
+      "version": 1
+    }
+  },
+  {
+    "description": "two sponsors beside a user, an approver and the act claim",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "document": {
+        "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "approver": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+          "subject": "bob@example.com",
+          "type": "approver"
+        },
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "kind": "agent",
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+            "subject": "finance-lead@example.com",
+            "type": "sponsor"
+          },
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI12",
+    "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+  },
+  {
+    "description": "two sponsors beside a user, an approver and the act claim (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "document": {
+        "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "approver": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+          "subject": "bob@example.com",
+          "type": "approver"
+        },
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "kind": "agent",
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+            "subject": "finance-lead@example.com",
+            "type": "sponsor"
+          },
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+            "subject": "owner@example.com",
+            "type": "sponsor"
+          }
+        ],
+        "user": {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+          "subject": "alice@example.com",
+          "type": "user"
+        },
+        "version": 1
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI12D",
+    "input": {
+      "act": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "approver": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com",
+        "subject": "bob@example.com",
+        "type": "approver"
+      },
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "kind": "agent",
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+          "subject": "finance-lead@example.com",
+          "type": "sponsor"
+        },
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
+      "user": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
+        "subject": "alice@example.com",
         "type": "user"
       },
       "version": 1
@@ -1122,6 +1407,51 @@
     "input": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a0>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a1>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a2>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a3>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a4>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a5>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a6>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a7>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a8>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a9>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a10>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a11>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a12>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a13>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a14>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a15>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a16>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a17>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a18>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a19>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a20>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a21>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a22>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a23>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a24>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a25>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a26>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a27>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a28>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a29>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a30>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a31>agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/a32"
   },
   {
+    "description": "sponsors out of sorted order",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_sponsor_order"
+    },
+    "id": "CR29",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com"
+  },
+  {
+    "description": "a sponsor named twice",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_sponsor_repeated"
+    },
+    "id": "CR30",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com"
+  },
+  {
+    "description": "an empty sponsor entry",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_ref_malformed"
+    },
+    "id": "CR31",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com+"
+  },
+  {
+    "description": "a second sponsor entry carrying a user ref",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_ref_type_mismatch"
+    },
+    "id": "CR32",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com+user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com"
+  },
+  {
+    "description": "an empty sponsor list where the sponsor is required",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_attribute_empty"
+    },
+    "id": "CR33",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor="
+  },
+  {
     "description": "the parts name mallory while the id names alice",
     "direction": "document",
     "expected": {
@@ -1149,13 +1479,15 @@
       "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "user": {
         "domain": "https://idp.example.com/realms/agents",
         "environment": "prod",
@@ -1194,13 +1526,15 @@
       "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "user": {
         "domain": "https://idp.example.com/realms/agents",
         "environment": "prod",
@@ -1239,13 +1573,15 @@
       "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "tier": "gold",
       "user": {
         "domain": "https://idp.example.com/realms/agents",
@@ -1285,13 +1621,15 @@
       "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "user": {
         "domain": "https://idp.example.com/realms/agents",
         "environment": "prod",
@@ -1330,19 +1668,149 @@
       "grants": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "id": "aid1!agent;user=user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com;approver=approver:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/bob%40example.com;act=sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1;grants=sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
       "kind": "agent",
-      "sponsor": {
-        "domain": "https://idp.example.com/realms/agents",
-        "environment": "prod",
-        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/mallory%40example.com",
-        "subject": "owner@example.com",
-        "type": "sponsor"
-      },
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/mallory%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ],
       "user": {
         "domain": "https://idp.example.com/realms/agents",
         "environment": "prod",
         "id": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
         "subject": "alice@example.com",
         "type": "user"
+      },
+      "version": 1
+    }
+  },
+  {
+    "description": "sponsors out of sorted order",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_sponsor_order"
+    },
+    "id": "CD6",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        },
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+          "subject": "finance-lead@example.com",
+          "type": "sponsor"
+        }
+      ],
+      "version": 1
+    }
+  },
+  {
+    "description": "a sponsor named twice",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_sponsor_repeated"
+    },
+    "id": "CD7",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+          "subject": "finance-lead@example.com",
+          "type": "sponsor"
+        },
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+          "subject": "finance-lead@example.com",
+          "type": "sponsor"
+        }
+      ],
+      "version": 1
+    }
+  },
+  {
+    "description": "an empty sponsor list where the sponsor is required",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_sponsor_malformed"
+    },
+    "id": "CD8",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": [],
+      "version": 1
+    }
+  },
+  {
+    "description": "one sponsor written as a ref instead of a list of refs",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_sponsor_malformed"
+    },
+    "id": "CD9",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+        "subject": "finance-lead@example.com",
+        "type": "sponsor"
       },
       "version": 1
     }

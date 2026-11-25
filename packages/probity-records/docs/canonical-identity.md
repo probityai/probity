@@ -22,7 +22,8 @@ identity    = "aid1!" kind *( ";" attribute )
 kind        = "human-attested" / "agent" / "unknown" / "transport"
 attribute   = "user=" ref
             / "chain=" ref *( ">" ref )
-            / "sponsor=" ref / "approver=" ref / "service=" ref
+            / "sponsor=" ref *( "+" ref )
+            / "approver=" ref / "service=" ref
             / "evidence=" ( "presence" / "approval" ) ":" digest
             / "act=" digest / "grants=" digest
 ref         = type ":" env "/" domain "/" subject
@@ -58,28 +59,34 @@ digest      = "sha256:" 64( DIGIT / %x61-66 )      ; lowercase hex
    a SPIFFE trust domain) and the subject. The same name under two issuers, or in two environments, is two identities.
 7. **The chain is ordered and complete.** It lists the agents of the delegation path, root first, the agent that acted
    last, so a sub-agent's identity always shows its parent. At most 32 agents, none twice.
-8. **Digests bind what the string summarises.** `act` is the SHA-256 of the RFC 8785 bytes of the RFC 8693 `act` claim
+8. **Every sponsor is named, in one order.** An agent can be answered for by several sponsors, and `sponsor` lists each
+   of them, joined by `+`, sorted by the octets of each rendered ref, none twice. A reader refuses an unsorted list
+   (`identity_sponsor_order`) and a repeated sponsor (`identity_sponsor_repeated`), so one set of sponsors has one
+   written form. A reader checks every entry: a rule that denies one sponsor fires whatever other sponsors the
+   identity also names. An identity with one sponsor is written exactly as it was before the list, so its string, and
+   every access-list entry naming it, is unchanged.
+9. **Digests bind what the string summarises.** `act` is the SHA-256 of the RFC 8785 bytes of the RFC 8693 `act` claim
    in the user's credential, as its identity provider signed it; it requires `user`. `grants` is the SHA-256 of the
    RFC 8785 bytes of the capability grant chain the request ran under, root first.
-9. **Which attributes each kind carries.**
+10. **Which attributes each kind carries.**
 
-   | attribute | human-attested | agent | unknown | transport |
-   |---|---|---|---|---|
-   | user | required | optional | required | no |
-   | chain | no | required | no | no |
-   | sponsor | no | optional (required when there is no user) | no | no |
-   | approver | optional (required by approval evidence) | optional | no | no |
-   | service | no | no | no | required |
-   | evidence | required | no | no | no |
-   | act | no | optional | no | no |
-   | grants | optional | optional | no | no |
+    | attribute | human-attested | agent | unknown | transport |
+    |---|---|---|---|---|
+    | user | required | optional | required | no |
+    | chain | no | required | no | no |
+    | sponsor | no | optional (required when there is no user) | no | no |
+    | approver | optional (required by approval evidence) | optional | no | no |
+    | service | no | no | no | required |
+    | evidence | required | no | no | no |
+    | act | no | optional | no | no |
+    | grants | optional | optional | no | no |
 
-10. **One written form.** Attributes appear in the order of the grammar, each at most once. Every octet of a domain or
+11. **One written form.** Attributes appear in the order of the grammar, each at most once. Every octet of a domain or
     subject that is not unreserved is written `%XX` with uppercase hex, and an unreserved octet never is. A reader
     refuses lowercase hex, an encoded unreserved octet, a raw reserved octet, an encoding that is not UTF-8, an unknown
     or empty attribute, and any attribute out of order. So two strings name the same identity exactly when they are
     byte-equal, and `render(parse(s)) == s` for every accepted `s`.
-11. **Size and characters.** At most 8192 octets, all printable ASCII, with no quote, backslash, space or comma, so the
+12. **Size and characters.** At most 8192 octets, all printable ASCII, with no quote, backslash, space or comma, so the
     string goes into a JSON string, a Rego or Cedar string literal or a CSV cell unescaped.
 
 An unknown attribute is refused, never skipped: a reader that dropped an attribute it did not know would merge two
@@ -88,8 +95,10 @@ identities, and for an access list that grants one the other's entries.
 ## The structured form
 
 `document()` gives the same identity as JSON: `id` (the canonical string), `version` (1), `kind`, and each attribute
-present. A ref is `{"id", "type", "environment", "domain", "subject"}`, `chain` is a list of refs, `evidence` is
-`{"method", "digest"}`, and an absent attribute is omitted, never null. A document whose `id` is not the render of its
+present. A ref is `{"id", "type", "environment", "domain", "subject"}`, `chain` and `sponsor` are non-empty lists of
+refs (`sponsor` sorted as in rule 8, even when it holds one ref), `evidence` is `{"method", "digest"}`, and an absent
+attribute is omitted, never null. In Python and TypeScript the attribute is `sponsors`, a tuple or array that is empty
+when no sponsor answers for the agent. A document whose `id` is not the render of its
 own parts is refused, so an engine that compares the id and one that reads the parts cannot disagree about who acted.
 
 ## Using it in a policy engine
@@ -99,7 +108,8 @@ own parts is refused, so an engine that compares the id and one that reads the p
 - **OpenID AuthZEN 1.0.** The subject of an Access Evaluation request is `{"type": "identity", "id": <canonical
   string>, "properties": <structured form>}`. The `id` is scoped to the type, as section 5.1 requires.
 - **OPA.** Put the structured forms in the input document; a Rego rule tests `input.identity.kind == "agent"` and the
-  refs it needs.
+  refs it needs. A rule over sponsors iterates the list, `some s in input.identity.sponsor`, so a deny on one sponsor
+  fires whichever others are named.
 - **Cedar.** The principal is the entity whose id is the canonical string, with the structured form's members as
   record attributes; an absent member is omitted, and a policy tests it with `has`.
 
@@ -111,6 +121,7 @@ When a request has a transport identity, decide on both identities and allow onl
 `identity_attribute_order`, `identity_attribute_empty`, `identity_attribute_missing`, `identity_attribute_not_allowed`,
 `identity_ref_malformed`, `identity_ref_type_unknown`, `identity_ref_type_mismatch`, `identity_environment_malformed`,
 `identity_component_not_canonical`, `identity_value_not_utf8`, `identity_digest_malformed`, `identity_evidence_malformed`,
-`identity_chain_malformed`, `identity_chain_repeats_agent`, `identity_chain_too_deep`, `identity_too_long`,
+`identity_chain_malformed`, `identity_chain_repeats_agent`, `identity_chain_too_deep`, `identity_sponsor_malformed`,
+`identity_sponsor_order`, `identity_sponsor_repeated`, `identity_too_long`,
 `identity_string_not_canonical`, `identity_document_malformed`, `identity_document_id_mismatch`,
 `identity_not_human_attested`, `identity_actor_unknown` and `identity_profile_unknown`.

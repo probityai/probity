@@ -19,6 +19,7 @@ from probity_records.canonical_identity import (
 from probity_records.canonical_identity_vectors import (
     ACCEPTED,
     ALICE,
+    FINANCE,
     OWNER,
     REFUNDS,
     check,
@@ -60,8 +61,9 @@ def _identity(rng: random.Random) -> CanonicalIdentity:
                                  evidence=Evidence(method, digest), grants=digest if rng.random() < 0.3 else None)
     user = _ref(rng, "user") if rng.random() < 0.8 else None
     chain = tuple({_ref(rng, "agent"): None for _ in range(rng.randint(1, 4))})
-    return CanonicalIdentity(kind=kind, user=user, chain=chain,
-                             sponsor=_ref(rng, "sponsor") if user is None or rng.random() < 0.5 else None,
+    count = rng.randint(1, 4) if user is None else rng.choice((0, 0, 1, 2, 3))
+    sponsors = tuple(sorted({_ref(rng, "sponsor") for _ in range(count)}, key=Ref.render))
+    return CanonicalIdentity(kind=kind, user=user, chain=chain, sponsors=sponsors,
                              act=digest if user is not None and rng.random() < 0.5 else None)
 
 
@@ -111,10 +113,10 @@ def test_strict_refuses_an_unknown_actor_and_basic_admits_it() -> None:
 
 def test_a_sub_agent_shows_its_parent_and_the_acting_agent_is_last() -> None:
     orch = Ref(type="agent", environment="prod", domain=REFUNDS.domain, subject="orchestrator")
-    sub = CanonicalIdentity(kind="agent", user=ALICE, chain=(orch, REFUNDS), sponsor=OWNER)
+    sub = CanonicalIdentity(kind="agent", user=ALICE, chain=(orch, REFUNDS), sponsors=(OWNER,))
     assert sub.agent == REFUNDS
     assert f"chain={orch.render()}>{REFUNDS.render()}" in sub.render()
-    assert sub != CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsor=OWNER)
+    assert sub != CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsors=(OWNER,))
 
 
 @pytest.mark.parametrize("vector", [v for v in vectors() if "refused" in v["expected"]], ids=lambda v: v["id"])
@@ -131,3 +133,55 @@ def test_the_spec_lists_exactly_the_refusal_codes_the_reader_raises() -> None:
     raised |= set(re.findall(r'"(identity_[a-z_]+)" if ', source))
     spec = (package / "docs" / "canonical-identity.md").read_text().split("## Refusal codes", 1)[1]
     assert raised == set(re.findall(r"`(identity_[a-z_]+)`", spec))
+
+
+def _code(build) -> str:
+    with pytest.raises(IdentityStringError) as caught:
+        build()
+    return caught.value.code
+
+
+def test_sponsors_are_a_sorted_tuple_with_no_entry_twice() -> None:
+    assert _code(lambda: CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(OWNER, FINANCE))) == (
+        "identity_sponsor_order")
+    assert _code(lambda: CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(OWNER, OWNER))) == (
+        "identity_sponsor_repeated")
+    assert _code(lambda: CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=[FINANCE, OWNER])) == (
+        "identity_sponsor_malformed")
+    assert _code(lambda: CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(FINANCE, ALICE))) == (
+        "identity_ref_type_mismatch")
+    assert _code(lambda: CanonicalIdentity(kind="unknown", user=ALICE, sponsors=(OWNER,))) == (
+        "identity_attribute_not_allowed")
+
+
+def test_an_empty_sponsor_tuple_is_no_sponsor_and_is_refused_where_a_sponsor_is_required() -> None:
+    assert _code(lambda: CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=())) == (
+        "identity_attribute_missing")
+    with_user = CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsors=())
+    assert with_user == CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,))
+    assert ";sponsor=" not in with_user.render() and "sponsor" not in with_user.document()
+
+
+def test_several_sponsors_round_trip_through_the_string_and_the_document() -> None:
+    identity = CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsors=(FINANCE, OWNER))
+    text = identity.render()
+    assert f";sponsor={FINANCE.render()}+{OWNER.render()}" in text
+    assert CanonicalIdentity.parse(text) == identity and CanonicalIdentity.parse(text).render() == text
+    doc = identity.document()
+    assert doc["sponsor"] == [FINANCE.document(), OWNER.document()]
+    assert CanonicalIdentity.from_document(json.loads(json.dumps(doc))) == identity
+    assert identity.sponsors == (FINANCE, OWNER)
+
+
+def test_one_sponsor_renders_the_bytes_it_rendered_before_the_list() -> None:
+    one = CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(OWNER,))
+    assert one.render() == "aid1!agent;chain=" + REFUNDS.render() + ";sponsor=" + OWNER.render()
+
+
+def test_a_rule_that_denies_one_sponsor_fires_whatever_other_sponsors_are_named() -> None:
+    denied = OWNER.render()
+    for sponsors in ((OWNER,), (FINANCE, OWNER)):
+        identity = CanonicalIdentity.parse(CanonicalIdentity(kind="agent", chain=(REFUNDS,),
+                                                             sponsors=sponsors).render())  # fmt: skip
+        assert any(ref.render() == denied for ref in identity.sponsors)
+        assert any(ref["id"] == denied for ref in identity.document()["sponsor"])

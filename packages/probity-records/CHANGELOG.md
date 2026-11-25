@@ -2,6 +2,18 @@
 
 ## 0.10.0 (2026-11-24)
 
+- **Breaking: a canonical identity names every sponsor.** `CanonicalIdentity.sponsor: Ref | None` is replaced by
+  `sponsors: tuple[Ref, ...]` (TypeScript: `sponsors: Ref[]`), sorted by each rendered ref with no entry twice, and
+  empty when no sponsor answers for the agent; there is no `sponsor` attribute any more. An agent acting for no user
+  still needs at least one sponsor, so `sponsors=()` there is refused `identity_attribute_missing`. In the string, the
+  `sponsor` attribute lists the refs joined by `+`; one sponsor is written exactly as before, so a single-sponsor
+  string and every access-list entry naming it are unchanged, and a reader that predates the list refuses a string
+  with two. In the structured form, `sponsor` is now a non-empty list of refs even when it holds one, so a policy that
+  read `identity.sponsor.subject` must iterate `identity.sponsor`; a rule that denies one sponsor then fires whatever
+  others are named. New refusal codes: `identity_sponsor_order` (unsorted), `identity_sponsor_repeated` (a sponsor
+  twice) and `identity_sponsor_malformed` (not a tuple, or a document member that is not a non-empty list).
+  `vectors/shared/canonical_identity.json` adds CI11 and CI12 (two sponsors), CR29 to CR33 and CD6 to CD9, and every
+  document vector that names a sponsor now carries the list.
 - `build_approval_binding` writes the members the agent-evidence-vectors 0.38 approval-binding reader judges, each from
   the party that holds it: `issued=` (keyword, required) is the server's issuance register, written as
   `issuedApprovalIds`; `enforcement=` (keyword, required, one of `ENFORCEMENT_MODES`: `enforce`, `observe`, `monitor`)
