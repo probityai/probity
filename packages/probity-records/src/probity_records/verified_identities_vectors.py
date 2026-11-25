@@ -179,12 +179,12 @@ def pin(key: Any, roles: list[str], tenants: list[str] | None = None, kid: str |
     return jwk, {"thumbprint": jwk_thumbprint(jwk), "roles": roles, "tenants": tenants or [TENANT]}
 
 
-def bundle(profile: str = "basic", **issuers: Any) -> dict[str, Any]:
+def bundle(profile: str = "basic", issuers: dict[str, Any] | None = None) -> dict[str, Any]:
     user_jwk, user_pin = pin(USER_KEY, ["user", "agent", "sponsor"])
     stamp_jwk, stamp_pin = pin(STAMP_KEY, ["stamp"], kid=None)
     base = {IDP: {"keys": [user_jwk], "pins": [user_pin]}, GATEWAY: {"keys": [stamp_jwk], "pins": [stamp_pin]}}
     return {"version": 2, "environment": ENV, "tenant": TENANT, "audience": AUDIENCE, "profile": profile,
-            "issuers": {**base, **issuers}, "anchors": []}  # fmt: skip
+            "issuers": {**base, **(issuers or {})}, "anchors": []}  # fmt: skip
 
 
 STAMP_ACT = act_chain_digest({"sub": "agent-refunds"})
@@ -288,10 +288,10 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({"user": user, "agent": agent}, transport=TRANSPORT.render())),
         ("VI7", "an ES256 identity provider", c({"user": token("user", key=_ec(), kid="ec-1", iss=IDP_EC),
                                                  "agent": token("agent", key=_ec(), kid="ec-1", iss=IDP_EC)},
-                                                bundle=bundle(**{IDP_EC: {"keys": [ec_jwk], "pins": [ec_pin]}}))),
+                                                bundle=bundle(issuers={IDP_EC: {"keys": [ec_jwk], "pins": [ec_pin]}}))),
         ("VI8", "an RS256 identity provider", c({"user": token("user", key=_rsa(), kid="rsa-1", iss=IDP_RSA),
                                                  "agent": token("agent", key=_rsa(), kid="rsa-1", iss=IDP_RSA)},
-                                                bundle=bundle(**{IDP_RSA: {"keys": [rsa_jwk], "pins": [rsa_pin]}}))),
+                                                bundle=bundle(issuers={IDP_RSA: {"keys": [rsa_jwk], "pins": [rsa_pin]}}))),
         ("VI9", "a stamp from the pinned gateway names the identity the gateway verified",
          c({}, request=request(headers=stamp()))),
         ("VI13", "the stamp's field names in another case are the same fields",
@@ -329,11 +329,11 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
         ("VR10", "a kid that selects no pinned key", c({"user": user, "agent": token("agent", kid="idp-9")})),
         ("VR11", "a key pinned for users only signs an agent token",
          c({"user": user, "agent": token("agent", key=ROGUE_KEY, kid="idp-2")},
-           bundle=bundle(**{IDP: {"keys": [_jwk(USER_KEY, "idp-1"), user_only_jwk],
+           bundle=bundle(issuers={IDP: {"keys": [_jwk(USER_KEY, "idp-1"), user_only_jwk],
                                   "pins": [pin(USER_KEY, ["user", "agent", "sponsor"])[1], user_only_pin]}}))),
         ("VR12", "a key pinned for another tenant",
          c({"user": user, "agent": token("agent", key=ROGUE_KEY, kid="idp-3")},
-           bundle=bundle(**{IDP: {"keys": [_jwk(USER_KEY, "idp-1"), other_tenant_jwk],
+           bundle=bundle(issuers={IDP: {"keys": [_jwk(USER_KEY, "idp-1"), other_tenant_jwk],
                                   "pins": [pin(USER_KEY, ["user", "agent", "sponsor"])[1], other_tenant_pin]}}))),
         ("VR13", "alg none", c({"user": user, "agent": _alg_none(agent)})),
         ("VR14", "an ID token presented as the agent's access token",
@@ -412,7 +412,7 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(headers=stamp(principals=principals_field(CanonicalIdentity(kind="agent", user=Ref("user", "staging", IDP, "alice@example.com"), chain=(Ref("agent", "staging", IDP, "agent-refunds"),), act=STAMP_ACT).render()))))),
         ("VS29", "an identity provider's key signs a stamp", c({}, request=request(headers=stamp(signer=USER_KEY)))),
         ("VS30", "a stamp key pinned for another tenant",
-         c({}, bundle=bundle(**{GATEWAY: {"keys": [_jwk(STAMP_KEY, None)],
+         c({}, bundle=bundle(issuers={GATEWAY: {"keys": [_jwk(STAMP_KEY, None)],
                                           "pins": [pin(STAMP_KEY, ["stamp"], tenants=["globex"], kid=None)[1]]}}),
            request=request(headers=stamp()))),
         ("VS31", "a stamp whose nonce is an Integer, not a String", c({}, request=request(headers=stamp(nonce=7)))),
@@ -423,10 +423,10 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
          c({}, request=request(headers=replace(stamp(), SIGNATURE_INPUT_HEADER, "probity=(\"@method\"")))),
         # --- refused: the bundle ---
         ("VB1", "a bundle pin naming no listed key",
-         c({"user": user, "agent": agent}, bundle=bundle(**{IDP: {"keys": [_jwk(USER_KEY, "idp-1")],
+         c({"user": user, "agent": agent}, bundle=bundle(issuers={IDP: {"keys": [_jwk(USER_KEY, "idp-1")],
                                                                   "pins": [user_only_pin]}}))),
         ("VB2", "a bundle carrying a private key",
-         c({"user": user, "agent": agent}, bundle=bundle(**{IDP: {"keys": [{**_jwk(USER_KEY, "idp-1"), "d": "AA"}],
+         c({"user": user, "agent": agent}, bundle=bundle(issuers={IDP: {"keys": [{**_jwk(USER_KEY, "idp-1"), "d": "AA"}],
                                                                   "pins": [pin(USER_KEY, ["user"])[1]]}}))),
     ]
 
