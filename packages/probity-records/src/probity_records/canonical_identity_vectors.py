@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .canonical_identity import CanonicalIdentity, Evidence, IdentityStringError, Ref
+from .canonical_identity import DOCUMENT_VERSION, CanonicalIdentity, Evidence, IdentityStringError, Ref
 
 ISSUER = "https://idp.example.com/realms/agents"
 OTHER_ISSUER = "https://login.example.org/tenant-b"
@@ -61,6 +61,8 @@ ACCEPTED: list[tuple[str, str, CanonicalIdentity]] = [
     ("CI12", "two sponsors beside a user, an approver and the act claim",
      CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsors=(FINANCE, OWNER), approver=BOB,
                        act=ACT)),
+    ("CI13", "a sponsor whose subject holds + is one sponsor: the + is written %2B, never as the list separator",
+     CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(ref("sponsor", "ops+oncall@example.com"),))),
 ]
 
 PLAIN_USER = ALICE.render()
@@ -114,6 +116,10 @@ REFUSED_STRINGS: list[tuple[str, str, str]] = [
      "aid1!agent;chain=" + REFUNDS.render() + ";sponsor=" + OWNER.render() + "+" + PLAIN_USER),
     ("CR33", "an empty sponsor list where the sponsor is required", "aid1!agent;chain=" + REFUNDS.render()
      + ";sponsor="),
+    ("CR34", "a raw + inside a ref is refused: + is not unreserved, so a component never holds it",
+     "aid1!unknown;user=user:prod/idp/ops+oncall"),
+    ("CR35", "two sponsors never read as one sponsor whose subject holds +: the part after + is not a ref",
+     "aid1!agent;chain=" + REFUNDS.render() + ";sponsor=sponsor:prod/idp/ops+oncall"),
 ]
 
 EXPECTED_CODES = {
@@ -129,7 +135,7 @@ EXPECTED_CODES = {
     "CR24": "identity_attribute_not_allowed", "CR25": "identity_string_malformed", "CR26": "identity_too_long",
     "CR27": "identity_attribute_empty", "CR28": "identity_chain_too_deep", "CR29": "identity_sponsor_order",
     "CR30": "identity_sponsor_repeated", "CR31": "identity_ref_malformed", "CR32": "identity_ref_type_mismatch",
-    "CR33": "identity_attribute_empty",
+    "CR33": "identity_attribute_empty", "CR34": "identity_component_not_canonical", "CR35": "identity_ref_malformed",
 }  # fmt: skip
 
 
@@ -144,6 +150,9 @@ def _refused_documents() -> list[tuple[str, str, Any]]:
     repeated = {**two, "sponsor": [two["sponsor"][0], two["sponsor"][0]]}
     no_sponsor = {**two, "sponsor": []}
     single = {**two, "sponsor": two["sponsor"][0]}
+    old_shape = {**ACCEPTED[6][2].document(), "version": 1}
+    old_shape["sponsor"] = old_shape["sponsor"][0]
+    unversioned = {k: v for k, v in two.items() if k != "version"}
     return [
         ("CD1", "the parts name mallory while the id names alice", swapped),
         ("CD2", "a ref whose id disagrees with its subject", forged_ref),
@@ -154,13 +163,17 @@ def _refused_documents() -> list[tuple[str, str, Any]]:
         ("CD7", "a sponsor named twice", repeated),
         ("CD8", "an empty sponsor list where the sponsor is required", no_sponsor),
         ("CD9", "one sponsor written as a ref instead of a list of refs", single),
+        ("CD10", "a version 1 document (probity-records 0.9, sponsor as one ref) is refused, never read",
+         old_shape),
+        ("CD11", f"a document that does not declare version {DOCUMENT_VERSION}", unversioned),
     ]
 
 
 DOCUMENT_CODES = {"CD1": "identity_document_id_mismatch", "CD2": "identity_document_id_mismatch",
                   "CD3": "identity_attribute_unknown", "CD4": "identity_version_unknown", "CD5": "identity_document_id_mismatch",
                   "CD6": "identity_sponsor_order", "CD7": "identity_sponsor_repeated", "CD8": "identity_sponsor_malformed",
-                  "CD9": "identity_sponsor_malformed"}  # fmt: skip
+                  "CD9": "identity_sponsor_malformed", "CD10": "identity_version_unknown",
+                  "CD11": "identity_document_malformed"}  # fmt: skip
 
 
 def outcome(identity: CanonicalIdentity) -> dict[str, Any]:

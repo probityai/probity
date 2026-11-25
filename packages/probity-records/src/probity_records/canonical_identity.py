@@ -33,6 +33,11 @@ from dataclasses import dataclass
 from typing import Any, Final
 
 VERSION: Final = 1
+#: The version of the structured form, which ``document()`` writes as ``version`` and ``from_document`` requires.
+#: Version 2 (probity-records 0.10.0) carries ``sponsor`` as a list of refs; version 1 carried one ref there. It is
+#: separate from the string grammar's ``VERSION``: a one-sponsor string is the same in both, the document is not, so a
+#: policy over the document refuses any version but this one instead of reading a member whose shape it does not know.
+DOCUMENT_VERSION: Final = 2
 MARKER: Final = "aid1!"
 KINDS: Final = ("human-attested", "agent", "unknown", "transport")
 TYPES: Final = ("user", "agent", "service", "sponsor", "approver")
@@ -331,7 +336,7 @@ class CanonicalIdentity:
 
     def document(self) -> dict[str, Any]:
         """The structured form: ``id`` is the canonical string; an absent member is omitted, never null."""
-        doc: dict[str, Any] = {"id": self.render(), "version": VERSION, "kind": self.kind}
+        doc: dict[str, Any] = {"id": self.render(), "version": DOCUMENT_VERSION, "kind": self.kind}
         for key in KEYS:
             value = self._value(key)
             if value in (None, ()):
@@ -355,7 +360,7 @@ class CanonicalIdentity:
         unknown = set(doc) - {"id", "version", "kind", *KEYS}
         if unknown:
             raise IdentityStringError("identity_attribute_unknown", min(unknown)[:32])
-        if doc["version"] != VERSION or isinstance(doc["version"], bool):
+        if doc["version"] != DOCUMENT_VERSION or isinstance(doc["version"], bool):
             raise IdentityStringError("identity_version_unknown", repr(doc["version"])[:16])
         fields: dict[str, Any] = {"kind": doc["kind"]}
         for key in KEYS:

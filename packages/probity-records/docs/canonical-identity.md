@@ -64,7 +64,11 @@ digest      = "sha256:" 64( DIGIT / %x61-66 )      ; lowercase hex
    (`identity_sponsor_order`) and a repeated sponsor (`identity_sponsor_repeated`), so one set of sponsors has one
    written form. A reader checks every entry: a rule that denies one sponsor fires whatever other sponsors the
    identity also names. An identity with one sponsor is written exactly as it was before the list, so its string, and
-   every access-list entry naming it, is unchanged.
+   every access-list entry naming it, is unchanged. `+` can never be part of a ref, so the list always splits into
+   the refs that were joined: a component is `1*( unreserved / pct-encoded )` and `unreserved` is
+   `ALPHA / DIGIT / "-" / "." / "_" / "~"` (the grammar above), so a `+` inside a domain or subject is written `%2B`
+   and a raw one is refused (`identity_component_not_canonical`); `type` is one of five words and `env` is lowercase
+   letters, digits and `-`, neither of which holds `+`. Vectors CI13, CR34 and CR35 hold readers to it.
 9. **Digests bind what the string summarises.** `act` is the SHA-256 of the RFC 8785 bytes of the RFC 8693 `act` claim
    in the user's credential, as its identity provider signed it; it requires `user`. `grants` is the SHA-256 of the
    RFC 8785 bytes of the capability grant chain the request ran under, root first.
@@ -94,14 +98,22 @@ identities, and for an access list that grants one the other's entries.
 
 ## The structured form
 
-`document()` gives the same identity as JSON: `id` (the canonical string), `version` (1), `kind`, and each attribute
-present. A ref is `{"id", "type", "environment", "domain", "subject"}`, `chain` and `sponsor` are non-empty lists of
+`document()` gives the same identity as JSON: `id` (the canonical string), `version` (2), `kind`, and each attribute
+present. `version` is the version of the structured form, not of the string: version 2, written by probity-records
+0.10.0 and later, carries `sponsor` as a list; version 1 (0.9 and earlier) carried one ref there. A reader refuses a
+document with any other version (`identity_version_unknown`) or with none (`identity_document_malformed`). A ref is `{"id", "type", "environment", "domain", "subject"}`, `chain` and `sponsor` are non-empty lists of
 refs (`sponsor` sorted as in rule 8, even when it holds one ref), `evidence` is `{"method", "digest"}`, and an absent
 attribute is omitted, never null. In Python and TypeScript the attribute is `sponsors`, a tuple or array that is empty
 when no sponsor answers for the agent. A document whose `id` is not the render of its
 own parts is refused, so an engine that compares the id and one that reads the parts cannot disagree about who acted.
 
 ## Using it in a policy engine
+
+**A policy consumer refuses a structured identity whose `version` is not 2.** A rule written for version 1, such as
+`deny if input.identity.sponsor.subject == "x"`, is undefined on a version 2 list, so it would stop denying without an
+error. The version check turns that silent change of shape into a refusal: an engine or gateway that hands the
+structured form to Rego, Cedar or an AuthZEN service checks `version == 2` first and refuses the request otherwise, and
+a policy bundle that is not written for version 2 is not loaded against it.
 
 - **Access lists.** Look up `acl_key()`: the plain user ref for a human-attested identity, the full string otherwise.
   An entry for an agent acting for a user is written as that full string, or as a rule over the structured form.

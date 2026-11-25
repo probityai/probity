@@ -41,7 +41,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -91,7 +91,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -134,7 +134,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -178,7 +178,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -227,7 +227,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -269,7 +269,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -291,7 +291,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
       "strict": null
@@ -318,7 +318,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
       "strict": null
@@ -338,7 +338,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -367,7 +367,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
       "strict": null
@@ -401,7 +401,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": "user:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/alice%40example.com",
       "strict": null
@@ -428,7 +428,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -446,7 +446,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": "identity_actor_unknown"
@@ -469,7 +469,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": "identity_actor_unknown"
@@ -485,7 +485,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -503,7 +503,7 @@
           "subject": "billing",
           "type": "service"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -526,7 +526,7 @@
           "subject": "billing",
           "type": "service"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -542,7 +542,7 @@
         "subject": "billing",
         "type": "service"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -571,7 +571,7 @@
             "type": "sponsor"
           }
         ],
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -605,7 +605,7 @@
             "type": "sponsor"
           }
         ],
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -632,7 +632,7 @@
           "type": "sponsor"
         }
       ],
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -659,7 +659,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -691,7 +691,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -716,7 +716,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -743,7 +743,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -775,7 +775,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -800,7 +800,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -827,7 +827,7 @@
           "subject": "j\u00f6rg/ops;x=y>z!",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -859,7 +859,7 @@
           "subject": "j\u00f6rg/ops;x=y>z!",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -884,7 +884,7 @@
         "subject": "j\u00f6rg/ops;x=y>z!",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -920,7 +920,7 @@
             "type": "sponsor"
           }
         ],
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -961,7 +961,7 @@
             "type": "sponsor"
           }
         ],
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -995,7 +995,7 @@
           "type": "sponsor"
         }
       ],
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1046,7 +1046,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -1102,7 +1102,7 @@
           "subject": "alice@example.com",
           "type": "user"
         },
-        "version": 1
+        "version": 2
       },
       "plainUser": null,
       "strict": null
@@ -1151,7 +1151,97 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
+    }
+  },
+  {
+    "description": "a sponsor whose subject holds + is one sponsor: the + is written %2B, never as the list separator",
+    "direction": "string",
+    "expected": {
+      "aclKey": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+        "kind": "agent",
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+            "subject": "ops+oncall@example.com",
+            "type": "sponsor"
+          }
+        ],
+        "version": 2
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI13",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com"
+  },
+  {
+    "description": "a sponsor whose subject holds + is one sponsor: the + is written %2B, never as the list separator (document)",
+    "direction": "document",
+    "expected": {
+      "aclKey": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+      "document": {
+        "chain": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+            "subject": "agent-refunds",
+            "type": "agent"
+          }
+        ],
+        "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+        "kind": "agent",
+        "sponsor": [
+          {
+            "domain": "https://idp.example.com/realms/agents",
+            "environment": "prod",
+            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+            "subject": "ops+oncall@example.com",
+            "type": "sponsor"
+          }
+        ],
+        "version": 2
+      },
+      "plainUser": null,
+      "strict": null
+    },
+    "id": "CI13D",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+      "kind": "agent",
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/ops%2Boncall%40example.com",
+          "subject": "ops+oncall@example.com",
+          "type": "sponsor"
+        }
+      ],
+      "version": 2
     }
   },
   {
@@ -1452,6 +1542,24 @@
     "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor="
   },
   {
+    "description": "a raw + inside a ref is refused: + is not unreserved, so a component never holds it",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_component_not_canonical"
+    },
+    "id": "CR34",
+    "input": "aid1!unknown;user=user:prod/idp/ops+oncall"
+  },
+  {
+    "description": "two sponsors never read as one sponsor whose subject holds +: the part after + is not a ref",
+    "direction": "string",
+    "expected": {
+      "refused": "identity_ref_malformed"
+    },
+    "id": "CR35",
+    "input": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/idp/ops+oncall"
+  },
+  {
     "description": "the parts name mallory while the id names alice",
     "direction": "document",
     "expected": {
@@ -1495,7 +1603,7 @@
         "subject": "mallory@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1542,7 +1650,7 @@
         "subject": "mallory@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1590,7 +1698,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1684,7 +1792,7 @@
         "subject": "alice@example.com",
         "type": "user"
       },
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1722,7 +1830,7 @@
           "type": "sponsor"
         }
       ],
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1760,7 +1868,7 @@
           "type": "sponsor"
         }
       ],
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1783,7 +1891,7 @@
       "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
       "kind": "agent",
       "sponsor": [],
-      "version": 1
+      "version": 2
     }
   },
   {
@@ -1812,7 +1920,73 @@
         "subject": "finance-lead@example.com",
         "type": "sponsor"
       },
+      "version": 2
+    }
+  },
+  {
+    "description": "a version 1 document (probity-records 0.9, sponsor as one ref) is refused, never read",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_version_unknown"
+    },
+    "id": "CD10",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": {
+        "domain": "https://idp.example.com/realms/agents",
+        "environment": "prod",
+        "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+        "subject": "owner@example.com",
+        "type": "sponsor"
+      },
       "version": 1
+    }
+  },
+  {
+    "description": "a document that does not declare version 2",
+    "direction": "document",
+    "expected": {
+      "refused": "identity_document_malformed"
+    },
+    "id": "CD11",
+    "input": {
+      "chain": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds",
+          "subject": "agent-refunds",
+          "type": "agent"
+        }
+      ],
+      "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com+sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+      "kind": "agent",
+      "sponsor": [
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/finance-lead%40example.com",
+          "subject": "finance-lead@example.com",
+          "type": "sponsor"
+        },
+        {
+          "domain": "https://idp.example.com/realms/agents",
+          "environment": "prod",
+          "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+          "subject": "owner@example.com",
+          "type": "sponsor"
+        }
+      ]
     }
   }
 ]

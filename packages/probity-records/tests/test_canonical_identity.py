@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from probity_records.canonical_identity import (
+    DOCUMENT_VERSION,
     KINDS,
     MARKER,
     CanonicalIdentity,
@@ -185,3 +186,27 @@ def test_a_rule_that_denies_one_sponsor_fires_whatever_other_sponsors_are_named(
                                                              sponsors=sponsors).render())  # fmt: skip
         assert any(ref.render() == denied for ref in identity.sponsors)
         assert any(ref["id"] == denied for ref in identity.document()["sponsor"])
+
+
+def test_a_two_sponsor_string_never_parses_as_one_sponsor_and_a_ref_never_holds_a_raw_plus() -> None:
+    two = CanonicalIdentity.parse(CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(FINANCE, OWNER)).render())
+    assert two.sponsors == (FINANCE, OWNER)
+    plus = Ref(type="sponsor", environment="prod", domain="idp", subject="ops+oncall")
+    assert plus.render() == "sponsor:prod/idp/ops%2Boncall" and Ref.parse(plus.render()) == plus
+    one = CanonicalIdentity(kind="agent", chain=(REFUNDS,), sponsors=(plus,))
+    assert CanonicalIdentity.parse(one.render()).sponsors == (plus,)
+    assert _code(lambda: Ref.parse("sponsor:prod/idp/ops+oncall")) == "identity_component_not_canonical"
+    assert _code(lambda: Ref.parse("sponsor:prod/id+p/ops")) == "identity_component_not_canonical"
+    assert _code(lambda: Ref.parse("spon+sor:prod/idp/ops")) == "identity_ref_type_unknown"
+    assert _code(lambda: Ref.parse("sponsor:pr+od/idp/ops")) == "identity_environment_malformed"
+
+
+def test_every_structured_identity_declares_the_document_version_and_a_version_1_document_is_refused() -> None:
+    rng = random.Random(20261125)
+    documents = [_identity(rng).document() for _ in range(500)] + [identity.document() for _, _, identity in ACCEPTED]
+    assert DOCUMENT_VERSION == 2 and all(doc["version"] == DOCUMENT_VERSION for doc in documents)
+    old = {**ACCEPTED[6][2].document(), "version": 1}
+    old["sponsor"] = old["sponsor"][0]
+    assert _code(lambda: CanonicalIdentity.from_document(old)) == "identity_version_unknown"
+    assert _code(lambda: CanonicalIdentity.from_document({**ACCEPTED[0][2].document(), "version": 1})) == (
+        "identity_version_unknown")

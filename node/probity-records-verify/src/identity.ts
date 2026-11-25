@@ -7,6 +7,8 @@
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export const VERSION = 1;
+/** The structured form's version (probity-records 0.10.0: `sponsor` is a list of refs), separate from the string's. */
+export const DOCUMENT_VERSION = 2;
 export const MARKER = "aid1!";
 export const KINDS = ["human-attested", "agent", "unknown", "transport"] as const;
 export const TYPES = ["user", "agent", "service", "sponsor", "approver"] as const;
@@ -250,7 +252,7 @@ export class CanonicalIdentity {
 
   /** The structured form: `id` is the canonical string; an absent member is omitted, never null. */
   document(): J {
-    const doc: J = { id: this.render(), version: VERSION, kind: this.kind };
+    const doc: J = { id: this.render(), version: DOCUMENT_VERSION, kind: this.kind };
     for (const key of KEYS) {
       if (!this.present(key)) continue;
       const value = this.value(key);
@@ -267,7 +269,7 @@ export class CanonicalIdentity {
     }
     const unknown = Object.keys(doc).filter((k) => !["id", "version", "kind", ...KEYS].includes(k)).sort();
     if (unknown.length) throw new IdentityStringError("identity_attribute_unknown", unknown[0].slice(0, 32));
-    if (doc.version !== VERSION) throw new IdentityStringError("identity_version_unknown");
+    if (doc.version !== DOCUMENT_VERSION) throw new IdentityStringError("identity_version_unknown");
     const parts: J = { kind: doc.kind };
     for (const key of KEYS) {
       if (!(key in doc)) continue;
