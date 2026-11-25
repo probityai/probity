@@ -167,9 +167,12 @@ def token(role: str, *, key: Any = None, kid: str = "idp-1", iss: str = IDP, hea
     key = USER_KEY if key is None else key
     typ = {"user": "at+jwt", "agent": "at+jwt", "sponsor": "JWT"}[role]
     head = {"alg": _alg(key), "typ": typ, "kid": kid, **(header or {})}
-    body = {"user": {"sub": "alice@example.com", "client_id": "agent-refunds", "act": {"sub": "agent-refunds"}},
-            "agent": {"sub": "agent-refunds", "client_id": "agent-refunds"},
-            "sponsor": {"sub": "owner@example.com", "azp": "console"}}[role]
+    bodies: dict[str, dict[str, Any]] = {
+        "user": {"sub": "alice@example.com", "client_id": "agent-refunds", "act": {"sub": "agent-refunds"}},
+        "agent": {"sub": "agent-refunds", "client_id": "agent-refunds"},
+        "sponsor": {"sub": "owner@example.com", "azp": "console"},
+    }
+    body = bodies[role]
     full = {"iss": iss, "aud": AUDIENCE, "iat": NOW - 60, "exp": NOW + 300, **copy.deepcopy(body), **claims}
     return _sign(key, {k: v for k, v in head.items() if v is not None}, {k: v for k, v in full.items() if v is not None})
 
