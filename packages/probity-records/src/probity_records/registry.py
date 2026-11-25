@@ -671,14 +671,10 @@ def _disclosed(payload: Mapping[str, Any], disclosures: list[str]) -> dict[str, 
             or len(set(digests)) != len(digests)):
         raise RegistryError("passport_malformed", "_sd is a list of distinct digests")
     out: dict[str, Any] = {}
-    used: set[str] = set()
     for disclosure in disclosures:
         digest = _digest(disclosure)
         if digest not in digests:
             raise RegistryError("passport_disclosure_unreferenced", "a disclosure the issuer signed no digest for")
-        if digest in used:
-            raise RegistryError("passport_disclosure_repeated", "one disclosure twice")
-        used.add(digest)
         item = strict_json(unb64url(disclosure))
         if not isinstance(item, list) or len(item) != 3 or not isinstance(item[0], str) or not isinstance(item[1], str):
             raise RegistryError("passport_disclosure_malformed", "a disclosure is [salt, name, value]")

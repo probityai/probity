@@ -122,6 +122,17 @@ def test_the_type_issuer_kid_pin_and_signature_are_each_held() -> None:
         registry.verify_jws(sign(head, claims_of(), key), broken, typ=("t+jwt",))
 
 
+def test_a_signature_is_checked_only_by_the_algorithm_its_key_type_admits() -> None:
+    key = Ed25519PrivateKey.generate()
+    data = b"signing input"
+    signature = key.sign(data)
+    ed = jwk_of(key)
+    assert registry.verify_signature("EdDSA", ed, data, signature)
+    # An EC key whose x coordinate is the Ed25519 public key: EdDSA over it would verify if the algorithm were not bound.
+    ec_key = {"kty": "EC", "crv": "P-256", "x": ed["x"], "y": ed["x"]}
+    assert not registry.verify_signature("EdDSA", ec_key, data, signature)
+
+
 @pytest.mark.parametrize("token", ["a.b", "a..c", "a.b.c.d", "é.b.c", "x" * (70 << 10)])
 def test_a_compact_jws_has_three_ascii_bounded_segments(token: str) -> None:
     with raises("jws_malformed"):
