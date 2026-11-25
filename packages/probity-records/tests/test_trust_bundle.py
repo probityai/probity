@@ -56,8 +56,10 @@ def _bundle(*anchors: dict[str, Any], issuers: bool = True) -> dict[str, Any]:
     return doc
 
 
-def _envelope(signer: Signer, predicate_type: str = KERNEL) -> dict[str, Any]:
-    body = statement("kernel", "ab" * 32, predicate_type, {"build": "1"})
+def _envelope(signer: Signer, predicate_type: str = KERNEL, build: str = "1") -> dict[str, Any]:
+    """Ed25519 is deterministic: the same key over the same body gives the same bytes, so another statement needs
+    another ``build``."""
+    body = statement("kernel", "ab" * 32, predicate_type, {"build": build})
     return sign_envelope(signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
 
 
@@ -216,8 +218,31 @@ def test_a_witnessed_head_that_does_not_include_the_statement_is_refused() -> No
     signer = Signer.generate()
     bundle = TrustBundle.parse(_bundle(_anchor(signer, status="retired", notAfter=NOT_AFTER)))
     env = _envelope(signer)
-    other = _witnessed(_envelope(signer), T_INSIDE)  # the same key, another statement
+    other_env = _envelope(signer, build="2")  # the same key, another statement
+    assert other_env != env
+    other = _witnessed(other_env, T_INSIDE)
     _refused("anchor_signing_time_unbound", env, bundle, witnessed=other)
+
+
+def test_an_inclusion_proof_for_another_index_gives_no_time() -> None:
+    signer = Signer.generate()
+    bundle = TrustBundle.parse(_bundle(_anchor(signer, status="retired", notAfter=NOT_AFTER)))
+    env = _envelope(signer)
+    held = _witnessed(env, T_INSIDE, index=1)
+    for index in (0, 2, 3, 4, -1):
+        moved = WitnessedTime(note=held.note, policy=held.policy, index=index, proof=held.proof)
+        _refused("anchor_signing_time_unbound", env, bundle, witnessed=moved)
+    assert verify_anchored(env, bundle, witnessed=held).signed_no_later_than
+
+
+def test_a_truncated_or_padded_inclusion_proof_gives_no_time() -> None:
+    signer = Signer.generate()
+    bundle = TrustBundle.parse(_bundle(_anchor(signer, status="retired", notAfter=NOT_AFTER)))
+    env = _envelope(signer)
+    held = _witnessed(env, T_INSIDE, others=6, index=3)
+    for proof in (held.proof[:-1], (*held.proof, held.proof[-1]), ()):
+        bent = WitnessedTime(note=held.note, policy=held.policy, index=held.index, proof=proof)
+        _refused("anchor_signing_time_unbound", env, bundle, witnessed=bent)
 
 
 def test_a_witness_quorum_of_none_gives_no_time() -> None:
