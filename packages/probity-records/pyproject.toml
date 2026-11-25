@@ -27,7 +27,11 @@ Issues = "https://github.com/probityai/probity/issues"
 # Kept outside the root workspace lock, like probity-effects: the framework integrations that
 # depend on it bring their own dependency trees.
 [dependency-groups]
-dev = ["pytest>=9.2.0,<10"]
+dev = [
+    "mypy>=1.18,<2",
+    "pytest>=9.2.0,<10",
+    "ruff==0.17.3",
+]
 
 [tool.setuptools.package-data]
 probity_records = ["refusal_codes.json"]
