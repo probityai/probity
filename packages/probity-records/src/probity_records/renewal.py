@@ -41,6 +41,7 @@ from typing import Any, Protocol
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
 from .core import canonical, key_id, sha256_hex
 
 CERTIFICATE_TYPE = "instance-certificate/v1"

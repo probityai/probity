@@ -8,6 +8,7 @@ import base64
 import copy
 import json
 from importlib import resources
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -288,7 +289,7 @@ def test_every_registered_renewal_code_is_reached_by_a_case_above() -> None:
     registry = json.loads(resources.files("probity_records").joinpath("refusal_codes.json").read_text("utf-8"))
     held = {entry["code"] for entry in registry["codes"] if entry["check"] == "lifecycle.renewal"}
     source = resources.files("probity_records").joinpath("renewal.py").read_text("utf-8")
-    here = open(__file__, encoding="utf-8").read()
+    here = Path(__file__).read_text("utf-8")
     assert held
     assert {code for code in held if f'"{code}"' not in here} == set()
     assert {code for code in held if f'"{code}"' not in source} == set()
