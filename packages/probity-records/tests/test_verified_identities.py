@@ -40,11 +40,18 @@ from probity_records.verified_identities_vectors import (
     vectors,
 )
 
-SHARED = Path(__file__).resolve().parents[1] / "vectors" / "shared" / "verified_identities.json"
+SHARED = (
+    Path(__file__).resolve().parents[1]
+    / "vectors"
+    / "shared"
+    / "verified_identities.json"
+)
 ROWS = vectors()
 
 
-def test_the_shared_file_is_the_generated_vectors_and_this_package_reports_them() -> None:
+def test_the_shared_file_is_the_generated_vectors_and_this_package_reports_them() -> (
+    None
+):
     assert ROWS == vectors()
     assert json.loads(SHARED.read_text()) == json.loads(json.dumps(ROWS))
     assert check(json.loads(SHARED.read_text())) == []
@@ -87,8 +94,12 @@ def test_the_transport_identity_is_returned_beside_the_request_identity() -> Non
 
 
 def test_the_result_is_identities_only_never_a_decision() -> None:
-    found = verified_identities({"user": token("user"), "agent": token("agent")}, bundle(), AT)
-    assert isinstance(found, list) and all(isinstance(i, CanonicalIdentity) for i in found)
+    found = verified_identities(
+        {"user": token("user"), "agent": token("agent")}, bundle(), AT
+    )
+    assert isinstance(found, list) and all(
+        isinstance(i, CanonicalIdentity) for i in found
+    )
 
 
 def test_a_key_the_token_names_is_never_used_even_when_it_is_the_pinned_key() -> None:
@@ -106,19 +117,31 @@ def _proof_of(vid: str) -> dict:
 
 def test_the_proof_and_the_stamp_nonce_are_returned_for_a_store_to_spend() -> None:
     holder = cnf_for_jwk(public_jwk(HOLDER_KEY))["jkt"]
-    assert _proof_of("VI10") == {"method": "dpop", "iat": NOW, "jkt": holder, "jti": "dpop-0001",
-                                 "key": proof_key(holder, "dpop-0001"), "expires": NOW + DEFAULT_SKEW + REPLAY_GRACE}
-    assert next(r for r in ROWS if r["id"] == "VI9")["expected"]["stamp"] == {"nonce": "stamp-0001",
-                                                                               "expires": NOW + 50}
+    assert _proof_of("VI10") == {
+        "method": "dpop",
+        "iat": NOW,
+        "jkt": holder,
+        "jti": "dpop-0001",
+        "key": proof_key(holder, "dpop-0001"),
+        "expires": NOW + DEFAULT_SKEW + REPLAY_GRACE,
+    }
+    assert next(r for r in ROWS if r["id"] == "VI9")["expected"]["stamp"] == {
+        "nonce": "stamp-0001",
+        "expires": NOW + 50,
+    }
 
 
-def test_the_spend_window_covers_every_second_the_freshness_check_still_accepts_the_proof() -> None:
+def test_the_spend_window_covers_every_second_the_freshness_check_still_accepts_the_proof() -> (
+    None
+):
     oldest = _proof_of("VI16")
     assert oldest["iat"] == NOW - DEFAULT_SKEW
     assert oldest["expires"] == NOW + REPLAY_GRACE
 
 
-def test_a_proof_signed_again_with_the_same_jti_is_the_same_spend_whatever_its_iat() -> None:
+def test_a_proof_signed_again_with_the_same_jti_is_the_same_spend_whatever_its_iat() -> (
+    None
+):
     assert _proof_of("VI16")["iat"] != _proof_of("VI10")["iat"]
     assert _proof_of("VI16")["key"] == _proof_of("VI10")["key"]
     assert _proof_of("VI17")["key"] != _proof_of("VI10")["key"]
@@ -127,24 +150,51 @@ def test_a_proof_signed_again_with_the_same_jti_is_the_same_spend_whatever_its_i
 def test_the_single_use_key_hashes_the_jti_as_utf8() -> None:
     proof = _proof_of("VI17")
     assert proof["jti"] == "dpop-\u00e9-0002"
-    assert proof["key"] == b64url(hashlib.sha256(f"{proof['jkt']}.{proof['jti']}".encode()).digest())
+    assert proof["key"] == b64url(
+        hashlib.sha256(f"{proof['jkt']}.{proof['jti']}".encode()).digest()
+    )
 
 
-def test_a_certificate_proof_names_the_confirmed_thumbprint_and_has_nothing_to_spend() -> None:
-    assert _proof_of("VI11") == {"method": "mtls", "x5t#S256": cnf_for_certificate(certificate())["x5t#S256"]}
+def test_a_certificate_proof_names_the_confirmed_thumbprint_and_has_nothing_to_spend() -> (
+    None
+):
+    assert _proof_of("VI11") == {
+        "method": "mtls",
+        "x5t#S256": cnf_for_certificate(certificate())["x5t#S256"],
+    }
 
 
-def test_a_stamped_request_is_verified_from_its_header_lines_and_never_from_tokens() -> None:
-    stamped = judge({"tokens": {}, "bundle": bundle(), "at": AT, "transport": None, "request": request(headers=stamp())})
+def test_a_stamped_request_is_verified_from_its_header_lines_and_never_from_tokens() -> (
+    None
+):
+    stamped = judge(
+        {
+            "tokens": {},
+            "bundle": bundle(),
+            "at": AT,
+            "transport": None,
+            "request": request(headers=stamp()),
+        }
+    )
     assert stamped == next(r for r in ROWS if r["id"] == "VI9")["expected"]
-    as_token = judge({"tokens": {"stamp": "x"}, "bundle": bundle(), "at": AT, "transport": None, "request": request()})
+    as_token = judge(
+        {
+            "tokens": {"stamp": "x"},
+            "bundle": bundle(),
+            "at": AT,
+            "transport": None,
+            "request": request(),
+        }
+    )
     assert as_token == {"refused": "principal_role_not_configured"}
 
 
 def test_a_short_rsa_key_is_refused_in_the_bundle() -> None:
     doc = bundle()
-    doc["issuers"]["https://rsa.example"] = {"keys": [{"kty": "RSA", "kid": "r", "e": "AQAB", "n": "AQAB" * 10}],
-                                             "pins": [{"thumbprint": "x", "roles": ["user"], "tenants": ["acme"]}]}
+    doc["issuers"]["https://rsa.example"] = {
+        "keys": [{"kty": "RSA", "kid": "r", "e": "AQAB", "n": "AQAB" * 10}],
+        "pins": [{"thumbprint": "x", "roles": ["user"], "tenants": ["acme"]}],
+    }
     with pytest.raises(VerifiedIdentitiesRefused) as err:
         TrustBundle.parse(doc)
     assert err.value.code == "trust_bundle_malformed"
@@ -152,15 +202,25 @@ def test_a_short_rsa_key_is_refused_in_the_bundle() -> None:
 
 def test_a_transport_identity_of_another_kind_is_a_programming_error() -> None:
     with pytest.raises(TypeError):
-        verify_request({"user": token("user"), "agent": token("agent")}, bundle(), AT,
-                       CanonicalIdentity.parse(_identity("VI1")["id"]))
+        verify_request(
+            {"user": token("user"), "agent": token("agent")},
+            bundle(),
+            AT,
+            CanonicalIdentity.parse(_identity("VI1")["id"]),
+        )
 
 
 def test_a_request_without_facts_cannot_prove_a_key_bound_token() -> None:
     from probity_records.verified_identities_vectors import HOLDER_CNF
 
     with pytest.raises(VerifiedIdentitiesRefused) as err:
-        verify_request({"user": token("user"), "agent": token("agent", cnf=HOLDER_CNF)}, bundle(), AT)
+        verify_request(
+            {"user": token("user"), "agent": token("agent", cnf=HOLDER_CNF)},
+            bundle(),
+            AT,
+        )
     assert err.value.code == "dpop_proof_missing"
     assert RequestFacts(method="GET", url="https://x.example/").content is None
-    assert judge(next(r for r in ROWS if r["id"] == "VR22")) == {"refused": "dpop_proof_missing"}
+    assert judge(next(r for r in ROWS if r["id"] == "VR22")) == {
+        "refused": "dpop_proof_missing"
+    }

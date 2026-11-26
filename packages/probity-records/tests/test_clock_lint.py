@@ -32,24 +32,42 @@ PLANTED = [
     ("import time\nx = time.asctime()\n", "time.asctime with no time argument"),
     ("import time\nx = time.strftime('%Y')\n", "time.strftime with no time argument"),
     ("from datetime import datetime\nx = datetime.now()\n", "datetime.datetime.now"),
-    ("from datetime import datetime, UTC\nx = datetime.now(UTC)\n", "datetime.datetime.now"),
-    ("from datetime import datetime\nx = datetime.utcnow()\n", "datetime.datetime.utcnow"),
-    ("from datetime import datetime\nx = datetime.today()\n", "datetime.datetime.today"),
+    (
+        "from datetime import datetime, UTC\nx = datetime.now(UTC)\n",
+        "datetime.datetime.now",
+    ),
+    (
+        "from datetime import datetime\nx = datetime.utcnow()\n",
+        "datetime.datetime.utcnow",
+    ),
+    (
+        "from datetime import datetime\nx = datetime.today()\n",
+        "datetime.datetime.today",
+    ),
     ("from datetime import date\nx = date.today()\n", "datetime.date.today"),
     ("import datetime\nx = datetime.datetime.now()\n", "datetime.datetime.now"),
     ("import datetime as d\nx = d.date.today()\n", "datetime.date.today"),
     ("import asyncio\nasync def f():\n    await asyncio.sleep(1)\n", "asyncio.sleep"),
     ("import asyncio\nx = asyncio.get_running_loop().time()\n", "event loop time()"),
     ("def f(loop):\n    return loop.time()\n", "event loop time()"),
-    ("class A:\n    def f(self):\n        return self._loop.time()\n", "event loop time()"),
+    (
+        "class A:\n    def f(self):\n        return self._loop.time()\n",
+        "event loop time()",
+    ),
     ("import threading\nt = threading.Timer(1, print)\n", "threading.Timer"),
     ("import uuid\nx = uuid.uuid1()\n", "uuid.uuid1"),
     ("import time as t\nx = t.time()\n", "time.time"),
     ("from time import monotonic\nx = monotonic()\n", "time.monotonic"),
     ("from time import monotonic as m\nx = m()\n", "time.monotonic"),
     ("from datetime import datetime as dt\nx = dt.now()\n", "datetime.datetime.now"),
-    ("import time\nfrom dataclasses import field\nclock = field(default=time.time)\n", "time.time"),
-    ("import time\ndef f(clock=time.monotonic_ns):\n    return clock()\n", "time.monotonic_ns"),
+    (
+        "import time\nfrom dataclasses import field\nclock = field(default=time.time)\n",
+        "time.time",
+    ),
+    (
+        "import time\ndef f(clock=time.monotonic_ns):\n    return clock()\n",
+        "time.monotonic_ns",
+    ),
 ]
 
 
@@ -62,7 +80,9 @@ def test_each_planted_read_is_refused(source: str, name: str) -> None:
 def test_every_forbidden_name_has_a_planted_case() -> None:
     planted = {n.split(" with ")[0] for _, n in PLANTED}
     listed = {f"{m}.{n}" for m, names in FORBIDDEN.items() for n in names}
-    listed |= {f"{m}.{c}.{n}" for (m, c), names in FORBIDDEN_METHODS.items() for n in names}
+    listed |= {
+        f"{m}.{c}.{n}" for (m, c), names in FORBIDDEN_METHODS.items() for n in names
+    }
     assert listed - planted <= {"uuid.uuid6", "uuid.uuid7"}, listed - planted
 
 
@@ -87,9 +107,19 @@ def test_the_package_source_reads_the_clock_only_in_the_clock_module() -> None:
 
 
 def test_the_scan_reads_every_tracked_source_file() -> None:
-    tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "*.py"], cwd=SRC, capture_output=True, text=True, check=True)
-    expected = {str((SRC / line).resolve()) for line in tracked.stdout.split()} - {str(CLOCK.resolve())}
-    assert len(expected) > 20  # the read path works: a broken listing reports absence identically to a clean tree
+    tracked = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "*.py"],
+        cwd=SRC,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    expected = {str((SRC / line).resolve()) for line in tracked.stdout.split()} - {
+        str(CLOCK.resolve())
+    }
+    assert (
+        len(expected) > 20
+    )  # the read path works: a broken listing reports absence identically to a clean tree
     scanned = {str(Path(f).resolve()) for f in scan_paths([SRC], allow=[CLOCK]).files}
     assert scanned == expected
 
@@ -109,7 +139,11 @@ def test_cli_exit_codes(tmp_path: Path) -> None:
 
 def test_cli_runs_as_a_module(tmp_path: Path) -> None:
     (tmp_path / "bad.py").write_text("from datetime import date\ndate.today()\n")
-    proc = subprocess.run([sys.executable, "-m", "probity_records.clock_lint", str(tmp_path)],
-                          capture_output=True, text=True, check=False)
+    proc = subprocess.run(
+        [sys.executable, "-m", "probity_records.clock_lint", str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     assert proc.returncode == 1
     assert "datetime.date.today" in proc.stdout and "1 files scanned" in proc.stdout

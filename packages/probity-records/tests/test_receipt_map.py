@@ -37,17 +37,29 @@ def test_each_vector_reaches_its_verdict(case: dict[str, Any]) -> None:
     verdict, held = _verdict(case)
     assert verdict == case["expect"]
     if verdict == "member":
-        assert held is not None and {"index": held.index, "leafHash": held.leaf.hex()} == case["holds"]
+        assert (
+            held is not None
+            and {"index": held.index, "leafHash": held.leaf.hex()} == case["holds"]
+        )
 
 
 def test_the_vector_set_covers_every_verdict() -> None:
-    assert {c["expect"] for c in VECTORS["cases"]} == {"member", "absent", "refused", "malformed"}
+    assert {c["expect"] for c in VECTORS["cases"]} == {
+        "member",
+        "absent",
+        "refused",
+        "malformed",
+    }
 
 
 def test_the_root_is_the_root_of_the_listed_entries() -> None:
     m = rm.ReceiptMap()
     for e in VECTORS["entries"]:
-        m.insert(rm.map_key(e["issuer"], e["permit"], e["stage"]), e["index"], bytes.fromhex(e["leafHash"]))
+        m.insert(
+            rm.map_key(e["issuer"], e["permit"], e["stage"]),
+            e["index"],
+            bytes.fromhex(e["leafHash"]),
+        )
     assert m.root().hex() == VECTORS["root"]
     with pytest.raises(rm.MapError, match="already holds"):
         e = VECTORS["entries"][0]
@@ -66,8 +78,13 @@ def test_bad_keys_are_refused(k: dict[str, str]) -> None:
 
 
 def test_the_vector_file_is_what_the_generator_writes() -> None:
-    spec = importlib.util.spec_from_file_location("make_receipt_map_vectors", ROOT / "scripts" / "make_receipt_map_vectors.py")
+    spec = importlib.util.spec_from_file_location(
+        "make_receipt_map_vectors", ROOT / "scripts" / "make_receipt_map_vectors.py"
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert module.render() == (ROOT / "vectors" / "shared" / "receipt-map.json").read_text()
+    assert (
+        module.render()
+        == (ROOT / "vectors" / "shared" / "receipt-map.json").read_text()
+    )

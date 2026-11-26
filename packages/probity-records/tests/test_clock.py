@@ -32,7 +32,9 @@ def test_both_implementations_are_clocks() -> None:
 def test_datetime_round_trip_is_exact_to_the_microsecond() -> None:
     moment = datetime(2026, 11, 21, 12, 0, 0, 123456, tzinfo=UTC)
     assert to_datetime(from_datetime(moment)) == moment
-    assert to_datetime(T0 + 999) == to_datetime(T0)  # sub-microsecond nanoseconds are truncated, never rounded up
+    assert to_datetime(T0 + 999) == to_datetime(
+        T0
+    )  # sub-microsecond nanoseconds are truncated, never rounded up
 
 
 def test_from_datetime_takes_any_zone_and_refuses_a_naive_one() -> None:
@@ -140,7 +142,7 @@ def test_under_any_steps_monotonic_and_high_water_never_decrease(seed: int) -> N
         if rng.random() < 0.5:
             clock.advance(rng.randrange(0, 10**12))
         else:
-            clock.step_wall(rng.randrange(-10**12, 10**12))
+            clock.step_wall(rng.randrange(-(10**12), 10**12))
         assert clock.monotonic() >= last_mono and wall.now() >= last_wall
         last_mono, last_wall = clock.monotonic(), wall.now()
 
@@ -173,7 +175,9 @@ def test_sleep_until_async_cancels_its_timer_when_cancelled() -> None:
             await waiter
 
     asyncio.run(run())
-    assert clock._timers == [] or all(key not in clock._live for _, key, _ in clock._timers)
+    assert clock._timers == [] or all(
+        key not in clock._live for _, key, _ in clock._timers
+    )
 
 
 def test_system_clock_reads_the_host_and_its_timer_fires() -> None:
