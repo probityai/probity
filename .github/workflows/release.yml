@@ -15,9 +15,14 @@ name: release
 # only for that distribution's tag, so the job that holds the id-token for one
 # project never runs for another.
 #
+# Before any upload, the family-candidate job checks the built files against the latest
+# PyPI releases of the family (scripts/family_resolves.py candidate), and every publish
+# job needs it, so a release that would strand a published dependent is refused.
+#
 # PyPI trusted publishing does not accept a reusable workflow, so each publish
 # job carries its steps here. To add a member, copy one publish job and change
-# the distribution name in its job name, `if:`, url and artifact name.
+# the distribution name in its job name, `if:`, url and artifact name, and keep
+# family-candidate in its `needs`.
 
 on:
   release:
@@ -86,8 +91,39 @@ jobs:
     secrets:
       DIST_CLEAN_PRIVATE_NAMES: ${{ secrets.DIST_CLEAN_PRIVATE_NAMES }}
 
-  publish-agent-evidence-verify:
+  # The pre-publication family gate. It refuses the files built above when the latest PyPI
+  # release of any family member, or of any distribution published from this repository,
+  # requires this distribution in a range that excludes the new version, when the new version
+  # requires one of them in a range that excludes its latest release, or when it does not
+  # install, pass `uv pip check` and import beside the latest release of every other family
+  # member (scripts/family_resolves.py, `candidate`). Every publish job needs it, so a release
+  # that would leave the published family unable to install together is never uploaded: on
+  # 2026-11-24 agent-evidence-verify 0.10.0 was, and PyPI's agent-evidence-mcp 0.2.7 capped
+  # verify at <0.10. The remedy it prints is to release the stranded dependent first.
+  family-candidate:
     needs: [resolve, build]
+    if: needs.resolve.outputs.published == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-distributions-${{ needs.resolve.outputs.distribution }}
+          path: release-artifacts
+      - name: the files are the ones built from this commit
+        run: |
+          cd release-artifacts
+          test "$(cat SOURCE-COMMIT)" = "$GITHUB_SHA"
+          sha256sum --check SHA256SUMS
+      - name: the release leaves the latest releases of the family installable together
+        run: python3 scripts/family_resolves.py candidate release-artifacts/dist
+
+  publish-agent-evidence-verify:
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'agent-evidence-verify' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -154,7 +190,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probityai:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'probityai' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -221,7 +257,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-ratchet:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'probity-ratchet' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -288,7 +324,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-ratchet-cases:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'probity-ratchet-cases' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -355,7 +391,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-agent-evidence-observer:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'agent-evidence-observer' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -422,7 +458,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-effects:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'probity-effects' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -489,7 +525,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-records:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'probity-records' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -556,7 +592,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-agent-evidence-replay:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'agent-evidence-replay' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -623,7 +659,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-agent-evidence-a2a:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'agent-evidence-a2a' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -690,7 +726,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-probity-verify:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'probity-verify' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:
@@ -757,7 +793,7 @@ jobs:
         run: python3 .github/scripts/verify_pypi_upload.py release-artifacts/dist/
 
   publish-agent-evidence-mcp:
-    needs: [resolve, build]
+    needs: [resolve, build, family-candidate]
     if: needs.resolve.outputs.distribution == 'agent-evidence-mcp' && needs.resolve.outputs.published == 'false'
     runs-on: ubuntu-24.04
     environment:

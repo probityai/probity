@@ -7,7 +7,7 @@ Add this server to your MCP settings. In Cline, open MCP Servers, choose Configu
   "mcpServers": {
     "agent-evidence": {
       "command": "uvx",
-      "args": ["agent-evidence-mcp@0.2.7"],
+      "args": ["agent-evidence-mcp@0.2.8"],
       "timeout": 120
     }
   }
@@ -16,6 +16,6 @@ Add this server to your MCP settings. In Cline, open MCP Servers, choose Configu
 
 The first start downloads the package, so keep the timeout at 120 seconds or more.
 
-This needs [uv](https://docs.astral.sh/uv/). Without uv, run `pip install agent-evidence-mcp==0.2.7` and use the command `agent-evidence-mcp` with no arguments.
+This needs [uv](https://docs.astral.sh/uv/). Without uv, run `pip install agent-evidence-mcp==0.2.8` and use the command `agent-evidence-mcp` with no arguments.
 
 To check the install, call the tool `verify_sample` with `{"scenario": "contradicted"}`. It returns the decision `contradicted` with the reason `selected_span_missing_from_record`.

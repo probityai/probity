@@ -28,20 +28,24 @@ ARGS = {"quantity": 1, "sku": "A-1"}
 class Owner:
     """Holds effects by key; each send behaves as the next scripted step."""
 
-    def __init__(self, steps=(), *, answers=None, dedup=False, token=None):
+    def __init__(self, steps=(), *, answers=None, dedup=False, forgets=False, token=None):
         self.steps = list(steps)
         self.answers = answers  # None: answer from the ledger, finally
         self.effects: dict[str, int] = {}
+        self.remembered: set[str] = set()  # the keys a deduplicating owner still holds
         self.sends = 0
         self.lookups = 0
         self.dedup = dedup
+        self.forgets = forgets  # forget each key once its effect is applied, as an expired retention window does
         self.token = token
 
     def send(self, call):
         self.sends += 1
         step = self.steps.pop(0) if self.steps else "commit"
-        if step in ("commit", "commit_lost") and not (self.dedup and call.key in self.effects):
+        if step in ("commit", "commit_lost") and not (self.dedup and call.key in self.remembered):
             self.effects[call.key] = self.effects.get(call.key, 0) + 1
+            if not self.forgets:
+                self.remembered.add(call.key)
         if step == "commit":
             return {"order": call.key}
         if step == "refuse":
@@ -94,10 +98,41 @@ def test_lookup_that_is_not_final_settles_nothing():
     assert (outcome.outcome, owner.sends, owner.lookups) == ("unknown", 1, 5)
 
 
-def test_deduplicating_owner_gets_the_same_key_again():
-    owner = Owner(["commit_lost", "commit"], dedup=True)
+def test_deduplicating_owner_is_asked_before_the_same_key_is_sent_again():
+    owner = Owner(["commit_lost"], dedup=True)
     outcome = EffectGuard(owner.port()).perform("create_order", ARGS, send=owner.send)
-    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("committed", 2, 0, 1)
+    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("committed", 1, 1, 1)
+
+
+def test_deduplicating_owner_that_cannot_answer_gets_the_same_key_again():
+    owner = Owner(["commit_lost", "commit"], answers=[], dedup=True)
+    outcome = EffectGuard(owner.port()).perform("create_order", ARGS, send=owner.send)
+    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("committed", 2, 5, 1)
+
+
+def test_deduplicating_owner_that_forgot_the_key_is_not_sent_it_again():
+    owner = Owner(["commit_lost"], answers=[Lookup(False, final=False)] * 5, dedup=True, forgets=True)
+    outcome = EffectGuard(owner.port()).perform("create_order", ARGS, send=owner.send)
+    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("unknown", 1, 5, 1)
+
+
+def test_a_replay_after_the_owner_forgot_the_key_is_not_sent_again(tmp_path):
+    # The confirmed reply is lost with the process; the owner has since forgotten the key and cannot say
+    # finally whether it holds the effect, so its deduplication no longer covers a second send.
+    owner = Owner(["commit"], answers=[Lookup(False, final=False)] * 5, dedup=True, forgets=True)
+    path = tmp_path / "journal.jsonl"
+
+    class Stop(BaseException):
+        pass
+
+    def stopping_send(call):
+        owner.send(call)
+        raise Stop()
+
+    with pytest.raises(Stop):
+        EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=stopping_send)
+    outcome = EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=owner.send)
+    assert (outcome.outcome, outcome.sent, owner.sends, sum(owner.effects.values())) == ("unknown", 0, 1, 1)
 
 
 def test_definite_no_effect_is_not_run():
@@ -158,6 +193,29 @@ def test_torn_last_line_is_ignored_and_earlier_lines_are_kept(tmp_path):
     EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=owner.send)
     path.write_text(path.read_text() + '{"event": "dis', encoding="utf-8")
     assert len(Journal.open(path).keys()) == 1
+
+
+@pytest.mark.parametrize("torn", ['{"event": "dis', '{"event":"note","at":"2026-01-01T00:00:00Z","key":"x"}'])
+def test_the_next_append_cuts_a_torn_last_line_so_the_journal_stays_readable(tmp_path, torn):
+    path = tmp_path / "journal.jsonl"
+    owner = Owner(["commit", "commit"])
+    EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=owner.send)
+    events = len(Journal.open(path).events())
+    path.write_text(path.read_text() + torn, encoding="utf-8")  # a stop mid-write: no newline, never acted on
+    assert len(Journal.open(path).events()) == events
+    EffectGuard(owner.port(), Journal.open(path)).perform("create_order", {**ARGS, "n": 2}, send=owner.send)
+    lines = path.read_bytes().split(b"\n")
+    assert lines[-1] == b"" and torn.encode() not in path.read_bytes()
+    assert len(Journal.open(path).keys()) == 2
+
+
+def test_a_whole_line_that_is_not_an_event_is_refused_not_skipped(tmp_path):
+    path = tmp_path / "journal.jsonl"
+    owner = Owner(["commit"])
+    EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=owner.send)
+    path.write_text(path.read_text() + '{"event": "dis{"event":"dispatch"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="not a journal event"):
+        Journal.open(path)
 
 
 def test_record_is_the_uncertain_effect_contract():

@@ -6,6 +6,7 @@
     "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
     "actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0",
     "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+    "astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2",
     "pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086",
     "sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532"
   ],
@@ -40,7 +41,7 @@
   "workflows": [
     {
       "path": ".github/workflows/release.yml",
-      "sha256": "2ac77d60d3715e90d009c27f0775c865b366c488082397ade748bf30f09bb5ef"
+      "sha256": "e5281caf3155e55ffecfb55a134feea7a4f8ae050c41e2e8295525307f6da446"
     },
     {
       "path": ".github/workflows/python-build.yml",

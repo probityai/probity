@@ -361,6 +361,10 @@ def _possession(tokens: list[_Token], request: RequestFacts | None,
     return proof
 
 
+def _sponsors(sponsor: _Token | None, env: str) -> tuple[Ref, ...]:
+    return () if sponsor is None else (Ref("sponsor", env, sponsor.issuer, sponsor.subject),)
+
+
 def _identity_from_tokens(found: Mapping[str, _Token], bundle: TrustBundle) -> CanonicalIdentity:
     env = bundle.environment
     user, agent, sponsor = found.get("user"), found.get("agent"), found.get("sponsor")
@@ -369,8 +373,7 @@ def _identity_from_tokens(found: Mapping[str, _Token], bundle: TrustBundle) -> C
     if user is None:
         assert agent is not None  # a request with no credential was refused before this
         return CanonicalIdentity(kind="agent", chain=(Ref("agent", env, agent.issuer, agent.subject),),
-                                 sponsor=None if sponsor is None else Ref("sponsor", env, sponsor.issuer,
-                                                                          sponsor.subject))  # fmt: skip
+                                 sponsors=_sponsors(sponsor, env))
     user_ref = Ref("user", env, user.issuer, user.subject)
     actors = _actors(user.claims["act"]) if "act" in user.claims else []
     if agent is None:
@@ -388,8 +391,7 @@ def _identity_from_tokens(found: Mapping[str, _Token], bundle: TrustBundle) -> C
         raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
     return CanonicalIdentity(kind="agent", user=user_ref,
                              chain=(*reversed(parents), Ref("agent", env, agent.issuer, agent.subject)),
-                             sponsor=None if sponsor is None else Ref("sponsor", env, sponsor.issuer, sponsor.subject),
-                             act=act)  # fmt: skip
+                             sponsors=_sponsors(sponsor, env), act=act)  # fmt: skip
 
 
 def _stamp(bundle: TrustBundle, request: RequestFacts, at: str) -> VerifiedStamp:
@@ -402,7 +404,7 @@ def _stamp(bundle: TrustBundle, request: RequestFacts, at: str) -> VerifiedStamp
 
 
 def _environment(identity: CanonicalIdentity, bundle: TrustBundle) -> None:
-    refs = [identity.user, *identity.chain, identity.sponsor, identity.approver, identity.service]
+    refs = [identity.user, *identity.chain, *identity.sponsors, identity.approver, identity.service]
     if any(ref is not None and ref.environment != bundle.environment for ref in refs):
         raise _refuse("identity_environment_mismatch", f"an identity outside environment {bundle.environment}")
 

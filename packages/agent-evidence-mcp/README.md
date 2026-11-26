@@ -52,7 +52,7 @@ Nine tools, all read-only, offline and bounded: `verify_claim`, `verify_sample`,
 
 ## Status
 
-Version 0.2.7. The tests run every tool through a real MCP client against the shipped corpus, and a mutation check confirms they fail when a tool's output is broken.
+Version 0.2.8. The tests run every tool through a real MCP client against the shipped corpus, and a mutation check confirms they fail when a tool's output is broken.
 
 ## Documentation
 

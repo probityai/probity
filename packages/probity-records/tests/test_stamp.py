@@ -103,7 +103,7 @@ def test_absent_partial_and_repeated_stamps_are_told_apart() -> None:
 def test_the_stamp_names_an_agent_acting_for_a_user_and_nothing_else() -> None:
     alone = CanonicalIdentity(kind="unknown", user=Ref("user", "prod", "https://idp.example.com", "alice")).render()
     no_user = CanonicalIdentity(kind="agent", chain=(Ref("agent", "prod", "https://idp.example.com", "a"),),
-                                sponsor=Ref("sponsor", "prod", "https://idp.example.com", "owner")).render()  # fmt: skip
+                                sponsors=(Ref("sponsor", "prod", "https://idp.example.com", "owner"),)).render()  # fmt: skip
     for identity, code in ((alone, "stamp_downgraded"), (no_user, "stamp_no_user"),
                            ("not an identity", "stamp_identity_mismatch")):  # fmt: skip
         with pytest.raises(StampRefused) as err:

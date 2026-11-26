@@ -48,7 +48,7 @@ def body(approver: str = "dave", key: str | None = None, **over: Any) -> dict[st
     return {"approvalId": "req-1", "approver": approver, "event": "mcp/tools-call", "expiresAt": EXPIRES,
             "issuedAt": ISSUED, "keyId": key or principal_id(ISSUER, SUB), "payloadSha256":
             hashlib.sha256(PAYLOAD).hexdigest(), "phase": "pre-execution", "principal": "agent:acme",
-            "target": USE["target"], "tool": "wire", **over}
+            "target": USE["target"], "tool": "wire", "outcome": "approved", "requestId": "req-1", **over}
 
 
 def oidc(approval: dict[str, Any], *, nonce: str | None = None, auth_offset: int = 60, sub: str = SUB,
@@ -59,13 +59,14 @@ def oidc(approval: dict[str, Any], *, nonce: str | None = None, auth_offset: int
     principal = _principal(token, JWK, JWKS, "id-token", {**claims, "client_id": CLIENT})
     principal["authMethod"] = "client_secret_basic"
     record, payload = build_approval_binding(approval, USE, PAYLOAD, [], {approval["approver"]: approval["keyId"]},
-                                             DECIDED, RELEASE)
+                                             DECIDED, RELEASE, issued=["req-1"], enforcement="enforce")
     return embed_oidc_approval(record, payload, token, principal, JWKS)
 
 
 def keyed(approval: dict[str, Any]) -> dict[str, Any]:
     signed = sign_approval(BOB, approval)
-    record, payload = build_approval_binding(approval, USE, PAYLOAD, [], {"bob": BOB.key_id}, DECIDED, RELEASE)
+    record, payload = build_approval_binding(approval, USE, PAYLOAD, [], {"bob": BOB.key_id}, DECIDED, RELEASE,
+                                             issued=["req-1"], enforcement="enforce")
     return embed_approval_binding(record, payload, signed["sig"])
 
 

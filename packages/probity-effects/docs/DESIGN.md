@@ -41,7 +41,7 @@ idempotency key, is:
 | `probity_effects.langgraph.effect_tool` | Turns a tool body into a LangChain tool that never lets a lost reply escape as an exception. |
 | `probity_effects.openai_agents.effect_function_tool` | The same for an OpenAI Agents SDK function tool. |
 | `probity_effects.ag2.effect_tool` | The same for an AG2 tool. |
-| `probity_effects.testing` and the pytest plugin | Drive your tool through the framework's own paths against the eight lost-reply scenarios that agent-evidence-vectors ships, and judge each run three ways. |
+| `probity_effects.testing` and the pytest plugin | Drive your tool through the framework's own paths against every lost-reply scenario that the installed agent-evidence-vectors ships, and judge each run three ways. |
 
 ## The policy
 
@@ -53,8 +53,10 @@ For one operation, identified by its idempotency key:
 3. An earlier attempt whose reply was lost is reconciled first: the owner is asked until it
    gives a final answer. Present is committed. A final absent permits a send. No answer, or
    only answers that are not final, is unknown, and nothing is sent. An owner that
-   deduplicates by key inside its retention window is the one exception: the same key is sent
-   again and the owner returns the first effect.
+   deduplicates by key inside its retention window is the one exception, and only when it gives
+   no answer at all: the same key is sent again and the owner returns the first effect. An
+   owner that answers it does not hold the key, without saying so finally, may have forgotten
+   the key, so its deduplication no longer covers a second send and the outcome is unknown.
 4. Before each send, a worker that holds a lease checks it. A lost lease sends nothing.
 5. The attempt is written to the journal before it is sent. A confirmed reply is committed;
    a definite no-effect answer (`NoEffect`, or a refusal the classifier knows) is not run; a
