@@ -2,6 +2,22 @@
 
 ## 0.11.0 (2026-11-26)
 
+- **Breaking: a canonical identity names every sponsor.** `CanonicalIdentity.sponsor: Ref | None` is replaced by
+  `sponsors: tuple[Ref, ...]` (TypeScript: `sponsors: Ref[]`), sorted by each rendered ref with no entry twice, and
+  empty when no sponsor answers for the agent; there is no `sponsor` attribute any more. An agent acting for no user
+  still needs at least one sponsor, so `sponsors=()` there is refused `identity_attribute_missing`. In the string, the
+  `sponsor` attribute lists the refs joined by `+`; one sponsor is written exactly as before, so a single-sponsor
+  string and every access-list entry naming it are unchanged, and a reader that predates the list refuses a string
+  with two. In the structured form, `sponsor` is now a non-empty list of refs even when it holds one, so a policy that
+  read `identity.sponsor.subject` must iterate `identity.sponsor`; a rule that denies one sponsor then fires whatever
+  others are named. The structured form's `version` is now 2 (`DOCUMENT_VERSION`; the string grammar stays version
+  1), `document()` always writes it, and `from_document` refuses version 1 with `identity_version_unknown`. A policy
+  consumer refuses a structured identity whose `version` is not 2, because a version 1 rule over `sponsor` is
+  undefined on the list and would stop denying silently. `+` is never part of a ref (it is not unreserved, so it is
+  written `%2B` inside a component), so the list always splits into the refs that were joined. New refusal codes: `identity_sponsor_order` (unsorted), `identity_sponsor_repeated` (a sponsor
+  twice) and `identity_sponsor_malformed` (not a tuple, or a document member that is not a non-empty list).
+  `vectors/shared/canonical_identity.json` adds CI11 to CI13 (two sponsors, and a sponsor whose subject holds `+`),
+  CR29 to CR35 and CD6 to CD11, and every document vector carries version 2 and, where it names a sponsor, the list.
 - `build_approval_binding` writes the members the agent-evidence-vectors 0.38 approval-binding reader judges, each from
   the party that holds it: `issued=` (keyword, required) is the server's issuance register, written as
   `issuedApprovalIds`; `enforcement=` (keyword, required, one of `ENFORCEMENT_MODES`: `enforce`, `observe`, `monitor`)

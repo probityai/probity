@@ -76,7 +76,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -174,7 +174,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -257,14 +257,16 @@
           ],
           "id": "aid1!agent;chain=agent:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/agent-refunds;sponsor=sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
           "kind": "agent",
-          "sponsor": {
-            "domain": "https://idp.example.com/realms/agents",
-            "environment": "prod",
-            "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
-            "subject": "owner@example.com",
-            "type": "sponsor"
-          },
-          "version": 1
+          "sponsor": [
+            {
+              "domain": "https://idp.example.com/realms/agents",
+              "environment": "prod",
+              "id": "sponsor:prod/https%3A%2F%2Fidp.example.com%2Frealms%2Fagents/owner%40example.com",
+              "subject": "owner@example.com",
+              "type": "sponsor"
+            }
+          ],
+          "version": 2
         }
       ],
       "proof": null,
@@ -345,7 +347,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -500,7 +502,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         },
         {
           "id": "aid1!transport;service=service:prod/spiffe%3A%2F%2Fmesh.example.org/billing-gw",
@@ -512,7 +514,7 @@
             "subject": "billing-gw",
             "type": "service"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -626,7 +628,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -739,7 +741,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -830,7 +832,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -945,7 +947,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -1060,7 +1062,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -1167,7 +1169,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
@@ -1282,7 +1284,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": {
@@ -1387,7 +1389,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": {
@@ -1492,7 +1494,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": {
@@ -1597,7 +1599,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": {
@@ -1698,7 +1700,7 @@
             "subject": "alice@example.com",
             "type": "user"
           },
-          "version": 1
+          "version": 2
         }
       ],
       "proof": null,
