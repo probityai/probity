@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.10.0 (2026-11-25)
+
+This release changes the revocation list format, so a list written by 0.9.0 or earlier is refused by 0.10.0 and a
+list written by 0.10.0 is refused by 0.9.0. Version 0.9.0 on PyPI is the cumulative format.
+
+- Revocation lists are deltas. A list carries only the subjects it newly revokes, and a reader folds each list into
+  the state it already holds, so applying one list costs what that list holds, not everything the chain has revoked.
+  The list type is `agent-evidence-vectors/predicate/v2/revocation-list`; a list of the v1 (cumulative) type is
+  refused as `revocation_list_shape`. `sign_revocations(..., entries=...)` takes the new entries only.
+- A list that names a subject an earlier list in the chain revoked is refused with `revocation_entry_repeated`: an
+  entry is published once, and its `revokedAt` and `reason` never change. `revocation_list_drops_entry` is removed,
+  because a delta cannot drop an entry. An empty list is a freshness list: a new `seq` that revokes nothing new.
+- A rotation successor that an earlier list revoked never becomes a root; a list it signs is refused as
+  `revocation_list_signer_not_a_root`.
+- A state's entries are a read-only view over a store shared along one chain. The state at the chain's tip extends
+  the store in place; any other state copies the entries it sees once. An older state never sees later entries, and
+  two lists applied to one state give two independent states.
+- `vectors/shared/revocation.json`: every list is rewritten as a delta, so RL01 to RL19 and RL21 to RL47 have new
+  list bytes, signatures and head digests (RL20 is unchanged). RL34 and RL35 now expect `revocation_entry_repeated`.
+  New cases: RL48 (an empty list after a list with entries), RL49 (a v1 list is refused), RL50 (a root rotated to a
+  revoked successor ends the chain), RL51 (a list that re-dates an earlier entry) and RL52 (the state after such a
+  rotation holds no root). A reader that has not learned the v2 type refuses every case.
+- `vectors/shared/effects.json`: EV4 and EV5 now expect `owner_effect_unaccounted`, not `duplicate_effect`. The owner
+  holds two effects and the trail one attempt that could make one, and agent-evidence-verify 0.6.0 checks that before
+  it checks for a duplicate; the committed cases had been written by an older reader. The TypeScript twin reads
+  uncertain effects with the same checks.
+- The journals in `vectors/shared/approvals.json`, `constraints.json`, `effects.json`, `grants.json` and
+  `quorum.json` are recorded at one fixed instant, so `scripts/gen_shared_vectors.py` writes the same bytes on every
+  run. Every journal line and checkpoint of those files changed; no verdict, record count or failure changed other
+  than EV4 and EV5.
+
 ## 0.9.0 (2026-11-24)
 
 - The revocation list names an identity provider's token-signing key with kind `idp-key`. Its id is the key's RFC 7638
