@@ -10,7 +10,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from .canonical_identity import DOCUMENT_VERSION, CanonicalIdentity, Evidence, IdentityStringError, Ref
+from .canonical_identity import (
+    DOCUMENT_VERSION,
+    CanonicalIdentity,
+    Evidence,
+    IdentityStringError,
+    Ref,
+)
 
 ISSUER = "https://idp.example.com/realms/agents"
 OTHER_ISSUER = "https://login.example.org/tenant-b"
