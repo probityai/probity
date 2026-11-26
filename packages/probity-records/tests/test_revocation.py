@@ -7,9 +7,11 @@ and must agree with these refusals.
 from __future__ import annotations
 
 import base64
+import copy
 import gc
 import importlib.util
 import json
+import pickle
 import statistics
 import threading
 import time
@@ -244,6 +246,18 @@ def test_a_state_built_with_a_plain_dict_still_applies() -> None:
     held[("agent", "agent:q")] = _entry("agent", "agent:q")  # the caller's dict is not the state's
     with pytest.raises(RevocationError, match="^revocation_entry_repeated:agent:agent:a"):
         state.apply(_list(root, 2, [_entry("agent", "agent:a")], previous=first))
+
+
+def test_a_copied_or_pickled_state_is_a_state_of_its_own() -> None:
+    root = Signer.generate()
+    first, second, third = _chain(root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")],
+                                  [_entry("agent", "agent:c")])
+    one = RevocationState(roots=frozenset({root.key_id})).apply(first)
+    for copied in (copy.deepcopy(one), pickle.loads(pickle.dumps(one))):
+        assert copied == one and copied.summary() == one.summary()
+        assert copied.apply(second).apply(third).summary()["revoked"]["agent"] == ["agent:a", "agent:b", "agent:c"]
+    assert one.summary()["revoked"]["agent"] == ["agent:a"]
+    assert one.apply(second).summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
 
 
 def test_threads_applying_different_lists_to_one_state_each_get_their_own() -> None:
