@@ -84,6 +84,8 @@ from .quorum import APPROVAL_QUORUM, QuorumResult, request_hash, sign_vote
 from .quorum import count as count_votes
 from .records import (
                    APPROVAL_BINDING_CONTRACT,
+                   BINDING_MALFORMED,
+                   ENFORCEMENT_MODES,
                    OUTCOMES,
                    REPLIES,
                    TOOL_CALL_RECORD,
@@ -125,8 +127,10 @@ __all__ = [
                    "APPROVAL_BINDING_CONTRACT",
                    "APPROVAL_DOMAIN",
                    "APPROVAL_QUORUM",
+                   "BINDING_MALFORMED",
                    "CAPABILITY_GRANT",
                    "CHECKPOINT_TYPE",
+                   "ENFORCEMENT_MODES",
                    "EXCEPTION_ALLOW",
                    "EXPORT_SEAL",
                    "GOVERNANCE_EXCEPTION",

@@ -27,17 +27,48 @@ TOOL_CALL_RECORD = identifier("agent-evidence-vectors/predicate/v1/tool-call-rec
 PAYLOAD_FILE = "payload.bin"
 OUTCOMES = ("committed", "not_run", "unknown")
 REPLIES = ("confirmed", "no_effect", "timeout", "connection_lost")
+#: The modes a gate records an approval under. Only ``enforce`` gated the call; the reader denies an approval
+#: gathered in ``observe`` or ``monitor`` mode (``approval_not_enforced``).
+ENFORCEMENT_MODES = ("enforce", "observe", "monitor")
+#: The reason a binding whose record the reader cannot read at all is denied with, instead of an exception that
+#: would end the whole journal verification on one malformed line.
+BINDING_MALFORMED = "approval_binding_malformed"
 
 
 def build_approval_binding(approval: Mapping[str, Any], use: Mapping[str, Any], payload: bytes,
                            consumed: list[str], trusted_keys: Mapping[str, str], decision_time: str,
-                           policy_release: Mapping[str, Any]) -> tuple[dict[str, Any], bytes]:
-    """An approval-binding/v1 record for one use, and the payload bytes it binds."""
+                           policy_release: Mapping[str, Any], *, issued: list[str],
+                           enforcement: str) -> tuple[dict[str, Any], bytes]:
+    """An approval-binding/v1 record for one use, and the payload bytes it binds.
+
+    Every member comes from the party that holds it, never from a default the reader would accept:
+
+    * ``approval`` is the approver's own signed body. Its ``outcome`` (``approved``,
+      ``approved-with-corrections`` or a refusal) and its ``requestId`` are the approver's words; an
+      approval that carries no ``requestId`` is refused here, because no reader can tell whether its
+      request was answered twice.
+    * ``issued`` is the server's issuance register: every approval identifier it issued. The approval
+      the client presents is not added to it here; one the server never issued is denied
+      (``approval_not_issued``).
+    * ``consumed`` is the server's register of approvals already used (``approval_replayed``).
+    * ``enforcement`` is the mode the gate ran in when it took the approval, one of
+      ``ENFORCEMENT_MODES``; only ``enforce`` gated the call (``approval_not_enforced``).
+    """
+    if not isinstance(approval.get("requestId"), str) or not approval["requestId"]:
+        raise ValueError("approval_request_id_missing")
+    if enforcement not in ENFORCEMENT_MODES:
+        raise ValueError(f"enforcement must be one of {ENFORCEMENT_MODES}")
+    for register, ids in (("issued", issued), ("consumed", consumed)):
+        # a bare string would be written as its characters, and the reader matches a string by substring
+        if isinstance(ids, (str, bytes)) or not all(isinstance(i, str) and i for i in ids):
+            raise ValueError(f"{register} must be a list of approval identifiers")
     record = {
         "approval": dict(approval),
         "consumedApprovalIds": sorted(set(consumed)),
         "contractId": APPROVAL_BINDING_CONTRACT,
         "decisionTime": decision_time,
+        "enforcement": enforcement,
+        "issuedApprovalIds": sorted(set(issued)),
         "policyRelease": dict(policy_release),
         "presentedApprovals": [dict(approval)],
         "trustedKeys": dict(trusted_keys),
@@ -48,17 +79,25 @@ def build_approval_binding(approval: Mapping[str, Any], use: Mapping[str, Any], 
 
 def judge_approval_binding(record: Mapping[str, Any], payload: bytes) -> dict[str, str]:
     """``{"decision": "allow"|"deny", "reason": ...}`` from the published approval-binding reader,
-    through its public entry point on the record and payload exactly as an outsider would hold them."""
+    through its public entry point on the record and payload exactly as an outsider would hold them.
+
+    A record the reader cannot read (a member it needs is missing or of the wrong type) is a deny with
+    ``approval_binding_malformed``: the record comes from the journal under verification, so its shape
+    is the writer's claim, and a verifier never ends on it."""
     from agent_evidence_vectors import approvalbinding
 
-    name = str(record.get("use", {}).get("payloadFile", PAYLOAD_FILE))
+    use = record.get("use") if isinstance(record, Mapping) else None
+    name = str(use.get("payloadFile", PAYLOAD_FILE)) if isinstance(use, Mapping) else PAYLOAD_FILE
     if "/" in name or name in ("", ".", ".."):
         return {"decision": "deny", "reason": "payload_file_unsafe"}
     with tempfile.TemporaryDirectory(prefix="probity-ab-") as tmp:
         path = Path(tmp) / "record.json"
-        path.write_bytes(canonical(dict(record)))
-        (Path(tmp) / name).write_bytes(payload)
-        verdict = approvalbinding.verify(path)
+        try:
+            path.write_bytes(canonical(dict(record)))
+            (Path(tmp) / name).write_bytes(payload)
+            verdict = approvalbinding.verify(path)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return {"decision": "deny", "reason": BINDING_MALFORMED}
     return {"decision": verdict["decision"], "reason": verdict["reason"]}
 
 

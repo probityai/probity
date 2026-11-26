@@ -1,7 +1,8 @@
-"""The eight shipped lost-reply scenarios: the guard alone, through LangGraph, and a plain tool as the control."""
+"""The shipped lost-reply scenarios: the guard alone, through LangGraph, and a plain tool as the control."""
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -23,9 +24,21 @@ from probity_effects.testing import (
     scenario_owner,
 )
 
+#: The scenarios the first corpus shipped; a later corpus may add scenarios, never drop these.
+FIRST_EIGHT = {"confirmed", "commit-then-lost-reply", "commit-then-lost-reply-deduplicating",
+               "owner-unreachable-after-lost-reply", "lost-before-commit", "late-commit-after-missed-lookup",
+               "definite-no-effect", "lease-lost-after-lost-reply"}
 
-def test_the_corpus_ships_eight_scenarios():
-    assert len(lost_reply_scenarios()) == 8
+
+def test_every_scenario_the_corpus_pairs_with_a_case_is_driven():
+    from agent_evidence_vectors import uncertaineffect
+
+    manifest = json.loads((uncertaineffect.ROOT / "MANIFEST.json").read_text(encoding="utf-8"))
+    paired = {entry["runtime"]["scenario"]["id"] for entry in manifest["vectors"]}
+    driven = [scenario["id"] for scenario in lost_reply_scenarios()]
+    assert len(driven) == len(set(driven))
+    assert set(driven) == paired
+    assert FIRST_EIGHT <= paired
 
 
 def test_guard_alone_passes(lost_reply_scenario):

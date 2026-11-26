@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.11.1 (2026-11-26)
+
+- **A writer killed mid-append no longer leaves a journal that cannot be read or appended to.** An append is durable
+  on return, so the bytes after the last newline are an append that never returned and that nothing acted on.
+  `Journal.statements()`, `verify_journal`, the `keys.jsonl` reader and `otel.export_journal` now read only whole
+  lines (up to the last newline), as `Journal`'s own head refresh and `witness.journal_leaves` already did; before,
+  `statements()` and `export_journal` raised `JSONDecodeError` on the torn tail, so a restarted authority could not
+  catch up, and `verify_journal` and the keys reader counted it as a failed record. `Journal.append` and the
+  session-key certificate writer cut a torn tail under the journal lock, and fsync the cut, before writing; before,
+  the next line was glued onto the torn bytes and the file stayed unreadable. `verify_journal` reports the torn tail's
+  length as `tornTailBytes` and no longer counts it in `records`, so the count agrees with a checkpoint the restarted
+  writer signs; lines are split on `\n` only, as the writer and the witness tree split them. The witness feed cuts a
+  torn entry from `checkpoints.log` before the next note, and writes its `witness-*.size` files whole (a kill mid-write
+  left an empty file that stopped every later `Feed.publish`). The TypeScript twin's command line verifies only whole
+  lines and reports `tornTailBytes`. No wire format or shared vector changes.
+
+## 0.11.0 (2026-11-26)
+
+- **Breaking: a canonical identity names every sponsor.** `CanonicalIdentity.sponsor: Ref | None` is replaced by
+  `sponsors: tuple[Ref, ...]` (TypeScript: `sponsors: Ref[]`), sorted by each rendered ref with no entry twice, and
+  empty when no sponsor answers for the agent; there is no `sponsor` attribute any more. An agent acting for no user
+  still needs at least one sponsor, so `sponsors=()` there is refused `identity_attribute_missing`. In the string, the
+  `sponsor` attribute lists the refs joined by `+`; one sponsor is written exactly as before, so a single-sponsor
+  string and every access-list entry naming it are unchanged, and a reader that predates the list refuses a string
+  with two. In the structured form, `sponsor` is now a non-empty list of refs even when it holds one, so a policy that
+  read `identity.sponsor.subject` must iterate `identity.sponsor`; a rule that denies one sponsor then fires whatever
+  others are named. The structured form's `version` is now 2 (`DOCUMENT_VERSION`; the string grammar stays version
+  1), `document()` always writes it, and `from_document` refuses version 1 with `identity_version_unknown`. A policy
+  consumer refuses a structured identity whose `version` is not 2, because a version 1 rule over `sponsor` is
+  undefined on the list and would stop denying silently. `+` is never part of a ref (it is not unreserved, so it is
+  written `%2B` inside a component), so the list always splits into the refs that were joined. New refusal codes: `identity_sponsor_order` (unsorted), `identity_sponsor_repeated` (a sponsor
+  twice) and `identity_sponsor_malformed` (not a tuple, or a document member that is not a non-empty list).
+  `vectors/shared/canonical_identity.json` adds CI11 to CI13 (two sponsors, and a sponsor whose subject holds `+`),
+  CR29 to CR35 and CD6 to CD11, and every document vector carries version 2 and, where it names a sponsor, the list.
+- `build_approval_binding` writes the members the agent-evidence-vectors 0.38 approval-binding reader judges, each from
+  the party that holds it: `issued=` (keyword, required) is the server's issuance register, written as
+  `issuedApprovalIds`; `enforcement=` (keyword, required, one of `ENFORCEMENT_MODES`: `enforce`, `observe`, `monitor`)
+  is the mode the gate ran in. The approval body carries its own `outcome` (`approved`, `approved-with-corrections` or
+  a refusal) and `requestId`, which the approver signs; an approval with no `requestId` is refused with
+  `approval_request_id_missing`. Nothing is defaulted: an approval the server never issued is denied
+  `approval_not_issued`, a refused one `approval_not_granted`, and one taken in observe or monitor mode
+  `approval_not_enforced`. Every caller passes the two new keywords.
+- `judge_approval_binding` denies a record the reader cannot read (a missing or mistyped member) with
+  `approval_binding_malformed` (`BINDING_MALFORMED`), so one malformed binding is a failure of its line instead of an
+  exception that ends `verify_journal`.
+- The dependency range of `agent-evidence-vectors` is `>=0.38.0,<0.40`.
+- The TypeScript twin `@probityai/records-verify` judges approval bindings with the 0.38 reader's twenty-two checks in
+  its order. `vectors/shared/approvals.json` adds AV29 to AV37 (not issued, refused, approved with corrections,
+  observe and monitor modes, one request answered twice, a lost request identifier, a retired key and a key used
+  before its retirement), and every approval vector was regenerated under the 0.38 reader.
+
 ## 0.10.0 (2026-11-25)
 
 This release changes the revocation list format, so a list written by 0.9.0 or earlier is refused by 0.10.0 and a

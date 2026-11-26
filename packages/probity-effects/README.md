@@ -4,7 +4,7 @@
 
 Keep one effect per agent tool call when its reply is lost: the guard asks the service that owns
 the effect before anything is sent again, records each operation as an `uncertain-effect/v1`
-record, and tests your tools against eight lost-reply scenarios in CI.
+record, and tests your tools against the lost-reply scenarios agent-evidence-vectors ships, in CI.
 
 It's for teams whose LangGraph, OpenAI Agents SDK or AG2 agents create orders, move money or open
 tickets, and who cannot afford a retry policy, a resumed thread or a model calling again to repeat the write.
@@ -121,9 +121,11 @@ Agents SDK use `OPENAI_AGENTS_VARIANTS` and `run_openai_agents_scenario`, and fo
 
 ## Status
 
-Version 0.2.0, alpha, with adapters for LangGraph, the OpenAI Agents SDK and AG2. Version 0.1.0 told a
+Version 0.2.2, alpha, with adapters for LangGraph, the OpenAI Agents SDK and AG2. Version 0.1.0 told a
 second caller with the same arguments that a write was committed when it was never sent, if the
-tool had no thread and no `key_from`; 0.2.0 refuses such a call, so upgrade.
+tool had no thread and no `key_from`; 0.2.0 refuses such a call, so upgrade. Before 0.2.1, an event appended after a
+stop mid-write was glued onto the torn line and could be lost or leave the file journal unreadable; 0.2.1 cuts the
+torn line first. Version 0.2.2 widens the `agent-evidence-vectors` requirement of the `testing` extra from `~=0.32.1` to `>=0.32.1,<1`, so the extra installs beside the current vectors release. It also asks a deduplicating owner before sending a key again: an owner that has forgotten the key and cannot say finally whether it holds the effect is no longer sent it twice, and the outcome is unknown.
 
 ## Documentation
 

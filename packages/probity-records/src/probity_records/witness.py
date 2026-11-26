@@ -571,12 +571,8 @@ class Witness:
         self._latest[origin] = (size, root_hash)
         if self.state_dir is None:
             return
-        path = Path(self.state_dir) / (origin.encode().hex() + ".state")
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(f"{size} {base64.b64encode(root_hash).decode()}\n")
-        with tmp.open("rb") as fh:
-            os.fsync(fh.fileno())
-        tmp.replace(path)
+        _write_whole(Path(self.state_dir) / (origin.encode().hex() + ".state"),
+                     f"{size} {base64.b64encode(root_hash).decode()}\n")
 
     def add_checkpoint(self, body: str) -> str:
         old, proof, note_text = parse_add_checkpoint(body)
@@ -673,6 +669,48 @@ def attach(note: str, response: str) -> str:
 
 
 # ---- the authority's checkpoint feed ------------------------------------------------------------
+def _write_whole(path: Path, text: str) -> None:
+    """Replace ``path`` with ``text`` whole or not at all: a writer killed mid-write leaves the old file, never an
+    empty or half-written one that the next reader cannot parse."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text)
+    with tmp.open("rb") as fh:
+        os.fsync(fh.fileno())
+    tmp.replace(path)
+
+
+_SIGNATURE_LINE = f"{EM_DASH} ".encode()
+
+
+def _whole_notes_end(data: bytes) -> int:
+    """The end of the last whole entry of a checkpoint log: a note's last signature line, then the blank line."""
+    end = pos = 0
+    previous = b""
+    for line in data.split(b"\n")[:-1]:
+        pos += len(line) + 1
+        if not line and previous.startswith(_SIGNATURE_LINE):
+            end = pos
+        previous = line
+    return end
+
+
+def _append_note(path: Path, note: str) -> None:
+    """Append ``note`` and a blank line to the checkpoint log, durably, after cutting back any torn entry: bytes
+    past the last whole entry are an append a killed writer never finished, and the next note must not be glued
+    onto them."""
+    data = path.read_bytes() if path.exists() else b""
+    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+    try:
+        end = _whole_notes_end(data)
+        if len(data) > end:
+            os.ftruncate(fd, end)
+            os.fsync(fd)
+        os.write(fd, (note + "\n").encode())
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
 def journal_leaves(path: Path) -> list[bytes]:
     """Leaf hashes of a journal's complete lines (a torn tail is not a line)."""
     if not path.exists():
@@ -730,7 +768,7 @@ class Feed:
                     raise
                 old = int(exc.body.strip())  # the witness's own latest size: prove from there
                 continue
-            state.write_text(f"{len(leaves)}\n")
+            _write_whole(state, f"{len(leaves)}\n")
             return response
         raise WitnessRefused(409, f"witness {wkey.name} kept moving its size")
 
@@ -751,13 +789,8 @@ class Feed:
                 verify_note(note, self.policy)
             except NoteError as exc:
                 raise WitnessRefused(503, f"not published: {exc}; witness errors: {errors}") from exc
-        tmp = Path(self.directory) / "checkpoint.tmp"
-        tmp.write_text(note)
-        with tmp.open("rb") as fh:
-            os.fsync(fh.fileno())
-        tmp.replace(Path(self.directory) / "checkpoint")
-        with (Path(self.directory) / "checkpoints.log").open("a") as fh:
-            fh.write(note + "\n")
+        _write_whole(Path(self.directory) / "checkpoint", note)
+        _append_note(Path(self.directory) / "checkpoints.log", note)
         return note
 
     def latest(self) -> str | None:

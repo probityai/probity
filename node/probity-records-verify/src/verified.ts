@@ -252,9 +252,9 @@ function actors(act: J): J[] {
 function identityFromTokens(found: Record<string, Token>, bundle: TrustBundle): CanonicalIdentity {
   const env = bundle.environment;
   const { user, agent, sponsor } = found;
-  const sponsorRef = sponsor ? new Ref("sponsor", env, sponsor.issuer, sponsor.subject) : undefined;
+  const sponsors = sponsor ? [new Ref("sponsor", env, sponsor.issuer, sponsor.subject)] : [];
   if (sponsor && !agent) refuse("principals_need_agent");
-  if (!user) return new CanonicalIdentity({ kind: "agent", chain: [new Ref("agent", env, agent.issuer, agent.subject)], sponsor: sponsorRef });
+  if (!user) return new CanonicalIdentity({ kind: "agent", chain: [new Ref("agent", env, agent.issuer, agent.subject)], sponsors });
   const userRef = new Ref("user", env, user.issuer, user.subject);
   const chainActors = "act" in user.claims ? actors(user.claims.act) : [];
   if (!agent) {
@@ -270,7 +270,7 @@ function identityFromTokens(found: Record<string, Token>, bundle: TrustBundle): 
       if (e instanceof IdentityDigestError) refuse(e.code); throw e;
     }
   }
-  return new CanonicalIdentity({ kind: "agent", user: userRef, chain: [...parents.reverse(), new Ref("agent", env, agent.issuer, agent.subject)], sponsor: sponsorRef, act });
+  return new CanonicalIdentity({ kind: "agent", user: userRef, chain: [...parents.reverse(), new Ref("agent", env, agent.issuer, agent.subject)], sponsors, act });
 }
 
 // --- possession: probity_records.possession.check_possession ------------------------------------------------------
@@ -556,7 +556,7 @@ function verifyStampOf(fields: Map<string, string>, bundle: TrustBundle, request
 export interface VerifiedRequest { identities: CanonicalIdentity[]; proof: PossessionProof | null; stamp: { nonce: string; expires: number } | null }
 
 function checkEnvironment(identity: CanonicalIdentity, bundle: TrustBundle): void {
-  const refs = [identity.user, ...identity.chain, identity.sponsor, identity.approver, identity.service];
+  const refs = [identity.user, ...identity.chain, ...identity.sponsors, identity.approver, identity.service];
   if (refs.some((r) => r !== undefined && r.environment !== bundle.environment)) refuse("identity_environment_mismatch");
 }
 

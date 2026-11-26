@@ -44,6 +44,9 @@ class EffectOutcomeUnknown(RuntimeError):
         self.outcome = outcome
 
 
+# What the owner's lookups settled about one key.
+PRESENT, ABSENT, OPEN = "present", "absent", "open"
+
 # What the policy asks its driver to do.
 Request = tuple[str, Any]
 Plan = Generator[Request, Any, Outcome]
@@ -170,9 +173,9 @@ class EffectGuard:
         if history.committed:
             return self._report(key, "committed", "the owner already holds this effect, so it was not sent again")
         pending = history.unresolved()
-        if pending is not None and not self._deduplicated(pending):
+        if pending is not None:
             answer = yield from self._settle(key)
-            if answer is not False:
+            if not self._may_resend(answer, pending):
                 return self._settled(key, answer, "an earlier reply was lost")
         sent = 0
         while True:
@@ -199,10 +202,8 @@ class EffectGuard:
             if reply is Reply.NO_EFFECT:
                 return self._report(key, "not_run", f"the owner answered that the effect did not happen ({error})",
                                     sent=sent, error=error)
-            if self._deduplicated(journal.history(key).unresolved()):
-                continue
             answer = yield from self._settle(key)
-            if answer is not False:
+            if not self._may_resend(answer, journal.history(key).unresolved()):
                 return self._settled(key, answer, "the reply was lost", sent=sent, error=error)
 
     def _lease_lost(self, key: str, history: Any, sent: int) -> Plan:
@@ -210,12 +211,17 @@ class EffectGuard:
             return self._report(key, history.settled(), "this worker no longer holds the lease, so nothing was sent",
                                 sent=sent)
         answer = yield from self._settle(key)
-        if answer is False:
+        if answer == ABSENT:
             return self._report(key, "not_run", "the lease moved and the owner holds no effect", sent=sent)
         return self._settled(key, answer, "the lease moved after a lost reply", sent=sent)
 
-    def _settle(self, key: str) -> Generator[Request, Any, bool | None]:
-        """Ask the owner until it answers finally: True present, False absent, None no final answer."""
+    def _settle(self, key: str) -> Generator[Request, Any, str | None]:
+        """Ask the owner until it answers finally.
+
+        Returns PRESENT, ABSENT (final), OPEN (the owner answered, but only that it does not hold the key now,
+        without saying so finally) or None (the owner gave no answer at all).
+        """
+        seen: str | None = None
         for number in range(self.owner.lookups):
             if number:
                 yield ("sleep", self.owner.lookup_interval)
@@ -227,10 +233,20 @@ class EffectGuard:
             self.journal.append({"event": "lookup", "key": key, "answered": True,
                                  "result": "present" if answer.present else "absent", "final": final})
             if answer.present:
-                return True
+                return PRESENT
             if final:
-                return False
-        return None
+                return ABSENT
+            seen = OPEN
+        return seen
+
+    def _may_resend(self, answer: str | None, pending: Attempt | None) -> bool:
+        """Whether the owner's answers permit sending the same key again.
+
+        A final absent does. Deduplication does only when the owner gave no answer at all: an owner that
+        answers it does not hold the key now, without saying so finally, may have forgotten the key, and a
+        second send would then be applied again.
+        """
+        return answer == ABSENT or (answer is None and self._deduplicated(pending))
 
     def _deduplicated(self, pending: Attempt | None) -> bool:
         """Whether the owner's deduplication covers sending the same key again now."""
@@ -242,8 +258,8 @@ class EffectGuard:
         age = (datetime.now(UTC) - parse(pending.dispatched_at)).total_seconds()
         return age <= owner.key_retention_seconds
 
-    def _settled(self, key: str, answer: bool | None, why: str, *, sent: int = 0, error: str | None = None) -> Outcome:
-        if answer is True:
+    def _settled(self, key: str, answer: str | None, why: str, *, sent: int = 0, error: str | None = None) -> Outcome:
+        if answer == PRESENT:
             return self._report(key, "committed", f"{why}, and the owner holds the effect", sent=sent, error=error)
         return self._report(key, "unknown", f"{why}, and the owner could not confirm what it holds",
                             sent=sent, error=error)
