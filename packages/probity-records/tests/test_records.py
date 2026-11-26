@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
 from probity_records import (
     BINDING_MALFORMED,
     TOOL_CALL_RECORD,

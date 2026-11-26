@@ -11,7 +11,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from probity_records import BINDING_MALFORMED, judge_approval_binding, verify_journal
 from probity_records.authority import Trust
 
