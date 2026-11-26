@@ -2,6 +2,18 @@
 
 ## 0.13.0 (2026-11-26)
 
+- **Witness soundness fixes, each pinned by `tests/test_witness_soundness_review.py` and
+  `tests/test_witness_repair_attacks.py`.** A policy refuses a name listed in two groups (`policy_group_members`); an
+  ML-DSA-44 line dated 0 is a subtree cosignature and is never made or counted as a checkpoint cosignature, so
+  `sign_checkpoint(..., pq=...)` now needs a `timestamp`; a size-0 tree and an empty subtree carry only the empty-tree
+  hash; the witness persists one fsynced `<hex SHA-256 of origin>.checkpoint` per log under a directory lock, reads a
+  0.12.0 `.state` file as its floor, and refuses to start on state it cannot read (`witness_state_unreadable`) or to
+  cosign what it cannot persist (`witness_state_unwritable`); the monitor copy holds only lines the witness verified or
+  made; `sign-subtree` answers 400 for more than one signature and signs with the key that cosigned; the feed keeps
+  one verified line per asked witness and treats any transport fault as that witness's error; unknown keys of any name
+  length are ignored; the client refuses a non-UTF-8 reply (`witness_response_malformed`); the server checks
+  `Content-Length`; the refusal lint reads the argument a raiser names and refuses a code composed at run time.
+
 - **`probity_records.witness` is now the whole C2SP witness surface, and every refusal carries a registered code.**
   New cases, each pinned by `tests/test_witness_c2sp_surface.py` and the published examples in
   `vectors/shared/c2sp-conformance.json` (the c2sp.org/signed-note example, golang.org/x/mod sumdb notes, a Sigstore
