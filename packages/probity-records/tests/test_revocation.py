@@ -1,4 +1,4 @@
-"""The one signed revocation list: eight subject kinds, a hash chain, cumulative entries, root rotation.
+"""The one signed revocation list: eight subject kinds, a hash chain, delta entries, root rotation.
 
 Every reader of revocations (records audit, the TypeScript twin, the Go reader and any other) applies this format
 and must agree with these refusals.
@@ -7,14 +7,22 @@ and must agree with these refusals.
 from __future__ import annotations
 
 import base64
+import copy
+import gc
 import importlib.util
 import json
+import pickle
+import statistics
+import threading
+import time
+from collections.abc import MutableMapping
 from pathlib import Path
 
 import pytest
 from probity_records import (
     REFUSAL_CODES,
     REVOCATION_KINDS,
+    REVOCATION_LIST,
     Journal,
     RevocationError,
     RevocationState,
@@ -33,6 +41,7 @@ from probity_records import (
 )
 from probity_records.clock import SystemClock
 from probity_records.core import canonical, sha256_hex
+from probity_records.identifiers import identifier
 from probity_records.identity import jwk_thumbprint
 from probity_records.possession import cnf_for_signer
 from test_records import _approval, _trust, _write_run
@@ -97,15 +106,15 @@ def test_out_of_order_lists_are_refused_and_leave_the_state_unchanged(case: str,
     bad = {
         "replay": two,
         "rollback": one,
-        "future": _list(root, 4, [_entry("stream", "s1")], previous=two, issued_at="2026-06-03T00:00:00Z"),
-        "fork": _list(root, 3, [_entry("stream", "s1")], previous=one, issued_at="2026-06-03T00:00:00Z"),
-        "chain": _list(root, 3, [_entry("stream", "s1")], previous=two, issued_at="2026-06-03T00:00:00Z", list_id="x"),
-        "time": _list(root, 3, [_entry("stream", "s1")], previous=two, issued_at="2026-06-01T12:00:00Z"),
+        "future": _list(root, 4, [_entry("stream", "s2")], previous=two, issued_at="2026-06-03T00:00:00Z"),
+        "fork": _list(root, 3, [_entry("stream", "s2")], previous=one, issued_at="2026-06-03T00:00:00Z"),
+        "chain": _list(root, 3, [_entry("stream", "s2")], previous=two, issued_at="2026-06-03T00:00:00Z", list_id="x"),
+        "time": _list(root, 3, [_entry("stream", "s2")], previous=two, issued_at="2026-06-01T12:00:00Z"),
     }[case]
     with pytest.raises(RevocationError) as exc:
         state.apply(bad)
     assert _code(exc) == code
-    assert state.seq == 2 and state.revoked("stream", "s1")
+    assert state.seq == 2 and state.revoked("stream", "s1") and not state.revoked("stream", "s2")
 
 
 def test_a_fresh_verifier_starts_at_seq_one() -> None:
@@ -116,20 +125,240 @@ def test_a_fresh_verifier_starts_at_seq_one() -> None:
     assert _code(exc) == "revocation_list_gap"
 
 
-@pytest.mark.parametrize("edit", ["drop", "retime", "reason", "add-successor"])
-def test_a_list_never_shrinks_and_never_edits_an_entry(edit: str) -> None:
+def test_the_list_type_is_v2_and_a_v1_list_is_refused_for_its_type() -> None:
+    assert REVOCATION_LIST == identifier("agent-evidence-vectors/predicate/v2/revocation-list")
+    root = Signer.generate()
+    v1 = dict(_list(root, 1, [])["body"], type=identifier("agent-evidence-vectors/predicate/v1/revocation-list"))
+    with pytest.raises(RevocationError, match="^revocation_list_shape:type$"):
+        RevocationState.from_lists([_resign(root, v1)], {root.key_id})
+
+
+def test_lists_are_deltas_that_fold_to_the_union() -> None:
+    root = Signer.generate()
+    first = _list(root, 1, [_entry("agent", "agent:a", "1999-01-01T00:00:00Z"), _entry("stream", "s1")])
+    second = _list(root, 2, [_entry("agent", "agent:b")], previous=first)
+    state = RevocationState.from_lists([first, second], {root.key_id})
+    assert state.seq == 2 and len(state.entries) == 3
+    assert state.revoked("agent", "agent:a") and state.revoked("agent", "agent:b") and state.revoked("stream", "s1")
+    assert state.revoked_at("agent", "agent:a", "1999-06-01T00:00:00Z")
+    assert not state.revoked_at("agent", "agent:b", "1999-06-01T00:00:00Z")
+    assert state.summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
+
+
+def test_a_seq_one_list_carries_entries_and_an_empty_delta_is_a_freshness_list() -> None:
+    root = Signer.generate()
+    first = _list(root, 1, [_entry("sponsor", "sponsor:acme")], issued_at="2026-06-01T00:00:00Z")
+    fresh = _list(root, 2, [], previous=first, issued_at="2026-06-02T00:00:00Z")
+    state = RevocationState.from_lists([first, fresh], {root.key_id})
+    assert (state.seq, state.issued_at, state.head) == (2, "2026-06-02T00:00:00Z", list_digest(fresh["body"]))
+    assert state.revoked("sponsor", "sponsor:acme") and len(state.entries) == 1
+
+
+@pytest.mark.parametrize("edit", ["same", "retime", "reason", "add-successor"])
+def test_a_list_that_names_a_subject_an_earlier_list_revoked_is_refused(edit: str) -> None:
+    """An entry is published once and its revokedAt never moves: a delta cannot repeat, re-date or edit it."""
     root, other = Signer.generate(), Signer.generate()
     kept = _entry("key", other.key_id, reason="lost")
     first = _list(root, 1, [kept, _entry("sponsor", "sponsor:acme")])
-    changed = {
-        "drop": [_entry("sponsor", "sponsor:acme")],
-        "retime": [{**kept, "revokedAt": "1999-01-01T00:00:00Z"}, _entry("sponsor", "sponsor:acme")],
-        "reason": [{**kept, "reason": "found"}, _entry("sponsor", "sponsor:acme")],
-        "add-successor": [{**kept, "successor": raw_public(root)}, _entry("sponsor", "sponsor:acme")],
+    again = {
+        "same": kept,
+        "retime": {**kept, "revokedAt": "1999-01-01T00:00:00Z"},
+        "reason": {**kept, "reason": "found"},
+        "add-successor": {**kept, "successor": raw_public(root)},
     }[edit]
+    state = RevocationState.from_lists([first], {root.key_id})
     with pytest.raises(RevocationError) as exc:
-        RevocationState.from_lists([first, _list(root, 2, changed, previous=first)], {root.key_id})
-    assert _code(exc) == "revocation_list_drops_entry"
+        state.apply(_list(root, 2, [again, _entry("stream", "s9")], previous=first))
+    assert str(exc.value) == f"revocation_entry_repeated:key:{other.key_id[:12]}"
+    assert state.seq == 1 and not state.revoked("stream", "s9")
+
+
+def test_the_refusal_codes_are_the_delta_formats() -> None:
+    assert "revocation_list_drops_entry" not in REFUSAL_CODES
+    assert REFUSAL_CODES[-2:] == ("revocation_entry_from_future", "revocation_entry_repeated")
+
+
+# -- every state is an immutable snapshot ----------------------------------------------------------------------------
+
+
+def _chain(root: Signer, *deltas: list) -> list[dict]:
+    lists: list[dict] = []
+    for seq, entries in enumerate(deltas, start=1):
+        lists.append(_list(root, seq, entries, previous=lists[-1] if lists else None))
+    return lists
+
+
+def test_an_older_state_never_sees_a_later_lists_entries() -> None:
+    root = Signer.generate()
+    first, second, third = _chain(root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")],
+                                  [_entry("agent", "agent:c")])
+    one = RevocationState(roots=frozenset({root.key_id})).apply(first)
+    two = one.apply(second)
+    three = two.apply(third)
+    assert sorted(one.entries) == [("agent", "agent:a")] and len(one.entries) == 1
+    assert not one.revoked("agent", "agent:b") and ("agent", "agent:b") not in one.entries
+    with pytest.raises(KeyError):
+        one.entries[("agent", "agent:c")]
+    assert one.summary()["revoked"]["agent"] == ["agent:a"]
+    assert two.summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
+    assert three.summary()["revoked"]["agent"] == ["agent:a", "agent:b", "agent:c"]
+    assert not isinstance(one.entries, MutableMapping)
+    with pytest.raises(TypeError):
+        one.entries[("agent", "agent:z")] = {}  # type: ignore[index]
+
+
+def test_two_successors_of_one_state_are_both_correct() -> None:
+    root = Signer.generate()
+    (first,) = _chain(root, [_entry("agent", "agent:a")])
+    base = RevocationState(roots=frozenset({root.key_id})).apply(first)
+    left = base.apply(_list(root, 2, [_entry("agent", "agent:b")], previous=first))
+    right_list = _list(root, 2, [_entry("agent", "agent:c")], previous=first)
+    right = base.apply(right_list)
+    assert left.revoked("agent", "agent:b") and not left.revoked("agent", "agent:c")
+    assert right.revoked("agent", "agent:c") and not right.revoked("agent", "agent:b")
+    assert not base.revoked("agent", "agent:b") and not base.revoked("agent", "agent:c")
+    # each branch goes on independently, and a key one branch adds stays out of the other
+    right_next = right.apply(_list(root, 3, [_entry("agent", "agent:b")], previous=right_list))
+    assert right_next.summary()["revoked"]["agent"] == ["agent:a", "agent:b", "agent:c"]
+    assert left.summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
+    assert right.summary()["revoked"]["agent"] == ["agent:a", "agent:c"]
+
+
+def test_a_refused_list_adds_nothing_to_any_state() -> None:
+    root = Signer.generate()
+    (first,) = _chain(root, [_entry("agent", "agent:a")])
+    base = RevocationState(roots=frozenset({root.key_id})).apply(first)
+    with pytest.raises(RevocationError, match="^revocation_entry_repeated:"):
+        base.apply(_list(root, 2, [_entry("agent", "agent:a"), _entry("agent", "agent:z")], previous=first))
+    after = base.apply(_list(root, 2, [_entry("agent", "agent:y")], previous=first))
+    assert not after.revoked("agent", "agent:z") and not base.revoked("agent", "agent:z")
+    assert after.summary()["revoked"]["agent"] == ["agent:a", "agent:y"]
+
+
+def test_a_state_built_with_a_plain_dict_still_applies() -> None:
+    root = Signer.generate()
+    first, second = _chain(root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")])
+    held = {("agent", "agent:a"): _entry("agent", "agent:a")}
+    state = RevocationState(frozenset({root.key_id}), "rl", 1, list_digest(first["body"]), PAST, held)
+    after = state.apply(second)
+    assert after.summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
+    assert sorted(state.entries) == [("agent", "agent:a")]
+    held[("agent", "agent:q")] = _entry("agent", "agent:q")  # the caller's dict is not the state's
+    with pytest.raises(RevocationError, match="^revocation_entry_repeated:agent:agent:a"):
+        state.apply(_list(root, 2, [_entry("agent", "agent:a")], previous=first))
+
+
+def test_a_copied_or_pickled_state_is_a_state_of_its_own() -> None:
+    root = Signer.generate()
+    first, second, third = _chain(root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")],
+                                  [_entry("agent", "agent:c")])
+    one = RevocationState(roots=frozenset({root.key_id})).apply(first)
+    for copied in (copy.deepcopy(one), pickle.loads(pickle.dumps(one))):
+        assert copied == one and copied.summary() == one.summary()
+        assert copied.apply(second).apply(third).summary()["revoked"]["agent"] == ["agent:a", "agent:b", "agent:c"]
+    assert one.summary()["revoked"]["agent"] == ["agent:a"]
+    assert one.apply(second).summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
+
+
+def test_threads_applying_different_lists_to_one_state_each_get_their_own() -> None:
+    root = Signer.generate()
+    (first,) = _chain(root, [_entry("agent", "agent:a")])
+    base = RevocationState(roots=frozenset({root.key_id})).apply(first)
+    lists = [_list(root, 2, [_entry("stream", f"s{i:02d}")], previous=first) for i in range(16)]
+    results: list[RevocationState | None] = [None] * len(lists)
+    gate = threading.Barrier(len(lists))
+
+    # each chain is signed ahead of time, so the threads only apply
+    chains = []
+    for i, lst in enumerate(lists):
+        chain = [lst]
+        for j in range(3, 40):
+            chain.append(_list(root, j, [_entry("stream", f"s{i:02d}-{j:02d}")], previous=chain[-1]))
+        chains.append(chain)
+
+    def run(i: int) -> None:
+        gate.wait()
+        state = base
+        for signed in chains[i]:
+            state = state.apply(signed)
+        results[i] = state
+
+    threads = [threading.Thread(target=run, args=(i,)) for i in range(len(lists))]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join()
+    for i, state in enumerate(results):
+        assert state is not None and state.seq == 39
+        want = sorted([f"s{i:02d}"] + [f"s{i:02d}-{j:02d}" for j in range(3, 40)])
+        assert state.summary()["revoked"]["stream"] == want
+        assert state.summary()["revoked"]["agent"] == ["agent:a"]
+    assert base.summary()["revoked"]["stream"] == [] and len(base.entries) == 1
+
+
+def test_a_thread_extending_the_tip_never_disturbs_readers_of_older_states() -> None:
+    root = Signer.generate()
+    chain = _chain(root, [_entry("agent", f"agent:{i:04d}") for i in range(200)],
+                   *[[_entry("stream", f"s{j:04d}")] for j in range(400)])
+    old = RevocationState(roots=frozenset({root.key_id})).apply(chain[0])
+    want = old.summary()
+    done = threading.Event()
+    faults: list[Exception] = []
+
+    def read() -> None:
+        try:
+            while not done.is_set():
+                assert old.summary() == want
+                assert len(list(old.entries.items())) == 200 and len(old.entries) == 200
+                assert not old.revoked("stream", "s0000")
+        except (AssertionError, KeyError, RuntimeError) as exc:  # reported by the main thread
+            faults.append(exc)
+
+    readers = [threading.Thread(target=read) for _ in range(4)]
+    for th in readers:
+        th.start()
+    state = old
+    try:
+        for signed in chain[1:]:
+            state = state.apply(signed)
+    finally:
+        done.set()
+        for th in readers:
+            th.join()
+    assert not faults, faults
+    assert state.seq == 401 and len(state.entries) == 600
+
+
+# -- cost does not grow with what is already revoked ---------------------------------------------------------------
+
+
+def _delta_costs(held: int, runs: int = 21) -> tuple[float, float]:
+    """Median seconds to sign, and to apply, a one-entry delta onto a state already holding ``held`` entries."""
+    root = Signer.generate()
+    first = _list(root, 1, [_entry("agent", f"agent:{i:07d}") for i in range(held)])
+    state = RevocationState(roots=frozenset({root.key_id})).apply(first)
+    previous, sign, apply = first, [], []
+    gc.disable()
+    try:
+        for n in range(runs):
+            start = time.perf_counter()
+            signed = _list(root, n + 2, [_entry("stream", f"stream:{n:03d}")], previous=previous)
+            middle = time.perf_counter()
+            state = state.apply(signed)
+            sign.append(middle - start)
+            apply.append(time.perf_counter() - middle)
+            previous = signed
+    finally:
+        gc.enable()
+    assert len(state.entries) == held + runs
+    return statistics.median(sign), statistics.median(apply)
+
+
+def test_signing_and_applying_a_delta_do_not_grow_with_the_entries_already_revoked() -> None:
+    small_sign, small_apply = _delta_costs(1_000)
+    large_sign, large_apply = _delta_costs(100_000)
+    assert large_apply < 3 * small_apply, (small_apply, large_apply)
+    assert large_sign < 3 * small_sign, (small_sign, large_sign)
 
 
 # -- who may sign -------------------------------------------------------------------------------------------------
@@ -163,11 +392,11 @@ def test_a_forged_list_is_refused(tamper: str) -> None:
 def test_root_rotation_hands_over_to_the_successor() -> None:
     old, new = Signer.generate(), Signer.generate()
     first = _list(old, 1, [_entry("key", old.key_id, reason="rotation", successor=raw_public(new))])
-    second = _list(new, 2, first["body"]["entries"], previous=first)
+    second = _list(new, 2, [], previous=first)
     state = RevocationState.from_lists([first, second], {old.key_id})
     assert state.roots == frozenset({new.key_id}) and state.seq == 2
     with pytest.raises(RevocationError) as exc:
-        RevocationState.from_lists([first, _list(old, 2, first["body"]["entries"], previous=first)], {old.key_id})
+        RevocationState.from_lists([first, _list(old, 2, [], previous=first)], {old.key_id})
     assert _code(exc) == "revocation_list_signer_not_a_root"
 
 
@@ -182,6 +411,17 @@ def test_a_revoked_successor_is_never_a_root_in_either_id_order() -> None:
         assert state.roots == frozenset({other.key_id})
         seen.add(old.key_id < new.key_id)
     assert seen == {True, False}
+
+
+def test_a_successor_revoked_by_an_earlier_list_never_becomes_a_root() -> None:
+    old, new, other = Signer.generate(), Signer.generate(), Signer.generate()
+    first = _list(old, 1, [_entry("key", new.key_id, reason="compromised")])
+    second = _list(old, 2, [_entry("key", old.key_id, reason="rotation", successor=raw_public(new))], previous=first)
+    state = RevocationState.from_lists([first, second], {old.key_id, other.key_id})
+    assert state.roots == frozenset({other.key_id})
+    with pytest.raises(RevocationError) as exc:
+        state.apply(_list(new, 3, [], previous=second))
+    assert _code(exc) == "revocation_list_signer_not_a_root"
 
 
 # -- shape --------------------------------------------------------------------------------------------------------

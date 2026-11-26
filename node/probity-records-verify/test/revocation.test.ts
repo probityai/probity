@@ -39,7 +39,7 @@ test("a refused list leaves the state unchanged", () => {
   let state = newRevocationState(v.roots);
   for (const signed of v.lists.slice(0, v.expected.index)) state = applyRevocationList(state, signed);
   const before = revocationSummary(state);
-  assert.throws(() => applyRevocationList(state, v.lists[v.expected.index]), /^Error: revocation_list_drops_entry/);
+  assert.throws(() => applyRevocationList(state, v.lists[v.expected.index]), /^Error: revocation_entry_repeated:/);
   assert.deepEqual(revocationSummary(state), before);
 });
 
@@ -68,10 +68,140 @@ const rootId = sha256Hex(rootRaw);
 
 /** A seq-1 list holding `entries`, signed by the test root whatever its shape. */
 function signedList(entries: object[], issuedAt = "2026-05-02T00:00:00Z"): object {
-  const body = { entries, issuedAt, issuerKey: rootRaw.toString("base64"), listId: "rl", previous: null, seq: 1, type: REVOCATION_LIST };
+  return chainedList(entries, 1, null, issuedAt);
+}
+
+/** List `seq` of the test root's chain, holding `entries` (the delta) after `previous`, signed whatever its shape. */
+function chainedList(entries: object[], seq: number, previous: any, issuedAt = "2026-05-02T00:00:00Z", type: string = REVOCATION_LIST): any {
+  const body = { entries, issuedAt, issuerKey: rootRaw.toString("base64"), listId: "rl",
+    previous: previous === null ? null : rev.listDigest(previous.body), seq, type };
   const sig = sign(null, Buffer.concat([Buffer.from("probity-revocation-v1\u0000", "latin1"), canonicalBytes(body)]), root.privateKey);
   return { body, sig: sig.toString("base64") };
 }
+
+const agent = (id: string, revokedAt = "2026-05-01T00:00:00Z") => ({ kind: "agent", id, revokedAt });
+const agentsOf = (state: rev.RevocationState): string[] => revocationSummary(state).revoked.agent;
+
+// ---------- delta lists: each list carries only what it newly revokes ----------
+
+test("the list type is v2 and a v1 list is refused for its type", () => {
+  assert.ok(REVOCATION_LIST.endsWith("agent-evidence-vectors/predicate/v2/revocation-list"));
+  const v1 = chainedList([], 1, null, undefined, REVOCATION_LIST.replace("/v2/", "/v1/"));
+  assert.throws(() => applyRevocationList(newRevocationState([rootId]), v1), /^Error: revocation_list_shape:type$/);
+});
+
+test("the refusal codes are the delta format's", () => {
+  assert.ok(!(REFUSAL_CODES as readonly string[]).includes("revocation_list_drops_entry"));
+  assert.deepEqual(REFUSAL_CODES.slice(-2), ["revocation_entry_from_future", "revocation_entry_repeated"]);
+});
+
+test("deltas fold to the union, and an empty delta is a freshness list", () => {
+  const one = chainedList([agent("agent:a", "1999-01-01T00:00:00Z")], 1, null);
+  const two = chainedList([agent("agent:b")], 2, one);
+  const three = chainedList([], 3, two, "2026-05-03T00:00:00Z");
+  let state = newRevocationState([rootId]);
+  for (const signed of [one, two, three]) state = applyRevocationList(state, signed);
+  assert.deepEqual(agentsOf(state), ["agent:a", "agent:b"]);
+  assert.equal(state.seq, 3);
+  assert.equal(state.issuedAt, "2026-05-03T00:00:00Z");
+  assert.equal(state.entries.size, 2);
+  assert.equal(rev.revokedAt(state, "agent", "agent:a", "1999-06-01T00:00:00Z"), true);
+  assert.equal(rev.revokedAt(state, "agent", "agent:b", "1999-06-01T00:00:00Z"), false);
+});
+
+for (const [edit, again] of Object.entries({
+  same: agent("agent:a"),
+  retime: agent("agent:a", "1999-01-01T00:00:00Z"),
+  reason: { ...agent("agent:a"), reason: "found" },
+})) {
+  test(`a list naming a subject an earlier list revoked is refused: ${edit}`, () => {
+    const one = chainedList([agent("agent:a")], 1, null);
+    const state = applyRevocationList(newRevocationState([rootId]), one);
+    const bad = chainedList([again, agent("agent:z")], 2, one);
+    assert.throws(() => applyRevocationList(state, bad), /^Error: revocation_entry_repeated:agent:agent:a$/);
+    assert.equal(state.seq, 1);
+    assert.equal(revoked(state, "agent", "agent:z"), false);
+  });
+}
+
+test("an older state never sees a later list's entries", () => {
+  const one = chainedList([agent("agent:a")], 1, null);
+  const two = chainedList([agent("agent:b")], 2, one);
+  const s1 = applyRevocationList(newRevocationState([rootId]), one);
+  const s2 = applyRevocationList(s1, two);
+  assert.deepEqual(agentsOf(s1), ["agent:a"]);
+  assert.deepEqual([...s1.entries.keys()], ["agent\u0000agent:a"]);
+  assert.equal(s1.entries.size, 1);
+  assert.equal(s1.entries.has("agent\u0000agent:b"), false);
+  assert.equal(s1.entries.get("agent\u0000agent:b"), undefined);
+  assert.deepEqual(agentsOf(s2), ["agent:a", "agent:b"]);
+});
+
+test("two successors of one state are both correct", () => {
+  const one = chainedList([agent("agent:a")], 1, null);
+  const base = applyRevocationList(newRevocationState([rootId]), one);
+  const rightList = chainedList([agent("agent:c")], 2, one);
+  const left = applyRevocationList(base, chainedList([agent("agent:b")], 2, one));
+  const right = applyRevocationList(base, rightList);
+  const rightNext = applyRevocationList(right, chainedList([agent("agent:b")], 3, rightList));
+  assert.deepEqual(agentsOf(base), ["agent:a"]);
+  assert.deepEqual(agentsOf(left), ["agent:a", "agent:b"]);
+  assert.deepEqual(agentsOf(right), ["agent:a", "agent:c"]);
+  assert.deepEqual(agentsOf(rightNext), ["agent:a", "agent:b", "agent:c"]);
+});
+
+test("a refused list adds nothing to any state", () => {
+  const one = chainedList([agent("agent:a")], 1, null);
+  const base = applyRevocationList(newRevocationState([rootId]), one);
+  assert.throws(() => applyRevocationList(base, chainedList([agent("agent:a"), agent("agent:z")], 2, one)), /revocation_entry_repeated/);
+  const after = applyRevocationList(base, chainedList([agent("agent:y")], 2, one));
+  assert.deepEqual(agentsOf(after), ["agent:a", "agent:y"]);
+  assert.equal(revoked(base, "agent", "agent:z"), false);
+});
+
+test("a state built with a plain Map still applies", () => {
+  const one = chainedList([agent("agent:a")], 1, null);
+  const held = new Map([["agent\u0000agent:a", agent("agent:a")]]);
+  const state: rev.RevocationState = { roots: new Set([rootId]), listId: "rl", seq: 1, head: rev.listDigest(one.body),
+    issuedAt: "2026-05-02T00:00:00Z", entries: held };
+  const after = applyRevocationList(state, chainedList([agent("agent:b")], 2, one));
+  assert.deepEqual(agentsOf(after), ["agent:a", "agent:b"]);
+  assert.equal(held.size, 1);
+});
+
+test("a successor revoked by an earlier list never becomes a root", () => {
+  const next = generateKeyPairSync("ed25519");
+  const nextRaw = Buffer.from(next.publicKey.export({ format: "jwk" }).x as string, "base64url");
+  const nextId = sha256Hex(nextRaw);
+  const one = chainedList([{ kind: "key", id: nextId, revokedAt: "2026-05-01T00:00:00Z" }], 1, null);
+  const two = chainedList([{ kind: "key", id: rootId, revokedAt: "2026-05-01T00:00:00Z", successor: nextRaw.toString("base64") }], 2, one);
+  let state = newRevocationState([rootId]);
+  for (const signed of [one, two]) state = applyRevocationList(state, signed);
+  assert.deepEqual([...state.roots], []);
+});
+
+/** Median milliseconds to apply a one-entry delta onto a state already holding `held` entries. */
+function deltaApplyMs(held: number, runs = 21): number {
+  const first = chainedList(Array.from({ length: held }, (_, i) => agent(`agent:${String(i).padStart(7, "0")}`)), 1, null);
+  let state = applyRevocationList(newRevocationState([rootId]), first);
+  let previous = first;
+  const times: number[] = [];
+  for (let n = 0; n < runs; n++) {
+    const signed = chainedList([{ kind: "stream", id: `stream:${String(n).padStart(3, "0")}`, revokedAt: "2026-05-01T00:00:00Z" }], n + 2, previous);
+    const start = performance.now();
+    state = applyRevocationList(state, signed);
+    times.push(performance.now() - start);
+    previous = signed;
+  }
+  assert.equal(state.entries.size, held + runs);
+  return times.sort((a, b) => a - b)[Math.floor(runs / 2)];
+}
+
+test("applying a delta does not grow with the entries already revoked", () => {
+  const small = deltaApplyMs(1_000);
+  const large = deltaApplyMs(100_000);
+  assert.ok(large < 3 * small, `${small} ms at 1,000, ${large} ms at 100,000`);
+});
 
 test("the thumbprint constant is RFC 8037's", () => {
   assert.equal(jwkThumbprint(RFC8037_JWK), THUMBPRINT);
