@@ -143,6 +143,10 @@ class _Scan:
         elif isinstance(node, ast.Call) and _name(node.func) in ("frozenset", "set", "tuple", "list"):
             for arg in node.args:
                 self.strings(arg, shaped_only=shaped_only)
+        elif isinstance(node, ast.Call) and not shaped_only:
+            # where only a code goes, a string a call returns (``body.strip()``, ``str(exc)``) is a code nobody can
+            # check: a remote party's text, or an exception's message, would become the refusal code
+            self.findings.append(Finding(self.path, node.lineno, ast.unparse(node), "refusal code composed at run time"))
 
     def located(self, node: ast.AST) -> None:
         """A problem string ``<where>:<code>[:<detail>]``: the code is the segment after the first ``:``."""
@@ -331,8 +335,12 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
             elif (called in ("append", "extend", "add") and isinstance(node.func, ast.Attribute)
                   and cfg.has(cfg.located_lists, scan.path, _name(node.func.value)) and node.args):
                 scan.located(node.args[0])
-            elif cfg.has(cfg.raisers, scan.path, called) and node.args:
-                scan.strings(node.args[0], shaped_only=False)  # the code; a second argument is the detail
+            elif (raised := cfg.positions(cfg.raisers, scan.path, called)) is not None and node.args:
+                # ``Error@1`` names the argument that holds the code (``WitnessRefused(409, "code:...")``); a bare
+                # name means the first argument, and a second argument is the detail
+                for index in raised if len(raised) < 64 else (0,):
+                    if index < len(node.args):
+                        scan.strings(node.args[index], shaped_only=False)
             for keyword in node.keywords:
                 if keyword.arg in cfg.keywords:
                     scan.strings(keyword.value, shaped_only=False)
@@ -365,6 +373,7 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
 PACKAGE_CONFIG = Config(
     raisers=frozenset({"RevocationError", "IdentityStringError", "IdentityDigestError@0", "_JwkRefused",
                        "grants.py::ValueError", "NoteError", "WitnessRefused@1"}),
+    refusal_calls=frozenset({"witness.py::_refuse@1"}),  # the witness server's coded answers
     exempt_functions=frozenset({"act_grade", "possession_grade", "strict_shortfall", "_state"}),  # grades and a
     # state-file path, never refusals
     located_lists=frozenset({"problems", "found", "ignored", "failures"}),

@@ -3561,10 +3561,28 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_request_too_large"
   },
   {
+   "code": "witness_response_malformed",
+   "check": "witness.protocol",
+   "meaning": "a remote witness answered with bytes that are not a UTF-8 response",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_response_malformed"
+  },
+  {
    "code": "witness_size_unstable",
    "check": "witness.protocol",
    "meaning": "a witness kept moving its size while the feed retried",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_size_unstable"
+  },
+  {
+   "code": "witness_state_unreadable",
+   "check": "witness.protocol",
+   "meaning": "the witness's state directory holds a file it cannot read as its latest cosigned checkpoint, so it refuses to cosign",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_state_unreadable"
+  },
+  {
+   "code": "witness_state_unwritable",
+   "check": "witness.protocol",
+   "meaning": "the witness could not persist the new checkpoint, so it does not cosign it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_state_unwritable"
   },
   {
    "code": "witness_subtree_invalid",

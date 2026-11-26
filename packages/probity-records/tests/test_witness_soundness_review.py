@@ -111,7 +111,10 @@ def test_a_size_zero_checkpoint_with_another_root_is_refused() -> None:
     log, wkey = Ed25519PrivateKey.generate(), MLDSA44PrivateKey.generate()
     vk = w.VerifierKey.mldsa44("w", wkey.public_key())
     wrong = b"\x11" * 32
-    note = w.sign_checkpoint(w.Checkpoint(ORIGIN, 0, wrong), log)
+    cp = w.Checkpoint(ORIGIN, 0, wrong)
+    with pytest.raises(w.NoteError):  # our own signer refuses to make it, so the note is assembled by hand
+        w.sign_checkpoint(cp, log)
+    note = w.Note(cp.text(), (w.log_signature(cp.text(), ORIGIN, log),)).encode()
     parsed = w.parse_note(note)
     line = w.SigLine("w", vk.id, bytes(8) + wkey.sign(_subtree_bytes("w", ORIGIN, 0, 0, wrong)))
     with pytest.raises(w.NoteError):

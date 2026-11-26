@@ -35,6 +35,7 @@ import base64
 import binascii
 import fcntl
 import hashlib
+import http.client
 import os
 import re
 import threading
@@ -57,7 +58,11 @@ from cryptography.hazmat.primitives.asymmetric.mldsa import (
     MLDSA44PrivateKey,
     MLDSA44PublicKey,
 )
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_der_public_key
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    PublicFormat,
+    load_der_public_key,
+)
 
 from .clock import NS_PER_S, Clock
 
@@ -623,9 +628,17 @@ def cosignature_message(timestamp: int, text: str) -> bytes:
     return f"cosignature/v1\ntime {timestamp}\n{text}".encode()
 
 
+def _signable(text: str) -> Checkpoint:
+    """The checkpoint a signer may sign: a tree of size 0 carries the RFC 6962 hash of the empty string."""
+    cp = parse_checkpoint(text)
+    if cp.size == 0 and not is_empty_root(cp.root):
+        raise NoteError("checkpoint_malformed:a tree of size 0 has the root of the empty tree")
+    return cp
+
+
 def cosign(text: str, name: str, key: Ed25519PrivateKey, timestamp: int) -> SigLine:
     """An Ed25519 checkpoint cosignature (type 0x04): timestamp || signature, covering extension lines."""
-    parse_checkpoint(text)
+    _signable(text)
     sig = key.sign(cosignature_message(timestamp, text))
     return SigLine(name, VerifierKey.cosignature_v1(name, key.public_key()).id, timestamp.to_bytes(8, "big") + sig)
 
@@ -650,9 +663,18 @@ def subtree_message(cosigner: str, timestamp: int, origin: str, start: int, end:
 def cosign_mldsa(text: str, name: str, key: MLDSA44PrivateKey, timestamp: int) -> SigLine:
     """An ML-DSA-44 checkpoint cosignature (type 0x06): timestamp || FIPS 204 signature, empty context. It does not
     cover extension lines, so a checkpoint that carries any is refused rather than half-signed."""
-    cp = parse_checkpoint(text)
+    cp = _signable(text)
     if cp.extensions:
         raise NoteError("checkpoint_extensions_unsigned:an ML-DSA-44 cosignature does not cover extension lines")
+    return _mldsa_checkpoint_line(name, key, cp, timestamp)
+
+
+def _mldsa_checkpoint_line(name: str, key: MLDSA44PrivateKey, cp: Checkpoint, timestamp: int) -> SigLine:
+    """The one maker of ML-DSA-44 checkpoint cosignature lines. Its timestamp is never 0: the same bytes with
+    timestamp 0 are a subtree cosignature of ``[0, size)`` (c2sp.org/tlog-cosignature), which says nothing about
+    the latest checkpoint, so ``verify_line`` refuses a 0x06 line dated 0 and this refuses to make one."""
+    if timestamp == 0:
+        raise NoteError("cosignature_timestamp_range:a checkpoint cosignature is dated; 0 marks a subtree cosignature")
     sig = key.sign(subtree_message(name, timestamp, cp.origin, 0, cp.size, cp.root))
     return SigLine(name, VerifierKey.mldsa44(name, key.public_key()).id, timestamp.to_bytes(8, "big") + sig)
 
@@ -681,6 +703,7 @@ def sign_checkpoint(cp: Checkpoint, signer: Any, *, name: str | None = None, pq:
     ``name`` (the origin by default), plus the log's own ML-DSA-44 checkpoint cosignature dated ``timestamp`` when
     it holds a post-quantum key ``pq``."""
     text = cp.text()
+    _signable(text)
     key_name = cp.origin if name is None else name
     lines = [log_signature(text, key_name, signer)]
     if pq is not None:
@@ -723,6 +746,8 @@ def verify_line(key: VerifierKey, text: str, line: SigLine) -> int | None:
             raise NoteError(f"note_signature_length:ML-DSA-44 cosignature from {key.name}")
         timestamp = int.from_bytes(line.sig[:8], "big")
         cp = parse_checkpoint(text)
+        if timestamp == 0:  # a subtree cosignature of [0, size): never a statement about the latest checkpoint
+            raise NoteError(f"note_signature_invalid:ML-DSA-44 line from {key.name} is dated 0, a subtree cosignature")
         if timestamp > MAX_TIMESTAMP or not key.verify(
                 line.sig[8:], subtree_message(key.name, timestamp, cp.origin, 0, cp.size, cp.root)):  # fmt: skip
             raise NoteError(f"note_signature_invalid:ML-DSA-44 cosignature from {key.name}")
@@ -933,8 +958,6 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
             log_types.add(k.sig_type)
         elif ts is None:  # unreachable: a policy witness key is a cosignature type
             raise NoteError(f"policy_key_type:witness {wname} key is not a cosignature key")
-        elif ts == 0 and k.sig_type == SIG_MLDSA44:
-            continue  # the bytes of a subtree cosignature of [0, size): no statement about the latest checkpoint
         elif now is not None and ts > now + max_skew:
             continue  # dated ahead of our clock: not counted, so it neither vetoes nor completes the quorum
         elif now is None or max_age is None or now - ts <= max_age:
@@ -1017,9 +1040,7 @@ def _witness_line(text: str, name: str, key: Any, timestamp: int) -> SigLine:
     """A witness's cosignature with one of its keys. An ML-DSA-44 witness line signs origin, size and root; a witness
     attests consistency, so it cosigns a checkpoint that carries extension lines too."""
     if isinstance(key, MLDSA44PrivateKey):
-        cp = parse_checkpoint(text)
-        sig = key.sign(subtree_message(name, timestamp, cp.origin, 0, cp.size, cp.root))
-        return SigLine(name, VerifierKey.mldsa44(name, key.public_key()).id, timestamp.to_bytes(8, "big") + sig)
+        return _mldsa_checkpoint_line(name, key, _signable(text), timestamp)
     return cosign(text, name, key, timestamp)
 
 
@@ -1032,9 +1053,11 @@ class Witness:
     """A cosigner: its name and keys (the customer's), the log keys it trusts, its per-origin state.
 
     ``key`` and each of ``more_keys`` is an ML-DSA-44 (preferred by c2sp.org/tlog-witness) or Ed25519 private key;
-    the witness cosigns with every one. ``state_dir`` persists ``origin -> (size, root)`` and the latest cosigned
-    checkpoint, so a restart never forgets what it signed (forgetting would let a log fork past it) and monitors can
-    still fetch it.
+    the witness cosigns with every one. ``state_dir`` holds one file per origin, ``<hex SHA-256 of origin>.checkpoint``:
+    the latest cosigned checkpoint, which is both the state and the monitor's copy. It is written whole and durably
+    before the witness answers, and ``add_checkpoint`` re-reads it under an exclusive lock on the directory before it
+    checks the old size, so neither a restart, a crash nor a second process on the same directory lets the witness
+    forget what it signed (forgetting would let a log fork past it).
     """
 
     name: str
@@ -1050,21 +1073,42 @@ class Witness:
     def __post_init__(self) -> None:
         if not valid_name(self.name):
             raise NoteError(f"note_name_invalid:{self.name!r}")
+        for origin, keys in self.logs.items():
+            if len(keys) + len(self.keys) > MAX_SIGNATURES:  # the monitor copy holds the log lines and our own
+                raise NoteError(f"note_signature_count:{origin!r} would carry {len(keys) + len(self.keys)} lines")
         if self.state_dir is None:
             return
         self.state_dir = Path(self.state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
-        self._reload()
+        with _dir_lock(self.state_dir):
+            self._reload()
 
     def _reload(self) -> None:
-        """Read every origin's latest cosigned checkpoint: the one file is both the monitor's copy and the state."""
+        """Read every origin's latest cosigned checkpoint from its one file. A file that does not parse, or whose
+        origin does not hash to its name, refuses: a witness never runs on state it cannot read.
+
+        Release 0.12.0 kept ``<hex of origin>.state`` (size and root) instead. Such a file is read as the floor for
+        its origin until that origin's checkpoint file exists, then removed: dropping it unread would be a restart
+        that forgets what the witness signed, the one fault a witness exists to prevent, so this is the one place a
+        former format is still read."""
         if self.state_dir is None:
             return
-        for f in Path(self.state_dir).glob("*.checkpoint"):
-            note = f.read_text()
-            cp = parse_checkpoint(parse_note(note).text)
-            self._notes[f.stem] = note
-            self._latest[cp.origin] = (cp.size, cp.root)
+        directory = Path(self.state_dir)
+        try:
+            for f in directory.glob("*.state"):
+                size, root_b64 = f.read_text().split()
+                origin = bytes.fromhex(f.stem).decode()
+                if not (directory / (_origin_hash(origin) + ".checkpoint")).exists():
+                    self._latest[origin] = (parse_decimal(size, "tree size"), b64decode_canonical(root_b64))
+            for f in directory.glob("*.checkpoint"):
+                note = f.read_text()
+                cp = parse_checkpoint(parse_note(note).text)
+                if _origin_hash(cp.origin) != f.stem:
+                    raise NoteError(f"checkpoint_malformed:{f.name} holds the checkpoint of {cp.origin!r}")
+                self._notes[f.stem] = note
+                self._latest[cp.origin] = (cp.size, cp.root)
+        except (OSError, ValueError) as exc:
+            raise WitnessRefused(500, f"witness_state_unreadable:{exc}") from exc
 
     @property
     def keys(self) -> tuple[MLDSA44PrivateKey | Ed25519PrivateKey, ...]:
@@ -1080,8 +1124,17 @@ class Witness:
         return self.vkeys[0]
 
     def _save(self, origin: str, size: int, root_hash: bytes, note: str) -> None:
+        """Persist first, then remember: a write that fails leaves memory and disk at the old checkpoint, and the
+        caller answers with a refusal, never a cosignature."""
         if self.state_dir is not None:
-            _write_whole(Path(self.state_dir) / (_origin_hash(origin) + ".checkpoint"), note)
+            directory = Path(self.state_dir)
+            try:
+                _write_whole(directory / (_origin_hash(origin) + ".checkpoint"), note)
+                legacy = directory / (origin.encode().hex() + ".state")
+                if len(legacy.name.encode()) <= 255:
+                    legacy.unlink(missing_ok=True)
+            except OSError as exc:
+                raise WitnessRefused(500, f"witness_state_unwritable:{exc}") from exc
         self._latest[origin] = (size, root_hash)
         self._notes[_origin_hash(origin)] = note
 
@@ -1162,7 +1215,14 @@ class Witness:
         return base64.b64encode(cosign_subtree(self.name, private, cp.origin, start, end, sub_hash)).decode() + "\n"
 
     def latest_checkpoint(self, origin_hash: str) -> str | None:
-        """The latest checkpoint this witness cosigned for the origin whose SHA-256 is ``origin_hash`` (hex)."""
+        """The latest checkpoint this witness cosigned for the origin whose SHA-256 is ``origin_hash`` (hex), read from
+        the state file when there is one, so a second process on the directory serves what the first persisted."""
+        if self.state_dir is not None and re.fullmatch(r"[0-9a-f]{64}", origin_hash):
+            path = Path(self.state_dir) / (origin_hash + ".checkpoint")
+            try:
+                return path.read_text() if path.exists() else None
+            except OSError:
+                return None
         return self._notes.get(origin_hash)
 
 
@@ -1197,7 +1257,7 @@ def serve_witness(witness: Witness, host: str = "127.0.0.1", port: int = 0) -> T
             parts = self.path.rstrip("/").split("/")
             note = witness.latest_checkpoint(parts[-2]) if len(parts) >= 2 and parts[-1] == "checkpoint" else None
             if note is None:
-                self._reply(404, "witness_not_found\n")
+                self._refuse(404, "witness_not_found")
                 return
             self._reply(200, note)
 
@@ -1205,22 +1265,31 @@ def serve_witness(witness: Witness, host: str = "127.0.0.1", port: int = 0) -> T
             handlers = {"add-checkpoint": witness.add_checkpoint, "sign-subtree": witness.sign_subtree}
             handle = handlers.get(self.path.rstrip("/").split("/")[-1])
             if handle is None:
-                self._reply(404, "witness_not_found\n")
+                self._refuse(404, "witness_not_found")
                 return
-            length = int(self.headers.get("Content-Length", "0"))
-            if length > _MAX_REQUEST:
-                self._reply(400, "witness_request_too_large\n")
+            declared = self.headers.get("Content-Length", "0").strip()
+            if not _DECIMAL.match(declared) or len(declared) > 19:
+                self._refuse(400, "witness_request_malformed:Content-Length is not an ASCII decimal")
+                return
+            if int(declared) > _MAX_REQUEST:
+                self._refuse(400, "witness_request_too_large")
                 return
             try:
-                out = handle(self.rfile.read(length).decode())
+                out = handle(self.rfile.read(int(declared)).decode())
             except WitnessRefused as exc:
                 self._reply(exc.status, exc.body or exc.message + "\n",
                             "text/x.tlog.size" if exc.status == 409 else "text/plain")
                 return
             except UnicodeDecodeError:
-                self._reply(400, "witness_request_not_utf8\n")
+                self._refuse(400, "witness_request_not_utf8")
+                return
+            except NoteError as exc:  # our own signing refused (a clock at 0, a key that cannot sign): never a crash
+                self._refuse(500, exc.code)
                 return
             self._reply(200, out)
+
+        def _refuse(self, status: int, refusal: str) -> None:
+            self._reply(status, refusal + "\n")
 
         def _reply(self, status: int, body: str, ctype: str = "text/plain") -> None:
             data = body.encode()
@@ -1238,10 +1307,14 @@ def serve_witness(witness: Witness, host: str = "127.0.0.1", port: int = 0) -> T
 def _request(req: urllib.request.Request, timeout: float, opener: Callable[..., Any]) -> str:
     try:
         with opener(req, timeout=timeout) as resp:
-            return str(resp.read().decode())
+            data = resp.read()
     except urllib.error.HTTPError as exc:
         body = exc.read().decode(errors="replace")
         raise WitnessRefused(exc.code, f"witness_remote_refused:{body.strip() or exc.reason}", body) from exc
+    try:
+        return str(data.decode())
+    except UnicodeDecodeError as exc:
+        raise WitnessRefused(502, "witness_response_malformed:the witness answered with bytes that are not UTF-8") from exc
 
 
 def add_checkpoint(url: str, body: str, timeout: float = 10.0,
@@ -1281,6 +1354,11 @@ def _write_whole(path: Path, text: str) -> None:
     with tmp.open("rb") as fh:
         os.fsync(fh.fileno())
     tmp.replace(path)
+    fd = os.open(path.parent, os.O_RDONLY)  # the rename itself survives a crash only once the directory is synced
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 _SIGNATURE_LINE = f"{EM_DASH} ".encode()
@@ -1368,13 +1446,27 @@ class Feed:
             try:
                 response = self.poster(url, body)
             except WitnessRefused as exc:
-                if exc.status != 409 or not _DECIMAL.match(exc.body.strip()):
+                if exc.status != 409:
                     raise
-                old = int(exc.body.strip())  # the witness's own latest size: prove from there
+                old = parse_decimal(exc.body.strip(), "witness size")  # its own latest size: prove from there
                 continue
             _write_whole(state, f"{len(leaves)}\n")
             return response
         raise WitnessRefused(409, f"witness_size_unstable:{wkey.name} kept moving its size")
+
+    @staticmethod
+    def _attach_verified(note: str, wkey: VerifierKey, response: str) -> str:
+        """``note`` with the one line of ``response`` that is ``wkey``'s and verifies (c2sp.org/tlog-witness: the
+        client MUST ignore signatures from unknown keys). A line under another witness's name and id is not this
+        witness's to give, so a faulty witness can add nothing but its own cosignature, and a line the note already
+        holds is not added twice."""
+        parsed = parse_note(note)
+        mine = [line for line in parse_note("x\n\n" + response).sigs if (line.name, line.key_id) == (wkey.name, wkey.id)]
+        if not mine:
+            raise NoteError(f"note_unverified:no cosignature from {wkey.name}")
+        verify_line(wkey, parsed.text, mine[0])
+        held = {(line.name, line.key_id) for line in parsed.sigs}
+        return note if (wkey.name, wkey.id) in held else Note(parsed.text, (*parsed.sigs, mine[0])).encode()
 
     def publish(self) -> str:
         """Sign, gather cosignatures, check the policy, then publish; returns the published note."""
@@ -1385,16 +1477,9 @@ class Feed:
         for url, text in self.witnesses:
             wkey = parse_vkey(text)
             try:
-                parsed = parse_note(note)
-                mine = [line for line in parse_note("x\n\n" + self._cosign(url, wkey, note, leaves)).sigs
-                        if (line.name, line.key_id) == (wkey.name, wkey.id)]
-                for line in mine:
-                    verify_line(wkey, parsed.text, line)
-                if not mine:
-                    raise NoteError(f"note_unverified:no cosignature from {wkey.name}")
-                note = Note(parsed.text, parsed.sigs + tuple(mine)).encode()
-            except (WitnessRefused, OSError, ValueError) as exc:
-                errors.append(f"{wkey.name}: {exc}")
+                note = self._attach_verified(note, wkey, self._cosign(url, wkey, note, leaves))
+            except (WitnessRefused, OSError, ValueError, http.client.HTTPException) as exc:
+                errors.append(f"{wkey.name}: {exc}")  # one witness's fault is that witness's error, never the feed's
         if self.policy is not None:
             try:
                 verify_note(note, self.policy)
