@@ -28,20 +28,24 @@ ARGS = {"quantity": 1, "sku": "A-1"}
 class Owner:
     """Holds effects by key; each send behaves as the next scripted step."""
 
-    def __init__(self, steps=(), *, answers=None, dedup=False, token=None):
+    def __init__(self, steps=(), *, answers=None, dedup=False, forgets=False, token=None):
         self.steps = list(steps)
         self.answers = answers  # None: answer from the ledger, finally
         self.effects: dict[str, int] = {}
+        self.remembered: set[str] = set()  # the keys a deduplicating owner still holds
         self.sends = 0
         self.lookups = 0
         self.dedup = dedup
+        self.forgets = forgets  # forget each key once its effect is applied, as an expired retention window does
         self.token = token
 
     def send(self, call):
         self.sends += 1
         step = self.steps.pop(0) if self.steps else "commit"
-        if step in ("commit", "commit_lost") and not (self.dedup and call.key in self.effects):
+        if step in ("commit", "commit_lost") and not (self.dedup and call.key in self.remembered):
             self.effects[call.key] = self.effects.get(call.key, 0) + 1
+            if not self.forgets:
+                self.remembered.add(call.key)
         if step == "commit":
             return {"order": call.key}
         if step == "refuse":
@@ -94,10 +98,41 @@ def test_lookup_that_is_not_final_settles_nothing():
     assert (outcome.outcome, owner.sends, owner.lookups) == ("unknown", 1, 5)
 
 
-def test_deduplicating_owner_gets_the_same_key_again():
-    owner = Owner(["commit_lost", "commit"], dedup=True)
+def test_deduplicating_owner_is_asked_before_the_same_key_is_sent_again():
+    owner = Owner(["commit_lost"], dedup=True)
     outcome = EffectGuard(owner.port()).perform("create_order", ARGS, send=owner.send)
-    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("committed", 2, 0, 1)
+    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("committed", 1, 1, 1)
+
+
+def test_deduplicating_owner_that_cannot_answer_gets_the_same_key_again():
+    owner = Owner(["commit_lost", "commit"], answers=[], dedup=True)
+    outcome = EffectGuard(owner.port()).perform("create_order", ARGS, send=owner.send)
+    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("committed", 2, 5, 1)
+
+
+def test_deduplicating_owner_that_forgot_the_key_is_not_sent_it_again():
+    owner = Owner(["commit_lost"], answers=[Lookup(False, final=False)] * 5, dedup=True, forgets=True)
+    outcome = EffectGuard(owner.port()).perform("create_order", ARGS, send=owner.send)
+    assert (outcome.outcome, owner.sends, owner.lookups, sum(owner.effects.values())) == ("unknown", 1, 5, 1)
+
+
+def test_a_replay_after_the_owner_forgot_the_key_is_not_sent_again(tmp_path):
+    # The confirmed reply is lost with the process; the owner has since forgotten the key and cannot say
+    # finally whether it holds the effect, so its deduplication no longer covers a second send.
+    owner = Owner(["commit"], answers=[Lookup(False, final=False)] * 5, dedup=True, forgets=True)
+    path = tmp_path / "journal.jsonl"
+
+    class Stop(BaseException):
+        pass
+
+    def stopping_send(call):
+        owner.send(call)
+        raise Stop()
+
+    with pytest.raises(Stop):
+        EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=stopping_send)
+    outcome = EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=owner.send)
+    assert (outcome.outcome, outcome.sent, owner.sends, sum(owner.effects.values())) == ("unknown", 0, 1, 1)
 
 
 def test_definite_no_effect_is_not_run():

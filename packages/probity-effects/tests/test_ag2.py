@@ -1,4 +1,4 @@
-"""The AG2 adapter: the eight scenarios on each AG2 path, with a plain tool as the control."""
+"""The AG2 adapter: the shipped scenarios on each AG2 path, with a plain tool as the control."""
 
 from __future__ import annotations
 
@@ -70,31 +70,53 @@ def plain_tools(run):
     return [create_order]
 
 
-def plain_runs(variant: str) -> tuple[dict[str, int], int]:
+def plain_runs(variant: str) -> tuple[dict[str, int], set[str]]:
     """Effects per scenario, and the scenarios passed when a run ending in an error reports nothing happened."""
-    counts, passed = {}, 0
+    counts: dict[str, int] = {}
+    passed: set[str] = set()
     for scenario in lost_reply_scenarios():
         with scenario_owner(scenario) as run:
             error = drive_ag2(lambda owner, journal: plain_tools(run), run, None, variant=variant)
             counts[scenario["id"]] = run.state.effects
-            passed += not uncertaineffect_runtime.judge(scenario, run.state, "not_run" if error else "committed")
+            if not uncertaineffect_runtime.judge(scenario, run.state, "not_run" if error else "committed"):
+                passed.add(scenario["id"])
     return counts, passed
 
 
+# What the plain tool does in each scenario these tables name, and which of them it passes. A scenario a later
+# corpus adds is driven and judged too, and stays out of these pins until it is named here.
 PLAIN_ONE_ASK = {"confirmed": 1, "commit-then-lost-reply": 1, "commit-then-lost-reply-deduplicating": 1,
                  "owner-unreachable-after-lost-reply": 1, "lost-before-commit": 0,
-                 "late-commit-after-missed-lookup": 0, "definite-no-effect": 0, "lease-lost-after-lost-reply": 1}
+                 "late-commit-after-missed-lookup": 0, "definite-no-effect": 0, "lease-lost-after-lost-reply": 1,
+                 "crash-mid-step-checkpoint-kept": 1, "crash-mid-step-checkpoint-lost": 1,
+                 "redelivery-new-task-id": 1, "rewind-replay-after-confirmed": 1, "duplicate-human-completion": 1,
+                 "key-forgotten-by-owner-then-replay": 1}
 PLAIN_CALLED_AGAIN = {"confirmed": 1, "commit-then-lost-reply": 2, "commit-then-lost-reply-deduplicating": 1,
                       "owner-unreachable-after-lost-reply": 2, "lost-before-commit": 1,
                       "late-commit-after-missed-lookup": 2, "definite-no-effect": 1,
-                      "lease-lost-after-lost-reply": 2}
+                      "lease-lost-after-lost-reply": 2, "crash-mid-step-checkpoint-kept": 2,
+                      "crash-mid-step-checkpoint-lost": 1, "redelivery-new-task-id": 1,
+                      "rewind-replay-after-confirmed": 1, "duplicate-human-completion": 1,
+                      "key-forgotten-by-owner-then-replay": 1}
+# A committed write whose reply arrives passes; so does nothing sent, where nothing is acceptable.
+PASSES_ONE = {"confirmed", "lost-before-commit", "definite-no-effect", "rewind-replay-after-confirmed",
+              "duplicate-human-completion", "key-forgotten-by-owner-then-replay"}
+# Called again, the second send lands on a deduplicating owner, on an owner with nothing yet, or after a confirm.
+PASSES_AGAIN = {"confirmed", "commit-then-lost-reply-deduplicating", "lost-before-commit", "definite-no-effect",
+                "crash-mid-step-checkpoint-lost", "redelivery-new-task-id", "rewind-replay-after-confirmed",
+                "duplicate-human-completion", "key-forgotten-by-owner-then-replay"}
 
 
-@pytest.mark.parametrize(("variant", "effects", "passed"), [("default", PLAIN_ONE_ASK, 3),
-                                                             ("reask", PLAIN_CALLED_AGAIN, 4),
-                                                             ("model-retry", PLAIN_CALLED_AGAIN, 4)])
-def test_control_plain_tool(variant, effects, passed):
-    assert plain_runs(variant) == (effects, passed)
+@pytest.mark.parametrize(("variant", "effects", "passes"), [("default", PLAIN_ONE_ASK, PASSES_ONE),
+                                                             ("reask", PLAIN_CALLED_AGAIN, PASSES_AGAIN),
+                                                             ("model-retry", PLAIN_CALLED_AGAIN, PASSES_AGAIN)])
+def test_control_plain_tool(variant, effects, passes):
+    counts, passed = plain_runs(variant)
+    assert set(effects) <= set(counts), "a scenario these pins name is no longer shipped"
+    assert {name: counts[name] for name in effects} == effects
+    assert passed & set(effects) == passes
+    # The control fails somewhere the guarded tool passes, or it shows nothing.
+    assert passed != set(counts)
 
 
 class Orders:
