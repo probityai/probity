@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-effects"
-version = "0.2.0"
+version = "0.2.1"
 description = "Keep one effect per agent tool call when its reply is lost: reconcile before resend, record the trail, test it in CI"
 readme = "README.md"
 requires-python = ">=3.11"
