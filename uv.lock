@@ -97,11 +97,11 @@ provides-extras = ["test"]
 
 [[package]]
 name = "agent-evidence-admission"
-version = "0.2.1"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cc/f8/c2157395a11d3b99ae6a6d7863a4323fa9fa929998272809b826faec1532/agent_evidence_admission-0.2.1.tar.gz", hash = "sha256:123a451a2e758ddb448899e98d23190c198d85a8421cb5dd52393eb2f1f09ac7", size = 58308, upload-time = "2026-11-19T19:52:57.324Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/13/daa8c7512e634dd194d09eca7ec88bb3acb7dbe0f51b5e0cace471738b4a/agent_evidence_admission-0.3.0.tar.gz", hash = "sha256:5d045d5d9519b7cf1555a49fb7b4c36f07fbb9450849b99f7affc4ff4caf066d", size = 120135, upload-time = "2026-11-22T19:42:27.927Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f8/b9/9bdcd5caffb2277a0fe6003459968d548e223bf26ee4e35a1c07a6d42ce2/agent_evidence_admission-0.2.1-py3-none-any.whl", hash = "sha256:db7c0093d87b76f113b309752d471fad55303371d494d696059b75282a89651c", size = 40980, upload-time = "2026-11-19T19:52:56.143Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/a3/b201455b2730a26533d77175b41cb0adaa0175a199f63eecda2025066e54/agent_evidence_admission-0.3.0-py3-none-any.whl", hash = "sha256:a6326923581db1984e05a1c6384b0b778ca612d63ff85bc386427b9ec319e7d0", size = 74051, upload-time = "2026-11-22T19:42:26.671Z" },
 ]
 
 [[package]]
