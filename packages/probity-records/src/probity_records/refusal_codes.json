@@ -3537,6 +3537,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_quorum_not_met"
   },
   {
+   "code": "witness_remote_refused",
+   "check": "witness.protocol",
+   "meaning": "a remote witness answered with an HTTP error; its status and body are the detail",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_remote_refused"
+  },
+  {
    "code": "witness_request_malformed",
    "check": "witness.protocol",
    "meaning": "the request body is not the shape the endpoint takes",

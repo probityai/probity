@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import fcntl
 import hashlib
 import os
 import re
@@ -287,7 +288,7 @@ def b64decode_canonical(text: str) -> bytes:
 
 
 def parse_decimal(text: str, what: str) -> int:
-    if not _DECIMAL.match(text) or int(text) > MAX_TIMESTAMP:
+    if len(text) > 19 or not _DECIMAL.match(text) or int(text) > MAX_TIMESTAMP:
         raise NoteError(f"note_decimal_invalid:{what} must be an ASCII decimal with no leading zeros")
     return int(text)
 
@@ -299,6 +300,11 @@ def valid_name(name: str) -> bool:
     except UnicodeEncodeError:
         return False
     return bool(name) and size <= 255 and "+" not in name and not any(ch.isspace() or ord(ch) < 0x20 for ch in name)
+
+
+def valid_key_name(name: str) -> bool:
+    """A signed-note key name: non-empty, no Unicode space, no '+'. The 255-byte limit is a cosigner name's."""
+    return bool(name) and "+" not in name and not any(ch.isspace() for ch in name)
 
 
 def note_key_id(name: str, sig_type: int, public: bytes) -> bytes:
@@ -489,7 +495,7 @@ def parse_note(note: str) -> Note:
     sigs = []
     for line in lines:
         parts = line.split(" ")
-        if len(parts) != 3 or parts[0] != EM_DASH or not valid_name(parts[1]):
+        if len(parts) != 3 or parts[0] != EM_DASH or not valid_key_name(parts[1]):
             raise NoteError(f"note_signature_line_malformed:{line!r}")
         blob = b64decode_canonical(parts[2])
         if len(blob) < 5:
@@ -635,6 +641,8 @@ def subtree_message(cosigner: str, timestamp: int, origin: str, start: int, end:
         raise NoteError("cosignature_input_range:timestamp, bounds or hash out of range")
     if start and timestamp:
         raise NoteError("cosignature_input_range:a subtree with a non-zero start carries timestamp 0")
+    if start == end and root_hash != EMPTY_ROOT:
+        raise NoteError("cosignature_input_range:an empty subtree carries the hash of the empty string")
     return b"".join([SUBTREE_LABEL, bytes([len(name)]), name, timestamp.to_bytes(8, "big"), bytes([len(log)]), log,
                      start.to_bytes(8, "big"), end.to_bytes(8, "big"), root_hash])
 
@@ -661,7 +669,10 @@ def verify_subtree_cosignature(key: VerifierKey, origin: str, start: int, end: i
     """Whether ``sig`` is ``key``'s ML-DSA-44 subtree cosignature of ``[start, end)`` with hash ``sub_hash``."""
     if key.sig_type != SIG_MLDSA44 or len(sig) != MLDSA44_SIG_LEN or not valid_subtree(start, end):
         return False
-    return key.verify(sig, subtree_message(key.name, 0, origin, start, end, sub_hash))
+    try:
+        return key.verify(sig, subtree_message(key.name, 0, origin, start, end, sub_hash))
+    except NoteError:
+        return False
 
 
 def sign_checkpoint(cp: Checkpoint, signer: Any, *, name: str | None = None, pq: MLDSA44PrivateKey | None = None,
@@ -813,7 +824,7 @@ _POLICY_BYTES = re.compile(rb"[\t\n\x20-\x7e\x80-\xff]*\Z")
 
 class _PolicyReader:
     def __init__(self) -> None:
-        self.policy, self.keys = Policy(), set[bytes]()
+        self.policy, self.keys, self.members = Policy(), set[bytes](), set[str]()
 
     def key(self, text: str, sig_types: tuple[int, ...]) -> VerifierKey:
         k = parse_vkey(text)
@@ -831,8 +842,9 @@ class _PolicyReader:
 
     def group(self, name: str, threshold: str, members: tuple[str, ...]) -> None:
         known = set(self.policy.witnesses) | set(self.policy.groups)
-        if len(set(members)) != len(members) or not set(members) <= known:
-            raise NoteError("policy_group_members:members are distinct, earlier-defined names")
+        if len(set(members)) != len(members) or not set(members) <= known or self.members & set(members):
+            raise NoteError("policy_group_members:members are earlier-defined names, each listed in one group only")
+        self.members |= set(members)
         k = {"all": len(members), "any": 1}.get(threshold) or parse_decimal(threshold, "group threshold")
         if not 1 <= k <= len(members):
             raise NoteError("policy_group_threshold:a group threshold is 1 to n")
@@ -901,6 +913,8 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
     """
     parsed = parse_note(note)
     cp = parse_checkpoint(parsed.text)
+    if cp.size == 0 and not is_empty_root(cp.root):
+        raise NoteError("checkpoint_malformed:a tree of size 0 has the root of the empty tree")
     known: dict[tuple[str, bytes], tuple[str, VerifierKey]] = {}
     for k in policy.logs:
         if k.name == cp.origin:
@@ -919,6 +933,8 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
             log_types.add(k.sig_type)
         elif ts is None:  # unreachable: a policy witness key is a cosignature type
             raise NoteError(f"policy_key_type:witness {wname} key is not a cosignature key")
+        elif ts == 0 and k.sig_type == SIG_MLDSA44:
+            continue  # the bytes of a subtree cosignature of [0, size): no statement about the latest checkpoint
         elif now is not None and ts > now + max_skew:
             continue  # dated ahead of our clock: not counted, so it neither vetoes nor completes the quorum
         elif now is None or max_age is None or now - ts <= max_age:
@@ -1038,12 +1054,17 @@ class Witness:
             return
         self.state_dir = Path(self.state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
-        for f in self.state_dir.glob("*.state"):
-            size, root_b64 = f.read_text().split()
-            origin = bytes.fromhex(f.stem).decode()
-            self._latest[origin] = (int(size), base64.b64decode(root_b64))
-        for f in self.state_dir.glob("*.checkpoint"):
-            self._notes[f.stem] = f.read_text()
+        self._reload()
+
+    def _reload(self) -> None:
+        """Read every origin's latest cosigned checkpoint: the one file is both the monitor's copy and the state."""
+        if self.state_dir is None:
+            return
+        for f in Path(self.state_dir).glob("*.checkpoint"):
+            note = f.read_text()
+            cp = parse_checkpoint(parse_note(note).text)
+            self._notes[f.stem] = note
+            self._latest[cp.origin] = (cp.size, cp.root)
 
     @property
     def keys(self) -> tuple[MLDSA44PrivateKey | Ed25519PrivateKey, ...]:
@@ -1059,15 +1080,16 @@ class Witness:
         return self.vkeys[0]
 
     def _save(self, origin: str, size: int, root_hash: bytes, note: str) -> None:
+        if self.state_dir is not None:
+            _write_whole(Path(self.state_dir) / (_origin_hash(origin) + ".checkpoint"), note)
         self._latest[origin] = (size, root_hash)
         self._notes[_origin_hash(origin)] = note
-        if self.state_dir is None:
-            return
-        _write_whole(Path(self.state_dir) / (_origin_hash(origin) + ".checkpoint"), note)
-        _write_whole(Path(self.state_dir) / (origin.encode().hex() + ".state"),
-                     f"{size} {base64.b64encode(root_hash).decode()}\n")
 
     def _trusted_note(self, note_text: str) -> tuple[Note, Checkpoint]:
+        parsed, cp, _ = self._trusted_lines(note_text)
+        return parsed, cp
+
+    def _trusted_lines(self, note_text: str) -> tuple[Note, Checkpoint, tuple[SigLine, ...]]:
         try:
             parsed = parse_note(note_text)
             cp = parse_checkpoint(parsed.text)
@@ -1076,7 +1098,7 @@ class Witness:
         trusted = {(k.name, k.id): k for k in self.logs.get(cp.origin, [])}
         if not trusted:
             raise WitnessRefused(404, f"witness_origin_unknown:{cp.origin!r}")
-        signed = False
+        signed: list[SigLine] = []
         for line in parsed.sigs:
             k = trusted.get((line.name, line.key_id))
             if k is None:
@@ -1085,15 +1107,16 @@ class Witness:
                 verify_line(k, parsed.text, line)
             except NoteError as exc:
                 raise WitnessRefused(403, f"witness_log_signature_invalid:{exc}") from exc
-            signed = True
+            signed.append(line)
         if not signed:
             raise WitnessRefused(403, "witness_log_signature_missing")
-        return parsed, cp
+        return parsed, cp, tuple(signed)
 
     def add_checkpoint(self, body: str) -> str:
         old, proof, note_text = parse_add_checkpoint(body)
-        parsed, cp = self._trusted_note(note_text)
-        with self._lock:
+        parsed, cp, verified = self._trusted_lines(note_text)
+        with self._lock, _dir_lock(self.state_dir):
+            self._reload()
             size, stored = self._latest.get(cp.origin, (0, EMPTY_ROOT))
             if old > cp.size:
                 raise WitnessRefused(400, "witness_old_size_beyond:old size is larger than the checkpoint size")
@@ -1105,7 +1128,7 @@ class Witness:
                 raise WitnessRefused(422, "witness_consistency_invalid")
             now = self.clock.now() // NS_PER_S
             lines = [_witness_line(parsed.text, self.name, k, now) for k in self.keys]
-            self._save(cp.origin, cp.size, cp.root, Note(parsed.text, parsed.sigs + tuple(lines)).encode())
+            self._save(cp.origin, cp.size, cp.root, Note(parsed.text, verified + tuple(lines)).encode())
         return "".join(line.encode() for line in lines)
 
     def sign_subtree(self, body: str) -> str:
@@ -1119,23 +1142,44 @@ class Witness:
             cp = parse_checkpoint(parsed.text)
         except NoteError as exc:
             raise WitnessRefused(400, f"witness_request_malformed:{exc}") from exc
-        own = {(k.name, k.id): k for k in self.vkeys}
-        if len(parsed.sigs) != 1 or (parsed.sigs[0].name, parsed.sigs[0].key_id) not in own:
-            raise WitnessRefused(403, "witness_checkpoint_not_cosigned:exactly one signature, from this witness")
+        own = {(k.name, k.id): (k, private) for k, private in zip(self.vkeys, self.keys, strict=True)}
+        if len(parsed.sigs) != 1:
+            raise WitnessRefused(400, "witness_request_malformed:the reference checkpoint carries exactly one signature")
         line = parsed.sigs[0]
+        if (line.name, line.key_id) not in own:
+            raise WitnessRefused(403, "witness_checkpoint_not_cosigned:the signature is not from this witness")
+        own_key, private = own[(line.name, line.key_id)]
+        if not isinstance(private, MLDSA44PrivateKey):
+            raise WitnessRefused(403, "witness_subtree_unsupported:the key that cosigned the reference is Ed25519")
         try:
-            verify_line(own[(line.name, line.key_id)], parsed.text, line)
+            verify_line(own_key, parsed.text, line)
         except NoteError as exc:
             raise WitnessRefused(403, f"witness_checkpoint_not_cosigned:{exc}") from exc
         if end > cp.size:
             raise WitnessRefused(400, f"witness_subtree_invalid:[{start}, {end}) beyond size {cp.size}")
         if not verify_subtree_consistency(proof, cp.size, cp.root, start, end, sub_hash):
             raise WitnessRefused(422, "witness_subtree_proof_invalid")
-        return base64.b64encode(cosign_subtree(self.name, pq[0], cp.origin, start, end, sub_hash)).decode() + "\n"
+        return base64.b64encode(cosign_subtree(self.name, private, cp.origin, start, end, sub_hash)).decode() + "\n"
 
     def latest_checkpoint(self, origin_hash: str) -> str | None:
         """The latest checkpoint this witness cosigned for the origin whose SHA-256 is ``origin_hash`` (hex)."""
         return self._notes.get(origin_hash)
+
+
+class _dir_lock:
+    """An exclusive lock on a state directory, so two witness processes check and persist one after the other."""
+
+    def __init__(self, directory: Path | None) -> None:
+        self.directory, self.fd = directory, -1
+
+    def __enter__(self) -> None:
+        if self.directory is not None:
+            self.fd = os.open(Path(self.directory) / ".lock", os.O_RDWR | os.O_CREAT, 0o600)
+            fcntl.flock(self.fd, fcntl.LOCK_EX)
+
+    def __exit__(self, *_: object) -> None:
+        if self.fd >= 0:
+            os.close(self.fd)
 
 
 _MAX_REQUEST = 1 << 16
@@ -1197,7 +1241,7 @@ def _request(req: urllib.request.Request, timeout: float, opener: Callable[..., 
             return str(resp.read().decode())
     except urllib.error.HTTPError as exc:
         body = exc.read().decode(errors="replace")
-        raise WitnessRefused(exc.code, body.strip() or str(exc.reason), body) from exc
+        raise WitnessRefused(exc.code, f"witness_remote_refused:{body.strip() or exc.reason}", body) from exc
 
 
 def add_checkpoint(url: str, body: str, timeout: float = 10.0,
@@ -1324,7 +1368,7 @@ class Feed:
             try:
                 response = self.poster(url, body)
             except WitnessRefused as exc:
-                if exc.status != 409 or not exc.body.strip().isdigit():
+                if exc.status != 409 or not _DECIMAL.match(exc.body.strip()):
                     raise
                 old = int(exc.body.strip())  # the witness's own latest size: prove from there
                 continue
@@ -1341,8 +1385,15 @@ class Feed:
         for url, text in self.witnesses:
             wkey = parse_vkey(text)
             try:
-                note = attach(note, self._cosign(url, wkey, note, leaves))
-            except (WitnessRefused, OSError, NoteError) as exc:
+                parsed = parse_note(note)
+                mine = [line for line in parse_note("x\n\n" + self._cosign(url, wkey, note, leaves)).sigs
+                        if (line.name, line.key_id) == (wkey.name, wkey.id)]
+                for line in mine:
+                    verify_line(wkey, parsed.text, line)
+                if not mine:
+                    raise NoteError(f"note_unverified:no cosignature from {wkey.name}")
+                note = Note(parsed.text, parsed.sigs + tuple(mine)).encode()
+            except (WitnessRefused, OSError, ValueError) as exc:
                 errors.append(f"{wkey.name}: {exc}")
         if self.policy is not None:
             try:
