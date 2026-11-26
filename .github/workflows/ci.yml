@@ -92,6 +92,21 @@ jobs:
           python3 scripts/readme-image-check-test.py
           python3 scripts/readme-image-check.py README.md packages/*/README.md harnesses/*/README.md
           python3 scripts/readme-package-owner-lint.py README.md
+      # An identifier our packages write under the agent-evidence-vectors host sits inside bytes a third
+      # party signs, so it must have a page before a record carries it. The registry and the page build
+      # live in agent-evidence-vectors, so its gate runs here over this tree: a new type URI is
+      # registered there first. probity-records 0.10.0 shipped predicate/v2/revocation-list unregistered
+      # and the URI answered 404 until the vectors gate caught it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: probityai/agent-evidence-vectors
+          path: .vectors-site
+          persist-credentials: false
+      - name: every identifier this tree names has a page on the site that serves it
+        working-directory: .vectors-site
+        run: |
+          uv sync --locked --extra dev
+          uv run python scripts/identifier-pages-gate.py --also ..
 
   agent-evidence-verify-conformance:
     name: "agent-evidence-verify / conformance"
