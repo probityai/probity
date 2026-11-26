@@ -303,7 +303,7 @@ def test_a_thread_extending_the_tip_never_disturbs_readers_of_older_states() -> 
     old = RevocationState(roots=frozenset({root.key_id})).apply(chain[0])
     want = old.summary()
     done = threading.Event()
-    faults: list[BaseException] = []
+    faults: list[Exception] = []
 
     def read() -> None:
         try:
@@ -311,7 +311,7 @@ def test_a_thread_extending_the_tip_never_disturbs_readers_of_older_states() -> 
                 assert old.summary() == want
                 assert len(list(old.entries.items())) == 200 and len(old.entries) == 200
                 assert not old.revoked("stream", "s0000")
-        except BaseException as exc:  # a fault in a thread is reported by the main thread
+        except (AssertionError, KeyError, RuntimeError) as exc:  # reported by the main thread
             faults.append(exc)
 
     readers = [threading.Thread(target=read) for _ in range(4)]
