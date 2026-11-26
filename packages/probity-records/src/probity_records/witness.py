@@ -45,7 +45,7 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.primitives import hashes
@@ -1425,6 +1425,11 @@ class Feed:
         self.directory.mkdir(parents=True, exist_ok=True)
 
     @property
+    def _dir(self) -> Path:
+        """The feed directory, which ``__post_init__`` always sets."""
+        return cast(Path, self.directory)
+
+    @property
     def log_key(self) -> Any:
         """The key that signs checkpoints: the root behind a delegated session key, so a witness pins
         one log key for the life of the deployment."""
@@ -1434,7 +1439,7 @@ class Feed:
         return log_vkey(self.origin, self.log_key)
 
     def _state(self, wkey: VerifierKey) -> Path:
-        return Path(self.directory) / f"witness-{wkey.id.hex()}.size"
+        return self._dir / f"witness-{wkey.id.hex()}.size"
 
     def _cosign(self, url: str, wkey: VerifierKey, note: str, leaves: list[bytes]) -> str:
         state = self._state(wkey)
@@ -1485,12 +1490,12 @@ class Feed:
                 verify_note(note, self.policy)
             except NoteError as exc:
                 raise WitnessRefused(503, f"feed_not_published:{exc}; witness errors: {errors}") from exc
-        _write_whole(Path(self.directory) / "checkpoint", note)
-        _append_note(Path(self.directory) / "checkpoints.log", note)
+        _write_whole(self._dir / "checkpoint", note)
+        _append_note(self._dir / "checkpoints.log", note)
         return note
 
     def latest(self) -> str | None:
-        path = Path(self.directory) / "checkpoint"
+        path = self._dir / "checkpoint"
         return path.read_text() if path.exists() else None
 
     def witnessed_size(self) -> int:

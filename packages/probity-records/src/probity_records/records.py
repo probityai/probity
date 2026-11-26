@@ -148,7 +148,7 @@ def judge_uncertain_effect(record: Mapping[str, Any]) -> dict[str, Any]:
         policy = {"schema_version": "probity-policy/v1",
                   "assessments": {"record": {"claim_type": "uncertain_effect/v1", "record": "record"}}}
         result = adjudicate(case, policy, Path(tmp))
-    check = next((c for c in result.get("checks", []) if c.get("id") == "uncertain_effect_checks"), {})
+    check: dict[str, Any] = next((c for c in result.get("checks", []) if c.get("id") == "uncertain_effect_checks"), {})
     return {"decision": result["decision"], "reason": result["reason"],
             "settled_outcome": check.get("settled_outcome"), "reported_outcome": check.get("reported_outcome")}
 

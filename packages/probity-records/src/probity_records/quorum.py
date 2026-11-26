@@ -36,7 +36,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from cryptography.exceptions import InvalidSignature
 
@@ -199,7 +199,7 @@ def _deputy_problem(vote: Mapping[str, Any], policy: Mapping[str, Any], at: str)
     if raw is None or dbody.get("delegator") != who:
         return "deputy_for_unknown_approver", None
     try:
-        load_public(_unb64(raw)).verify(_unb64(delegation.get("sig")), DEPUTY_DOMAIN + canonical(dbody))
+        load_public(_unb64(raw)).verify(_unb64(cast(Mapping[str, Any], delegation).get("sig")), DEPUTY_DOMAIN + canonical(dbody))
     except (InvalidSignature, ValueError, TypeError):
         return "deputy_delegation_unverified", None
     if dbody.get("policyId") != policy["policyId"] or dbody.get("deputy") != body.get("approver"):

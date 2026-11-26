@@ -228,7 +228,7 @@ async def sleep_until_async(clock: Clock, t: int) -> None:
     done = loop.create_future()
 
     def fire() -> None:
-        loop.call_soon_threadsafe(lambda: done.done() or done.set_result(None))
+        loop.call_soon_threadsafe(lambda: None if done.done() else done.set_result(None))
 
     handle = clock.timer(t, fire)
     try:

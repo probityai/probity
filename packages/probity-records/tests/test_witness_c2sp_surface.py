@@ -330,8 +330,8 @@ def test_a_witness_cosigns_with_every_key_and_serves_its_latest_checkpoint(tmp_p
 def test_sign_subtree_returns_a_cosignature_from_the_checkpoint_key(tmp_path: Path) -> None:
     witness, log, wml = _witness(tmp_path)
     cp = w.Checkpoint(ORIGIN, len(LEAVES), w.root(LEAVES))
-    cosig = [s for s in w.parse_note("x\n\n" + witness.add_checkpoint(
-        w.encode_add_checkpoint(0, [], w.sign_checkpoint(cp, log)))).sigs if len(s.sig) > 72][0]
+    cosig = next(s for s in w.parse_note("x\n\n" + witness.add_checkpoint(
+        w.encode_add_checkpoint(0, [], w.sign_checkpoint(cp, log)))).sigs if len(s.sig) > 72)
     reference = w.Note(cp.text(), (cosig,)).encode()
     sub = w.subtree_hash(LEAVES, 8, 13)
     body = w.encode_sign_subtree(8, 13, sub, w.subtree_consistency_proof(8, 13, LEAVES), reference)
@@ -404,7 +404,7 @@ def test_subtree_proof_property(size: int, data: st.DataObject) -> None:
     leaves = [w.leaf_hash(i.to_bytes(2, "big")) for i in range(size)]
     end = data.draw(st.integers(1, size))
     width = 1 << (end - 1).bit_length() if end > 1 else 1
-    starts = [s for s in range(0, end) if w.valid_subtree(s, end)]
+    starts = [s for s in range(end) if w.valid_subtree(s, end)]
     start = data.draw(st.sampled_from(starts))
     assert width >= 1
     proof = w.subtree_consistency_proof(start, end, leaves)
