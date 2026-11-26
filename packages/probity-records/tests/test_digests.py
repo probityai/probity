@@ -50,11 +50,12 @@ def test_the_same_value_in_another_member_order_digests_the_same() -> None:
     assert _expected("AC2") == _expected("AC3")
 
 
-def test_an_approver_list_has_a_digest_and_its_order_is_part_of_it() -> None:
-    """An approver list of two principals is a block as recorded; its order is the writer's, so the other order is
-    another block. A list of one, a member that is not an object, and any other role as a list are refused."""
+def test_an_approver_list_has_a_digest_and_its_order_is_not_part_of_it() -> None:
+    """An approver list of two principals is a set: the same approvers in the other order have the same digest, so one
+    set of approvers has one spelling. A list of one, a member that is not an object, and any other role as a list are
+    refused."""
     assert "digest" in _expected("PD21") and "digest" in _expected("PD22")
-    assert _expected("PD21") != _expected("PD22") != _expected("PD1")
+    assert _expected("PD21") == _expected("PD22") != _expected("PD1")
     for vid in ("PD23", "PD24", "PD25"):
         assert _expected(vid) == {"refused": "identity_principals_malformed", "reason": None}, vid
 

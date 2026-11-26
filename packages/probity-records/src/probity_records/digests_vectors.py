@@ -162,7 +162,7 @@ def _cases() -> list[tuple[str, str, str, str]]:
          _args(_with(["user", "act"], None), None)),
         ("PD21", "an approver list of two principals: an approval two people gave", "principals_digest",
          _args({**b, "approver": [b["approver"], second_approver()[0]]})),
-        ("PD22", "the same approvers in the other order are another block", "principals_digest",
+        ("PD22", "the same approvers in the other order: the same digest, an approver list is a set", "principals_digest",
          _args({**b, "approver": [second_approver()[0], b["approver"]]})),
         ("PD23", "an approver list of one", "principals_digest", _args({**b, "approver": [b["approver"]]})),
         ("PD24", "an approver list with a member that is not an object", "principals_digest",

@@ -4,32 +4,53 @@
 
 - **`approver` names every person an approval counted: one principal, or a list of at least two.** A principals block
   may now carry `approver` as a list of principals when an approval took several people (an M-of-N quorum); each member
-  is a full principal checked as the single form is, and each must be a counted signer of the approval. The single form
+  is a full principal checked as the single form is, and each must be a person the approval may name. The single form
   is unchanged and still means one approver. New refusals, under every profile: `principal_approver_duplicate` (a list
   names one subject twice) and `principal_approver_list_too_short` (a list of fewer than two: one approval takes the
-  single form, so a block has one spelling); a list member that fails the principal checks is refused
-  `principal_approver:<code>`, and one that names a person the approval did not count is refused
-  `principal_approver_not_an_approval_signer`, as before.
-- **Behaviour change: strict needs every counted approver named.** A human-session block whose approval counted two or
-  more people and that names only some of them is now `basic`, with the new shortfall `approvers-partial`
-  (`identity.strict_shortfall`, and `principals_below_strict:approvers-partial` from a strict auditor); before, naming
-  any one counted approver was strict. An autonomous block, which has no basic grade, is refused
-  `principals_need_every_approver` in the same case. A block whose approval counted one person is graded as before.
-- `digests.principals_digest` accepts an `approver` list of at least two principal objects and hashes it in the order
-  recorded, so the same approvers in another order are another block; a list of one, a list with a member that is not an
-  object, and any other role given as a list are refused `identity_principals_malformed`. `identity.approver_principals`
-  and `identity.approver_subjects` read either form.
-- Shared vectors, every existing case byte for byte unchanged: `identity.json` adds ID41 to ID51 (a list of two, strict;
-  two counted and one named, basic; a subject twice; a list of one; an empty list; a member not counted; a member whose
-  thumbprint does not recompute; a member that is not an object; a list with no approval; autonomous with both named;
-  autonomous with one of two named). `identity_digests.json` adds PD21 to PD25. The new family `approvers.json` holds six
-  journals under a 1-of-2 and a 2-of-2 policy (MA1 to MA6: both named, strict; one named; one named twice; a list naming a
-  replayed approval; an intent naming both; an intent naming one). A reader that has not learned the list form refuses
-  every vector that carries one; `@probityai/records-verify` learns it in the same change, so both releases go out
-  together. An erasure rule's path names object keys, not list positions, so a rule on `principals.approver` covers
-  the whole list under one subject key.
-- Minor, not patch: a block that was strict (an approval of several, one named) is now basic, and a new shape is
-  accepted.
+  single form); a list member that fails the principal checks is refused `principal_approver:<code>`, and one that
+  names a person the approval cannot name is refused `principal_approver_not_an_approval_signer`, as before.
+- **Behaviour change, allows only: strict needs every counted approver named.** A human-session block whose ALLOW
+  counted two or more people and that names only some of them is now `basic`, with the new shortfall
+  `approvers-partial` (`identity.strict_shortfall`, and `principals_below_strict:approvers-partial` from a strict
+  auditor); before, naming any one counted approver was strict. An autonomous block, which has no basic grade, is
+  refused `principals_need_every_approver` in the same case. An intent or effect inherits its permit's allow. A block
+  whose approval counted one person is graded as before.
+- **A deny is graded as before.** A deny counts nobody: its approver principal may name any person whose binding it
+  carries, and strict never needs each of them named. `identity.check_principals` and `strict_shortfall` take the
+  people the approval counted (`counted`) apart from the people the block may name (`approvers`); for an allow they
+  are one set, the default; for a deny `counted` is empty. So a deny resting on two people's bindings that names one
+  of them stays strict (`approver-absent` still applies to a deny that names none), and an autonomous deny of that
+  shape stays `autonomous`. `@probityai/records-verify` takes the same argument (`checkPrincipals(..., counted)`).
+- **The approver list is a set: its order never changes a verdict or a digest.** A permit's parties are each role's
+  issuer and subject; for a list they are its members' (issuer, subject) pairs in no order, so an intent naming the
+  allow's approvers in another order, or after one approver's credential was refreshed, is the same parties (before,
+  a list compared whole credentials in order, and both read as `principals_differ_from_permit`).
+  `digests.principals_digest` accepts an `approver` list of at least two principal objects and hashes its members
+  sorted by their RFC 8785 bytes, so one set of approvers has one digest in any written order; a list of one, a list
+  with a member that is not an object, and any other role given as a list are refused `identity_principals_malformed`.
+  `identity.approver_principals` and `identity.approver_subjects` read either form.
+- **Erasure seals an approver list per member.** A subject key is one person's, so an `approver` field whose value is
+  a list is sealed member by member: member `n` is the field `<path>.<n>` under the subject `approver.<n>`, with its
+  own key and its own ciphertext group, and erasing one approver (destroying that member's key) leaves the others
+  readable; the erased member opens as null in its place. `erasure.seal` refuses a list whose members do not each have
+  a key (`field_names_several_subjects`) and an empty list (`approver_list_empty`); `check_block` refuses a member
+  field under another member's subject and a list whose members are not 0 to N-1 (`roles_malformed`). A record with
+  no approver list seals byte for byte as before. `erasure.member_subject(n)` names member n's subject.
+- Shared vectors, every case released before this change byte for byte unchanged: `identity.json` adds ID41 to ID55
+  (a list of two, strict; two counted and one named, basic; a subject twice; a list of one; an empty list; a member not
+  counted; a member whose thumbprint does not recompute; a member that is not an object; a list with no approval;
+  autonomous with both named; autonomous with one of two named; an empty list; a deny naming one of two, strict; a deny
+  naming both; an autonomous deny naming one of two; the list in the other order). A vector may carry `counted` apart
+  from `approvers`. `identity_digests.json` adds PD21 to PD25 (PD22: the other order, the same digest). The new family
+  `approvers.json` holds nine journals under a 1-of-2 and a 2-of-2 policy (MA1 to MA9: both named, strict; one named;
+  one named twice; a list naming a replayed approval; an intent naming both; an intent naming one; a deny of two naming
+  one, strict; an intent naming both in the other order; an intent after one approver's credential refresh).
+  `erasure.json` adds S11 to S13 and O13 to O16 (the per-member seal and its refusals, opening with every key, with
+  one approver's key destroyed, a member under another member's subject, members not 0 to N-1). A reader that has not
+  learned the list form refuses every vector that carries one; `@probityai/records-verify` learns it in the same
+  change, so both releases go out together.
+- Minor, not patch: a vector that turns a passing implementation red (an allow of several, one named, is now basic)
+  and a new accepted shape make this a minor release under strict semver.
 
 ## 0.12.0 (2026-11-26)
 

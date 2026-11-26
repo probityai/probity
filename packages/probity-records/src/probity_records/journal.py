@@ -241,22 +241,33 @@ NOT_RUN_RETRY = "not_run_retry"
 RETRY_REASONS = (RECONCILED_RETRY, NOT_RUN_RETRY)
 
 
-def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> set[str] | None:
-    """Check the approvals an authorize record rests on, and return the approvers it COUNTS: the only people an
-    approver principal may name. For an allow that is the approvers whose binding the reader allowed and whose
-    signature verified under the pinned policy, or the approving voters of a quorum that held; for a deny, every
-    approver whose binding it carries. None when no approval admitted the call (no approval, or none that holds)."""
+#: What an authorize record's approvals give its principals: (nameable, counted). ``nameable`` is who an approver
+#: principal may name, None when no approval admitted the call; ``counted`` is who the approval counted, every one of
+#: whom strict names. An allow's two are one set; a deny counts nobody, so its ``counted`` is empty.
+Approvers = tuple[set[str] | None, set[str] | None]
+
+
+def _same(counted: set[str] | None) -> Approvers:
+    return counted, counted
+
+
+def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust: Trust | None) -> Approvers:
+    """Check the approvals an authorize record rests on, and return (nameable, counted). For an allow both are the
+    approvers it COUNTS: those whose binding the reader allowed and whose signature verified under the pinned
+    policy, or the approving voters of a quorum that held. For a deny, nameable is every approver whose binding it
+    carries and counted is empty: a deny counts nobody, so strict does not need each of them named. (None, None)
+    when no approval admitted the call (no approval, or none that holds)."""
     if pred.get("decision") == "allow":
         before = len(problems)
         if check_authority(pred, trust, problems, where):
-            return (_vote_signers(pred) or None) if len(problems) == before else None
+            return _same((_vote_signers(pred) or None) if len(problems) == before else None)
     bindings = pred.get("approvalBindings") or []
     if not bindings:
         # An allow with no approval is accepted only as the authority's signed statement that its
         # policy required none for this call; verify_journal counts these apart (policyAllows).
         if pred.get("decision") == "allow" and pred.get("reason") not in (NO_APPROVAL_REQUIRED, *RETRY_REASONS):
             problems.append(f"{where}:allow_without_approval_binding")
-        return None
+        return None, None
     reader_allowed: set[str] = set()
     for n, embedded in enumerate(bindings):
         payload = base64.b64decode(embedded["payloadB64"])
@@ -269,16 +280,16 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
             problems.append(f"{where}:deny_reason_mismatch:{pred.get('reason')}:{verdict['reason']}")
     if pred.get("decision") != "allow":
         # A deny counts nobody; its approver principal may name any approver whose binding it carries.
-        return {str((b.get("record") or {}).get("approval", {}).get("approver")) for b in bindings}
+        return {str((b.get("record") or {}).get("approval", {}).get("approver")) for b in bindings}, set()
     # The M of N is re-counted under the quorum policy the AUDITOR pinned: the approver keys and the
     # threshold come from Trust, never from the record the authority wrote.
     if trust is None:
         problems.append(f"{where}:authority_trust_not_pinned:approval")
-        return None
+        return None, None
     policy = trust.quorum_policies.get(str(pred.get("approvalPolicyId")))
     if policy is None:
         problems.append(f"{where}:approval_policy_not_pinned")
-        return None
+        return None, None
     if pred.get("threshold") != policy["threshold"]:
         problems.append(f"{where}:threshold_not_pinned:{pred.get('threshold')}:{policy['threshold']}")
     signed, sig_problems = count_bindings(policy, bindings, str(pred.get("at")), trust.key_revoked,
@@ -287,7 +298,7 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
     counted = signed & reader_allowed
     if len(counted) < policy["threshold"]:
         problems.append(f"{where}:approvals_below_threshold:{len(counted)}:{policy['threshold']}")
-    return counted or None
+    return _same(counted or None)
 
 
 def _check_effect(pred: dict[str, Any], problems: list[str], where: str) -> str | None:
@@ -394,7 +405,7 @@ def _revocation_problems(block: Mapping[str, Any], grade: str, at: str, trust: T
 
 
 def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[str], where: str,
-                    seen: dict[str, dict[str, Any]], approvers: set[str] | None) -> None:  # fmt: skip
+                    seen: dict[str, dict[str, Any]], approvers: Approvers) -> None:  # fmt: skip
     if trust is None:
         problems.append(f"{where}:principals_but_no_trust_pinned")
         return
@@ -402,7 +413,8 @@ def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[st
     at = str(pred.get("at"))
     autonomous = isinstance(block, dict) and bool(set(block) & set(AUTONOMOUS))
     grants = _standing_grants(pred, trust, seen) if autonomous else None
-    found, grade = check_principals(block, at, trust.identity_issuers, approvers,
+    nameable, counted = approvers
+    found, grade = check_principals(block, at, trust.identity_issuers, nameable, counted=counted,
                                     sponsors=trust.agent_sponsors or None, standing_grants=grants)
     problems.extend(f"{where}:{p}" for p in found)
     if grade == "autonomous":
@@ -410,7 +422,7 @@ def _check_identity(pred: dict[str, Any], trust: Trust | None, problems: list[st
     if grade is not None:
         problems.extend(f"{where}:{p}" for p in _revocation_problems(block, grade, at, trust))
     if grade is not None and trust.identity_profile == "strict" and grade not in ("strict", "autonomous"):
-        problems.append(f"{where}:principals_below_strict:{strict_shortfall(block, approvers)}")
+        problems.append(f"{where}:principals_below_strict:{strict_shortfall(block, nameable, counted)}")
 
 
 def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[str, dict[str, Any]]) -> None:
@@ -423,7 +435,7 @@ def _remember_standing(pred: Mapping[str, Any], trust: Trust | None, seen: dict[
 
 def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | None,
                 delegations: Mapping[str, Delegation], seen: dict[str, dict[str, Any]],
-                counted: dict[str, set[str] | None]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
+                counted: dict[str, Approvers]) -> tuple[dict[str, Any] | None, list[str]]:  # fmt: skip
     problems: list[str] = []
     where = f"line_{i}"
     try:
@@ -454,7 +466,7 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
                 counted.setdefault(pid, approvers)
         else:
             # An intent or effect answers to the allow its permit rests on: the approvers that allow counted.
-            approvers = counted.get(pid)
+            approvers = counted.get(pid, (None, None))
         if pred.get("principals") is not None:
             _check_identity(pred, trust, problems, where, seen, approvers)
         elif pred.get("phase") == "authorize" and trust is not None and trust.identity_profile == "strict":
@@ -525,12 +537,18 @@ def _retry_problem(pred: dict[str, Any], since_allow: list[str], last_effect: st
     return "not_run_retry_but_an_effect_may_have_happened"
 
 
+def _party(p: Any) -> Any:
+    return (p.get("issuer"), p.get("subject")) if isinstance(p, dict) else p
+
+
 def _parties(block: Any) -> dict[str, Any] | None:
     """Who a principals block names, role by role (issuer and subject). A credential may be refreshed between a
-    permit's records; the parties may not change."""
+    permit's records; the parties may not change. An approver list is the set of its members' (issuer, subject), in
+    no order: the verdict never depends on the order the writer listed them in."""
     if not isinstance(block, dict):
         return None
-    return {role: (p.get("issuer"), p.get("subject")) if isinstance(p, dict) else p for role, p in block.items()}
+    return {role: sorted((_party(m) for m in p), key=lambda x: json.dumps(x, sort_keys=True))
+            if isinstance(p, list) else _party(p) for role, p in block.items()}
 
 
 def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[str]:
@@ -669,7 +687,7 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     outcomes: dict[str, int] = {}
     policy_allows = 0
     seen: dict[str, dict[str, Any]] = {}  # grant bodies of the authority chains verified so far, by digest
-    counted: dict[str, set[str] | None] = {}  # permit id -> the approvers its first allow counted
+    counted: dict[str, Approvers] = {}  # permit id -> the approvers its first allow counted
     for i, line in enumerate(lines, 1):
         body, problems = _check_line(i, line, keys, prev, trust, delegations, seen, counted)
         prev = _line_hash(line.encode())

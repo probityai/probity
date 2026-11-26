@@ -921,6 +921,19 @@ def approver_rows() -> list[tuple[str, str, object]]:
                              approval_policy="refunds2of2",
                              approval_bindings=[binding(OPS, WHO["ops"]), binding(LEAD, WHO["lead"])])  # fmt: skip
 
+    def deny_of_two(block: dict) -> dict:
+        """A deny resting on two people's denials; a deny counts nobody."""
+        bindings = [binding(OPS, WHO["ops"], approval={"outcome": "denied"}),
+                    binding(LEAD, WHO["lead"], approval={"outcome": "denied"})]
+        return identity_call("authorize", block, decision="deny", reason="approval_denied", threshold=1,
+                             approval_policy="refunds1of2", approval_bindings=bindings)
+
+    def refreshed(block: dict, index: int) -> dict:
+        """The block with one listed approver's credential refreshed: a new token, the same person."""
+        out = copy.deepcopy(block)
+        out["approver"][index]["tokenDigest"] = "ab" * 32
+        return out
+
     def one_of_two(*who: str) -> dict:
         return identity_call("authorize", named(*who), decision="allow", reason="bound", threshold=1,
                              approval_policy="refunds1of2",
@@ -939,6 +952,12 @@ def approver_rows() -> list[tuple[str, str, object]]:
          lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("ops", "lead"))])),
         ("MA6", "the intent of a 2-of-2 allow names one of its approvers: below strict, and not the parties of its permit",
          lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("lead"))])),
+        ("MA7", "a deny resting on two people's denials names one of them: a deny counts nobody, so it stays strict",
+         lambda d: identity_case(d, [deny_of_two(named("ops"))])),
+        ("MA8", "the intent names the allow's two approvers in the other order: the same parties, identity holds",
+         lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("lead", "ops"))])),
+        ("MA9", "one listed approver's credential is refreshed between the allow and the intent: the same parties",
+         lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", refreshed(named("ops", "lead"), 1))])),
     ]
 
 

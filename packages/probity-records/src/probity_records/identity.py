@@ -17,8 +17,9 @@ than the agent principal, and an approver principal who is not among the approva
 several (an M-of-N quorum): each member a full principal, each a counted signer of the approval, no subject named
 twice (``principal_approver_duplicate``). A list of fewer than two is refused (``principal_approver_list_too_short``):
 one approval takes the single form, so one block has one spelling. A member that fails the principal checks is refused
-as ``principal_approver:<code>``, as the single form is. The list's order is the writer's; the verdict never depends on
-it, the digest of the block does (``digests.principals_digest`` hashes the block as recorded).
+as ``principal_approver:<code>``, as the single form is. The list is a set: its order is the writer's and
+neither the verdict, a permit's parties (``journal._parties``) nor the digest (``digests.principals_digest`` sorts the
+members) depends on it.
 An issuer's pins are a collection of thumbprints (a set, list or tuple); a pin written as one string is
 refused rather than searched, so a string that merely contains a thumbprint pins nothing.
 
@@ -266,7 +267,7 @@ def _grant_problems(block: Mapping[str, Any], at: str,
 
 
 def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], approvers: set[str] | None,
-                      sponsors: Mapping[str, Any] | None,
+                      counted: set[str] | None, sponsors: Mapping[str, Any] | None,
                       standing_grants: Mapping[str, Mapping[str, Any]]) -> tuple[list[str], str | None]:  # fmt: skip
     if "user" in block:
         return ["principals_autonomous_has_user"], None
@@ -304,16 +305,21 @@ def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], a
         problems.append("principals_need_approver")
     elif "approver" in block and approvers is not None and not named <= approvers:
         problems.append("principal_approver_not_an_approval_signer")
-    elif approvers is not None and not approvers <= named:
+    elif counted and not counted <= named:
         problems.append("principals_need_every_approver")
     return (problems, None) if problems else ([], "autonomous")
 
 
 def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: set[str] | None = None, *,
-                     sponsors: Mapping[str, Any] | None = None,
+                     counted: set[str] | None = None, sponsors: Mapping[str, Any] | None = None,
                      standing_grants: Mapping[str, Mapping[str, Any]] | None = None) -> tuple[list[str], str | None]:
     """(problems, grade) for one record's ``principals``. Grade is ``strict``, ``basic`` or ``autonomous``; None
     when a problem refuses the block.
+
+    ``approvers`` are the people the block may name as approver; ``counted`` are the people the approval counted,
+    whom strict (and an autonomous block) needs every one of named. For an allow the two are the same set, the
+    default (``counted`` None). A deny counts nobody: its ``approvers`` are the people whose binding it carries and
+    its ``counted`` is empty, so a deny naming one of two such people is graded as it was before the list form.
 
     ``sponsors`` is the registry the auditor pins: agent client id to the (issuer, subject) pairs registered as its
     sponsors. ``standing_grants`` maps a grant digest to a grant body the caller verified against its own pinned
@@ -321,7 +327,8 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: se
     if not isinstance(block, dict) or not block or set(block) - set(ROLES) - set(AUTONOMOUS):
         return ["principals_malformed"], None
     if set(block) & set(AUTONOMOUS):
-        return _check_autonomous(block, at, pins, approvers, sponsors, standing_grants or {})
+        return _check_autonomous(block, at, pins, approvers, approvers if counted is None else counted, sponsors,
+                                 standing_grants or {})
     problems = [found for role in ROLES if role in block for found in _role_problems(block, role, at, pins)]
     if "user" not in block or "agent" not in block:
         problems.append("principals_need_user_and_agent")
@@ -336,21 +343,25 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: se
             return ["principal_approver_without_approval"], None
         if not approver_subjects(block) <= approvers:
             return ["principal_approver_not_an_approval_signer"], None
-    return [], "basic" if strict_shortfall(block, approvers) else "strict"
+    return [], "basic" if strict_shortfall(block, approvers, counted) else "strict"
 
 
-def strict_shortfall(block: Mapping[str, Any], approvers: set[str] | None) -> str | None:
+def strict_shortfall(block: Mapping[str, Any], approvers: set[str] | None,
+                     counted: set[str] | None = None) -> str | None:
     """What keeps a human-session block that passed from ``strict``: ``act-absent`` (the user credential names no
     agent in ``act``), ``sponsor-absent``, ``approver-absent`` (an approval admitted the call and the block does not
     name who gave it), or ``approvers-partial`` (it names some of the approvers the approval counts, not all); None
-    when it is strict. The gateway writer applies the same rule."""
+    when it is strict. ``approver-absent`` reads ``approvers``, the people the block may name; ``approvers-partial``
+    reads ``counted``, the people the approval counted (default: ``approvers``; empty for a deny, which counts
+    nobody). The gateway writer applies the same rule."""
     if "act" not in block.get("user", {}):
         return "act-absent"
     if "sponsor" not in block:
         return "sponsor-absent"
     if approvers and "approver" not in block:
         return "approver-absent"
-    if approvers and not approvers <= approver_subjects(block):
+    counted = approvers if counted is None else counted
+    if counted and not counted <= approver_subjects(block):
         return "approvers-partial"
     return None
 

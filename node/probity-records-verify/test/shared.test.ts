@@ -23,8 +23,9 @@ for (const family of JOURNAL_FAMILIES) {
 for (const v of load("identity.json")) {
   test(`${v.id} ${v.description}`, () => {
     const approvers = v.approvers === null ? null : new Set<string>(v.approvers);
+    const counted = v.counted === undefined || v.counted === null ? undefined : new Set<string>(v.counted);
     const [problems, grade] = checkPrincipals(v.principals, v.at, v.pins, approvers,
-      { sponsors: v.sponsors === undefined ? undefined : v.sponsors, standingGrants: v.standingGrants ?? {} });
+      { sponsors: v.sponsors === undefined ? undefined : v.sponsors, standingGrants: v.standingGrants ?? {} }, counted);
     assert.deepEqual({ problems, grade }, { problems: v.expected.problems, grade: v.expected.grade });
   });
 }

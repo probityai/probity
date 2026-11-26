@@ -172,6 +172,20 @@ def test_strict_names_every_approver_an_approval_counted() -> None:
     assert strict_shortfall(_without(block, "approver"), both) == "approver-absent"
 
 
+def test_a_deny_counts_nobody_so_strict_needs_no_approver_named() -> None:
+    """A deny may name any approver whose binding it carries and counts none of them: naming one of two is strict, as
+    it was before the list form; naming none is still ``approver-absent``; a name outside the bindings is refused."""
+    v = base()
+    pins = {ISSUER: frozenset(v["pins"][ISSUER])}
+    block = v["principals"]
+    both = {"bob@example.com", "carol@example.com"}
+    assert check_principals(block, v["at"], pins, both, counted=set()) == ([], "strict")
+    assert strict_shortfall(block, both, set()) is None
+    assert strict_shortfall(_without(block, "approver"), both, set()) == "approver-absent"
+    assert check_principals(block, v["at"], pins, {"carol@example.com"}, counted=set()) == \
+        (["principal_approver_not_an_approval_signer"], None)
+
+
 def test_journal_checks_principals_at_the_record_time(tmp_path) -> None:
     gate = Signer.generate()
     v = base()

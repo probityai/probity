@@ -987,7 +987,7 @@ function grantProblems(block: J, at: string, grants: Record<string, J>): string[
   if (block.sponsor.issuer !== g.sponsor.issuer || block.sponsor.subject !== g.sponsor.subject || Object.keys(g.sponsor).length !== 2) out.push("principals_sponsor_not_the_grant_sponsor");
   return out;
 }
-function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust): [string[], string | null] {
+function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, counted: Set<string> | null, auto: AutonomousTrust): [string[], string | null] {
   if ("user" in block) return [["principals_autonomous_has_user"], null];
   let problems: string[] = ([["principals_need_agent", "agent"], ["principals_need_sponsor", "sponsor"], ["principals_need_session", "session"], ["principals_need_standing_grant", "standingGrant"]] as const)
     .filter(([, m]) => !(m in block)).map(([code]) => code);
@@ -1007,12 +1007,15 @@ function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, a
   if ("approver" in block && approvers === null) problems.push("principal_approver_without_approval");
   else if (approvers !== null && !("approver" in block)) problems.push("principals_need_approver");
   else if ("approver" in block && approvers !== null && ![...named].every((s) => approvers.has(s))) problems.push("principal_approver_not_an_approval_signer");
-  else if (approvers !== null && ![...approvers].every((s) => named.has(s))) problems.push("principals_need_every_approver");
+  else if (counted !== null && ![...counted].every((s) => named.has(s))) problems.push("principals_need_every_approver");
   return problems.length ? [problems, null] : [[], "autonomous"];
 }
-export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust = {}): [string[], string | null] {
+// approvers: who the block may name as approver; counted: who the approval counted, every one of whom strict (and an
+// autonomous block) names. An allow's two are one set (counted undefined); a deny counts nobody (counted empty).
+export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust = {}, counted?: Set<string> | null): [string[], string | null] {
+  const tally = counted === undefined ? approvers : counted;
   if (!isObj(block) || !Object.keys(block).length || Object.keys(block).some((k) => !ROLES.includes(k) && !AUTONOMOUS.includes(k))) return [["principals_malformed"], null];
-  if (Object.keys(block).some((k) => AUTONOMOUS.includes(k))) return checkAutonomous(block, at, pins, approvers, auto);
+  if (Object.keys(block).some((k) => AUTONOMOUS.includes(k))) return checkAutonomous(block, at, pins, approvers, tally, auto);
   const problems: string[] = [];
   for (const r of ROLES) if (r in block) problems.push(...roleProblems(block, r, at, pins));
   if (!("user" in block) || !("agent" in block)) problems.push("principals_need_user_and_agent");
@@ -1021,16 +1024,17 @@ export function checkPrincipals(block: J, at: string, pins: Record<string, strin
   if (chain.length && ![block.agent.subject, block.agent.clientId].includes(chain[0])) return [["principal_act_names_another_agent"], null];
   if ("approver" in block && (approvers === null || approvers.size === 0)) return [["principal_approver_without_approval"], null];
   if ("approver" in block && ![...approverSubjects(block)].every((s) => approvers!.has(s))) return [["principal_approver_not_an_approval_signer"], null];
-  return [[], strictShortfall(block, approvers) === null ? "strict" : "basic"];
+  return [[], strictShortfall(block, approvers, tally) === null ? "strict" : "basic"];
 }
 
 // What keeps a human-session block that passed from strict (identity.strict_shortfall): the user credential's act
 // chain, the sponsor, and the approver exactly when an approval admitted the call.
-export function strictShortfall(block: J, approvers: Set<string> | null): string | null {
+export function strictShortfall(block: J, approvers: Set<string> | null, counted?: Set<string> | null): string | null {
   if (!("act" in (block.user ?? {}))) return "act-absent";
   if (!("sponsor" in block)) return "sponsor-absent";
   if (approvers !== null && approvers.size > 0 && !("approver" in block)) return "approver-absent";
-  if (approvers !== null && approvers.size > 0) { const named = approverSubjects(block); if (![...approvers].every((s) => named.has(s))) return "approvers-partial"; }
+  const tally = counted === undefined ? approvers : counted;
+  if (tally !== null && tally.size > 0) { const named = approverSubjects(block); if (![...tally].every((s) => named.has(s))) return "approvers-partial"; }
   return null;
 }
 
@@ -1435,20 +1439,23 @@ function countBindings(policy: J, bindings: J[]): { counted: Set<string>; proble
 const NO_APPROVAL_REQUIRED = "no_approval_required";
 const RECONCILED_RETRY = "reconciled_absent_retry";
 
-// The approvers an authorize record COUNTS (journal._check_approval), the only people its approver principal may name;
-// null when no approval admitted the call.
-function checkApproval(pred: J, problems: string[], where: string, trust: TrustDoc | null): Set<string> | null {
+// What an authorize record's approvals give its principals (journal._check_approval): [nameable, counted]. nameable is
+// who its approver principal may name, null when no approval admitted the call; counted is who the approval counted.
+// An allow's two are one set; a deny counts nobody, so its counted is empty.
+type Approvers = [Set<string> | null, Set<string> | null];
+const same = (s: Set<string> | null): Approvers => [s, s];
+function checkApproval(pred: J, problems: string[], where: string, trust: TrustDoc | null): Approvers {
   if (pred.decision === "allow") {
     const before = problems.length;
     if (checkAuthority(pred, trust, problems, where)) {
       const votes = voteSigners(pred);
-      return problems.length === before && votes.size ? votes : null;
+      return same(problems.length === before && votes.size ? votes : null);
     }
   }
   const bindings: J[] = pred.approvalBindings ?? [];
   if (!bindings.length) {
     if (pred.decision === "allow" && ![NO_APPROVAL_REQUIRED, RECONCILED_RETRY].includes(pred.reason)) problems.push(`${where}:allow_without_approval_binding`);
-    return null;
+    return [null, null];
   }
   const readerAllowed = new Set<string>();
   bindings.forEach((embedded, n) => {
@@ -1460,16 +1467,16 @@ function checkApproval(pred: J, problems: string[], where: string, trust: TrustD
       problems.push(`${where}:deny_reason_mismatch:${pred.reason}:${verdict.reason}`);
   });
   // a deny counts nobody; its approver principal may name any approver whose binding it carries
-  if (pred.decision !== "allow") return new Set(bindings.map((b) => String(b?.record?.approval?.approver)));
-  if (trust === null) { problems.push(`${where}:authority_trust_not_pinned:approval`); return null; }
+  if (pred.decision !== "allow") return [new Set(bindings.map((b) => String(b?.record?.approval?.approver))), new Set()];
+  if (trust === null) { problems.push(`${where}:authority_trust_not_pinned:approval`); return [null, null]; }
   const policy = (trust.quorumPolicies ?? {})[String(pred.approvalPolicyId)];
-  if (policy === undefined) { problems.push(`${where}:approval_policy_not_pinned`); return null; }
+  if (policy === undefined) { problems.push(`${where}:approval_policy_not_pinned`); return [null, null]; }
   if (!pyEq(pred.threshold, policy.threshold)) problems.push(`${where}:threshold_not_pinned:${pyRepr(pred.threshold, isFloat(pred, "threshold", pred.threshold))}:${pyRepr(policy.threshold, isFloat(policy, "threshold", policy.threshold))}`);
   const { counted: signed, problems: sigProblems } = countBindings(policy, bindings);
   problems.push(...sigProblems.map((p) => `${where}:${p}`));
   const counted = [...signed].filter((a) => readerAllowed.has(a));
   if (counted.length < policy.threshold) problems.push(`${where}:approvals_below_threshold:${counted.length}:${policy.threshold}`);
-  return counted.length ? new Set(counted) : null;
+  return same(counted.length ? new Set(counted) : null);
 }
 
 function checkEffect(pred: J, problems: string[], where: string): void {
@@ -1509,7 +1516,7 @@ function standingProblems(pred: J, block: J): string[] {
 }
 
 function checkLine(i: number, line: string, keys: KeyObject[], prev: string, trust: TrustDoc | null, seen: Record<string, J>,
-                   counted: Map<string, Set<string> | null>): [J | null, string[]] {
+                   counted: Map<string, Approvers>): [J | null, string[]] {
   const where = `line_${i}`, problems: string[] = [];
   let body: J;
   try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
@@ -1520,13 +1527,13 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   // The approvals are judged first, because an approver principal may name only an approver this record counts; their
   // problems are reported after the identity's.
   const approvalProblems: string[] = [];
-  let approvers: Set<string> | null = null;
+  let approvers: Approvers = [null, null];
   if (isToolCall(body)) {
     const pid = String(pred.permitId);
     if (pred.phase === "authorize") {
       approvers = checkApproval(pred, approvalProblems, where, trust);
       if (pred.decision === "allow" && !counted.has(pid)) counted.set(pid, approvers);
-    } else approvers = counted.get(pid) ?? null; // an intent or effect answers to the approvers its permit's allow counted
+    } else approvers = counted.get(pid) ?? [null, null]; // an intent or effect answers to the approvers its permit's allow counted
   }
   if (isToolCall(body) && (pred.principals === undefined || pred.principals === null)
       && pred.phase === "authorize" && trust !== null && trust.identityProfile === "strict")
@@ -1545,11 +1552,12 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
         for (const chain of chains) Object.assign(grants, chainDigests(chain, roots));
       }
       const sponsors = trust.agentSponsors && Object.keys(trust.agentSponsors).length ? trust.agentSponsors : null;
-      const [found, grade] = checkPrincipals(block, String(pred.at), trust.identityIssuers ?? {}, approvers, { sponsors, standingGrants: grants });
+      const [nameable, tally] = approvers;
+      const [found, grade] = checkPrincipals(block, String(pred.at), trust.identityIssuers ?? {}, nameable, { sponsors, standingGrants: grants }, tally);
       problems.push(...found.map((p) => `${where}:${p}`));
       if (grade === "autonomous") problems.push(...standingProblems(pred, block).map((p) => `${where}:${p}`));
       if (grade !== null && trust.identityProfile === "strict" && grade !== "strict" && grade !== "autonomous")
-        problems.push(`${where}:principals_below_strict:${strictShortfall(block, approvers)}`);
+        problems.push(`${where}:principals_below_strict:${strictShortfall(block, nameable, tally)}`);
     }
   }
   // Keep the verified bodies of an allow's authority chain, so later intent and effect lines resolve the standing
@@ -1571,10 +1579,15 @@ function spendOf(budget: J, args: J): number {
   return typeof v === "number" ? v : Infinity;
 }
 
+// Who a principals block names, role by role (journal._parties): issuer and subject, so a refreshed credential is the
+// same party; an approver list is the set of its members' pairs, in no order.
+const party = (p: J): J => isObj(p) ? [p.issuer ?? null, p.subject ?? null] : p;
 function parties(block: J): J {
   if (!isObj(block)) return null;
   const out: Record<string, J> = {};
-  for (const [role, p] of Object.entries(block)) out[role] = isObj(p) ? [p.issuer ?? null, p.subject ?? null] : p;
+  for (const [role, p] of Object.entries(block)) {
+    out[role] = Array.isArray(p) ? p.map(party).map((x) => [JSON.stringify(x), x] as const).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, x]) => x) : party(p);
+  }
   return out;
 }
 
@@ -1649,7 +1662,7 @@ export function verifyJournal(lines: string[], publicPems: string[], checkpointE
   const failures: string[] = [], bodies: [number, J][] = [];
   lines = lines.filter((l) => l.trim());
   const seen: Record<string, J> = {}; // grant bodies of the authority chains verified so far, by digest
-  const counted = new Map<string, Set<string> | null>(); // permit id -> the approvers its first allow counted
+  const counted = new Map<string, Approvers>(); // permit id -> the approvers its first allow counted
   lines.forEach((line, n) => {
     const i = n + 1;
     const [body, problems] = checkLine(i, line, keys, prev, trust, seen, counted);
@@ -1740,7 +1753,11 @@ function principalsDoc(block: J, holder: J, key: string): J {
       if (member.length < APPROVER_LIST_MIN || !member.every(isObj)) throw new IdentityDigestError("identity_principals_malformed");
     } else if (!isObj(member)) throw new IdentityDigestError("identity_principals_malformed");
   }
-  return block;
+  // an approver list is a set: hashed sorted by each member's RFC 8785 bytes (digests._principals), so one set of
+  // approvers has one digest whatever order the writer listed them in
+  if (!Array.isArray(block.approver)) return block;
+  const sorted = block.approver.map((m: J) => [canonicalBytes(m), m] as const).sort(([a]: readonly [Buffer, J], [b]: readonly [Buffer, J]) => Buffer.compare(a, b)).map(([, m]: readonly [Buffer, J]) => m);
+  return { ...block, approver: sorted };
 }
 
 /** probity_records.digests.principals_digest. */

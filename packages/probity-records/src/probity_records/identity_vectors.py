@@ -8,7 +8,9 @@ where ``expected`` is ``{"problems": [...], "grade": "strict" | "basic" | "auton
 ``sponsors`` (agent client id to the registered [issuer, subject] pairs, or null when none is pinned) and
 ``standingGrants`` (grant digest to the grant body the verifier resolved); its ``approvers`` is null when no approval
 admitted the call. ``pins`` maps an issuer to its pinned thumbprints exactly as an auditor wrote them (``ID35`` writes
-one as a string, which pins nothing); ``tokens`` are checked at the vector's ``at``.
+one as a string, which pins nothing); ``tokens`` are checked at the vector's ``at``. A vector that carries
+``counted`` (``ID52`` on) gives the people the approval counted apart from ``approvers``, the people the block may
+name: a deny counts nobody, so its ``counted`` is ``[]``; with no ``counted`` the two are one set.
 
 ``python -m probity_records identity-vectors`` prints them as JSON; ``check`` re-runs them.
 """
@@ -262,6 +264,15 @@ def _many_approver_vectors() -> list[dict[str, Any]]:
               autonomous("bob", "carol")),
         _auto("ID50", "autonomous names one of the two approvers its approval counted", autonomous("bob")),
         _mut("ID51", "an empty approver list", lambda v: _approvers(v)),
+        _mut("ID52", "a deny resting on two people's bindings names one of them: a deny counts nobody, strict",
+             lambda v: (v.__setitem__("approvers", ["bob@example.com", "carol@example.com"]),
+                        v.__setitem__("counted", []))),
+        _mut("ID53", "a deny resting on two people's bindings names both as a list: strict",
+             lambda v: (_approvers(v, "bob", "carol"), v.__setitem__("counted", []))),
+        _auto("ID54", "autonomous deny resting on two people's bindings names one of them: autonomous",
+              lambda v: (autonomous("bob")(v), v.__setitem__("counted", []))),
+        _mut("ID55", "the approver list written in the other order: the verdict is the same, strict",
+             lambda v: _approvers(v, "carol", "bob")),
     ]
 
 
@@ -330,9 +341,10 @@ def vectors() -> list[dict[str, Any]]:
     out += _many_approver_vectors()
     for v in out:
         approvers = None if v["approvers"] is None else set(v["approvers"])
+        counted = None if v.get("counted") is None else set(v["counted"])
         sponsors = v.get("sponsors")
         problems, grade = check_principals(v["principals"], v["at"], v["pins"],
-                                           approvers,
+                                           approvers, counted=counted,
                                            sponsors=None if sponsors is None else
                                            {a: frozenset(map(tuple, s)) for a, s in sponsors.items()},
                                            standing_grants=v.get("standingGrants"))  # fmt: skip
