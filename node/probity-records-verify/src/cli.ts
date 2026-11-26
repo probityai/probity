@@ -7,7 +7,7 @@
 //   agent-evidence-vectors' a2a-jcs corpus (agent_evidence_vectors.a2ajcs): exit 0 with
 //   {"canonical_utf8_hex": ...} on the last line, exit 1 for a refusal, exit 2 when it cannot run.
 import { readFileSync } from "node:fs";
-import { canonicalBytes, canonicalOfReceived, parseReceived, verifyJournal } from "./verify.ts";
+import { canonicalBytes, canonicalOfReceived, journalLines, parseReceived, verifyJournal } from "./verify.ts";
 import { main as corpusMain } from "./corpus.ts";
 import { main as webBotAuthMain } from "./webbotauth.ts";
 
@@ -48,6 +48,8 @@ let text: string;
 // A journal that is not UTF-8 is refused, never read through replacement characters.
 try { text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(readFileSync(journal)); }
 catch { console.error(`probity-records-verify: NOT RUN: ${journal} is not UTF-8`); process.exit(2); }
-const report = verifyJournal(text.split("\n"), keys, checkpoint, trust as never);
+// Only whole lines are records: a torn tail from a writer killed mid-append is reported, never read.
+const { lines, tornTailBytes } = journalLines(text);
+const report = { ...verifyJournal(lines, keys, checkpoint, trust as never), tornTailBytes };
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.verdict === "PASS" ? 0 : 1);
