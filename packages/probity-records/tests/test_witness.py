@@ -36,7 +36,9 @@ def test_consistency_proofs_hold_for_every_pair_and_fail_when_bent() -> None:
                 bent = [bytes(32), *proof[1:]]
                 assert not w.verify_consistency(old, new, old_root, new_root, bent)
             if old < new:
-                assert not w.verify_consistency(old, new, w.root(_leaves(old + 1)[1:]), new_root, proof)
+                assert not w.verify_consistency(
+                    old, new, w.root(_leaves(old + 1)[1:]), new_root, proof
+                )
 
 
 def test_root_matches_rfc9162_shapes() -> None:
@@ -52,8 +54,13 @@ def _setup(tmp_path: Path, *, witnesses: int = 1):
     servers, pairs = [], []
     feed_vkey = w.log_vkey(ORIGIN, signer)
     for n, key in enumerate(keys):
-        wit = w.Witness(f"customer.example/witness-{n}", key, {ORIGIN: [w.parse_vkey(feed_vkey)]},
-                        state_dir=tmp_path / f"witness-{n}", clock=SYSTEM_CLOCK)
+        wit = w.Witness(
+            f"customer.example/witness-{n}",
+            key,
+            {ORIGIN: [w.parse_vkey(feed_vkey)]},
+            state_dir=tmp_path / f"witness-{n}",
+            clock=SYSTEM_CLOCK,
+        )
         srv = w.serve_witness(wit)
         servers.append(srv)
         pairs.append((f"http://127.0.0.1:{srv.server_address[1]}", wit.vkey.encode()))
@@ -69,34 +76,64 @@ def _policy(feed_vkey: str, pairs, quorum: str = "w0") -> str:
 
 def _append(journal: Journal, n: int) -> None:
     for i in range(n):
-        journal.append("https://example.test/t", f"s{i}", "0" * 64, {"phase": "note", "i": i})
+        journal.append(
+            "https://example.test/t", f"s{i}", "0" * 64, {"phase": "note", "i": i}
+        )
 
 
-def test_customer_witness_cosigns_and_the_offline_verifier_requires_it(tmp_path) -> None:
+def test_customer_witness_cosigns_and_the_offline_verifier_requires_it(
+    tmp_path,
+) -> None:
     signer, journal, servers, pairs, feed_vkey = _setup(tmp_path)
     policy = _policy(feed_vkey, pairs)
     feed = w.Feed(journal, ORIGIN, pairs, policy=w.parse_policy(policy))
     _append(journal, 3)
     feed.publish()
     _append(journal, 4)
-    note = feed.publish()  # the second checkpoint needed a consistency proof from size 3
+    note = (
+        feed.publish()
+    )  # the second checkpoint needed a consistency proof from size 3
     trust = Trust(witness_policy=policy)
-    out = verify_journal(journal.directory, [signer.public_pem()], journal.checkpoint(), trust=trust,
-                         witnessed_checkpoint=note)
+    out = verify_journal(
+        journal.directory,
+        [signer.public_pem()],
+        journal.checkpoint(),
+        trust=trust,
+        witnessed_checkpoint=note,
+    )
     assert out["verdict"] == "PASS", out["failures"]
-    assert out["witnessed"] == {"status": "verified", "size": 7, "of": 7, "cosigners": ["w0"], "origin": ORIGIN}
+    assert out["witnessed"] == {
+        "status": "verified",
+        "size": 7,
+        "of": 7,
+        "cosigners": ["w0"],
+        "origin": ORIGIN,
+    }
     # the same journal with the log's signature alone: refused offline
-    bare = w.sign_checkpoint(w.Checkpoint(ORIGIN, 7, w.root(w.journal_leaves(journal.path))), signer)
-    out = verify_journal(journal.directory, [signer.public_pem()], journal.checkpoint(), trust=trust,
-                         witnessed_checkpoint=bare)
-    assert out["verdict"] == "FAIL" and any("witness_quorum_not_met" in f for f in out["failures"])
-    out = verify_journal(journal.directory, [signer.public_pem()], journal.checkpoint(), trust=trust)
+    bare = w.sign_checkpoint(
+        w.Checkpoint(ORIGIN, 7, w.root(w.journal_leaves(journal.path))), signer
+    )
+    out = verify_journal(
+        journal.directory,
+        [signer.public_pem()],
+        journal.checkpoint(),
+        trust=trust,
+        witnessed_checkpoint=bare,
+    )
+    assert out["verdict"] == "FAIL" and any(
+        "witness_quorum_not_met" in f for f in out["failures"]
+    )
+    out = verify_journal(
+        journal.directory, [signer.public_pem()], journal.checkpoint(), trust=trust
+    )
     assert "witnessed_checkpoint_missing" in out["failures"]
     for s in servers:
         s.shutdown()
 
 
-def test_a_rewritten_or_truncated_journal_fails_and_a_new_tail_is_not_established(tmp_path) -> None:
+def test_a_rewritten_or_truncated_journal_fails_and_a_new_tail_is_not_established(
+    tmp_path,
+) -> None:
     signer, journal, servers, pairs, feed_vkey = _setup(tmp_path)
     policy = _policy(feed_vkey, pairs)
     feed = w.Feed(journal, ORIGIN, pairs, policy=w.parse_policy(policy))
@@ -104,19 +141,36 @@ def test_a_rewritten_or_truncated_journal_fails_and_a_new_tail_is_not_establishe
     note = feed.publish()
     trust = Trust(witness_policy=policy)
     _append(journal, 1)
-    out = verify_journal(journal.directory, [signer.public_pem()], journal.checkpoint(), trust=trust,
-                         witnessed_checkpoint=note)
-    assert out["verdict"] == "NOT_ESTABLISHED" and out["witnessed"]["status"] == "tail_unwitnessed"
+    out = verify_journal(
+        journal.directory,
+        [signer.public_pem()],
+        journal.checkpoint(),
+        trust=trust,
+        witnessed_checkpoint=note,
+    )
+    assert (
+        out["verdict"] == "NOT_ESTABLISHED"
+        and out["witnessed"]["status"] == "tail_unwitnessed"
+    )
     # the authority rewrites history, re-signing every line with its own key: the witness root no longer holds
     lines = journal.path.read_text().splitlines()
     forged = Journal(tmp_path / "forged", signer, clock=SYSTEM_CLOCK)
     for i in range(len(lines)):
-        forged.append("https://example.test/t", f"s{i}", "0" * 64, {"phase": "note", "i": 100 + i})
-    out = verify_journal(forged.directory, [signer.public_pem()], forged.checkpoint(), trust=trust,
-                         witnessed_checkpoint=note)
+        forged.append(
+            "https://example.test/t", f"s{i}", "0" * 64, {"phase": "note", "i": 100 + i}
+        )
+    out = verify_journal(
+        forged.directory,
+        [signer.public_pem()],
+        forged.checkpoint(),
+        trust=trust,
+        witnessed_checkpoint=note,
+    )
     assert "witnessed_checkpoint_root_mismatch" in out["failures"]
     journal.path.write_text("\n".join(lines[:2]) + "\n")
-    out = verify_journal(journal.directory, [signer.public_pem()], trust=trust, witnessed_checkpoint=note)
+    out = verify_journal(
+        journal.directory, [signer.public_pem()], trust=trust, witnessed_checkpoint=note
+    )
     assert "witnessed_checkpoint_beyond_journal:4:2" in out["failures"]
     for s in servers:
         s.shutdown()
@@ -135,12 +189,16 @@ def test_the_witness_refuses_a_split_view_and_an_unproven_extension(tmp_path) ->
     assert exc.value.status == 422
     bigger = w.sign_checkpoint(w.Checkpoint(ORIGIN, 5, w.root(_leaves(5))), signer)
     with pytest.raises(w.WitnessRefused) as exc:  # not an extension of what it cosigned
-        w.add_checkpoint(url, w.encode_add_checkpoint(3, w.consistency_proof(3, _leaves(5)), bigger))
+        w.add_checkpoint(
+            url, w.encode_add_checkpoint(3, w.consistency_proof(3, _leaves(5)), bigger)
+        )
     assert exc.value.status == 422
     with pytest.raises(w.WitnessRefused) as exc:
         w.add_checkpoint(url, w.encode_add_checkpoint(1, [], bigger))
     assert exc.value.status == 409 and exc.value.body.strip() == "3"
-    rogue = w.sign_checkpoint(w.Checkpoint(ORIGIN, 3, w.root(leaves)), Signer.generate())
+    rogue = w.sign_checkpoint(
+        w.Checkpoint(ORIGIN, 3, w.root(leaves)), Signer.generate()
+    )
     with pytest.raises(w.WitnessRefused) as exc:
         w.add_checkpoint(url, w.encode_add_checkpoint(3, [], rogue))
     assert exc.value.status == 403
@@ -148,15 +206,24 @@ def test_the_witness_refuses_a_split_view_and_an_unproven_extension(tmp_path) ->
         s.shutdown()
 
 
-def test_the_witness_remembers_across_restarts_and_the_feed_recovers_from_409(tmp_path) -> None:
+def test_the_witness_remembers_across_restarts_and_the_feed_recovers_from_409(
+    tmp_path,
+) -> None:
     signer, journal, servers, pairs, feed_vkey = _setup(tmp_path)
-    feed = w.Feed(journal, ORIGIN, pairs, policy=w.parse_policy(_policy(feed_vkey, pairs)))
+    feed = w.Feed(
+        journal, ORIGIN, pairs, policy=w.parse_policy(_policy(feed_vkey, pairs))
+    )
     _append(journal, 2)
     feed.publish()
     key = _setup.keys[0]  # type: ignore[attr-defined]
     servers[0].shutdown()
-    wit = w.Witness("customer.example/witness-0", key, {ORIGIN: [w.parse_vkey(feed_vkey)]},
-                    state_dir=tmp_path / "witness-0", clock=SYSTEM_CLOCK)
+    wit = w.Witness(
+        "customer.example/witness-0",
+        key,
+        {ORIGIN: [w.parse_vkey(feed_vkey)]},
+        state_dir=tmp_path / "witness-0",
+        clock=SYSTEM_CLOCK,
+    )
     assert wit._latest[ORIGIN][0] == 2
     srv = w.serve_witness(wit)
     url = f"http://127.0.0.1:{srv.server_address[1]}"
@@ -174,9 +241,13 @@ def test_the_witness_remembers_across_restarts_and_the_feed_recovers_from_409(tm
     srv.shutdown()
 
 
-def test_publish_fails_closed_when_the_quorum_is_missing_and_the_lag_gate_stops_permits(tmp_path) -> None:
+def test_publish_fails_closed_when_the_quorum_is_missing_and_the_lag_gate_stops_permits(
+    tmp_path,
+) -> None:
     _signer, journal, servers, pairs, feed_vkey = _setup(tmp_path, witnesses=2)
-    text = _policy(feed_vkey, pairs, quorum="both").replace("quorum both", "group both all w0 w1\nquorum both")
+    text = _policy(feed_vkey, pairs, quorum="both").replace(
+        "quorum both", "group both all w0 w1\nquorum both"
+    )
     policy = w.parse_policy(text)
     feed = w.Feed(journal, ORIGIN, pairs, policy=policy)
     _append(journal, 2)
@@ -196,7 +267,12 @@ def test_publish_fails_closed_when_the_quorum_is_missing_and_the_lag_gate_stops_
 def test_policy_parsing_refuses_malformed_input() -> None:
     k = Ed25519PrivateKey.generate()
     vk = w.vkey("c.example/w", w.SIG_COSIGNATURE_V1, k.public_key()).encode()
-    for bad in ["", f"witness a {vk}\n", "quorum nobody\n", f"witness a {vk}\nwitness b {vk}\nquorum a\n"]:
+    for bad in [
+        "",
+        f"witness a {vk}\n",
+        "quorum nobody\n",
+        f"witness a {vk}\nwitness b {vk}\nquorum a\n",
+    ]:
         with pytest.raises(w.NoteError):
             w.parse_policy(bad)
     with pytest.raises(w.NoteError):
@@ -209,7 +285,9 @@ def test_cosignature_bytes_follow_the_c2sp_layout() -> None:
     line = w.cosign(text, "c.example/w", k, 1700000000)
     assert line.key_id == w.note_key_id("c.example/w", 0x04, w._raw(k.public_key()))
     assert int.from_bytes(line.sig[:8], "big") == 1700000000
-    k.public_key().verify(line.sig[8:], b"cosignature/v1\ntime 1700000000\n" + text.encode())
+    k.public_key().verify(
+        line.sig[8:], b"cosignature/v1\ntime 1700000000\n" + text.encode()
+    )
     assert line.encode().startswith("— c.example/w ")
     with pytest.raises(w.NoteError, match="share key name"):
         w.parse_note(w.Note(text, (line, line)).encode())

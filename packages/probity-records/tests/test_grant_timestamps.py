@@ -36,9 +36,18 @@ CALL = {"amount_cents": 5}
 
 
 def _body(issuer: Signer, holder: Signer, **over: Any) -> dict[str, Any]:
-    body = {"cnf": cnf_for_signer(holder), "context": {}, "expiresAt": "2099-01-01T00:00:00Z", "grantId": "g",
-            "holderKey": raw_public(holder), "issuerKey": raw_public(issuer), "maxDepth": 1,
-            "notBefore": "2026-01-01T00:00:00Z", "parent": None, "tools": TOOLS}
+    body = {
+        "cnf": cnf_for_signer(holder),
+        "context": {},
+        "expiresAt": "2099-01-01T00:00:00Z",
+        "grantId": "g",
+        "holderKey": raw_public(holder),
+        "issuerKey": raw_public(issuer),
+        "maxDepth": 1,
+        "notBefore": "2026-01-01T00:00:00Z",
+        "parent": None,
+        "tools": TOOLS,
+    }
     body.update(over)
     return body
 
@@ -71,7 +80,9 @@ BAD = [
 
 
 @pytest.mark.parametrize(("member", "value", "code"), BAD)
-def test_validate_body_refuses_a_timestamp_with_no_offset_or_another_grammar(member, value, code) -> None:
+def test_validate_body_refuses_a_timestamp_with_no_offset_or_another_grammar(
+    member, value, code
+) -> None:
     issuer, holder = Signer.generate(), Signer.generate()
     with pytest.raises(ValueError) as caught:
         validate_body(_body(issuer, holder, **{member: value}))
@@ -91,12 +102,21 @@ def test_validate_body_refuses_a_grant_with_no_window_member(member) -> None:
 def test_issue_grant_refuses_an_offsetless_window() -> None:
     issuer, holder = Signer.generate(), Signer.generate()
     with pytest.raises(ValueError, match="grant_timestamp_offset_missing:notBefore"):
-        issue_grant(issuer, grant_id="g", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=TOOLS,
-                    not_before="2026-01-01T00:00:00", expires_at="2099-01-01T00:00:00Z")
+        issue_grant(
+            issuer,
+            grant_id="g",
+            holder_key=raw_public(holder),
+            cnf=cnf_for_signer(holder),
+            tools=TOOLS,
+            not_before="2026-01-01T00:00:00",
+            expires_at="2099-01-01T00:00:00Z",
+        )
 
 
 @pytest.mark.parametrize(("member", "value", "code"), BAD)
-def test_a_root_with_a_bad_timestamp_is_refused_by_every_chain_check(member, value, code) -> None:
+def test_a_root_with_a_bad_timestamp_is_refused_by_every_chain_check(
+    member, value, code
+) -> None:
     root, holder = Signer.generate(), Signer.generate()
     chain = [_forge(root, _body(root, holder, **{member: value}))]
     want = f"grant_invalid:0:{code}:{member}"
@@ -106,12 +126,30 @@ def test_a_root_with_a_bad_timestamp_is_refused_by_every_chain_check(member, val
     assert (verdict["decision"], verdict["reason"]) == ("deny", want)
 
 
-def test_a_child_with_an_offsetless_window_is_refused_not_compared_with_its_parent() -> None:
+def test_a_child_with_an_offsetless_window_is_refused_not_compared_with_its_parent() -> (
+    None
+):
     root, a, b = Signer.generate(), Signer.generate(), Signer.generate()
-    parent = issue_grant(root, grant_id="p", holder_key=raw_public(a), cnf=cnf_for_signer(a), tools=TOOLS,
-                         max_depth=1, not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")
-    child = _forge(a, _body(a, b, maxDepth=0, parent=grant_digest(parent["body"]),
-                            expiresAt="2098-01-01T00:00:00"))
+    parent = issue_grant(
+        root,
+        grant_id="p",
+        holder_key=raw_public(a),
+        cnf=cnf_for_signer(a),
+        tools=TOOLS,
+        max_depth=1,
+        not_before="2026-01-01T00:00:00Z",
+        expires_at="2099-01-01T00:00:00Z",
+    )
+    child = _forge(
+        a,
+        _body(
+            a,
+            b,
+            maxDepth=0,
+            parent=grant_digest(parent["body"]),
+            expiresAt="2098-01-01T00:00:00",
+        ),
+    )
     want = "grant_invalid:1:grant_timestamp_offset_missing:expiresAt"
     assert chain_problem([parent, child], {root.key_id}) == want
     assert verify_chain([parent, child], {root.key_id}, AT) == (None, want)
@@ -119,24 +157,55 @@ def test_a_child_with_an_offsetless_window_is_refused_not_compared_with_its_pare
 
 def test_an_offsetless_review_date_is_refused_as_such() -> None:
     root, holder = Signer.generate(), Signer.generate()
-    body = _body(root, holder, sponsor={"issuer": "https://idp.example.com", "subject": "owner@example.com"},
-                 reviewBy="2027-01-01T00:00:00")
+    body = _body(
+        root,
+        holder,
+        sponsor={"issuer": "https://idp.example.com", "subject": "owner@example.com"},
+        reviewBy="2027-01-01T00:00:00",
+    )
     with pytest.raises(ValueError, match="^grant_timestamp_offset_missing:reviewBy$"):
         validate_body(body)
 
 
-@pytest.mark.parametrize("at", ["2026-06-01T00:00:00", "2026-06-01", "yesterday", "None"])
+@pytest.mark.parametrize(
+    "at", ["2026-06-01T00:00:00", "2026-06-01", "yesterday", "None"]
+)
 def test_a_use_time_that_names_no_instant_is_refused_not_thrown(at) -> None:
     root, holder = Signer.generate(), Signer.generate()
-    chain = [issue_grant(root, grant_id="g", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=TOOLS,
-                         not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")]
+    chain = [
+        issue_grant(
+            root,
+            grant_id="g",
+            holder_key=raw_public(holder),
+            cnf=cnf_for_signer(holder),
+            tools=TOOLS,
+            not_before="2026-01-01T00:00:00Z",
+            expires_at="2099-01-01T00:00:00Z",
+        )
+    ]
     assert verify_chain(chain, {root.key_id}, at) == (None, "grant_use_time_invalid")
 
 
 def test_offsets_other_than_z_compare_as_instants() -> None:
-    assert ts("2026-06-01T02:00:00+02:00") == ts("2026-06-01T00:00:00Z") == ts("2026-05-31T19:30:00-04:30")
+    assert (
+        ts("2026-06-01T02:00:00+02:00")
+        == ts("2026-06-01T00:00:00Z")
+        == ts("2026-05-31T19:30:00-04:30")
+    )
     root, holder = Signer.generate(), Signer.generate()
-    chain = [issue_grant(root, grant_id="g", holder_key=raw_public(holder), cnf=cnf_for_signer(holder), tools=TOOLS,
-                         not_before="2026-06-01T02:00:00+02:00", expires_at="2026-06-01T03:00:00+02:00")]
+    chain = [
+        issue_grant(
+            root,
+            grant_id="g",
+            holder_key=raw_public(holder),
+            cnf=cnf_for_signer(holder),
+            tools=TOOLS,
+            not_before="2026-06-01T02:00:00+02:00",
+            expires_at="2026-06-01T03:00:00+02:00",
+        )
+    ]
     assert verify_chain(chain, {root.key_id}, "2026-06-01T00:00:00Z")[1] == "ok"
-    assert verify_chain(chain, {root.key_id}, "2026-05-31T23:59:59Z")[1] == "grant_outside_window:0"
+    assert (
+        verify_chain(chain, {root.key_id}, "2026-05-31T23:59:59Z")[1]
+        == "grant_outside_window:0"
+    )

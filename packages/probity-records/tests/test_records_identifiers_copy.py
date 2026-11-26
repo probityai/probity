@@ -8,8 +8,13 @@ from pathlib import Path
 
 import probity_records.identifiers as copy
 
-SOURCE = (Path(__file__).resolve().parents[2]
-          / "agent-evidence-verify" / "src" / "agent_evidence_verify" / "identifiers.py")
+SOURCE = (
+    Path(__file__).resolve().parents[2]
+    / "agent-evidence-verify"
+    / "src"
+    / "agent_evidence_verify"
+    / "identifiers.py"
+)
 
 
 def test_the_copy_is_the_source_file():
@@ -21,4 +26,6 @@ def test_the_copy_recognises_both_hosts():
     new = "https://probityai.org/agent-evidence-vectors/predicate/v1/uncertain-effect"
     assert copy.canonical_identifier(new) == old
     assert copy.same_identifier(old, new)
-    assert not copy.same_identifier("http://probityai.org/agent-evidence-vectors/predicate/v1/uncertain-effect", old)
+    assert not copy.same_identifier(
+        "http://probityai.org/agent-evidence-vectors/predicate/v1/uncertain-effect", old
+    )

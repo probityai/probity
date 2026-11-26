@@ -26,8 +26,13 @@ from probity_records.canonical_identity_vectors import (
     vectors,
 )
 
-SHARED = Path(__file__).resolve().parents[1] / "vectors" / "shared" / "canonical_identity.json"
-ALPHABET = "aZ09-._~ %/@:;=>!?&,\"\\\u00e9\u4e2d\U0001f600"
+SHARED = (
+    Path(__file__).resolve().parents[1]
+    / "vectors"
+    / "shared"
+    / "canonical_identity.json"
+)
+ALPHABET = 'aZ09-._~ %/@:;=>!?&,"\\\u00e9\u4e2d\U0001f600'
 
 
 def test_every_vector_judges_as_expected_and_the_shared_file_is_current() -> None:
@@ -56,13 +61,22 @@ def _identity(rng: random.Random) -> CanonicalIdentity:
     if kind == "human-attested":
         approver = _ref(rng, "approver") if rng.random() < 0.5 else None
         method = "approval" if approver else "presence"
-        return CanonicalIdentity(kind=kind, user=_ref(rng, "user"), approver=approver,
-                                 evidence=Evidence(method, digest), grants=digest if rng.random() < 0.3 else None)
+        return CanonicalIdentity(
+            kind=kind,
+            user=_ref(rng, "user"),
+            approver=approver,
+            evidence=Evidence(method, digest),
+            grants=digest if rng.random() < 0.3 else None,
+        )
     user = _ref(rng, "user") if rng.random() < 0.8 else None
     chain = tuple({_ref(rng, "agent"): None for _ in range(rng.randint(1, 4))})
-    return CanonicalIdentity(kind=kind, user=user, chain=chain,
-                             sponsor=_ref(rng, "sponsor") if user is None or rng.random() < 0.5 else None,
-                             act=digest if user is not None and rng.random() < 0.5 else None)
+    return CanonicalIdentity(
+        kind=kind,
+        user=user,
+        chain=chain,
+        sponsor=_ref(rng, "sponsor") if user is None or rng.random() < 0.5 else None,
+        act=digest if user is not None and rng.random() < 0.5 else None,
+    )
 
 
 def test_parse_render_is_a_bijection_over_random_identities() -> None:
@@ -73,14 +87,20 @@ def test_parse_render_is_a_bijection_over_random_identities() -> None:
         assert CanonicalIdentity.parse(text) == identity
         assert CanonicalIdentity.parse(text).render() == text
         assert CanonicalIdentity.from_document(identity.document()) == identity
-        assert not any(c in text for c in "\"\\ ,") and text.isascii() and text.isprintable()
+        assert (
+            not any(c in text for c in '"\\ ,')
+            and text.isascii()
+            and text.isprintable()
+        )
 
 
 def test_an_agent_acting_for_a_user_never_matches_the_users_legacy_entry() -> None:
     agent = ACCEPTED[0][2]
     entry = ALICE.render()
     assert agent.render() != entry and agent.acl_key() != entry
-    assert not agent.render().startswith(entry) and not agent.render().startswith("user:")
+    assert not agent.render().startswith(entry) and not agent.render().startswith(
+        "user:"
+    )
     with pytest.raises(IdentityStringError) as caught:
         Ref.parse(agent.render())
     assert caught.value.code == "identity_ref_malformed"
@@ -90,7 +110,11 @@ def test_an_agent_acting_for_a_user_never_matches_the_users_legacy_entry() -> No
 
 
 def test_only_a_human_attested_identity_renders_the_plain_user_form() -> None:
-    human = CanonicalIdentity(kind="human-attested", user=ALICE, evidence=Evidence("presence", "sha256:" + "0" * 64))
+    human = CanonicalIdentity(
+        kind="human-attested",
+        user=ALICE,
+        evidence=Evidence("presence", "sha256:" + "0" * 64),
+    )
     assert human.plain_user() == human.acl_key() == ALICE.render()
     assert human.render().startswith(MARKER)
     unknown = CanonicalIdentity(kind="unknown", user=ALICE)
@@ -110,14 +134,24 @@ def test_strict_refuses_an_unknown_actor_and_basic_admits_it() -> None:
 
 
 def test_a_sub_agent_shows_its_parent_and_the_acting_agent_is_last() -> None:
-    orch = Ref(type="agent", environment="prod", domain=REFUNDS.domain, subject="orchestrator")
-    sub = CanonicalIdentity(kind="agent", user=ALICE, chain=(orch, REFUNDS), sponsor=OWNER)
+    orch = Ref(
+        type="agent", environment="prod", domain=REFUNDS.domain, subject="orchestrator"
+    )
+    sub = CanonicalIdentity(
+        kind="agent", user=ALICE, chain=(orch, REFUNDS), sponsor=OWNER
+    )
     assert sub.agent == REFUNDS
     assert f"chain={orch.render()}>{REFUNDS.render()}" in sub.render()
-    assert sub != CanonicalIdentity(kind="agent", user=ALICE, chain=(REFUNDS,), sponsor=OWNER)
+    assert sub != CanonicalIdentity(
+        kind="agent", user=ALICE, chain=(REFUNDS,), sponsor=OWNER
+    )
 
 
-@pytest.mark.parametrize("vector", [v for v in vectors() if "refused" in v["expected"]], ids=lambda v: v["id"])
+@pytest.mark.parametrize(
+    "vector",
+    [v for v in vectors() if "refused" in v["expected"]],
+    ids=lambda v: v["id"],
+)
 def test_each_refusal_is_its_stated_code(vector: dict) -> None:
     assert judge(vector["direction"], vector["input"]) == vector["expected"]
 
@@ -129,5 +163,9 @@ def test_the_spec_lists_exactly_the_refusal_codes_the_reader_raises() -> None:
     source = (package / "src" / "probity_records" / "canonical_identity.py").read_text()
     raised = set(re.findall(r'IdentityStringError\(\s*"(identity_[a-z_]+)"', source))
     raised |= set(re.findall(r'"(identity_[a-z_]+)" if ', source))
-    spec = (package / "docs" / "canonical-identity.md").read_text().split("## Refusal codes", 1)[1]
+    spec = (
+        (package / "docs" / "canonical-identity.md")
+        .read_text()
+        .split("## Refusal codes", 1)[1]
+    )
     assert raised == set(re.findall(r"`(identity_[a-z_]+)`", spec))

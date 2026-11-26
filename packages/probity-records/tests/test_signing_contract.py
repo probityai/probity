@@ -93,7 +93,11 @@ def _delegated() -> Backend:
     root = AwsKmsKey("root", client=FakeAwsKms())
     return Backend(
         "delegated",
-        delegate(root, DelegationScope("record", "ours", "t1", 3600), now=to_datetime(SYSTEM_CLOCK.now())),
+        delegate(
+            root,
+            DelegationScope("record", "ours", "t1", 3600),
+            now=to_datetime(SYSTEM_CLOCK.now()),
+        ),
         "delegated",
         root.public_pem(),
         {root.key_id: "aws-kms"},
@@ -189,7 +193,9 @@ class _GarbledGcp(FakeGcpKms):
 def _garbled(service: str, answer: object) -> SigningKey:
     if service == "vault-transit":
         opener = _GarbledVault(answer)
-        return VaultTransitKey("http://vault:8200", "authority", token="t", opener=opener)
+        return VaultTransitKey(
+            "http://vault:8200", "authority", token="t", opener=opener
+        )
     if service == "aws-kms":
         return AwsKmsKey("k1", client=_GarbledAws(answer))
     name = "projects/p/locations/global/keyRings/r/cryptoKeys/a/cryptoKeyVersions/1"
@@ -212,8 +218,12 @@ GARBLED = [
 ]
 
 
-@pytest.mark.parametrize(("service", "answer"), GARBLED, ids=[f"{s}-{i}" for i, (s, _) in enumerate(GARBLED)])
-def test_an_answer_with_no_readable_signature_raises_signing_error(service: str, answer: object) -> None:
+@pytest.mark.parametrize(
+    ("service", "answer"), GARBLED, ids=[f"{s}-{i}" for i, (s, _) in enumerate(GARBLED)]
+)
+def test_an_answer_with_no_readable_signature_raises_signing_error(
+    service: str, answer: object
+) -> None:
     # The break: these answers escaped sign() as IndexError, KeyError, TypeError and
     # AttributeError, so a caller handling SigningError crashed instead of refusing; and
     # ``bytes(64)`` turned a number into 64 zero bytes before the check.

@@ -52,12 +52,31 @@ PAST = "2000-01-01T00:00:00Z"
 ROOT = Path(__file__).resolve().parents[1]
 H = "ab" * 32
 #: The RFC 7638 thumbprint of the RFC 8037 appendix A Ed25519 key, as RFC 8037 A.3 states it.
-RFC8037_JWK = {"kty": "OKP", "crv": "Ed25519", "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}
+RFC8037_JWK = {
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+}
 THUMBPRINT = "kPrK_qmxVWaYVA9wwBF6Iuo3vVzz7TxHCTwXBygrS4k"
 
 
-def _list(root: Signer, seq: int, entries: list, previous=None, *, issued_at: str = PAST, list_id: str = "rl") -> dict:
-    return sign_revocations(root, list_id=list_id, seq=seq, issued_at=issued_at, entries=entries, previous=previous)
+def _list(
+    root: Signer,
+    seq: int,
+    entries: list,
+    previous=None,
+    *,
+    issued_at: str = PAST,
+    list_id: str = "rl",
+) -> dict:
+    return sign_revocations(
+        root,
+        list_id=list_id,
+        seq=seq,
+        issued_at=issued_at,
+        entries=entries,
+        previous=previous,
+    )
 
 
 def _entry(kind: str, ident: str, at: str = PAST, **extra) -> dict:
@@ -87,75 +106,149 @@ def test_seq_rises_by_one_and_previous_is_the_digest_of_the_last_body() -> None:
     first = _list(root, 1, [])
     second = _list(root, 2, [_entry("agent", "agent:a")], previous=first)
     assert second["body"]["previous"] == list_digest(first["body"])
-    assert list_digest(first["body"]) == "sha256:" + sha256_hex(canonical(first["body"]))
+    assert list_digest(first["body"]) == "sha256:" + sha256_hex(
+        canonical(first["body"])
+    )
     state = RevocationState.from_lists([second, first], {root.key_id})
-    assert (state.seq, state.head, state.list_id) == (2, list_digest(second["body"]), "rl")
+    assert (state.seq, state.head, state.list_id) == (
+        2,
+        list_digest(second["body"]),
+        "rl",
+    )
     assert state.revoked("agent", "agent:a") and not state.revoked("agent", "agent:b")
 
 
-@pytest.mark.parametrize(("case", "code"), [
-    ("replay", "revocation_list_rollback"), ("rollback", "revocation_list_rollback"),
-    ("future", "revocation_list_gap"), ("fork", "revocation_list_previous_mismatch"),
-    ("chain", "revocation_list_other_chain"), ("time", "revocation_list_time_reversed"),
-])
-def test_out_of_order_lists_are_refused_and_leave_the_state_unchanged(case: str, code: str) -> None:
+@pytest.mark.parametrize(
+    ("case", "code"),
+    [
+        ("replay", "revocation_list_rollback"),
+        ("rollback", "revocation_list_rollback"),
+        ("future", "revocation_list_gap"),
+        ("fork", "revocation_list_previous_mismatch"),
+        ("chain", "revocation_list_other_chain"),
+        ("time", "revocation_list_time_reversed"),
+    ],
+)
+def test_out_of_order_lists_are_refused_and_leave_the_state_unchanged(
+    case: str, code: str
+) -> None:
     root = Signer.generate()
     one = _list(root, 1, [], issued_at="2026-06-01T00:00:00Z")
-    two = _list(root, 2, [_entry("stream", "s1")], previous=one, issued_at="2026-06-02T00:00:00Z")
+    two = _list(
+        root,
+        2,
+        [_entry("stream", "s1")],
+        previous=one,
+        issued_at="2026-06-02T00:00:00Z",
+    )
     state = RevocationState(roots=frozenset({root.key_id})).apply(one).apply(two)
     bad = {
         "replay": two,
         "rollback": one,
-        "future": _list(root, 4, [_entry("stream", "s2")], previous=two, issued_at="2026-06-03T00:00:00Z"),
-        "fork": _list(root, 3, [_entry("stream", "s2")], previous=one, issued_at="2026-06-03T00:00:00Z"),
-        "chain": _list(root, 3, [_entry("stream", "s2")], previous=two, issued_at="2026-06-03T00:00:00Z", list_id="x"),
-        "time": _list(root, 3, [_entry("stream", "s2")], previous=two, issued_at="2026-06-01T12:00:00Z"),
+        "future": _list(
+            root,
+            4,
+            [_entry("stream", "s2")],
+            previous=two,
+            issued_at="2026-06-03T00:00:00Z",
+        ),
+        "fork": _list(
+            root,
+            3,
+            [_entry("stream", "s2")],
+            previous=one,
+            issued_at="2026-06-03T00:00:00Z",
+        ),
+        "chain": _list(
+            root,
+            3,
+            [_entry("stream", "s2")],
+            previous=two,
+            issued_at="2026-06-03T00:00:00Z",
+            list_id="x",
+        ),
+        "time": _list(
+            root,
+            3,
+            [_entry("stream", "s2")],
+            previous=two,
+            issued_at="2026-06-01T12:00:00Z",
+        ),
     }[case]
     with pytest.raises(RevocationError) as exc:
         state.apply(bad)
     assert _code(exc) == code
-    assert state.seq == 2 and state.revoked("stream", "s1") and not state.revoked("stream", "s2")
+    assert (
+        state.seq == 2
+        and state.revoked("stream", "s1")
+        and not state.revoked("stream", "s2")
+    )
 
 
 def test_a_fresh_verifier_starts_at_seq_one() -> None:
     root = Signer.generate()
     one = _list(root, 1, [])
     with pytest.raises(RevocationError) as exc:
-        RevocationState(roots=frozenset({root.key_id})).apply(_list(root, 2, [], previous=one))
+        RevocationState(roots=frozenset({root.key_id})).apply(
+            _list(root, 2, [], previous=one)
+        )
     assert _code(exc) == "revocation_list_gap"
 
 
 def test_the_list_type_is_v2_and_a_v1_list_is_refused_for_its_type() -> None:
-    assert REVOCATION_LIST == identifier("agent-evidence-vectors/predicate/v2/revocation-list")
+    assert REVOCATION_LIST == identifier(
+        "agent-evidence-vectors/predicate/v2/revocation-list"
+    )
     root = Signer.generate()
-    v1 = dict(_list(root, 1, [])["body"], type=identifier("agent-evidence-vectors/predicate/v1/revocation-list"))
+    v1 = dict(
+        _list(root, 1, [])["body"],
+        type=identifier("agent-evidence-vectors/predicate/v1/revocation-list"),
+    )
     with pytest.raises(RevocationError, match="^revocation_list_shape:type$"):
         RevocationState.from_lists([_resign(root, v1)], {root.key_id})
 
 
 def test_lists_are_deltas_that_fold_to_the_union() -> None:
     root = Signer.generate()
-    first = _list(root, 1, [_entry("agent", "agent:a", "1999-01-01T00:00:00Z"), _entry("stream", "s1")])
+    first = _list(
+        root,
+        1,
+        [_entry("agent", "agent:a", "1999-01-01T00:00:00Z"), _entry("stream", "s1")],
+    )
     second = _list(root, 2, [_entry("agent", "agent:b")], previous=first)
     state = RevocationState.from_lists([first, second], {root.key_id})
     assert state.seq == 2 and len(state.entries) == 3
-    assert state.revoked("agent", "agent:a") and state.revoked("agent", "agent:b") and state.revoked("stream", "s1")
+    assert (
+        state.revoked("agent", "agent:a")
+        and state.revoked("agent", "agent:b")
+        and state.revoked("stream", "s1")
+    )
     assert state.revoked_at("agent", "agent:a", "1999-06-01T00:00:00Z")
     assert not state.revoked_at("agent", "agent:b", "1999-06-01T00:00:00Z")
     assert state.summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
 
 
-def test_a_seq_one_list_carries_entries_and_an_empty_delta_is_a_freshness_list() -> None:
+def test_a_seq_one_list_carries_entries_and_an_empty_delta_is_a_freshness_list() -> (
+    None
+):
     root = Signer.generate()
-    first = _list(root, 1, [_entry("sponsor", "sponsor:acme")], issued_at="2026-06-01T00:00:00Z")
+    first = _list(
+        root, 1, [_entry("sponsor", "sponsor:acme")], issued_at="2026-06-01T00:00:00Z"
+    )
     fresh = _list(root, 2, [], previous=first, issued_at="2026-06-02T00:00:00Z")
     state = RevocationState.from_lists([first, fresh], {root.key_id})
-    assert (state.seq, state.issued_at, state.head) == (2, "2026-06-02T00:00:00Z", list_digest(fresh["body"]))
+    assert (state.seq, state.issued_at, state.head) == (
+        2,
+        "2026-06-02T00:00:00Z",
+        list_digest(fresh["body"]),
+    )
     assert state.revoked("sponsor", "sponsor:acme") and len(state.entries) == 1
 
 
 @pytest.mark.parametrize("edit", ["same", "retime", "reason", "add-successor"])
-def test_a_list_that_names_a_subject_an_earlier_list_revoked_is_refused(edit: str) -> None:
+def test_a_list_that_names_a_subject_an_earlier_list_revoked_is_refused(
+    edit: str,
+) -> None:
     """An entry is published once and its revokedAt never moves: a delta cannot repeat, re-date or edit it."""
     root, other = Signer.generate(), Signer.generate()
     kept = _entry("key", other.key_id, reason="lost")
@@ -175,7 +268,10 @@ def test_a_list_that_names_a_subject_an_earlier_list_revoked_is_refused(edit: st
 
 def test_the_refusal_codes_are_the_delta_formats() -> None:
     assert "revocation_list_drops_entry" not in REFUSAL_CODES
-    assert REFUSAL_CODES[-2:] == ("revocation_entry_from_future", "revocation_entry_repeated")
+    assert REFUSAL_CODES[-2:] == (
+        "revocation_entry_from_future",
+        "revocation_entry_repeated",
+    )
 
 
 # -- every state is an immutable snapshot ----------------------------------------------------------------------------
@@ -190,13 +286,19 @@ def _chain(root: Signer, *deltas: list) -> list[dict]:
 
 def test_an_older_state_never_sees_a_later_lists_entries() -> None:
     root = Signer.generate()
-    first, second, third = _chain(root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")],
-                                  [_entry("agent", "agent:c")])
+    first, second, third = _chain(
+        root,
+        [_entry("agent", "agent:a")],
+        [_entry("agent", "agent:b")],
+        [_entry("agent", "agent:c")],
+    )
     one = RevocationState(roots=frozenset({root.key_id})).apply(first)
     two = one.apply(second)
     three = two.apply(third)
     assert sorted(one.entries) == [("agent", "agent:a")] and len(one.entries) == 1
-    assert not one.revoked("agent", "agent:b") and ("agent", "agent:b") not in one.entries
+    assert (
+        not one.revoked("agent", "agent:b") and ("agent", "agent:b") not in one.entries
+    )
     with pytest.raises(KeyError):
         one.entries[("agent", "agent:c")]
     assert one.summary()["revoked"]["agent"] == ["agent:a"]
@@ -218,7 +320,9 @@ def test_two_successors_of_one_state_are_both_correct() -> None:
     assert right.revoked("agent", "agent:c") and not right.revoked("agent", "agent:b")
     assert not base.revoked("agent", "agent:b") and not base.revoked("agent", "agent:c")
     # each branch goes on independently, and a key one branch adds stays out of the other
-    right_next = right.apply(_list(root, 3, [_entry("agent", "agent:b")], previous=right_list))
+    right_next = right.apply(
+        _list(root, 3, [_entry("agent", "agent:b")], previous=right_list)
+    )
     assert right_next.summary()["revoked"]["agent"] == ["agent:a", "agent:b", "agent:c"]
     assert left.summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
     assert right.summary()["revoked"]["agent"] == ["agent:a", "agent:c"]
@@ -229,33 +333,58 @@ def test_a_refused_list_adds_nothing_to_any_state() -> None:
     (first,) = _chain(root, [_entry("agent", "agent:a")])
     base = RevocationState(roots=frozenset({root.key_id})).apply(first)
     with pytest.raises(RevocationError, match="^revocation_entry_repeated:"):
-        base.apply(_list(root, 2, [_entry("agent", "agent:a"), _entry("agent", "agent:z")], previous=first))
+        base.apply(
+            _list(
+                root,
+                2,
+                [_entry("agent", "agent:a"), _entry("agent", "agent:z")],
+                previous=first,
+            )
+        )
     after = base.apply(_list(root, 2, [_entry("agent", "agent:y")], previous=first))
-    assert not after.revoked("agent", "agent:z") and not base.revoked("agent", "agent:z")
+    assert not after.revoked("agent", "agent:z") and not base.revoked(
+        "agent", "agent:z"
+    )
     assert after.summary()["revoked"]["agent"] == ["agent:a", "agent:y"]
 
 
 def test_a_state_built_with_a_plain_dict_still_applies() -> None:
     root = Signer.generate()
-    first, second = _chain(root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")])
+    first, second = _chain(
+        root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")]
+    )
     held = {("agent", "agent:a"): _entry("agent", "agent:a")}
-    state = RevocationState(frozenset({root.key_id}), "rl", 1, list_digest(first["body"]), PAST, held)
+    state = RevocationState(
+        frozenset({root.key_id}), "rl", 1, list_digest(first["body"]), PAST, held
+    )
     after = state.apply(second)
     assert after.summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
     assert sorted(state.entries) == [("agent", "agent:a")]
-    held[("agent", "agent:q")] = _entry("agent", "agent:q")  # the caller's dict is not the state's
-    with pytest.raises(RevocationError, match="^revocation_entry_repeated:agent:agent:a"):
+    held[("agent", "agent:q")] = _entry(
+        "agent", "agent:q"
+    )  # the caller's dict is not the state's
+    with pytest.raises(
+        RevocationError, match="^revocation_entry_repeated:agent:agent:a"
+    ):
         state.apply(_list(root, 2, [_entry("agent", "agent:a")], previous=first))
 
 
 def test_a_copied_or_pickled_state_is_a_state_of_its_own() -> None:
     root = Signer.generate()
-    first, second, third = _chain(root, [_entry("agent", "agent:a")], [_entry("agent", "agent:b")],
-                                  [_entry("agent", "agent:c")])
+    first, second, third = _chain(
+        root,
+        [_entry("agent", "agent:a")],
+        [_entry("agent", "agent:b")],
+        [_entry("agent", "agent:c")],
+    )
     one = RevocationState(roots=frozenset({root.key_id})).apply(first)
     for copied in (copy.deepcopy(one), pickle.loads(pickle.dumps(one))):
         assert copied == one and copied.summary() == one.summary()
-        assert copied.apply(second).apply(third).summary()["revoked"]["agent"] == ["agent:a", "agent:b", "agent:c"]
+        assert copied.apply(second).apply(third).summary()["revoked"]["agent"] == [
+            "agent:a",
+            "agent:b",
+            "agent:c",
+        ]
     assert one.summary()["revoked"]["agent"] == ["agent:a"]
     assert one.apply(second).summary()["revoked"]["agent"] == ["agent:a", "agent:b"]
 
@@ -264,7 +393,10 @@ def test_threads_applying_different_lists_to_one_state_each_get_their_own() -> N
     root = Signer.generate()
     (first,) = _chain(root, [_entry("agent", "agent:a")])
     base = RevocationState(roots=frozenset({root.key_id})).apply(first)
-    lists = [_list(root, 2, [_entry("stream", f"s{i:02d}")], previous=first) for i in range(16)]
+    lists = [
+        _list(root, 2, [_entry("stream", f"s{i:02d}")], previous=first)
+        for i in range(16)
+    ]
     results: list[RevocationState | None] = [None] * len(lists)
     gate = threading.Barrier(len(lists))
 
@@ -273,7 +405,11 @@ def test_threads_applying_different_lists_to_one_state_each_get_their_own() -> N
     for i, lst in enumerate(lists):
         chain = [lst]
         for j in range(3, 40):
-            chain.append(_list(root, j, [_entry("stream", f"s{i:02d}-{j:02d}")], previous=chain[-1]))
+            chain.append(
+                _list(
+                    root, j, [_entry("stream", f"s{i:02d}-{j:02d}")], previous=chain[-1]
+                )
+            )
         chains.append(chain)
 
     def run(i: int) -> None:
@@ -298,8 +434,11 @@ def test_threads_applying_different_lists_to_one_state_each_get_their_own() -> N
 
 def test_a_thread_extending_the_tip_never_disturbs_readers_of_older_states() -> None:
     root = Signer.generate()
-    chain = _chain(root, [_entry("agent", f"agent:{i:04d}") for i in range(200)],
-                   *[[_entry("stream", f"s{j:04d}")] for j in range(400)])
+    chain = _chain(
+        root,
+        [_entry("agent", f"agent:{i:04d}") for i in range(200)],
+        *[[_entry("stream", f"s{j:04d}")] for j in range(400)],
+    )
     old = RevocationState(roots=frozenset({root.key_id})).apply(chain[0])
     want = old.summary()
     done = threading.Event()
@@ -311,7 +450,11 @@ def test_a_thread_extending_the_tip_never_disturbs_readers_of_older_states() -> 
                 assert old.summary() == want
                 assert len(list(old.entries.items())) == 200 and len(old.entries) == 200
                 assert not old.revoked("stream", "s0000")
-        except (AssertionError, KeyError, RuntimeError) as exc:  # reported by the main thread
+        except (
+            AssertionError,
+            KeyError,
+            RuntimeError,
+        ) as exc:  # reported by the main thread
             faults.append(exc)
 
     readers = [threading.Thread(target=read) for _ in range(4)]
@@ -342,7 +485,9 @@ def _delta_costs(held: int, runs: int = 21) -> tuple[float, float]:
     try:
         for n in range(runs):
             start = time.perf_counter()
-            signed = _list(root, n + 2, [_entry("stream", f"stream:{n:03d}")], previous=previous)
+            signed = _list(
+                root, n + 2, [_entry("stream", f"stream:{n:03d}")], previous=previous
+            )
             middle = time.perf_counter()
             state = state.apply(signed)
             sign.append(middle - start)
@@ -354,7 +499,9 @@ def _delta_costs(held: int, runs: int = 21) -> tuple[float, float]:
     return statistics.median(sign), statistics.median(apply)
 
 
-def test_signing_and_applying_a_delta_do_not_grow_with_the_entries_already_revoked() -> None:
+def test_signing_and_applying_a_delta_do_not_grow_with_the_entries_already_revoked() -> (
+    None
+):
     small_sign, small_apply = _delta_costs(1_000)
     large_sign, large_apply = _delta_costs(100_000)
     assert large_apply < 3 * small_apply, (small_apply, large_apply)
@@ -378,11 +525,18 @@ def test_a_forged_list_is_refused(tamper: str) -> None:
     sig = base64.b64decode(good["sig"])
     forged = {
         "entries": {**good, "body": {**good["body"], "entries": []}},
-        "sig-bytes": {**good, "sig": base64.b64encode(bytes([sig[0] ^ 1]) + sig[1:]).decode()},
+        "sig-bytes": {
+            **good,
+            "sig": base64.b64encode(bytes([sig[0] ^ 1]) + sig[1:]).decode(),
+        },
         "sig-short": {**good, "sig": base64.b64encode(sig[:63]).decode()},
         # the presented key is a pinned root, but the signature is another key's
-        "issuer-swap": {"body": {**good["body"], "issuerKey": raw_public(root)},
-                        "sig": _resign(other, {**good["body"], "issuerKey": raw_public(root)})["sig"]},
+        "issuer-swap": {
+            "body": {**good["body"], "issuerKey": raw_public(root)},
+            "sig": _resign(other, {**good["body"], "issuerKey": raw_public(root)})[
+                "sig"
+            ],
+        },
     }[tamper]
     with pytest.raises(RevocationError) as exc:
         RevocationState.from_lists([forged], {root.key_id})
@@ -391,12 +545,18 @@ def test_a_forged_list_is_refused(tamper: str) -> None:
 
 def test_root_rotation_hands_over_to_the_successor() -> None:
     old, new = Signer.generate(), Signer.generate()
-    first = _list(old, 1, [_entry("key", old.key_id, reason="rotation", successor=raw_public(new))])
+    first = _list(
+        old,
+        1,
+        [_entry("key", old.key_id, reason="rotation", successor=raw_public(new))],
+    )
     second = _list(new, 2, [], previous=first)
     state = RevocationState.from_lists([first, second], {old.key_id})
     assert state.roots == frozenset({new.key_id}) and state.seq == 2
     with pytest.raises(RevocationError) as exc:
-        RevocationState.from_lists([first, _list(old, 2, [], previous=first)], {old.key_id})
+        RevocationState.from_lists(
+            [first, _list(old, 2, [], previous=first)], {old.key_id}
+        )
     assert _code(exc) == "revocation_list_signer_not_a_root"
 
 
@@ -405,9 +565,13 @@ def test_a_revoked_successor_is_never_a_root_in_either_id_order() -> None:
     seen = set()
     for _ in range(64):
         old, new = Signer.generate(), Signer.generate()
-        entries = [_entry("key", old.key_id, reason="rotation", successor=raw_public(new)),
-                   _entry("key", new.key_id, reason="compromised")]
-        state = RevocationState.from_lists([_list(old, 1, entries)], {old.key_id, other.key_id})
+        entries = [
+            _entry("key", old.key_id, reason="rotation", successor=raw_public(new)),
+            _entry("key", new.key_id, reason="compromised"),
+        ]
+        state = RevocationState.from_lists(
+            [_list(old, 1, entries)], {old.key_id, other.key_id}
+        )
         assert state.roots == frozenset({other.key_id})
         seen.add(old.key_id < new.key_id)
     assert seen == {True, False}
@@ -416,7 +580,12 @@ def test_a_revoked_successor_is_never_a_root_in_either_id_order() -> None:
 def test_a_successor_revoked_by_an_earlier_list_never_becomes_a_root() -> None:
     old, new, other = Signer.generate(), Signer.generate(), Signer.generate()
     first = _list(old, 1, [_entry("key", new.key_id, reason="compromised")])
-    second = _list(old, 2, [_entry("key", old.key_id, reason="rotation", successor=raw_public(new))], previous=first)
+    second = _list(
+        old,
+        2,
+        [_entry("key", old.key_id, reason="rotation", successor=raw_public(new))],
+        previous=first,
+    )
     state = RevocationState.from_lists([first, second], {old.key_id, other.key_id})
     assert state.roots == frozenset({other.key_id})
     with pytest.raises(RevocationError) as exc:
@@ -431,39 +600,46 @@ def _body(root: Signer, entries: list) -> dict:
     return dict(_list(root, 1, [])["body"], entries=entries)
 
 
-@pytest.mark.parametrize("mutate", [
-    lambda b: {**b, "extra": 1},
-    lambda b: {k: v for k, v in b.items() if k != "listId"},
-    lambda b: {**b, "type": "https://example.org/other-list"},
-    lambda b: {**b, "seq": 0},
-    lambda b: {**b, "seq": True},
-    lambda b: {**b, "seq": 2**53},
-    lambda b: {**b, "previous": "sha256:" + "00" * 32},
-    lambda b: {**b, "issuedAt": "2026-06-01T00:00:00+00:00"},
-    lambda b: {**b, "issuedAt": "2026-02-30T00:00:00Z"},
-    lambda b: {**b, "issuerKey": base64.b64encode(b"\x01" * 31).decode()},
-    lambda b: {**b, "listId": "has space"},
-    lambda b: {**b, "entries": [_entry("tenant", "t")]},
-    lambda b: {**b, "entries": [_entry("agent", "a"), _entry("agent", "a")]},
-    lambda b: {**b, "entries": [_entry("stream", "s"), _entry("agent", "a")]},
-    lambda b: {**b, "entries": [_entry("agent", "")]},
-    lambda b: {**b, "entries": [_entry("agent", "a" * 513)]},
-    lambda b: {**b, "entries": [_entry("agent", "agenté")]},
-    lambda b: {**b, "entries": [_entry("grant", "AB" * 32)]},
-    lambda b: {**b, "entries": [_entry("key", "ab" * 31)]},
-    lambda b: {**b, "entries": [_entry("agent", "a", successor="x")]},
-    lambda b: {**b, "entries": [{**_entry("agent", "a"), "note": "x"}]},
-    lambda b: {**b, "entries": [_entry("agent", "a", reason=7)]},
-    lambda b: {**b, "entries": [{"kind": "agent", "id": "a"}]},
-])
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda b: {**b, "extra": 1},
+        lambda b: {k: v for k, v in b.items() if k != "listId"},
+        lambda b: {**b, "type": "https://example.org/other-list"},
+        lambda b: {**b, "seq": 0},
+        lambda b: {**b, "seq": True},
+        lambda b: {**b, "seq": 2**53},
+        lambda b: {**b, "previous": "sha256:" + "00" * 32},
+        lambda b: {**b, "issuedAt": "2026-06-01T00:00:00+00:00"},
+        lambda b: {**b, "issuedAt": "2026-02-30T00:00:00Z"},
+        lambda b: {**b, "issuerKey": base64.b64encode(b"\x01" * 31).decode()},
+        lambda b: {**b, "listId": "has space"},
+        lambda b: {**b, "entries": [_entry("tenant", "t")]},
+        lambda b: {**b, "entries": [_entry("agent", "a"), _entry("agent", "a")]},
+        lambda b: {**b, "entries": [_entry("stream", "s"), _entry("agent", "a")]},
+        lambda b: {**b, "entries": [_entry("agent", "")]},
+        lambda b: {**b, "entries": [_entry("agent", "a" * 513)]},
+        lambda b: {**b, "entries": [_entry("agent", "agenté")]},
+        lambda b: {**b, "entries": [_entry("grant", "AB" * 32)]},
+        lambda b: {**b, "entries": [_entry("key", "ab" * 31)]},
+        lambda b: {**b, "entries": [_entry("agent", "a", successor="x")]},
+        lambda b: {**b, "entries": [{**_entry("agent", "a"), "note": "x"}]},
+        lambda b: {**b, "entries": [_entry("agent", "a", reason=7)]},
+        lambda b: {**b, "entries": [{"kind": "agent", "id": "a"}]},
+    ],
+)
 def test_malformed_lists_are_refused_even_when_signed(mutate) -> None:
     root = Signer.generate()
     with pytest.raises(RevocationError) as exc:
-        RevocationState.from_lists([_resign(root, mutate(_list(root, 1, [])["body"]))], {root.key_id})
+        RevocationState.from_lists(
+            [_resign(root, mutate(_list(root, 1, [])["body"]))], {root.key_id}
+        )
     assert _code(exc) == "revocation_list_shape"
 
 
-@pytest.mark.parametrize("signed", [None, [], {"body": {}}, {"body": {}, "sig": "", "x": 1}, {"sig": ""}])
+@pytest.mark.parametrize(
+    "signed", [None, [], {"body": {}}, {"body": {}, "sig": "", "x": 1}, {"sig": ""}]
+)
 def test_a_list_that_is_not_an_object_of_body_and_sig_is_refused(signed) -> None:
     with pytest.raises(RevocationError) as exc:
         RevocationState(roots=frozenset({"00" * 32})).apply(signed)
@@ -486,18 +662,26 @@ def test_an_entry_revoked_after_the_list_was_issued_is_refused() -> None:
 
 
 def _some_id(kind: str) -> str:
-    return {"grant": H, "key": H, "permit": H, "idp-key": THUMBPRINT}.get(kind, f"{kind}:x")
+    return {"grant": H, "key": H, "permit": H, "idp-key": THUMBPRINT}.get(
+        kind, f"{kind}:x"
+    )
 
 
 def test_the_issuer_sorts_entries_and_every_kind_is_listed() -> None:
     root = Signer.generate()
     entries = [_entry(k, _some_id(k)) for k in reversed(REVOCATION_KINDS)]
     state = RevocationState.from_lists([_list(root, 1, entries)], {root.key_id})
-    assert [e["kind"] for e in _list(root, 1, entries)["body"]["entries"]] == sorted(REVOCATION_KINDS)
+    assert [e["kind"] for e in _list(root, 1, entries)["body"]["entries"]] == sorted(
+        REVOCATION_KINDS
+    )
     assert all(state.revoked(k, _some_id(k)) for k in REVOCATION_KINDS)
     assert state.revokes([("sponsor", "sponsor:x"), ("agent", "agent:none")])
     assert not state.revokes([("agent", "sponsor:x")])
-    assert set(REFUSAL_CODES) >= {"revocation_list_shape", "revocation_list_rollback", "revocation_list_gap"}
+    assert set(REFUSAL_CODES) >= {
+        "revocation_list_shape",
+        "revocation_list_rollback",
+        "revocation_list_gap",
+    }
 
 
 def test_an_unknown_kind_in_a_query_is_a_programming_error() -> None:
@@ -513,12 +697,33 @@ def test_revoked_approver_approval_is_refused() -> None:
     signed = sign_approval(approver, _approval(approver, "00" * 32))
     pems = {"human:ops": approver.public_pem()}
     clean = RevocationState.from_lists([], {root.key_id})
-    assert verify_approval_live(signed, pems, clean, "2026-06-01T00:00:00Z") == signed["body"]
+    assert (
+        verify_approval_live(signed, pems, clean, "2026-06-01T00:00:00Z")
+        == signed["body"]
+    )
     state = RevocationState.from_lists(
-        [_list(root, 1, [_entry("key", approver.key_id, "2026-05-01T00:00:00Z", reason="laptop lost")],
-               issued_at="2026-05-02T00:00:00Z")], {root.key_id})
+        [
+            _list(
+                root,
+                1,
+                [
+                    _entry(
+                        "key",
+                        approver.key_id,
+                        "2026-05-01T00:00:00Z",
+                        reason="laptop lost",
+                    )
+                ],
+                issued_at="2026-05-02T00:00:00Z",
+            )
+        ],
+        {root.key_id},
+    )
     assert verify_approval_live(signed, pems, state, "2026-06-01T00:00:00Z") is None
-    assert verify_approval_live(signed, pems, state, "2026-04-01T00:00:00Z") == signed["body"]
+    assert (
+        verify_approval_live(signed, pems, state, "2026-04-01T00:00:00Z")
+        == signed["body"]
+    )
 
 
 def test_records_signed_after_revocation_fail_offline(tmp_path) -> None:
@@ -527,54 +732,114 @@ def test_records_signed_after_revocation_fail_offline(tmp_path) -> None:
     _write_run(journal, approver, "committed", "confirmed")
     lists = [_list(root, 1, [_entry("key", gate.key_id, reason="compromised")])]
     trust = Trust(revocations=RevocationState.from_lists(lists, {root.key_id}))
-    report = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=trust)
+    report = verify_journal(
+        tmp_path, [gate.public_pem()], journal.checkpoint(), trust=trust
+    )
     assert report["verdict"] == "FAIL"
     assert sum("signer_key_revoked" in f for f in report["failures"]) == 3
-    approver_out = Trust(revocations=RevocationState.from_lists(
-        [_list(root, 1, [_entry("key", approver.key_id, reason="left")])], {root.key_id}),
-        quorum_policies=_trust(("human:ops", approver)).quorum_policies)
-    failures = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=approver_out)["failures"]
+    approver_out = Trust(
+        revocations=RevocationState.from_lists(
+            [_list(root, 1, [_entry("key", approver.key_id, reason="left")])],
+            {root.key_id},
+        ),
+        quorum_policies=_trust(("human:ops", approver)).quorum_policies,
+    )
+    failures = verify_journal(
+        tmp_path, [gate.public_pem()], journal.checkpoint(), trust=approver_out
+    )["failures"]
     assert any("approver_key_revoked" in f for f in failures), failures
     pid = journal.statements()[0]["predicate"]["permitId"]
-    permit_out = Trust(revocations=RevocationState.from_lists(
-        [_list(root, 1, [_entry("permit", pid, reason="cancelled")])], {root.key_id}))
-    failures = verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=permit_out)["failures"]
+    permit_out = Trust(
+        revocations=RevocationState.from_lists(
+            [_list(root, 1, [_entry("permit", pid, reason="cancelled")])], {root.key_id}
+        )
+    )
+    failures = verify_journal(
+        tmp_path, [gate.public_pem()], journal.checkpoint(), trust=permit_out
+    )["failures"]
     assert sum("permit_revoked" in f for f in failures) == 3
-    clean = Trust(revocations=RevocationState.from_lists([], {root.key_id}),
-                  quorum_policies=_trust(("human:ops", approver)).quorum_policies)
-    assert verify_journal(tmp_path, [gate.public_pem()], journal.checkpoint(), trust=clean)["verdict"] == "PASS"
+    clean = Trust(
+        revocations=RevocationState.from_lists([], {root.key_id}),
+        quorum_policies=_trust(("human:ops", approver)).quorum_policies,
+    )
+    assert (
+        verify_journal(
+            tmp_path, [gate.public_pem()], journal.checkpoint(), trust=clean
+        )["verdict"]
+        == "PASS"
+    )
 
 
 def test_revoking_a_parent_grant_revokes_its_descendants() -> None:
     root, agent, sub, rev = (Signer.generate() for _ in range(4))
     tools = {"t": {"args": {"n": {"type": "range", "max": 10}}}}
-    parent = issue_grant(root, grant_id="p", holder_key=raw_public(agent), cnf=cnf_for_signer(agent), tools=tools, max_depth=1,
-                         not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")
-    child = issue_grant(agent, grant_id="c", holder_key=raw_public(sub), cnf=cnf_for_signer(sub), tools=tools, parent=parent,
-                        not_before="2026-01-01T00:00:00Z", expires_at="2099-01-01T00:00:00Z")
-    state = RevocationState.from_lists([_list(rev, 1, [_entry("grant", grant_digest(parent["body"]))])],
-                                       {rev.key_id})
-    verdict = verify_grant_allow([parent, child], "t", {"n": 1}, "2026-06-01T00:00:00Z", {root.key_id},
-                                 set(state.revoked_grants()), state.key_revoked)
+    parent = issue_grant(
+        root,
+        grant_id="p",
+        holder_key=raw_public(agent),
+        cnf=cnf_for_signer(agent),
+        tools=tools,
+        max_depth=1,
+        not_before="2026-01-01T00:00:00Z",
+        expires_at="2099-01-01T00:00:00Z",
+    )
+    child = issue_grant(
+        agent,
+        grant_id="c",
+        holder_key=raw_public(sub),
+        cnf=cnf_for_signer(sub),
+        tools=tools,
+        parent=parent,
+        not_before="2026-01-01T00:00:00Z",
+        expires_at="2099-01-01T00:00:00Z",
+    )
+    state = RevocationState.from_lists(
+        [_list(rev, 1, [_entry("grant", grant_digest(parent["body"]))])], {rev.key_id}
+    )
+    verdict = verify_grant_allow(
+        [parent, child],
+        "t",
+        {"n": 1},
+        "2026-06-01T00:00:00Z",
+        {root.key_id},
+        set(state.revoked_grants()),
+        state.key_revoked,
+    )
     assert verdict["reason"] == "grant_revoked:0"
-    key_state = RevocationState.from_lists([_list(rev, 1, [_entry("key", agent.key_id)])], {rev.key_id})
-    verdict = verify_grant_allow([parent, child], "t", {"n": 1}, "2026-06-01T00:00:00Z", {root.key_id},
-                                 set(), key_state.key_revoked)
+    key_state = RevocationState.from_lists(
+        [_list(rev, 1, [_entry("key", agent.key_id)])], {rev.key_id}
+    )
+    verdict = verify_grant_allow(
+        [parent, child],
+        "t",
+        {"n": 1},
+        "2026-06-01T00:00:00Z",
+        {root.key_id},
+        set(),
+        key_state.key_revoked,
+    )
     assert verdict["reason"] == "grant_issuer_key_revoked:1"
 
 
 def test_state_carries_the_newest_lists_signed_issue_time() -> None:
     root = Signer.generate()
     first = _list(root, 1, [], issued_at="2026-06-01T00:00:00Z", list_id="L")
-    second = _list(root, 2, [], previous=first, issued_at="2026-06-02T00:00:00Z", list_id="L")
-    assert RevocationState.from_lists([first, second], {root.key_id}).issued_at == "2026-06-02T00:00:00Z"
+    second = _list(
+        root, 2, [], previous=first, issued_at="2026-06-02T00:00:00Z", list_id="L"
+    )
+    assert (
+        RevocationState.from_lists([first, second], {root.key_id}).issued_at
+        == "2026-06-02T00:00:00Z"
+    )
 
 
 # -- the shared vectors every other reader runs -------------------------------------------------------------------
 
 
 def _generator():
-    spec = importlib.util.spec_from_file_location("gen_shared_vectors", ROOT / "scripts" / "gen_shared_vectors.py")
+    spec = importlib.util.spec_from_file_location(
+        "gen_shared_vectors", ROOT / "scripts" / "gen_shared_vectors.py"
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -583,13 +848,17 @@ def _generator():
 
 def test_shared_revocation_vectors_are_this_packages_output() -> None:
     rows = _generator().revocation_rows()
-    assert rows == json.loads((ROOT / "vectors" / "shared" / "revocation.json").read_text())
+    assert rows == json.loads(
+        (ROOT / "vectors" / "shared" / "revocation.json").read_text()
+    )
     codes = {row["expected"]["refused"] for row in rows if "refused" in row["expected"]}
     assert codes == set(REFUSAL_CODES), set(REFUSAL_CODES) - codes
 
 
 def test_every_shared_vector_holds_under_this_reader() -> None:
-    for row in json.loads((ROOT / "vectors" / "shared" / "revocation.json").read_text()):
+    for row in json.loads(
+        (ROOT / "vectors" / "shared" / "revocation.json").read_text()
+    ):
         state = RevocationState(roots=frozenset(row["roots"]))
         expected = row["expected"]
         for index, signed in enumerate(row["lists"]):
@@ -603,21 +872,39 @@ def test_every_shared_vector_holds_under_this_reader() -> None:
             assert expected.get("state") == state.summary(), row["id"]
 
 
-@pytest.mark.parametrize(("kind", "ident"), [
-    ("grant", "a" * 64), ("key", "0" * 64), ("permit", "f" * 64),
-    ("agent", "agent://tenant/a"), ("stream", "s"), ("sponsor", "issuer#subject"), ("build", "x" * 512),
-])
-def test_check_subject_id_admits_every_id_a_list_can_name(kind: str, ident: str) -> None:
+@pytest.mark.parametrize(
+    ("kind", "ident"),
+    [
+        ("grant", "a" * 64),
+        ("key", "0" * 64),
+        ("permit", "f" * 64),
+        ("agent", "agent://tenant/a"),
+        ("stream", "s"),
+        ("sponsor", "issuer#subject"),
+        ("build", "x" * 512),
+    ],
+)
+def test_check_subject_id_admits_every_id_a_list_can_name(
+    kind: str, ident: str
+) -> None:
     check_subject_id(kind, ident)
 
 
-@pytest.mark.parametrize(("kind", "ident", "why"), [
-    ("grant", "A" * 64, "entry_id_form:grant"), ("key", "a" * 63, "entry_id_form:key"),
-    ("agent", "", "entry_id_form:agent"), ("agent", "caf\u00e9", "entry_id_form:agent"),
-    ("stream", "x" * 513, "entry_id_form:stream"), ("sponsor", 7, "entry_id_form:sponsor"),
-    ("user", "u", "entry_kind_unknown"),
-])
-def test_check_subject_id_refuses_what_no_list_can_name(kind: str, ident: object, why: str) -> None:
+@pytest.mark.parametrize(
+    ("kind", "ident", "why"),
+    [
+        ("grant", "A" * 64, "entry_id_form:grant"),
+        ("key", "a" * 63, "entry_id_form:key"),
+        ("agent", "", "entry_id_form:agent"),
+        ("agent", "caf\u00e9", "entry_id_form:agent"),
+        ("stream", "x" * 513, "entry_id_form:stream"),
+        ("sponsor", 7, "entry_id_form:sponsor"),
+        ("user", "u", "entry_kind_unknown"),
+    ],
+)
+def test_check_subject_id_refuses_what_no_list_can_name(
+    kind: str, ident: object, why: str
+) -> None:
     with pytest.raises(RevocationError, match=f"^revocation_list_shape:{why}$"):
         check_subject_id(kind, ident)
 
@@ -652,9 +939,26 @@ def test_the_thumbprint_constant_is_rfc8037s() -> None:
 def test_an_idp_key_entry_is_read_by_its_thumbprint() -> None:
     root = Signer.generate()
     state = RevocationState.from_lists(
-        [_list(root, 1, [_entry("idp-key", THUMBPRINT, "2026-05-01T00:00:00Z", reason="signing key leaked")],
-               issued_at="2026-05-02T00:00:00Z")], {root.key_id})
-    assert state.revoked("idp-key", THUMBPRINT) and state.revoked_ids("idp-key") == frozenset({THUMBPRINT})
+        [
+            _list(
+                root,
+                1,
+                [
+                    _entry(
+                        "idp-key",
+                        THUMBPRINT,
+                        "2026-05-01T00:00:00Z",
+                        reason="signing key leaked",
+                    )
+                ],
+                issued_at="2026-05-02T00:00:00Z",
+            )
+        ],
+        {root.key_id},
+    )
+    assert state.revoked("idp-key", THUMBPRINT) and state.revoked_ids(
+        "idp-key"
+    ) == frozenset({THUMBPRINT})
     assert not state.revoked("key", THUMBPRINT)
     assert state.summary()["revoked"]["idp-key"] == [THUMBPRINT]
     check_subject_id("idp-key", THUMBPRINT)
@@ -663,8 +967,16 @@ def test_an_idp_key_entry_is_read_by_its_thumbprint() -> None:
 def test_idp_key_revoked_holds_at_and_after_revoked_at_only() -> None:
     root = Signer.generate()
     state = RevocationState.from_lists(
-        [_list(root, 1, [_entry("idp-key", THUMBPRINT, "2026-05-01T00:00:00Z")], issued_at="2026-05-02T00:00:00Z")],
-        {root.key_id})
+        [
+            _list(
+                root,
+                1,
+                [_entry("idp-key", THUMBPRINT, "2026-05-01T00:00:00Z")],
+                issued_at="2026-05-02T00:00:00Z",
+            )
+        ],
+        {root.key_id},
+    )
     assert not state.idp_key_revoked(THUMBPRINT, "2026-04-30T23:59:59Z")
     assert state.idp_key_revoked(THUMBPRINT, "2026-05-01T00:00:00Z")
     assert state.idp_key_revoked(THUMBPRINT, "2026-05-01T01:00:00+01:00")
@@ -673,30 +985,63 @@ def test_idp_key_revoked_holds_at_and_after_revoked_at_only() -> None:
     assert not state.key_revoked(THUMBPRINT, "2026-06-01T00:00:00Z")
 
 
-@pytest.mark.parametrize("ident", list(BAD_THUMBPRINTS.values()), ids=list(BAD_THUMBPRINTS))
-def test_an_idp_key_id_that_is_not_one_thumbprint_spelling_is_refused(ident: str) -> None:
-    with pytest.raises(RevocationError, match="^revocation_list_shape:entry_id_form:idp-key$"):
+@pytest.mark.parametrize(
+    "ident", list(BAD_THUMBPRINTS.values()), ids=list(BAD_THUMBPRINTS)
+)
+def test_an_idp_key_id_that_is_not_one_thumbprint_spelling_is_refused(
+    ident: str,
+) -> None:
+    with pytest.raises(
+        RevocationError, match="^revocation_list_shape:entry_id_form:idp-key$"
+    ):
         check_subject_id("idp-key", ident)
     root = Signer.generate()
-    with pytest.raises(RevocationError, match="^revocation_list_shape:entry_id_form:idp-key$"):
-        RevocationState.from_lists([_resign(root, _body(root, [_entry("idp-key", ident)]))], {root.key_id})
+    with pytest.raises(
+        RevocationError, match="^revocation_list_shape:entry_id_form:idp-key$"
+    ):
+        RevocationState.from_lists(
+            [_resign(root, _body(root, [_entry("idp-key", ident)]))], {root.key_id}
+        )
 
 
 def test_a_thumbprint_never_names_a_key_entry() -> None:
-    with pytest.raises(RevocationError, match="^revocation_list_shape:entry_id_form:key$"):
+    with pytest.raises(
+        RevocationError, match="^revocation_list_shape:entry_id_form:key$"
+    ):
         check_subject_id("key", THUMBPRINT)
 
 
 def test_an_idp_key_entry_carries_no_successor() -> None:
     root = Signer.generate()
-    body = _body(root, [_entry("idp-key", THUMBPRINT, successor=raw_public(Signer.generate()))])
-    with pytest.raises(RevocationError, match="^revocation_list_shape:successor_on_non_key_entry$"):
+    body = _body(
+        root, [_entry("idp-key", THUMBPRINT, successor=raw_public(Signer.generate()))]
+    )
+    with pytest.raises(
+        RevocationError, match="^revocation_list_shape:successor_on_non_key_entry$"
+    ):
         RevocationState.from_lists([_resign(root, body)], {root.key_id})
 
 
 def test_the_shared_vectors_hold_idp_key_lists() -> None:
-    rows = {row["id"]: row for row in json.loads((ROOT / "vectors" / "shared" / "revocation.json").read_text())}
-    accepted = [r for r in rows.values() if r["expected"].get("state", {}).get("revoked", {}).get("idp-key")]
-    refused = [r for r in rows.values() if "refused" in r["expected"]
-               and any(e.get("kind") == "idp-key" for signed in r["lists"] for e in signed["body"].get("entries", []))]
+    rows = {
+        row["id"]: row
+        for row in json.loads(
+            (ROOT / "vectors" / "shared" / "revocation.json").read_text()
+        )
+    }
+    accepted = [
+        r
+        for r in rows.values()
+        if r["expected"].get("state", {}).get("revoked", {}).get("idp-key")
+    ]
+    refused = [
+        r
+        for r in rows.values()
+        if "refused" in r["expected"]
+        and any(
+            e.get("kind") == "idp-key"
+            for signed in r["lists"]
+            for e in signed["body"].get("entries", [])
+        )
+    ]
     assert accepted and len(refused) >= 5

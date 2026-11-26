@@ -37,23 +37,45 @@ SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's tim
 
 
 def _attrs(actor: str = "agent:orders") -> dict:
-    return {"audit.actor.id": actor, "audit.actor.type": "service", "audit.action": "EXECUTE",
-            "audit.outcome": "success", "gen_ai.operation.name": "execute_tool", "gen_ai.tool.name": "create_order"}
+    return {
+        "audit.actor.id": actor,
+        "audit.actor.type": "service",
+        "audit.action": "EXECUTE",
+        "audit.outcome": "success",
+        "gen_ai.operation.name": "execute_tool",
+        "gen_ai.tool.name": "create_order",
+    }
 
 
 def _stream(witness: Signer | None = None) -> AuditStream:
-    return AuditStream(Signer.generate(), clock=SYSTEM_CLOCK, witness=witness_signer(witness) if witness else None)
+    return AuditStream(
+        Signer.generate(),
+        clock=SYSTEM_CLOCK,
+        witness=witness_signer(witness) if witness else None,
+    )
 
 
 def test_signing_payload_matches_the_processor_encoding() -> None:
-    record = {"event_name": "e", "timestamp": 1714041600000000000, "observed_timestamp": 0,
-              "trace_id": "00000000000000000000000000000000",
-              "attributes": {"i": 9007199254740993, "b": True, "s": "<x>", "l": [1, "a"], "m": {"k": 2},
-                             "audit.integrity.value": "dropped", "audit.verification.status": "dropped"}}
+    record = {
+        "event_name": "e",
+        "timestamp": 1714041600000000000,
+        "observed_timestamp": 0,
+        "trace_id": "00000000000000000000000000000000",
+        "attributes": {
+            "i": 9007199254740993,
+            "b": True,
+            "s": "<x>",
+            "l": [1, "a"],
+            "m": {"k": 2},
+            "audit.integrity.value": "dropped",
+            "audit.verification.status": "dropped",
+        },
+    }
     assert signing_payload(record) == (
         b'{"attributes":{"b":{"boolValue":true},"i":{"intValue":"9007199254740993"},'
         b'"l":[{"intValue":"1"},{"stringValue":"a"}],"m":{"k":{"intValue":"2"}},"s":{"stringValue":"<x>"}},'
-        b'"event_name":"e","timestamp":"1714041600000000000"}')
+        b'"event_name":"e","timestamp":"1714041600000000000"}'
+    )
 
 
 def test_a_whole_stream_verifies_and_chains() -> None:
@@ -68,7 +90,10 @@ def test_a_dropped_record_is_refused_by_the_chain() -> None:
     stream = _stream()
     for _ in range(3):
         stream.emit("probity.tool_call.effect", _attrs())
-    report = verify_stream([stream.export_request([stream.records[0], stream.records[2]])], [stream.certificate])
+    report = verify_stream(
+        [stream.export_request([stream.records[0], stream.records[2]])],
+        [stream.certificate],
+    )
     assert report.verified == 2 and not report.ok
     assert [r["reason"] for r in report.refused] == ["sequence_gap"]
 
@@ -78,14 +103,21 @@ def test_an_edited_or_reordered_record_is_refused() -> None:
     for _ in range(2):
         stream.emit("probity.tool_call.effect", _attrs())
     stream.records[1]["attributes"]["audit.outcome"] = "failure"
-    assert [r["reason"] for r in verify_stream([stream.export_request()], [stream.certificate]).refused] == [
-        "integrity_mismatch"]
+    assert [
+        r["reason"]
+        for r in verify_stream([stream.export_request()], [stream.certificate]).refused
+    ] == ["integrity_mismatch"]
 
 
 def test_a_forged_chain_signed_by_another_key_is_refused() -> None:
     stream, other = _stream(), _stream()
     other.emit("probity.tool_call.effect", _attrs())
-    assert verify_stream([other.export_request()], [stream.certificate]).refused[0]["reason"] == "certificate_mismatch"
+    assert (
+        verify_stream([other.export_request()], [stream.certificate]).refused[0][
+            "reason"
+        ]
+        == "certificate_mismatch"
+    )
 
 
 def test_nothing_may_follow_the_end_of_a_stream() -> None:
@@ -97,20 +129,32 @@ def test_nothing_may_follow_the_end_of_a_stream() -> None:
 
 def test_a_redacted_record_verifies_and_the_value_is_proven_by_reveal() -> None:
     stream = _stream()
-    record, reveals = stream.emit("probity.tool_call.intent", _attrs(),
-                                  redact={"gen_ai.tool.call.arguments": {"card": "4111111111111111"}})
+    record, reveals = stream.emit(
+        "probity.tool_call.intent",
+        _attrs(),
+        redact={"gen_ai.tool.call.arguments": {"card": "4111111111111111"}},
+    )
     wire = json.dumps(stream.export_request())
     assert "4111111111111111" not in wire
     assert verify_stream([json.loads(wire)], [stream.certificate]).ok
     assert reveal_matches(record, reveals[0])
-    assert not reveal_matches(record, Reveal(reveals[0].field, {"card": "4000000000000000"}, reveals[0].salt))
+    assert not reveal_matches(
+        record, Reveal(reveals[0].field, {"card": "4000000000000000"}, reveals[0].salt)
+    )
 
 
 def test_a_stripped_redaction_hash_is_refused() -> None:
     stream = _stream()
-    record, _ = stream.emit("probity.tool_call.intent", _attrs(), redact={"gen_ai.tool.call.arguments": {"a": 1}})
+    record, _ = stream.emit(
+        "probity.tool_call.intent",
+        _attrs(),
+        redact={"gen_ai.tool.call.arguments": {"a": 1}},
+    )
     del record["attributes"]["gen_ai.tool.call.arguments.redacted_sha256"]
-    reasons = [r["reason"] for r in verify_stream([stream.export_request()], [stream.certificate]).refused]
+    reasons = [
+        r["reason"]
+        for r in verify_stream([stream.export_request()], [stream.certificate]).refused
+    ]
     assert reasons == ["integrity_mismatch"]
 
 
@@ -120,18 +164,35 @@ def test_a_witness_cosigns_the_real_head_and_catches_a_fork() -> None:
     stream.emit("a", _attrs())
     stream.emit("b", _attrs())
     stream.checkpoint()
-    report = verify_stream([stream.export_request()], [stream.certificate], witness_keys=[witness.public_pem()],
-                           require_witness=True)
+    report = verify_stream(
+        [stream.export_request()],
+        [stream.certificate],
+        witness_keys=[witness.public_pem()],
+        require_witness=True,
+    )
     assert report.ok and report.witnessed == {stream.stream_id: 1}
     # The producer holds its key and forks: a second chain under the same stream id with record 2 changed.
-    fork = AuditStream(stream.signer, clock=SYSTEM_CLOCK, stream_id=stream.stream_id, certificate=stream.certificate,
-                       witness=lambda s, n, h: {"keyId": witness.key_id,
-                                                "sig": stream.records[2]["attributes"]["probity.witness.signature"]})
+    fork = AuditStream(
+        stream.signer,
+        clock=SYSTEM_CLOCK,
+        stream_id=stream.stream_id,
+        certificate=stream.certificate,
+        witness=lambda s, n, h: {
+            "keyId": witness.key_id,
+            "sig": stream.records[2]["attributes"]["probity.witness.signature"],
+        },
+    )
     fork.emit("a", _attrs())
     fork.emit("b", _attrs("agent:someone-else"))
     fork.checkpoint()
-    reasons = [r["reason"] for r in verify_stream([fork.export_request()], [stream.certificate],
-                                                  witness_keys=[witness.public_pem()]).refused]
+    reasons = [
+        r["reason"]
+        for r in verify_stream(
+            [fork.export_request()],
+            [stream.certificate],
+            witness_keys=[witness.public_pem()],
+        ).refused
+    ]
     assert reasons == ["witness_signature_invalid"]
 
 
@@ -140,30 +201,59 @@ def test_an_unpinned_witness_and_a_missing_witness_are_refused() -> None:
     stream = _stream(witness)
     stream.emit("a", _attrs())
     stream.checkpoint()
-    assert [r["reason"] for r in verify_stream([stream.export_request()], [stream.certificate]).refused] == [
-        "witness_key_unpinned"]
+    assert [
+        r["reason"]
+        for r in verify_stream([stream.export_request()], [stream.certificate]).refused
+    ] == ["witness_key_unpinned"]
     bare = _stream()
     bare.emit("a", _attrs())
-    assert [r["reason"] for r in verify_stream([bare.export_request()], [bare.certificate],
-                                               require_witness=True).refused] == ["witness_missing"]
+    assert [
+        r["reason"]
+        for r in verify_stream(
+            [bare.export_request()], [bare.certificate], require_witness=True
+        ).refused
+    ] == ["witness_missing"]
 
 
-def test_the_journal_export_carries_each_record_digest_and_a_missing_line_is_named(tmp_path: Path) -> None:
+def test_the_journal_export_carries_each_record_digest_and_a_missing_line_is_named(
+    tmp_path: Path,
+) -> None:
     journal = Journal(tmp_path, Signer.generate(), clock=SYSTEM_CLOCK)
     for phase in ("authorize", "intent", "effect"):
-        journal.append("https://example.test/tool-call", "call", "0" * 64, tool_call_predicate(
-            phase=phase, run_id="run-1", tool_call_id="tc-1", tool="create_order", args_sha256_hex="a" * 64,
-            permit_id="p" * 64, decision="allow" if phase == "authorize" else None,
-            outcome="committed" if phase == "effect" else None))
+        journal.append(
+            "https://example.test/tool-call",
+            "call",
+            "0" * 64,
+            tool_call_predicate(
+                phase=phase,
+                run_id="run-1",
+                tool_call_id="tc-1",
+                tool="create_order",
+                args_sha256_hex="a" * 64,
+                permit_id="p" * 64,
+                decision="allow" if phase == "authorize" else None,
+                outcome="committed" if phase == "effect" else None,
+            ),
+        )
     stream = _stream()
     export_journal(stream, journal.path, actor_id="agent:orders")
     lines = journal.path.read_bytes().splitlines()
     import hashlib
+
     digests = {hashlib.sha256(line).hexdigest(): stream.stream_id for line in lines}
-    assert verify_stream([stream.export_request()], [stream.certificate], journal_digests=digests).ok
+    assert verify_stream(
+        [stream.export_request()], [stream.certificate], journal_digests=digests
+    ).ok
     first = stream.records[0]["attributes"]
-    assert first["gen_ai.tool.name"] == "create_order" and first["probity.permit.id"] == "p" * 64
-    short = verify_stream([stream.export_request(stream.records[:2])], [stream.certificate], journal_digests=digests)
+    assert (
+        first["gen_ai.tool.name"] == "create_order"
+        and first["probity.permit.id"] == "p" * 64
+    )
+    short = verify_stream(
+        [stream.export_request(stream.records[:2])],
+        [stream.certificate],
+        journal_digests=digests,
+    )
     assert [r["reason"] for r in short.refused] == ["journal_record_missing"]
 
 
@@ -210,8 +300,11 @@ service:
       exporters: [file]
 """
         (tmp / f"config-{failure_mode}.yaml").write_text(config)
-        self.proc = subprocess.Popen([OTELCOL, "--config", str(tmp / f"config-{failure_mode}.yaml")],
-                                     stdout=subprocess.DEVNULL, stderr=open(tmp / f"col-{failure_mode}.log", "wb"))  # noqa: SIM115 held open for the child process lifetime
+        self.proc = subprocess.Popen(
+            [OTELCOL, "--config", str(tmp / f"config-{failure_mode}.yaml")],
+            stdout=subprocess.DEVNULL,
+            stderr=open(tmp / f"col-{failure_mode}.log", "wb"),  # noqa: SIM115 held open for the child process lifetime
+        )
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
             with socket.socket() as sock:
@@ -234,7 +327,15 @@ service:
                 for line in self.out.read_text().splitlines():
                     if line.strip():
                         records.append(json.loads(line))
-            if sum(len(sl["logRecords"]) for r in records for rl in r["resourceLogs"] for sl in rl["scopeLogs"]) >= want:
+            if (
+                sum(
+                    len(sl["logRecords"])
+                    for r in records
+                    for rl in r["resourceLogs"]
+                    for sl in rl["scopeLogs"]
+                )
+                >= want
+            ):
                 break
             time.sleep(0.1)
         return records
@@ -246,7 +347,9 @@ service:
 
 @pytest.fixture
 def collector_factory(tmp_path: Path):
-    assert OTELCOL and Path(OTELCOL).exists(), "PROBITY_OTELCOL must name an otelcol built with verifyprocessor"
+    assert OTELCOL and Path(OTELCOL).exists(), (
+        "PROBITY_OTELCOL must name an otelcol built with verifyprocessor"
+    )
     started: list[Collector] = []
 
     def start(cert_pem: bytes, failure_mode: str) -> Collector:
@@ -263,41 +366,85 @@ def _status(records: list[dict]) -> list[str]:
     out = []
     for request in records:
         for rl in request["resourceLogs"]:
-            resource = {a["key"]: a["value"].get("stringValue") for a in rl["resource"]["attributes"]}
+            resource = {
+                a["key"]: a["value"].get("stringValue")
+                for a in rl["resource"]["attributes"]
+            }
             for sl in rl["scopeLogs"]:
-                scope = {a["key"]: a["value"].get("stringValue") for a in sl.get("scope", {}).get("attributes", [])}
+                scope = {
+                    a["key"]: a["value"].get("stringValue")
+                    for a in sl.get("scope", {}).get("attributes", [])
+                }
                 for lr in sl["logRecords"]:
-                    attrs = {a["key"]: a["value"].get("stringValue") for a in lr["attributes"]}
-                    out.append(attrs.get("audit.verification.status") or scope.get("audit.verification.status")
-                               or resource.get("audit.verification.status") or "")
+                    attrs = {
+                        a["key"]: a["value"].get("stringValue")
+                        for a in lr["attributes"]
+                    }
+                    out.append(
+                        attrs.get("audit.verification.status")
+                        or scope.get("audit.verification.status")
+                        or resource.get("audit.verification.status")
+                        or ""
+                    )
     return out
 
 
-def test_the_stock_verifyprocessor_verifies_our_export_unchanged(collector_factory) -> None:
+def test_the_stock_verifyprocessor_verifies_our_export_unchanged(
+    collector_factory,
+) -> None:
     witness = Signer.generate()
     stream = _stream(witness)
     stream.emit("probity.tool_call.authorize", _attrs())
-    stream.emit("probity.tool_call.intent", _attrs(), redact={"gen_ai.tool.call.arguments": {"card": "4111"}})
-    stream.emit("probity.tool_call.effect", {**_attrs(), "probity.record.seq": 3}, body={"result": [1, 2.5, True]})
+    stream.emit(
+        "probity.tool_call.intent",
+        _attrs(),
+        redact={"gen_ai.tool.call.arguments": {"card": "4111"}},
+    )
+    stream.emit(
+        "probity.tool_call.effect",
+        {**_attrs(), "probity.record.seq": 3},
+        body={"result": [1, 2.5, True]},
+    )
     stream.checkpoint()
     col = collector_factory(certificate_pem(stream.certificate), "mark")
     assert post_logs(col.endpoint, stream.export_request()) == 200
     stored = col.stored(4)
     assert _status(stored) == ["verified"] * 4
     # What the sink stored is still ours to verify, chain and witness included.
-    assert verify_stream(stored, [stream.certificate], witness_keys=[witness.public_pem()],
-                         require_witness=True).ok
+    assert verify_stream(
+        stored,
+        [stream.certificate],
+        witness_keys=[witness.public_pem()],
+        require_witness=True,
+    ).ok
 
 
-def test_a_dropped_record_passes_the_stock_processor_and_is_refused_by_ours(collector_factory) -> None:
+def test_a_dropped_record_passes_the_stock_processor_and_is_refused_by_ours(
+    collector_factory,
+) -> None:
     stream = _stream()
     for _ in range(3):
         stream.emit("probity.tool_call.effect", _attrs())
     col = collector_factory(certificate_pem(stream.certificate), "strict")
-    assert post_logs(col.endpoint, stream.export_request([stream.records[0], stream.records[2]])) == 200
+    assert (
+        post_logs(
+            col.endpoint, stream.export_request([stream.records[0], stream.records[2]])
+        )
+        == 200
+    )
     stored = col.stored(2)
-    assert sum(len(sl["logRecords"]) for r in stored for rl in r["resourceLogs"] for sl in rl["scopeLogs"]) == 2
-    assert [r["reason"] for r in verify_stream(stored, [stream.certificate]).refused] == ["sequence_gap"]
+    assert (
+        sum(
+            len(sl["logRecords"])
+            for r in stored
+            for rl in r["resourceLogs"]
+            for sl in rl["scopeLogs"]
+        )
+        == 2
+    )
+    assert [
+        r["reason"] for r in verify_stream(stored, [stream.certificate]).refused
+    ] == ["sequence_gap"]
 
 
 def test_a_tampered_record_is_refused_by_the_stock_processor(collector_factory) -> None:
@@ -311,5 +458,7 @@ def test_a_tampered_record_is_refused_by_the_stock_processor(collector_factory) 
     assert refused.value.code == 500
     time.sleep(0.5)
     assert col.stored(1, timeout=1.0) == []
-    assert fingerprint(stream.certificate).startswith("sha256:") and integrity_hash(stream.records[0])
+    assert fingerprint(stream.certificate).startswith("sha256:") and integrity_hash(
+        stream.records[0]
+    )
     assert base64.b64decode(stream.records[0]["attributes"]["audit.integrity.value"])

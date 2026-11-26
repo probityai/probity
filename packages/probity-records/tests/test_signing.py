@@ -57,14 +57,25 @@ class FakeVault:
     def __call__(self, req, timeout=None):
         self.calls.append((req.get_method(), req.full_url, req.headers))
         if req.get_method() == "GET":
-            body = {"data": {"type": self.kind, "latest_version": max(self.keys),
-                             "keys": {str(v): {"public_key": base64.b64encode(_raw(k)).decode()}
-                                      for v, k in self.keys.items()}}}
+            body = {
+                "data": {
+                    "type": self.kind,
+                    "latest_version": max(self.keys),
+                    "keys": {
+                        str(v): {"public_key": base64.b64encode(_raw(k)).decode()}
+                        for v, k in self.keys.items()
+                    },
+                }
+            }
         else:
             msg = json.loads(req.data)
             version = self.answer_version or msg["key_version"]
             sig = self.keys[version].sign(base64.b64decode(msg["input"]))
-            body = {"data": {"signature": f"vault:v{version}:{base64.b64encode(sig).decode()}"}}
+            body = {
+                "data": {
+                    "signature": f"vault:v{version}:{base64.b64encode(sig).decode()}"
+                }
+            }
         return io.BytesIO(json.dumps(body).encode())
 
 
@@ -74,7 +85,11 @@ def test_vault_transit_signs_under_the_pinned_version_and_names_it() -> None:
     assert isinstance(key, SigningKey)
     sig = key.sign(b"hello")
     key.public.verify(sig, b"hello")
-    assert key.provenance == {"backend": "vault-transit", "key": "transit/authority", "version": 1}
+    assert key.provenance == {
+        "backend": "vault-transit",
+        "key": "transit/authority",
+        "version": 1,
+    }
     assert vault.calls[-1][1] == "http://vault:8200/v1/transit/sign/authority"
     vault.rotate()  # a rotation after start never changes the key a running authority signs with
     key.public.verify(key.sign(b"again"), b"again")
@@ -88,7 +103,9 @@ def test_vault_answer_from_another_version_or_key_is_refused() -> None:
     with pytest.raises(SigningError, match="another key version"):
         key.sign(b"x")
     vault.answer_version = None
-    vault.keys[1] = Ed25519PrivateKey.generate()  # the service now answers with a key we never pinned
+    vault.keys[1] = (
+        Ed25519PrivateKey.generate()
+    )  # the service now answers with a key we never pinned
     with pytest.raises(SigningError, match="does not accept"):
         key.sign(b"x")
 
@@ -106,8 +123,14 @@ class FakeAwsKms:
         self.key, self.spec, self.calls = Ed25519PrivateKey.generate(), spec, []
 
     def get_public_key(self, KeyId):
-        der = self.key.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-        return {"KeyId": f"arn:aws:kms:us-east-1:111122223333:key/{KeyId}", "KeySpec": self.spec, "PublicKey": der}
+        der = self.key.public_key().public_bytes(
+            Encoding.DER, PublicFormat.SubjectPublicKeyInfo
+        )
+        return {
+            "KeyId": f"arn:aws:kms:us-east-1:111122223333:key/{KeyId}",
+            "KeySpec": self.spec,
+            "PublicKey": der,
+        }
 
     def sign(self, **kw):
         self.calls.append(kw)
@@ -118,9 +141,15 @@ def test_aws_kms_signs_raw_ed25519_and_refuses_oversized_messages() -> None:
     kms = FakeAwsKms()
     key = AwsKmsKey("k1", client=kms)
     key.public.verify(key.sign(b"m"), b"m")
-    assert kms.calls[-1] == {"KeyId": "k1", "Message": b"m", "MessageType": "RAW",
-                             "SigningAlgorithm": "ED25519_SHA_512"}
-    assert key.provenance["backend"] == "aws-kms" and key.provenance["key"].endswith("key/k1")
+    assert kms.calls[-1] == {
+        "KeyId": "k1",
+        "Message": b"m",
+        "MessageType": "RAW",
+        "SigningAlgorithm": "ED25519_SHA_512",
+    }
+    assert key.provenance["backend"] == "aws-kms" and key.provenance["key"].endswith(
+        "key/k1"
+    )
     with pytest.raises(SigningError, match="4096"):
         key.sign(b"x" * 4097)
     with pytest.raises(SigningError, match="not ECC_NIST_EDWARDS25519"):
@@ -132,8 +161,14 @@ class FakeGcpKms:
         self.key = Ed25519PrivateKey.generate()
 
     def get_public_key(self, request):
-        pem = self.key.public_key().public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo).decode()
-        return SimpleNamespace(pem=pem, algorithm=SimpleNamespace(name="EC_SIGN_ED25519"))
+        pem = (
+            self.key.public_key()
+            .public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
+            .decode()
+        )
+        return SimpleNamespace(
+            pem=pem, algorithm=SimpleNamespace(name="EC_SIGN_ED25519")
+        )
 
     def asymmetric_sign(self, request):
         return SimpleNamespace(signature=self.key.sign(request["data"]))
@@ -146,36 +181,60 @@ def test_gcp_kms_signs_and_names_the_key_version() -> None:
     assert key.provenance == {"backend": "gcp-kms", "key": name}
 
 
-def test_a_journal_signed_through_a_kms_backend_verifies_and_names_its_custody(tmp_path) -> None:
+def test_a_journal_signed_through_a_kms_backend_verifies_and_names_its_custody(
+    tmp_path,
+) -> None:
     key = GcpKmsKey("projects/p/k/1", client=FakeGcpKms())
     journal = Journal(tmp_path, key, clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     cp = journal.checkpoint()
     trust = Trust(key_custody={key.key_id: "gcp-kms"})
-    assert verify_journal(tmp_path, [key.public_pem()], cp, trust=trust)["verdict"] == "PASS"
+    assert (
+        verify_journal(tmp_path, [key.public_pem()], cp, trust=trust)["verdict"]
+        == "PASS"
+    )
     wrong = Trust(key_custody={key.key_id: "aws-kms"})
     out = verify_journal(tmp_path, [key.public_pem()], cp, trust=wrong)
-    assert out["verdict"] == "FAIL" and any(f.startswith("key_custody_differs:") for f in out["failures"])
+    assert out["verdict"] == "FAIL" and any(
+        f.startswith("key_custody_differs:") for f in out["failures"]
+    )
 
 
 def test_delegated_session_key_signs_large_records_under_a_kms_root(tmp_path) -> None:
     root = AwsKmsKey("k1", client=FakeAwsKms())
     session = delegate(root, RECORD, now=to_datetime(SYSTEM_CLOCK.now()))
-    assert session.key_id != root.key_id and session.provenance["root"]["backend"] == "aws-kms"
+    assert (
+        session.key_id != root.key_id
+        and session.provenance["root"]["backend"] == "aws-kms"
+    )
     journal = Journal(tmp_path, session, clock=SYSTEM_CLOCK)
     big = {"phase": "note", "blob": "x" * 20000}  # far past the 4096-byte raw KMS cap
     journal.append("https://example.test/t", "s", "0" * 64, big)
-    out = verify_journal(tmp_path, [root.public_pem()], journal.checkpoint(),
-                         trust=Trust(key_custody={root.key_id: "aws-kms"}))
+    out = verify_journal(
+        tmp_path,
+        [root.public_pem()],
+        journal.checkpoint(),
+        trust=Trust(key_custody={root.key_id: "aws-kms"}),
+    )
     assert out["verdict"] == "PASS", out["failures"]
     # the session key alone is not trusted: without the root pinned nothing verifies
     other = Signer.generate()
-    assert verify_journal(tmp_path, [other.public_pem()], journal.checkpoint())["verdict"] == "FAIL"
+    assert (
+        verify_journal(tmp_path, [other.public_pem()], journal.checkpoint())["verdict"]
+        == "FAIL"
+    )
 
 
-def test_a_session_key_outside_its_window_or_from_an_unpinned_root_is_refused(tmp_path) -> None:
+def test_a_session_key_outside_its_window_or_from_an_unpinned_root_is_refused(
+    tmp_path,
+) -> None:
     root = Signer.generate()
-    past = delegate(root, RECORD, lifetime=timedelta(minutes=5), now=datetime.now(UTC) - timedelta(hours=2))
+    past = delegate(
+        root,
+        RECORD,
+        lifetime=timedelta(minutes=5),
+        now=datetime.now(UTC) - timedelta(hours=2),
+    )
     journal = Journal(tmp_path, past, clock=SYSTEM_CLOCK)
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     out = verify_journal(tmp_path, [root.public_pem()], journal.checkpoint())
@@ -195,24 +254,41 @@ def test_a_session_key_outside_its_window_or_from_an_unpinned_root_is_refused(tm
 
 def test_rotation_records_each_certificate_once(tmp_path) -> None:
     root = Signer.generate()
-    journal = Journal(tmp_path, delegate(root, RECORD, now=to_datetime(SYSTEM_CLOCK.now())), clock=SYSTEM_CLOCK)
+    journal = Journal(
+        tmp_path,
+        delegate(root, RECORD, now=to_datetime(SYSTEM_CLOCK.now())),
+        clock=SYSTEM_CLOCK,
+    )
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
     journal.rotate(delegate(root, RECORD, now=to_datetime(SYSTEM_CLOCK.now())))
     journal.append("https://example.test/t", "s", "0" * 64, {"phase": "note"})
-    Journal(tmp_path, journal.signer, clock=SYSTEM_CLOCK)  # reopening with the same key adds nothing
+    Journal(
+        tmp_path, journal.signer, clock=SYSTEM_CLOCK
+    )  # reopening with the same key adds nothing
     assert len((tmp_path / KEYS_FILE).read_text().splitlines()) == 2
-    assert verify_journal(tmp_path, [root.public_pem()], journal.checkpoint())["verdict"] == "PASS"
+    assert (
+        verify_journal(tmp_path, [root.public_pem()], journal.checkpoint())["verdict"]
+        == "PASS"
+    )
 
 
-def test_permits_carry_custody_and_a_delegated_permit_verifies_under_the_root_only() -> None:
+def test_permits_carry_custody_and_a_delegated_permit_verifies_under_the_root_only() -> (
+    None
+):
     root = Signer.generate()
     session = delegate(root, AUTHORITY, now=to_datetime(SYSTEM_CLOCK.now()))
-    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # issued inside the window
+    now = datetime.now(UTC).strftime(
+        "%Y-%m-%dT%H:%M:%S.%fZ"
+    )  # issued inside the window
     permit = sign_permit(session, {"issuedAt": now, "permitId": "p"})
     claims = verify_permit(permit, root.public_pem())
     assert claims is not None and claims["keyProvenance"]["backend"] == "delegated"
-    late = sign_permit(session, {"issuedAt": "2999-01-01T00:00:00.000000Z", "permitId": "p"})
+    late = sign_permit(
+        session, {"issuedAt": "2999-01-01T00:00:00.000000Z", "permitId": "p"}
+    )
     assert verify_permit(late, root.public_pem()) is None
     assert verify_permit(permit, Signer.generate().public_pem()) is None
     plain = sign_permit(root, {"issuedAt": now, "permitId": "p"})
-    assert verify_permit(plain, root.public_pem())["keyProvenance"] == {"backend": "local"}
+    assert verify_permit(plain, root.public_pem())["keyProvenance"] == {
+        "backend": "local"
+    }
