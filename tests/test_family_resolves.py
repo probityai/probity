@@ -195,7 +195,9 @@ def test_a_release_inside_every_published_range_strands_nobody() -> None:
 
 def test_a_requirement_carried_only_by_an_extra_still_counts() -> None:
     problems = fr.stranded_dependents("jcs-admit", "0.2.0", REGISTRY_1125)
-    assert sorted(p.split(" ")[0] for p in problems) == ["agent-evidence-mcp", "agent-evidence-observer", "probity-ratchet"]
+    # mcp requires jcs-admit<1,>=0.1.0, which admits 0.2.0, so it is not stranded; the extra-only and the ~=0.1.0 pins are.
+    assert sorted(p.split(" ")[0] for p in problems) == ["agent-evidence-observer", "probity-ratchet"]
+    assert fr.stranded_dependents("jcs-admit", "1.0.0", REGISTRY_1125) != []
 
 
 def test_an_unpublished_dependent_is_skipped_and_the_candidate_itself_is_not_its_own_dependent() -> None:
