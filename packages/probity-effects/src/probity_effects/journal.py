@@ -62,6 +62,17 @@ class History:
         return "unknown" if self.unresolved() is not None else "not_run"
 
 
+def _cut_torn_tail(fd: int) -> None:
+    """Cut a torn last line (no newline) left by a stop mid-write, durably, before the next line is appended:
+    written after it, the next event would be glued onto it and the journal could no longer be read."""
+    size = os.fstat(fd).st_size
+    if size == 0 or os.pread(fd, 1, size - 1) == b"\n":
+        return
+    end = os.pread(fd, size, 0).rfind(b"\n") + 1
+    os.ftruncate(fd, end)
+    os.fsync(fd)
+
+
 class Journal:
     """Append-only events per idempotency key, in memory or in a JSON-lines file.
 
@@ -88,15 +99,17 @@ class Journal:
         return self._path
 
     def _load(self, path: Path) -> None:
-        lines = path.read_text(encoding="utf-8").splitlines()
+        # Only whole lines are events: bytes after the last newline are a write a stop cut short, and the guard
+        # acts on an event only after its line is written, so nothing acted on them. A whole line that is not an
+        # event is a damaged journal and is refused.
+        data = path.read_bytes()
+        lines = data[: data.rfind(b"\n") + 1].decode("utf-8").split("\n")[:-1]
         for number, line in enumerate(lines, start=1):
             if not line.strip():
                 continue
             try:
                 event = json.loads(line)
             except ValueError:
-                if number == len(lines):
-                    break  # a line torn by a stop mid-write; nothing after it was acted on
                 raise ValueError(f"{path}:{number}: not a journal event") from None
             self._events.append(event)
             self.clock.advance_to(parse(event["at"]))
@@ -105,11 +118,15 @@ class Journal:
         with self._lock:
             entry = {**event, "at": stamp(self.clock.now())}
             if self._path is not None:
-                with self._path.open("a", encoding="utf-8") as handle:
-                    handle.write(json.dumps(entry, sort_keys=True, separators=(",", ":")) + "\n")
-                    handle.flush()
+                line = (json.dumps(entry, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+                fd = os.open(self._path, os.O_RDWR | os.O_APPEND | os.O_CREAT, 0o644)
+                try:
+                    _cut_torn_tail(fd)
+                    os.write(fd, line)
                     if self._fsync:
-                        os.fsync(handle.fileno())
+                        os.fsync(fd)
+                finally:
+                    os.close(fd)
             self._events.append(entry)
             return entry
 
