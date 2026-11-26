@@ -1613,6 +1613,14 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
 
 export interface Report { verdict: string; records: number; verified: number; failures: string[]; checkpoint: string }
 
+// A journal file's records are its whole lines. Bytes after the last newline are an append a writer killed mid-write
+// never finished: not a record, and counted apart (probity_records.journal._whole_lines; the writer's next append
+// cuts them). Pass `lines` to verifyJournal.
+export function journalLines(text: string): { lines: string[]; tornTailBytes: number } {
+  const end = text.lastIndexOf("\n") + 1;
+  return { lines: text.slice(0, end).split("\n").slice(0, -1), tornTailBytes: Buffer.byteLength(text.slice(end), "utf8") };
+}
+
 export function verifyJournal(lines: string[], publicPems: string[], checkpointEnv: J | null, trust: TrustDoc | null): Report {
   const keys = publicPems.map((p) => createPublicKey(p));
   if (!keys.length) throw new Error("verify_journal needs at least one trusted public key");

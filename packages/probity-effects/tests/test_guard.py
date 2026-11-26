@@ -160,6 +160,29 @@ def test_torn_last_line_is_ignored_and_earlier_lines_are_kept(tmp_path):
     assert len(Journal.open(path).keys()) == 1
 
 
+@pytest.mark.parametrize("torn", ['{"event": "dis', '{"event":"note","at":"2026-01-01T00:00:00Z","key":"x"}'])
+def test_the_next_append_cuts_a_torn_last_line_so_the_journal_stays_readable(tmp_path, torn):
+    path = tmp_path / "journal.jsonl"
+    owner = Owner(["commit", "commit"])
+    EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=owner.send)
+    events = len(Journal.open(path).events())
+    path.write_text(path.read_text() + torn, encoding="utf-8")  # a stop mid-write: no newline, never acted on
+    assert len(Journal.open(path).events()) == events
+    EffectGuard(owner.port(), Journal.open(path)).perform("create_order", {**ARGS, "n": 2}, send=owner.send)
+    lines = path.read_bytes().split(b"\n")
+    assert lines[-1] == b"" and torn.encode() not in path.read_bytes()
+    assert len(Journal.open(path).keys()) == 2
+
+
+def test_a_whole_line_that_is_not_an_event_is_refused_not_skipped(tmp_path):
+    path = tmp_path / "journal.jsonl"
+    owner = Owner(["commit"])
+    EffectGuard(owner.port(), Journal.open(path)).perform("create_order", ARGS, send=owner.send)
+    path.write_text(path.read_text() + '{"event": "dis{"event":"dispatch"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="not a journal event"):
+        Journal.open(path)
+
+
 def test_record_is_the_uncertain_effect_contract():
     owner = Owner(["commit_lost"])
     journal = Journal()
