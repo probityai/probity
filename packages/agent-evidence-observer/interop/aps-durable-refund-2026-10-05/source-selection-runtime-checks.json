@@ -30,8 +30,8 @@
     "probity_aps_refund/reader.py": "4e8b3eb354bf4180c97d3e28e341292b15170e9be74f67151f7e002fc5bd21b2",
     "probity_aps_refund/verification.py": "44550476ddaa92ffd976be920b0244c5730b86a9af61862c50f53d8738d7bc19",
     "pyproject.toml": "8bbf7500d274d2c06a7fefae492f45c22ca21b836cef8dc659041a5c96157d49",
-    "requirements.in": "af7482f3f527deeaa1b501e03a3ce68cc499d5ddcd66042c689f1c225024ef48",
-    "requirements.lock": "9a9531fca074a47507a3e0ce866035b6c5b5e9cd6a1bb2079421001fe5e76eae",
+    "requirements.in": "79ad77b812cd66ed73537019d23bf7dd6e7ae6fd5d88ca3663c4589a197a3afc",
+    "requirements.lock": "b641b22bef0f6abed53b9d69e06d59e45d4f72e2ff9869128da8ba1e8731b154",
     "test_reader.py": "c2bb8ccedb24e5d12b507137e82b8edb5f57f935c55ac78f24464d066f1b9879",
     "verify-aps.mjs": "b0a6742b4c540e5fe4bea6d096b0c94a7e5c235c5c7ad288ba47c73f6e6d20a6",
     "verify_retained.py": "c5fa50e43a22ad4e600880e2401e3ee8eb24f407d44952622a41b1897eacf899"

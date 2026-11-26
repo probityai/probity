@@ -34,8 +34,8 @@
       "sha256": "a903f668887fb13a37ea8c998bb9d4179fa24be398c43d5cb42fb6099b015d83"
     },
     "interop/framework-consumer-2026-10-02/FRAMEWORK-CONSUMER-REQUIREMENTS-2026-10-02.lock": {
-      "git_blob_sha1": "1f91d7d6e4d504d56d5d5317880e206808cddc74",
-      "sha256": "b98eaf668b9b8a37f1201444eed85f2dd713e957e9204112934a4b23105805e5"
+      "git_blob_sha1": "3bc42510d2ed0fa48ae33248eb358f0a18c39c41",
+      "sha256": "fe748c345be135f641410adb70eab653ac76398e5fbc893dbce31e16cec5b3ca"
     },
     "interop/framework-consumer-2026-10-02/FRAMEWORK-DURABLE-CONSUMER-BUILD-2026-10-02.sh": {
       "git_blob_sha1": "913eef1196ec262706cf3ab1da6920b056a35dd9",

@@ -3,3 +3,4 @@ pytest
 ruff
 setuptools
 wheel
+probity-records==0.9.0
