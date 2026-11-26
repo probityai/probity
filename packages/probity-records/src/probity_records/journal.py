@@ -63,6 +63,27 @@ def _payload(envelope: Mapping[str, Any]) -> dict[str, Any]:
     return json.loads(base64.b64decode(envelope["payload"]))
 
 
+def _whole_lines(path: Path) -> tuple[list[bytes], int]:
+    """The lines of an append-only file up to its last newline, and the byte count of the torn tail after it.
+
+    Each line is written with its newline in one append, durable on return, so bytes after the last newline are an
+    append a killed writer never finished and nothing acted on: they are not a line. Every reader stops before them.
+    """
+    if not path.exists():
+        return [], 0
+    data = path.read_bytes()
+    end = data.rfind(b"\n") + 1
+    return data[:end].split(b"\n")[:-1], len(data) - end
+
+
+def _cut_torn_tail(fd: int, end: int) -> None:
+    """Cut the file open at ``fd`` back to ``end``, the end of its last whole line, durably, before a line is
+    appended: written after a torn tail, the new line would be glued onto it and the file would stay unreadable."""
+    if os.fstat(fd).st_size > end:
+        os.ftruncate(fd, end)
+        os.fsync(fd)
+
+
 class Journal:
     """Append-only signed journal in ``directory``.
 
@@ -95,10 +116,12 @@ class Journal:
         lock = self.directory / (JOURNAL_FILE + ".lock")
         with lock.open("w") as guard:
             fcntl.flock(guard, fcntl.LOCK_EX)
-            if keys.exists() and line in keys.read_text().splitlines():
+            present = _whole_lines(keys)[0]
+            if line.encode() in present:
                 return
             fd = os.open(keys, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
             try:
+                _cut_torn_tail(fd, sum(len(row) + 1 for row in present))
                 os.write(fd, line.encode() + b"\n")
                 os.fsync(fd)
             finally:
@@ -160,6 +183,7 @@ class Journal:
             line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
             try:
+                _cut_torn_tail(fd, self._offset)  # the refresh above stopped at the last whole line
                 os.write(fd, line)
                 self._offset += len(line)
                 self._seq, self._head = seq + 1, _line_hash(line.rstrip(b"\n"))
@@ -171,9 +195,8 @@ class Journal:
         return envelope
 
     def statements(self) -> list[dict[str, Any]]:
-        if not self.path.exists():
-            return []
-        return [_payload(json.loads(line)) for line in self.path.read_text().splitlines() if line.strip()]
+        """The statements of every whole line; a torn tail from a writer killed mid-append is not one."""
+        return [_payload(json.loads(line)) for line in _whole_lines(self.path)[0] if line.strip()]
 
     def checkpoint(self) -> dict[str, Any]:
         """A signed statement of the line count and head, for an outsider to pin."""
@@ -194,10 +217,7 @@ def _keys(public_pems: Iterable[bytes]) -> list[Any]:
 def _delegations(directory: Path, roots: list[Any], failures: list[str]) -> dict[str, Delegation]:
     """Session keys certified by a pinned root; a certificate no pinned root signed is a failure."""
     found: dict[str, Delegation] = {}
-    path = directory / KEYS_FILE
-    if not path.exists():
-        return found
-    for n, line in enumerate(path.read_text().splitlines(), 1):
+    for n, line in enumerate(_whole_lines(directory / KEYS_FILE)[0], 1):
         if not line.strip():
             continue
         try:
@@ -630,11 +650,17 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     custody of each signing key (``key_custody``), and the c2sp.org/tlog-policy whose witnesses must
     have cosigned ``witnessed_checkpoint`` (``witness_policy``): a journal the customer's witness did
     not cosign then fails, offline, whatever else holds.
+
+    A record is a whole line, up to its newline, as the writer and the witness tree count it. Bytes after the
+    last newline are an append a writer killed mid-write never finished: not a record, and reported as
+    ``tornTailBytes`` (the writer's next append cuts them).
     """
     roots = _keys(public_pems)
     p = Path(path)
     p = p / JOURNAL_FILE if p.is_dir() else p
-    lines = [line for line in p.read_text().splitlines() if line.strip()] if p.exists() else []
+    # the lines a writer and the witness tree count: up to the last newline (a torn tail is reported, not read)
+    raw, torn = _whole_lines(p)
+    lines = [line.decode() for line in raw if line.strip()]
     failures: list[str] = []
     delegations = _delegations(p.parent, roots, failures)
     keys = [*roots, *(d.session for d in delegations.values())]
@@ -692,4 +718,4 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         verdict = "PASS"
     return {"verdict": verdict, "records": len(lines), "verified": verified, "failures": failures,
             "checkpoint": checkpoint, "witnessed": witnessed, "outcomes": outcomes, "policyAllows": policy_allows,
-            "statements": [body for _, body in bodies]}
+            "tornTailBytes": torn, "statements": [body for _, body in bodies]}
