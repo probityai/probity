@@ -3,6 +3,7 @@ cryptography==50.0.0
 eth-account==0.14.0
 hypothesis==6.141.1
 pip==26.2.0
+probity-records==0.9.0
 pytest==9.0.3
 rfc8785==0.1.4
 ruff==0.16.10

@@ -248,11 +248,17 @@ def main():
     parser.add_argument("packet", type=Path)
     parser.add_argument("--pins-file", type=Path, required=True)
     parser.add_argument("--withheld-sources", type=Path, default=None)
+    parser.add_argument("--installed-sources", type=Path, default=None)
     args = parser.parse_args()
     pins = args.pins_file.resolve(strict=True)
     require(not pins.is_relative_to(args.packet.resolve()), "selection-must-be-outside-packet")
     withheld = joint_common.withheld_sources(args.withheld_sources)
-    print(canonical(verify_saved(args.packet, load(pins.parent, pins.name), withheld)).decode(), end="")
+    installed = None
+    if args.installed_sources is not None:
+        selection = args.installed_sources.resolve(strict=True)
+        require(not selection.is_relative_to(args.packet.resolve()), "selection-must-be-outside-packet")
+        installed = load(selection.parent, selection.name)
+    print(canonical(verify_saved(args.packet, load(pins.parent, pins.name), withheld, installed)).decode(), end="")
 
 
 if __name__ == "__main__":

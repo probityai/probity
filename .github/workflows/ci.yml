@@ -2497,6 +2497,7 @@ jobs:
         run: |
           cp retained/fresh-run/consumer-pins.json "$RUNNER_TEMP/crash-window-selected-pins.json"
           cp retained/WITHHELD-SOURCES.json "$RUNNER_TEMP/crash-window-withheld.json"
+          cp installed-source-pins.json "$RUNNER_TEMP/crash-window-installed-sources.json"
           PYTHONPATH=../joint-recovery-2026-10-02 python - "$RUNNER_TEMP/crash-window-reader/bin/probity-read-langgraph-crash-window" "$RUNNER_TEMP/crash-window-selected-closure.json" <<'PY'
           import sys
           from pathlib import Path
@@ -2505,7 +2506,7 @@ jobs:
           reader, output = map(Path, sys.argv[1:])
           output.write_bytes(canonical(reader_closure(reader)))
           PY
-          python consume_installed.py retained/fresh-run --pins-file "$RUNNER_TEMP/crash-window-selected-pins.json" --withheld-sources "$RUNNER_TEMP/crash-window-withheld.json" --reader "$RUNNER_TEMP/crash-window-reader/bin/probity-read-langgraph-crash-window" --selected-closure "$RUNNER_TEMP/crash-window-selected-closure.json" --output consumer-receipts > installed-report.json
+          python consume_installed.py retained/fresh-run --pins-file "$RUNNER_TEMP/crash-window-selected-pins.json" --withheld-sources "$RUNNER_TEMP/crash-window-withheld.json" --installed-sources "$RUNNER_TEMP/crash-window-installed-sources.json" --reader "$RUNNER_TEMP/crash-window-reader/bin/probity-read-langgraph-crash-window" --selected-closure "$RUNNER_TEMP/crash-window-selected-closure.json" --output consumer-receipts > installed-report.json
           python -c 'import json; assert json.load(open("retained/fresh-report.json")) == json.load(open("installed-report.json"))'
       - name: Retain installed consumer receipts
         if: always()

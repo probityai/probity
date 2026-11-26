@@ -13,11 +13,11 @@ from crash_common import NONCLAIMS, PROFILE, child_environment, load, require, s
 from probity_observer.crypto import strict_loads  # noqa: E402
 
 
-def consume(packet, pins, reader, selected_closure, output, withheld=None):
+def consume(packet, pins, reader, selected_closure, output, withheld=None, installed=None):
     """Refuse changed installation before launch; retain actual isolated streams."""
     root = packet.resolve(strict=True)
     reader = reader.absolute()
-    for selection in (pins, selected_closure, *([withheld] if withheld else [])):
+    for selection in (pins, selected_closure, *([withheld] if withheld else []), *([installed] if installed else [])):
         require(not selection.resolve(strict=True).is_relative_to(root), "selection-must-be-outside-packet")
     require(not output.resolve().is_relative_to(root), "consumer-receipts-outside-packet")
     output.mkdir(parents=True, exist_ok=False)
@@ -28,6 +28,8 @@ def consume(packet, pins, reader, selected_closure, output, withheld=None):
     command = [str(reader.parent / "python"), "-I", "-B", str(reader), str(root), "--pins-file", str(pins.resolve())]
     if withheld:
         command += ["--withheld-sources", str(withheld.resolve())]
+    if installed:
+        command += ["--installed-sources", str(installed.resolve())]
     timed_out = False
     try:
         result = subprocess.run(command, env=child_environment(), capture_output=True, timeout=30, check=False)
@@ -58,9 +60,11 @@ def main():
     parser.add_argument("--selected-closure", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--withheld-sources", type=Path, default=None)
+    parser.add_argument("--installed-sources", type=Path, default=None)
     args = parser.parse_args()
     from probity_observer.crypto import canonical
-    print(canonical(consume(args.packet, args.pins_file, args.reader, args.selected_closure, args.output, args.withheld_sources)).decode(), end="")
+    print(canonical(consume(args.packet, args.pins_file, args.reader, args.selected_closure, args.output, args.withheld_sources,
+                                    args.installed_sources)).decode(), end="")
 
 
 if __name__ == "__main__":
