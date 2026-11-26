@@ -22,6 +22,10 @@ export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } 
 export const TOOL_CALL_RECORD = identifier("agent-evidence-vectors/predicate/v1/tool-call-record");
 /** True when a signed body names the tool-call-record predicate under either recognised host spelling. */
 const isToolCall = (body: J): boolean => sameIdentifier(body.predicateType, TOOL_CALL_RECORD);
+/** A producer's signed statement that `dropped` records it made never reached the journal, after line `afterSeq`. */
+export const GAP_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-gap");
+/** A writer's signed statement that it removed a torn last line (`bytes` long, `tornSha256`) after `afterSeq`. */
+export const TORN_TAIL_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-torn-tail");
 const IN_TOTO = "application/vnd.in-toto+json";
 const GRANT_DOMAIN = "probity-grant-v1\u0000";
 const VOTE_DOMAIN = "probity-quorum-vote-v1\u0000";
@@ -1539,9 +1543,27 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   if (isToolCall(body)) {
     problems.push(...approvalProblems);
     if (pred.phase === "effect") checkEffect(pred, problems, where);
-  } else if (!isToolCall(body) && pred.phase === undefined && body.predicateType?.endsWith("/governance-step"))
+  } else if (sameIdentifier(body.predicateType, GAP_TYPE) || sameIdentifier(body.predicateType, TORN_TAIL_TYPE))
+    problems.push(...lossProblems(body, i).map((p) => `${where}:${p}`));
+  else if (!isToolCall(body) && pred.phase === undefined && body.predicateType?.endsWith("/governance-step"))
     problems.push(`${where}:governance_step_not_ported`);
   return [body, problems];
+}
+
+// A gap or torn-tail line holds exactly its members: a count of at least one and a position before itself
+// (probity_records.journal._loss_problems).
+function lossProblems(body: J, line: number): string[] {
+  const pred = isObj(body.predicate) ? body.predicate : {};
+  const count = (key: string, low: number): boolean => isInt(pred, key, pred[key]) && pred[key] >= low;
+  const gap = sameIdentifier(body.predicateType, GAP_TYPE);
+  const members = gap ? ["afterSeq", "dropped", "reason", "at", "prev", "seq"] : ["afterSeq", "bytes", "tornSha256", "at", "prev", "seq"];
+  const shape = gap
+    ? count("dropped", 1) && typeof pred.reason === "string" && pred.reason !== ""
+    : count("bytes", 1) && typeof pred.tornSha256 === "string" && /^[0-9a-f]{64}$/.test(pred.tornSha256);
+  const keys = Object.keys(pred);
+  const exact = keys.length === members.length && members.every((m) => keys.includes(m));
+  if (!exact || !shape || !count("afterSeq", 0) || pred.afterSeq >= line) return [gap ? "journal_gap_invalid" : "journal_torn_tail_invalid"];
+  return [];
 }
 
 function spendOf(budget: J, args: J): number {
@@ -1615,10 +1637,21 @@ export interface Report { verdict: string; records: number; verified: number; fa
 
 // A journal file's records are its whole lines. Bytes after the last newline are an append a writer killed mid-write
 // never finished: not a record, and counted apart (probity_records.journal._whole_lines; the writer's next append
-// cuts them). Pass `lines` to verifyJournal.
+// cuts them and writes a signed torn-tail line that says so). Pass `lines` to verifyJournal, or the file's text to
+// verifyJournalText.
 export function journalLines(text: string): { lines: string[]; tornTailBytes: number } {
   const end = text.lastIndexOf("\n") + 1;
   return { lines: text.slice(0, end).split("\n").slice(0, -1), tornTailBytes: Buffer.byteLength(text.slice(end), "utf8") };
+}
+
+// A journal file's text, verified as probity_records.journal.verify_journal does: torn bytes after the last newline are
+// not a record, are reported as tornTailBytes, and keep the verdict from PASS, because what the writer was writing
+// is not in the journal.
+export function verifyJournalText(text: string, publicPems: string[], checkpointEnv: J | null,
+                                  trust: TrustDoc | null): Report & { tornTailBytes: number } {
+  const { lines, tornTailBytes } = journalLines(text);
+  const report = verifyJournal(lines, publicPems, checkpointEnv, trust);
+  return { ...report, verdict: report.verdict === "PASS" && tornTailBytes > 0 ? "NOT_ESTABLISHED" : report.verdict, tornTailBytes };
 }
 
 export function verifyJournal(lines: string[], publicPems: string[], checkpointEnv: J | null, trust: TrustDoc | null): Report {

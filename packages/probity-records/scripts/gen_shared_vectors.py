@@ -75,6 +75,7 @@ from probity_records.identity_vectors import (
 )
 from probity_records.identity_vectors import base as identity_base
 from probity_records.identity_vectors import vectors as identity_vectors
+from probity_records.journal import GAP_TYPE, JOURNAL_SUBJECT, TORN_TAIL_TYPE
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
     approval_policy,
@@ -884,6 +885,49 @@ def identity_rows() -> list[tuple[str, str, object]]:
     ]
 
 
+LOSS_STEP = "https://example.test/step"
+
+
+def loss_case(directory: Path, *, torn: bytes = b"", forged: tuple[str, dict] | None = None,
+              gap: dict | None = None) -> Journal:
+    """Two steps, then the loss a case names: a gap the producer states, torn bytes the next writer cuts with a signed
+    torn-tail line, or a loss line of a forged shape; then one more step."""
+    j = Journal(directory, GATE, clock=recording_clock())
+    for n in (1, 2):
+        j.append(LOSS_STEP, f"step-{n}", "ab" * 32, {"n": n})
+    if gap is not None:
+        j.gap(**gap)
+    if forged is not None:
+        j.append(forged[0], JOURNAL_SUBJECT, "00" * 32, forged[1])
+    if torn:
+        j.path.write_bytes(j.path.read_bytes() + torn)
+        j = Journal(directory, GATE, clock=recording_clock())  # the restarted writer
+    j.append(LOSS_STEP, "step-3", "ab" * 32, {"n": 3})
+    return j
+
+
+def loss_rows() -> list[tuple[str, str, object]]:
+    torn = {"afterSeq": 2, "bytes": 5, "tornSha256": "ab" * 32}
+    return [
+        ("LV1", "a gap line the producer signed between two steps: the journal holds, with the loss stated",
+         lambda d: loss_case(d, gap={"dropped": 3, "after_seq": 2, "reason": "ring_overflow"})),
+        ("LV2", "a restarted writer cut a torn last line and signed a torn-tail line before its next step",
+         lambda d: loss_case(d, torn=b'{"payload":"eyJ')),
+        ("LV3", "a gap line whose dropped count is a string", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": "five", "reason": "ring_overflow"}))),
+        ("LV4", "a gap line with a member the format does not define", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1, "reason": "ring_overflow", "note": "x"}))),
+        ("LV5", "a gap line whose dropped count is the number 1.0", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1.0, "reason": "ring_overflow"}))),
+        ("LV6", "a torn-tail line that places the loss at its own line", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "afterSeq": 3}))),
+        ("LV7", "a torn-tail line whose digest is upper-case hex", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "tornSha256": "AB" * 32}))),
+        ("LV8", "a torn-tail line that removed no bytes", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "bytes": 0}))),
+    ]
+
+
 def trust_doc() -> dict:
     return {"grantRootKeyIds": [ROOT.key_id], "quorumPolicies": {"pay": POLICY, **APOL}}
 
@@ -959,6 +1003,7 @@ def main(out: Path) -> None:
     cases["approvals"] = approval_rows()
     cases["identities"] = identity_rows()
     cases["effects"] = effect_rows()
+    cases["loss"] = loss_rows()
     trust = Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
     family_trust = {"autonomous": autonomous_trust(), "identities": identity_trust()}
     for family, rows in cases.items():
