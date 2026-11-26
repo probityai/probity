@@ -938,6 +938,24 @@ function checkPrincipal(p: J, at: string, pins: Record<string, string[]>): strin
   return null;
 }
 const ROLES = ["user", "agent", "sponsor", "approver"];
+// approver is one principal, or a list of at least two (an approval several people gave), each a counted signer
+const APPROVER_LIST_MIN = 2;
+function approverPrincipals(block: J): J[] {
+  if (!("approver" in block)) return [];
+  return Array.isArray(block.approver) ? block.approver : [block.approver];
+}
+function approverSubjects(block: J): Set<string> { return new Set(approverPrincipals(block).map((p) => p.subject)); }
+function roleProblems(block: J, role: string, at: string, pins: Record<string, string[]>): string[] {
+  if (role === "approver" && Array.isArray(block.approver)) {
+    const members: J[] = block.approver;
+    if (members.length < APPROVER_LIST_MIN) return ["principal_approver_list_too_short"];
+    const found = members.map((m) => checkPrincipal(m, at, pins)).filter((p) => p).map((p) => `principal_approver:${p}`);
+    if (found.length) return found;
+    return new Set(members.map((m) => m.subject)).size !== members.length ? ["principal_approver_duplicate"] : [];
+  }
+  const p = checkPrincipal(block[role], at, pins);
+  return p ? [`principal_${role}:${p}`] : [];
+}
 const AUTONOMOUS = ["session", "standingGrant"];
 const SESSION_ID_MAX = 256;
 const PRINTABLE = /^[\x21-\x7e]+$/;
@@ -976,7 +994,7 @@ function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, a
   if (problems.length) return [problems, null];
   const grants = auto.standingGrants ?? {};
   const grant = typeof block.standingGrant === "string" && Object.prototype.hasOwnProperty.call(grants, block.standingGrant) ? grants[block.standingGrant] : undefined;
-  for (const r of ["agent", "approver"]) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
+  for (const r of ["agent", "approver"]) if (r in block) problems.push(...roleProblems(block, r, at, pins));
   // the sponsor answered for the grant when it was issued; with no resolved grant the grant's own refusal decides
   const sp = grant === undefined || !("notBefore" in grant) ? null : checkPrincipal(block.sponsor, String(grant.notBefore), pins);
   if (sp) problems.push(`principal_sponsor:${sp}`);
@@ -985,22 +1003,24 @@ function checkAutonomous(block: J, at: string, pins: Record<string, string[]>, a
   problems = grantProblems(block, at, grants);
   if (auto.sponsors === undefined || auto.sponsors === null) problems.push("principals_sponsors_not_pinned");
   else if (!(auto.sponsors[block.agent.clientId] ?? []).some(([i, s]) => i === block.sponsor.issuer && s === block.sponsor.subject)) problems.push("principal_sponsor_not_registered");
+  const named = approverSubjects(block);
   if ("approver" in block && approvers === null) problems.push("principal_approver_without_approval");
   else if (approvers !== null && !("approver" in block)) problems.push("principals_need_approver");
-  else if ("approver" in block && approvers !== null && !approvers.has(block.approver.subject)) problems.push("principal_approver_not_an_approval_signer");
+  else if ("approver" in block && approvers !== null && ![...named].every((s) => approvers.has(s))) problems.push("principal_approver_not_an_approval_signer");
+  else if (approvers !== null && ![...approvers].every((s) => named.has(s))) problems.push("principals_need_every_approver");
   return problems.length ? [problems, null] : [[], "autonomous"];
 }
 export function checkPrincipals(block: J, at: string, pins: Record<string, string[]>, approvers: Set<string> | null, auto: AutonomousTrust = {}): [string[], string | null] {
   if (!isObj(block) || !Object.keys(block).length || Object.keys(block).some((k) => !ROLES.includes(k) && !AUTONOMOUS.includes(k))) return [["principals_malformed"], null];
   if (Object.keys(block).some((k) => AUTONOMOUS.includes(k))) return checkAutonomous(block, at, pins, approvers, auto);
   const problems: string[] = [];
-  for (const r of ROLES) if (r in block) { const p = checkPrincipal(block[r], at, pins); if (p) problems.push(`principal_${r}:${p}`); }
+  for (const r of ROLES) if (r in block) problems.push(...roleProblems(block, r, at, pins));
   if (!("user" in block) || !("agent" in block)) problems.push("principals_need_user_and_agent");
   if (problems.length) return [problems, null];
   const chain = "act" in block.user ? actSubjects(block.user.act) ?? [] : [];
   if (chain.length && ![block.agent.subject, block.agent.clientId].includes(chain[0])) return [["principal_act_names_another_agent"], null];
   if ("approver" in block && (approvers === null || approvers.size === 0)) return [["principal_approver_without_approval"], null];
-  if ("approver" in block && !approvers!.has(block.approver.subject)) return [["principal_approver_not_an_approval_signer"], null];
+  if ("approver" in block && ![...approverSubjects(block)].every((s) => approvers!.has(s))) return [["principal_approver_not_an_approval_signer"], null];
   return [[], strictShortfall(block, approvers) === null ? "strict" : "basic"];
 }
 
@@ -1010,6 +1030,7 @@ export function strictShortfall(block: J, approvers: Set<string> | null): string
   if (!("act" in (block.user ?? {}))) return "act-absent";
   if (!("sponsor" in block)) return "sponsor-absent";
   if (approvers !== null && approvers.size > 0 && !("approver" in block)) return "approver-absent";
+  if (approvers !== null && approvers.size > 0) { const named = approverSubjects(block); if (![...approvers].every((s) => named.has(s))) return "approvers-partial"; }
   return null;
 }
 
@@ -1714,7 +1735,10 @@ function principalsDoc(block: J, holder: J, key: string): J {
   admitIdentity(block, holder, key, 0);
   if (!isObj(block) || Object.keys(block).length === 0) throw new IdentityDigestError("identity_principals_malformed");
   for (const [role, member] of Object.entries(block)) {
-    if (!ID_ROLES.has(role) || !isObj(member)) throw new IdentityDigestError("identity_principals_malformed");
+    if (!ID_ROLES.has(role)) throw new IdentityDigestError("identity_principals_malformed");
+    if (role === "approver" && Array.isArray(member)) {
+      if (member.length < APPROVER_LIST_MIN || !member.every(isObj)) throw new IdentityDigestError("identity_principals_malformed");
+    } else if (!isObj(member)) throw new IdentityDigestError("identity_principals_malformed");
   }
   return block;
 }
