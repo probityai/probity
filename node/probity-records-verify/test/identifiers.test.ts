@@ -22,13 +22,13 @@ test("the host we write is the old one until the release that flips it, and both
 test("identifier builds an identifier under the host we write", () => {
   assert.equal(identifier("agent-evidence-vectors/predicate/v1/tool-call-record"), `${OLD}agent-evidence-vectors/predicate/v1/tool-call-record`);
   assert.equal(TOOL_CALL_RECORD, `${OLD}agent-evidence-vectors/predicate/v1/tool-call-record`);
-  assert.equal(REVOCATION_LIST, `${OLD}agent-evidence-vectors/predicate/v1/revocation-list`);
+  assert.equal(REVOCATION_LIST, `${OLD}agent-evidence-vectors/predicate/v2/revocation-list`);
 });
 
 const FAMILIES = [
   "agent-evidence-vectors/predicate/v1/tool-call-record", "agent-evidence-vectors/predicate/v2/tool-call-record",
   "agent-evidence-vectors/contract/approval-binding/v1", "agent-evidence-vectors/predicate/v1/uncertain-effect",
-  "agent-evidence-vectors/predicate/v1/revocation-list", "agent-evidence-vectors/schema/verdict-line/v1",
+  "agent-evidence-vectors/predicate/v2/revocation-list", "agent-evidence-vectors/schema/verdict-line/v1",
   "agent-evidence-vectors/vocab/v1/outcome", "agent-evidence-vectors/evaluator/v1/replay", "",
 ];
 

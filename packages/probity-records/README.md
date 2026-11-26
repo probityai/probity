@@ -39,7 +39,7 @@ The signing key can live in Vault transit, AWS KMS or Cloud KMS, and the custome
 | `grants` | Signed capability grants: per-tool, closed-world argument constraints (17 types, from `range` and `subpath` to `url_safe` and `shlex`), delegation that can only narrow, the grant digest in the permit, and the holder confirmation key (`cnf`, RFC 7800) every grant must name |
 | `possession` | Proof that the presenter holds the grant's key, checked statelessly: DPoP proofs (RFC 9449, ES256 or EdDSA) or a mutual TLS client certificate (RFC 8705) against the issuer-signed `cnf`; the possession record an allow carries; and the offline check that no DPoP proof was spent by two permits inside its lifetime, so any verifier catches replay from the journal alone |
 | `quorum` | M-of-N approvals, one key per approver, bound to the request hash, fetched and retried while pending |
-| `revocation` | Signed, append-only revocation lists for keys, permits and grants; root rotation; a last-known-good cache that fails closed |
+| `revocation` | Signed revocation lists for keys, permits and grants, each list carrying only what it newly revokes; root rotation; a last-known-good cache that fails closed |
 | `governance` | Exceptions with owner, rationale and expiry under a quorum; intake, risk routing, approval, attestation and sign-off as signed steps |
 | `exports` | `python -m probity_records seal-export`: a signed census of a governance platform export that anyone re-checks offline |
 

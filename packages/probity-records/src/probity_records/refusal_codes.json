@@ -2679,6 +2679,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_entry_from_future"
   },
   {
+   "code": "revocation_entry_repeated",
+   "check": "revocation.list",
+   "meaning": "a revocation list names a subject an earlier list of its chain already revoked",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_entry_repeated"
+  },
+  {
    "code": "revocation_handle_invalid",
    "check": "mesh.revocation",
    "meaning": "the admission handle is not well formed",
@@ -2689,12 +2695,6 @@
    "check": "mesh.revocation",
    "meaning": "a cited list digest is not the list in force",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_list_digest_mismatch"
-  },
-  {
-   "code": "revocation_list_drops_entry",
-   "check": "revocation.list",
-   "meaning": "a successor list drops an entry of its predecessor",
-   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/revocation_list_drops_entry"
   },
   {
    "code": "revocation_list_fork",

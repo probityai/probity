@@ -22,7 +22,6 @@ import hashlib
 import json
 import sys
 import tempfile
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -54,7 +53,7 @@ from probity_records import canonical as jcs
 from probity_records.canonical_identity_vectors import (
     vectors as canonical_identity_vectors,
 )
-from probity_records.clock import FixedClock, SystemClock, from_datetime
+from probity_records.clock import FixedClock, from_datetime
 from probity_records.core import (
     IN_TOTO_PAYLOAD_TYPE,
     STATEMENT_TYPE,
@@ -69,6 +68,7 @@ from probity_records.erasure_vectors import vectors as erasure_vectors
 from probity_records.grant_body_vectors import bodies as grant_bodies
 from probity_records.grant_body_vectors import calls as grant_calls
 from probity_records.grants import GRANT_DOMAIN, grant_digest
+from probity_records.identifiers import identifier
 from probity_records.identity_vectors import (
     autonomous_record_parts,
     standing_grant_vectors,
@@ -88,9 +88,17 @@ from probity_records.verified_identities_vectors import (
     vectors as verified_identity_vectors,
 )
 
-SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
-
 NB, EXP, AT = "2026-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "2026-06-01T00:00:00Z"
+# Every journal case below records at this one instant, never the host's time, so two runs write the same bytes.
+# It lies after every time a case states (decisions and uses on 2026-06-01, a release first served on 2026-07-01)
+# and long before every expiry (2099), where the host's clock stood when these cases were written.
+RECORDED_AT = datetime.fromisoformat("2026-09-01T00:00:00Z")
+
+
+def recording_clock() -> FixedClock:
+    """A clock standing at ``RECORDED_AT``; each journal gets its own, so no case moves another's time."""
+    return FixedClock(from_datetime(RECORDED_AT))
+
 TOOLS = {"refund": {"approval": "none", "when": ["args.amount_cents < 3000 || args.currency == 'USD'"], "args": {
     "amount_cents": {"type": "range", "min": 1, "max": 4000},
     "currency": {"type": "cel", "expr": "value in ['USD', 'EUR']"},
@@ -119,7 +127,7 @@ def chain(**root_kw) -> list[dict]:
 def grant_case(directory: Path, grants: list[dict], calls: list[dict], *, intent_grant: str | None = None,
                ctx: dict | None = None, possession: list[dict] | None = None) -> Journal:
     """One authorize and one intent record per call; ``possession`` gives each allow the proof it rested on."""
-    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
+    j = Journal(directory, GATE, clock=recording_clock())
     for n, args in enumerate(calls):
         pid = permit_id("p", f"c{n}", args_sha256(args))
         common = {"run_id": "r1", "tool_call_id": f"c{n}", "tool": "refund", "args_sha256_hex": args_sha256(args),
@@ -205,9 +213,9 @@ def forged(depth: int, **members: object) -> list[dict]:
 
 
 def dpop_use(jti: str, holder: Signer = SUB) -> dict:
-    """The possession record of a DPoP proof by ``holder`` (the leaf grant's cnf key by default), made now, so
-    the journal's own record times fall inside its lifetime."""
-    return {"iat": int(time.time()), "jkt": cnf_for_signer(holder)["jkt"], "jti": jti, "method": "dpop"}
+    """The possession record of a DPoP proof by ``holder`` (the leaf grant's cnf key by default), made at
+    ``RECORDED_AT``, so the journal's own record times fall inside its lifetime."""
+    return {"iat": int(RECORDED_AT.timestamp()), "jkt": cnf_for_signer(holder)["jkt"], "jti": jti, "method": "dpop"}
 
 
 def bearer_grant() -> list[dict]:
@@ -236,7 +244,7 @@ def quorum_case(directory: Path, votes: list[dict], proposer: str = "dave") -> J
     result = count(POLICY, QREQ, votes, AT, proposer=proposer)
     evidence = result.evidence(POLICY, QREQ, proposer=proposer, history="ab" * 32)
     evidence["votes"] = list(votes)
-    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
+    j = Journal(directory, GATE, clock=recording_clock())
     j.append(TOOL_CALL_RECORD, "tool-call:q1", args_sha256(QARGS), tool_call_predicate(
         phase="authorize", decision="allow", reason=QUORUM_ALLOW, authority=evidence, run_id="r1",
         tool_call_id="q1", tool="pay", args_sha256_hex=args_sha256(QARGS), permit_id=QPID))
@@ -253,7 +261,7 @@ def solo_chain(tools: dict) -> list[dict]:
 def solo_case(directory: Path, tools: dict, tool: str, calls: list[dict]) -> Journal:
     """One recorded allow per call. A call the grant refuses is recorded as an allow all the same, so the
     verifier's own judgement of the grant is what the vector pins."""
-    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
+    j = Journal(directory, GATE, clock=recording_clock())
     grants = solo_chain(tools)
     for n, args in enumerate(calls):
         verdict = verify_grant_allow(grants, tool, args, AT, {ROOT.key_id}, ctx={})
@@ -331,7 +339,7 @@ def binding(signer: Signer, who: str, *, payload: dict | None = None, consumed: 
 
 def approval_case(directory: Path, bindings: list[dict], *, decision: str = "allow", reason: str = "bound",
                   threshold: int | None = 1, policy: str | None = "refunds1") -> Journal:
-    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
+    j = Journal(directory, GATE, clock=recording_clock())
     j.append(TOOL_CALL_RECORD, "tool-call:a1", args_sha256(AARGS), tool_call_predicate(
         phase="authorize", decision=decision, reason=reason, approval_bindings=bindings, threshold=threshold,
         approval_policy=policy, run_id="run", tool_call_id="a1", tool="refund_payment", args_sha256_hex=args_sha256(AARGS),
@@ -451,7 +459,7 @@ def effect_record(outcome: str, replies: list[str], owner_effects: int = 1, toke
 
 def effect_case(directory: Path, record: dict | None, *, outcome: str | None = None, args: str = E_DIGEST,
                 intent: bool = True) -> Journal:
-    j = Journal(directory, GATE, clock=SYSTEM_CLOCK)
+    j = Journal(directory, GATE, clock=recording_clock())
     pid = permit_id("pause", "e1", args)
     common = {"run_id": "run", "tool_call_id": "e1", "tool": "refund_payment", "args_sha256_hex": args, "permit_id": pid}
     j.append(TOOL_CALL_RECORD, "tool-call:e1", args, tool_call_predicate(
@@ -657,9 +665,12 @@ def revocation_rows() -> list[dict]:
     one = rl(1, [])
     two = rl(2, [rl_entry("agent", "agent:alpha", T1), rl_entry("stream", "stream-7", T1)], one, at=T1)
     every = [rl_entry(k, rl_subject(k), T2, reason="test") for k in REVOCATION_KINDS]
-    three = rl(3, sorted(two["body"]["entries"] + every, key=lambda e: (e["kind"], e["id"])), two, at=T2)
+    three = rl(3, every, two, at=T2)  # a delta: only what list 3 newly revokes
     rotate = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT))])
-    by_next = rl(2, rotate["body"]["entries"], rotate, at=T1, signer=RL_NEXT)
+    by_next = rl(2, [], rotate, at=T1, signer=RL_NEXT)
+    next_out = rl(1, [rl_entry("key", RL_NEXT.key_id, reason="compromised")])
+    late_rotate = rl(2, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT))], next_out,
+                     at=T1)
     killed = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="compromised")])
     both_early = rl(1, [rl_entry("key", RL_ROOT.key_id, reason="rotation", successor=raw_public(RL_NEXT)),
                         rl_entry("key", RL_NEXT.key_id, reason="compromised")])
@@ -730,25 +741,24 @@ def revocation_rows() -> list[dict]:
         ("RL29", "a list from the future (a seq gap) is refused", [one, three], refuse, "revocation_list_gap", 1),
         ("RL30", "a fresh reader refuses a first list past seq 1", [two], refuse, "revocation_list_gap", 0),
         ("RL31", "a fork (seq right, previous wrong) is refused",
-         [one, two, rl(3, two["body"]["entries"], one, at=T2)], refuse, "revocation_list_previous_mismatch", 2),
+         [one, two, rl(3, [], one, at=T2)], refuse, "revocation_list_previous_mismatch", 2),
         ("RL32", "a list issued before the list in force is refused",
-         [one, two, rl(3, two["body"]["entries"], two, at=T0)], refuse, "revocation_list_time_reversed", 2),
+         [one, two, rl(3, [], two, at=T0)], refuse, "revocation_list_time_reversed", 2),
         ("RL33", "an entry revoked after the list's issue time is refused",
          [rl_edit(one, entries=[rl_entry("agent", "a", T1)])], refuse, "revocation_entry_from_future", 0),
-        ("RL34", "a list that drops an entry (shrinks) is refused", [one, two, rl(3, [], two, at=T2)], refuse,
-         "revocation_list_drops_entry", 2),
-        ("RL35", "a list that edits an entry is refused",
-         [one, two, rl(3, [{**two["body"]["entries"][0], "reason": "changed"}, two["body"]["entries"][1]], two,
-                       at=T2)], refuse, "revocation_list_drops_entry", 2),
+        ("RL34", "a list that names again a subject an earlier list revoked is refused",
+         [one, two, rl(3, [two["body"]["entries"][0]], two, at=T2)], refuse, "revocation_entry_repeated", 2),
+        ("RL35", "a list that republishes an earlier entry with another reason is refused",
+         [one, two, rl(3, [{**two["body"]["entries"][0], "reason": "changed"}], two, at=T2)], refuse,
+         "revocation_entry_repeated", 2),
         ("RL36", "after rotation the old root's next list is refused",
-         [rotate, rl(2, rotate["body"]["entries"], rotate, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
+         [rotate, rl(2, [], rotate, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
         ("RL37", "a root revoked without a successor ends the chain",
-         [killed, rl(2, killed["body"]["entries"], killed, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
+         [killed, rl(2, [], killed, at=T1)], refuse, "revocation_list_signer_not_a_root", 1),
         ("RL38", "a root revoked with a successor that the same list revokes ends the chain (successor id sorts before)",
-         [both_early, rl(2, both_early["body"]["entries"], both_early, at=T1, signer=RL_NEXT)], refuse,
-         "revocation_list_signer_not_a_root", 1),
+         [both_early, rl(2, [], both_early, at=T1, signer=RL_NEXT)], refuse, "revocation_list_signer_not_a_root", 1),
         ("RL39", "a root revoked with a successor that the same list revokes ends the chain (successor id sorts after)",
-         [both_late, rl(2, both_late["body"]["entries"], both_late, at=T1, signer=RL_NEXT_LATE)], refuse,
+         [both_late, rl(2, [], both_late, at=T1, signer=RL_NEXT_LATE)], refuse,
          "revocation_list_signer_not_a_root", 1),
         ("RL40", "an identity provider key is revoked by its RFC 7638 thumbprint",
          [rl(1, [rl_entry("idp-key", IDP_THUMBPRINT, reason="signing key leaked")])], accept, None, None),
@@ -769,6 +779,19 @@ def revocation_rows() -> list[dict]:
          "revocation_list_shape", 0),
         ("RL47", "a thumbprint under kind key is refused",
          [rl_edit(one, entries=[rl_entry("key", IDP_THUMBPRINT)])], refuse, "revocation_list_shape", 0),
+        ("RL48", "an empty list after a list with entries is a freshness list: a new seq, nothing newly revoked",
+         [one, two, rl(3, [], two, at=T2)], accept, None, None),
+        ("RL49", "a list of the previous (v1, cumulative) type is refused",
+         [rl_edit(one, type=identifier("agent-evidence-vectors/predicate/v1/revocation-list"))], refuse,
+         "revocation_list_shape", 0),
+        ("RL50", "a root rotated to a successor an earlier list revoked ends the chain",
+         [next_out, late_rotate, rl(3, [], late_rotate, at=T2, signer=RL_NEXT)], refuse,
+         "revocation_list_signer_not_a_root", 2),
+        ("RL51", "a list that re-dates an earlier entry is refused",
+         [one, two, rl(3, [{**two["body"]["entries"][1], "revokedAt": T0}], two, at=T2)], refuse,
+         "revocation_entry_repeated", 2),
+        ("RL52", "the state after a rotation to a successor an earlier list revoked holds no root",
+         [next_out, late_rotate], accept, None, None),
     ]
     rows = []
     for vid, description, lists, verdict, code, index in cases:

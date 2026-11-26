@@ -1245,14 +1245,18 @@ function approvalVerdict(record: J, payload: Buffer): { decision: string; reason
 // ---------- uncertain_effect/v1 reader ----------
 
 const EFFECT_CONTRACT = identifier("agent-evidence-vectors/predicate/v1/uncertain-effect");
-const UNKNOWN_REPLIES = ["timeout", "connection_lost"];
+const UNKNOWN_REPLIES = ["timeout", "connection_lost", "worker_crashed"];
+// What set an attempt off when it is not a first dispatch or a plain retry: the engine redelivered
+// the task, a replay or rewind re-ran the step, or a completion signal ran it.
+const TRIGGER_KINDS = ["redelivery", "replay", "completion"];
 const REPLIES = ["confirmed", "no_effect", ...UNKNOWN_REPLIES];
 const ANSWERS = ["present", "absent"];
 const OUTCOMES = ["committed", "not_run", "unknown"];
 const STOP_REPORTS = ["quiescent", "effect_after_stop", "not_established"];
 const AUTHORITY_ANSWERS = ["accepted", "refused"];
 const EFFECT_CHECKS = ["contract_id_missing", "contract_id_unknown", "operation_identity_missing", "idempotency_key_args_changed",
-  "dispatch_beyond_lease", "retry_after_unknown", "duplicate_effect", "unknown_released", "outcome_settled_without_authority",
+  "idempotency_key_follows_trigger", "dispatch_beyond_lease", "retry_after_unknown", "owner_effect_unaccounted", "duplicate_effect",
+  "unknown_released", "outcome_settled_without_authority",
   "outcome_disagrees_with_authority", "authority_used_after_revocation", "effect_after_stop_reported_quiescent",
   "stop_straddle_reported_settled"];
 
@@ -1308,8 +1312,13 @@ function effectFirstFailure(record: J): string | null {
     idempotency_key_args_changed: () => { const op = req(record, "operation");
       return req(record, "attempts").some((a: J) => pyEq(getOr(a, "idempotencyKey", null), getOr(op, "idempotencyKey", null)) &&
         !pyEq(getOr(a, "argsDigest", null), getOr(op, "argsDigest", null))); },
+    idempotency_key_follows_trigger: () => { const key = getOr(req(record, "operation"), "idempotencyKey", null);
+      return req(record, "attempts").some((a: J) => { const trigger = getOr(a, "trigger", null);
+        return truthy(trigger) && TRIGGER_KINDS.includes(getOr(trigger, "kind", null)) && !pyEq(getOr(a, "idempotencyKey", null), key); }); },
     dispatch_beyond_lease: () => { const leases = getOr(record, "leases", null) ?? []; return leases.length > 0 && req(record, "attempts").some((a: J) => outsideLease(a, leases)); },
     retry_after_unknown: () => unprotectedRetry(record),
+    owner_effect_unaccounted: () =>
+      req(record, "ownerEffects") > req(record, "attempts").filter((a: J) => !pyEq(req(a, "reply"), "no_effect")).length,
     duplicate_effect: () => req(record, "ownerEffects") > 1,
     unknown_released: () => { const r = getOr(record, "reservation", null); return r !== null && settledOutcome(record) === "unknown" && !truthy(req(r, "charged")); },
     outcome_settled_without_authority: () => settledOutcome(record) === "unknown" && ["committed", "not_run"].includes(req(req(record, "reported"), "outcome")),
@@ -1339,7 +1348,11 @@ const domainFlag = (item: J, name: string): void => domainRequire(typeof getOr(i
 function checkEffectDomains(record: J): void {
   const count = getOr(record, "ownerEffects", 0);
   domainRequire(Number.isInteger(count) && count >= 0, "ownerEffects");
-  for (const a of domainObjects(record, "attempts")) domainWord(a, "reply", REPLIES);
+  for (const a of domainObjects(record, "attempts")) {
+    domainWord(a, "reply", REPLIES);
+    const trigger = getOr(a, "trigger", null);
+    domainRequire(trigger === null || (isObj(trigger) && typeof getOr(trigger, "kind", null) === "string"), "trigger");
+  }
   for (const r of domainObjects(record, "reconciliations")) { domainWord(r, "result", ANSWERS); domainFlag(r, "final"); }
   domainObjects(record, "leases");
   const owner = domainObject(record, "effectOwner");

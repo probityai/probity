@@ -4,9 +4,9 @@ Probity Verify checks a claim against local evidence and a consumer-held policy.
 Use it when you need a decision you can replay from the same bytes.
 Python 3.12 or newer and [uv](https://docs.astral.sh/uv/) are required.
 
-Version 0.9.0 is published on [PyPI](https://pypi.org/project/agent-evidence-verify/0.9.0/).
-Its wheel modules are identical to the source at tag `agent-evidence-verify-v0.9.0`, commit
-`d17c97fd6cc076edd1f36e7cdd932231009b0a50`, and the wheel carries the source-coverage
+Version 0.10.0 is published on [PyPI](https://pypi.org/project/agent-evidence-verify/0.10.0/).
+Its wheel modules are identical to the source at tag `agent-evidence-verify-v0.10.0`, commit
+`6bdf0d7d8e738880a400362843f5f5b2a30d63bb`, and the wheel carries the source-coverage
 sample inputs as package resources. The [release guide](RELEASING.md) gives the
 installed-resource recipe and the artifact checks.
 
@@ -16,7 +16,7 @@ Run these commands from a new working directory:
 
 ```sh
 uv venv --python 3.12 verify-env
-uv pip install --python verify-env/bin/python agent-evidence-verify==0.9.0
+uv pip install --python verify-env/bin/python agent-evidence-verify==0.10.0
 samples="$(verify-env/bin/python -c 'import importlib.resources as r; print(r.files("agent_evidence_verify") / "samples")')"
 verify-env/bin/agent-evidence-verify "$samples/case.json" --policy "$samples/policy-june.json"
 ```
@@ -32,11 +32,11 @@ The release files and their SHA-256 digests are recorded in [release.json](relea
 
 | file | SHA-256 |
 | --- | --- |
-| `agent_evidence_verify-0.9.0-py3-none-any.whl` | `9e1b2cf581e6f26160ac89ae0911380f726218480d0e1ade9871c67b3e7ba0a7` |
-| `agent_evidence_verify-0.9.0.tar.gz` | `1fcfe5b7efc7bc75f66973e861fea428aa80795b46a3169cbab7c66c4257c18f` |
+| `agent_evidence_verify-0.10.0-py3-none-any.whl` | `e0d289b6fa61f4bc28584731816c69f1ae5b9780988323e8d56b45169026faac` |
+| `agent_evidence_verify-0.10.0.tar.gz` | `867afc7d3bc36566f00036aa6a8b8989abebd1b2663f254f5c734e899bf0ff32` |
 
 To require these digests at install time, put the line
-`agent-evidence-verify==0.9.0 --hash=sha256:9e1b2cf581e6f26160ac89ae0911380f726218480d0e1ade9871c67b3e7ba0a7`
+`agent-evidence-verify==0.10.0 --hash=sha256:e0d289b6fa61f4bc28584731816c69f1ae5b9780988323e8d56b45169026faac`
 in a requirements file and install it with `uv pip install --require-hashes -r`.
 
 The packet includes:
