@@ -43,7 +43,7 @@ def test_every_cosignature_torchwood_made_verifies(signed: dict[str, str]) -> No
     assert parsed.text == signed["text"] and len(parsed.sigs) == 1
     key = keys[signed["cosigner"]]
     assert parsed.sigs[0].key_id == key.id
-    assert isinstance(w._verify_line(key, parsed.text, parsed.sigs[0]), int)
+    assert isinstance(w.verify_line(key, parsed.text, parsed.sigs[0]), int)
 
 
 @pytest.mark.parametrize("entry", VECTORS["ours_checked_by_torchwood"], ids=lambda e: e["label"])
@@ -52,10 +52,10 @@ def test_torchwoods_verdict_on_every_other_note(entry: dict[str, object]) -> Non
     key = w.parse_vkey(str(entry["vkey"]))
     parsed = w.parse_note(str(entry["note"]))
     if entry["expected"]:
-        assert isinstance(w._verify_line(key, parsed.text, parsed.sigs[0]), int)
+        assert isinstance(w.verify_line(key, parsed.text, parsed.sigs[0]), int)
     else:
         with pytest.raises(w.NoteError):
-            w._verify_line(key, parsed.text, parsed.sigs[0])
+            w.verify_line(key, parsed.text, parsed.sigs[0])
 
 
 def test_an_ml_dsa_cosignature_covers_no_extension_line() -> None:
@@ -68,9 +68,9 @@ def test_a_line_of_one_type_never_verifies_under_the_other() -> None:
     text = w.Checkpoint(ORIGIN, 3, w.leaf_hash(b"x")).text()
     pq, ed = MLDSA44PrivateKey.generate(), Ed25519PrivateKey.generate()
     with pytest.raises(w.NoteError):
-        w._verify_line(w.vkey("w", w.SIG_COSIGNATURE_V1, ed.public_key()), text, w.cosign_mldsa(text, "w", pq, 5))
+        w.verify_line(w.vkey("w", w.SIG_COSIGNATURE_V1, ed.public_key()), text, w.cosign_mldsa(text, "w", pq, 5))
     with pytest.raises(w.NoteError):
-        w._verify_line(w.vkey("w", w.SIG_MLDSA44, pq.public_key()), text, w.cosign(text, "w", ed, 5))
+        w.verify_line(w.vkey("w", w.SIG_MLDSA44, pq.public_key()), text, w.cosign(text, "w", ed, 5))
     with pytest.raises(w.NoteError, match="does not match"):
         w.vkey("w", w.SIG_MLDSA44, ed.public_key())
     with pytest.raises(w.NoteError, match="does not match"):
