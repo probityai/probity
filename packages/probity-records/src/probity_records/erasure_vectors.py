@@ -4,7 +4,8 @@ Each vector is ``{"id", "description", "op", "input", "expected"}``. Byte string
 ciphertexts) are lowercase hex. ``op`` is one of:
 
 - ``seal``: ``input`` is ``{"schema", "record", "keys", "subjectValue", "subjectRole", "leaf", "nonces"}`` (``keys``
-  maps a role to a 32-byte key, ``nonces`` maps ``"<role>/<class>"`` to a 12-byte nonce); ``expected`` is
+  maps a subject (a role, or ``approver.<n>`` for member n of an approver list) to a 32-byte key, ``nonces`` maps
+  ``"<subject>/<class>"`` to a 12-byte nonce); ``expected`` is
   ``{"kept", "erasure", "blobs", "subjectDigest"}`` or ``{"refused"}``.
 - ``open``: ``input`` is ``{"kept", "erasure", "blobs", "keys"}``; ``expected`` is ``{"fields", "erased",
   "missing"}`` or ``{"refused"}``.
@@ -58,6 +59,9 @@ REFERENCE_KEY = bytes([0x52]) * 32
 LEAF = _bytes("leaf/1", 16)
 NONCE_TAG = ev.NONCE_BYTES + ev.TAG_BYTES
 NONCES = {(role, cls): _bytes(f"nonce/{role}/{cls}", 12) for role in ev.ROLES for cls in (PSEUDONYM, PAYLOAD)}
+#: One key per member of an approver list: each approver is a data subject of their own.
+MEMBER_KEYS = {ev.member_subject(n): _bytes(f"key/{ev.member_subject(n)}", 32) for n in range(2)}
+MEMBER_NONCES = {(s, cls): _bytes(f"nonce/{s}/{cls}", 12) for s in MEMBER_KEYS for cls in (PSEUDONYM, PAYLOAD)}
 
 
 def record(**over: Any) -> dict[str, Any]:
@@ -73,10 +77,12 @@ def _hex(keys: dict[str, bytes]) -> dict[str, str]:
     return {k: v.hex() for k, v in sorted(keys.items())}
 
 
-def _seal_input(schema: Schema, rec: Any, keys: dict[str, bytes], role: str | None) -> dict[str, Any]:
+def _seal_input(schema: Schema, rec: Any, keys: dict[str, bytes], role: str | None,
+                members: bool = False) -> dict[str, Any]:  # fmt: skip
+    nonces = {**NONCES, **MEMBER_NONCES} if members else NONCES
     return {"schema": schema.to_json(), "record": rec, "keys": _hex(keys), "subjectValue": CALL if role else None,
             "subjectRole": role, "leaf": LEAF.hex(),
-            "nonces": {f"{r}/{c}": n.hex() for (r, c), n in sorted(NONCES.items())}}  # fmt: skip
+            "nonces": {f"{r}/{c}": n.hex() for (r, c), n in sorted(nonces.items())}}  # fmt: skip
 
 
 def run(op: str, data: dict[str, Any]) -> dict[str, Any]:
@@ -255,7 +261,41 @@ def vectors() -> list[dict[str, Any]]:
     add("T2", "a v1-style record: a name in clear (any case), an object in clear, an upper-case hex digest and a "
         "base64 digest of JCS bytes are each found", "personal-traces",
         {"signed": canonical(leaky).decode("utf-8"), "personal": canaries})
+    _member_vectors(add)
     return rows
+
+
+def _member_vectors(add: Any) -> None:
+    """An approver list (an approval two people gave) sealed per member: each approver its own subject and key."""
+    pair = [{"issuer": "https://idp.example", "subject": "carol"}, {"issuer": "https://idp.example", "subject": "dave"}]
+    listed = record(approver=["carol@example.com", "dave@example.com"],
+                    principals={"user": record()["principals"]["user"], "approver": pair})
+    keys = {"user": KEYS["user"], **MEMBER_KEYS}
+    sealed = add("S11", "an approver list sealed per member: member n is <path>.<n> under subject approver.<n> and its "
+                 "own key, in its own ciphertext", "seal", _seal_input(SCHEMA, listed, keys, "user", members=True))
+    add("S12", "an approver list under the one approver key names several subjects and is refused", "seal",
+        _seal_input(SCHEMA, listed, KEYS, "user", members=True))
+    add("S13", "an empty approver list names no subject and is refused", "seal",
+        _seal_input(SCHEMA, record(approver=[]), {"user": KEYS["user"], **MEMBER_KEYS}, "user", members=True))
+    kept, erasure, blobs = sealed["kept"], sealed["erasure"], sealed["blobs"]
+    add("O13", "every member key present: the approver lists open in their order", "open",
+        {"kept": kept, "erasure": erasure, "blobs": blobs, "keys": _hex(keys)})
+    gone = {k: v for k, v in keys.items() if k != ev.member_subject(1)}
+    add("O14", "one approver's key destroyed: that approver reads as erased (null in place), the other still opens",
+        "open", {"kept": kept, "erasure": erasure, "blobs": blobs, "keys": _hex(gone)})
+    swapped = {**erasure["roles"], "principals.approver.0": ev.member_subject(1)}
+    add("O15", "a member field under another member's subject is refused", "open",
+        {"kept": kept, "erasure": {**erasure, "roles": swapped}, "blobs": blobs, "keys": _hex(keys)})
+
+    def renumber(block: Any) -> Any:
+        """Members 0 and 2: the list skips a position."""
+        if isinstance(block, dict):
+            return {k.replace("approver.1", "approver.2"): renumber(v) for k, v in block.items()}
+        if isinstance(block, list):
+            return [renumber(v) for v in block]
+        return block.replace("approver.1", "approver.2") if isinstance(block, str) else block
+    add("O16", "an approver list whose members are not 0 to N-1 is refused", "open",
+        {"kept": kept, "erasure": renumber(erasure), "blobs": blobs, "keys": _hex(keys)})
 
 
 def check(rows: list[dict[str, Any]]) -> list[str]:
