@@ -106,9 +106,8 @@ def test_an_ecdsa_key_id_is_the_spki_hash_and_an_rfc6962_one_the_log_id() -> Non
     (lambda: w.VerifierKey.ed25519("bad name", Ed25519PrivateKey.generate().public_key()), "note_name_invalid"),
     (lambda: w.parse_vkey("a+00000000+" + base64.b64encode(b"\x03" + b"\x00" * 32).decode()), "vkey_type_unknown"),
     (lambda: w.parse_vkey("a+00000000+" + base64.b64encode(b"\x01" + b"\x00" * 31).decode()), "vkey_key_length"),
-    (lambda: w.parse_vkey(w.VerifierKey.ed25519("a", Ed25519PrivateKey.generate().public_key()).encode()[:-46]
-                          + "00000000+" + w.VerifierKey.ed25519("a", Ed25519PrivateKey.generate().public_key())
-                          .encode().split("+")[2]), "vkey_id_mismatch"),
+    (lambda: w.parse_vkey("a+00000000+" + w.VerifierKey.ed25519("a", Ed25519PrivateKey.generate().public_key())
+                          .encode().split("+", 2)[2]), "vkey_id_mismatch"),
     (lambda: w.parse_vkey("no-plus"), "vkey_malformed"),
 ])  # fmt: skip
 def test_vkey_refusals_carry_codes(make: object, expected: str) -> None:

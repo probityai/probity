@@ -38,11 +38,11 @@
     },
     {
       "id": "rekor-ecdsa-0x02-bad-signature",
-      "source": "https://github.com/transparency-dev/formats/blob/c97e37833724f18319aeaa71785fe3cd88368aa3/note/note_verifier_test.go (invalid signature)",
+      "source": "https://github.com/transparency-dev/formats/blob/c97e37833724f18319aeaa71785fe3cd88368aa3/note/note_verifier_test.go (invalid signature; the corrupted blob also corrupts the 4-byte key id, so no line comes from the known key)",
       "vkey": "rekor.sigstore.dev+c0d23d6a+AjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABNhtmPtrWm3U1eQXBogSMdGvXwBcK5AW5i0hrZLOC96l+smGNM7nwZ4QvFK/4sueRoVj//QP22Ni4Qt9DPfkWLc=",
       "note": "Rekor\n798034\nf+7CoKgXKE/tNys9TTXcr/ad6U/K3xvznmzew9y6SP0=\n\n— rekor.sigstore.dev THIS/IS/PROBABLY/NOT/A/VALID/SIGNATURE/ANy/MOREowGp/XgIgc+qEHS3+GKVClgqq20uDLet7MCoTURUCRdxwWBHHufk=\n",
       "verifies": false,
-      "code": "note_signature_invalid"
+      "code": "note_unverified"
     },
     {
       "id": "pixel-ecdsa-0x02",
