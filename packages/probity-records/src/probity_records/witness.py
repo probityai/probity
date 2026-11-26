@@ -326,6 +326,8 @@ def parse_checkpoint(text: str) -> Checkpoint:
 
 
 def cosignature_message(timestamp: int, text: str) -> bytes:
+    if not 0 <= timestamp <= MAX_TIMESTAMP:
+        raise NoteError("cosignature timestamp out of range")
     return f"cosignature/v1\ntime {timestamp}\n{text}".encode()
 
 
@@ -372,7 +374,9 @@ def cosign_mldsa(text: str, name: str, key: MLDSA44PrivateKey, timestamp: int) -
                    timestamp.to_bytes(8, "big") + sig)
 
 
-def _verify_line(key: VerifierKey, text: str, line: SigLine) -> int | None:
+def verify_line(key: VerifierKey, text: str, line: SigLine) -> int | None:
+    """One signature line from a known key: None for a valid Ed25519 log signature, the timestamp for a valid
+    cosignature (either type, a log's own ML-DSA-44 line included); ``NoteError`` when it does not verify."""
     if key.sig_type == SIG_MLDSA44:
         if len(line.sig) != 8 + MLDSA44_SIG_LEN:
             raise NoteError(f"ML-DSA-44 cosignature from {key.name} has the wrong length")
@@ -414,7 +418,12 @@ class Policy:
         return sum(self.satisfied(cosigned, m) for m in members) >= k
 
 
+_POLICY_BYTES = re.compile(rb"[\t\n\x20-\x7e\x80-\xff]*\Z")
+
+
 def parse_policy(text: str) -> Policy:
+    if not _POLICY_BYTES.match(text.encode()):
+        raise NoteError("a policy holds no control character but tab and newline")
     policy, keys = Policy(), set()
 
     def key(t: str, sig_types: tuple[int, ...]) -> VerifierKey:
@@ -475,7 +484,8 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
     """Accept a checkpoint only when a policy log signed it and the witness quorum cosigned it.
 
     Offline (``now`` None) every valid cosignature counts; with ``now`` and ``max_age`` only fresh
-    ones do. A known key whose signature fails rejects the note; unknown keys are ignored. A log's own
+    ones do, and one dated more than ``max_skew`` seconds after ``now`` is not counted: a witness whose
+    clock runs ahead can neither veto a quorum the other witnesses meet nor complete one. A known key whose signature fails rejects the note; unknown keys are ignored. A log's own
     ML-DSA-44 line (a policy log key of type 0x06) authenticates the log like its Ed25519 line, is
     reported in ``log_types``, and never counts as a witness.
     """
@@ -494,13 +504,13 @@ def verify_note(note: str, policy: Policy, now: int | None = None, max_age: int 
         if entry is None:
             continue
         wname, k = entry
-        ts = _verify_line(k, parsed.text, line)
+        ts = verify_line(k, parsed.text, line)
         if not wname:
             log_types.add(k.sig_type)
         elif ts is None:  # unreachable: a policy witness key is a cosignature type
             raise NoteError(f"witness {wname} key is not a cosignature key")
         elif now is not None and ts > now + max_skew:
-            raise NoteError(f"cosignature from {wname} is dated in the future")
+            continue  # dated ahead of our clock: not counted, so it neither vetoes nor completes the quorum
         elif now is None or max_age is None or now - ts <= max_age:
             cosigned[wname] = ts
     if not log_types:
@@ -590,7 +600,7 @@ class Witness:
             if k is None:
                 continue
             try:
-                _verify_line(k, parsed.text, line)
+                verify_line(k, parsed.text, line)
             except NoteError as exc:
                 raise WitnessRefused(403, str(exc)) from exc
             signed = True
