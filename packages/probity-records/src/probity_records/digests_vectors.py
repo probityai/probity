@@ -19,7 +19,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from .core import Signer
 from .digests import MAX_ACTORS, MAX_DEPTH, MAX_SAFE_INT, judge
 from .grants import grant_digest, issue_grant, raw_public
-from .identity_vectors import base
+from .identity_vectors import base, second_approver
 from .possession import cnf_for_signer
 
 NOT_BEFORE, EXPIRES = "2026-11-21T00:00:00Z", "2026-11-22T00:00:00Z"
@@ -160,6 +160,15 @@ def _cases() -> list[tuple[str, str, str, str]]:
         ("SS2", "a block with no act claim and no grants", "stamp_digest_of", _args(no_act, None)),
         ("SS3", "a user principal whose act member is null", "stamp_digest_of",
          _args(_with(["user", "act"], None), None)),
+        ("PD21", "an approver list of two principals: an approval two people gave", "principals_digest",
+         _args({**b, "approver": [b["approver"], second_approver()[0]]})),
+        ("PD22", "the same approvers in the other order are another block", "principals_digest",
+         _args({**b, "approver": [second_approver()[0], b["approver"]]})),
+        ("PD23", "an approver list of one", "principals_digest", _args({**b, "approver": [b["approver"]]})),
+        ("PD24", "an approver list with a member that is not an object", "principals_digest",
+         _args({**b, "approver": [b["approver"], "carol@example.com"]})),
+        ("PD25", "a role other than approver given as a list", "principals_digest",
+         _args({**b, "sponsor": [b["sponsor"], b["approver"]]})),
     ]
 
 

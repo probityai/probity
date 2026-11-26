@@ -5,7 +5,8 @@ Every digest is ``sha256:`` followed by 64 lowercase hex digits: SHA-256 over th
 gives, after one admission check, the identity domain. Version 1 defines four digests:
 
 - ``principals_digest(block)``: the verified principals block of one request (``user``, ``agent``, ``sponsor``,
-  ``approver``, each the principal member ``identity`` checks), exactly as recorded.
+  ``approver``, each the principal member ``identity`` checks; ``approver`` may be a list of at least two), exactly as
+  recorded.
 - ``act_chain_digest(act)``: the RFC 8693 ``act`` claim of the user's credential, as its identity provider signed it.
 - ``grant_chain_digest(links)``: the capability grant chain a request runs under, root first. It is the digest of the
   list of the links' grant digests (``grants.grant_digest`` of each body), so whoever holds the grant digests (a
@@ -29,7 +30,7 @@ from typing import Any, Final, NoReturn
 
 from .core import canonical
 from .grants import grant_digest
-from .identity import ROLES
+from .identity import APPROVER_LIST_MIN, ROLES
 
 VERSION: Final = 1
 PREFIX: Final = "sha256:"
@@ -126,13 +127,18 @@ def _principals(block: Any) -> dict[str, Any]:
     for role, member in doc.items():
         if role not in ROLES:
             raise IdentityDigestError("identity_principals_malformed", detail=f"{role!r} is not a role")
-        if not isinstance(member, dict):
+        if role == "approver" and isinstance(member, list):
+            if len(member) < APPROVER_LIST_MIN or not all(isinstance(m, dict) for m in member):
+                raise IdentityDigestError("identity_principals_malformed",
+                                          detail="an approver list is at least two principal objects")
+        elif not isinstance(member, dict):
             raise IdentityDigestError("identity_principals_malformed", detail=f"the {role} principal is not an object")
     return doc
 
 
 def principals_digest(block: Mapping[str, Any]) -> str:
-    """The digest of a principals block: its members among ``user``, ``agent``, ``sponsor`` and ``approver``."""
+    """The digest of a principals block: its members among ``user``, ``agent``, ``sponsor`` and ``approver`` (one
+    principal, or a list of at least two)."""
     return _digest(_principals(block))
 
 

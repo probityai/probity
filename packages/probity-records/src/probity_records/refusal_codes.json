@@ -2163,6 +2163,18 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_act_names_another_agent"
   },
   {
+   "code": "principal_approver_duplicate",
+   "check": "identity.principals",
+   "meaning": "an approver list names one subject twice",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_approver_duplicate"
+  },
+  {
+   "code": "principal_approver_list_too_short",
+   "check": "identity.principals",
+   "meaning": "an approver list holds fewer than two principals; one approval takes the single form",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principal_approver_list_too_short"
+  },
+  {
    "code": "principal_approver_not_an_approval_signer",
    "check": "identity.principals",
    "meaning": "the approver principal is not a signer of the approval",
@@ -2353,6 +2365,12 @@
    "check": "identity.principals",
    "meaning": "approvals are pinned but the principals block names no approver",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_approver"
+  },
+  {
+   "code": "principals_need_every_approver",
+   "check": "identity.principals",
+   "meaning": "an autonomous block names some, not all, of the approvers the approval counts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_need_every_approver"
   },
   {
    "code": "principals_need_session",

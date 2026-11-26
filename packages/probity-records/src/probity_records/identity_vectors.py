@@ -98,6 +98,28 @@ def base() -> dict[str, Any]:
             "approvers": ["bob@example.com"], "tokens": tokens, "jwks": jwks}
 
 
+def second_approver() -> tuple[dict[str, Any], str]:
+    """A second approver, ``carol@example.com``, signed in at the same issuer as ``bob@example.com``: her principal
+    and her escrowed ID token. ``base`` keeps one approver, so every vector before ``ID41`` keeps its bytes."""
+    priv = _key("probity-identity-vectors/issuer-key-1")
+    jwk = _jwk(priv, "k1")
+    claims = {"iss": ISSUER, "iat": IAT, "exp": EXP, "jti": "jti-approver-2", "sub": "carol@example.com",
+              "client_id": "console", "aud": "console"}
+    token = _token(priv, "k1", claims, "JWT")
+    return _principal(token, dict(jwk), {"keys": [jwk]}, "id-token", claims), token
+
+
+def _approvers(v: dict[str, Any], *who: str, counted: tuple[str, ...] | None = ("bob@example.com", "carol@example.com"),
+               ) -> None:  # fmt: skip
+    """Name the approvers ``who`` (``bob`` or ``carol``) as a list, with their tokens in the same order, and set the
+    approvals counted (None when no approval admitted the call)."""
+    carol, carol_token = second_approver()
+    own = {"bob": (v["principals"]["approver"], v["tokens"]["approver"]), "carol": (carol, carol_token)}
+    v["principals"]["approver"] = [copy.deepcopy(own[w][0]) for w in who]
+    v["tokens"]["approver"] = [own[w][1] for w in who]
+    v["approvers"] = None if counted is None else list(counted)
+
+
 def _mut(vid: str, description: str, fn) -> dict[str, Any]:
     v = base()
     fn(v)
@@ -202,6 +224,47 @@ def _autonomous_vectors() -> list[dict[str, Any]]:
     ]
 
 
+def _many_approver_vectors() -> list[dict[str, Any]]:
+    """``approver`` as a list of at least two principals: an approval two people gave, each a counted signer."""
+    def bad_thumbprint(v: dict[str, Any]) -> None:
+        _approvers(v, "bob", "carol")
+        v["principals"]["approver"][1]["keyThumbprint"] = "A" * 43
+
+    def not_an_object(v: dict[str, Any]) -> None:
+        _approvers(v, "bob", "carol")
+        v["principals"]["approver"][1] = "carol@example.com"
+
+    def autonomous(*who: str) -> Any:
+        """An autonomous block whose approval two people gave, naming ``who`` (one name: the single form)."""
+        def fn(v: dict[str, Any]) -> None:
+            b = base()
+            v["principals"]["approver"], v["tokens"]["approver"] = b["principals"]["approver"], b["tokens"]["approver"]
+            if len(who) > 1:
+                _approvers(v, *who)
+            else:
+                v["approvers"] = ["bob@example.com", "carol@example.com"]
+        return fn
+
+    return [
+        _mut("ID41", "two approvers, both counted signers of the approval, named as a list: strict",
+             lambda v: _approvers(v, "bob", "carol")),
+        _mut("ID42", "two approvals counted, the block names one approver: basic, approvers-partial",
+             lambda v: v.__setitem__("approvers", ["bob@example.com", "carol@example.com"])),
+        _mut("ID43", "an approver list names the same person twice", lambda v: _approvers(v, "bob", "bob")),
+        _mut("ID44", "an approver list of one: one approval takes the single form", lambda v: _approvers(v, "bob")),
+        _mut("ID45", "an approver list names a person whose approval was not counted",
+             lambda v: _approvers(v, "bob", "carol", counted=("bob@example.com",))),
+        _mut("ID46", "an approver list member whose thumbprint does not recompute from its key", bad_thumbprint),
+        _mut("ID47", "an approver list member that is not a principal object", not_an_object),
+        _mut("ID48", "an approver list when no approval admitted the call",
+             lambda v: _approvers(v, "bob", "carol", counted=None)),
+        _auto("ID49", "autonomous with both approvers its approval counted, named as a list",
+              autonomous("bob", "carol")),
+        _auto("ID50", "autonomous names one of the two approvers its approval counted", autonomous("bob")),
+        _mut("ID51", "an empty approver list", lambda v: _approvers(v)),
+    ]
+
+
 def _bearer_agent(v: dict[str, Any]) -> None:
     priv, jwk = _key("probity-identity-vectors/issuer-key-1"), v["jwks"]["keys"][0]
     claims = {"iss": ISSUER, "iat": IAT, "exp": EXP, "jti": "jti-agent", "sub": "agent-refunds",
@@ -264,6 +327,7 @@ def vectors() -> list[dict[str, Any]]:
         _mut("ID40", "an approval admitted the call and the block does not name the approver: basic",
              lambda v: v["principals"].pop("approver")),
     ]
+    out += _many_approver_vectors()
     for v in out:
         approvers = None if v["approvers"] is None else set(v["approvers"])
         sponsors = v.get("sponsors")
@@ -272,13 +336,21 @@ def vectors() -> list[dict[str, Any]]:
                                            sponsors=None if sponsors is None else
                                            {a: frozenset(map(tuple, s)) for a, s in sponsors.items()},
                                            standing_grants=v.get("standingGrants"))  # fmt: skip
-        token_checks = {role: verify_token(p, v["tokens"][role], v["jwks"], at=v["at"])
+        token_checks = {role: _token_check(p, v["tokens"][role], v["jwks"], v["at"])
                         for role, p in v["principals"].items() if role in v["tokens"]}
         v["expected"] = {"problems": problems, "grade": grade,  # an autonomous block has no user: act-absent
                          "act": "act-chain" if "act" in v["principals"].get("user", {}) else "act-absent",
                          "possession": possession_grade(v["principals"]),
                          "tokens": token_checks}
     return copy.deepcopy(out)
+
+
+def _token_check(p: Any, token: Any, jwks: dict[str, Any], at: str) -> Any:
+    """``verify_token`` for one principal, or a list of its outcomes for an approver list (a member that is not an
+    object has no token to check: None)."""
+    if isinstance(p, list):
+        return [verify_token(m, t, jwks, at=at) if isinstance(m, dict) else None for m, t in zip(p, token, strict=True)]
+    return verify_token(p, token, jwks, at=at)
 
 
 def check(vs: list[dict[str, Any]]) -> list[str]:

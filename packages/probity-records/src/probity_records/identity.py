@@ -12,15 +12,22 @@ Refused: a missing or unknown member, a thumbprint that does not recompute from 
 mismatch, a credential not valid at the record's time, an issuer the auditor did not pin or a key
 whose thumbprint the auditor did not pin for that issuer, an ``act`` chain that names an agent other
 than the agent principal, and an approver principal who is not among the approvals the record counts.
+
+``approver`` is one principal when one person approved, or a list of at least two principals when an approval took
+several (an M-of-N quorum): each member a full principal, each a counted signer of the approval, no subject named
+twice (``principal_approver_duplicate``). A list of fewer than two is refused (``principal_approver_list_too_short``):
+one approval takes the single form, so one block has one spelling. A member that fails the principal checks is refused
+as ``principal_approver:<code>``, as the single form is. The list's order is the writer's; the verdict never depends on
+it, the digest of the block does (``digests.principals_digest`` hashes the block as recorded).
 An issuer's pins are a collection of thumbprints (a set, list or tuple); a pin written as one string is
 refused rather than searched, so a string that merely contains a thumbprint pins nothing.
 
 Graded, never refused, on delegation: ``act-chain`` when the user's credential names the agent in
 ``act``, ``act-absent`` when it carries no ``act``. ``strict`` conformance needs the user, the agent and the
-sponsor, ``act-chain``, and the approver exactly when an approval admitted the call: a call no human approved is
-strict without one, and an approved call is strict only with its approver named. An approver principal no approval
-counts is refused (``principal_approver_without_approval``) under every profile: it states that a person approved
-when none did. Anything else that passes is ``basic`` (``strict_shortfall`` names what it lacks). An auditor may
+sponsor, ``act-chain``, and the approvers exactly when an approval admitted the call: a call no human approved is
+strict without one, and an approved call is strict only with every approver the approval counts named
+(``approvers-partial`` when the block names some of them). An approver principal no approval counts is refused
+(``principal_approver_without_approval``) under every profile: it states that a person approved when none did. Anything else that passes is ``basic`` (``strict_shortfall`` names what it lacks). An auditor may
 require ``strict``.
 
 Autonomous: an agent that runs with no person in its session. Its block carries no ``user``; it carries the agent,
@@ -28,8 +35,9 @@ the ``sponsor`` who answers for it, the digest of its standing grant (``standing
 that sponsor and a review date, ``grants.py``) and its ``session`` ({"id", "startedAt"}). ``check_principals`` grades
 it ``autonomous`` when the standing grant is one the verifier resolved from content it verified against its own
 pinned grant roots, is inside its window and before its review date, is held by the agent's confirmed key (``cnf``)
-and names this sponsor; the sponsor is registered for this agent in the registry the auditor pins; and the approver
-is present exactly when an approval admitted the call. The sponsor's credential is checked at the grant's
+and names this sponsor; the sponsor is registered for this agent in the registry the auditor pins; and the approvers
+are named exactly when an approval admitted the call, every one it counts (``principals_need_every_approver`` when the
+block names some of them: an autonomous block has no basic grade to fall to). The sponsor's credential is checked at the grant's
 ``notBefore``, the moment the sponsor answered for it, never per call. A ``user`` in such a block is refused
 (``principals_autonomous_has_user``): an autonomous block never carries a person's token. ``autonomous`` is
 strict-equivalent: an auditor that requires ``strict`` accepts it.
@@ -76,6 +84,8 @@ TYP_SOURCES = {"oauth-id-jag+jwt": "id-jag", "at+jwt": "jwt-access-token"}
 #: The containers an issuer's pinned thumbprints may come in; a string is never one (``in`` would search it).
 PIN_SETS = (set, frozenset, list, tuple)
 THUMBPRINT_MEMBERS = {"RSA": ("e", "kty", "n"), "EC": ("crv", "kty", "x", "y"), "OKP": ("crv", "kty", "x")}
+#: The fewest principals an approver list holds: one approval takes the single form.
+APPROVER_LIST_MIN = 2
 
 
 def b64url(data: bytes) -> str:
@@ -171,6 +181,35 @@ def check_principal(p: Any, at: str, pins: Mapping[str, Any]) -> str | None:
     return None
 
 
+def approver_principals(block: Mapping[str, Any]) -> list[Any]:
+    """The approver principals a block names, in the writer's order: none, the single form's one, or a list's
+    members."""
+    named = block.get("approver")
+    if named is None:
+        return []
+    return list(named) if isinstance(named, list) else [named]
+
+
+def approver_subjects(block: Mapping[str, Any]) -> set[str]:
+    """The subjects of the approvers a block names (call only on a block whose approvers passed their checks)."""
+    return {p["subject"] for p in approver_principals(block)}
+
+
+def _role_problems(block: Mapping[str, Any], role: str, at: str, pins: Mapping[str, Any]) -> list[str]:
+    """``principal_<role>:<code>`` for each principal of ``role`` that fails the principal checks, the approver list's
+    own refusals (too short, a subject twice), or nothing."""
+    if role == "approver" and isinstance(block["approver"], list):
+        members = block["approver"]
+        if len(members) < APPROVER_LIST_MIN:
+            return ["principal_approver_list_too_short"]
+        found = [f"principal_approver:{prob}" for m in members for prob in [check_principal(m, at, pins)] if prob]
+        if found:
+            return found
+        return ["principal_approver_duplicate"] if len({m["subject"] for m in members}) != len(members) else []
+    prob = check_principal(block[role], at, pins)
+    return [f"principal_{role}:{prob}"] if prob else []
+
+
 def sponsor_id(issuer: str, subject: str) -> str:
     """The id a sponsor goes by in the revocation list (kind ``sponsor``): ``<issuer>#<subject>``. An issuer is an
     https URL with no fragment (OpenID Connect Discovery 1.0, section 3), so the first ``#`` splits it
@@ -237,9 +276,7 @@ def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], a
     grant = standing_grants.get(block["standingGrant"]) if isinstance(block["standingGrant"], str) else None
     for role in ("agent", "approver"):
         if role in block:
-            prob = check_principal(block[role], at, pins)
-            if prob:
-                problems.append(f"principal_{role}:{prob}")
+            problems += _role_problems(block, role, at, pins)
     # The sponsor answered for the grant when it was issued: with no resolved grant there is no such instant, and
     # the grant's own refusal below is the reason the block falls.
     prob = None if grant is None or "notBefore" not in grant else check_principal(block["sponsor"],
@@ -257,12 +294,15 @@ def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], a
         problems.append("principals_sponsors_not_pinned")
     elif (sponsor["issuer"], sponsor["subject"]) not in {tuple(s) for s in sponsors.get(agent["clientId"], ())}:
         problems.append("principal_sponsor_not_registered")
+    named = approver_subjects(block)
     if "approver" in block and approvers is None:
         problems.append("principal_approver_without_approval")
     elif approvers is not None and "approver" not in block:
         problems.append("principals_need_approver")
-    elif "approver" in block and approvers is not None and block["approver"]["subject"] not in approvers:
+    elif "approver" in block and approvers is not None and not named <= approvers:
         problems.append("principal_approver_not_an_approval_signer")
+    elif approvers is not None and not approvers <= named:
+        problems.append("principals_need_every_approver")
     return (problems, None) if problems else ([], "autonomous")
 
 
@@ -279,8 +319,7 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: se
         return ["principals_malformed"], None
     if set(block) & set(AUTONOMOUS):
         return _check_autonomous(block, at, pins, approvers, sponsors, standing_grants or {})
-    problems = [f"principal_{role}:{prob}" for role in ROLES if role in block
-                for prob in [check_principal(block[role], at, pins)] if prob]
+    problems = [found for role in ROLES if role in block for found in _role_problems(block, role, at, pins)]
     if "user" not in block or "agent" not in block:
         problems.append("principals_need_user_and_agent")
     if problems:
@@ -292,21 +331,24 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: se
     if "approver" in block:
         if not approvers:
             return ["principal_approver_without_approval"], None
-        if block["approver"]["subject"] not in approvers:
+        if not approver_subjects(block) <= approvers:
             return ["principal_approver_not_an_approval_signer"], None
     return [], "basic" if strict_shortfall(block, approvers) else "strict"
 
 
 def strict_shortfall(block: Mapping[str, Any], approvers: set[str] | None) -> str | None:
     """What keeps a human-session block that passed from ``strict``: ``act-absent`` (the user credential names no
-    agent in ``act``), ``sponsor-absent``, or ``approver-absent`` (an approval admitted the call and the block does not
-    name who gave it); None when it is strict. The gateway writer applies the same rule."""
+    agent in ``act``), ``sponsor-absent``, ``approver-absent`` (an approval admitted the call and the block does not
+    name who gave it), or ``approvers-partial`` (it names some of the approvers the approval counts, not all); None
+    when it is strict. The gateway writer applies the same rule."""
     if "act" not in block.get("user", {}):
         return "act-absent"
     if "sponsor" not in block:
         return "sponsor-absent"
     if approvers and "approver" not in block:
         return "approver-absent"
+    if approvers and not approvers <= approver_subjects(block):
+        return "approvers-partial"
     return None
 
 
