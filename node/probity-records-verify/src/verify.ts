@@ -1443,13 +1443,13 @@ const RECONCILED_RETRY = "reconciled_absent_retry";
 // who its approver principal may name, null when no approval admitted the call; counted is who the approval counted.
 // An allow's two are one set; a deny counts nobody, so its counted is empty.
 type Approvers = [Set<string> | null, Set<string> | null];
-const same = (s: Set<string> | null): Approvers => [s, s];
+const sameSet = (s: Set<string> | null): Approvers => [s, s];
 function checkApproval(pred: J, problems: string[], where: string, trust: TrustDoc | null): Approvers {
   if (pred.decision === "allow") {
     const before = problems.length;
     if (checkAuthority(pred, trust, problems, where)) {
       const votes = voteSigners(pred);
-      return same(problems.length === before && votes.size ? votes : null);
+      return sameSet(problems.length === before && votes.size ? votes : null);
     }
   }
   const bindings: J[] = pred.approvalBindings ?? [];
@@ -1476,7 +1476,7 @@ function checkApproval(pred: J, problems: string[], where: string, trust: TrustD
   problems.push(...sigProblems.map((p) => `${where}:${p}`));
   const counted = [...signed].filter((a) => readerAllowed.has(a));
   if (counted.length < policy.threshold) problems.push(`${where}:approvals_below_threshold:${counted.length}:${policy.threshold}`);
-  return same(counted.length ? new Set(counted) : null);
+  return sameSet(counted.length ? new Set(counted) : null);
 }
 
 function checkEffect(pred: J, problems: string[], where: string): void {

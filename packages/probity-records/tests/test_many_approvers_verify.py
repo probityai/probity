@@ -18,7 +18,7 @@ from probity_records.erasure_vectors import KEYS, LEAF, SCHEMA, record
 from probity_records.identity_vectors import base, second_approver
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-import gen_shared_vectors as g  # noqa: E402
+import gen_shared_vectors as g
 
 FULL = base()["principals"]
 CAROL = second_approver()[0]

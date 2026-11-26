@@ -78,6 +78,11 @@ EXPECTED = {
     "ID49": ([], "autonomous"),
     "ID50": (["principals_need_every_approver"], None),
     "ID51": (["principal_approver_list_too_short"], None),
+    # a deny counts nobody; the approver list is a set
+    "ID52": ([], "strict"),
+    "ID53": ([], "strict"),
+    "ID54": ([], "autonomous"),
+    "ID55": ([], "strict"),
 }
 #: The vectors whose escrowed tokens are refused, by role (every other token verifies).
 TOKEN_REFUSALS = {"ID36": {"user": "token_type_mismatch:id-jag"}, "ID37": {"agent": "token_not_yet_valid"}}
