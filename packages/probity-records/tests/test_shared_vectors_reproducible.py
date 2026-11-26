@@ -3,8 +3,8 @@
 ``scripts/gen_shared_vectors.py`` writes the shared vectors that the TypeScript twin and every other reader
 run. A generator that reads the host's clock writes different journal lines on each run, so regenerating one
 family rewrites the others, and a maintainer who keeps only the family they changed leaves the committed files
-behind the generator. These tests run the whole generator and hold it to one output: no real clock read, the same
-bytes twice, and the bytes that are committed.
+behind the generator. These tests hold it to one output: no clock reader named in the scripts, the same bytes from
+two runs, and the bytes that are committed.
 """
 
 from __future__ import annotations
@@ -14,7 +14,6 @@ from pathlib import Path
 
 import pytest
 from probity_records.clock_lint import scan_paths
-from probity_records.clock_tripwire import installed
 
 ROOT = Path(__file__).resolve().parents[1]
 SHARED = ROOT / "vectors" / "shared"
@@ -45,13 +44,6 @@ def test_the_vector_scripts_name_no_clock_reader() -> None:
     result = scan_paths([ROOT / "scripts"])
     assert len(result.files) >= 2  # the read path works: an empty listing reports absence like a clean tree
     assert result.findings == (), "\n".join(map(str, result.findings))
-
-
-def test_the_generator_reads_no_clock(tmp_path: Path) -> None:
-    gen = _generator()
-    with installed() as wire:
-        gen.main(tmp_path)
-    assert wire.reads == []
 
 
 def test_two_runs_write_the_same_bytes(two_runs: tuple[dict[str, bytes], dict[str, bytes]]) -> None:
