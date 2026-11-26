@@ -20,7 +20,9 @@ SHARED = ROOT / "vectors" / "shared"
 
 
 def _generator():
-    spec = importlib.util.spec_from_file_location("gen_shared_vectors", ROOT / "scripts" / "gen_shared_vectors.py")
+    spec = importlib.util.spec_from_file_location(
+        "gen_shared_vectors", ROOT / "scripts" / "gen_shared_vectors.py"
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -32,7 +34,9 @@ def _files(directory: Path) -> dict[str, bytes]:
 
 
 @pytest.fixture(scope="module")
-def two_runs(tmp_path_factory: pytest.TempPathFactory) -> tuple[dict[str, bytes], dict[str, bytes]]:
+def two_runs(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[dict[str, bytes], dict[str, bytes]]:
     gen = _generator()
     first, second = tmp_path_factory.mktemp("first"), tmp_path_factory.mktemp("second")
     gen.main(first)
@@ -42,17 +46,25 @@ def two_runs(tmp_path_factory: pytest.TempPathFactory) -> tuple[dict[str, bytes]
 
 def test_the_vector_scripts_name_no_clock_reader() -> None:
     result = scan_paths([ROOT / "scripts"])
-    assert len(result.files) >= 2  # the read path works: an empty listing reports absence like a clean tree
+    assert (
+        len(result.files) >= 2
+    )  # the read path works: an empty listing reports absence like a clean tree
     assert result.findings == (), "\n".join(map(str, result.findings))
 
 
-def test_two_runs_write_the_same_bytes(two_runs: tuple[dict[str, bytes], dict[str, bytes]]) -> None:
+def test_two_runs_write_the_same_bytes(
+    two_runs: tuple[dict[str, bytes], dict[str, bytes]],
+) -> None:
     first, second = two_runs
     assert sorted(first) == sorted(second)
     assert [name for name in first if first[name] != second[name]] == []
 
 
-def test_every_committed_file_is_the_generators_output(two_runs: tuple[dict[str, bytes], dict[str, bytes]]) -> None:
+def test_every_committed_file_is_the_generators_output(
+    two_runs: tuple[dict[str, bytes], dict[str, bytes]],
+) -> None:
     written, committed = two_runs[0], _files(SHARED)
-    assert len(written) >= 19  # every family the generator writes; other tools write the rest of the directory
+    assert (
+        len(written) >= 19
+    )  # every family the generator writes; other tools write the rest of the directory
     assert [name for name in written if committed.get(name) != written[name]] == []
