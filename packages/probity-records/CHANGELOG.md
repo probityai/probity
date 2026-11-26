@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.0 (2026-11-26)
+
+- **The C2SP note verifier agrees with the reference on three cases; two of them refuse input it accepted before.**
+  A cosignature dated more than `max_skew` seconds after the verifier's clock (`verify_note` with `now`) is now skipped
+  instead of rejecting the whole note, so a witness whose clock runs ahead neither vetoes a quorum the other
+  witnesses meet nor completes one; before, `verify_note` raised `NoteError`. `parse_policy` now refuses any control
+  character other than tab and newline (`NoteError`); before, such a policy parsed. `cosignature_message` now refuses a
+  timestamp outside `0..2**63-1` (`NoteError`); before, it encoded any integer. `verify_line` is now public (it was
+  `_verify_line`): it checks one signature line against one known key. Minor, not patch, because a policy or a
+  timestamp that verified before is now refused. No wire format or shared vector changes.
+
 ## 0.11.1 (2026-11-26)
 
 - **A writer killed mid-append no longer leaves a journal that cannot be read or appended to.** An append is durable
