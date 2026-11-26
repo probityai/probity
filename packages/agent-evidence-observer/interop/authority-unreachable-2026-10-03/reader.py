@@ -9,8 +9,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from probity_observer.crypto import VerificationError, digest, strict_loads
 from probity_observer import retained_grants
+from probity_observer.crypto import VerificationError, digest, strict_loads
 from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     DOMAIN,
