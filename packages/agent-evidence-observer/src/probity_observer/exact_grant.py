@@ -1,6 +1,6 @@
 """An exact request as a capability grant, and the permit that presents it.
 
-The one grant model (probity-records ``docs/one-name-ruling.md`` section 3): an exact request is a
+The one grant model (probity-records ``docs/one-name.md`` section 3): an exact request is a
 ``probity_records`` capability grant whose one tool fixes every argument with an ``exact`` constraint and whose
 context fixes the run, attempt, request, tenant and principal, presented with a permit for the call. Its window is
 inclusive at both ends, as every capability-grant verifier reads it, so the observer and the records verifiers give

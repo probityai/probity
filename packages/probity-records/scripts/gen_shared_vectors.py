@@ -75,6 +75,7 @@ from probity_records.identity_vectors import (
 )
 from probity_records.identity_vectors import base as identity_base
 from probity_records.identity_vectors import vectors as identity_vectors
+from probity_records.journal import GAP_TYPE, JOURNAL_SUBJECT, TORN_TAIL_TYPE
 from probity_records.possession import cnf_for_signer
 from probity_records.quorum import (
     approval_policy,
@@ -319,16 +320,18 @@ RELEASE = {"releaseId": "r1", "lookup": "ok", "graceSeconds": 300, "firstServedA
 
 def binding(signer: Signer, who: str, *, payload: dict | None = None, consumed: tuple = (), approval: dict | None = None,
             use: dict | None = None, record: dict | None = None, trusted_key: str | None = None,
-            release: dict | None = None, payload_file: str | None = None) -> dict:
+            release: dict | None = None, payload_file: str | None = None, issued: tuple = ("appr-0", "appr-1"),
+            enforcement: str = "enforce") -> dict:
     approval_body = {"approvalId": "appr-1", "approver": who, "event": "tools/call", "expiresAt": "2099-01-01T00:00:00Z",
-                     "issuedAt": "2026-01-01T00:00:00Z", "keyId": signer.key_id, "payloadSha256": args_sha256(AARGS),
-                     "phase": "pre-execution", "principal": "customer:alice", "target": "acct-alice",
-                     "tool": "refund_payment", **(approval or {})}
+                     "issuedAt": "2026-01-01T00:00:00Z", "keyId": signer.key_id, "outcome": "approved",
+                     "payloadSha256": args_sha256(AARGS), "phase": "pre-execution", "principal": "customer:alice",
+                     "requestId": "req-1", "target": "acct-alice", "tool": "refund_payment", **(approval or {})}
     use_body = {k: approval_body[k] for k in ("approvalId", "event", "phase", "principal", "target", "tool")}
     use_body["usedAt"] = "2026-06-01T00:00:00Z"
     use_body.update(use or {})
     rec, raw = build_approval_binding(approval_body, use_body, jcs(payload if payload is not None else AARGS), list(consumed),
-                                      {who: trusted_key or signer.key_id}, "2026-06-01T00:00:00Z", release or RELEASE)
+                                      {who: trusted_key or signer.key_id}, "2026-06-01T00:00:00Z", release or RELEASE,
+                                      issued=list(issued), enforcement=enforcement)
     rec.update(record or {})
     if payload_file is not None:
         rec["use"]["payloadFile"] = payload_file
@@ -356,7 +359,7 @@ def approval_rows() -> list[tuple[str, str, object]]:
     old = {"approvalId": "appr-0", "approver": WHO["ops"], "event": "tools/call", "expiresAt": "2099-01-01T00:00:00Z",
            "issuedAt": "2026-01-01T00:00:00Z", "keyId": OPS.key_id, "payloadSha256": args_sha256(AARGS),
            "phase": "pre-execution", "principal": "customer:alice", "target": "acct-alice", "tool": "refund_payment",
-           "decisionId": "d0"}
+           "decisionId": "d0", "outcome": "approved", "requestId": "req-0"}
     return [
         ("AV1", "one approval under a 1-of-1 policy", lambda d: approval_case(d, [ops()])),
         ("AV2", "two distinct approvers under a 2-of-2 policy", lambda d: approval_case(d, [ops(), lead()], **two)),
@@ -413,7 +416,33 @@ def approval_rows() -> list[tuple[str, str, object]]:
          lambda d: approval_case(d, [ops(record={"contractId": "https://example.invalid/other"})])),
         ("AV28", "the approving principal is not the user who made the call",
          lambda d: approval_case(d, [ops(use={"principal": "customer:mallory"})])),
+        ("AV29", "an approval the server never issued, presented by the client",
+         lambda d: approval_case(d, [ops(issued=("appr-0",))])),
+        ("AV30", "a refused request recorded as an allow", lambda d: approval_case(d, [ops(approval={"outcome": "denied"})])),
+        ("AV31", "an approval with corrections binds the corrected payload",
+         lambda d: approval_case(d, [ops(approval={"outcome": "approved-with-corrections",
+                                                   "requestedPayloadSha256": args_sha256({**AARGS, "amount_cents": 9000})})])),
+        ("AV32", "an approval gathered while the gate only observed", lambda d: approval_case(d, [ops(enforcement="observe")])),
+        ("AV33", "an approval gathered in monitor mode, recorded as a deny with the reader's reason",
+         lambda d: approval_case(d, [ops(enforcement="monitor")], decision="deny", reason="approval_not_enforced")),
+        ("AV34", "one request answered twice under two approval identifiers",
+         lambda d: approval_case(d, [ops(record={"presentedApprovals": [
+             approval_body_of(ops()), {**approval_body_of(ops()), "approvalId": "appr-2"}]})])),
+        ("AV35", "the embedded record lost the approval's request identifier",
+         lambda d: approval_case(d, [ops(record={"approval": approval_body_of(ops(), drop="requestId"),
+                                                 "presentedApprovals": [approval_body_of(ops(), drop="requestId")]})])),
+        ("AV36", "the approver key was retired before the approval was issued",
+         lambda d: approval_case(d, [ops(trusted_key="ff" * 32, record={"retiredKeys": {WHO["ops"]: [
+             {"keyId": OPS.key_id, "retiredAt": "2025-12-31T00:00:00Z"}]}})])),
+        ("AV37", "the approval was issued under the approver's previous key before its retirement",
+         lambda d: approval_case(d, [ops(trusted_key="ff" * 32, record={"retiredKeys": {WHO["ops"]: [
+             {"keyId": OPS.key_id, "retiredAt": "2026-02-01T00:00:00Z"}]}})])),
     ]
+
+
+def approval_body_of(embedded: dict, drop: str | None = None) -> dict:
+    """The approval body an embedded binding carries, without the member ``drop``."""
+    return {k: v for k, v in embedded["record"]["approval"].items() if k != drop}
 
 
 E_ARGS = {"amount_cents": 1200, "customer_id": "bob"}
@@ -856,6 +885,49 @@ def identity_rows() -> list[tuple[str, str, object]]:
     ]
 
 
+LOSS_STEP = "https://example.test/step"
+
+
+def loss_case(directory: Path, *, torn: bytes = b"", forged: tuple[str, dict] | None = None,
+              gap: dict | None = None) -> Journal:
+    """Two steps, then the loss a case names: a gap the producer states, torn bytes the next writer cuts with a signed
+    torn-tail line, or a loss line of a forged shape; then one more step."""
+    j = Journal(directory, GATE, clock=recording_clock())
+    for n in (1, 2):
+        j.append(LOSS_STEP, f"step-{n}", "ab" * 32, {"n": n})
+    if gap is not None:
+        j.gap(**gap)
+    if forged is not None:
+        j.append(forged[0], JOURNAL_SUBJECT, "00" * 32, forged[1])
+    if torn:
+        j.path.write_bytes(j.path.read_bytes() + torn)
+        j = Journal(directory, GATE, clock=recording_clock())  # the restarted writer
+    j.append(LOSS_STEP, "step-3", "ab" * 32, {"n": 3})
+    return j
+
+
+def loss_rows() -> list[tuple[str, str, object]]:
+    torn = {"afterSeq": 2, "bytes": 5, "tornSha256": "ab" * 32}
+    return [
+        ("LV1", "a gap line the producer signed between two steps: the journal holds, with the loss stated",
+         lambda d: loss_case(d, gap={"dropped": 3, "after_seq": 2, "reason": "ring_overflow"})),
+        ("LV2", "a restarted writer cut a torn last line and signed a torn-tail line before its next step",
+         lambda d: loss_case(d, torn=b'{"payload":"eyJ')),
+        ("LV3", "a gap line whose dropped count is a string", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": "five", "reason": "ring_overflow"}))),
+        ("LV4", "a gap line with a member the format does not define", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1, "reason": "ring_overflow", "note": "x"}))),
+        ("LV5", "a gap line whose dropped count is the number 1.0", lambda d: loss_case(
+            d, forged=(GAP_TYPE, {"afterSeq": 2, "dropped": 1.0, "reason": "ring_overflow"}))),
+        ("LV6", "a torn-tail line that places the loss at its own line", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "afterSeq": 3}))),
+        ("LV7", "a torn-tail line whose digest is upper-case hex", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "tornSha256": "AB" * 32}))),
+        ("LV8", "a torn-tail line that removed no bytes", lambda d: loss_case(
+            d, forged=(TORN_TAIL_TYPE, {**torn, "bytes": 0}))),
+    ]
+
+
 def trust_doc() -> dict:
     return {"grantRootKeyIds": [ROOT.key_id], "quorumPolicies": {"pay": POLICY, **APOL}}
 
@@ -931,6 +1003,7 @@ def main(out: Path) -> None:
     cases["approvals"] = approval_rows()
     cases["identities"] = identity_rows()
     cases["effects"] = effect_rows()
+    cases["loss"] = loss_rows()
     trust = Trust(grant_root_key_ids=frozenset({ROOT.key_id}), quorum_policies={"pay": POLICY, **APOL})
     family_trust = {"autonomous": autonomous_trust(), "identities": identity_trust()}
     for family, rows in cases.items():

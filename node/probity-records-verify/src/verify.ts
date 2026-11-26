@@ -7,8 +7,8 @@
 // deputies) and the four-principal identity block. Failure codes are the Python verifier's,
 // character for character; test/shared.test.ts holds the two to the shared vectors.
 //
-// The two published per-record readers are ported too: approval-binding/v1 (the sixteen ordered
-// checks of agent_evidence_vectors.approvalbinding, with the M-of-N recount under the quorum policy
+// The two published per-record readers are ported too: approval-binding/v1 (the twenty-two ordered
+// checks of agent_evidence_vectors.approvalbinding 0.38, with the M-of-N recount under the quorum policy
 // the auditor pinned) and uncertain_effect/v1 (the thirteen ordered checks of agent-evidence-verify's
 // built-in adapter). A governance-step record is still reported as not ported, never passed.
 
@@ -22,6 +22,10 @@ export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } 
 export const TOOL_CALL_RECORD = identifier("agent-evidence-vectors/predicate/v1/tool-call-record");
 /** True when a signed body names the tool-call-record predicate under either recognised host spelling. */
 const isToolCall = (body: J): boolean => sameIdentifier(body.predicateType, TOOL_CALL_RECORD);
+/** A producer's signed statement that `dropped` records it made never reached the journal, after line `afterSeq`. */
+export const GAP_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-gap");
+/** A writer's signed statement that it removed a torn last line (`bytes` long, `tornSha256`) after `afterSeq`. */
+export const TORN_TAIL_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-torn-tail");
 const IN_TOTO = "application/vnd.in-toto+json";
 const GRANT_DOMAIN = "probity-grant-v1\u0000";
 const VOTE_DOMAIN = "probity-quorum-vote-v1\u0000";
@@ -1091,12 +1095,18 @@ function voteSigners(pred: J): Set<string> {
 // ---------- approval-binding/v1 reader ----------
 
 const APPROVAL_BINDING_CONTRACT = identifier("agent-evidence-vectors/contract/approval-binding/v1");
-const APPROVAL_CHECKS = ["contract_id_missing", "contract_id_unknown", "approval_not_cited", "approval_id_ambiguous",
-  "approval_replayed", "approval_superseded", "renewal_transition_missing", "renewal_binding_invalid", "key_not_bound",
-  "principal_mismatch", "event_phase_mismatch", "payload_mismatch", "approval_outside_validity", "effect_already_closed",
-  "comparison_unavailable", "release_not_served_at_decision"] as const;
+const APPROVAL_CHECKS = ["contract_id_missing", "contract_id_unknown", "approval_not_cited", "approval_not_issued",
+  "approval_id_ambiguous", "approval_request_completed_twice", "approval_not_granted", "approval_not_enforced",
+  "approval_replayed", "transition_status_unknown", "approval_superseded", "renewal_transition_missing",
+  "renewal_binding_invalid", "key_not_bound", "key_retired", "principal_mismatch", "event_phase_mismatch",
+  "payload_mismatch", "approval_outside_validity", "effect_already_closed", "comparison_unavailable",
+  "release_not_served_at_decision"] as const;
 const BOUND_FIELDS = ["event", "payloadSha256", "phase", "principal", "target", "tool"];
 const CLOSED_EFFECT_STATES = ["CONSUMED", "UNCERTAIN_CLOSE"];
+const GRANTS = ["approved", "approved-with-corrections"];
+const TRANSITION_STATUSES = ["proposed", "accepted"];
+/** The reason a record the reader cannot read is denied with (records.BINDING_MALFORMED). */
+export const BINDING_MALFORMED = "approval_binding_malformed";
 
 /** Python's `==` on parsed JSON: 1 == 1.0 == True, dicts by members, lists by position. */
 function pyEq(a: J, b: J): boolean {
@@ -1122,10 +1132,40 @@ function req(obj: J, key: string): J {
 }
 const getOr = (obj: J, key: string, dflt: J): J => (isObj(obj) && key in obj ? obj[key] : dflt);
 const instant = (text: J): number => ts(text);
+/** Python's `x in container` on parsed JSON: a list by `==`, a string by substring, an object by key; a TypeError
+ *  where Python raises one (a non-string in a string, an unhashable key, a number or null container). */
+function pyIn(x: J, container: J): boolean {
+  if (Array.isArray(container)) return container.some((e: J) => pyEq(x, e));
+  if (typeof container === "string") { if (typeof x !== "string") throw new TypeError("in <string> needs a string"); return container.includes(x); }
+  if (isObj(container)) { if (Array.isArray(x) || isObj(x)) throw new TypeError("unhashable type"); return typeof x === "string" && Object.hasOwn(container, x); }
+  throw new TypeError("argument of this type is not iterable");
+}
+/** Python's `record.get(key, default)`: an AttributeError where the record is not an object. */
+function pyGet(obj: J, key: string, dflt: J): J {
+  if (!isObj(obj)) throw new TypeError("not a mapping");
+  return key in obj ? obj[key] : dflt;
+}
 
 function approvalAmbiguous(record: J): boolean {
   const approval = req(record, "approval");
   return getOr(record, "presentedApprovals", []).some((o: J) => pyEq(req(o, "approvalId"), req(approval, "approvalId")) && !pyEq(o, approval));
+}
+function requestCompletedTwice(record: J): boolean {
+  const approval = req(record, "approval");
+  return getOr(record, "presentedApprovals", []).some((o: J) => pyEq(req(o, "requestId"), req(approval, "requestId")) &&
+    !pyEq(req(o, "approvalId"), req(approval, "approvalId")));
+}
+function transitionStatusUnknown(record: J): boolean {
+  const id = req(req(record, "approval"), "approvalId");
+  return getOr(record, "transitions", []).some((t: J) => !TRANSITION_STATUSES.some((s) => pyEq(req(t, "status"), s)) &&
+    [req(t, "predecessorApprovalId"), req(t, "successorApprovalId")].some((x: J) => pyEq(id, x)));
+}
+/** The earliest instant any `retiredKeys` entry retires the approval's key, or null; every entry naming it is read. */
+function retiredAt(record: J): number | null {
+  const approval = req(record, "approval");
+  const entries = pyGet(pyGet(record, "retiredKeys", {}), String(req(approval, "approver")), []);
+  const instants = entries.filter((e: J) => pyEq(req(e, "keyId"), req(approval, "keyId"))).map((e: J) => instant(req(e, "retiredAt")));
+  return instants.length ? Math.min(...instants) : null;
 }
 function approvalSuperseded(record: J): boolean {
   const approval = req(record, "approval"), used = instant(req(req(record, "use"), "usedAt"));
@@ -1163,17 +1203,28 @@ function useMatchesApproval(record: J, used: Buffer): boolean {
 export function judgeApprovalBinding(record: J, payload: Buffer): { decision: string; reason: string } {
   const name = String(getOr(getOr(record, "use", {}), "payloadFile", "payload.bin"));
   if (name.includes("/") || ["", ".", ".."].includes(name)) return { decision: "deny", reason: "payload_file_unsafe" };
+  try { return approvalVerdict(record, payload); } catch { return { decision: "deny", reason: BINDING_MALFORMED }; }
+}
+
+function approvalVerdict(record: J, payload: Buffer): { decision: string; reason: string } {
   const approval = req(record, "approval"), use = req(record, "use");
   const failures: Record<string, () => boolean> = {
     contract_id_missing: () => !("contractId" in record),
     contract_id_unknown: () => !pyEq(canonicalIdentifier(getOr(record, "contractId", APPROVAL_BINDING_CONTRACT)), APPROVAL_BINDING_CONTRACT),
     approval_not_cited: () => !pyEq(getOr(use, "approvalId", null), req(approval, "approvalId")),
+    approval_not_issued: () => !pyIn(req(approval, "approvalId"), pyGet(record, "issuedApprovalIds", [])),
     approval_id_ambiguous: () => approvalAmbiguous(record),
-    approval_replayed: () => getOr(record, "consumedApprovalIds", []).some((x: J) => pyEq(x, req(approval, "approvalId"))),
+    approval_request_completed_twice: () => requestCompletedTwice(record),
+    approval_not_granted: () => !GRANTS.some((g) => pyEq(pyGet(approval, "outcome", null), g)),
+    approval_not_enforced: () => !pyEq(pyGet(record, "enforcement", null), "enforce"),
+    approval_replayed: () => pyIn(req(approval, "approvalId"), pyGet(record, "consumedApprovalIds", [])),
+    transition_status_unknown: () => transitionStatusUnknown(record),
     approval_superseded: () => approvalSuperseded(record),
     renewal_transition_missing: () => renewed(record) && acceptedInto(record).length === 0,
     renewal_binding_invalid: () => renewalInvalid(record),
-    key_not_bound: () => !pyEq(getOr(req(record, "trustedKeys"), String(req(approval, "approver")), null), req(approval, "keyId")),
+    key_not_bound: () => !pyEq(pyGet(req(record, "trustedKeys"), String(req(approval, "approver")), null), req(approval, "keyId")) &&
+      retiredAt(record) === null,
+    key_retired: () => { const r = retiredAt(record); return r !== null && instant(req(approval, "issuedAt")) >= r; },
     principal_mismatch: () => !pyEq(req(use, "principal"), req(approval, "principal")),
     event_phase_mismatch: () => !(pyEq(req(use, "event"), req(approval, "event")) && pyEq(req(use, "phase"), req(approval, "phase"))),
     payload_mismatch: () => !useMatchesApproval(record, payload),
@@ -1492,9 +1543,27 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
   if (isToolCall(body)) {
     problems.push(...approvalProblems);
     if (pred.phase === "effect") checkEffect(pred, problems, where);
-  } else if (!isToolCall(body) && pred.phase === undefined && body.predicateType?.endsWith("/governance-step"))
+  } else if (sameIdentifier(body.predicateType, GAP_TYPE) || sameIdentifier(body.predicateType, TORN_TAIL_TYPE))
+    problems.push(...lossProblems(body, i).map((p) => `${where}:${p}`));
+  else if (!isToolCall(body) && pred.phase === undefined && body.predicateType?.endsWith("/governance-step"))
     problems.push(`${where}:governance_step_not_ported`);
   return [body, problems];
+}
+
+// A gap or torn-tail line holds exactly its members: a count of at least one and a position before itself
+// (probity_records.journal._loss_problems).
+function lossProblems(body: J, line: number): string[] {
+  const pred = isObj(body.predicate) ? body.predicate : {};
+  const count = (key: string, low: number): boolean => isInt(pred, key, pred[key]) && pred[key] >= low;
+  const gap = sameIdentifier(body.predicateType, GAP_TYPE);
+  const members = gap ? ["afterSeq", "dropped", "reason", "at", "prev", "seq"] : ["afterSeq", "bytes", "tornSha256", "at", "prev", "seq"];
+  const shape = gap
+    ? count("dropped", 1) && typeof pred.reason === "string" && pred.reason !== ""
+    : count("bytes", 1) && typeof pred.tornSha256 === "string" && /^[0-9a-f]{64}$/.test(pred.tornSha256);
+  const keys = Object.keys(pred);
+  const exact = keys.length === members.length && members.every((m) => keys.includes(m));
+  if (!exact || !shape || !count("afterSeq", 0) || pred.afterSeq >= line) return [gap ? "journal_gap_invalid" : "journal_torn_tail_invalid"];
+  return [];
 }
 
 function spendOf(budget: J, args: J): number {
@@ -1565,6 +1634,25 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
 }
 
 export interface Report { verdict: string; records: number; verified: number; failures: string[]; checkpoint: string }
+
+// A journal file's records are its whole lines. Bytes after the last newline are an append a writer killed mid-write
+// never finished: not a record, and counted apart (probity_records.journal._whole_lines; the writer's next append
+// cuts them and writes a signed torn-tail line that says so). Pass `lines` to verifyJournal, or the file's text to
+// verifyJournalText.
+export function journalLines(text: string): { lines: string[]; tornTailBytes: number } {
+  const end = text.lastIndexOf("\n") + 1;
+  return { lines: text.slice(0, end).split("\n").slice(0, -1), tornTailBytes: Buffer.byteLength(text.slice(end), "utf8") };
+}
+
+// A journal file's text, verified as probity_records.journal.verify_journal does: torn bytes after the last newline are
+// not a record, are reported as tornTailBytes, and keep the verdict from PASS, because what the writer was writing
+// is not in the journal.
+export function verifyJournalText(text: string, publicPems: string[], checkpointEnv: J | null,
+                                  trust: TrustDoc | null): Report & { tornTailBytes: number } {
+  const { lines, tornTailBytes } = journalLines(text);
+  const report = verifyJournal(lines, publicPems, checkpointEnv, trust);
+  return { ...report, verdict: report.verdict === "PASS" && tornTailBytes > 0 ? "NOT_ESTABLISHED" : report.verdict, tornTailBytes };
+}
 
 export function verifyJournal(lines: string[], publicPems: string[], checkpointEnv: J | null, trust: TrustDoc | null): Report {
   const keys = publicPems.map((p) => createPublicKey(p));

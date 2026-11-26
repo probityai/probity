@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from probity_records import (
+    BINDING_MALFORMED,
     TOOL_CALL_RECORD,
     Journal,
     Signer,
@@ -34,20 +36,22 @@ ARGS = {"amount_cents": 4000, "customer_id": "alice", "payee_account": "acct-ali
 def _approval(signer: Signer, digest: str, who: str = "human:ops") -> dict:
     return {"approvalId": "appr-1", "approver": who, "event": "tools/call",
             "expiresAt": "2099-01-01T00:00:00Z", "issuedAt": "2026-01-01T00:00:00Z",
-            "keyId": signer.key_id, "payloadSha256": digest, "phase": "pre-execution",
-            "principal": "customer:alice", "target": "acct-alice", "tool": "refund_payment"}
+            "keyId": signer.key_id, "outcome": "approved", "payloadSha256": digest, "phase": "pre-execution",
+            "principal": "customer:alice", "requestId": "req-1", "target": "acct-alice", "tool": "refund_payment"}
 
 
-def _binding(approver: Signer, payload_args: dict, consumed: list[str],
-             who: str = "human:ops") -> tuple[dict, bytes]:
-    approval = _approval(approver, args_sha256(ARGS), who)
+def _binding(approver: Signer, payload_args: dict, consumed: list[str], who: str = "human:ops", *,
+             issued: tuple[str, ...] = ("appr-1",), enforcement: str = "enforce",
+             approval: dict | None = None) -> tuple[dict, bytes]:
+    approval = {**_approval(approver, args_sha256(ARGS), who), **(approval or {})}
     use = {k: approval[k] for k in ("approvalId", "event", "phase", "principal", "target", "tool")}
     use["usedAt"] = "2026-06-01T00:00:00Z"
     return build_approval_binding(approval, use, canonical(payload_args), consumed,
                                   {who: approver.key_id}, "2026-06-01T00:00:00Z",
                                   {"releaseId": "r1", "lookup": "ok", "graceSeconds": 300,
                                    "firstServedAt": "2026-01-01T00:00:00Z",
-                                   "lastServedAt": "2099-01-01T00:00:00Z"})
+                                   "lastServedAt": "2099-01-01T00:00:00Z"},
+                                  issued=issued, enforcement=enforcement)  # type: ignore[arg-type]
 
 
 def test_permit_id_is_stable_and_bound_to_each_input() -> None:
@@ -72,6 +76,55 @@ def test_approval_binding_reader_allows_bound_and_refuses_replay_and_mutation() 
     assert judge_approval_binding(*_binding(approver, ARGS, ["appr-1"]))["reason"] == "approval_replayed"
     mutated = {**ARGS, "amount_cents": 400000}
     assert judge_approval_binding(*_binding(approver, mutated, []))["reason"] == "payload_mismatch"
+
+
+def test_builder_writes_the_servers_registers_and_mode_never_a_default() -> None:
+    record, _ = _binding(Signer.generate(), ARGS, ["appr-0", "appr-0"], issued=("appr-2", "appr-1", "appr-1"))
+    assert record["issuedApprovalIds"] == ["appr-1", "appr-2"]
+    assert record["consumedApprovalIds"] == ["appr-0"]
+    assert record["enforcement"] == "enforce"
+    assert record["approval"]["outcome"] == "approved" and record["approval"]["requestId"] == "req-1"
+    # the builder never adds the presented approval to the server's register on the server's behalf
+    unissued, _ = _binding(Signer.generate(), ARGS, [], issued=())
+    assert unissued["issuedApprovalIds"] == []
+
+
+def test_approval_binding_reader_holds_issuance_outcome_and_mode() -> None:
+    approver = Signer.generate()
+    assert judge_approval_binding(*_binding(approver, ARGS, [], issued=("appr-0",)))["reason"] == "approval_not_issued"
+    assert judge_approval_binding(*_binding(approver, ARGS, [], issued=()))["reason"] == "approval_not_issued"
+    for outcome in ("denied", "rejected", None):
+        verdict = judge_approval_binding(*_binding(approver, ARGS, [], approval={"outcome": outcome}))
+        assert verdict == {"decision": "deny", "reason": "approval_not_granted"}, outcome
+    corrected = judge_approval_binding(*_binding(approver, ARGS, [], approval={"outcome": "approved-with-corrections"}))
+    assert corrected == {"decision": "allow", "reason": "bound"}
+    for mode in ("observe", "monitor"):
+        verdict = judge_approval_binding(*_binding(approver, ARGS, [], enforcement=mode))
+        assert verdict == {"decision": "deny", "reason": "approval_not_enforced"}, mode
+
+
+def test_builder_refuses_an_approval_without_a_request_or_an_unknown_mode() -> None:
+    approver = Signer.generate()
+    for request_id in (None, "", 7):
+        with pytest.raises(ValueError, match="^approval_request_id_missing$"):
+            _binding(approver, ARGS, [], approval={"requestId": request_id})
+    for mode in ("enforced", "", "ENFORCE", "observe-only"):
+        with pytest.raises(ValueError, match="^enforcement must be one of"):
+            _binding(approver, ARGS, [], enforcement=mode)
+    for issued in ("appr-1", ("appr-1", 1), ("",)):
+        with pytest.raises(ValueError, match="^issued must be a list of approval identifiers$"):
+            _binding(approver, ARGS, [], issued=issued)
+    with pytest.raises(ValueError, match="^consumed must be a list of approval identifiers$"):
+        _binding(approver, ARGS, "appr-0")  # type: ignore[arg-type]
+
+
+def test_a_record_the_reader_cannot_read_is_a_deny_not_an_exception() -> None:
+    record, payload = _binding(Signer.generate(), ARGS, [])
+    no_request = {**record, "approval": {k: v for k, v in record["approval"].items() if k != "requestId"},
+                  "presentedApprovals": [{k: v for k, v in record["approval"].items() if k != "requestId"}]}
+    for broken in (no_request, {**record, "approval": []}, {**record, "use": {**record["use"], "usedAt": "never"}},
+                   {k: v for k, v in record.items() if k != "policyRelease"}, {**record, "use": "x"}):
+        assert judge_approval_binding(broken, payload) == {"decision": "deny", "reason": BINDING_MALFORMED}
 
 
 def _effect(outcome: str, reply: str, owner_effects: int) -> dict:

@@ -3,7 +3,7 @@
 `probity_records.trust_bundle` reads the `anchors` member of a version 2 trust bundle
 ([verified-identities.md](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/verified-identities.md))
 and verifies a DSSE-signed in-toto statement under one. Why anchors live in the bundle, and not in a manifest of their
-own: [one-name-ruling.md](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/one-name-ruling.md).
+own: [one-name.md](https://github.com/probityai/probity/blob/main/packages/probity-records/docs/one-name.md).
 
 ```json
 {

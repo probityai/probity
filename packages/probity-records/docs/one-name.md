@@ -14,7 +14,7 @@ keeps an alias.
 not enforce `not_after` at all ("an expired anchor still verifies"), and an anchor's revocation reaches a verifier
 only in a new binary.
 
-**Ruling.** One document, the trust bundle, version 2. A version-2 bundle has the six version-1 members and a seventh,
+**Decision.** One document, the trust bundle, version 2. A version-2 bundle has the six version-1 members and a seventh,
 `anchors`; at least one of `issuers` and `anchors` is non-empty. There is no second "anchor manifest" and no version 1:
 a version-1 document is refused, and a service that pinned one adds `"anchors": []` and writes `2`. Each anchor is
 closed:
@@ -53,7 +53,7 @@ predates the anchor's window.
 nothing; a torn last line (a crash mid-write) is skipped by the writer and counted as a line by the verifier; a
 checkpoint names no run, so a journal and checkpoint of another run under the same key verify.
 
-**Ruling.** Two line kinds join the journal, each a signed statement in the same hash chain, with structural fields
+**Decision.** Two line kinds join the journal, each a signed statement in the same hash chain, with structural fields
 only (record envelope v2 `kept` class: counts, positions, a digest over our own bytes):
 
 - **gap** (`tool-call-journal-gap`, `Journal.gap`): `dropped` records the producer made and never wrote, lost after
@@ -69,7 +69,7 @@ none (`checkpoint_run_mismatch`). The verifier reports `dropped` (the sum of val
 and reads bytes after the last whole line as `tornTail`, never as a record, with the verdict held at `NOT_ESTABLISHED`.
 A journal with gaps can pass: its loss is signed and counted, so a reader sees how much is missing instead of reading a
 short journal as complete. The 100 signed checkpoints in the shared vectors and the TypeScript twin's journal verdicts
-are unchanged by this; the twin's reading of gap and torn-tail shapes and of `run` is listed for the twin-parity lane.
+are unchanged by this; the twin's reading of gap and torn-tail shapes and of `run` is not yet read by the twin.
 
 ## 3. One grant model
 
@@ -80,7 +80,7 @@ with `cnf`, then a per-call permit) admits a call at `notBefore <= at <= expires
 `grant_records` (profile `probity-protected-action-reference-v0`) signs one exact request with an issuer key and
 treats `expiresAt` as exclusive. At the instant `expiresAt` the two answer the same question differently.
 
-**Ruling.** The capability grant and its permit are the model. The observer record names one exact call, which is
+**Decision.** The capability grant and its permit are the model. The observer record names one exact call, which is
 what a permit is, so it is a permit that took the grant's name. It is deleted: an exact request is a capability grant
 whose one tool's arguments are each fixed by an `eq` constraint and whose context fixes the run, attempt and request
 ids, presented with a permit for the call. Every window is inclusive at both ends, as every records verifier already

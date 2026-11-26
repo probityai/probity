@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "probity-effects"
-version = "0.2.0"
+version = "0.2.2"
 description = "Keep one effect per agent tool call when its reply is lost: reconcile before resend, record the trail, test it in CI"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -31,7 +31,7 @@ Issues = "https://github.com/probityai/probity/issues"
 
 [project.optional-dependencies]
 # What a user installs to run the lost-reply scenarios against their own tools.
-testing = ["pytest>=8,<10", "agent-evidence-vectors~=0.32.1"]
+testing = ["pytest>=8,<10", "agent-evidence-vectors>=0.32.1,<1"]
 
 [project.entry-points.pytest11]
 probity_effects = "probity_effects.pytest_plugin"
@@ -42,7 +42,7 @@ probity_effects = "probity_effects.pytest_plugin"
 # This member's own tests: the frameworks the adapters drive, pinned to the versions measured.
 dev = [
     "pytest>=9.2.0,<10",
-    "agent-evidence-vectors~=0.32.1",
+    "agent-evidence-vectors>=0.32.1,<1",
     "langgraph==1.2.19",
     "openai-agents==0.24.0",
     "ag2==1.2.2",

@@ -29,6 +29,7 @@ import urllib.request
 import uuid
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from cryptography import x509
@@ -39,6 +40,7 @@ from cryptography.x509.oid import NameOID
 
 from .clock import Clock
 from .core import Signer, canonical, key_id, load_public, sha256_hex
+from .journal import _whole_lines
 
 INTEGRITY_PREFIX = "audit.integrity."
 VERIFICATION_PREFIX = "audit.verification."
@@ -385,18 +387,17 @@ def export_journal(stream: AuditStream, journal_path: os.PathLike[str] | str, *,
     """Emit one audit record per journal line, in journal order; returns the reveals kept back."""
     reveals: list[Reveal] = []
     wanted = set(redact_fields)
-    with open(journal_path, "rb") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            envelope = json.loads(line)
-            statement = json.loads(base64.b64decode(envelope["payload"]))
-            attrs = tool_call_attributes(line, statement, actor_id=actor_id)
-            pred = statement.get("predicate", {})
-            redact = {name: pred[key] for key, name in (("context", "probity.context"),)
-                      if name in wanted and pred.get(key)}
-            _, kept = stream.emit("probity.tool_call." + str(pred.get("phase", "record")), attrs, redact=redact)
-            reveals.extend(kept)
+    for body in _whole_lines(Path(journal_path))[0]:  # a torn tail from a writer killed mid-append is not a line
+        if not body.strip():
+            continue
+        envelope = json.loads(body)
+        statement = json.loads(base64.b64decode(envelope["payload"]))
+        attrs = tool_call_attributes(body, statement, actor_id=actor_id)
+        pred = statement.get("predicate", {})
+        redact = {name: pred[key] for key, name in (("context", "probity.context"),)
+                  if name in wanted and pred.get(key)}
+        _, kept = stream.emit("probity.tool_call." + str(pred.get("phase", "record")), attrs, redact=redact)
+        reveals.extend(kept)
     return reveals
 
 
