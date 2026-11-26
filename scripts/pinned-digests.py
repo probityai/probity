@@ -50,7 +50,7 @@ class Pin:
 
 def git_blob(raw: bytes) -> str:
     """The git object id of a blob with these bytes."""
-    return hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()  # noqa: S324
+    return hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
 
 
 def digest(kind: str, raw: bytes) -> str:

@@ -66,6 +66,10 @@ jobs:
         run: uv run --frozen --only-group dev ruff check .
       - name: workspace tools
         run: uv run --frozen --only-group dev python -m pytest tests
+      - name: every committed digest pin matches the file it names
+        run: python3 scripts/pinned-digests.py check
+      - name: every observer reader lock carries the observer's core requirements
+        run: uv run --frozen --only-group dev python packages/agent-evidence-observer/scripts/check-runtime-locks.py
       - name: every publish job has a tag the pypi environment allows
         env:
           GH_TOKEN: ${{ github.token }}
