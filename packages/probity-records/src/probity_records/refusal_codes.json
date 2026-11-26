@@ -3483,6 +3483,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_empty_root_required"
   },
   {
+   "code": "witness_lag_exceeded",
+   "check": "witness.protocol",
+   "meaning": "the journal has run further past its last witnessed size than the lag gate allows",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_lag_exceeded"
+  },
+  {
    "code": "witness_log_signature_invalid",
    "check": "witness.protocol",
    "meaning": "a signature from a trusted log key does not verify",

@@ -60,7 +60,7 @@ def test_torchwoods_verdict_on_every_other_note(entry: dict[str, object]) -> Non
 
 def test_an_ml_dsa_cosignature_covers_no_extension_line() -> None:
     assert "extension" in VECTORS["torchwood_refuses_to_sign"][0]
-    with pytest.raises(w.NoteError, match="extension"):
+    with pytest.raises(w.NoteError, match="^checkpoint_extensions_unsigned"):
         w.cosign_mldsa(f"{ORIGIN}\n7\n" + "A" * 43 + "=\nextension line\n", "w", MLDSA44PrivateKey.generate(), 1)
 
 
@@ -71,9 +71,9 @@ def test_a_line_of_one_type_never_verifies_under_the_other() -> None:
         w.verify_line(w.vkey("w", w.SIG_COSIGNATURE_V1, ed.public_key()), text, w.cosign_mldsa(text, "w", pq, 5))
     with pytest.raises(w.NoteError):
         w.verify_line(w.vkey("w", w.SIG_MLDSA44, pq.public_key()), text, w.cosign(text, "w", ed, 5))
-    with pytest.raises(w.NoteError, match="does not match"):
+    with pytest.raises(w.NoteError, match="^vkey_type_mismatch"):
         w.vkey("w", w.SIG_MLDSA44, ed.public_key())
-    with pytest.raises(w.NoteError, match="does not match"):
+    with pytest.raises(w.NoteError, match="^vkey_type_mismatch"):
         w.vkey("w", w.SIG_COSIGNATURE_V1, pq.public_key())
 
 
@@ -112,7 +112,7 @@ def test_a_tampered_ml_dsa_line_under_a_pinned_key_rejects_the_note() -> None:
     pq_line = parsed.sigs[2]
     flipped = w.SigLine(pq_line.name, pq_line.key_id, pq_line.sig[:-1] + bytes([pq_line.sig[-1] ^ 1]))
     tampered = w.Note(parsed.text, (*parsed.sigs[:2], flipped, parsed.sigs[3])).encode()
-    with pytest.raises(w.NoteError, match="does not verify"):
+    with pytest.raises(w.NoteError, match="^note_signature_invalid"):
         w.verify_note(tampered, w.parse_policy(policy_text), 1_800_000_000, 3600)
 
 
@@ -123,18 +123,18 @@ def test_the_log_ml_dsa_line_alone_authenticates_the_log_but_never_counts_as_a_w
     verified = w.verify_note(pq_only, w.parse_policy(policy_text), 1_800_000_000, 3600)
     assert verified.log_types == frozenset({w.SIG_MLDSA44}) and set(verified.cosigned_at) == {"pq", "ed"}
     without_pq_witness = w.Note(parsed.text, (parsed.sigs[0], parsed.sigs[1], parsed.sigs[3])).encode()
-    with pytest.raises(w.NoteError, match="witness_quorum_not_met"):
+    with pytest.raises(w.NoteError, match="^witness_quorum_not_met"):
         w.verify_note(without_pq_witness, w.parse_policy(policy_text), 1_800_000_000, 3600)
 
 
 def test_policy_types_by_role() -> None:
     ed = Ed25519PrivateKey.generate()
     pq = MLDSA44PrivateKey.generate()
-    with pytest.raises(w.NoteError, match="wrong type"):
+    with pytest.raises(w.NoteError, match="^policy_key_type"):
         w.parse_policy(f"witness a {w.vkey('a', w.SIG_ED25519, ed.public_key()).encode()}\nquorum a\n")
-    with pytest.raises(w.NoteError, match="wrong type"):
+    with pytest.raises(w.NoteError, match="^policy_key_type"):
         w.parse_policy(f"log {w.vkey(ORIGIN, w.SIG_COSIGNATURE_V1, ed.public_key()).encode()}\nquorum none\n")
     assert w.parse_policy(f"witness a {w.vkey('a', w.SIG_MLDSA44, pq.public_key()).encode()}\nquorum a\n")
     bad = base64.b64encode(bytes([w.SIG_MLDSA44]) + bytes(32)).decode()
-    with pytest.raises(w.NoteError, match="1312-byte"):
+    with pytest.raises(w.NoteError, match="^vkey_key_length:type 0x06 carries a 1312-byte key"):
         w.parse_vkey(f"a+00000000+{bad}")
