@@ -5,7 +5,7 @@ credentials (``issuers``) and the anchors that sign evidence (``anchors``). This
 a public Ed25519 key with a role, a status (``active``, ``retired``, ``revoked``), a window in which its signatures
 may have been made (``notBefore``, ``notAfter``) and the in-toto predicate types it may sign. The format and the
 reasons are in ``docs/trust-bundle.md``; the decision that made the anchor manifest and the bundle one document is
-``docs/one-name-ruling.md``.
+``docs/one-name.md``.
 
 The time a statement was signed is never read from the statement: the signer chose it. ``verify_anchored`` trusts
 only an upper bound a witness quorum gives, the latest cosignature time on a c2sp.org tlog checkpoint whose tree holds

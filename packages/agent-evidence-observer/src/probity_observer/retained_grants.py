@@ -1,7 +1,7 @@
 """The one pinned copy of the retired grant module, for readers of retained runs.
 
 Retained interop runs signed their grants and observer bindings under the old per-profile grant module
-(``probity-protected-action-reference-v0``). The ruling in probity-records ``docs/one-name-ruling.md`` section 3
+(``probity-protected-action-reference-v0``). The ruling in probity-records ``docs/one-name.md`` section 3
 keeps those runs verifiable against exactly the bytes they pinned and re-signs nothing: this module loads those
 bytes, refuses to load any others, and exposes the names the retained readers use. New records never use it;
 they use :mod:`probity_observer.exact_grant`.
