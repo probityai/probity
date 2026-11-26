@@ -10,7 +10,7 @@ import { bodyProblem, canonicalBytes, canonicalOfReceived, chainDigests, checkPr
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const load = (name: string) => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
 
-const JOURNAL_FAMILIES = ["grants", "autonomous", "quorum", "constraints", "approvals", "identities", "effects", "received"];
+const JOURNAL_FAMILIES = ["grants", "autonomous", "quorum", "constraints", "approvals", "identities", "effects", "received", "loss"];
 for (const family of JOURNAL_FAMILIES) {
   for (const v of load(`${family}.json`)) {
     test(`${v.id} ${v.description}`, () => {
