@@ -207,7 +207,10 @@ def _role_problems(block: Mapping[str, Any], role: str, at: str, pins: Mapping[s
             return found
         return ["principal_approver_duplicate"] if len({m["subject"] for m in members}) != len(members) else []
     prob = check_principal(block[role], at, pins)
-    return [f"principal_{role}:{prob}"] if prob else []
+    problems: list[str] = []
+    if prob:
+        problems.append(f"principal_{role}:{prob}")
+    return problems
 
 
 def sponsor_id(issuer: str, subject: str) -> str:
