@@ -121,11 +121,11 @@ Agents SDK use `OPENAI_AGENTS_VARIANTS` and `run_openai_agents_scenario`, and fo
 
 ## Status
 
-Version 0.2.1, alpha, with adapters for LangGraph, the OpenAI Agents SDK and AG2. Version 0.1.0 told a
+Version 0.2.2, alpha, with adapters for LangGraph, the OpenAI Agents SDK and AG2. Version 0.1.0 told a
 second caller with the same arguments that a write was committed when it was never sent, if the
 tool had no thread and no `key_from`; 0.2.0 refuses such a call, so upgrade. Before 0.2.1, an event appended after a
 stop mid-write was glued onto the torn line and could be lost or leave the file journal unreadable; 0.2.1 cuts the
-torn line first.
+torn line first. Version 0.2.2 widens the `agent-evidence-vectors` requirement of the `testing` extra from `~=0.32.1` to `>=0.32.1,<1`, so the extra installs beside the current vectors release.
 
 ## Documentation
 
