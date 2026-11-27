@@ -18,6 +18,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from . import celexpr
+from .core import value_key
 
 TYPES = ("wildcard", "exact", "one_of", "not_one_of", "range", "pattern", "regex", "cidr", "url_pattern",
          "url_safe", "subpath", "shlex", "contains", "subset", "all", "any", "not", "cel")
@@ -31,6 +32,28 @@ class ConstraintError(ValueError):
 
 def _number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def same(a: Any, b: Any) -> bool:
+    """Whether two parsed JSON values are one JSON value, by ``core.value_key`` (the TypeScript twin's ``same`` reads the
+    same bytes): object members in any order are one object, ``3`` and ``3.0`` are one number, and ``true`` is never
+    ``1`` where Python's ``==`` calls them equal. A value jcs-admit refuses (a lone surrogate, NaN) equals nothing."""
+    try:
+        return value_key(a) == value_key(b)
+    except ValueError:
+        return False
+
+
+def _member(v: Any, values: list[Any]) -> bool:
+    return any(same(v, x) for x in values)
+
+
+def _keys(values: list[Any]) -> set[bytes] | None:
+    """The value keys of a list, or None when one of its values is one jcs-admit refuses."""
+    try:
+        return {value_key(x) for x in values}
+    except ValueError:
+        return None
 
 
 def _finite_values(c: dict[str, Any]) -> list[Any]:
@@ -173,15 +196,15 @@ def _check_list(c: dict[str, Any], v: Any) -> bool:
     if not isinstance(v, list):
         return False
     if c["type"] == "contains":
-        return all(item in v for item in c["values"])
-    return all(item in c["values"] for item in v)
+        return all(_member(item, v) for item in c["values"])
+    return all(_member(item, c["values"]) for item in v)
 
 
 _CHECKS: dict[str, Callable[[dict[str, Any], Any], bool]] = {
     "wildcard": lambda c, v: True,
-    "exact": lambda c, v: v == c["value"] and type(v) is type(c["value"]),
-    "one_of": lambda c, v: any(v == x and type(v) is type(x) for x in c["values"]),
-    "not_one_of": lambda c, v: v not in c["values"],
+    "exact": lambda c, v: same(v, c["value"]) and type(v) is type(c["value"]),
+    "one_of": lambda c, v: any(same(v, x) and type(v) is type(x) for x in c["values"]),
+    "not_one_of": lambda c, v: _keys([v]) is not None and not _member(v, c["values"]),
     "range": _check_range,
     "pattern": lambda c, v: isinstance(v, str) and fnmatch.fnmatchcase(v, c["pattern"]),
     "regex": lambda c, v: isinstance(v, str) and re.fullmatch(c["regex"], v) is not None,
@@ -281,6 +304,12 @@ def check(c: dict[str, Any], value: Any) -> bool:
     return _CHECKS[c["type"]](c, value)
 
 
+def _contained(inner: list[Any], outer: list[Any]) -> bool:
+    """Whether every value of ``inner`` is a value of ``outer``, by value key."""
+    inner_keys, outer_keys = _keys(inner), _keys(outer)
+    return inner_keys is not None and outer_keys is not None and inner_keys <= outer_keys
+
+
 def _same_type_narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:
     kind = parent["type"]
     if kind == "range":
@@ -306,18 +335,17 @@ def _same_type_narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:
         return (set(child.get("schemes", ["https"])) <= set(parent.get("schemes", ["https"])) and hosts_ok
                 and (child.get("denyPrivate", True) or not parent.get("denyPrivate", True)))
     if kind in ("shlex", "subset"):
-        return set(map(repr, child["allow" if kind == "shlex" else "values"])) <= set(
-            map(repr, parent["allow" if kind == "shlex" else "values"]))
+        return _contained(child["allow" if kind == "shlex" else "values"], parent["allow" if kind == "shlex" else "values"])
     if kind in ("contains", "not_one_of"):
-        return set(map(repr, parent["values"])) <= set(map(repr, child["values"]))
-    return child == parent  # regex, not, cel: only an identical constraint is provably no wider
+        return _contained(parent["values"], child["values"])
+    return same(child, parent)  # regex, not, cel: only an identical constraint is provably no wider
 
 
 def narrows(child: dict[str, Any], parent: dict[str, Any]) -> bool:
     """True only when every value ``child`` admits is provably admitted by ``parent``."""
     validate(child)
     validate(parent)
-    if parent["type"] == "wildcard" or child == parent:
+    if parent["type"] == "wildcard" or same(child, parent):
         return True
     if child["type"] in FINITE:
         return all(check(parent, v) for v in _finite_values(child))

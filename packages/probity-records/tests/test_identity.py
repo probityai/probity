@@ -17,8 +17,14 @@ from probity_records import (
     verify_journal,
 )
 from probity_records.clock import SystemClock
-from probity_records.identity import check_principals, verify_token
-from probity_records.identity_vectors import ISSUER, base, check, vectors
+from probity_records.identity import check_principals, strict_shortfall, verify_token
+from probity_records.identity_vectors import (
+    ISSUER,
+    base,
+    check,
+    second_approver,
+    vectors,
+)
 
 SYSTEM_CLOCK = SystemClock()  # these cases judge windows against the host's time
 
@@ -62,6 +68,23 @@ EXPECTED = {
     "ID38": ([], "strict"),
     "ID39": (["principal_approver_without_approval"], None),
     "ID40": ([], "basic"),
+    # many approvers: a list of at least two principals, each a counted signer
+    "ID41": ([], "strict"),
+    "ID42": ([], "basic"),
+    "ID43": (["principal_approver_duplicate"], None),
+    "ID44": (["principal_approver_list_too_short"], None),
+    "ID45": (["principal_approver_not_an_approval_signer"], None),
+    "ID46": (["principal_approver:principal_thumbprint_mismatch"], None),
+    "ID47": (["principal_approver:principal_malformed"], None),
+    "ID48": (["principal_approver_without_approval"], None),
+    "ID49": ([], "autonomous"),
+    "ID50": (["principals_need_every_approver"], None),
+    "ID51": (["principal_approver_list_too_short"], None),
+    # a deny counts nobody; the approver list is a set
+    "ID52": ([], "strict"),
+    "ID53": ([], "strict"),
+    "ID54": ([], "autonomous"),
+    "ID55": ([], "strict"),
 }
 #: The vectors whose escrowed tokens are refused, by role (every other token verifies).
 TOKEN_REFUSALS = {"ID36": {"user": "token_type_mismatch:id-jag"}, "ID37": {"agent": "token_not_yet_valid"}}
@@ -163,6 +186,49 @@ def test_strict_names_the_approver_exactly_when_an_approval_admitted_the_call() 
     assert check_principals(_without(block, "sponsor"), v["at"], pins, {"bob@example.com"}) == ([], "basic")
     no_act = {**unapproved, "user": {k: x for k, x in unapproved["user"].items() if k != "act"}}
     assert check_principals(no_act, v["at"], pins, None) == ([], "basic")
+
+
+def test_strict_names_every_approver_an_approval_counted() -> None:
+    """An approval of two signers is strict only when the block names both: the single form names one of them and is
+    basic (``approvers-partial``); the list names both; a list never names a person twice or one person alone."""
+    v = base()
+    pins = {ISSUER: frozenset(v["pins"][ISSUER])}
+    block = v["principals"]
+    bob = block["approver"]
+    carol = second_approver()[0]
+    both = {"bob@example.com", "carol@example.com"}
+    assert check_principals(block, v["at"], pins, both) == ([], "basic")
+    assert strict_shortfall(block, both) == "approvers-partial"
+    listed = {**block, "approver": [bob, carol]}
+    assert check_principals(listed, v["at"], pins, both) == ([], "strict")
+    assert strict_shortfall(listed, both) is None
+    # the order of the list is the writer's; the verdict does not depend on it
+    assert check_principals({**block, "approver": [carol, bob]}, v["at"], pins, both) == ([], "strict")
+    # one approval counted, the list names its signer and a second person who signed nothing
+    assert check_principals(listed, v["at"], pins, {"bob@example.com"}) == \
+        (["principal_approver_not_an_approval_signer"], None)
+    assert check_principals({**block, "approver": [bob, bob]}, v["at"], pins, both) == \
+        (["principal_approver_duplicate"], None)
+    for short in ([], [bob]):
+        assert check_principals({**block, "approver": short}, v["at"], pins, both) == \
+            (["principal_approver_list_too_short"], None)
+    assert check_principals(listed, v["at"], pins, None) == (["principal_approver_without_approval"], None)
+    # the shortfalls keep their order: an absent approver is named before a partial list
+    assert strict_shortfall(_without(block, "approver"), both) == "approver-absent"
+
+
+def test_a_deny_counts_nobody_so_strict_needs_no_approver_named() -> None:
+    """A deny may name any approver whose binding it carries and counts none of them: naming one of two is strict, as
+    it was before the list form; naming none is still ``approver-absent``; a name outside the bindings is refused."""
+    v = base()
+    pins = {ISSUER: frozenset(v["pins"][ISSUER])}
+    block = v["principals"]
+    both = {"bob@example.com", "carol@example.com"}
+    assert check_principals(block, v["at"], pins, both, counted=set()) == ([], "strict")
+    assert strict_shortfall(block, both, set()) is None
+    assert strict_shortfall(_without(block, "approver"), both, set()) == "approver-absent"
+    assert check_principals(block, v["at"], pins, {"carol@example.com"}, counted=set()) == \
+        (["principal_approver_not_an_approval_signer"], None)
 
 
 def test_journal_checks_principals_at_the_record_time(tmp_path) -> None:

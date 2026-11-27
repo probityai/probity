@@ -29,13 +29,17 @@ agent-evidence-a2a ssrf --judge yourpkg.webhooks:refuses
 
 ## Status
 
-Version 0.1.0, alpha. The verifier, the 57 `a2a-jcs-v01` vectors, the 43-card corpus and the 42-URL webhook corpus are complete. The packaged verifier rejects all 28 attack cards and accepts all 11 controls; 4 probes wait on the spec text of [A2A#2122](https://github.com/a2aproject/A2A/issues/2122) and are never scored. The reference judge refuses all 30 unsafe webhook URLs and none of the 6 safe ones.
+Version 0.2.0, alpha. The verifier, the 57 `a2a-jcs-v01` vectors, the 43-card corpus and the 42-URL webhook corpus are complete. The packaged verifier rejects all 28 attack cards and accepts all 11 controls; 4 probes wait on the spec text of [A2A#2122](https://github.com/a2aproject/A2A/issues/2122) and are never scored. The reference judge refuses all 30 unsafe webhook URLs and none of the 6 safe ones.
 
 ## What is in the package
 
 | Piece | What it does |
 | --- | --- |
 | `verify_served_card` | Recomputes the signed payload from the served bytes (RFC 8785), rejects a repeated member name or an appended member, checks every `kid` against a pinned trust store with validity windows, and applies a signer threshold. |
+| `judge_signature` | Judges one member of a card's `signatures` array for four failures: a card with no RFC 8785 form or a signature made over a non-JCS form, a signature that does not verify, a malformed signature or header, and a `kid` that is unknown, expired or not pinned. It names the non-JCS form a failing signature verifies over. `lookup` takes any `kid -> key` function. |
+| `settle_signatures` | Applies the card's signer policy (distinct-signer threshold, required signers, key rotation) to the judgements of all its signatures. `verify_served_card` is `read_signed_card`, then `judge_signature` per signature, then this, so a verifier that calls the three reaches the same verdict on every card. |
+| `read_signed_card` | Reads a served card's signatures, signing payload and non-JCS forms from one parse, and says which of three things a card with nothing to judge is: unsigned, a `signatures` member that is not an array, or no RFC 8785 form. |
+| `verify_detached` | The byte-level detached JWS check under `judge_signature`, for a caller that resolves its key another way (an `x5c` leaf). |
 | `check_canonicaliser` | Runs the 57 vectors against your canonicaliser, and against your card-to-signing-bytes function when you pass one. |
 | `score_card_verifier` | Scores any `served bytes -> accepted` function on the card corpus: the cards it must accept, the cards it must reject, and the probes whose verdict waits on the spec. |
 | `score_ssrf_judge` | Scores a webhook URL judge on 42 URLs with resolved ground truth. |

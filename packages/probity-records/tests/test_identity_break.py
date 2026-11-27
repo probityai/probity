@@ -32,6 +32,7 @@ from probity_records.identity_vectors import (
     _principal,
     _token,
     base,
+    second_approver,
 )
 from probity_records.quorum import approval_policy
 from probity_records.revocation import RevocationState, sign_revocations
@@ -141,6 +142,34 @@ def test_the_approver_principal_must_be_a_counted_approver(tmp_path) -> None:
     # lead's approval is a replay: the reader refuses it, the allow holds on ops alone
     assert journal(tmp_path / "lead", g.WHO["lead"]) == ["line_1:principal_approver_not_an_approval_signer"]
     assert journal(tmp_path / "ops", g.WHO["ops"]) == []
+
+
+def test_a_two_of_two_approval_is_strict_only_when_the_allow_names_both_approvers(tmp_path) -> None:
+    """Both approvers of a 2-of-2 quorum are counted signers: the list naming both is strict, the single form naming
+    one is below strict (``approvers-partial``), and a list naming one person twice is refused."""
+    policy = approval_policy("refunds2", {g.WHO["ops"]: g.OPS.public_pem(), g.WHO["lead"]: g.LEAD.public_pem()}, 2)
+    trust = Trust(identity_issuers=PINS, quorum_policies={"refunds2": policy}, identity_profile="strict")
+    carol = second_approver()[0]
+
+    def journal(directory, subjects: list[str], single: bool = False) -> list[str]:
+        block = _now_block(base()["principals"])
+        named = []
+        for n, subject in enumerate(subjects):
+            p = copy.deepcopy(block["approver"] if n == 0 else _now_block({"approver": carol})["approver"])
+            p["subject"] = subject
+            named.append(p)
+        block["approver"] = named[0] if single else named
+        pred = tool_call_predicate(
+            phase="authorize", decision="allow", reason="bound", threshold=2, approval_policy="refunds2",
+            approval_bindings=[g.binding(g.OPS, g.WHO["ops"]), g.binding(g.LEAD, g.WHO["lead"])],
+            run_id="run", tool_call_id="a1", tool="refund_payment", args_sha256_hex=args_sha256(g.AARGS),
+            permit_id=permit_id("pause", "a1", args_sha256(g.AARGS)), principals=block)
+        return [f for f in _failures(directory, [pred], trust) if "principal" in f]
+
+    assert journal(tmp_path / "both", [g.WHO["ops"], g.WHO["lead"]]) == []
+    assert journal(tmp_path / "one", [g.WHO["ops"]], single=True) == \
+        ["line_1:principals_below_strict:approvers-partial"]
+    assert journal(tmp_path / "twice", [g.WHO["ops"], g.WHO["ops"]]) == ["line_1:principal_approver_duplicate"]
 
 
 def test_an_intent_of_an_approved_allow_may_name_the_approver_that_allow_counted(tmp_path) -> None:

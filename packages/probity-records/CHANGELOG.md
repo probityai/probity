@@ -65,6 +65,110 @@
 - **The TypeScript verifier reads token and DPoP segments the same way** (32 containers deep, strict UTF-8, no lone
   surrogate), so a segment the Python verifier refuses is refused there with the same code.
 
+- **`approver` names every person an approval counted: one principal, or a list of at least two.** A principals block
+  may now carry `approver` as a list of principals when an approval took several people (an M-of-N quorum); each member
+  is a full principal checked as the single form is, and each must be a person the approval may name. The single form
+  is unchanged and still means one approver. New refusals, under every profile: `principal_approver_duplicate` (a list
+  names one subject twice) and `principal_approver_list_too_short` (a list of fewer than two: one approval takes the
+  single form); a list member that fails the principal checks is refused `principal_approver:<code>`, and one that
+  names a person the approval cannot name is refused `principal_approver_not_an_approval_signer`, as before.
+- **Behaviour change, allows only: strict needs every counted approver named.** A human-session block whose ALLOW
+  counted two or more people and that names only some of them is now `basic`, with the new shortfall
+  `approvers-partial` (`identity.strict_shortfall`, and `principals_below_strict:approvers-partial` from a strict
+  auditor); before, naming any one counted approver was strict. An autonomous block, which has no basic grade, is
+  refused `principals_need_every_approver` in the same case. An intent or effect inherits its permit's allow. A block
+  whose approval counted one person is graded as before.
+- **A deny is graded as before.** A deny counts nobody: its approver principal may name any person whose binding it
+  carries, and strict never needs each of them named. `identity.check_principals` and `strict_shortfall` take the
+  people the approval counted (`counted`) apart from the people the block may name (`approvers`); for an allow they
+  are one set, the default; for a deny `counted` is empty. So a deny resting on two people's bindings that names one
+  of them stays strict (`approver-absent` still applies to a deny that names none), and an autonomous deny of that
+  shape stays `autonomous`. `@probityai/records-verify` takes the same argument (`checkPrincipals(..., counted)`).
+- **Behaviour change: a 0.12.0 schema with a rule on `principals.approver` is refused until it declares `members`.**
+  Such a schema no longer lints (`approver_list_undeclared:principals.approver`), so `seal` refuses every record
+  under it (`schema_refused`), lists or not. Add `members=True` to the approver rule; a record with no approver list
+  then seals byte for byte as 0.12.0 sealed it. `erasure.seal` reads every subject key as bytes: a `bytearray` or a
+  `memoryview` is its bytes (one key under two members is refused in any spelling), and a key that is not bytes-like
+  is refused `subject_key_not_bytes` instead of raising `TypeError`.
+- **Behaviour change: constraint values are compared by one key in both readers (`core.value_key`).** Python compared
+  with `==` and `repr` and the TypeScript twin with a text form, so `true` and `1` were equal in one and different in the
+  other. A `not_one_of` list, a `subset` or `contains` list, `exact` and `one_of`, and the narrowing proof for each now
+  read two values as one when their RFC 8785 bytes are equal: `true` is never `1` (a `not_one_of [1]` now admits `true`,
+  where it denied it), `3` and `3.0` are one number, and object member order is free. A value jcs-admit refuses equals
+  nothing, so a `not_one_of` constraint denies it. New shared vectors: CV12 to CV16.
+- **Behaviour change: an ID or access token is read by one strict rule in both readers.** `identity.verify_token`
+  (and the OpenID Connect approval count) reads a token's header and claims with `identity.token_segments`: three
+  base64url segments without padding, each of header and claims one JSON object that jcs-admit admits. A token with
+  `NaN` or `Infinity`, a duplicate member, a header or claims that is not an object, or an `iat`, `exp` or `nbf` that
+  is not an integer (a float such as `1794301200.0`, a string, a boolean, null) or an `iat` or `exp` outside years 1
+  to 9999 is refused `token_malformed`. Before, Python truncated a float `iat`, read a string one, raised `TypeError`
+  on a null one and counted a token with a `NaN` claim, and the TypeScript twin read each of these another way.
+- **The approver list is a set: its order never changes a verdict or a digest.** A permit's parties are each role's
+  issuer and subject; for a list they are its members' (issuer, subject) pairs in no order, so an intent naming the
+  allow's approvers in another order, or after one approver's credential was refreshed, is the same parties (before,
+  a list compared whole credentials in order, and both read as `principals_differ_from_permit`). Each party is
+  compared by its RFC 8785 bytes with numbers read as IEEE doubles (`core.value_key`, `valueKey` in the TypeScript
+  twin), so two readers give one answer: `1.0` and `1`, `1e16` and `10000000000000000`, and an object written with
+  its members in another order are one value, and `true` is never `1`; a list is the same parties when its members
+  match one for one.
+  `digests.principals_digest` accepts an `approver` list of at least two principal objects and hashes its members
+  sorted by their RFC 8785 bytes, so one set of approvers has one digest in any written order; a list of one, a list
+  with a member that is not an object, and any other role given as a list are refused `identity_principals_malformed`.
+  `identity.approver_principals` and `identity.approver_subjects` read either form.
+- **Erasure seals an approver list per member, where the schema declares one.** A subject key is one person's. A
+  rule declares that its approver field lists several people with `members` (`Rule(..., members=True)`; JSON
+  `"members": true`, written only when set, so a schema without it serializes as before), and `lint_schema` refuses
+  every rule that could seal the identity profile's approver list under one key (`approver_list_undeclared:<path>`):
+  a non-kept rule on `principals.approver` that is not for the approver role with `members` (one for another
+  subject, the user's included, would put every approver under that subject's key), and a non-kept rule on the whole
+  `principals` block. It refuses `members` on any rule that is kept or not for the approver role
+  (`members_outside_approver:<path>`). A list under a declared rule is sealed member by member:
+  member `n` is the field `<path>.<n>` under the subject `approver.<n>`, with its own key and its own ciphertext group,
+  and erasing one approver (destroying that member's key) leaves the others readable; the erased member opens as null
+  in its place. A list under an approver rule without the flag is one approver's own value (the roles they voted in)
+  and seals whole under the `approver` key, byte for byte as 0.12.0 does; the JSON type of a value never decides how
+  many people it names. `erasure.seal` refuses, with `field_names_several_subjects`, a declared list whose members do
+  not each have a key, two members passed one key, declared lists of different lengths in one record (member `n` of
+  every list is one person), and a record with a declared list that also seals a field under the one `approver` key;
+  it refuses an empty list (`approver_list_empty`). `check_block` refuses a member field under another member's
+  subject and a list whose members are not 0 to N-1 (`roles_malformed`). A record with no approver list seals byte
+  for byte as before. `erasure.member_subject(n)` names member n's subject. The erasure block of a record with a list
+  shows how many approvers it has (one `<path>.<n>` entry and one ciphertext group per member).
+- Shared vectors, every case released before this change byte for byte unchanged: `identity.json` adds ID41 to ID55
+  (a list of two, strict; two counted and one named, basic; a subject twice; a list of one; an empty list; a member not
+  counted; a member whose thumbprint does not recompute; a member that is not an object; a list with no approval;
+  autonomous with both named; autonomous with one of two named; an empty list; a deny naming one of two, strict; a deny
+  naming both; an autonomous deny naming one of two; the list in the other order). A vector may carry `counted` apart
+  from `approvers`. `identity_digests.json` adds PD21 to PD25 (PD22: the other order, the same digest). The new family
+  `approvers.json` holds nine journals under a 1-of-2 and a 2-of-2 policy (MA1 to MA9: both named, strict; one named;
+  one named twice; a list naming a replayed approval; an intent naming both; an intent naming one; a deny of two naming
+  one, strict; an intent naming both in the other order; an intent after one approver's credential refresh).
+  `approvers.json` also holds MA10 and MA11 (an intent whose approver is two strings spelling the allow's approver,
+  in either order: malformed, and not the parties of its permit, in both readers). `erasure.json` adds S11 to S17,
+  O13 to O16 and L6 (the per-member seal and its refusals, one key under two members, one approver's own list sealed
+  whole, a list beside a field under the one approver key, lists of different lengths, opening with every key, with
+  one approver's key destroyed, a member under another member's subject, members not 0 to N-1, the `members` lint).
+  `approvers.json` adds MA12 and MA13 (an issuer written `1.0` against `1`, and `1e16` against
+  `10000000000000000`: one number, the same parties). `erasure.json` adds L7 and S18 (the 0.12.0 example schema:
+  no longer lints, and a record under it is refused) and L8 and L9 (a `principals.approver` rule for the user's key,
+  and a rule on the whole `principals` block, each refused). **Six released 0.12.0 erasure vectors give another
+  output for their 0.12.0 inputs:** S1, S2, S4, S5 and S6 are now `schema_refused`, and L1 reports
+  `approver_list_undeclared:principals.approver`, because their schema input is the 0.12.0 example schema. Those
+  vectors now carry the example schema with `members` on its two approver rules, and under it each gives its 0.12.0
+  output byte for byte; L7 and S18 keep the 0.12.0 schema as the vectors of its refusal. A reader that has not
+  learned the list form refuses every vector that carries one; `@probityai/records-verify` learns it in the same
+  change, so both releases go out together.
+- `@probityai/records-verify` reads `TrustDoc.revocations` wherever the Python reader reads `Trust.revocations`: the
+  record's signer key (`signer_key_revoked`) and permit (`permit_revoked`), the agent, sponsor and standing grant of
+  a principals block (`principals_agent_revoked`, `principals_sponsor_revoked`, `principals_standing_grant_revoked`),
+  a grant chain's issuer keys and grants (`grant_deny:grant_issuer_key_revoked:<depth>`,
+  `grant_deny:grant_revoked:<depth>`) and approver keys (`approver_key_revoked`). Before, it read them for approver
+  keys only and passed a journal the Python reader failed.
+- Minor, not patch: this releases as 0.13.0. Vectors that turn a passing implementation red (an allow of several, one
+  named, is now basic; six 0.12.0 erasure vectors whose schema no longer lints; tokens with a float or null time
+  claim or a `NaN` claim, now refused), a schema 0.12.0 accepted that this release refuses, and a new accepted shape
+  make this a minor release under strict semver.
+
 ## 0.12.0 (2026-11-26)
 
 - **The C2SP note verifier agrees with the reference on three cases; two of them refuse input it accepted before.**

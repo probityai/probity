@@ -1,0 +1,1717 @@
+{
+ "at": "2026-11-10T09:01:30Z",
+ "cases": [
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "6a2cde22ed2d42a38b0b4b4c93a23726001538fa484f4c1e7eea719b266223da"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ._4H3q1PR0K9T1FjFhnAmHo9cOTGd5JTXQZEYqBF9Rdk1FD8E9EZdiNu3HSpjJp5pUJ1LiIciROS5FB793x-eAg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    },
+    {
+     "approvalSig": "LQx0wwYCJP8PTDBPMizAkXkblS1Qeq4LDMq1ISuNMaug1lGQpJmEJsQ5LoEcDV/EGyw1OsXGDNiN5PL77d4pCg==",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "bob",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "bob",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "bob": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [
+     "bob",
+     "dave"
+    ],
+    []
+   ],
+   "id": "oidc and key approvals both count",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "6a2cde22ed2d42a38b0b4b4c93a23726001538fa484f4c1e7eea719b266223da"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ._4H3q1PR0K9T1FjFhnAmHo9cOTGd5JTXQZEYqBF9Rdk1FD8E9EZdiNu3HSpjJp5pUJ1LiIciROS5FB793x-eAg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    },
+    {
+     "approvalSig": "LQx0wwYCJP8PTDBPMizAkXkblS1Qeq4LDMq1ISuNMaug1lGQpJmEJsQ5LoEcDV/EGyw1OsXGDNiN5PL77d4pCg==",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "bob",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "bob",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "bob": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [
+     "bob"
+    ],
+    [
+     "binding_0:principal_issuer_untrusted"
+    ]
+   ],
+   "id": "no provider pinned: the sign-in does not count",
+   "pins": {},
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "6a2cde22ed2d42a38b0b4b4c93a23726001538fa484f4c1e7eea719b266223da"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ._4H3q1PR0K9T1FjFhnAmHo9cOTGd5JTXQZEYqBF9Rdk1FD8E9EZdiNu3HSpjJp5pUJ1LiIciROS5FB793x-eAg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    },
+    {
+     "approvalSig": "LQx0wwYCJP8PTDBPMizAkXkblS1Qeq4LDMq1ISuNMaug1lGQpJmEJsQ5LoEcDV/EGyw1OsXGDNiN5PL77d4pCg==",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "bob",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "bob",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "bob": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [
+     "bob"
+    ],
+    [
+     "binding_0:approval_nonce_mismatch"
+    ]
+   ],
+   "id": "the body was edited after the sign-in",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "fa567727ca2b3ec0210587a05657778b1fc7e5549dc80acced2051dd79aaf52c"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQyOTc2MDAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ.BFgVN5MfuHlQEcZUIsPBuyO0A4GKpxDk9RBIB-4SkdW-Uy9h3TK3VTKayPHUS8uN2XsTLUXTC006tdIkD8fTAw",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [],
+    [
+     "binding_0:approval_auth_not_fresh"
+    ]
+   ],
+   "id": "a session from before the request",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "a8e2eeb9e9e2454f2d669923a74301a33e4f7fc7f0e9383633973e3ab67a75c9"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ.0cuCyWjzCpF45dDVLEboBO-CnrkGaCBDmO9IeO4b4jygJ4_rCKwlRGH_JgXrMNeEWvXt1rqUZv3OMRiF5_AdCg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [],
+    [
+     "binding_0:token_signature_unverified"
+    ]
+   ],
+   "id": "a token another provider key signed",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "someone-else",
+      "tokenDigest": "5c0aa600ea4dbcd77d0637e9df31877299c66b6ca4ab332c76d8142f214cda3e"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6InNvbWVvbmUtZWxzZSJ9.2pVRCvwAv_IwHtG-WCVdrr89IuG63Op8JQSI9Lw8ebXM8D9Cjf3bQmFKVOjK1FbD94Tx1pPw_uzdxY4rkIO2Cg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [],
+    [
+     "binding_0:approval_principal_not_pinned"
+    ]
+   ],
+   "id": "a sign-in as someone the policy does not pin",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "378adaa16000895cbb63359f786b5213ab7102764109c022fe41ef1d869e3294"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiY2ZhYmYyOWU2OTM3MDA3NGJkZDdhZTlhMzNiZDEwMWQyMTdmMzQxYWJmNDc0YzVhNmU2OTQxMjFjYjc1YWM1MiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ.dwe-8hl4BF---Wunxf7RK7t4ePKhM6CGhqhSrBeJ5JW0PvV4K0ZX08BZeizU-siFZVtrkovYUJlrvoWEOK62BQ",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [],
+    [
+     "binding_0:approval_key_id_is_not_the_principal"
+    ]
+   ],
+   "id": "an approval key id that is not the principal",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "6a2cde22ed2d42a38b0b4b4c93a23726001538fa484f4c1e7eea719b266223da"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ._4H3q1PR0K9T1FjFhnAmHo9cOTGd5JTXQZEYqBF9Rdk1FD8E9EZdiNu3HSpjJp5pUJ1LiIciROS5FB793x-eAg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    },
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "6a2cde22ed2d42a38b0b4b4c93a23726001538fa484f4c1e7eea719b266223da"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ._4H3q1PR0K9T1FjFhnAmHo9cOTGd5JTXQZEYqBF9Rdk1FD8E9EZdiNu3HSpjJp5pUJ1LiIciROS5FB793x-eAg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [
+     "dave"
+    ],
+    [
+     "binding_1:duplicate_approver"
+    ]
+   ],
+   "id": "one person signs in twice",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalSig": "LQx0wwYCJP8PTDBPMizAkXkblS1Qeq4LDMq1ISuNMaug1lGQpJmEJsQ5LoEcDV/EGyw1OsXGDNiN5PL77d4pCg==",
+     "approvalToken": "x.y.z",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "bob",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "bob",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "bob": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [],
+    [
+     "binding_0:approval_oidc_evidence_missing"
+    ]
+   ],
+   "id": "the key approval carries a token",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": null
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "6a2cde22ed2d42a38b0b4b4c93a23726001538fa484f4c1e7eea719b266223da"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ._4H3q1PR0K9T1FjFhnAmHo9cOTGd5JTXQZEYqBF9Rdk1FD8E9EZdiNu3HSpjJp5pUJ1LiIciROS5FB793x-eAg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    },
+    {
+     "approvalSig": "LQx0wwYCJP8PTDBPMizAkXkblS1Qeq4LDMq1ISuNMaug1lGQpJmEJsQ5LoEcDV/EGyw1OsXGDNiN5PL77d4pCg==",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "bob",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "bob",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "bob": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [
+     "dave"
+    ],
+    [
+     "binding_1:approver_key_revoked"
+    ]
+   ],
+   "id": "bob's key revoked before the decision",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": {
+    "lists": [
+     {
+      "body": {
+       "entries": [
+        {
+         "id": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+         "kind": "key",
+         "reason": "left",
+         "revokedAt": "2026-11-10T09:00:00Z"
+        }
+       ],
+       "issuedAt": "2026-11-11T00:00:00Z",
+       "issuerKey": "5VjwNLAep6LE8rOMWdDMCkQzgpNMg2YSJWoUqwSD8Ho=",
+       "listId": "rl",
+       "previous": null,
+       "seq": 1,
+       "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v2/revocation-list"
+      },
+      "sig": "LX1djOgnSQLaAWzrfXqMx2KuEO+c/Pad027W4hyUUwZsmJdPmruExshxM8plhwQPpVtUnRqP6juG68vze4FZBw=="
+     }
+    ],
+    "rootKeyIds": [
+     "62863ffe0cf8e4f6030917370bcc75f1f60939f7950454f3f1cacf8b3e275f0f"
+    ]
+   }
+  },
+  {
+   "bindings": [
+    {
+     "approvalJwks": {
+      "keys": [
+       {
+        "crv": "Ed25519",
+        "kid": "idp-1",
+        "kty": "OKP",
+        "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+       }
+      ]
+     },
+     "approvalPrincipal": {
+      "audience": [
+       "probity-gateway"
+      ],
+      "authMethod": "client_secret_basic",
+      "clientId": "probity-gateway",
+      "expiresAt": "2026-11-10T09:05:00Z",
+      "issuedAt": "2026-11-10T09:01:01Z",
+      "issuer": "https://idp.example.com/realms/acme",
+      "jwksDigest": "317621c10ea74e89476271b30f95686fb48b80782ea71079fb1145bc81f9d096",
+      "key": {
+       "crv": "Ed25519",
+       "kid": "idp-1",
+       "kty": "OKP",
+       "x": "4sgz1AOKjy6A5ZLHB2a8BnJUAs7obxWprGNngT-WqxQ"
+      },
+      "keyThumbprint": "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8",
+      "kid": "idp-1",
+      "source": "id-token",
+      "subject": "4f1c2b7e-dave",
+      "tokenDigest": "6a2cde22ed2d42a38b0b4b4c93a23726001538fa484f4c1e7eea719b266223da"
+     },
+     "approvalToken": "eyJhbGciOiJFZERTQSIsImtpZCI6ImlkcC0xIiwidHlwIjoiSldUIn0.eyJhdWQiOiJwcm9iaXR5LWdhdGV3YXkiLCJhdXRoX3RpbWUiOjE3OTQzMDEyNjAsImF6cCI6InByb2JpdHktZ2F0ZXdheSIsImV4cCI6MTc5NDMwMTUwMCwiaWF0IjoxNzk0MzAxMjYxLCJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlLmNvbS9yZWFsbXMvYWNtZSIsIm5vbmNlIjoiN2RlMmQzN2E3ZDA0OWM2MzFkN2EwMmM0ZjFjMDdkYzY0ZDc0ZjBiODY2ZTYxNWQyMjFjYTc0YTYwOTc4ZDIzMiIsInN1YiI6IjRmMWMyYjdlLWRhdmUifQ._4H3q1PR0K9T1FjFhnAmHo9cOTGd5JTXQZEYqBF9Rdk1FD8E9EZdiNu3HSpjJp5pUJ1LiIciROS5FB793x-eAg",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "dave",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "dave",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "dave": "0b60ef79be62211e826579c7afdb128560d852ce247f42f970265b0486341aa3"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    },
+    {
+     "approvalSig": "LQx0wwYCJP8PTDBPMizAkXkblS1Qeq4LDMq1ISuNMaug1lGQpJmEJsQ5LoEcDV/EGyw1OsXGDNiN5PL77d4pCg==",
+     "payloadB64": "eyJ1c2QiOjkwMH0=",
+     "record": {
+      "approval": {
+       "approvalId": "req-1",
+       "approver": "bob",
+       "event": "mcp/tools-call",
+       "expiresAt": "2026-11-10T09:10:00Z",
+       "issuedAt": "2026-11-10T09:00:00Z",
+       "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+       "outcome": "approved",
+       "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "requestId": "req-1",
+       "target": "https://wires.example/mcp",
+       "tool": "wire"
+      },
+      "consumedApprovalIds": [],
+      "contractId": "https://probityai.github.io/agent-evidence-vectors/contract/approval-binding/v1",
+      "decisionTime": "2026-11-10T09:01:30Z",
+      "enforcement": "enforce",
+      "issuedApprovalIds": [
+       "req-1"
+      ],
+      "policyRelease": {
+       "firstServedAt": "2000-01-01T00:00:00Z",
+       "graceSeconds": 0,
+       "lastServedAt": "2999-01-01T00:00:00Z",
+       "lookup": "ok",
+       "releaseId": "test"
+      },
+      "presentedApprovals": [
+       {
+        "approvalId": "req-1",
+        "approver": "bob",
+        "event": "mcp/tools-call",
+        "expiresAt": "2026-11-10T09:10:00Z",
+        "issuedAt": "2026-11-10T09:00:00Z",
+        "keyId": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+        "outcome": "approved",
+        "payloadSha256": "9130740e20d112255678dd4f1431707c7820093e2c3911fd099624d8585d9e87",
+        "phase": "pre-execution",
+        "principal": "agent:acme",
+        "requestId": "req-1",
+        "target": "https://wires.example/mcp",
+        "tool": "wire"
+       }
+      ],
+      "trustedKeys": {
+       "bob": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd"
+      },
+      "use": {
+       "approvalId": "req-1",
+       "event": "mcp/tools-call",
+       "payloadFile": "payload.bin",
+       "phase": "pre-execution",
+       "principal": "agent:acme",
+       "target": "https://wires.example/mcp",
+       "tool": "wire",
+       "usedAt": "2026-11-10T09:01:30Z"
+      }
+     }
+    }
+   ],
+   "expected": [
+    [
+     "bob",
+     "dave"
+    ],
+    []
+   ],
+   "id": "bob's key revoked after the decision",
+   "pins": {
+    "https://idp.example.com/realms/acme": [
+     "C22RqLJbTxlt3eXyk8B2hcVsDAwB2x1HMSd7g3cvQa8"
+    ]
+   },
+   "revocations": {
+    "lists": [
+     {
+      "body": {
+       "entries": [
+        {
+         "id": "2a0b65d7367c09b897e30e3762f2098f028935be708d043670d72c95199858bd",
+         "kind": "key",
+         "reason": "left",
+         "revokedAt": "2026-11-10T09:05:00Z"
+        }
+       ],
+       "issuedAt": "2026-11-11T00:00:00Z",
+       "issuerKey": "5VjwNLAep6LE8rOMWdDMCkQzgpNMg2YSJWoUqwSD8Ho=",
+       "listId": "rl",
+       "previous": null,
+       "seq": 1,
+       "type": "https://probityai.github.io/agent-evidence-vectors/predicate/v2/revocation-list"
+      },
+      "sig": "mq9eBFF5eypnSbWihQA1o7VGkYoCBJr3IayJbnlL6zpMZfs+xkMcFHszlwwfCE7+SFqdhIXN7qaWVVvr/62CAA=="
+     }
+    ],
+    "rootKeyIds": [
+     "62863ffe0cf8e4f6030917370bcc75f1f60939f7950454f3f1cacf8b3e275f0f"
+    ]
+   }
+  }
+ ],
+ "policy": {
+  "approvers": {
+   "bob": "Q3bhbmR4vsxG4PQX9xMQB1lJgdF30sN8h6fOdK/sGYI=",
+   "dave": {
+    "issuer": "https://idp.example.com/realms/acme",
+    "subject": "4f1c2b7e-dave"
+   }
+  },
+  "policyId": "acme-wires",
+  "threshold": 2
+ }
+}

@@ -18,6 +18,13 @@ A v2 record splits every field of the record, by a declared schema, into one of 
   (`disclose`) without revealing the subject key or any other field, and equal values do not link across leaves.
 
 Every non-kept field names the data subject whose key covers it (a role: user, agent, sponsor, approver, session).
+A schema declares which approver fields list several people (``Rule.members``: an approval several people gave; it
+is required on ``principals.approver``). A list under such a rule is sealed per member: member ``n`` is the field
+``<path>.<n>`` under its own subject ``approver.<n>`` and its own key, and erasing one approver leaves every other
+one readable. ``seal`` refuses such a list when a member has no key of its own, when two members share one key, or
+when the record also seals a field under the one ``approver`` key (``field_names_several_subjects``), rather than
+put several people under one key. A list under an approver rule without the flag is one approver's own value (the
+roles they voted in, say) and seals whole under the ``approver`` key.
 The payload is encrypted per subject and per class (AES-256-GCM, a key derived per leaf, the AAD binding the format,
 leaf id, schema, subject and class, the plaintext padded to a multiple of 256 bytes, or to one exact size for a
 class the schema fixes, so a length cannot tell two values or two subjects apart). The signed statement carries only
@@ -70,6 +77,19 @@ _HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 _HEX32 = re.compile(r"[0-9a-f]{32}\Z")
 #: Field names that look like digests; a kept one must be declared structural (`Schema.structural`).
 _DIGEST_NAME = re.compile(r"(sha256|digest|hash|thumbprint)", re.IGNORECASE)
+#: The role whose field may hold a list of people (an approval several gave); each member is its own data subject.
+LIST_ROLE: Final = "approver"
+#: The subject of member n of an approver list, and the path segment of its field: ``approver.<n>``, ``<path>.<n>``.
+_MEMBER = re.compile(r"approver\.(0|[1-9][0-9]*)\Z")
+
+
+def member_subject(n: int) -> str:
+    """The data subject of member ``n`` of an approver list: ``approver.<n>``, the name its key goes by."""
+    return f"{LIST_ROLE}.{n}"
+
+
+def _subject_ok(subject: Any) -> bool:
+    return subject in ROLES or (isinstance(subject, str) and _MEMBER.fullmatch(subject) is not None)
 
 
 class EnvelopeError(ValueError):
@@ -91,6 +111,7 @@ class Rule:
     personal: bool = False  # the value can carry personal data
     digest_of_personal: bool = False  # the value is a digest computed over personal content
     commit: bool = False  # a payload field also gets a keyed commitment in the signed statement
+    members: bool = False  # an approver field whose list value names several people, one subject per member
 
 
 @dataclass(frozen=True)
@@ -128,8 +149,7 @@ class Schema:
     def to_json(self) -> dict[str, Any]:
         """The schema as JSON, the form the shared vectors and other implementations read."""
         return {"name": self.name, "structural": sorted(self.structural), "fixed": dict(sorted(self.fixed)),
-                "rules": [{"path": r.path, "class": r.cls, "subject": r.subject, "personal": r.personal,
-                           "digestOfPersonal": r.digest_of_personal, "commit": r.commit} for r in self.rules]}
+                "rules": [_rule_json(r) for r in self.rules]}
 
     @classmethod
     def from_json(cls, doc: Mapping[str, Any]) -> Schema:
@@ -151,7 +171,8 @@ class Schema:
 
         try:
             rules = tuple(Rule(text(r["path"]), text(r["class"]), None if r["subject"] is None else text(r["subject"]),
-                               flag(r["personal"]), flag(r["digestOfPersonal"]), flag(r["commit"]))
+                               flag(r["personal"]), flag(r["digestOfPersonal"]), flag(r["commit"]),
+                               flag(r.get("members", False)))
                           for r in doc["rules"])  # fmt: skip
             if not isinstance(doc["fixed"], Mapping):
                 raise EnvelopeError("schema_malformed", "fixed is not an object")
@@ -159,6 +180,20 @@ class Schema:
             return cls(text(doc["name"]), rules, frozenset(text(p) for p in doc["structural"]), fixed)
         except (KeyError, TypeError) as exc:
             raise EnvelopeError("schema_malformed", str(exc)) from exc
+
+
+def _rule_json(r: Rule) -> dict[str, Any]:
+    """A rule as JSON. ``members`` appears only when set, so a schema with no approver list serializes as before."""
+    out: dict[str, Any] = {"path": r.path, "class": r.cls, "subject": r.subject, "personal": r.personal,
+                           "digestOfPersonal": r.digest_of_personal, "commit": r.commit}
+    if r.members:
+        out["members"] = True
+    return out
+
+
+#: The field the identity profile defines as one principal or a list of several: its rule must say so.
+PRINCIPALS: Final = "principals"
+APPROVER_PRINCIPALS: Final = f"{PRINCIPALS}.approver"
 
 
 def lint_schema(schema: Schema) -> list[str]:
@@ -191,6 +226,13 @@ def lint_schema(schema: Schema) -> list[str]:
                 problems.append(f"no_subject_role:{r.path}")
             if r.cls == PSEUDONYM and r.commit:
                 problems.append(f"pseudonym_with_commitment:{r.path}")
+            # The identity profile's approver may be a list of several people. Every rule that seals it must split it
+            # per member: one for the approver role with the flag, never one under another subject's key and never a
+            # rule on the whole principals block, which would carry the list under one key.
+            if (r.path == APPROVER_PRINCIPALS and not (r.subject == LIST_ROLE and r.members)) or r.path == PRINCIPALS:
+                problems.append(f"approver_list_undeclared:{r.path}")
+        if r.members and (r.cls == KEPT or r.subject != LIST_ROLE):
+            problems.append(f"members_outside_approver:{r.path}")
         if r.path in schema.structural and r.cls != KEPT:
             problems.append(f"structural_not_kept:{r.path}")
     for parent in split:
@@ -302,6 +344,65 @@ def _paths(record: Mapping[str, Any], schema: Schema) -> list[str]:
     return out
 
 
+def _seal_members(path: str, rule: Rule, members: list[Any], keys: Mapping[str, bytes], leaf: bytes,
+                  into: tuple[dict[str, str], dict[str, str], dict[tuple[str, str], dict[str, Any]], dict[str, str],
+                              dict[str, str]]) -> None:  # fmt: skip
+    """Seal an approver list member by member: member ``n`` is the field ``<path>.<n>``, covered by subject
+    ``approver.<n>`` and its own key, in its own ciphertext. One key over the list would put several people under one
+    subject, so a member with no key of its own refuses the record."""
+    classes, roles, groups, pseudonyms, commitments = into
+    if not members:
+        raise EnvelopeError("approver_list_empty", path)
+    for n, value in enumerate(members):
+        subject, at = member_subject(n), f"{path}.{n}"
+        key = keys.get(subject)
+        if key is None:
+            raise EnvelopeError("field_names_several_subjects",
+                                f"{path} lists {len(members)} approvers; member {n} needs its own {subject} key")
+        classes[at] = rule.cls
+        roles[at] = subject
+        groups.setdefault((subject, rule.cls), {})[at] = value
+        if rule.cls == PSEUDONYM:
+            pseudonyms[at] = pseudonym(key, leaf, at, value)
+        elif rule.commit:
+            commitments[at] = tag(field_key(key, leaf, at), value)
+
+
+def _one_person_per_key(roles: Mapping[str, str], keys: Mapping[str, bytes], subject_role: str | None) -> None:
+    """A record that seals an approver list names each approver under a key of their own: every list has the same
+    members (member n of each is one person), no two members share key bytes, and no field rests on the one
+    ``approver`` key, which in such a record covers nobody in particular."""
+    sizes = _member_lists(roles)
+    if not sizes:
+        return
+    if len(set(sizes.values())) > 1:
+        raise EnvelopeError("field_names_several_subjects",
+                            "approver lists of different lengths: " + ", ".join(f"{p} lists {n}" for p, n in
+                                                                                 sorted(sizes.items())))
+    plain = sorted(p for p, r in roles.items() if r == LIST_ROLE)
+    if plain or subject_role == LIST_ROLE:
+        raise EnvelopeError("field_names_several_subjects",
+                            f"the record lists several approvers; {', '.join(plain) or 'its subject'} names the one "
+                            f"{LIST_ROLE} key, which is nobody in particular")
+    owner: dict[bytes, str] = {}
+    for subject in sorted({r for r in roles.values() if _MEMBER.fullmatch(r)}):
+        other = owner.setdefault(keys[subject], subject)
+        if other != subject:
+            raise EnvelopeError("field_names_several_subjects", f"{other} and {subject} have one key")
+
+
+def _key_bytes(keys: Mapping[str, Any]) -> dict[str, bytes]:
+    """The subject keys as bytes: any bytes-like value (bytes, bytearray, memoryview) is its bytes, so one key compares
+    equal to itself in every spelling; anything else is refused ``subject_key_not_bytes``."""
+    out: dict[str, bytes] = {}
+    for subject, key in keys.items():
+        try:
+            out[subject] = bytes(memoryview(key))
+        except TypeError:
+            raise EnvelopeError("subject_key_not_bytes", f"the {subject} key is a {type(key).__name__}") from None
+    return out
+
+
 def seal(
     schema: Schema,
     record: Mapping[str, Any],
@@ -312,7 +413,8 @@ def seal(
     leaf: bytes | None = None,
     nonce: Mapping[tuple[str, str], bytes] | None = None,
 ) -> Sealed:
-    """Seal `record` under `keys` (role -> subject key). `subject_value` is what the v1 statement named by plain
+    """Seal `record` under `keys` (subject -> subject key: a role, or ``approver.<n>`` for member n of an approver
+    list, which is sealed per member). `subject_value` is what the v1 statement named by plain
     digest (the call); it is committed under `keys[subject_role]`. With `subject_role` None the record has no data
     subject, every field must be kept, and `subject_digest` is empty (the caller names a structural subject). A
     null value of a non-kept field whose role has no key is kept as null: there is nothing in it to erase. `leaf`
@@ -320,6 +422,7 @@ def seal(
     problems = lint_schema(schema)
     if problems:
         raise EnvelopeError("schema_refused", "; ".join(problems))
+    keys = _key_bytes(keys)
     leaf = os.urandom(LEAF_BYTES) if leaf is None else leaf
     if len(leaf) != LEAF_BYTES:
         raise EnvelopeError("leaf_id_length")
@@ -334,6 +437,11 @@ def seal(
         if rule is None:
             raise EnvelopeError("field_undeclared", path)
         _, value = _get(record, path)
+        if rule.members and isinstance(value, list):
+            # Several people, as the schema declares: each member is its own field and subject; the list's path
+            # itself carries no class.
+            _seal_members(path, rule, value, keys, leaf, (classes, roles, groups, pseudonyms, commitments))
+            continue
         classes[path] = rule.cls
         if rule.cls == KEPT:
             if isinstance(value, str) and _HEX64.fullmatch(value.removeprefix("sha256:")) and path not in schema.structural:
@@ -356,6 +464,7 @@ def seal(
             commitments[path] = tag(field_key(key, leaf, path), value)
     if subject_role is not None and subject_role not in keys:
         raise EnvelopeError("subject_key_missing", f"the statement subject needs the {subject_role} key")
+    _one_person_per_key(roles, keys, subject_role)
     if subject_role is None and groups:
         raise EnvelopeError("subject_role_missing", "a record with personal fields names its data subject")
     ciphertexts: list[dict[str, Any]] = []
@@ -417,6 +526,7 @@ def open_sealed(
         _set(out, path, value)
     erased: list[str] = []
     missing: list[str] = []
+    members: dict[str, dict[int, Any]] = {}  # approver list path -> member index -> value
     classes: Mapping[str, str] = erasure["classes"]
     for entry in erasure["ciphertexts"]:
         role, cls, digest = entry["subject"], entry["class"], entry["sha256"]
@@ -451,8 +561,35 @@ def open_sealed(
                 raise EnvelopeError("pseudonym_mismatch", path)
             if path in erasure["commitments"] and erasure["commitments"][path] != tag(field_key(key, leaf, path), value):
                 raise EnvelopeError("commitment_mismatch", path)
-            _set(out, path, value)
+            if _MEMBER.fullmatch(role):
+                base, _, n = path.rpartition(".")
+                members.setdefault(base, {})[int(n)] = value
+            else:
+                _set(out, path, value)
+    # An approver list opens with every member whose key is present; an erased or missing member reads as null in
+    # its place, so the others keep their positions.
+    sizes = _member_lists(erasure["roles"])
+    for base, opened in members.items():
+        _set(out, base, [opened.get(n) for n in range(sizes[base])])
     return Opened(out, tuple(sorted(erased)), tuple(sorted(missing)))
+
+
+def _member_lists(roles: Mapping[str, str]) -> dict[str, int]:
+    """Each approver list a block seals per member, with its size; EnvelopeError ``roles_malformed`` unless member
+    ``n`` of a list is the field ``<path>.<n>`` under subject ``approver.<n>`` and the members are 0 to N-1."""
+    found: dict[str, set[int]] = {}
+    for path, role in roles.items():
+        match = _MEMBER.fullmatch(role)
+        if match is None:
+            continue
+        base, _, n = path.rpartition(".")
+        if not base or n != match.group(1):
+            raise EnvelopeError("roles_malformed", f"{path} is not member {match.group(1)} of a list")
+        found.setdefault(base, set()).add(int(n))
+    for base, ns in found.items():
+        if ns != set(range(len(ns))):
+            raise EnvelopeError("roles_malformed", f"{base} does not list members 0 to {len(ns) - 1}")
+    return {base: len(ns) for base, ns in found.items()}
 
 
 def check_block(erasure: Mapping[str, Any]) -> None:
@@ -466,8 +603,9 @@ def check_block(erasure: Mapping[str, Any]) -> None:
         raise EnvelopeError("classes_malformed")
     roles = erasure.get("roles")
     if (not isinstance(roles, Mapping) or set(roles) != {p for p, c in classes.items() if c != KEPT}
-            or any(r not in ROLES for r in roles.values())):
+            or not all(_subject_ok(r) for r in roles.values())):
         raise EnvelopeError("roles_malformed")
+    _member_lists(roles)
     for name in ("commitments", "pseudonyms"):
         block = erasure.get(name)
         if not isinstance(block, Mapping) or not all(isinstance(v, str) and _HEX64.fullmatch(v) for v in block.values()):
@@ -482,7 +620,7 @@ def check_block(erasure: Mapping[str, Any]) -> None:
         raise EnvelopeError("ciphertexts_malformed")
     seen: set[tuple[str, str]] = set()
     for e in entries:
-        if (not isinstance(e, Mapping) or e.get("class") not in (PSEUDONYM, PAYLOAD) or e.get("subject") not in ROLES
+        if (not isinstance(e, Mapping) or e.get("class") not in (PSEUDONYM, PAYLOAD) or not _subject_ok(e.get("subject"))
                 or not isinstance(e.get("sha256"), str) or not _HEX64.fullmatch(e["sha256"])
                 or isinstance(e.get("bytes"), bool) or not isinstance(e.get("bytes"), int)
                 or e["bytes"] < NONCE_BYTES + TAG_BYTES):

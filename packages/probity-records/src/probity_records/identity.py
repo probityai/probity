@@ -12,15 +12,23 @@ Refused: a missing or unknown member, a thumbprint that does not recompute from 
 mismatch, a credential not valid at the record's time, an issuer the auditor did not pin or a key
 whose thumbprint the auditor did not pin for that issuer, an ``act`` chain that names an agent other
 than the agent principal, and an approver principal who is not among the approvals the record counts.
+
+``approver`` is one principal when one person approved, or a list of at least two principals when an approval took
+several (an M-of-N quorum): each member a full principal, each a counted signer of the approval, no subject named
+twice (``principal_approver_duplicate``). A list of fewer than two is refused (``principal_approver_list_too_short``):
+one approval takes the single form, so one block has one spelling. A member that fails the principal checks is refused
+as ``principal_approver:<code>``, as the single form is. The list is a set: its order is the writer's and
+neither the verdict, a permit's parties (``journal._parties``) nor the digest (``digests.principals_digest`` sorts the
+members) depends on it.
 An issuer's pins are a collection of thumbprints (a set, list or tuple); a pin written as one string is
 refused rather than searched, so a string that merely contains a thumbprint pins nothing.
 
 Graded, never refused, on delegation: ``act-chain`` when the user's credential names the agent in
 ``act``, ``act-absent`` when it carries no ``act``. ``strict`` conformance needs the user, the agent and the
-sponsor, ``act-chain``, and the approver exactly when an approval admitted the call: a call no human approved is
-strict without one, and an approved call is strict only with its approver named. An approver principal no approval
-counts is refused (``principal_approver_without_approval``) under every profile: it states that a person approved
-when none did. Anything else that passes is ``basic`` (``strict_shortfall`` names what it lacks). An auditor may
+sponsor, ``act-chain``, and the approvers exactly when an approval admitted the call: a call no human approved is
+strict without one, and an approved call is strict only with every approver the approval counts named
+(``approvers-partial`` when the block names some of them). An approver principal no approval counts is refused
+(``principal_approver_without_approval``) under every profile: it states that a person approved when none did. Anything else that passes is ``basic`` (``strict_shortfall`` names what it lacks). An auditor may
 require ``strict``.
 
 Autonomous: an agent that runs with no person in its session. Its block carries no ``user``; it carries the agent,
@@ -28,8 +36,9 @@ the ``sponsor`` who answers for it, the digest of its standing grant (``standing
 that sponsor and a review date, ``grants.py``) and its ``session`` ({"id", "startedAt"}). ``check_principals`` grades
 it ``autonomous`` when the standing grant is one the verifier resolved from content it verified against its own
 pinned grant roots, is inside its window and before its review date, is held by the agent's confirmed key (``cnf``)
-and names this sponsor; the sponsor is registered for this agent in the registry the auditor pins; and the approver
-is present exactly when an approval admitted the call. The sponsor's credential is checked at the grant's
+and names this sponsor; the sponsor is registered for this agent in the registry the auditor pins; and the approvers
+are named exactly when an approval admitted the call, every one it counts (``principals_need_every_approver`` when the
+block names some of them: an autonomous block has no basic grade to fall to). The sponsor's credential is checked at the grant's
 ``notBefore``, the moment the sponsor answered for it, never per call. A ``user`` in such a block is refused
 (``principals_autonomous_has_user``): an autonomous block never carries a person's token. ``autonomous`` is
 strict-equivalent: an auditor that requires ``strict`` accepts it.
@@ -46,6 +55,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 from collections.abc import Mapping
 from typing import Any, Final
 
@@ -83,6 +93,8 @@ TYP_SOURCES = {"oauth-id-jag+jwt": "id-jag", "at+jwt": "jwt-access-token"}
 #: The containers an issuer's pinned thumbprints may come in; a string is never one (``in`` would search it).
 PIN_SETS = (set, frozenset, list, tuple)
 THUMBPRINT_MEMBERS = {"RSA": ("e", "kty", "n"), "EC": ("crv", "kty", "x", "y"), "OKP": ("crv", "kty", "x")}
+#: The fewest principals an approver list holds: one approval takes the single form.
+APPROVER_LIST_MIN = 2
 
 
 def b64url(data: bytes) -> str:
@@ -224,6 +236,38 @@ def check_principal(p: Any, at: str, pins: Mapping[str, Any]) -> str | None:
     return None
 
 
+def approver_principals(block: Mapping[str, Any]) -> list[Any]:
+    """The approver principals a block names, in the writer's order: none, the single form's one, or a list's
+    members."""
+    named = block.get("approver")
+    if named is None:
+        return []
+    return list(named) if isinstance(named, list) else [named]
+
+
+def approver_subjects(block: Mapping[str, Any]) -> set[str]:
+    """The subjects of the approvers a block names (call only on a block whose approvers passed their checks)."""
+    return {p["subject"] for p in approver_principals(block)}
+
+
+def _role_problems(block: Mapping[str, Any], role: str, at: str, pins: Mapping[str, Any]) -> list[str]:
+    """``principal_<role>:<code>`` for each principal of ``role`` that fails the principal checks, the approver list's
+    own refusals (too short, a subject twice), or nothing."""
+    if role == "approver" and isinstance(block["approver"], list):
+        members = block["approver"]
+        if len(members) < APPROVER_LIST_MIN:
+            return ["principal_approver_list_too_short"]
+        found = [f"principal_approver:{prob}" for m in members for prob in [check_principal(m, at, pins)] if prob]
+        if found:
+            return found
+        return ["principal_approver_duplicate"] if len({m["subject"] for m in members}) != len(members) else []
+    prob = check_principal(block[role], at, pins)
+    problems: list[str] = []
+    if prob:
+        problems.append(f"principal_{role}:{prob}")
+    return problems
+
+
 def sponsor_id(issuer: str, subject: str) -> str:
     """The id a sponsor goes by in the revocation list (kind ``sponsor``): ``<issuer>#<subject>``. An issuer is an
     https URL with no fragment (OpenID Connect Discovery 1.0, section 3), so the first ``#`` splits it
@@ -277,7 +321,7 @@ def _grant_problems(block: Mapping[str, Any], at: str,
 
 
 def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], approvers: set[str] | None,
-                      sponsors: Mapping[str, Any] | None,
+                      counted: set[str] | None, sponsors: Mapping[str, Any] | None,
                       standing_grants: Mapping[str, Mapping[str, Any]]) -> tuple[list[str], str | None]:  # fmt: skip
     if "user" in block:
         return ["principals_autonomous_has_user"], None
@@ -290,9 +334,7 @@ def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], a
     grant = standing_grants.get(block["standingGrant"]) if isinstance(block["standingGrant"], str) else None
     for role in ("agent", "approver"):
         if role in block:
-            prob = check_principal(block[role], at, pins)
-            if prob:
-                problems.append(f"principal_{role}:{prob}")
+            problems += _role_problems(block, role, at, pins)
     # The sponsor answered for the grant when it was issued: with no resolved grant there is no such instant, and
     # the grant's own refusal below is the reason the block falls.
     prob = None if grant is None or "notBefore" not in grant else check_principal(block["sponsor"],
@@ -310,20 +352,28 @@ def _check_autonomous(block: dict[str, Any], at: str, pins: Mapping[str, Any], a
         problems.append("principals_sponsors_not_pinned")
     elif (sponsor["issuer"], sponsor["subject"]) not in {tuple(s) for s in sponsors.get(agent["clientId"], ())}:
         problems.append("principal_sponsor_not_registered")
+    named = approver_subjects(block)
     if "approver" in block and approvers is None:
         problems.append("principal_approver_without_approval")
     elif approvers is not None and "approver" not in block:
         problems.append("principals_need_approver")
-    elif "approver" in block and approvers is not None and block["approver"]["subject"] not in approvers:
+    elif "approver" in block and approvers is not None and not named <= approvers:
         problems.append("principal_approver_not_an_approval_signer")
+    elif counted and not counted <= named:
+        problems.append("principals_need_every_approver")
     return (problems, None) if problems else ([], "autonomous")
 
 
 def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: set[str] | None = None, *,
-                     sponsors: Mapping[str, Any] | None = None,
+                     counted: set[str] | None = None, sponsors: Mapping[str, Any] | None = None,
                      standing_grants: Mapping[str, Mapping[str, Any]] | None = None) -> tuple[list[str], str | None]:
     """(problems, grade) for one record's ``principals``. Grade is ``strict``, ``basic`` or ``autonomous``; None
     when a problem refuses the block.
+
+    ``approvers`` are the people the block may name as approver; ``counted`` are the people the approval counted,
+    whom strict (and an autonomous block) needs every one of named. For an allow the two are the same set, the
+    default (``counted`` None). A deny counts nobody: its ``approvers`` are the people whose binding it carries and
+    its ``counted`` is empty, so a deny naming one of two such people is graded as it was before the list form.
 
     ``sponsors`` is the registry the auditor pins: agent client id to the (issuer, subject) pairs registered as its
     sponsors. ``standing_grants`` maps a grant digest to a grant body the caller verified against its own pinned
@@ -331,9 +381,9 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: se
     if not isinstance(block, dict) or not block or set(block) - set(ROLES) - set(AUTONOMOUS):
         return ["principals_malformed"], None
     if set(block) & set(AUTONOMOUS):
-        return _check_autonomous(block, at, pins, approvers, sponsors, standing_grants or {})
-    problems = [f"principal_{role}:{prob}" for role in ROLES if role in block
-                for prob in [check_principal(block[role], at, pins)] if prob]
+        return _check_autonomous(block, at, pins, approvers, approvers if counted is None else counted, sponsors,
+                                 standing_grants or {})
+    problems = [found for role in ROLES if role in block for found in _role_problems(block, role, at, pins)]
     if "user" not in block or "agent" not in block:
         problems.append("principals_need_user_and_agent")
     if problems:
@@ -345,21 +395,28 @@ def check_principals(block: Any, at: str, pins: Mapping[str, Any], approvers: se
     if "approver" in block:
         if not approvers:
             return ["principal_approver_without_approval"], None
-        if block["approver"]["subject"] not in approvers:
+        if not approver_subjects(block) <= approvers:
             return ["principal_approver_not_an_approval_signer"], None
-    return [], "basic" if strict_shortfall(block, approvers) else "strict"
+    return [], "basic" if strict_shortfall(block, approvers, counted) else "strict"
 
 
-def strict_shortfall(block: Mapping[str, Any], approvers: set[str] | None) -> str | None:
+def strict_shortfall(block: Mapping[str, Any], approvers: set[str] | None,
+                     counted: set[str] | None = None) -> str | None:
     """What keeps a human-session block that passed from ``strict``: ``act-absent`` (the user credential names no
-    agent in ``act``), ``sponsor-absent``, or ``approver-absent`` (an approval admitted the call and the block does not
-    name who gave it); None when it is strict. The gateway writer applies the same rule."""
+    agent in ``act``), ``sponsor-absent``, ``approver-absent`` (an approval admitted the call and the block does not
+    name who gave it), or ``approvers-partial`` (it names some of the approvers the approval counts, not all); None
+    when it is strict. ``approver-absent`` reads ``approvers``, the people the block may name; ``approvers-partial``
+    reads ``counted``, the people the approval counted (default: ``approvers``; empty for a deny, which counts
+    nobody). The gateway writer applies the same rule."""
     if "act" not in block.get("user", {}):
         return "act-absent"
     if "sponsor" not in block:
         return "sponsor-absent"
     if approvers and "approver" not in block:
         return "approver-absent"
+    counted = approvers if counted is None else counted
+    if counted and not counted <= approver_subjects(block):
+        return "approvers-partial"
     return None
 
 
@@ -389,10 +446,45 @@ def _verify_jws(alg: str, jwk: Mapping[str, Any], signing_input: bytes, sig: byt
     return True
 
 
-def _iso(seconds: Any) -> str:
+def _iso(seconds: int) -> str:
     from datetime import UTC, datetime
 
-    return datetime.fromtimestamp(int(seconds), UTC).isoformat().replace("+00:00", "Z")
+    return datetime.fromtimestamp(seconds, UTC).isoformat().replace("+00:00", "Z")
+
+
+_B64URL_SEGMENT: Final = re.compile(r"[A-Za-z0-9_-]*")
+#: The whole seconds of years 1 to 9999, the range both readers print a time claim in the same way.
+_CLAIM_TIME_RANGE: Final = (-62135596800, 253402300799)
+
+
+def token_segments(token: str) -> tuple[dict[str, Any], dict[str, Any], bytes] | None:
+    """A compact JWS read strictly: its header, its claims and its signature bytes, or None when it is not one.
+
+    Three segments of the base64url alphabet without padding; the header and the claims each one JSON object that
+    jcs-admit admits (no duplicate member, no ``NaN`` or ``Infinity``, valid UTF-8, no lone surrogate), parsed with
+    integers and floats kept apart. The TypeScript twin's ``tokenSegments`` reads a token by the same rules, so a token a
+    provider signed is one value to both readers."""
+    parts = token.split(".")
+    if len(parts) != 3 or not all(_B64URL_SEGMENT.fullmatch(s) and len(s) % 4 != 1 for s in parts):
+        return None
+    try:
+        header = admitted_loads(unb64url(parts[0]), max_depth=TOKEN_MAX_DEPTH)
+        claims = admitted_loads(unb64url(parts[1]), max_depth=TOKEN_MAX_DEPTH)
+    except ValueError:
+        return None
+    if not isinstance(header, dict) or not isinstance(claims, dict):
+        return None
+    return header, claims, unb64url(parts[2])
+
+
+def _claim_time(claims: Mapping[str, Any], name: str) -> str | None:
+    """A token time claim (``iat``, ``exp``) as its principal field prints it, ``1970-01-01T00:00:00Z`` when absent;
+    None when it is not an integer number of seconds (a float, ``1.0`` included, a string, a boolean, null) within
+    years 1 to 9999."""
+    value = claims.get(name, 0)
+    if isinstance(value, bool) or not isinstance(value, int) or not _CLAIM_TIME_RANGE[0] <= value <= _CLAIM_TIME_RANGE[1]:
+        return None
+    return _iso(value)
 
 
 def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: str | None = None) -> str | None:
@@ -408,17 +500,13 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
         return "jwks_digest_mismatch"
     if dict(p.get("key", {})) not in [dict(k) for k in jwks.get("keys", [])]:
         return "key_not_in_jwks"
-    try:
-        head_b64, body_b64, sig_b64 = token.split(".")
-        header = admitted_loads(unb64url(head_b64), max_depth=TOKEN_MAX_DEPTH)
-        claims = admitted_loads(unb64url(body_b64), max_depth=TOKEN_MAX_DEPTH)
-        signature = unb64url(sig_b64)
-    except (ValueError, TypeError):
+    segments = token_segments(token)
+    if segments is None:
         return "token_malformed"
-    if not isinstance(header, dict) or not isinstance(claims, dict):
-        return "token_malformed"
+    header, claims, signature = segments
     if "crit" in header:  # RFC 7515 section 4.1.11: a verifier that implements no extension refuses one that is demanded
         return "token_critical_unsupported"
+    head_b64, body_b64, _ = token.split(".")
     if header.get("kid") != p.get("kid"):
         return "token_kid_mismatch"
     if p.get("source") == "id-jag" and header.get("typ") != "oauth-id-jag+jwt":
@@ -431,9 +519,11 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
     aud = claims.get("aud")
     # An ID token names its client in ``azp`` (OpenID Connect Core 1.0, section 2); an access token in ``client_id``.
     client = claims.get("client_id") or (claims.get("azp") if p.get("source") == "id-token" else None)
+    issued, expires = _claim_time(claims, "iat"), _claim_time(claims, "exp")
+    if issued is None or expires is None:
+        return "token_malformed"
     expected = {"issuer": claims.get("iss"), "subject": claims.get("sub"), "clientId": client,
-                "audience": aud if isinstance(aud, list) else [aud], "issuedAt": _iso(claims.get("iat", 0)),
-                "expiresAt": _iso(claims.get("exp", 0))}
+                "audience": aud if isinstance(aud, list) else [aud], "issuedAt": issued, "expiresAt": expires}
     for member, value in expected.items():
         if p.get(member) != value:
             return f"token_claim_mismatch:{member}"
