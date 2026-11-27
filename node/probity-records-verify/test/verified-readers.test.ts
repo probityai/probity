@@ -13,6 +13,7 @@ const b64u = (raw: Buffer | string): string => Buffer.from(raw).toString("base64
 
 const HOSTILE: Record<string, Buffer> = {
   "deep": Buffer.from("[".repeat(20000) + "]".repeat(20000)),
+  "deep and still a proof": Buffer.from("[".repeat(1500) + "]".repeat(1500)),
   "one level past the limit": Buffer.from("[".repeat(33) + "]".repeat(33)),
   "repeated member": Buffer.from('{"a":1,"a":2}'),
   "lone surrogate": Buffer.from('{"a":"\\ud800"}'),
@@ -43,6 +44,16 @@ test("a segment exactly at the depth limit is still read", () => {
 test("a DPoP header the strict reader refuses is dpop_malformed, and a repeated member keeps its own code", () => {
   const proof = (head: Buffer) => `${b64u(head)}.${b64u("{}")}.${b64u("x")}`;
   const run = (head: Buffer) => checkDpop(proof(head), "POST", "https://gw.example.com/x", "2026-11-27T00:00:00Z", "jkt", null, Buffer.alloc(0))[1];
-  for (const name of ["deep", "one level past the limit", "lone surrogate", "invalid utf-8"]) assert.equal(run(HOSTILE[name]), "dpop_malformed", name);
+  // The same cases, in the same order, as test_a_dpop_header_the_strict_reader_refuses_is_dpop_malformed in
+  // packages/probity-records/tests/test_untrusted_json_sweep.py. "deep" (40000 bytes) is not one of them: its proof is
+  // over MAX_PROOF_BYTES, so both readers answer dpop_too_large before any segment is read (own test below).
+  for (const name of ["deep and still a proof", "one level past the limit", "lone surrogate", "invalid utf-8", "not an object"]) {
+    assert.equal(run(HOSTILE[name]), "dpop_malformed", name);
+  }
   assert.equal(run(HOSTILE["repeated member"]), "dpop_duplicate_member");
+});
+
+test("a DPoP proof past MAX_PROOF_BYTES is dpop_too_large before any segment is read", () => {
+  const big = `${b64u(HOSTILE["deep"])}.${b64u("{}")}.${b64u("x")}`;
+  assert.equal(checkDpop(big, "POST", "https://gw.example.com/x", "2026-11-27T00:00:00Z", "jkt", null, Buffer.alloc(0))[1], "dpop_too_large");
 });

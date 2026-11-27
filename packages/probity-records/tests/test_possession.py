@@ -280,6 +280,22 @@ def test_claims_the_strict_reader_refuses_are_refused_after_the_signature_checks
         assert present(dpop=_signed_raw(head, claims)) == (None, reason), claims[:20]
 
 
+def test_a_dpop_header_the_strict_reader_refuses_is_dpop_malformed() -> None:
+    """The cases of the TypeScript twin's test in node/probity-records-verify/test/verified-readers.test.ts, in order."""
+    def run(head: bytes) -> tuple:
+        return present(dpop=f"{b64url(head)}.{b64url(b'{}')}.{b64url(b'x')}")
+
+    for head in (b"[" * 1500 + b"]" * 1500, b"[" * 33 + b"]" * 33, b'{"a":"\\ud800"}',
+                 b'{"a":"\xff"}', b"[1]"):
+        assert run(head) == (None, "dpop_malformed"), head[:20]
+    assert run(b'{"a":1,"a":2}') == (None, "dpop_duplicate_member")
+
+
+def test_a_dpop_proof_past_the_size_bound_is_too_large_before_any_segment_is_read() -> None:
+    big = f"{b64url(b'[' * 20_000 + b']' * 20_000)}.{b64url(b'{}')}.{b64url(b'x')}"
+    assert present(dpop=big) == (None, "dpop_too_large")
+
+
 @pytest.mark.parametrize("case", sorted(ADVERSARIAL))
 def test_every_adversarial_presentation_is_refused(case: str) -> None:
     run, reason = ADVERSARIAL[case]
