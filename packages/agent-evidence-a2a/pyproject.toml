@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-evidence-a2a"
-version = "0.1.0"
+version = "0.2.0"
 description = "Verify A2A agent card signatures over the bytes the server sent, with the a2a-jcs-v01 vectors, a 43-card corpus and a 42-URL webhook SSRF corpus"
 readme = "README.md"
 requires-python = ">=3.12"
