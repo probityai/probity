@@ -7,8 +7,8 @@ functions have the same fault: Python's ``\\d``, ``int``, ``str.strip()`` and ``
 does, each in its own way. A reader checks the type first and reads text by its grammar (``grammar/*.json``).
 
 These tests count such calls in every source file of both packages. The request readers (the contract of the grammar
-files) have none. Every other file is pinned at the number it has today, each with its reason, so none can be added;
-a file that is in no table fails.
+files) have none. Every other file is pinned at exactly the number it has today, so none can be added and a
+pin cannot stay loose after a file loses a call; a file that is in no table fails.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ PY_STRICT = ("certificate", "possession", "stamp", "trust_bundle", "verified_ide
 PY_NOT_READERS = ("__init__", "__main__", "canonical_identity_vectors", "clock_lint", "clock_tripwire",
                   "delegation_vectors", "digests_vectors", "erasure_vectors", "grant_body_vectors", "identity_vectors",
                   "refusal_codes", "refusal_lint", "verified_identities_vectors")  # fmt: skip
-#: Every other Python file, with the findings it has today. A count may fall; it may not rise. ``core`` keeps one
+#: Every other Python file, with the findings it has today. The count is exact: a file that loses a call lowers its pin in the same change. ``core`` keeps one
 #: ``int``: ``decimal``, the one function that turns grammar-matched digits into a number. The older record readers
 #: (journal, quorum, authority, governance, oidc_approval, otel, exports) still turn received members into text; they
 #: have no generated differential yet and are tracked as their own item.
@@ -50,7 +50,7 @@ PY_PINNED: dict[str, dict[str, int]] = {
     'journal': {'int()': 1, 'platform parser': 2, 'str()': 16, 'strip()': 4},
     'oidc_approval': {'platform parser': 2, 'str()': 4},
     'otel': {'int()': 10, 'lower()': 2, 'platform parser': 2, 'str()': 24, 'strip()': 1},
-    'quorum': {'str()': 8},
+    'quorum': {'str()': 1},
     'receipt_map': {},
     'records': {'str()': 1},
     'registry': {'isdigit()': 1, 'lower()': 1, 'platform parser': 2, 'str()': 2, 'strip()': 1},
@@ -72,7 +72,7 @@ TS_PINNED: dict[str, dict[str, int]] = {
     'identity.ts': {'parseInt()': 1, 'toLowerCase()': 1},
     'revocation.ts': {'Date': 1},
     'sf.ts': {'Number()': 1, 'String()': 1},
-    'verify.ts': {'Date': 1, 'Number()': 3, 'String()': 43, 'toLowerCase()': 3, 'trim()': 1},
+    'verify.ts': {'Date': 1, 'Number()': 3, 'String()': 36, 'toLowerCase()': 3, 'trim()': 1},
     'webbotauth.ts': {'Date': 3, 'Number()': 1, 'String()': 1, '\\d in a pattern': 6, 'parseInt()': 1, 'toLowerCase()': 11, 'trim()': 1},
 }
 
@@ -168,14 +168,18 @@ def test_no_python_request_reader_turns_a_value_into_text_or_calls_a_platform_pa
     assert not any(found.values()), {name: f for name, f in found.items() if f}
 
 
-def test_no_other_python_file_gains_such_a_call() -> None:
-    grew = {}
+def _moved(pinned: dict[str, int], now: Counter[str]) -> dict[str, tuple[int, int]]:
+    """(pinned, now) for each kind whose count is not the pinned one."""
+    return {kind: (pinned.get(kind, 0), now[kind]) for kind in sorted({*pinned, *now}) if pinned.get(kind, 0) != now[kind]}
+
+
+def test_every_other_python_file_has_exactly_its_pinned_calls() -> None:
+    moved = {}
     for name, pinned in PY_PINNED.items():
-        now = py_findings((SRC / f"{name}.py").read_text())
-        more = {kind: (pinned.get(kind, 0), count) for kind, count in now.items() if count > pinned.get(kind, 0)}
-        if more:
-            grew[name] = more
-    assert not grew, f"(pinned, now) by kind; read the value by its type and its grammar instead: {grew}"
+        differs = _moved(pinned, py_findings((SRC / f"{name}.py").read_text()))
+        if differs:
+            moved[name] = differs
+    assert not moved, f"(pinned, now) by kind; a rise: read the value by its type and its grammar; a fall: lower the pin: {moved}"
 
 
 def test_every_typescript_file_is_a_request_reader_or_pinned() -> None:
@@ -189,11 +193,10 @@ def test_no_typescript_request_reader_turns_a_value_into_text_or_calls_a_platfor
     assert not any(found.values()), {name: f for name, f in found.items() if f}
 
 
-def test_no_other_typescript_file_gains_such_a_call() -> None:
-    grew = {}
+def test_every_other_typescript_file_has_exactly_its_pinned_calls() -> None:
+    moved = {}
     for name, pinned in TS_PINNED.items():
-        now = ts_findings((TS_SRC / name).read_text())
-        more = {kind: (pinned.get(kind, 0), count) for kind, count in now.items() if count > pinned.get(kind, 0)}
-        if more:
-            grew[name] = more
-    assert not grew, f"(pinned, now) by kind; read the value by its type and its grammar instead: {grew}"
+        differs = _moved(pinned, ts_findings((TS_SRC / name).read_text()))
+        if differs:
+            moved[name] = differs
+    assert not moved, f"(pinned, now) by kind; a rise: read the value by its type and its grammar; a fall: lower the pin: {moved}"
