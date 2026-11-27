@@ -39,7 +39,15 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
 
 from .clock import Clock
-from .core import Signer, admitted_loads, canonical, key_id, load_public, sha256_hex, unb64
+from .core import (
+    Signer,
+    admitted_loads,
+    canonical,
+    key_id,
+    load_public,
+    sha256_hex,
+    unb64,
+)
 from .journal import _whole_lines
 
 INTEGRITY_PREFIX = "audit.integrity."
