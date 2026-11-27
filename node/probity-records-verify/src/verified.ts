@@ -293,7 +293,7 @@ function eq(a: string, b: string): boolean {
 // non-ASCII character or a backslash makes the text something other than the request URI (RFC 9449 section 4.3).
 const URI_TEXT = /^(?:[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*$/;
 // scheme "://" authority path, then a query or fragment (RFC 3986 section 3).
-const HTU_PARTS = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)([?#][\s\S]*)?$/;
+const HTU_PARTS = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)([?#][^]*)?$/;
 const IP_LITERAL = /^\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?$/;
 const REG_NAME = /^[A-Za-z0-9\-._~!$&'()*+,;=%]+$/;
 // grammar/target-uri.json: any number of leading zeros, then at most five digits; never a number read from the whole run.
@@ -308,15 +308,15 @@ export function httpUriParts(url: string): [string, string, number | null, strin
   if (typeof url !== "string" || !URI_TEXT.test(url)) throw new Error("uri_not_in_the_uri_alphabet");
   const parts = HTU_PARTS.exec(url);
   if (parts === null) throw new Error("uri_not_absolute");
-  const scheme = parts[1].toLowerCase(), authority = parts[2], path = parts[3], rest = parts[4] ?? "";
+  const scheme = asciiLower(parts[1]), authority = parts[2], path = parts[3], rest = parts[4] ?? "";
   if (!Object.hasOwn(URI_DEFAULT_PORTS, scheme) || authority.includes("@")) throw new Error("uri_not_absolute");
   let host: string, portText: string | null;
   const literal = IP_LITERAL.exec(authority);
-  if (literal !== null) { host = `[${literal[1].toLowerCase()}]`; portText = literal[2] ?? null; }
+  if (literal !== null) { host = `[${asciiLower(literal[1])}]`; portText = literal[2] ?? null; }
   else if (authority.includes("[") || authority.includes("]")) throw new Error("uri_not_absolute");
   else {
     const colon = authority.indexOf(":");
-    host = (colon < 0 ? authority : authority.slice(0, colon)).toLowerCase();
+    host = asciiLower(colon < 0 ? authority : authority.slice(0, colon));
     portText = colon < 0 ? null : authority.slice(colon + 1);
     if (!REG_NAME.test(host)) throw new Error("uri_not_absolute");
   }
@@ -470,7 +470,7 @@ function dictionary(value: string): Map<string, Member> {
 export function stampFields(headers: [string, string][]): Map<string, string> | null {
   const found = new Map<string, string[]>();
   for (const [name, value] of headers) {
-    const lower = name.toLowerCase();
+    const lower = asciiLower(name);  // A to Z only: a platform's lower-casing also maps other characters
     if (STAMP_HEADERS.includes(lower)) found.set(lower, [...(found.get(lower) ?? []), value]);
   }
   if ([...found.values()].some((v) => v.length > 1)) stampRefuse("stamp_repeated");

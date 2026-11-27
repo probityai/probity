@@ -49,6 +49,7 @@ from .core import (
     JsonRefused,
     Signer,
     admitted_loads,
+    ascii_lower,
     exact_int,
     same_text,
     unb64,
@@ -175,17 +176,17 @@ def http_uri_parts(url: object) -> tuple[str, str, int | None, str, str]:
     parts = _HTU_PARTS.fullmatch(url)
     if parts is None:
         raise ValueError("uri_not_absolute")
-    scheme, authority, path, rest = parts[1].lower(), parts[2], parts[3], parts[4] or ""
+    scheme, authority, path, rest = ascii_lower(parts[1]), parts[2], parts[3], parts[4] or ""
     if scheme not in DEFAULT_PORTS or "@" in authority:
         raise ValueError("uri_not_absolute")
     literal = _IP_LITERAL.fullmatch(authority)
     if literal is not None:
-        host, port_text = f"[{literal[1].lower()}]", literal[2]
+        host, port_text = f"[{ascii_lower(literal[1])}]", literal[2]
     elif "[" in authority or "]" in authority:
         raise ValueError("uri_not_absolute")
     else:
         name, colon, after = authority.partition(":")
-        host, port_text = name.lower(), (after if colon else None)
+        host, port_text = ascii_lower(name), (after if colon else None)
         if not _REG_NAME.fullmatch(host):
             raise ValueError("uri_not_absolute")
     if port_text is None:

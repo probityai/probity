@@ -51,7 +51,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 from .canonical_identity import CanonicalIdentity, IdentityStringError
 from .clock import NS_PER_S
-from .core import admitted_loads, canonical, sha256_hex, unb64
+from .core import admitted_loads, ascii_lower, canonical, sha256_hex, unb64
 from .digests import is_digest, stamp_digest
 from .possession import http_uri_parts, uri_authority
 from .signing import verify_delegation
@@ -74,7 +74,7 @@ PRINCIPALS_MEMBERS: Final = ("id", "client", "principals")
 #: The longest lifetime a stamp may carry; a stamp names one request, so it is never a standing credential.
 MAX_TTL_SECONDS: Final = 300
 MAX_NONCE_BYTES: Final = 128
-#: The optional whitespace around a field value (RFC 9110 section 5.5): space and tab. ``str.strip()`` with no argument
+#: The optional whitespace around a field value (RFC 9110 section 5.5): space and tab. Stripping with no argument
 #: also removes U+001C to U+001F and every Unicode space, which JavaScript's ``trim`` does not.
 OWS: Final = " \t"
 
@@ -261,8 +261,8 @@ def stamp_fields(headers: Headers) -> dict[str, str] | None:
     member belongs to another signer and is not a stamp."""
     found: dict[str, list[str]] = {}
     for name, value in _pairs(headers):
-        if name.lower() in STAMP_HEADERS:
-            found.setdefault(name.lower(), []).append(value)
+        if ascii_lower(name) in STAMP_HEADERS:  # A to Z only: a platform's lower-casing also maps other characters
+            found.setdefault(ascii_lower(name), []).append(value)
     repeated = sorted(name for name, values in found.items() if len(values) > 1)
     if repeated:
         raise StampRefused("stamp_repeated", "given more than once: " + ", ".join(repeated))
@@ -376,7 +376,7 @@ def window_field(certificate: Mapping[str, Any]) -> str:
 def window_certificate(headers: Headers) -> dict[str, Any]:
     """The window certificate a request's ``probity-stamp-window`` field carries; StampRefused ``stamp_window_missing``
     without the field, ``stamp_window_malformed`` unless it is base64 of the canonical JSON of an object."""
-    values = [value for name, value in _pairs(headers) if name.lower() == WINDOW_FIELD]
+    values = [value for name, value in _pairs(headers) if ascii_lower(name) == WINDOW_FIELD]
     if not values:
         raise StampRefused("stamp_window_missing", "the stamp carries no window certificate")
     if len(values) > 1:

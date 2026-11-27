@@ -69,7 +69,7 @@ def _time(value: Any, what: str) -> str:
         ts(value)
     except ValueError as exc:
         raise _malformed(f"anchor {what} is an RFC 3339 time with an offset") from exc
-    return str(value)
+    return value  # type: ignore[no-any-return]  # ts read it, so it is a string
 
 
 def _public(jwk: Any) -> Ed25519PublicKey:
@@ -84,9 +84,10 @@ def _public(jwk: Any) -> Ed25519PublicKey:
 
 
 def _predicate_types(value: Any) -> frozenset[str]:
-    if (not isinstance(value, list) or not value or len(set(map(str, value))) != len(value)
-            or not all(isinstance(t, str) and t.startswith("https://") and t.isascii() and " " not in t
-                       for t in value)):  # fmt: skip
+    # Type first, then distinct: only strings are hashed, and no member is turned into text to compare it.
+    if (not isinstance(value, list) or not value
+            or not all(isinstance(t, str) and t.startswith("https://") and t.isascii() and " " not in t for t in value)
+            or len(set(value)) != len(value)):  # fmt: skip
         raise _malformed("predicateTypes is a non-empty list of distinct https URIs")
     return frozenset(value)
 
@@ -207,7 +208,7 @@ def verify_anchored(envelope: Any, bundle: Any, *, revocations: RevocationState 
         raise AnchorRefused("anchor_predicate_not_authorized", f"anchor {anchor.role} may not sign this type")
     revoked_at = None
     if revocations is not None and revocations.revoked("key", anchor.key_id):
-        revoked_at = str(revocations.entries[("key", anchor.key_id)]["revokedAt"])
+        revoked_at = revocations.entries[("key", anchor.key_id)]["revokedAt"]  # the list's reader checked it is a time
     bound = None if witnessed is None else witnessed_bound(envelope, witnessed)
     if bound is None:
         if anchor.status == "retired" or anchor.not_after is not None or revoked_at is not None:

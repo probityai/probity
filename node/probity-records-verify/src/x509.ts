@@ -39,7 +39,7 @@ function children(der: Buffer, parent: Tlv): Tlv[] {
   return out;
 }
 
-const UTC_TIME = /^[0-9]{12}Z$/, GENERALIZED_TIME = /^[0-9]{14}Z$/;
+export const UTC_TIME = /^[0-9]{12}Z$/, GENERALIZED_TIME = /^[0-9]{14}Z$/;
 
 /** A Time (RFC 5280 section 4.1.2.5) as microseconds since the epoch: UTCTime YYMMDDHHMMSSZ (YY 50 to 99 is 19YY, 00 to
  *  49 is 20YY) or GeneralizedTime YYYYMMDDHHMMSSZ, seconds present, no fraction, no offset. */
@@ -90,8 +90,8 @@ export function certificateFacts(der: Buffer): CertificateFacts {
 
 // The SubjectPublicKeyInfo of the two key types a DPoP proof may use, as the bytes before the key (RFC 8410 section 4
 // for Ed25519; RFC 5480 section 2 for P-256, a named curve and an uncompressed point).
-const SPKI_ED25519 = Buffer.from("302a300506032b6570032100", "hex");
-const SPKI_P256 = Buffer.from("3059301306072a8648ce3d020106082a8648ce3d03010703420004", "hex");
+export const SPKI_ED25519 = Buffer.from("302a300506032b6570032100", "hex");
+export const SPKI_P256 = Buffer.from("3059301306072a8648ce3d020106082a8648ce3d03010703420004", "hex");
 
 /** The public key a SubjectPublicKeyInfo holds, as the JWK members' bytes: {kty, crv, x} or {kty, crv, x, y}; null
  *  for any other key type or encoding. */

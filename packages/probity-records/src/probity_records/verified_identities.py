@@ -267,7 +267,7 @@ def _seconds(claims: Mapping[str, Any], name: str) -> int:
     value = claims.get(name)
     if not exact_int(value):  # grammar/integer.json: an integer both readers hold exactly
         raise _refuse("token_malformed", f"{name} is not an integer")
-    return int(value)
+    return value  # type: ignore[no-any-return]
 
 
 @dataclass(frozen=True)
