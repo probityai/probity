@@ -18,6 +18,15 @@
   `identity.token_segments` returns None for a signature in a second spelling instead of raising. A test counts
   text coercion (`str()`, `String()`) and platform text functions in reader code: the request readers have none.
 
+- **A vote, a delegation and quorum evidence are read by type, in both languages.** A vote's `approver`,
+  `onBehalfOf` and `role`, a delegation's `deputy`, `deputyKey` and `roles`, and the evidence's policy id and
+  `proposer` count only when they are strings (`roles` a list of strings), and the TypeScript reader looks a name up
+  among an object's own members only. Before, the TypeScript reader read a list holding `"carol"` as `"carol"`, found
+  an approver, a policy and a proposer named `constructor` in every object, and took a proposer `[]` as present,
+  while the Python reader raised on a `role` that was a list and on a vote with no `decision`. A vote whose
+  `decision` is neither `"approve"` nor `"reject"` is now `vote_shape` in both readers, and a delegation whose `roles`
+  is one text no longer delegates every role that text contains. `vectors/shared/quorum.json` adds QV6 to QV20.
+
 - **One reading of a request target, of base64 and of a token segment, in both languages.** A DPoP `htu` and a stamp
   `@target-uri` are read by `possession.http_uri_parts` (TypeScript `httpUriParts`): text outside the RFC 3986 URI
   alphabet (a space, a control byte, a tab or line break, a backslash, a non-ASCII character), userinfo, an empty

@@ -379,5 +379,1156 @@
         }
       }
     }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjY0NjcxMzBhZGQ1NGYzMTBkYTIyZmY4Nzg3MGZjM2IzZTNjYmY1ZjlmYjllZWY0YTljYjVmNzFiNTMwYjQ1YzYiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjY0NjcxMzBhZGQ1NGYzMTBkYTIyZmY4Nzg3MGZjM2IzZTNjYmY1ZjlmYjllZWY0YTljYjVmNzFiNTMwYjQ1YzYifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "Wgi7HtNbxla1vp8GLPnITwQnikheGUeHuF0TfR41RGwv0EDmHJk9vD+6AEsNczIOQxEXXVsNBhpR14kDmoa4Cg=="
+        }
+      ]
+    },
+    "description": "a vote whose approver is a list holding an approver's name, signed by that approver",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:vote_from_unknown_approver"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV6",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6WyJjYXJvbCJdLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJmaW5hbmNlIn0sInNpZyI6IitVVlV1STRtTUxoc01yOWd2YWQ2aUwwcWpkZEc2a3hxaUFmVlVDdTVVRUtPV3BJSjNpN3kxaG1CVWFWZysyOVdwaXA5Skk4V21YM2xnZk5jQkRHTkJBPT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6IlRTT2EzbjYzeWF0YzQ5MFdpOXErYWlTMTVoUFBhLy9DK3dxSDJKZmx4dU1oYVZWbXdjMG14KzB5bkN2WXJ6RUZ4ZDEreHN5T0d3b09uK3Bra1p4WERBPT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"G2t05lcI9ymbxot3cFIZl4DUphIEE+UjxX5hq6OiYu8VOv4ya8AKeeQa0tC1qepg11pGWRqBsq7anIBJ72i5Ag==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6ImY0MzExZjg3NjA0ZTQ0Yzg0ZDY2M2VmZWY0YTFlYWJlYzM1MTQzZmJjMTRmOGFkNWU5MTU5ZjVlNzJjNjFjMmIiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImY0MzExZjg3NjA0ZTQ0Yzg0ZDY2M2VmZWY0YTFlYWJlYzM1MTQzZmJjMTRmOGFkNWU5MTU5ZjVlNzJjNjFjMmIifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "ed6g6eCd+grCCdjdvWzVS7x57Fl4mtgKnqA8JPWzJlBrSwhdeR2JT/iXk/TxSuUrmsNdJMA6QEOISyIUzZT2CQ=="
+        }
+      ]
+    },
+    "description": "a vote whose approver is named constructor, a member every object inherits",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:vote_from_unknown_approver"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV7",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNvbnN0cnVjdG9yIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJzaWciOiJlUWJFczU0YXNsa04vM3RLSjlhTFIzTjV3S0xibWxCbHhoVHlDTitNTXZOWVFodTFYSXl0Z2xINGlBSHlMUUNsZ1VDaGJyZlhXSExIVWxoSUdUT01CZz09In0seyJib2R5Ijp7ImFwcHJvdmVyIjoiYWxpY2UiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJzZWN1cml0eSJ9LCJzaWciOiJUU09hM242M3lhdGM0OTBXaTlxK2FpUzE1aFBQYS8vQyt3cUgySmZseHVNaGFWVm13YzBteCsweW5DdllyekVGeGQxK3hzeU9Hd29Pbitwa2taeFhEQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"F16CqbHICAEgEQ104cYcInKI2A5I8LYold2k5gPgOqW5siqIYspi5RM8G0MYLI9L2Bs5jPGZyAps0DVBb9JIDw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjJkMGNiNTc5YjFiZDBhOGIyZTdjMjQyMzQ4MTlkNzVhMTg4YzBhMWVkMjkyODRlOTQ4MDY3MzE4OTlmNTk1YWUiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjJkMGNiNTc5YjFiZDBhOGIyZTdjMjQyMzQ4MTlkNzVhMTg4YzBhMWVkMjkyODRlOTQ4MDY3MzE4OTlmNTk1YWUifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "hIkGLt/TYqkjKmWkq393B27jRomSSmg0LHi4RSArzI/owGGUk4Kt1kwfgh2SzA9ruerVAkdHihKR9w590rxuDw=="
+        }
+      ]
+    },
+    "description": "a deputy's vote on behalf of a list holding the delegator's name",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:deputy_for_unknown_approver"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV8",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImVyaW4iLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJvbkJlaGFsZk9mIjpbImJvYiJdLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJmaW5hbmNlIn0sImRlbGVnYXRpb24iOnsiYm9keSI6eyJkZWxlZ2F0b3IiOiJib2IiLCJkZXB1dHkiOiJlcmluIiwiZGVwdXR5S2V5IjoiUEFyemZMa0VCL2FIQUNSNS9abkVxSnppNEs4VWV0T3AxNWw3NVRXbk9mTT0iLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsIm5vdEJlZm9yZSI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyb2xlcyI6WyJmaW5hbmNlIl19LCJzaWciOiJRWU0rcThZL1h3WXphblJBVjhUZHZGWmFqd2Q0T3ZNeXprQit4Nk9TOFBlTVY1a3dLODlIZ1hXWDVLRjExWHhlRG56UEZQNHRKWW9Neko5ZnZKQU9CQT09In0sInNpZyI6IlZzbjRZaFZMMmFkaW5aWnNJUnlkR1VaZnlRR3oxd0g1TjQ5SWh4WnVQTHY0MHRtaUxaZTRJNi9CNDVMRm05QmVKa3pPOHBlYS9aL3JtOW9FSzJraURRPT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6IlRTT2EzbjYzeWF0YzQ5MFdpOXErYWlTMTVoUFBhLy9DK3dxSDJKZmx4dU1oYVZWbXdjMG14KzB5bkN2WXJ6RUZ4ZDEreHN5T0d3b09uK3Bra1p4WERBPT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"/F3FmfWql/D02J6IB1ig0dpo4OaidtcED+8UCXxHiYwMl/34ukWtogF6Ki+ALH5c8gCCBchuZL0IlNiJyWSIAQ==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6ImI1ZGExMWM0ZGNmNjRmNzkwYzU3YjliOWE1MmFjYTBiZDM1NmExMmEyZjQwNGI0ZjQyOTk4OGMwNmEwMzYxZjUiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImI1ZGExMWM0ZGNmNjRmNzkwYzU3YjliOWE1MmFjYTBiZDM1NmExMmEyZjQwNGI0ZjQyOTk4OGMwNmEwMzYxZjUifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "MEnVC+6q9e0R3Q0buxrDg1rqFsKnmDDvGozqupg4kecH96MMMft4vM+qRY+wyvhLl7LZwLZuRxOFrlGjyxKZCQ=="
+        }
+      ]
+    },
+    "description": "the evidence's policy id is a list holding the pinned policy's id",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_policy_not_pinned"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV9",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjpbInBheSJdLCJwcm9wb3NlckJvdW5kIjp0cnVlLCJyb2xlcyI6eyJmaW5hbmNlIjp7Im1lbWJlcnMiOlsiYm9iIiwiY2Fyb2wiXSwibWluIjoxfSwic2VjdXJpdHkiOnsibWVtYmVycyI6WyJhbGljZSIsImJvYiJdLCJtaW4iOjF9fSwidGhyZXNob2xkIjoyfSwicG9saWN5RGlnZXN0IjoiZGZhMDBlODE2ODIyMDUxZmNjMzJkOTgzYzU3MDQ0NTZiM2E0NDIzMTA4MzJhM2U5MDNkNDljZTU2MWJkYWE1OCIsInByb3Bvc2VyIjoiZGF2ZSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInZvdGVzIjpbeyJib2R5Ijp7ImFwcHJvdmVyIjoiY2Fyb2wiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJmaW5hbmNlIn0sInNpZyI6Im45a0p4RTUxeUNqZXRtWStOblUzb3FlemJIYXNkcys0VWhhSzVNS3BTbEJRUDZJK2VOSkZsQm9iYkNUdWl3enlpaVR1Ukl5bmJ5cU9WbFBiYWNSMEJBPT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6IlRTT2EzbjYzeWF0YzQ5MFdpOXErYWlTMTVoUFBhLy9DK3dxSDJKZmx4dU1oYVZWbXdjMG14KzB5bkN2WXJ6RUZ4ZDEreHN5T0d3b09uK3Bra1p4WERBPT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"MaUroswVISgddQIiv1UhzzzedcLiuQlR2GRSm+vazhsQiubQjtL5Cvrj2zai00ITd7aft+CBA3NtjUfqh3koCQ==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6Ijk1N2I3YzdjODg1MTNhZmZiMTNkM2FkMDA5Y2IzYWI2YWY1NDFlMzQyNjkzZTlhZDNkZmJjNmMxODc0NjBkY2UiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6Ijk1N2I3YzdjODg1MTNhZmZiMTNkM2FkMDA5Y2IzYWI2YWY1NDFlMzQyNjkzZTlhZDNkZmJjNmMxODc0NjBkY2UifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "oqtoE3LnATrS5ruNhTgSa3PK21nSUOlQCJ/ppYGGI6UVlrb4ozW5mVTf5UQn4Mgz4/8A3pq3xhspI3YXi2VxCw=="
+        }
+      ]
+    },
+    "description": "the evidence's policy id is constructor, which no auditor pinned",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_policy_not_pinned"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV10",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoiY29uc3RydWN0b3IiLCJwcm9wb3NlckJvdW5kIjp0cnVlLCJyb2xlcyI6eyJmaW5hbmNlIjp7Im1lbWJlcnMiOlsiYm9iIiwiY2Fyb2wiXSwibWluIjoxfSwic2VjdXJpdHkiOnsibWVtYmVycyI6WyJhbGljZSIsImJvYiJdLCJtaW4iOjF9fSwidGhyZXNob2xkIjoyfSwicG9saWN5RGlnZXN0IjoiZGZhMDBlODE2ODIyMDUxZmNjMzJkOTgzYzU3MDQ0NTZiM2E0NDIzMTA4MzJhM2U5MDNkNDljZTU2MWJkYWE1OCIsInByb3Bvc2VyIjoiZGF2ZSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInZvdGVzIjpbeyJib2R5Ijp7ImFwcHJvdmVyIjoiY2Fyb2wiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJmaW5hbmNlIn0sInNpZyI6Im45a0p4RTUxeUNqZXRtWStOblUzb3FlemJIYXNkcys0VWhhSzVNS3BTbEJRUDZJK2VOSkZsQm9iYkNUdWl3enlpaVR1Ukl5bmJ5cU9WbFBiYWNSMEJBPT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6IlRTT2EzbjYzeWF0YzQ5MFdpOXErYWlTMTVoUFBhLy9DK3dxSDJKZmx4dU1oYVZWbXdjMG14KzB5bkN2WXJ6RUZ4ZDEreHN5T0d3b09uK3Bra1p4WERBPT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"jDFuKXdsUbDhPErX4gZoa5E/n/HBc3tiSivuA2ZYx+mion6r5ubjEGynkmC5Laxwf+padysxLxHgSEpVLwX/DA==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjIxZTk1MzA0NTQ1NmI5MmY4NjY5NWIxODYwY2Q2NDUxOWRhOTU1OGJhNzEyYzFhZTMwODM0OGQ0MGM5YmE3NDAiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjIxZTk1MzA0NTQ1NmI5MmY4NjY5NWIxODYwY2Q2NDUxOWRhOTU1OGJhNzEyYzFhZTMwODM0OGQ0MGM5YmE3NDAifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "V+iTHsWSxaWwhPQoo+0J3QchXn2W1fv+0GQq6+19uMGsH1f9s+q/3j4bMV0g6Ew0B8fIMq8cKYqFy2XiaT9lDQ=="
+        }
+      ]
+    },
+    "description": "a proposer named constructor is no approver: one rejection leaves the quorum pending, not refused",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_pending"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV11",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImNvbnN0cnVjdG9yIiwicmVxdWVzdEhhc2giOiI3OTk2N2NmMzQ5OTlhY2EzYzE2MGVmYmRkNTRjMTY4NGI1YjRkMzZiODAwOGY4ZDM4ZDNiZDU5OGZhMjA5ZWY4Iiwidm90ZXMiOlt7ImJvZHkiOnsiYXBwcm92ZXIiOiJjYXJvbCIsImRlY2lzaW9uIjoicmVqZWN0IiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6Ijc5OTY3Y2YzNDk5OWFjYTNjMTYwZWZiZGQ1NGMxNjg0YjViNGQzNmI4MDA4ZjhkMzhkM2JkNTk4ZmEyMDllZjgiLCJyb2xlIjoiZmluYW5jZSJ9LCJzaWciOiJXbjZoTGp1ZzZUUVE3MW1qanZsbzVic3h2MUI1Rml6ZEtXaG1CZmdkZ2tvc0k4OEJHZmpjaW9OakRxTERIZGVDbkw4OXJaY0RBRWE5QjVHWDRhdStCdz09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"Qq25HmFcflubcp9gf0M36lCSNyDTvCe8uXBjZGWKt4iA3Pd0WfxItf/SWyLyvxG9VPcpggTL+fzD/OTXy8jtCw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjgyNzQ4NTZmODMwMWI5OTM3NjVmYTY2OTZmNzljOTNmNWY4ZTU0ZGQ2NDA4YTY4YWU5NjNkMTM4YjU1YzI4YjQiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjgyNzQ4NTZmODMwMWI5OTM3NjVmYTY2OTZmNzljOTNmNWY4ZTU0ZGQ2NDA4YTY4YWU5NjNkMTM4YjU1YzI4YjQifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "+aVd7KH/itavjkPGpDZzZx1WKWVKlM+WP/zWDtY5oOixFKJQmhAYRoS+mjjy79rRjdpUgUzdraYnkT1EkpdrBA=="
+        }
+      ]
+    },
+    "description": "a vote whose role is a list holding a role's name",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:vote_role_not_held"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV12",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNhcm9sIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjpbImZpbmFuY2UiXX0sInNpZyI6Ik9lTGhaTTJsZVRGeWVMWHdwZWpqU1Z0ZjdBRU1rTUQ5c0RuUFNvblFlVVF4R0VYTS9YMlY5eHRnTWErYlovdDZmcnpXQ0JrUDJHcDhFMFlVdm55SUJnPT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6IlRTT2EzbjYzeWF0YzQ5MFdpOXErYWlTMTVoUFBhLy9DK3dxSDJKZmx4dU1oYVZWbXdjMG14KzB5bkN2WXJ6RUZ4ZDEreHN5T0d3b09uK3Bra1p4WERBPT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"kN/0bCGViDXTk6AkET171Pxvj333iU4nAEoWu/bwGJQMfmrYHexe9CC4++uMmy9iC0lF/JaIDwDZLzZPQPQoDg==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjUwMzdlYTc1NDA5MjQ5ZmY4ODY2MTYzODBiYThkM2VkNGE4MDhlNTliOGJmYzg3ZGQzMGJjMWE4NTM4Yzg0N2MiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjUwMzdlYTc1NDA5MjQ5ZmY4ODY2MTYzODBiYThkM2VkNGE4MDhlNTliOGJmYzg3ZGQzMGJjMWE4NTM4Yzg0N2MifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "80YNLpX0iK+yUDv/U3guz3WodyfJsiBm1VDIGlmRNJXUgZwhhnhytMaMmGLy2AYdsCpoKFLbU0pHiiVfEpDRDw=="
+        }
+      ]
+    },
+    "description": "a deputy named constructor is not an approver, so the deputy's vote counts for bob",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [],
+      "records": 1,
+      "verdict": "PASS",
+      "verified": 1
+    },
+    "id": "QV13",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNvbnN0cnVjdG9yIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwib25CZWhhbGZPZiI6ImJvYiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6ImZpbmFuY2UifSwiZGVsZWdhdGlvbiI6eyJib2R5Ijp7ImRlbGVnYXRvciI6ImJvYiIsImRlcHV0eSI6ImNvbnN0cnVjdG9yIiwiZGVwdXR5S2V5IjoiUEFyemZMa0VCL2FIQUNSNS9abkVxSnppNEs4VWV0T3AxNWw3NVRXbk9mTT0iLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsIm5vdEJlZm9yZSI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyb2xlcyI6WyJmaW5hbmNlIl19LCJzaWciOiJ4L1FkcnZJM3N6cnNJc2RTeEhLMm14QitPVHp2eWpiZUtaL0FhZnY0ZFFLbElYYU9Yc2R1cFBYRWMvU3FhSVpXODZnZXhhZVU4a3k2WjVCb0tsZGlBdz09In0sInNpZyI6ImdqS3B6RmpDTmNMTmFXbldTUGhMNzQyaDBHOEpzYldvMGZTOUt3ODZJd3Q5azN0b0VTblh2dTBOQldyWEl0UTJXVG8vNTFiKzdsbUprcXlvSzVBMUR3PT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6IlRTT2EzbjYzeWF0YzQ5MFdpOXErYWlTMTVoUFBhLy9DK3dxSDJKZmx4dU1oYVZWbXdjMG14KzB5bkN2WXJ6RUZ4ZDEreHN5T0d3b09uK3Bra1p4WERBPT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"s2XzVz3B4llVA7YX/DZ1ATpDrzd/IMSHH80PZuw0mHTzTcDCtURFw2sdorOieoHZ1kmyP7bHC06rzDnNGxxZDw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjM0ODIxZjkwNGMyMWVjZjFjYzlmMzhkNzUxMTI5OWQ4ZWY2OWMxMGFkNWI2MTA2NzM3ZGM1YzI0ODQ4NjIwM2IiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjM0ODIxZjkwNGMyMWVjZjFjYzlmMzhkNzUxMTI5OWQ4ZWY2OWMxMGFkNWI2MTA2NzM3ZGM1YzI0ODQ4NjIwM2IifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "Ztzh0rfRuUq9FB73uQ/MJk0xA0x4W9lYwNYEbscykLWaO5KdnjWJ5W/RoaCNixiWsYIdlMf8yvjEpQIhshOlDw=="
+        }
+      ]
+    },
+    "description": "a delegation whose deputy key is a number: the vote verifies under no key",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:vote_signature_unverified"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV14",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImVyaW4iLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJvbkJlaGFsZk9mIjoiYm9iIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJkZWxlZ2F0aW9uIjp7ImJvZHkiOnsiZGVsZWdhdG9yIjoiYm9iIiwiZGVwdXR5IjoiZXJpbiIsImRlcHV0eUtleSI6NywiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJub3RCZWZvcmUiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5Iiwicm9sZXMiOlsiZmluYW5jZSJdfSwic2lnIjoiZEl5R3paTDZXOGJ4MXRQK3FPR1luQlF4VmdLckdoUnpmd2lsbC8rN09nMDkvc0tidW16QjduZTVYbUlJMWNUdDhqNE1QdkpyUjNxM25MaGxla0xIQWc9PSJ9LCJzaWciOiJuclpXc3ZSb0pFaVBQM21CMjM1aUt5R0p2bDdnTHJQSTE2bVpaNlFhOE5WdHFoeW5oY292UFMwcnB4M1dYVExGdytkZERMUVdpSGFwdlNLazM3bUFEZz09In0seyJib2R5Ijp7ImFwcHJvdmVyIjoiYWxpY2UiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJzZWN1cml0eSJ9LCJzaWciOiJUU09hM242M3lhdGM0OTBXaTlxK2FpUzE1aFBQYS8vQyt3cUgySmZseHVNaGFWVm13YzBteCsweW5DdllyekVGeGQxK3hzeU9Hd29Pbitwa2taeFhEQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"KKlTVkEcG5AUSyUqtM5UrSQFYMtY48oDOdwfOuC+zEvd+6m739c1vX38PbiCkjnL8ehDQLMiRqgHet67CIJfCA==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjVhMzYwNjA2MTg4MDcxMjZkMjAwMjczODc3OGYzZTE2ZDYyZDc4OTU4ZDMwMWNmOTI0YTA2OTMzM2NkOTE0MjAiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjVhMzYwNjA2MTg4MDcxMjZkMjAwMjczODc3OGYzZTE2ZDYyZDc4OTU4ZDMwMWNmOTI0YTA2OTMzM2NkOTE0MjAifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "ZAxWuS+X6Rqp+T+hEXqXBhRi2k1UoGbNmWnJy8syvM1BVyPfC/BuR5bORSND/JIhH/Dtw8DsxR4Q6OY9uTdWAg=="
+        }
+      ]
+    },
+    "description": "a deputy's role is a list, and the delegation lists that list",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:deputy_role_not_delegated"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV15",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImVyaW4iLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJvbkJlaGFsZk9mIjoiYm9iIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjpbImZpbmFuY2UiXX0sImRlbGVnYXRpb24iOnsiYm9keSI6eyJkZWxlZ2F0b3IiOiJib2IiLCJkZXB1dHkiOiJlcmluIiwiZGVwdXR5S2V5IjoiUEFyemZMa0VCL2FIQUNSNS9abkVxSnppNEs4VWV0T3AxNWw3NVRXbk9mTT0iLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsIm5vdEJlZm9yZSI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyb2xlcyI6W1siZmluYW5jZSJdXX0sInNpZyI6ImMzV1JZUk9CRWJkaGlFMGlzblQyRUUyNGw2S2xDN3pWRlpWYzc4eE1TU3RMSG40cktvMVlMekRDMGlTK3BITzluWTlEVCtyUU1EQldTT3BYVVFlUEJRPT0ifSwic2lnIjoiQVhMRXNEbWhzeUxoQVFWdWpydC82RENRU21QbmdlV1IyQ3VEMlUzZlhMUDNYWXN2QndwTlZjMjBwSmppUC9VaGlvbnVNWTJrSjR6UFBTL1MrWHQzQ3c9PSJ9LHsiYm9keSI6eyJhcHByb3ZlciI6ImFsaWNlIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoic2VjdXJpdHkifSwic2lnIjoiVFNPYTNuNjN5YXRjNDkwV2k5cSthaVMxNWhQUGEvL0Mrd3FIMkpmbHh1TWhhVlZtd2MwbXgrMHluQ3ZZcnpFRnhkMSt4c3lPR3dvT24rcGtrWnhYREE9PSJ9XX0sImNvbnRleHQiOnt9LCJkZWNpc2lvbiI6ImFsbG93IiwiZXhjZXB0aW9uRGlnZXN0IjpudWxsLCJncmFudERpZ2VzdCI6bnVsbCwib3V0Y29tZSI6bnVsbCwicGVybWl0SWQiOiI5OGNhY2RlZWU4YzU3YWE1NGUwYjMyMzQzZGVkOGM3NTI4MGFlY2ViM2EzMzU3NzRjN2RmY2U0NDAwYzUxMmNlIiwicGhhc2UiOiJhdXRob3JpemUiLCJwcmV2IjoiMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsInByaW5jaXBhbHMiOm51bGwsInJlYXNvbiI6InF1b3J1bSIsInJlc3VsdFNoYTI1NiI6bnVsbCwicnVuSWQiOiJyMSIsInNlcSI6MSwidGhyZXNob2xkIjpudWxsLCJ0b29sIjoicGF5IiwidG9vbENhbGxJZCI6InExIiwidW5jZXJ0YWluRWZmZWN0IjpudWxsfSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtcmVjb3JkIiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjMzZmRkYWM4Zjk2OWQ0Mjc5ZTA2Y2JmMGUwNjc3NzY2OTEyOTMzMDNhYzZkZTk2ZjUwNmQ5ZmYxOWIwMTg0ZTkifSwibmFtZSI6InRvb2wtY2FsbDpxMSJ9XX0=\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"H1W/Hqo+giKZWmRVow0wxg/AsuYeyi2c9xnQo1TypHr5MjeDakZBhDGv0wc3+shMIEOWdlBvPlUSK0TLcxRoDw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjUxODI5OGY4NWU2YzkyNjI5MWI3OTQyNTQxYThhYjVkOTBiYzhkNDVkODhhN2RkZDlmYzM3YzcwN2IyYjYyNmYiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjUxODI5OGY4NWU2YzkyNjI5MWI3OTQyNTQxYThhYjVkOTBiYzhkNDVkODhhN2RkZDlmYzM3YzcwN2IyYjYyNmYifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "QGq0RKgLxKYrML8lfY8utcpXpjkCBJHsRCdQqAizqf7gggFe9bqmb/9O8hWEkzLbH36AjQxlzyuzLhNTgoebBg=="
+        }
+      ]
+    },
+    "description": "a delegation whose roles are one text that only contains the role's name",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:deputy_role_not_delegated"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV16",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImVyaW4iLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJvbkJlaGFsZk9mIjoiYm9iIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJkZWxlZ2F0aW9uIjp7ImJvZHkiOnsiZGVsZWdhdG9yIjoiYm9iIiwiZGVwdXR5IjoiZXJpbiIsImRlcHV0eUtleSI6IlBBcnpmTGtFQi9hSEFDUjUvWm5FcUp6aTRLOFVldE9wMTVsNzVUV25PZk09IiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJub3RCZWZvcmUiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5Iiwicm9sZXMiOiJmaW5hbmNlLWFuZC1tb3JlIn0sInNpZyI6InNWVHVLSFNGZVAvSkRpM0w1N01nbWpLYkVhSVNOWkFJN28xOS9EOExDZ29tSkNNTDU2QTk0aFRjdlJ1QVZpOGE5VC9BSkd2dFdDdkJLZGM2SXQ0WENRPT0ifSwic2lnIjoibnJaV3N2Um9KRWlQUDNtQjIzNWlLeUdKdmw3Z0xyUEkxNm1aWjZRYThOVnRxaHluaGNvdlBTMHJweDNXWFRMRncrZGRETFFXaUhhcHZTS2szN21BRGc9PSJ9LHsiYm9keSI6eyJhcHByb3ZlciI6ImFsaWNlIiwiZGVjaXNpb24iOiJhcHByb3ZlIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoic2VjdXJpdHkifSwic2lnIjoiVFNPYTNuNjN5YXRjNDkwV2k5cSthaVMxNWhQUGEvL0Mrd3FIMkpmbHh1TWhhVlZtd2MwbXgrMHluQ3ZZcnpFRnhkMSt4c3lPR3dvT24rcGtrWnhYREE9PSJ9XX0sImNvbnRleHQiOnt9LCJkZWNpc2lvbiI6ImFsbG93IiwiZXhjZXB0aW9uRGlnZXN0IjpudWxsLCJncmFudERpZ2VzdCI6bnVsbCwib3V0Y29tZSI6bnVsbCwicGVybWl0SWQiOiI5OGNhY2RlZWU4YzU3YWE1NGUwYjMyMzQzZGVkOGM3NTI4MGFlY2ViM2EzMzU3NzRjN2RmY2U0NDAwYzUxMmNlIiwicGhhc2UiOiJhdXRob3JpemUiLCJwcmV2IjoiMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsInByaW5jaXBhbHMiOm51bGwsInJlYXNvbiI6InF1b3J1bSIsInJlc3VsdFNoYTI1NiI6bnVsbCwicnVuSWQiOiJyMSIsInNlcSI6MSwidGhyZXNob2xkIjpudWxsLCJ0b29sIjoicGF5IiwidG9vbENhbGxJZCI6InExIiwidW5jZXJ0YWluRWZmZWN0IjpudWxsfSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtcmVjb3JkIiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjMzZmRkYWM4Zjk2OWQ0Mjc5ZTA2Y2JmMGUwNjc3NzY2OTEyOTMzMDNhYzZkZTk2ZjUwNmQ5ZmYxOWIwMTg0ZTkifSwibmFtZSI6InRvb2wtY2FsbDpxMSJ9XX0=\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"Uq9sYDvGMZeepX4reGdEPAi9fnnCGMT3PlwzWfYYIVV/X4818sGIoS8aZfzDWrWpNHDdxbeYCdn2r/YUD3kTCg==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6Ijc3MzFkZmYwN2MwMTM1OTgwNTk0ODc5OWZkY2RkMDBhYTQyOGJjNTNlZDM5OWJkMDMxODRmZTY2ZmQ4YjU2ZmMiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6Ijc3MzFkZmYwN2MwMTM1OTgwNTk0ODc5OWZkY2RkMDBhYTQyOGJjNTNlZDM5OWJkMDMxODRmZTY2ZmQ4YjU2ZmMifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "VIbhqeuxu27/mZlIf2/BXwjH5CprVmg4Wa57jHJzxE9GVbMgwyXMO2oRHbpq4QcjfzxvWoWGLysJqiQBokXLDQ=="
+        }
+      ]
+    },
+    "description": "a vote with no decision",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:vote_shape"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV17",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNhcm9sIiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJpc3N1ZWRBdCI6IjIwMjYtMDUtMDFUMDA6MDA6MDBaIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJzaWciOiIwS0IraGNXUUpWeHpPNEtIRmR2TnFLZ043c1I0K1c1WjFvY0RnSG1QUUNwYnRFdHlQbHdwSkRHWDFINUk5YXp3alBtY0FQbFEwTVZXSlJDWUE0RHRDUT09In0seyJib2R5Ijp7ImFwcHJvdmVyIjoiYWxpY2UiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJzZWN1cml0eSJ9LCJzaWciOiJUU09hM242M3lhdGM0OTBXaTlxK2FpUzE1aFBQYS8vQyt3cUgySmZseHVNaGFWVm13YzBteCsweW5DdllyekVGeGQxK3hzeU9Hd29Pbitwa2taeFhEQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"UJ7uIxWO+iKimYbRsRrGRTVTDiAVkT1aTDBMLOZCCdKu0dr3vBBfJdmBAGVCxMWIv+BvxeKS8Oc8dbfBEMYfBQ==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjVlNWQwNzY2MTkzNjcyMTNhYWQwYTdiZTE2NTljYWExOTE0MmUxYzQzOGNhODIyNWYwMGY2Y2U0N2RiMDM2OWMiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjVlNWQwNzY2MTkzNjcyMTNhYWQwYTdiZTE2NTljYWExOTE0MmUxYzQzOGNhODIyNWYwMGY2Y2U0N2RiMDM2OWMifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "fy5ZcZa6EaGwt/GfDFSiGqo895AebVGkHe8DL4cvmVMnuZzET3qGkdxHbVLj9im5b4iSIrIuNA7h3tFgX6/uAQ=="
+        }
+      ]
+    },
+    "description": "a vote whose decision is a list holding approve",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_vote_invalid:vote_shape"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV18",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImNhcm9sIiwiZGVjaXNpb24iOlsiYXBwcm92ZSJdLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJmaW5hbmNlIn0sInNpZyI6InJjWHRUMjgyN0tZYWIvQ1BHTWZLcktOYW9xUy9OdmttZ3o1d3BMZHdrRkMvblpSU0pBdDBhRmZoemhRNktyOGJrZGYvRHhXR1R6TEJEUmdKTUVuSkNnPT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiI2YjE3MzJkMzI2NTdiZDk3Y2U3ODA1NTA2NWEyZWYyNzJmOTk5MGQ2MjliODAzNjgxMTUxNjlhYWY5OGE1MzNmIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6IlRTT2EzbjYzeWF0YzQ5MFdpOXErYWlTMTVoUFBhLy9DK3dxSDJKZmx4dU1oYVZWbXdjMG14KzB5bkN2WXJ6RUZ4ZDEreHN5T0d3b09uK3Bra1p4WERBPT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"aWd/BxfKEhsOI+HThuC0/V0axK9mTjP5fzlVSJq91uyfIjSEqcmetT2TjPurfCWF65zBqYKdOTPMxXl21dnGBQ==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6IjU1NDc2ODFjNDBjMWU2Y2VkZTIzZmZhNzE4NWM4ODMzOGFiMTVmZDRjNzRmMjU4NmUxNWZiMzU1ODFmMDgzZjAiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6IjU1NDc2ODFjNDBjMWU2Y2VkZTIzZmZhNzE4NWM4ODMzOGFiMTVmZDRjNzRmMjU4NmUxNWZiMzU1ODFmMDgzZjAifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "jzxU0guAHqqZWybXNaIC/Mi7oyhJg/Q8sCAPUZe63AJlf3Pz8zqt7yyBs7/IrsOCDQKQKcXyH7vl8cgxNfxBBg=="
+        }
+      ]
+    },
+    "description": "a proposer-bound policy and a proposer that is an empty list, with every vote signed for it",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [
+        "line_1:quorum_proposer_unbound"
+      ],
+      "records": 1,
+      "verdict": "FAIL",
+      "verified": 0
+    },
+    "id": "QV19",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6W10sInJlcXVlc3RIYXNoIjoiM2I5MmZhZWNmODFhZmRiOGZiMmQ0MDUzOGM0YjRjOGFmMTczZjQ4NzRjMDdkYzdmNTIwZDNkMzEwMTQ5YzMxMiIsInZvdGVzIjpbeyJib2R5Ijp7ImFwcHJvdmVyIjoiY2Fyb2wiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiM2I5MmZhZWNmODFhZmRiOGZiMmQ0MDUzOGM0YjRjOGFmMTczZjQ4NzRjMDdkYzdmNTIwZDNkMzEwMTQ5YzMxMiIsInJvbGUiOiJmaW5hbmNlIn0sInNpZyI6InFIUDdxSHpoUTZhTUhPN1VZUmxxVGczTVhsM0dVV3FIaitHdVBJTG5oK1FySlZiODdSQm52aTk3NFFaTWYyUEFJc0VFc3g0aHdVcVBCeTBpYkdhcUFnPT0ifSx7ImJvZHkiOnsiYXBwcm92ZXIiOiJhbGljZSIsImRlY2lzaW9uIjoiYXBwcm92ZSIsImV4cGlyZXNBdCI6IjIwOTktMTItMzFUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5IiwicmVxdWVzdEhhc2giOiIzYjkyZmFlY2Y4MWFmZGI4ZmIyZDQwNTM4YzRiNGM4YWYxNzNmNDg3NGMwN2RjN2Y1MjBkM2QzMTAxNDljMzEyIiwicm9sZSI6InNlY3VyaXR5In0sInNpZyI6ImM3NmhVNTdwTWlBQlVxMktCSHMrTktWSk9LK0Y0czBRVHpzSkZOREs2eGQvOVE0WnlQN3NrZmcrRFE5dGNHYjNpY2piRUFiVzkwV21OVk14QkFINkR3PT0ifV19LCJjb250ZXh0Ijp7fSwiZGVjaXNpb24iOiJhbGxvdyIsImV4Y2VwdGlvbkRpZ2VzdCI6bnVsbCwiZ3JhbnREaWdlc3QiOm51bGwsIm91dGNvbWUiOm51bGwsInBlcm1pdElkIjoiOThjYWNkZWVlOGM1N2FhNTRlMGIzMjM0M2RlZDhjNzUyODBhZWNlYjNhMzM1Nzc0YzdkZmNlNDQwMGM1MTJjZSIsInBoYXNlIjoiYXV0aG9yaXplIiwicHJldiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJwcmluY2lwYWxzIjpudWxsLCJyZWFzb24iOiJxdW9ydW0iLCJyZXN1bHRTaGEyNTYiOm51bGwsInJ1bklkIjoicjEiLCJzZXEiOjEsInRocmVzaG9sZCI6bnVsbCwidG9vbCI6InBheSIsInRvb2xDYWxsSWQiOiJxMSIsInVuY2VydGFpbkVmZmVjdCI6bnVsbH0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Byb2JpdHlhaS5naXRodWIuaW8vYWdlbnQtZXZpZGVuY2UtdmVjdG9ycy9wcmVkaWNhdGUvdjEvdG9vbC1jYWxsLXJlY29yZCIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5In0sIm5hbWUiOiJ0b29sLWNhbGw6cTEifV19\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"m5mKWAZqUV3OXQW5cPuhJ7cmXZc7Zf/IsyqtZQURq4hPAiQMdDQ3olGsmXbl9kV2uNtIp48GHQo2Iw5nTuc/BA==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
+  },
+  {
+    "checkpoint": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJjb3VudCI6MSwiaGVhZCI6ImQ2MzAxMTM1MDFkMGY3MGI5ZDU5MDA2ZTRmM2RiZDUxYTRhYWJjZWJmOTFiMTI3MzdkMzVkYWI2MjdlNTMzYWMiLCJrZXlQcm92ZW5hbmNlIjp7ImJhY2tlbmQiOiJsb2NhbCJ9fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vcHJvYml0eWFpLmdpdGh1Yi5pby9hZ2VudC1ldmlkZW5jZS12ZWN0b3JzL3ByZWRpY2F0ZS92MS90b29sLWNhbGwtam91cm5hbC1jaGVja3BvaW50Iiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImQ2MzAxMTM1MDFkMGY3MGI5ZDU5MDA2ZTRmM2RiZDUxYTRhYWJjZWJmOTFiMTI3MzdkMzVkYWI2MjdlNTMzYWMifSwibmFtZSI6InRvb2wtY2FsbC1qb3VybmFsIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "keyid": "a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a",
+          "sig": "PMG+8zxUa1AHq8ssFMlE8UNvrW4ihApKX88t+kz+jc6bcKmcrwdtAIo/1J5fxXOEQgCTu3w9w4GWyW2xDBE4Cg=="
+        }
+      ]
+    },
+    "description": "a deputy named erin votes for bob with every member a string: the control for QV8 and QV13 to QV16",
+    "expected": {
+      "checkpoint": "matches",
+      "failures": [],
+      "records": 1,
+      "verdict": "PASS",
+      "verified": 1
+    },
+    "id": "QV20",
+    "journal": [
+      "{\"payload\":\"eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYXBwcm92YWxCaW5kaW5ncyI6W10sImFwcHJvdmFsUG9saWN5SWQiOm51bGwsImFyZ3NTaGEyNTYiOiIzM2ZkZGFjOGY5NjlkNDI3OWUwNmNiZjBlMDY3Nzc2NjkxMjkzMzAzYWM2ZGU5NmY1MDZkOWZmMTliMDE4NGU5IiwiYXQiOiIyMDI2LTA5LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJhdXRob3JpdHkiOnsiaGlzdG9yeURpZ2VzdCI6ImFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWIiLCJraW5kIjoicXVvcnVtIiwicG9saWN5Ijp7ImFwcHJvdmVycyI6eyJhbGljZSI6IkhlQTAxdUZ1MmdtZklKTXRXenh2MmpMYWx0RUd5QjlKTTN6SjQyQmRuajA9IiwiYm9iIjoiNWowb0diZ1EwYmh6RHUwS3o2Rm9QeXVhK1B0Wm1lMXlxeVNkYUxSMlptVT0iLCJjYXJvbCI6IldUSGhxcmE1dmJ2bWlxYTNrTE1rejNlVElIREJLSkpBWmN2dFVZazgwQkk9In0sInBvbGljeUlkIjoicGF5IiwicHJvcG9zZXJCb3VuZCI6dHJ1ZSwicm9sZXMiOnsiZmluYW5jZSI6eyJtZW1iZXJzIjpbImJvYiIsImNhcm9sIl0sIm1pbiI6MX0sInNlY3VyaXR5Ijp7Im1lbWJlcnMiOlsiYWxpY2UiLCJib2IiXSwibWluIjoxfX0sInRocmVzaG9sZCI6Mn0sInBvbGljeURpZ2VzdCI6ImRmYTAwZTgxNjgyMjA1MWZjYzMyZDk4M2M1NzA0NDU2YjNhNDQyMzEwODMyYTNlOTAzZDQ5Y2U1NjFiZGFhNTgiLCJwcm9wb3NlciI6ImRhdmUiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJ2b3RlcyI6W3siYm9keSI6eyJhcHByb3ZlciI6ImVyaW4iLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJvbkJlaGFsZk9mIjoiYm9iIiwicG9saWN5SWQiOiJwYXkiLCJyZXF1ZXN0SGFzaCI6IjZiMTczMmQzMjY1N2JkOTdjZTc4MDU1MDY1YTJlZjI3MmY5OTkwZDYyOWI4MDM2ODExNTE2OWFhZjk4YTUzM2YiLCJyb2xlIjoiZmluYW5jZSJ9LCJkZWxlZ2F0aW9uIjp7ImJvZHkiOnsiZGVsZWdhdG9yIjoiYm9iIiwiZGVwdXR5IjoiZXJpbiIsImRlcHV0eUtleSI6IlBBcnpmTGtFQi9hSEFDUjUvWm5FcUp6aTRLOFVldE9wMTVsNzVUV25PZk09IiwiZXhwaXJlc0F0IjoiMjA5OS0xMi0zMVQwMDowMDowMFoiLCJub3RCZWZvcmUiOiIyMDI2LTA1LTAxVDAwOjAwOjAwWiIsInBvbGljeUlkIjoicGF5Iiwicm9sZXMiOlsiZmluYW5jZSJdfSwic2lnIjoiUVlNK3E4WS9Yd1l6YW5SQVY4VGR2RlphandkNE92TXl6a0IreDZPUzhQZU1WNWt3Szg5SGdYV1g1S0YxMVh4ZURuelBGUDR0SllvTXpKOWZ2SkFPQkE9PSJ9LCJzaWciOiJuclpXc3ZSb0pFaVBQM21CMjM1aUt5R0p2bDdnTHJQSTE2bVpaNlFhOE5WdHFoeW5oY292UFMwcnB4M1dYVExGdytkZERMUVdpSGFwdlNLazM3bUFEZz09In0seyJib2R5Ijp7ImFwcHJvdmVyIjoiYWxpY2UiLCJkZWNpc2lvbiI6ImFwcHJvdmUiLCJleHBpcmVzQXQiOiIyMDk5LTEyLTMxVDAwOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0wNS0wMVQwMDowMDowMFoiLCJwb2xpY3lJZCI6InBheSIsInJlcXVlc3RIYXNoIjoiNmIxNzMyZDMyNjU3YmQ5N2NlNzgwNTUwNjVhMmVmMjcyZjk5OTBkNjI5YjgwMzY4MTE1MTY5YWFmOThhNTMzZiIsInJvbGUiOiJzZWN1cml0eSJ9LCJzaWciOiJUU09hM242M3lhdGM0OTBXaTlxK2FpUzE1aFBQYS8vQyt3cUgySmZseHVNaGFWVm13YzBteCsweW5DdllyekVGeGQxK3hzeU9Hd29Pbitwa2taeFhEQT09In1dfSwiY29udGV4dCI6e30sImRlY2lzaW9uIjoiYWxsb3ciLCJleGNlcHRpb25EaWdlc3QiOm51bGwsImdyYW50RGlnZXN0IjpudWxsLCJvdXRjb21lIjpudWxsLCJwZXJtaXRJZCI6Ijk4Y2FjZGVlZThjNTdhYTU0ZTBiMzIzNDNkZWQ4Yzc1MjgwYWVjZWIzYTMzNTc3NGM3ZGZjZTQ0MDBjNTEyY2UiLCJwaGFzZSI6ImF1dGhvcml6ZSIsInByZXYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwicHJpbmNpcGFscyI6bnVsbCwicmVhc29uIjoicXVvcnVtIiwicmVzdWx0U2hhMjU2IjpudWxsLCJydW5JZCI6InIxIiwic2VxIjoxLCJ0aHJlc2hvbGQiOm51bGwsInRvb2wiOiJwYXkiLCJ0b29sQ2FsbElkIjoicTEiLCJ1bmNlcnRhaW5FZmZlY3QiOm51bGx9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9wcm9iaXR5YWkuZ2l0aHViLmlvL2FnZW50LWV2aWRlbmNlLXZlY3RvcnMvcHJlZGljYXRlL3YxL3Rvb2wtY2FsbC1yZWNvcmQiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiMzNmZGRhYzhmOTY5ZDQyNzllMDZjYmYwZTA2Nzc3NjY5MTI5MzMwM2FjNmRlOTZmNTA2ZDlmZjE5YjAxODRlOSJ9LCJuYW1lIjoidG9vbC1jYWxsOnExIn1dfQ==\",\"payloadType\":\"application/vnd.in-toto+json\",\"signatures\":[{\"keyid\":\"a5910fc872589aad5c56f6f78b662c4f9ab05e76e0fa4c06bdf8e06af998c18a\",\"sig\":\"l82tz5bqz64PaUtPjHg7RmXokGU1gezs/g3vBg0af1NRLvGm2BggAGS5mSzQ5VtNa2Wnj8MgUQ7Mv9b1jqe1Dw==\"}]}"
+    ],
+    "keys": [
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGpUt+U8FEKmZla0N8WsKO1BknasmsEgjLyEiyOTcl48=\n-----END PUBLIC KEY-----\n"
+    ],
+    "trust": {
+      "grantRootKeyIds": [
+        "df081d991f00236444082b9107eeb2c133f230210a6c25b83311e011f5334365"
+      ],
+      "quorumPolicies": {
+        "pay": {
+          "approvers": {
+            "alice": "HeA01uFu2gmfIJMtWzxv2jLaltEGyB9JM3zJ42Bdnj0=",
+            "bob": "5j0oGbgQ0bhzDu0Kz6FoPyua+PtZme1yqySdaLR2ZmU=",
+            "carol": "WTHhqra5vbvmiqa3kLMkz3eTIHDBKJJAZcvtUYk80BI="
+          },
+          "policyId": "pay",
+          "proposerBound": true,
+          "roles": {
+            "finance": {
+              "members": [
+                "bob",
+                "carol"
+              ],
+              "min": 1
+            },
+            "security": {
+              "members": [
+                "alice",
+                "bob"
+              ],
+              "min": 1
+            }
+          },
+          "threshold": 2
+        },
+        "refunds1": {
+          "approvers": {
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds1",
+          "threshold": 1
+        },
+        "refunds2": {
+          "approvers": {
+            "human:lead": "QvWkFvRx/rN/+udiRMkKjA0ELlIJG/HfWC/EPTYaPtI=",
+            "human:ops": "H9xTjdqWQexVIKJP1HIgyDgtmo2ICH4vmj9M7cgWlJU="
+          },
+          "policyId": "refunds2",
+          "threshold": 2
+        }
+      }
+    }
   }
 ]

@@ -207,8 +207,10 @@ def _deputy_problem(vote: Mapping[str, Any], policy: Mapping[str, Any], at: str)
         return "deputy_delegation_mismatch", None
     if deputy in policy["approvers"] or dbody.get("deputyKey") in policy["approvers"].values():
         return "deputy_is_an_approver", None
-    if "role" in body and body["role"] not in dbody.get("roles", []):
-        return "deputy_role_not_delegated", None
+    if "role" in body:  # a role is a string in a list of strings; a list in a list or a part of a text is none
+        role, delegated = body["role"], dbody.get("roles")
+        if not isinstance(role, str) or not isinstance(delegated, list) or role not in delegated:
+            return "deputy_role_not_delegated", None
     try:
         if not ts(dbody["notBefore"]) <= ts(at) <= ts(dbody["expiresAt"]):
             return "deputy_delegation_outside_window", None
@@ -225,6 +227,9 @@ def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
     body = vote.get("body") if isinstance(vote, Mapping) else None
     if not isinstance(body, dict):
         return "vote_shape"
+    decision = body.get("decision")
+    if not isinstance(decision, str) or decision not in ("approve", "reject"):
+        return "vote_shape"  # a vote says approve or reject; one that says neither is not counted as either
     if "onBehalfOf" in body:
         problem, raw = _deputy_problem(vote, policy, at)
         if problem:
@@ -321,9 +326,10 @@ def _verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[s
         return "quorum_policy_differs_from_pinned"
     if evidence.get("requestHash") != request:
         return "quorum_for_another_request"
-    if trusted.get("proposerBound") and not evidence.get("proposer"):
-        return "quorum_proposer_unbound"
-    result = count(trusted, request, evidence.get("votes") or [], at, key_revoked, evidence.get("proposer"))
+    proposer = evidence.get("proposer")
+    if trusted.get("proposerBound") and not (isinstance(proposer, str) and proposer):
+        return "quorum_proposer_unbound"  # only a non-empty string names a proposer; [] is none, in either language
+    result = count(trusted, request, evidence.get("votes") or [], at, key_revoked, proposer)
     if result.ignored:
         return f"quorum_vote_invalid:{result.ignored[0]}"
     if result.status == APPROVED:

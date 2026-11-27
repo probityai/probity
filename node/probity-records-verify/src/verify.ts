@@ -670,7 +670,8 @@ function deputyProblem(vote: J, policy: J, at: string): [string | null, string |
   if (!sigOk(raw, DEPUTY_DOMAIN, db, d.sig)) return ["deputy_delegation_unverified", null];
   if (db.policyId !== policy.policyId || typeof db.deputy !== "string" || db.deputy !== body.approver) return ["deputy_delegation_mismatch", null];
   if (Object.hasOwn(policy.approvers, db.deputy) || Object.values(policy.approvers).includes(db.deputyKey)) return ["deputy_is_an_approver", null];
-  if ("role" in body && !(db.roles ?? []).includes(body.role)) return ["deputy_role_not_delegated", null];
+  // A role is a string in a list of strings: "abc".includes("b") is true, and a list is never equal to a list.
+  if ("role" in body && !(typeof body.role === "string" && Array.isArray(db.roles) && db.roles.includes(body.role))) return ["deputy_role_not_delegated", null];
   try { if (!(ts(db.notBefore) <= ts(at) && ts(at) <= ts(db.expiresAt))) return ["deputy_delegation_outside_window", null]; }
   catch { return ["deputy_delegation_outside_window", null]; }
   if (typeof db.deputyKey !== "string") return ["vote_signature_unverified", null];  // no key the vote could verify under
@@ -680,6 +681,7 @@ function deputyProblem(vote: J, policy: J, at: string): [string | null, string |
 function voteProblem(vote: J, policy: J, request: string, at: string, proposer: J): string | null {
   const body = isObj(vote) ? vote.body : null;
   if (!isObj(body)) return "vote_shape";
+  if (body.decision !== "approve" && body.decision !== "reject") return "vote_shape";  // neither is not counted as either
   let raw: J, countedAs: string;
   if ("onBehalfOf" in body) {
     const [problem, k] = deputyProblem(vote, policy, at);
@@ -725,7 +727,8 @@ function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string,
   if (trusted === undefined) return "quorum_policy_not_pinned";
   if (digestOf(trusted) !== ev.policyDigest || digestOf(policy) !== digestOf(trusted)) return "quorum_policy_differs_from_pinned";
   if (ev.requestHash !== request) return "quorum_for_another_request";
-  if (trusted.proposerBound && !ev.proposer) return "quorum_proposer_unbound";
+  // Only a non-empty string names a proposer: [] and {} are true here and false in Python.
+  if (trusted.proposerBound && !(typeof ev.proposer === "string" && ev.proposer)) return "quorum_proposer_unbound";
   const r = countVotes(trusted, request, ev.votes ?? [], at, ev.proposer);
   if (r.ignored.length) return `quorum_vote_invalid:${r.ignored[0]}`;
   if (r.status === "approved") return "ok";
