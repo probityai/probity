@@ -30,8 +30,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any, Final
 
-from cryptography import x509
-from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -44,8 +43,17 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads, same_text, unb64
-from .grants import ts
+from .certificate import CertificateRefused, certificate_facts, spki_key
+from .core import (
+    TOKEN_MAX_DEPTH,
+    JsonRefused,
+    Signer,
+    admitted_loads,
+    exact_int,
+    same_text,
+    unb64,
+)
+from .grants import decimal, micros
 from .identity import b64url, has_private_member, jwk_thumbprint, unb64url
 from .identity import public_jwk as jwk_bytes
 
@@ -146,7 +154,9 @@ _URI_TEXT = re.compile(r"(?:[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2}
 _HTU_PARTS = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*)://([^/?#]*)([^?#]*)([?#].*)?", re.DOTALL)
 _IP_LITERAL = re.compile(r"\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?")
 _REG_NAME = re.compile(r"[A-Za-z0-9\-._~!$&'()*+,;=%]+")
-_PORT = re.compile(r"[0-9]+")
+#: ``grammar/target-uri.json``: any number of leading zeros, then at most five digits; never ``int`` on the whole run
+#: (Python refuses a run of more than 4300 digits, JavaScript reads it).
+PORT = re.compile(r"0*([0-9]{1,5})")
 #: The default port of each scheme an http target URI may carry.
 DEFAULT_PORTS: Final = {"http": 80, "https": 443}
 
@@ -180,9 +190,10 @@ def http_uri_parts(url: object) -> tuple[str, str, int | None, str, str]:
             raise ValueError("uri_not_absolute")
     if port_text is None:
         return scheme, host, None, path, rest
-    if not _PORT.fullmatch(port_text) or int(port_text) > 65535:
+    digits = PORT.fullmatch(port_text)
+    if digits is None or decimal(digits[1]) > 65535:
         raise ValueError("uri_port_invalid")
-    return scheme, host, int(port_text), path, rest
+    return scheme, host, decimal(digits[1]), path, rest
 
 
 def uri_authority(scheme: str, host: str, port: int | None) -> str:
@@ -237,12 +248,16 @@ def _x5c_problem(x5c: Any, jwk: Mapping[str, Any]) -> str | None:
     """An ``x5c`` is tolerated only as one certificate presenting the very key in ``jwk``."""
     if not isinstance(x5c, list) or len(x5c) != 1 or not isinstance(x5c[0], str):
         return "dpop_x5c_invalid"
-    try:
-        cert = x509.load_der_x509_certificate(unb64(x5c[0]))  # core.unb64: the canonical spelling only
-        presented = public_jwk(cert.public_key())
-    except (ValueError, TypeError, UnsupportedAlgorithm):
+    try:  # one DER certificate (certificate.py: no PEM, no byte after it, no second encoding); unb64: canonical only
+        presented = spki_key(certificate_facts(unb64(x5c[0])).spki)
+    except ValueError:
         return "dpop_x5c_invalid"
-    return None if presented == dict(jwk) else "dpop_x5c_key_mismatch"
+    if presented is None:  # neither an Ed25519 nor a P-256 key
+        return "dpop_x5c_invalid"
+    held = jwk_bytes(jwk)  # the proof key's coordinates; _load_jwk read this JWK already
+    same = (presented["kty"], presented["crv"]) == (jwk["kty"], jwk["crv"]) and all(
+        presented[m] == held[m] for m in held)
+    return None if same else "dpop_x5c_key_mismatch"
 
 
 def _header(segment: str, expected_jkt: str) -> tuple[str, Any, str | None]:
@@ -279,7 +294,7 @@ def _jti_ok(jti: Any) -> bool:
 
 
 def _int_claim(value: Any) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
+    return exact_int(value)
 
 
 def _claims_problem(p: Any, method: str, url: str, now: int, skew: int, access_token: str | None,
@@ -346,7 +361,7 @@ def check_dpop(proof: str, method: str, url: str, at: str, *, expected_jkt: str,
         claims = _segment_json(body)
     except ValueError as exc:
         return None, _segment_refusal(exc)
-    now = int(ts(at).timestamp())
+    now = micros(at) // 1_000_000  # whole seconds, by floor
     problem = _claims_problem(claims, method, url, now, skew, access_token, content, require_content_binding)
     if problem:
         return None, problem
@@ -388,13 +403,13 @@ def check_client_certificate(der: bytes | None, expected: str, at: str) -> str:
     if not same_text(cnf_for_certificate(der)["x5t#S256"], expected):
         return "mtls_certificate_not_confirmed"
     try:
-        cert = x509.load_der_x509_certificate(der)
-    except ValueError:
+        facts = certificate_facts(der)
+    except CertificateRefused:
         return "mtls_certificate_invalid"
-    when = ts(at)
-    if when < cert.not_valid_before_utc:
+    when = micros(at)
+    if when < facts.not_before:
         return "mtls_certificate_not_yet_valid"
-    if when > cert.not_valid_after_utc:
+    if when > facts.not_after:
         return "mtls_certificate_expired"
     return "ok"
 
@@ -464,7 +479,7 @@ def possession_record_problem(record: Any, cnf: Any) -> str | None:
     return None
 
 
-def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, str] | None:
+def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, Any] | None:
     """(proof key, iat, use time) for an ``authorize`` record whose grant evidence carries a DPoP use."""
     pred = body.get("predicate")
     if not isinstance(pred, Mapping) or pred.get("phase") != "authorize":
@@ -474,9 +489,9 @@ def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, str] | None:
     if not isinstance(record, Mapping) or record.get("method") != "dpop":
         return None
     jkt, jti, iat = record.get("jkt"), record.get("jti"), record.get("iat")
-    if not isinstance(jkt, str) or not isinstance(jti, str) or not isinstance(iat, int) or isinstance(iat, bool):
+    if not isinstance(jkt, str) or not isinstance(jti, str) or not exact_int(iat):
         return None
-    return proof_key(jkt, jti), iat, str(pred.get("at"))
+    return proof_key(jkt, jti), iat, pred.get("at")
 
 
 def duplicate_proofs(records: Iterable[tuple[int, Mapping[str, Any]]], *,
@@ -498,14 +513,14 @@ def duplicate_proofs(records: Iterable[tuple[int, Mapping[str, Any]]], *,
         key, iat, at = spent
         permit = body["predicate"].get("permitId")
         try:
-            used = ts(at).timestamp()
+            used = micros(at)  # a use time that is not a timestamp (any other JSON type included) is refused by ts
         except (ValueError, TypeError):
             found.append((n, "dpop_proof_use_time_invalid"))
             continue
         earlier = first.get(key)
-        if earlier is not None and earlier[2] != permit and used <= earlier[1] + skew + REPLAY_GRACE:
+        if earlier is not None and earlier[2] != permit and used <= (earlier[1] + skew + REPLAY_GRACE) * 1_000_000:
             found.append((n, f"dpop_proof_replayed:{earlier[0]}"))
             continue
-        if earlier is None or used > earlier[1] + skew + REPLAY_GRACE:
+        if earlier is None or used > (earlier[1] + skew + REPLAY_GRACE) * 1_000_000:
             first[key] = (n, iat, permit)
     return found

@@ -74,6 +74,9 @@ PRINCIPALS_MEMBERS: Final = ("id", "client", "principals")
 #: The longest lifetime a stamp may carry; a stamp names one request, so it is never a standing credential.
 MAX_TTL_SECONDS: Final = 300
 MAX_NONCE_BYTES: Final = 128
+#: The optional whitespace around a field value (RFC 9110 section 5.5): space and tab. ``str.strip()`` with no argument
+#: also removes U+001C to U+001F and every Unicode space, which JavaScript's ``trim`` does not.
+OWS: Final = " \t"
 
 
 class StampRefused(ValueError):
@@ -218,8 +221,8 @@ def signature_base(*, method: str, target_uri: str, content_digest_value: str, p
                    params: sf.InnerList) -> bytes:  # fmt: skip
     """The RFC 9421 section 2.5 signature base of a stamp over one request."""
     lines = [f'"@method": {method}', f'"@target-uri": {target_uri}', f'"@authority": {authority(target_uri)}',
-             f'"{CONTENT_DIGEST_HEADER}": {content_digest_value.strip()}',
-             f'"{PRINCIPALS_HEADER}": {principals_value.strip()}',
+             f'"{CONTENT_DIGEST_HEADER}": {content_digest_value.strip(OWS)}',
+             f'"{PRINCIPALS_HEADER}": {principals_value.strip(OWS)}',
              f'"@signature-params": {sf.serialize_inner_list(params)}']  # fmt: skip
     base = "\n".join(lines)
     if not base.isascii() or any(c in base for c in "\r\0"):
@@ -352,14 +355,14 @@ def verify_stamp(headers: Headers, *, method: str, target_uri: str, body: bytes 
         Ed25519PublicKey.from_public_bytes(public_raw).verify(signature.value, base)
     except (InvalidSignature, ValueError) as exc:
         raise StampRefused("stamp_forged", "the signature does not verify over this request under the pinned key") from exc
-    moment = now / NS_PER_S
     if expires <= created:
         raise StampRefused("stamp_malformed", "expires is not after created")
     if expires - created > MAX_TTL_SECONDS:
         raise StampRefused("stamp_lifetime_too_long", f"{expires - created} s")
-    if created > moment:
+    # Integers against integers: created and expires are whole seconds, ``now`` is nanoseconds.
+    if created * NS_PER_S > now:
         raise StampRefused("stamp_not_yet_valid", "created is in the future")
-    if moment >= expires:
+    if now >= expires * NS_PER_S:
         raise StampRefused("stamp_expired", "expires has passed")
     return VerifiedStamp(Stamp.from_field(fields[PRINCIPALS_HEADER]), nonce, expires)
 

@@ -138,8 +138,10 @@ def _alg_of(jwk: Mapping[str, Any]) -> str | None:
     included (``identity.has_private_member``)."""
     if has_private_member(jwk):
         return None
-    kty = jwk.get("kty")
-    return ALG_OF_KEY.get((str(kty), None if kty == "RSA" else str(jwk.get("crv"))))
+    kty, crv = jwk.get("kty"), jwk.get("crv")
+    if not isinstance(kty, str) or (kty != "RSA" and not isinstance(crv, str)):
+        return None  # only a string names a key type or a curve
+    return ALG_OF_KEY.get((kty, None if kty == "RSA" else crv))
 
 
 @dataclass(frozen=True)
@@ -263,8 +265,9 @@ def verify_jws(token: str, pins: Mapping[str, PinnedKeys], *, typ: tuple[str | N
     key = pin.select(header.get("kid"))
     signing_input = f"{head}.{body}".encode("ascii")
     signature = unb64url(sig)
-    _one_spelling(header.get("alg"), signature)
-    if not verify_signature(str(header.get("alg")), key, signing_input, signature):
+    alg = header.get("alg")
+    _one_spelling(alg, signature)
+    if not isinstance(alg, str) or not verify_signature(alg, key, signing_input, signature):
         raise RegistryError("jws_signature_unverified", f"issuer {iss}")
     return Verified(header, claims, key, signing_input)
 
@@ -699,8 +702,9 @@ def _key_binding(kb: str, holder: Mapping[str, Any], *, audience: str, prefix: s
     if "crit" in header:  # RFC 7515 section 4.1.11: no extension is understood, so none may be demanded
         raise RegistryError("passport_kb_critical", "the key binding JWT demands an extension through crit")
     signature = unb64url(sig)
-    _one_spelling(header.get("alg"), signature)
-    if not verify_signature(str(header.get("alg")), holder, f"{head}.{body}".encode("ascii"), signature):
+    alg = header.get("alg")
+    _one_spelling(alg, signature)
+    if not isinstance(alg, str) or not verify_signature(alg, holder, f"{head}.{body}".encode("ascii"), signature):
         raise RegistryError("passport_possession_unproven", "the key binding JWT is not signed by the cnf key")
     claims = _object(body, "the key binding claims")
     if claims.get("aud") != audience:

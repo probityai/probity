@@ -65,8 +65,15 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 
-from .core import TOKEN_MAX_DEPTH, admitted_loads, canonical, sha256_hex
-from .grants import ts
+from .core import (
+    TOKEN_MAX_DEPTH,
+    admitted_loads,
+    ascii_lower,
+    canonical,
+    exact_int,
+    sha256_hex,
+)
+from .grants import micros, ts
 
 #: Every JWK member that carries private key material: the members of the IANA "JSON Web Key Parameters" registry whose
 #: information class is Private. RFC 7518 section 6.2.2 (EC ``d``), section 6.3.2 (RSA ``d``, ``p``, ``q``, ``dp``,
@@ -177,7 +184,8 @@ def jwk_thumbprint(jwk: Mapping[str, Any]) -> str:
     A thumbprint names one key, so it exists only for the one spelling of that key, and never for a key that carries
     private material."""
     refuse_private(jwk)
-    members = THUMBPRINT_MEMBERS.get(str(jwk.get("kty")))
+    kty = jwk.get("kty")
+    members = THUMBPRINT_MEMBERS.get(kty) if isinstance(kty, str) else None  # only a string names a key type
     if members is None or any(m not in jwk for m in members):
         raise ValueError("jwk_unsupported")
     public_jwk(jwk)
@@ -495,11 +503,12 @@ def token_segments(token: str) -> tuple[dict[str, Any], dict[str, Any], bytes] |
     try:
         header = admitted_loads(unb64url(parts[0]), max_depth=TOKEN_MAX_DEPTH)
         claims = admitted_loads(unb64url(parts[1]), max_depth=TOKEN_MAX_DEPTH)
+        signature = unb64url(parts[2])  # a signature in a second spelling (stray low bits) is not a compact JWS either
     except ValueError:
         return None
     if not isinstance(header, dict) or not isinstance(claims, dict):
         return None
-    return header, claims, unb64url(parts[2])
+    return header, claims, signature
 
 
 def _claim_time(claims: Mapping[str, Any], name: str) -> str | None:
@@ -536,10 +545,12 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
         return "token_kid_mismatch"
     if p.get("source") == "id-jag" and header.get("typ") != "oauth-id-jag+jwt":
         return "token_typ_not_id_jag"
-    named = TYP_SOURCES.get(str(header.get("typ", "")).lower().removeprefix("application/"))
+    # Type first: a typ or an alg that is not a string names nothing, in either reader.
+    typ, alg = header.get("typ"), header.get("alg")
+    named = TYP_SOURCES.get(ascii_lower(typ).removeprefix("application/")) if isinstance(typ, str) else None
     if named is not None and named != p.get("source"):
         return f"token_type_mismatch:{named}"
-    if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), signature):
+    if not isinstance(alg, str) or not _verify_jws(alg, p["key"], f"{head_b64}.{body_b64}".encode(), signature):
         return "token_signature_unverified"
     aud = claims.get("aud")
     # An ID token names its client in ``azp`` (OpenID Connect Core 1.0, section 2); an access token in ``client_id``.
@@ -558,9 +569,9 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
         return "token_claim_mismatch:cnf"
     if at is not None and "nbf" in claims:
         nbf = claims["nbf"]
-        if isinstance(nbf, bool) or not isinstance(nbf, int):
+        if not exact_int(nbf):
             return "token_malformed"
-        if nbf > ts(at).timestamp():
+        if nbf * 1_000_000 > micros(at):
             return "token_not_yet_valid"
     return None
 

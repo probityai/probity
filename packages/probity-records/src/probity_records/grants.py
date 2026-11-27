@@ -67,9 +67,34 @@ CAPABILITY_GRANT = identifier("agent-evidence-vectors/predicate/v1/capability-gr
 APPROVAL_LEVELS = ("none", "required")
 
 
-#: The one timestamp grammar (RFC 3339 section 5.6 date-time, at most microseconds), the same as ``ts`` in the
-#: TypeScript verifier. The offset group is optional here only so that its absence is named, never accepted.
-_TIME = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})?")
+#: The one timestamp grammar (``grammar/timestamp.json``: RFC 3339 section 5.6 date-time, at most microseconds, years
+#: 0001 to 9999), the same as ``ts`` in the TypeScript verifier. The digits are 0 to 9 only: ``\d`` in a Python
+#: pattern also matches the digits of every other script, and ``int`` reads them, so one instant would have many
+#: spellings. The offset group is optional here only so that its absence is named, never accepted.
+TIMESTAMP = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,6}))?(Z|[+-][0-9]{2}:[0-9]{2})?")
+_DECIMAL = re.compile(r"[0-9]{1,15}")
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+_MICROSECOND = timedelta(microseconds=1)
+
+
+def decimal(text: str) -> int:
+    """The number a run of the digits 0 to 9 writes (at most 15 of them); ``ValueError`` for any other text.
+
+    Every number a reader takes from received text comes through here, after the text matched its grammar: ``int`` alone
+    also reads other scripts' digits, a sign, spaces and underscores, and refuses a run of more than 4300 digits."""
+    if not isinstance(text, str) or not _DECIMAL.fullmatch(text):
+        raise ValueError("not_decimal_digits")
+    return int(text)
+
+
+def micros_of(moment: datetime) -> int:
+    """An aware datetime as integer microseconds since 1970-01-01T00:00:00Z, exactly (``timestamp()`` is a float)."""
+    return (moment - _EPOCH) // _MICROSECOND
+
+
+def micros(text: Any) -> int:
+    """The instant an RFC 3339 timestamp names, as integer microseconds since the epoch; ``ValueError`` as ``ts``."""
+    return micros_of(ts(text))
 
 
 def ts(text: Any) -> datetime:
@@ -78,7 +103,7 @@ def ts(text: Any) -> datetime:
     ValueError ``grant_timestamp_offset_missing`` for a date-time with no offset (it names no instant), and
     ``grant_timestamp_invalid`` for anything else outside the grammar, including a field out of range (month 13, hour 24,
     second 60): ``datetime.fromisoformat`` accepts forms the TypeScript verifier refuses, so it is not used."""
-    m = _TIME.fullmatch(text) if isinstance(text, str) else None
+    m = TIMESTAMP.fullmatch(text) if isinstance(text, str) else None
     if m is None:
         raise ValueError("grant_timestamp_invalid")
     year, month, day, hour, minute, second, fraction, offset = m.groups()
@@ -87,13 +112,13 @@ def ts(text: Any) -> datetime:
     if offset == "Z":
         zone = UTC
     else:
-        hours, minutes = int(offset[1:3]), int(offset[4:6])
+        hours, minutes = decimal(offset[1:3]), decimal(offset[4:6])
         if hours > 23 or minutes > 59:
             raise ValueError("grant_timestamp_invalid")
         zone = timezone((-1 if offset[0] == "-" else 1) * timedelta(hours=hours, minutes=minutes))
     try:
-        return datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),
-                        int((fraction or "").ljust(6, "0")), zone)
+        return datetime(decimal(year), decimal(month), decimal(day), decimal(hour), decimal(minute), decimal(second),
+                        decimal((fraction or "").ljust(6, "0")), zone)
     except ValueError:
         raise ValueError("grant_timestamp_invalid") from None
 

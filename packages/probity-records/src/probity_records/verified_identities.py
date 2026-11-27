@@ -39,10 +39,9 @@ from dataclasses import dataclass, field
 from typing import Any, Final
 
 from .canonical_identity import PROFILES, CanonicalIdentity, IdentityStringError, Ref
-from .clock import from_datetime
-from .core import TOKEN_MAX_DEPTH, admitted_loads, value_key
+from .core import TOKEN_MAX_DEPTH, admitted_loads, ascii_lower, exact_int, value_key
 from .digests import IdentityDigestError, act_chain_digest
-from .grants import ts
+from .grants import micros
 from .identity import (
     _verify_jws,
     has_private_member,
@@ -142,7 +141,7 @@ class TrustBundle:
             raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
         if not issuers and not anchors:
             raise _refuse("trust_bundle_malformed", "a bundle pins at least one issuer or one anchor")
-        parsed = {str(url): _issuer(url, entry) for url, entry in issuers.items()}
+        parsed = {url: _issuer(url, entry) for url, entry in issuers.items()}
         return cls(doc["environment"], doc["tenant"], doc["audience"], doc["profile"], parsed, anchors)
 
     def key(self, issuer: str, role: str, kid: Any) -> PinnedKey:
@@ -152,7 +151,7 @@ class TrustBundle:
             raise _refuse("principal_issuer_untrusted", repr(issuer)[:80])
         matches = [k for k in pinned.keys if isinstance(kid, str) and k.jwk.get("kid") == kid]
         if len(matches) != 1:
-            raise _refuse("token_kid_unknown", f"kid {str(kid)[:80]!r} selects no single pinned key of {issuer}")
+            raise _refuse("token_kid_unknown", f"kid {kid!r:.80} selects no single pinned key of {issuer}")
         return self._admit(matches[0], role)
 
     def stamp_key(self, keyid: str) -> PinnedKey:
@@ -201,9 +200,8 @@ def _issuer(url: Any, entry: Any) -> PinnedIssuer:
         if jwk is None or any(p.thumbprint == pin["thumbprint"] for p in pinned):
             raise _refuse("trust_bundle_malformed", f"issuer {url}: a pin names no listed key, or one pinned twice")
         roles, tenants = pin["roles"], pin["tenants"]
-        if (not isinstance(roles, list) or not roles or not set(roles) <= set(PIN_ROLES) or len(set(roles)) != len(roles)
-                or not isinstance(tenants, list) or not tenants
-                or not all(isinstance(t, str) and t for t in tenants) or len(set(tenants)) != len(tenants)):  # fmt: skip
+        # Type first: a member that is a list or an object does not hash, so set() on a received list would raise.
+        if not _distinct_names(roles) or not set(roles) <= set(PIN_ROLES) or not _distinct_names(tenants):
             raise _refuse("trust_bundle_malformed", f"issuer {url}: roles and tenants are lists of distinct names")
         if "stamp" in roles and (len(roles) != 1 or not _is_stamp_key(jwk)):
             raise _refuse("trust_bundle_malformed", f"issuer {url}: a stamp key is an Ed25519 key pinned for stamp only")
@@ -211,6 +209,12 @@ def _issuer(url: Any, entry: Any) -> PinnedIssuer:
             raise _refuse("trust_bundle_malformed", f"issuer {url}: a token issuer is https and its keys carry kid")
         pinned.append(PinnedKey(jwk, pin["thumbprint"], frozenset(roles), frozenset(tenants)))
     return PinnedIssuer(url, tuple(pinned))
+
+
+def _distinct_names(value: Any) -> bool:
+    """A non-empty list of distinct non-empty strings (the twin's ``distinctNames``)."""
+    return (isinstance(value, list) and bool(value) and all(isinstance(t, str) and t for t in value)
+            and len(set(value)) == len(value))  # fmt: skip
 
 
 def _is_stamp_key(jwk: Mapping[str, Any]) -> bool:
@@ -261,9 +265,9 @@ def _segment(text: str) -> dict[str, Any]:
 
 def _seconds(claims: Mapping[str, Any], name: str) -> int:
     value = claims.get(name)
-    if isinstance(value, bool) or not isinstance(value, int):
+    if not exact_int(value):  # grammar/integer.json: an integer both readers hold exactly
         raise _refuse("token_malformed", f"{name} is not an integer")
-    return value
+    return int(value)
 
 
 @dataclass(frozen=True)
@@ -276,8 +280,9 @@ class _Token:
     claims: Mapping[str, Any]
 
 
-def _token(role: str, token: Any, bundle: TrustBundle, when: float) -> _Token:
-    """One identity-provider token, verified for ``role`` under the bundle; VerifiedIdentitiesRefused otherwise."""
+def _token(role: str, token: Any, bundle: TrustBundle, when: int) -> _Token:
+    """One identity-provider token, verified for ``role`` under the bundle at ``when`` (microseconds since the epoch);
+    VerifiedIdentitiesRefused otherwise."""
     parts = token.split(".") if isinstance(token, str) and token.isascii() else []
     if len(parts) != 3 or not all(parts):
         raise _refuse("token_malformed", f"the {role} credential is not a compact JWS")
@@ -292,11 +297,12 @@ def _token(role: str, token: Any, bundle: TrustBundle, when: float) -> _Token:
         raise _refuse("principal_issuer_untrusted", repr(iss)[:80])
     key = bundle.key(iss, role, header.get("kid"))
     typ = header.get("typ")
-    typ = typ.lower().removeprefix("application/") if isinstance(typ, str) else typ
+    typ = ascii_lower(typ).removeprefix("application/") if isinstance(typ, str) else typ
     if typ not in ROLE_TYPES[role]:
         raise _refuse("token_type_mismatch", f"a {role} credential with typ {header.get('typ')!r}")
-    if not _verify_jws(str(header.get("alg")), key.jwk, f"{parts[0]}.{parts[1]}".encode("ascii"),
-                       _signature(parts[2])):  # fmt: skip
+    # RFC 7515 section 4.1.1: alg is a string; a list or any other value names no algorithm, in either reader.
+    alg, signature = header.get("alg"), _signature(parts[2])
+    if not isinstance(alg, str) or not _verify_jws(alg, key.jwk, f"{parts[0]}.{parts[1]}".encode("ascii"), signature):
         raise _refuse("token_signature_unverified", f"the {role} credential")
     client = claims.get("client_id") if role != "sponsor" else claims.get("azp", claims.get("client_id"))
     if not isinstance(claims.get("sub"), str) or not claims["sub"] or not isinstance(client, str) or not client:
@@ -308,11 +314,12 @@ def _token(role: str, token: Any, bundle: TrustBundle, when: float) -> _Token:
         raise _refuse("token_wrong_audience", f"the {role} credential is not for {bundle.audience}")
     if exp <= iat:
         raise _refuse("token_malformed", "exp is not after iat")
-    if when < iat:
+    # Integers against integers: ``when`` is microseconds, and a claim is at most 2**53 - 1 seconds.
+    if when < iat * 1_000_000:
         raise _refuse("principal_not_yet_valid", f"the {role} credential's iat")
-    if "nbf" in claims and _seconds(claims, "nbf") > when:
+    if "nbf" in claims and _seconds(claims, "nbf") * 1_000_000 > when:
         raise _refuse("token_not_yet_valid", f"the {role} credential's nbf")
-    if when >= exp:
+    if when >= exp * 1_000_000:
         raise _refuse("principal_expired", f"the {role} credential")
     return _Token(role, token, iss, claims["sub"], client, claims)
 
@@ -382,7 +389,7 @@ def _identity_from_tokens(found: Mapping[str, _Token], bundle: TrustBundle) -> C
         raise _refuse("principal_act_names_another_agent", "the user's act claim names another agent")
     if user.client != agent.client:
         raise _refuse("principal_user_token_not_issued_to_agent", "the user's credential was issued to another client")
-    parents = [Ref("agent", env, str(a.get("iss", user.issuer)), a["sub"]) for a in actors[1:]]
+    parents = [Ref("agent", env, a.get("iss", user.issuer), a["sub"]) for a in actors[1:]]
     try:
         act = act_chain_digest(user.claims["act"]) if "act" in user.claims else None
     except IdentityDigestError as exc:
@@ -396,7 +403,7 @@ def _stamp(bundle: TrustBundle, request: RequestFacts, at: str) -> VerifiedStamp
     try:
         key = bundle.stamp_key(presented_key_id(request.headers))
         return verify_stamp(request.headers, method=request.method, target_uri=request.url, body=request.content,
-                            public_raw=_raw(key.jwk), now=from_datetime(ts(at)))  # fmt: skip
+                            public_raw=_raw(key.jwk), now=micros(at) * 1000)  # fmt: skip
     except StampRefused as exc:
         raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
 
@@ -420,7 +427,7 @@ def verify_request(tokens: Mapping[str, str], bundle: TrustBundle | Mapping[str,
         raise TypeError("transport is a CanonicalIdentity of kind transport")
     if not isinstance(tokens, Mapping):
         raise TypeError("tokens maps a role to a compact JWS")
-    unknown = sorted(str(role) for role in tokens if role not in TOKEN_ROLES)
+    unknown = sorted(f"{role!r}" for role in tokens if role not in TOKEN_ROLES)
     if unknown:
         raise _refuse("principal_role_not_configured", ", ".join(unknown)[:80])
     try:
@@ -430,7 +437,7 @@ def verify_request(tokens: Mapping[str, str], bundle: TrustBundle | Mapping[str,
     if not tokens and stamped is None:
         raise _refuse("principal_credential_missing", "the request presents no credential")
     try:
-        when = ts(at).timestamp()
+        when = micros(at)
     except (TypeError, ValueError) as exc:
         raise TypeError("at is an ISO 8601 time") from exc
     stamp: VerifiedStamp | None = None

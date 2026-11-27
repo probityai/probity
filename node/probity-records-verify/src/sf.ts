@@ -136,11 +136,13 @@ class Parser {
     if (end < 0) throw this.fail("unterminated byte sequence");
     const raw = this.s.slice(this.i, end);
     this.i = end + 1;
-    if (!B64.test(raw) || raw.length % 4 === 1) throw this.fail("bad base64");
-    // RFC 8941 section 4.2.7: a parser accepts a byte sequence with or without "=" padding and with nonzero stray bits,
-    // and the Python reader (agent_evidence_verify.structured_fields) does the same, so this one read keeps the format's
-    // own rule and not core.unb64's canonical one. The lint test lists this line by file.
-    return Buffer.from(raw.replace(/=+$/, ""), "base64");
+    // grammar/stamp.json, byte-sequence: the rule of the Python reader (agent_evidence_verify.structured_fields), which
+    // keeps RFC 8941 section 4.2.7 (padding optional, nonzero stray bits accepted) and not core.unb64's canonical one.
+    // The digits must make whole bytes: one digit left over after groups of four carries six bits and no byte, and
+    // Node's decoder drops it silently where Python's refuses it. The lint test lists this line by file.
+    const digits = raw.replace(/=+$/, "");
+    if (!B64.test(raw) || raw.length % 4 === 1 || digits.length % 4 === 1) throw this.fail("bad base64");
+    return Buffer.from(digits, "base64");
   }
 
   boolean(): boolean {

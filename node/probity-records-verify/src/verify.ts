@@ -219,25 +219,59 @@ function openEnvelope(env: J, keys: KeyObject[]): [Buffer, string] {
 
 // ---------- time ----------
 
-// The one timestamp grammar (grants.ts): RFC 3339 date-time, at most six fraction digits, an explicit offset. Microseconds
-// since the epoch; throws grant_timestamp_offset_missing for a date-time with no offset (it names no instant) and
-// grant_timestamp_invalid for anything else, a field out of range included (Date.UTC would roll month 13 into January).
-export function ts(text: J): number {
-  const m = typeof text === "string" ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})?$/.exec(text) : null;
+// The one timestamp grammar (grammar/timestamp.json, grants.ts in Python): RFC 3339 section 5.6 date-time written in the
+// digits 0 to 9, at most six fraction digits, an explicit offset, years 0001 to 9999. The instant is integer
+// microseconds since 1970-01-01T00:00:00Z, computed by calendar arithmetic and returned as a bigint: no Date (Date.UTC
+// reads years 0 to 99 as 1900 to 1999) and no double (a double holds microseconds exactly only for about 285 years
+// either side of 1970). Throws grant_timestamp_offset_missing for a date-time with no offset (it names no instant) and
+// grant_timestamp_invalid for anything else, a field out of range included.
+export const TIMESTAMP = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,6}))?(Z|[+-][0-9]{2}:[0-9]{2})?$/;
+export const MICROS = 1000000n;
+/** The number a run of the digits 0 to 9 writes (at most 15 of them, so the double is exact); grammar-matched text only. */
+export function decimal(text: string): number {
+  if (typeof text !== "string" || !/^[0-9]{1,15}$/.test(text)) throw new Error("not_decimal_digits");
+  let n = 0;
+  for (let i = 0; i < text.length; i += 1) n = n * 10 + (text.charCodeAt(i) - 48);
+  return n;
+}
+const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+/** Seconds since the epoch of a proleptic Gregorian civil time (years 1 to 9999), or null when a field is out of range. */
+export function civilSeconds(y: number, mo: number, d: number, h: number, mi: number, sec: number): number | null {
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+  if (y < 1 || y > 9999 || mo < 1 || mo > 12 || d < 1 || d > MONTH_DAYS[mo - 1] + (mo === 2 && leap ? 1 : 0) || h > 23 || mi > 59 || sec > 59) return null;
+  const yy = mo <= 2 ? y - 1 : y, era = Math.floor(yy / 400), yoe = yy - era * 400;  // days from civil, by eras of 400 years
+  const doy = Math.floor((153 * (mo + (mo > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+  const days = era * 146097 + yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy - 719468;
+  return days * 86400 + h * 3600 + mi * 60 + sec;
+}
+export function ts(text: J): bigint {
+  const m = typeof text === "string" ? TIMESTAMP.exec(text) : null;
   if (!m) throw new Error("grant_timestamp_invalid");
   if (m[8] === undefined) throw new Error("grant_timestamp_offset_missing");
-  const [y, mo, d, h, mi, sec] = m.slice(1, 7).map(Number);
-  const base = Date.UTC(y, mo - 1, d, h, mi, sec);
-  const back = new Date(base);
-  if (y < 1 || back.getUTCFullYear() !== y || back.getUTCMonth() !== mo - 1 || back.getUTCDate() !== d || h > 23 || mi > 59 || sec > 59)
-    throw new Error("grant_timestamp_invalid");
+  const [y, mo, d, h, mi, sec] = m.slice(1, 7).map(decimal);
+  const local = civilSeconds(y, mo, d, h, mi, sec);
+  if (local === null) throw new Error("grant_timestamp_invalid");
   let off = 0;
   if (m[8] !== "Z") {
-    const oh = +m[8].slice(1, 3), om = +m[8].slice(4, 6);
+    const oh = decimal(m[8].slice(1, 3)), om = decimal(m[8].slice(4, 6));
     if (oh > 23 || om > 59) throw new Error("grant_timestamp_invalid");
-    off = (m[8][0] === "-" ? -1 : 1) * (oh * 60 + om) * 60000;
+    off = (m[8][0] === "-" ? -1 : 1) * (oh * 60 + om) * 60;
   }
-  return (base - off) * 1000 + Number((m[7] ?? "").padEnd(6, "0"));
+  return BigInt(local - off) * MICROS + BigInt(decimal((m[7] ?? "").padEnd(6, "0")));
+}
+/** `text` with A to Z in lower case and every other character unchanged: a platform's own lower-casing also maps
+ *  characters outside ASCII, each platform by its own table. */
+export function asciiLower(text: string): string { return text.replace(/[A-Z]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 32)); }
+/** Floor of a / b for b > 0 (bigint division truncates toward zero). */
+export function floorDiv(a: bigint, b: bigint): bigint { const q = a / b; return a % b < 0n ? q - 1n : q; }
+/** An instant as a double, for the older record readers that subtract and sort instants; exact within about 285 years
+ *  of 1970. The request readers compare the bigint. */
+export function microsNumber(text: J): number { const us = ts(text); return Number(us); }
+/** A received JSON number that is an integer both readers hold exactly (grammar/integer.json): an integer spelling,
+ *  within 2**53 - 1 either side of zero. */
+export function exactInt(holder: J, key: string): boolean {
+  const v = holder[key];
+  return typeof v === "number" && Number.isSafeInteger(v) && !isFloat(holder, key, v);
 }
 
 // Every instant a grant names parses (grants._validate_times): "<code>:<member>" for the first that does not.
@@ -1141,10 +1175,10 @@ export function possessionRecordProblem(record: J, cnf: J): string | null {
   if (!isObj(record) || typeof record.method !== "string" || !Object.hasOwn(POSSESSION_MEMBERS, record.method)) return "possession_record_malformed";
   const want = POSSESSION_MEMBERS[record.method], keys = Object.keys(record).sort();
   if (keys.length !== want.length || keys.some((k, i) => k !== want[i])) return "possession_record_malformed";
-  if (record.method === "dpop" && (typeof record.iat !== "number" || !Number.isInteger(record.iat) || typeof record.jti !== "string"
+  if (record.method === "dpop" && (!exactInt(record, "iat") || typeof record.jti !== "string"
       || !record.jti || Buffer.byteLength(record.jti, "utf8") > MAX_JTI_BYTES)) return "possession_record_malformed";
   const member = record.method === "dpop" ? "jkt" : "x5t#S256";
-  if (!isObj(cnf) || !Object.hasOwn(cnf, member) || typeof record[member] !== "string" || record[member] !== String(cnf[member])) return "possession_not_the_grant_key";
+  if (!isObj(cnf) || !Object.hasOwn(cnf, member) || typeof record[member] !== "string" || typeof cnf[member] !== "string" || record[member] !== cnf[member]) return "possession_not_the_grant_key";
   return null;
 }
 
@@ -1157,12 +1191,12 @@ export function duplicateProofs(bodies: [number, J][], skew: number = DEFAULT_SK
     if (!isObj(pred) || pred.phase !== "authorize" || !isObj(pred.authority)) continue;
     const rec = pred.authority.possession;
     if (!isObj(rec) || rec.method !== "dpop" || typeof rec.jkt !== "string" || typeof rec.jti !== "string"
-        || typeof rec.iat !== "number" || !Number.isInteger(rec.iat)) continue;
+        || !exactInt(rec, "iat")) continue;
     const key = `${rec.jkt}.${rec.jti}`, permit = pred.permitId ?? null;
-    let used: number;
-    try { used = ts(pred.at) / 1e6; } catch { found.push(`line_${n}:dpop_proof_use_time_invalid`); continue; }
+    let used: bigint;  // microseconds
+    try { used = ts(pred.at); } catch { found.push(`line_${n}:dpop_proof_use_time_invalid`); continue; }
     const earlier = first.get(key);
-    const live = earlier !== undefined && used <= earlier[1] + skew + REPLAY_GRACE;
+    const live = earlier !== undefined && used <= BigInt(earlier[1] + skew + REPLAY_GRACE) * MICROS;
     if (live && earlier![2] !== permit) { found.push(`line_${n}:dpop_proof_replayed:${earlier![0]}`); continue; }
     if (!live) first.set(key, [n, rec.iat, permit]);
   }
@@ -1248,7 +1282,7 @@ function req(obj: J, key: string): J {
   return obj[key];
 }
 const getOr = (obj: J, key: string, dflt: J): J => (isObj(obj) && key in obj ? obj[key] : dflt);
-const instant = (text: J): number => ts(text);
+const instant = (text: J): number => microsNumber(text);
 /** Python's `x in container` on parsed JSON: a list by `==`, a string by substring, an object by key; a TypeError
  *  where Python raises one (a non-string in a string, an unhashable key, a number or null container). */
 function pyIn(x: J, container: J): boolean {
@@ -1581,9 +1615,12 @@ function verifyPrincipalToken(p: J, token: string, jwks: J, at: string | null): 
   if (Object.hasOwn(header, "crit")) return "token_critical_unsupported";
   if (!pyEq(header.kid, p.kid)) return "token_kid_mismatch";
   if (p.source === "id-jag" && header.typ !== "oauth-id-jag+jwt") return "token_typ_not_id_jag";
-  const named = TYP_SOURCES[String(header.typ ?? "").toLowerCase().replace(/^application\//, "")];
+  // Type first: a typ or an alg that is not a string names nothing (String(["EdDSA"]) is "EdDSA"), and a typ is looked
+  // up as an own member only ("constructor" is no credential type).
+  const typ = typeof header.typ === "string" ? asciiLower(header.typ).replace(/^application\//, "") : null;
+  const named = typ !== null && Object.hasOwn(TYP_SOURCES, typ) ? TYP_SOURCES[typ] : undefined;
   if (named !== undefined && named !== p.source) return `token_type_mismatch:${named}`;
-  if (!verifyJws(String(header.alg), p.key, Buffer.from(`${parts[0]}.${parts[1]}`), signature)) return "token_signature_unverified";
+  if (typeof header.alg !== "string" || !verifyJws(header.alg, p.key, Buffer.from(`${parts[0]}.${parts[1]}`), signature)) return "token_signature_unverified";
   const aud = claims.aud;
   // an ID token names its client in azp (OpenID Connect Core 1.0, section 2); an access token in client_id
   const client = truthy(claims.client_id) ? claims.client_id : (p.source === "id-token" ? claims.azp : null);
@@ -1595,8 +1632,8 @@ function verifyPrincipalToken(p: J, token: string, jwks: J, at: string | null): 
   if (!pyEq(claims.act, p.act)) return "token_claim_mismatch:act";
   if (!pyEq(claims.cnf, p.cnf)) return "token_claim_mismatch:cnf";
   if (at !== null && Object.hasOwn(claims, "nbf")) {
-    if (typeof claims.nbf !== "number" || !Number.isInteger(claims.nbf) || isFloat(claims, "nbf", claims.nbf)) return "token_malformed";
-    if (claims.nbf * 1e6 > ts(at)) return "token_not_yet_valid"; // ts: microseconds
+    if (!exactInt(claims, "nbf")) return "token_malformed";
+    if (BigInt(claims.nbf) * MICROS > ts(at)) return "token_not_yet_valid"; // ts: microseconds
   }
   return null;
 }
@@ -1622,7 +1659,7 @@ function verifyOidcApproval(embedded: J, pinned: J, pins: Record<string, string[
   const claims = segments[1];
   if (claims.nonce !== sha256Hex(canonicalBytes(approval))) return "approval_nonce_mismatch";
   let issued: number, expires: number;
-  try { issued = ts(req(approval, "issuedAt")) / 1e6; expires = ts(req(approval, "expiresAt")) / 1e6; } // ts: microseconds
+  try { issued = microsNumber(req(approval, "issuedAt")) / 1e6; expires = microsNumber(req(approval, "expiresAt")) / 1e6; } // ts: microseconds
   catch { return "approval_auth_not_fresh"; }
   const auth = claims.auth_time;
   if (typeof auth !== "number" || !(issued - OIDC_SKEW_SECONDS <= auth && auth <= expires)) return "approval_auth_not_fresh";

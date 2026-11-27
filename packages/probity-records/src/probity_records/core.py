@@ -134,6 +134,22 @@ def is_utf8_text(text: Any) -> bool:
     return True
 
 
+def exact_int(value: Any) -> bool:
+    """Whether a received JSON value is an integer both readers hold exactly (``grammar/integer.json``): an ``int``,
+    never a ``bool``, within 2**53 - 1 either side of zero. JavaScript reads 2**53 and 2**53 + 1 as one number, so a
+    larger integer has two readings."""
+    return isinstance(value, int) and not isinstance(value, bool) and -MAX_EXACT_INT <= value <= MAX_EXACT_INT
+
+
+def ascii_lower(text: str) -> str:
+    """``text`` with A to Z in lower case and every other character unchanged: ``str.lower`` also maps characters
+    outside ASCII, by a table that is not JavaScript's."""
+    return text.translate(_ASCII_LOWER)
+
+
+_ASCII_LOWER = {c: c + 32 for c in range(ord("A"), ord("Z") + 1)}
+
+
 def same_text(a: Any, b: Any) -> bool:
     """Constant-time equality of two strings of any text; False when either is not a string.
 
