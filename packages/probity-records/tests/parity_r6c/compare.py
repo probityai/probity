@@ -29,3 +29,5 @@ for case, p in raised_py[:20]:
     print(f"  PY_RAISED {case} {p}")
 for case, t in raised_ts[:20]:
     print(f"  TS_RAISED {case} {t}")
+
+sys.exit(1 if diff or raised_py or raised_ts else 0)

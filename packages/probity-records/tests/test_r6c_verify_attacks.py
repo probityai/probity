@@ -248,3 +248,19 @@ def test_a_request_body_jcs_cannot_print_is_a_renewal_error_not_a_raise(member: 
     hostile = {"body": {**signed["body"], **member}, "sig": signed["sig"]}
     with pytest.raises(renewal.RenewalError):
         renewal.verify_chain([cert], [hostile], [authority.public])
+
+
+# --- DPoP: a received proof is refused, never raised --------------------------------------------------------------
+
+
+def test_a_dpop_proof_whose_claims_segment_is_not_ascii_is_a_refusal_not_a_raise() -> None:
+    """``check_dpop`` builds the signing input with ``.encode("ascii")`` before it reads the claims; a request header
+    is received text, so a non-ASCII character there must be ``dpop_malformed``, the code the TypeScript twin should
+    give for the same proof."""
+    from probity_records.possession import check_dpop
+
+    head = _b64url(b'{"alg":"EdDSA","typ":"dpop+jwt","jwk":{"kty":"OKP","crv":"Ed25519","x":"' + b"A" * 43 + b'"}}')
+    proof = f"{head}.e30é.AA"
+    got = check_dpop(proof, "POST", "https://gw.example.com/x", "2026-11-27T00:00:00Z", expected_jkt="jkt",
+                     access_token=None)
+    assert got[0] is None and isinstance(got[1], str)
