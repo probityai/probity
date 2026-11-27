@@ -44,8 +44,8 @@ from .core import TOKEN_MAX_DEPTH, admitted_loads, canonical
 from .digests import IdentityDigestError, act_chain_digest
 from .grants import ts
 from .identity import (
-    PRIVATE_JWK_MEMBERS,
     _verify_jws,
+    has_private_member,
     jwk_thumbprint,
     public_jwk,
     unb64url,
@@ -181,7 +181,7 @@ def _issuer(url: Any, entry: Any) -> PinnedIssuer:
         raise _refuse("trust_bundle_malformed", f"issuer {url}: keys and pins are non-empty lists")
     by_thumbprint: dict[str, Mapping[str, Any]] = {}
     for jwk in keys:
-        if not isinstance(jwk, Mapping) or set(jwk) & PRIVATE_JWK_MEMBERS:
+        if not isinstance(jwk, Mapping) or has_private_member(jwk):
             raise _refuse("trust_bundle_malformed", f"issuer {url}: a key is a public JWK")
         try:
             thumbprint = jwk_thumbprint(jwk)  # only for one canonical public key: identity.public_jwk
@@ -218,7 +218,7 @@ def _is_stamp_key(jwk: Mapping[str, Any]) -> bool:
 
 
 def _raw(jwk: Mapping[str, Any]) -> bytes:
-    return unb64url(str(jwk["x"]))
+    return public_jwk(jwk)["x"]
 
 
 # --- the request --------------------------------------------------------------------------------------------------

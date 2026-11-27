@@ -28,7 +28,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from . import witness as w
 from .core import JsonRefused, admitted_loads, key_id, open_envelope
 from .grants import ts
-from .identity import PRIVATE_JWK_MEMBERS, jwk_thumbprint, unb64url
+from .identity import has_private_member, jwk_thumbprint, public_jwk
 from .revocation import RevocationState
 
 ANCHOR_MEMBERS: Final = frozenset({"jwk", "thumbprint", "role", "status", "notBefore", "notAfter", "predicateTypes"})
@@ -73,15 +73,12 @@ def _time(value: Any, what: str) -> str:
 
 
 def _public(jwk: Any) -> Ed25519PublicKey:
-    if not isinstance(jwk, Mapping) or set(jwk) & PRIVATE_JWK_MEMBERS:
+    if not isinstance(jwk, Mapping) or has_private_member(jwk):
         raise _malformed("an anchor key is a public JWK")
     if jwk.get("kty") != "OKP" or jwk.get("crv") != "Ed25519" or not isinstance(jwk.get("x"), str):
         raise _malformed("an anchor key is an Ed25519 OKP key")
     try:
-        raw = unb64url(jwk["x"])
-        if len(raw) != 32:
-            raise ValueError("length")
-        return Ed25519PublicKey.from_public_bytes(raw)
+        return Ed25519PublicKey.from_public_bytes(public_jwk(jwk)["x"])  # canonical, 32 bytes, nothing private
     except (ValueError, binascii.Error) as exc:
         raise _malformed("an anchor key's x is 32 base64url bytes") from exc
 

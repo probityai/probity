@@ -53,7 +53,7 @@ from cryptography.x509.verification import PolicyBuilder, Store, VerificationErr
 
 from . import witness
 from .core import TOKEN_MAX_DEPTH, JsonRefused, admitted_loads, sha256_hex
-from .identity import PRIVATE_JWK_MEMBERS, jwk_thumbprint, public_jwk
+from .identity import has_private_member, jwk_thumbprint, public_jwk
 
 #: The algorithm each pinned key type admits; the header's ``alg`` must be this one.
 ALG_OF_KEY: Final = {("OKP", "Ed25519"): "EdDSA", ("EC", "P-256"): "ES256", ("RSA", None): "RS256"}
@@ -145,6 +145,10 @@ def strict_json(data: bytes) -> Any:
 
 
 def _alg_of(jwk: Mapping[str, Any]) -> str | None:
+    """The one algorithm a public key of this type takes; None for a key no algorithm reads, private material
+    included (``identity.has_private_member``)."""
+    if has_private_member(jwk):
+        return None
     kty = jwk.get("kty")
     return ALG_OF_KEY.get((str(kty), None if kty == "RSA" else str(jwk.get("crv"))))
 
@@ -159,10 +163,13 @@ class PinnedKeys:
 
     @classmethod
     def of(cls, issuer: str, jwks: Mapping[str, Any], thumbprints: frozenset[str] | None = None) -> PinnedKeys:
-        """Pin ``jwks``; with ``thumbprints`` None, every usable key in the snapshot is accepted."""
+        """Pin ``jwks``; with ``thumbprints`` None, every usable key in the snapshot is accepted. A snapshot that
+        publishes a private key is no trust anchor (anyone could sign as the issuer), so it is refused whole."""
         keys = tuple(dict(k) for k in jwks.get("keys", []) if isinstance(k, Mapping))
         if not keys:
             raise ValueError(f"issuer {issuer}: a pin needs at least one key")
+        if any(has_private_member(k) for k in keys):
+            raise ValueError(f"issuer {issuer}: a pinned JWKS publishes private key material")
         if thumbprints is not None:
             return cls(issuer, keys, thumbprints)
         accepted = set()
@@ -366,7 +373,7 @@ def published_key(entry: Any) -> DomainKey:
     kid, use, jwk = entry["kid"], entry["use"], entry["jwk"]
     if not isinstance(kid, str) or not kid or use not in USES or not isinstance(jwk, Mapping):
         raise RegistryError("domain_key_malformed", f"kid {kid!r} use {use!r}")
-    if PRIVATE_JWK_MEMBERS & set(jwk):
+    if has_private_member(jwk):
         raise RegistryError("domain_key_private_material", kid)
     if _alg_of(jwk) is None:
         raise RegistryError("domain_key_unsupported", f"{kid}: {jwk.get('kty')!r} {jwk.get('crv')!r}")
@@ -746,10 +753,14 @@ def verify_presentation(text: str, pins: Mapping[str, PinnedKeys], *, audience: 
         raise RegistryError("passport_malformed", "epoch")
     cnf = payload.get("cnf")
     holder = cnf.get("jwk") if isinstance(cnf, dict) and set(cnf) == {"jwk"} else None
-    if not isinstance(holder, dict) or _alg_of(holder) is None:
+    try:
+        holder_print = jwk_thumbprint(holder) if isinstance(holder, dict) and _alg_of(holder) is not None else None
+    except ValueError:  # identity.PrivateKeyMaterial included: a published private half proves no holder (R-B)
+        holder_print = None
+    if holder is None or holder_print is None:
         raise RegistryError("passport_holder_invalid", "cnf is {jwk: <public key>}")
     disclosed = _disclosed(payload, disclosures)
     nonce, kb_iat = _key_binding(kb, holder, audience=audience, prefix=text[: len(text) - len(kb)], now=now,
                                  skew=skew)  # fmt: skip
-    return VerifiedPassport(str(payload["iss"]), sub, tenant, epoch, jwk_thumbprint(holder), disclosed, nonce, kb_iat,
+    return VerifiedPassport(str(payload["iss"]), sub, tenant, epoch, holder_print, disclosed, nonce, kb_iat,
                             int_claim(payload, "exp"), str(payload.get("jti", "")))  # fmt: skip

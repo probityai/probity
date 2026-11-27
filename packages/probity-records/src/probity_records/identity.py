@@ -75,6 +75,27 @@ from .grants import ts
 #: TypeScript twin is ``PRIVATE_JWK_MEMBERS`` in verify.ts; tests/test_private_jwk_members.py holds them equal.
 PRIVATE_JWK_MEMBERS: Final = frozenset({"d", "p", "q", "dp", "dq", "qi", "oth", "k", "priv"})
 
+
+class PrivateKeyMaterial(ValueError):
+    """A received JWK that carries a member of ``PRIVATE_JWK_MEMBERS``: a key whose private half is published proves
+    nobody holds it, and a pin on it lets anyone sign as its issuer."""
+
+
+def has_private_member(jwk: object) -> bool:
+    """True when ``jwk`` is a JSON object carrying any member of ``PRIVATE_JWK_MEMBERS`` (TypeScript:
+    ``hasPrivateMember``). Member names are case-sensitive (RFC 7517 section 4), so ``D`` is not ``d``."""
+    return isinstance(jwk, Mapping) and not PRIVATE_JWK_MEMBERS.isdisjoint(jwk)
+
+
+def refuse_private(jwk: object) -> None:
+    """Raise ``PrivateKeyMaterial`` for a JWK that carries private material.
+
+    Every reader of a received JWK goes through this by construction: ``public_jwk`` calls it first, and
+    ``jwk_thumbprint`` and every signature check read key bytes only through ``public_jwk``.
+    tests/test_private_jwk_members.py finds every function that reads a JWK and refuses each member through it."""
+    if has_private_member(jwk):
+        raise PrivateKeyMaterial("a JWK carries private key material")
+
 ROLES = ("user", "agent", "sponsor", "approver")
 #: The members of an autonomous block beside its roles.
 AUTONOMOUS = ("session", "standingGrant")
@@ -129,8 +150,10 @@ def public_jwk(jwk: Mapping[str, Any]) -> dict[str, bytes]:
     coordinate is the full size of its curve (RFC 7518 section 6.2.1.2: "MUST be the full size of a coordinate"), an
     Ed25519 ``x`` is 32 bytes, and RSA ``n`` and ``e`` use the minimum number of octets (RFC 7518 section 2,
     Base64urlUInt: no leading zero octet). Without this one key has several spellings, several RFC 7638
-    thumbprints, and a pin or a duplicate check keyed on the thumbprint can be stepped around.
+    thumbprints, and a pin or a duplicate check keyed on the thumbprint can be stepped around. A key carrying a
+    member of ``PRIVATE_JWK_MEMBERS`` is ``PrivateKeyMaterial``.
     """
+    refuse_private(jwk)
     kty = jwk.get("kty")
     if kty == "RSA":
         n, e = unb64url(jwk.get("n")), unb64url(jwk.get("e"))
@@ -151,7 +174,9 @@ def public_jwk(jwk: Mapping[str, Any]) -> dict[str, bytes]:
 def jwk_thumbprint(jwk: Mapping[str, Any]) -> str:
     """RFC 7638 SHA-256 thumbprint, base64url without padding, of a key ``public_jwk`` reads; else ``ValueError``.
 
-    A thumbprint names one key, so it exists only for the one spelling of that key."""
+    A thumbprint names one key, so it exists only for the one spelling of that key, and never for a key that carries
+    private material."""
+    refuse_private(jwk)
     members = THUMBPRINT_MEMBERS.get(str(jwk.get("kty")))
     if members is None or any(m not in jwk for m in members):
         raise ValueError("jwk_unsupported")
@@ -183,7 +208,7 @@ def _shape(p: Any) -> str | None:
     for m in ("tokenDigest", "jwksDigest"):
         if not isinstance(p[m], str) or len(p[m]) != 64 or any(c not in "0123456789abcdef" for c in p[m]):
             return "principal_malformed"
-    if not isinstance(p["key"], dict) or set(p["key"]) & PRIVATE_JWK_MEMBERS:
+    if not isinstance(p["key"], dict) or has_private_member(p["key"]):
         return "principal_key_invalid"
     if "cnf" in p:
         from .possession import cnf_problem
