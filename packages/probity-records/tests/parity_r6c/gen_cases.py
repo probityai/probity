@@ -2,7 +2,8 @@
 
 Every shared vector row is copied with one token segment or one DPoP segment replaced by hostile bytes or a hostile
 spelling, or with one bundle key member respelled (key_spellings.py), or with a token or proof edited and signed again
-(signed_edits.py), and judged by probity_records.verified_identities_vectors.judge. Cases of kind possession, record and
+(signed_edits.py), or generated from the grammar files (grammar_cases.py: every production of grammar/*.json at every
+place it is read), and judged by probity_records.verified_identities_vectors.judge. Cases of kind possession, record and
 spent judge the possession checks a request does not reach alone (check_possession, possession_record_problem,
 duplicate_proofs). The TypeScript twin judges the same cases (judge_ts.ts); compare.py prints every case where the two
 disagree and every registered refusal code of verified_identities.py and possession.py that no case reaches in either
@@ -19,14 +20,19 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from agent_evidence_verify import structured_fields as sf
+from probity_records.certificate import CertificateRefused, certificate_facts, spki_key
+from probity_records.grants import micros
 from probity_records.possession import (
     check_possession,
     duplicate_proofs,
+    http_uri_parts,
     possession_record_problem,
 )
 from probity_records.verified_identities_vectors import judge, proof_document
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: the shared key respellings
+from grammar_cases import grammar_cases
 from key_spellings import key_edits
 from signed_edits import possession_cases, record_cases, request_edits, spent_cases
 
@@ -110,7 +116,41 @@ def _spent(c: dict[str, Any]) -> Any:
     return {"found": found, **({"refused": found[0][1].split(":")[0]} if found else {})}
 
 
-JUDGES = {"request": judge, "possession": _possession, "record": _record, "spent": _spent}
+def _timestamp(c: dict[str, Any]) -> Any:
+    try:
+        return {"micros": f"{micros(c['text']):d}"}
+    except ValueError as exc:
+        return {"refused": exc.args[0]}
+
+
+def _uri(c: dict[str, Any]) -> Any:
+    try:
+        return list(http_uri_parts(c["text"]))
+    except ValueError as exc:
+        return {"refused": exc.args[0]}
+
+
+def _certificate(c: dict[str, Any]) -> Any:
+    try:
+        facts = certificate_facts(base64.b64decode(c["derB64"]))
+    except CertificateRefused as exc:
+        return {"refused": exc.args[0]}
+    key = spki_key(facts.spki)
+    shown = None if key is None else {m: (x.hex() if isinstance(x, bytes) else x) for m, x in key.items()}
+    return {"notBefore": f"{facts.not_before:d}", "notAfter": f"{facts.not_after:d}", "key": shown}
+
+
+def _sf_bytes(c: dict[str, Any]) -> Any:
+    try:
+        member = sf.parse_dictionary(f"a=:{c['text']}:").get("a")
+    except sf.SFError:
+        return {"refused": "sf"}
+    value = getattr(member, "value", None)
+    return {"hex": value.hex()} if isinstance(value, bytes) and len(getattr(member, "params", {})) == 0 else {"other": True}
+
+
+JUDGES = {"request": judge, "possession": _possession, "record": _record, "spent": _spent, "timestamp": _timestamp,
+          "uri": _uri, "certificate": _certificate, "sf-bytes": _sf_bytes}
 
 
 def verdict(kind: str, row: dict[str, Any]) -> Any:
@@ -160,6 +200,7 @@ def main() -> None:
         cases.extend({"case": name, "row": r} for name, r in request_edits(row))  # edited and signed again
     for kind, family in (("possession", possession_cases), ("record", record_cases), ("spent", spent_cases)):
         cases.extend({"case": name, "kind": kind, "row": c} for name, c in family(rows))
+    cases.extend(grammar_cases(rows))  # every production of grammar/*.json, at every place it is read
     for c in cases:
         c.setdefault("kind", "request")
         c["python"] = verdict(c["kind"], c["row"])
