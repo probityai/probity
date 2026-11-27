@@ -29,13 +29,22 @@
   sorted by their RFC 8785 bytes, so one set of approvers has one digest in any written order; a list of one, a list
   with a member that is not an object, and any other role given as a list are refused `identity_principals_malformed`.
   `identity.approver_principals` and `identity.approver_subjects` read either form.
-- **Erasure seals an approver list per member.** A subject key is one person's, so an `approver` field whose value is
-  a list is sealed member by member: member `n` is the field `<path>.<n>` under the subject `approver.<n>`, with its
-  own key and its own ciphertext group, and erasing one approver (destroying that member's key) leaves the others
-  readable; the erased member opens as null in its place. `erasure.seal` refuses a list whose members do not each have
-  a key (`field_names_several_subjects`) and an empty list (`approver_list_empty`); `check_block` refuses a member
-  field under another member's subject and a list whose members are not 0 to N-1 (`roles_malformed`). A record with
-  no approver list seals byte for byte as before. `erasure.member_subject(n)` names member n's subject.
+- **Erasure seals an approver list per member, where the schema declares one.** A subject key is one person's. A
+  rule declares that its approver field lists several people with `members` (`Rule(..., members=True)`; JSON
+  `"members": true`, written only when set, so a schema without it serializes as before), and `lint_schema` requires
+  it on `principals.approver` (`approver_list_undeclared:<path>`) and refuses it on any rule that is kept or not for
+  the approver role (`members_outside_approver:<path>`). A list under a declared rule is sealed member by member:
+  member `n` is the field `<path>.<n>` under the subject `approver.<n>`, with its own key and its own ciphertext group,
+  and erasing one approver (destroying that member's key) leaves the others readable; the erased member opens as null
+  in its place. A list under an approver rule without the flag is one approver's own value (the roles they voted in)
+  and seals whole under the `approver` key, byte for byte as 0.12.0 does; the JSON type of a value never decides how
+  many people it names. `erasure.seal` refuses, with `field_names_several_subjects`, a declared list whose members do
+  not each have a key, two members passed one key, declared lists of different lengths in one record (member `n` of
+  every list is one person), and a record with a declared list that also seals a field under the one `approver` key;
+  it refuses an empty list (`approver_list_empty`). `check_block` refuses a member field under another member's
+  subject and a list whose members are not 0 to N-1 (`roles_malformed`). A record with no approver list seals byte
+  for byte as before. `erasure.member_subject(n)` names member n's subject. The erasure block of a record with a list
+  shows how many approvers it has (one `<path>.<n>` entry and one ciphertext group per member).
 - Shared vectors, every case released before this change byte for byte unchanged: `identity.json` adds ID41 to ID55
   (a list of two, strict; two counted and one named, basic; a subject twice; a list of one; an empty list; a member not
   counted; a member whose thumbprint does not recompute; a member that is not an object; a list with no approval;
@@ -45,8 +54,13 @@
   `approvers.json` holds nine journals under a 1-of-2 and a 2-of-2 policy (MA1 to MA9: both named, strict; one named;
   one named twice; a list naming a replayed approval; an intent naming both; an intent naming one; a deny of two naming
   one, strict; an intent naming both in the other order; an intent after one approver's credential refresh).
-  `erasure.json` adds S11 to S13 and O13 to O16 (the per-member seal and its refusals, opening with every key, with
-  one approver's key destroyed, a member under another member's subject, members not 0 to N-1). A reader that has not
+  `approvers.json` also holds MA10 and MA11 (an intent whose approver is two strings spelling the allow's approver,
+  in either order: malformed, and not the parties of its permit, in both readers). `erasure.json` adds S11 to S17,
+  O13 to O16 and L6 (the per-member seal and its refusals, one key under two members, one approver's own list sealed
+  whole, a list beside a field under the one approver key, lists of different lengths, opening with every key, with
+  one approver's key destroyed, a member under another member's subject, members not 0 to N-1, the `members` lint).
+  The example schema declares `members` on its two approver rules, so the schema input of every erasure vector that
+  carries it gains that flag; every expected output is byte for byte unchanged. A reader that has not
   learned the list form refuses every vector that carries one; `@probityai/records-verify` learns it in the same
   change, so both releases go out together.
 - Minor, not patch: a vector that turns a passing implementation red (an allow of several, one named, is now basic)

@@ -27,7 +27,7 @@ SCHEMA = Schema("test@2", (
     Rule("intent", PAYLOAD, "user", personal=True, commit=True),
     Rule("reasons", PAYLOAD, "user", personal=True),
     Rule("principals.user", PSEUDONYM, "user", personal=True),
-    Rule("principals.approver", PSEUDONYM, "approver", personal=True),
+    Rule("principals.approver", PSEUDONYM, "approver", personal=True, members=True),
 ), STRUCT)  # fmt: skip
 
 

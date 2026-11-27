@@ -24,18 +24,28 @@ Every non-kept field names the role whose key covers it: `user`, `agent`, `spons
 
 ### Several approvers: one subject per member
 
-A subject key is one person's: destroying it erases that person and nobody else. An `approver` field whose value is a
-list (an approval several people gave) names several people, so it is sealed per member. Member `n` of the list is
-the field `<path>.<n>` (a rule names the list's path; the position is the last segment), covered by the subject
-`approver.<n>` and its own key, in its own ciphertext group (`approver.<n>`, class). The caller passes one key per
-member under `approver.0`, `approver.1`, and so on; member `n` of every approver list in one record is the same
-person. Erasing one approver is destroying that member's key: the others still open, and the erased member reads as
-null in its place so the positions hold.
+A subject key is one person's: destroying it erases that person and nobody else. A schema says which approver fields
+list several people (an approval several people gave): the rule carries `members` (JSON `"members": true`, written
+only when set). `lint_schema` requires the flag on `principals.approver`, which the identity profile defines as one
+principal or a list of several (`approver_list_undeclared:<path>`), and refuses it on a kept rule or a rule for another
+role (`members_outside_approver:<path>`). The value's JSON type never decides how many people it names: a list under an
+approver rule without the flag is one approver's own value (the roles they voted in, say) and seals whole under the
+`approver` key.
 
-`seal` refuses an approver list when any member has no key of its own (`field_names_several_subjects`): one key
-over the list would put several people under one subject, so erasing one would erase all, and whoever holds it
-would read them all. An empty list names no subject and is refused (`approver_list_empty`). `check_block` refuses a
-member field whose subject is another member's, or a list whose members are not `0` to `N-1` (`roles_malformed`).
+A list under a declared rule is sealed per member. Member `n` of the list is the field `<path>.<n>` (a rule names the
+list's path; the position is the last segment), covered by the subject `approver.<n>` and its own key, in its own
+ciphertext group (`approver.<n>`, class). The caller passes one key per member under `approver.0`, `approver.1`, and
+so on; member `n` of every declared list in one record is the same person. Erasing one approver is destroying that
+member's key: the others still open, and the erased member reads as null in its place so the positions hold. The
+erasure block shows how many approvers the record has: one `<path>.<n>` entry and one ciphertext group per member.
+
+`seal` refuses with `field_names_several_subjects` whatever would put several people under one key: a member with no
+key of its own, two members passed the same key bytes (destroying it would erase both, and its holder reads both),
+two declared lists of different lengths in one record (member `n` would not be one person), and a record with a
+declared list that also seals a field under the one `approver` key (in such a record that key is nobody in
+particular). An empty list names no subject and is refused (`approver_list_empty`). `check_block` refuses a member
+field whose subject is another member's, or a list whose members are not `0` to `N-1` (`roles_malformed`). That two
+lists of one length name their people in one order stays the caller's duty: `seal` cannot see who is behind a key.
 
 A schema may also fix the plaintext size of a class (`fixed`, class to bytes). Every ciphertext of that class then
 holds exactly that many plaintext bytes, whoever it covers, and a larger plaintext is refused at seal time
@@ -105,7 +115,7 @@ written with canary values; a sealed journal should give `[]`, and the same reco
 
 `vectors/shared/erasure.json` (from `erasure_vectors.vectors()`) fixes keys, leaf ids and nonces, so another
 implementation reproduces every byte. Schemas travel as JSON (`Schema.to_json`). The cases cover sealing (including
-every refusal, and a fixed-size class), an approver list sealed per member and its refusals (S11 to S13, O13 to
-O16), opening with all keys, with a destroyed key, with a missing or swapped blob,
+every refusal, and a fixed-size class), an approver list sealed per member and its refusals (S11 to S17, O13 to
+O16; L6 for the `members` lint), opening with all keys, with a destroyed key, with a missing or swapped blob,
 a changed leaf, tampered tags and malformed blocks, a signed length that is not the blob's, disclosure and its
 verification, the schema lint, the padding check, references and the canary lint, and the erasability label.

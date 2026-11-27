@@ -18,10 +18,13 @@ A v2 record splits every field of the record, by a declared schema, into one of 
   (`disclose`) without revealing the subject key or any other field, and equal values do not link across leaves.
 
 Every non-kept field names the data subject whose key covers it (a role: user, agent, sponsor, approver, session).
-An approver field whose value is a list (an approval several people gave) names several subjects, so it is sealed
-per member: member ``n`` is the field ``<path>.<n>`` under its own subject ``approver.<n>`` and its own key, and
-erasing one approver leaves every other one readable. ``seal`` refuses such a list when a member has no key of its
-own (``field_names_several_subjects``) rather than put several people under one key.
+A schema declares which approver fields list several people (``Rule.members``: an approval several people gave; it
+is required on ``principals.approver``). A list under such a rule is sealed per member: member ``n`` is the field
+``<path>.<n>`` under its own subject ``approver.<n>`` and its own key, and erasing one approver leaves every other
+one readable. ``seal`` refuses such a list when a member has no key of its own, when two members share one key, or
+when the record also seals a field under the one ``approver`` key (``field_names_several_subjects``), rather than
+put several people under one key. A list under an approver rule without the flag is one approver's own value (the
+roles they voted in, say) and seals whole under the ``approver`` key.
 The payload is encrypted per subject and per class (AES-256-GCM, a key derived per leaf, the AAD binding the format,
 leaf id, schema, subject and class, the plaintext padded to a multiple of 256 bytes, or to one exact size for a
 class the schema fixes, so a length cannot tell two values or two subjects apart). The signed statement carries only
@@ -108,6 +111,7 @@ class Rule:
     personal: bool = False  # the value can carry personal data
     digest_of_personal: bool = False  # the value is a digest computed over personal content
     commit: bool = False  # a payload field also gets a keyed commitment in the signed statement
+    members: bool = False  # an approver field whose list value names several people, one subject per member
 
 
 @dataclass(frozen=True)
@@ -145,8 +149,7 @@ class Schema:
     def to_json(self) -> dict[str, Any]:
         """The schema as JSON, the form the shared vectors and other implementations read."""
         return {"name": self.name, "structural": sorted(self.structural), "fixed": dict(sorted(self.fixed)),
-                "rules": [{"path": r.path, "class": r.cls, "subject": r.subject, "personal": r.personal,
-                           "digestOfPersonal": r.digest_of_personal, "commit": r.commit} for r in self.rules]}
+                "rules": [_rule_json(r) for r in self.rules]}
 
     @classmethod
     def from_json(cls, doc: Mapping[str, Any]) -> Schema:
@@ -168,7 +171,8 @@ class Schema:
 
         try:
             rules = tuple(Rule(text(r["path"]), text(r["class"]), None if r["subject"] is None else text(r["subject"]),
-                               flag(r["personal"]), flag(r["digestOfPersonal"]), flag(r["commit"]))
+                               flag(r["personal"]), flag(r["digestOfPersonal"]), flag(r["commit"]),
+                               flag(r.get("members", False)))
                           for r in doc["rules"])  # fmt: skip
             if not isinstance(doc["fixed"], Mapping):
                 raise EnvelopeError("schema_malformed", "fixed is not an object")
@@ -176,6 +180,19 @@ class Schema:
             return cls(text(doc["name"]), rules, frozenset(text(p) for p in doc["structural"]), fixed)
         except (KeyError, TypeError) as exc:
             raise EnvelopeError("schema_malformed", str(exc)) from exc
+
+
+def _rule_json(r: Rule) -> dict[str, Any]:
+    """A rule as JSON. ``members`` appears only when set, so a schema with no approver list serializes as before."""
+    out: dict[str, Any] = {"path": r.path, "class": r.cls, "subject": r.subject, "personal": r.personal,
+                           "digestOfPersonal": r.digest_of_personal, "commit": r.commit}
+    if r.members:
+        out["members"] = True
+    return out
+
+
+#: The field the identity profile defines as one principal or a list of several: its rule must say so.
+APPROVER_PRINCIPALS: Final = "principals.approver"
 
 
 def lint_schema(schema: Schema) -> list[str]:
@@ -208,6 +225,10 @@ def lint_schema(schema: Schema) -> list[str]:
                 problems.append(f"no_subject_role:{r.path}")
             if r.cls == PSEUDONYM and r.commit:
                 problems.append(f"pseudonym_with_commitment:{r.path}")
+            if r.path == APPROVER_PRINCIPALS and r.subject == LIST_ROLE and not r.members:
+                problems.append(f"approver_list_undeclared:{r.path}")
+        if r.members and (r.cls == KEPT or r.subject != LIST_ROLE):
+            problems.append(f"members_outside_approver:{r.path}")
         if r.path in schema.structural and r.cls != KEPT:
             problems.append(f"structural_not_kept:{r.path}")
     for parent in split:
@@ -343,6 +364,29 @@ def _seal_members(path: str, rule: Rule, members: list[Any], keys: Mapping[str, 
             commitments[at] = tag(field_key(key, leaf, at), value)
 
 
+def _one_person_per_key(roles: Mapping[str, str], keys: Mapping[str, bytes], subject_role: str | None) -> None:
+    """A record that seals an approver list names each approver under a key of their own: every list has the same
+    members (member n of each is one person), no two members share key bytes, and no field rests on the one
+    ``approver`` key, which in such a record covers nobody in particular."""
+    sizes = _member_lists(roles)
+    if not sizes:
+        return
+    if len(set(sizes.values())) > 1:
+        raise EnvelopeError("field_names_several_subjects",
+                            "approver lists of different lengths: " + ", ".join(f"{p} lists {n}" for p, n in
+                                                                                 sorted(sizes.items())))
+    plain = sorted(p for p, r in roles.items() if r == LIST_ROLE)
+    if plain or subject_role == LIST_ROLE:
+        raise EnvelopeError("field_names_several_subjects",
+                            f"the record lists several approvers; {', '.join(plain) or 'its subject'} names the one "
+                            f"{LIST_ROLE} key, which is nobody in particular")
+    owner: dict[bytes, str] = {}
+    for subject in sorted({r for r in roles.values() if _MEMBER.fullmatch(r)}):
+        other = owner.setdefault(keys[subject], subject)
+        if other != subject:
+            raise EnvelopeError("field_names_several_subjects", f"{other} and {subject} have one key")
+
+
 def seal(
     schema: Schema,
     record: Mapping[str, Any],
@@ -376,8 +420,9 @@ def seal(
         if rule is None:
             raise EnvelopeError("field_undeclared", path)
         _, value = _get(record, path)
-        if rule.cls != KEPT and rule.subject == LIST_ROLE and isinstance(value, list):
-            # Several people: each member is its own field and subject; the list's path itself carries no class.
+        if rule.members and isinstance(value, list):
+            # Several people, as the schema declares: each member is its own field and subject; the list's path
+            # itself carries no class.
             _seal_members(path, rule, value, keys, leaf, (classes, roles, groups, pseudonyms, commitments))
             continue
         classes[path] = rule.cls
@@ -402,6 +447,7 @@ def seal(
             commitments[path] = tag(field_key(key, leaf, path), value)
     if subject_role is not None and subject_role not in keys:
         raise EnvelopeError("subject_key_missing", f"the statement subject needs the {subject_role} key")
+    _one_person_per_key(roles, keys, subject_role)
     if subject_role is None and groups:
         raise EnvelopeError("subject_role_missing", "a record with personal fields names its data subject")
     ciphertexts: list[dict[str, Any]] = []
