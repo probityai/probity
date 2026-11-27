@@ -655,18 +655,26 @@ export function requestHash(tool: string, args: string, permit: string, proposer
   return digestOf(body);
 }
 
+/** `holder[key]` when `key` is a string and an own member of the object `holder`; undefined otherwise. A received
+ *  value is never turned into text to look it up, and a name every object inherits ("constructor") is no member. */
+function ownText(holder: J, key: J): J {
+  return typeof key === "string" && isObj(holder) && Object.hasOwn(holder, key) ? holder[key] : undefined;
+}
+
 function deputyProblem(vote: J, policy: J, at: string): [string | null, string | null] {
   const body = vote.body, d = vote.delegation, db = isObj(d) ? d.body : null;
   if (!isObj(db)) return ["deputy_without_delegation", null];
-  const who = String(body.onBehalfOf), raw = policy.approvers[who];
+  // Type first, own members only: String(["alice"]) is "alice", and every object has a "constructor".
+  const who = body.onBehalfOf, raw = ownText(policy.approvers, who);
   if (raw === undefined || db.delegator !== who) return ["deputy_for_unknown_approver", null];
   if (!sigOk(raw, DEPUTY_DOMAIN, db, d.sig)) return ["deputy_delegation_unverified", null];
-  if (db.policyId !== policy.policyId || db.deputy !== body.approver) return ["deputy_delegation_mismatch", null];
-  if (db.deputy in policy.approvers || Object.values(policy.approvers).includes(db.deputyKey)) return ["deputy_is_an_approver", null];
+  if (db.policyId !== policy.policyId || typeof db.deputy !== "string" || db.deputy !== body.approver) return ["deputy_delegation_mismatch", null];
+  if (Object.hasOwn(policy.approvers, db.deputy) || Object.values(policy.approvers).includes(db.deputyKey)) return ["deputy_is_an_approver", null];
   if ("role" in body && !(db.roles ?? []).includes(body.role)) return ["deputy_role_not_delegated", null];
   try { if (!(ts(db.notBefore) <= ts(at) && ts(at) <= ts(db.expiresAt))) return ["deputy_delegation_outside_window", null]; }
   catch { return ["deputy_delegation_outside_window", null]; }
-  return [null, String(db.deputyKey)];
+  if (typeof db.deputyKey !== "string") return ["vote_signature_unverified", null];  // no key the vote could verify under
+  return [null, db.deputyKey];
 }
 
 function voteProblem(vote: J, policy: J, request: string, at: string, proposer: J): string | null {
@@ -676,16 +684,16 @@ function voteProblem(vote: J, policy: J, request: string, at: string, proposer: 
   if ("onBehalfOf" in body) {
     const [problem, k] = deputyProblem(vote, policy, at);
     if (problem) return problem;
-    raw = k; countedAs = String(body.onBehalfOf);
-  } else { raw = policy.approvers[String(body.approver)]; countedAs = String(body.approver); }
+    raw = k; countedAs = body.onBehalfOf;  // a string: deputyProblem looked it up
+  } else { countedAs = body.approver; raw = ownText(policy.approvers, countedAs); }
   if (raw === undefined || raw === null) return "vote_from_unknown_approver";
-  if (proposer !== undefined && proposer !== null && (proposer === countedAs || proposer === String(body.approver))) return "vote_by_proposer";
+  if (proposer !== undefined && proposer !== null && (proposer === countedAs || proposer === body.approver)) return "vote_by_proposer";
   if (!sigOk(raw, VOTE_DOMAIN, body, vote.sig)) return "vote_signature_unverified";
   if (body.policyId !== policy.policyId) return "vote_for_another_policy";
   if (body.requestHash !== request) return "vote_for_another_request";
   const roles = policy.roles ?? {};
   if (Object.keys(roles).length) {
-    if (!(body.role in roles) || !roles[body.role].members.includes(countedAs)) return "vote_role_not_held";
+    if (ownText(roles, body.role) === undefined || !roles[body.role].members.includes(countedAs)) return "vote_role_not_held";
   }
   let live: boolean;
   try { live = ts(body.issuedAt) <= ts(at) && ts(at) <= ts(body.expiresAt); } catch { return "vote_time_invalid"; }
@@ -707,13 +715,13 @@ export function countVotes(policy: J, request: string, votes: J[], at: string, p
   const rolesMet = Object.entries(roles).every(([r, s]: J) => yes.filter((w) => seen.get(w).body.role === r).length >= s.min);
   const rolesDead = Object.entries(roles).some(([r, s]: J) => s.members.length - no.filter((w) => seen.get(w).body.role === r).length < s.min);
   let n = Object.keys(policy.approvers).length;
-  if (proposer !== undefined && proposer !== null && proposer in policy.approvers) n -= 1;
+  if (typeof proposer === "string" && Object.hasOwn(policy.approvers, proposer)) n -= 1;
   const status = yes.length >= policy.threshold && rolesMet ? "approved" : n - no.length < policy.threshold || rolesDead ? "refused" : "pending";
   return { status, ignored };
 }
 
 function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string, at: string): string {
-  const policy = ev.policy ?? {}, trusted = pinned[String(policy.policyId)];
+  const policy = ev.policy ?? {}, trusted = ownText(pinned, policy.policyId);  // only a string names a policy
   if (trusted === undefined) return "quorum_policy_not_pinned";
   if (digestOf(trusted) !== ev.policyDigest || digestOf(policy) !== digestOf(trusted)) return "quorum_policy_differs_from_pinned";
   if (ev.requestHash !== request) return "quorum_for_another_request";

@@ -256,7 +256,7 @@ def _x5c_problem(x5c: Any, jwk: Mapping[str, Any]) -> str | None:
         return "dpop_x5c_invalid"
     if presented is None:  # neither an Ed25519 nor a P-256 key
         return "dpop_x5c_invalid"
-    held = jwk_bytes(jwk)  # the proof key's coordinates; _load_jwk read this JWK already
+    held = {m: unb64url(jwk[m]) for m in ("x", "y") if m in jwk}  # the proof key's coordinates; _load_jwk read it
     same = (presented["kty"], presented["crv"]) == (jwk["kty"], jwk["crv"]) and all(
         presented[m] == held[m] for m in held)
     return None if same else "dpop_x5c_key_mismatch"
@@ -491,7 +491,7 @@ def _spent_proof(body: Mapping[str, Any]) -> tuple[str, int, Any] | None:
     if not isinstance(record, Mapping) or record.get("method") != "dpop":
         return None
     jkt, jti, iat = record.get("jkt"), record.get("jti"), record.get("iat")
-    if not isinstance(jkt, str) or not isinstance(jti, str) or not exact_int(iat):
+    if not isinstance(jkt, str) or not isinstance(jti, str) or not isinstance(iat, int) or not exact_int(iat):
         return None
     return proof_key(jkt, jti), iat, pred.get("at")
 

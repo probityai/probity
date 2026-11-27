@@ -265,9 +265,9 @@ def _segment(text: str) -> dict[str, Any]:
 
 def _seconds(claims: Mapping[str, Any], name: str) -> int:
     value = claims.get(name)
-    if not exact_int(value):  # grammar/integer.json: an integer both readers hold exactly
+    if not isinstance(value, int) or not exact_int(value):  # grammar/integer.json: one both readers hold exactly
         raise _refuse("token_malformed", f"{name} is not an integer")
-    return value  # type: ignore[no-any-return]
+    return value
 
 
 @dataclass(frozen=True)

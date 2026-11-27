@@ -69,7 +69,8 @@ def _time(value: Any, what: str) -> str:
         ts(value)
     except ValueError as exc:
         raise _malformed(f"anchor {what} is an RFC 3339 time with an offset") from exc
-    return value  # type: ignore[no-any-return]  # ts read it, so it is a string
+    assert isinstance(value, str)  # ts read it
+    return value
 
 
 def _public(jwk: Any) -> Ed25519PublicKey:

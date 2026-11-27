@@ -194,17 +194,18 @@ def _deputy_problem(vote: Mapping[str, Any], policy: Mapping[str, Any], at: str)
     if not isinstance(delegation, Mapping) or not isinstance(delegation.get("body"), dict):
         return "deputy_without_delegation", None
     dbody = delegation["body"]
-    who = str(body.get("onBehalfOf"))
-    raw = policy["approvers"].get(who)
+    who = body.get("onBehalfOf")
+    raw = policy["approvers"].get(who) if isinstance(who, str) else None  # only a string names an approver
     if raw is None or dbody.get("delegator") != who:
         return "deputy_for_unknown_approver", None
     try:
         load_public(unb64(raw)).verify(unb64(delegation.get("sig")), DEPUTY_DOMAIN + canonical(dbody))
     except (InvalidSignature, ValueError, TypeError):
         return "deputy_delegation_unverified", None
-    if dbody.get("policyId") != policy["policyId"] or dbody.get("deputy") != body.get("approver"):
+    deputy = dbody.get("deputy")
+    if dbody.get("policyId") != policy["policyId"] or not isinstance(deputy, str) or deputy != body.get("approver"):
         return "deputy_delegation_mismatch", None
-    if dbody.get("deputy") in policy["approvers"] or dbody.get("deputyKey") in policy["approvers"].values():
+    if deputy in policy["approvers"] or dbody.get("deputyKey") in policy["approvers"].values():
         return "deputy_is_an_approver", None
     if "role" in body and body["role"] not in dbody.get("roles", []):
         return "deputy_role_not_delegated", None
@@ -213,7 +214,10 @@ def _deputy_problem(vote: Mapping[str, Any], policy: Mapping[str, Any], at: str)
             return "deputy_delegation_outside_window", None
     except (KeyError, ValueError, TypeError):
         return "deputy_delegation_outside_window", None
-    return None, str(dbody.get("deputyKey"))
+    deputy_key = dbody.get("deputyKey")
+    if not isinstance(deputy_key, str):  # no key the vote could verify under
+        return "vote_signature_unverified", None
+    return None, deputy_key
 
 
 def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
@@ -225,13 +229,13 @@ def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
         problem, raw = _deputy_problem(vote, policy, at)
         if problem:
             return problem
-        counted_as = str(body["onBehalfOf"])
+        counted_as = body["onBehalfOf"]  # a string: _deputy_problem looked it up
     else:
-        raw = policy["approvers"].get(str(body.get("approver")))
-        counted_as = str(body.get("approver"))
+        counted_as = body.get("approver")
+        raw = policy["approvers"].get(counted_as) if isinstance(counted_as, str) else None
     if raw is None:
         return "vote_from_unknown_approver"
-    if proposer is not None and proposer in (counted_as, str(body.get("approver"))):
+    if proposer is not None and proposer in (counted_as, body.get("approver")):
         return "vote_by_proposer"
     try:
         key = load_public(unb64(raw))
@@ -245,7 +249,7 @@ def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
     roles = policy.get("roles", {})
     if roles:
         role = body.get("role")
-        if role not in roles or counted_as not in roles[role]["members"]:
+        if not isinstance(role, str) or role not in roles or counted_as not in roles[role]["members"]:
             return "vote_role_not_held"
     try:
         live = ts(body["issuedAt"]) <= ts(at) <= ts(body["expiresAt"])
@@ -286,7 +290,7 @@ def count(policy: Mapping[str, Any], request: str, votes: Iterable[Any], at: str
     roles_met = all(filled[r] >= spec["min"] for r, spec in roles.items())
     roles_dead = any(len(spec["members"]) - lost[r] < spec["min"] for r, spec in roles.items())
     if proposer is not None:
-        n -= 1 if proposer in policy["approvers"] else 0
+        n -= 1 if isinstance(proposer, str) and proposer in policy["approvers"] else 0
     if len(yes) >= m and roles_met:
         status = APPROVED
     elif n - len(no) < m or roles_dead:
@@ -309,7 +313,8 @@ def _verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[s
     """Offline: ``ok`` or the reason the recorded quorum does not hold. The policy is the one the
     auditor pinned under its id, compared by digest, never the copy inside the record."""
     policy = evidence.get("policy") or {}
-    trusted = pinned.get(str(policy.get("policyId")))
+    policy_id = policy.get("policyId")
+    trusted = pinned.get(policy_id) if isinstance(policy_id, str) else None  # only a string names a policy
     if trusted is None:
         return "quorum_policy_not_pinned"
     if policy_digest(trusted) != evidence.get("policyDigest") or policy_digest(policy) != policy_digest(trusted):

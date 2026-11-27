@@ -129,7 +129,7 @@ def certificate_facts(der: bytes) -> CertificateFacts:
     validity = _children(der, tbs[i + 3])
     if len(validity) != 2:
         raise _bad("validity")
-    allowed = _OPTIONAL
+    allowed: tuple[int, ...] = _OPTIONAL
     for extra in tbs[i + len(_OUTLINE) :]:
         if extra.tag not in allowed:
             raise _bad("tbs")
