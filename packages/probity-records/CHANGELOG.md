@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.12.0 (2026-11-26)
+
+- **The C2SP note verifier agrees with the reference on three cases; two of them refuse input it accepted before.**
+  A cosignature dated more than `max_skew` seconds after the verifier's clock (`verify_note` with `now`) is now skipped
+  instead of rejecting the whole note, so a witness whose clock runs ahead neither vetoes a quorum the other
+  witnesses meet nor completes one; before, `verify_note` raised `NoteError`. `parse_policy` now refuses any control
+  character other than tab and newline (`NoteError`); before, such a policy parsed. `cosignature_message` now refuses a
+  timestamp outside `0..2**63-1` (`NoteError`); before, it encoded any integer. `verify_line` is now public (it was
+  `_verify_line`): it checks one signature line against one known key. Minor, not patch, because a policy or a
+  timestamp that verified before is now refused. No wire format or shared vector changes.
+
+## 0.11.1 (2026-11-26)
+
+- **A writer killed mid-append no longer leaves a journal that cannot be read or appended to.** An append is durable
+  on return, so the bytes after the last newline are an append that never returned and that nothing acted on.
+  `Journal.statements()`, `verify_journal`, the `keys.jsonl` reader and `otel.export_journal` now read only whole
+  lines (up to the last newline), as `Journal`'s own head refresh and `witness.journal_leaves` already did; before,
+  `statements()` and `export_journal` raised `JSONDecodeError` on the torn tail, so a restarted authority could not
+  catch up, and `verify_journal` and the keys reader counted it as a failed record. `Journal.append` and the
+  session-key certificate writer cut a torn tail under the journal lock, and fsync the cut, before writing; before,
+  the next line was glued onto the torn bytes and the file stayed unreadable. `verify_journal` reports the torn tail's
+  length as `tornTailBytes` and no longer counts it in `records`, so the count agrees with a checkpoint the restarted
+  writer signs; lines are split on `\n` only, as the writer and the witness tree split them. The witness feed cuts a
+  torn entry from `checkpoints.log` before the next note, and writes its `witness-*.size` files whole (a kill mid-write
+  left an empty file that stopped every later `Feed.publish`). The TypeScript twin's command line verifies only whole
+  lines and reports `tornTailBytes`. No wire format or shared vector changes.
+
 ## 0.11.0 (2026-11-26)
 
 - **Breaking: a canonical identity names every sponsor.** `CanonicalIdentity.sponsor: Ref | None` is replaced by

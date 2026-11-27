@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, Protocol
 
 from joserfc.jwk import Key, import_key
 
@@ -23,6 +23,27 @@ def _instant(value: str | None) -> datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
+class PinnedKey(Protocol):
+    """What a signature judge reads from a pinned key: the public key and its validity window.
+
+    :class:`TrustedKey` is one; a caller with its own key record (a compliance gate's own trust store) passes
+    that record unchanged, so every verifier judges a signature against the same three fields.
+    """
+
+    @property
+    def key(self) -> Key: ...
+
+    @property
+    def not_before(self) -> datetime | None: ...
+
+    @property
+    def not_after(self) -> datetime | None: ...
+
+
+#: Resolves a signature's ``kid`` to its pinned key, or ``None`` for an unknown or revoked ``kid``.
+type KeyLookup = Callable[[str], PinnedKey | None]
+
+
 @dataclass(frozen=True, kw_only=True, slots=True)
 class TrustedKey:
     """A pinned public key; outside ``not_before`` and ``not_after`` it verifies nothing."""
@@ -31,13 +52,19 @@ class TrustedKey:
     not_before: datetime | None = None
     not_after: datetime | None = None
 
-    def invalid_reason(self, now: datetime) -> str | None:
-        """Return why the key is outside its validity window at *now*, else ``None``."""
-        if self.not_before is not None and now < self.not_before:
-            return f"is not valid before {self.not_before.isoformat()}"
-        if self.not_after is not None and now > self.not_after:
-            return f"expired at {self.not_after.isoformat()}"
-        return None
+
+def outside_window(pinned: PinnedKey, now: datetime) -> str | None:
+    """Return why *pinned* is outside its validity window at *now*, else ``None``.
+
+    Raises:
+        TypeError: A bound and *now* cannot be compared (one is naive, the other aware); the
+            caller decides what an undecidable window means, and a judge refuses the key.
+    """
+    if pinned.not_before is not None and now < pinned.not_before:
+        return f"is not valid before {pinned.not_before.isoformat()}"
+    if pinned.not_after is not None and now > pinned.not_after:
+        return f"expired at {pinned.not_after.isoformat()}"
+    return None
 
 
 class TrustStore:
