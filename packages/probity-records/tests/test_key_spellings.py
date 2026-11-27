@@ -16,7 +16,14 @@ import pytest
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
-from key_spellings import KEY_MEMBERS, NAME_EDITS, NAME_MEMBERS, TEXT_EDITS, b64u, key_edits
+from key_spellings import (
+    KEY_MEMBERS,
+    NAME_EDITS,
+    NAME_MEMBERS,
+    TEXT_EDITS,
+    b64u,
+    key_edits,
+)
 from probity_records import identity, registry
 from probity_records.identity import _verify_jws, jwk_thumbprint
 from probity_records.verified_identities_vectors import judge
