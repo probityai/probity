@@ -13,6 +13,17 @@
   `identity.verify_token`), DPoP header and claims, OIDC approval claims, the call arguments of an exception or a
   grant allow, exports and seals, the journal verifier's key certificates and checkpoint provenance, the journal's
   own lines, sealed plaintext and the Vault answer. Each answers with its own registered refusal and never raises.
+- **A token or DPoP segment has one spelling, and text a verifier cannot encode is a refusal.** `identity.unb64url`
+  reads only the canonical unpadded base64url of a segment: a space, a newline, padding, a stray last digit or text
+  outside ASCII is refused, where `base64.urlsafe_b64decode` skipped or accepted it, so one token had many spellings
+  and digests. The TypeScript twin's `strictB64url` applies the same rule at every token and DPoP segment, which
+  removes the one disagreement the differential found (`token_malformed` in Python, `token_signature_unverified` in
+  TypeScript). `identity.verify_token` answers `token_malformed` for a token that is not ASCII, and `check_dpop`
+  answers `dpop_malformed` for a proof that is not ASCII (checked before its size) and `dpop_ath_mismatch` for an
+  access token that is not; before, each raised `UnicodeEncodeError`. Comparisons of received claims go through
+  `core.same_text`, which never raises (`hmac.compare_digest` raised `TypeError` on text outside ASCII), and the
+  witness note, checkpoint and policy readers, the receipt map key and the DSSE envelope's `payloadType` refuse a
+  lone surrogate (`core.is_utf8_text`) instead of raising.
 - **New refusal codes:** `anchor_statement_malformed` (the signed payload under a trust anchor is not admissible JSON),
   `jws_signature_not_low_s` and `passport_kb_critical` (see below). `identity.verify_token` now also answers
   `token_critical_unsupported` for a token header that demands an extension through `crit`, and `token_malformed` for a
