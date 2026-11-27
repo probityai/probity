@@ -9,7 +9,9 @@
   EC coordinate verified as the same point under a second thumbprint, a trust bundle could pin a respelled key that
   the TypeScript reader then decoded leniently, and a respelled stamp key made `TrustBundle.stamp_key` raise. The
   TypeScript twin's `publicJwk` applies the same rule, and the differential in `tests/parity_r6c` now respells every
-  bundle key of every shared row.
+  bundle key of every shared row. A key's `kty` and `crv` name a curve only as strings: a `crv` of `["P-256"]` read as
+  P-256 in TypeScript under a second thumbprint and made the Python lookup raise, and a `kty` of `"constructor"` made
+  the TypeScript thumbprint raise; each is now `jwk_unsupported`.
 - **Every document a stranger can hand the package is read by one strict reader, `core.admitted_loads`.** A repeated
   member, invalid UTF-8, a lone surrogate (raw or escaped), NaN, a number no double holds, nesting past the reader's
   depth (128 containers; 32 for a token segment or registry document, `core.TOKEN_MAX_DEPTH`) and, where a caller sets
