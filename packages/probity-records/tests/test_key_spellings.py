@@ -16,9 +16,9 @@ import pytest
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
-from key_spellings import TEXT_EDITS, b64u, key_edits
-from probity_records import registry
-from probity_records.identity import _verify_jws, jwk_thumbprint, public_jwk
+from key_spellings import KEY_MEMBERS, NAME_EDITS, NAME_MEMBERS, TEXT_EDITS, b64u, key_edits
+from probity_records import identity, registry
+from probity_records.identity import _verify_jws, jwk_thumbprint
 from probity_records.verified_identities_vectors import judge
 
 ROWS = json.loads((Path(__file__).parents[1] / "vectors" / "shared" / "verified_identities.json").read_text())
@@ -26,11 +26,28 @@ ACCEPTED = [r for r in ROWS if "refused" not in r["expected"]]
 EDITED = [case for row in ACCEPTED for case in key_edits(row)]
 
 
-def test_the_edits_reach_every_key_type_and_the_stamp_keys() -> None:
+def _keys_in(node: Any) -> list[dict[str, Any]]:
+    """Every object with a ``kty`` anywhere under ``node``, found without key_edits' idea of where keys live."""
+    if isinstance(node, dict):
+        return ([node] if "kty" in node else []) + [k for v in node.values() for k in _keys_in(v)]
+    if isinstance(node, list):
+        return [k for v in node for k in _keys_in(v)]
+    return []
+
+
+def test_the_edits_reach_every_member_of_every_bundle_key_and_the_stamp_keys() -> None:
+    """The count is derived from the rows: each string x, y, n or e of each key in an accepted row's bundle times the
+    text spellings, plus each string kty or crv times the name spellings. A key the generator skips (an anchor key,
+    a key outside ``issuers``) or a member it leaves out makes the two counts differ."""
+    keys = [k for row in ACCEPTED for k in _keys_in(row.get("bundle"))]
+    want = sum(len(TEXT_EDITS) * sum(isinstance(k.get(m), str) for m in KEY_MEMBERS)
+               + len(NAME_EDITS) * sum(isinstance(k.get(m), str) for m in NAME_MEMBERS) for k in keys)
+    assert len(EDITED) == want
+    assert {(k.get("kty"), k.get("crv")) for k in keys} == {("OKP", "Ed25519"), ("EC", "P-256"), ("RSA", None)}
     names = {name.split("/key/")[1] for name, _ in EDITED}
     assert any(n.startswith("gateway.") for n in names)  # a stamp key
-    assert any("/n/" in n for n in names) and any("/e/" in n for n in names)  # an RSA key
-    assert len(EDITED) > 500
+    for member in KEY_MEMBERS + NAME_MEMBERS:
+        assert any(f"/{member}/" in n for n in names), member
 
 
 @pytest.mark.parametrize(("name", "row"), EDITED, ids=[n for n, _ in EDITED])
@@ -41,11 +58,28 @@ def test_a_bundle_key_in_a_second_spelling_is_trust_bundle_malformed(name: str, 
 OKP = {"crv": "Ed25519", "kty": "OKP", "x": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"}
 
 
+def _public_jwk() -> Any:
+    reader = getattr(identity, "public_jwk", None)
+    assert reader is not None, "identity has no public_jwk: no reader holds a key to one spelling"
+    return reader
+
+
 @pytest.mark.parametrize("edit", sorted(TEXT_EDITS))
 def test_public_jwk_and_the_thumbprint_refuse_a_second_spelling(edit: str) -> None:
     jwk = {**OKP, "x": TEXT_EDITS[edit](OKP["x"])}
     with pytest.raises(ValueError):
-        public_jwk(jwk)
+        _public_jwk()(jwk)
+    with pytest.raises(ValueError):
+        jwk_thumbprint(jwk)
+
+
+@pytest.mark.parametrize("member", NAME_MEMBERS)
+@pytest.mark.parametrize("edit", sorted(NAME_EDITS))
+def test_a_key_name_in_another_type_is_a_value_error_not_a_raise(member: str, edit: str) -> None:
+    """A crv given as ``["Ed25519"]`` once made the curve lookup raise TypeError (a list does not hash)."""
+    jwk = {**OKP, member: NAME_EDITS[edit](OKP[member])}
+    with pytest.raises(ValueError):
+        _public_jwk()(jwk)
     with pytest.raises(ValueError):
         jwk_thumbprint(jwk)
 

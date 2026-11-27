@@ -82,13 +82,14 @@ def b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
-def unb64url(text: str) -> bytes:
+def unb64url(text: object) -> bytes:
     """The bytes of one unpadded base64url segment; ``ValueError`` unless ``text`` is its canonical spelling.
 
     Only the canonical text of each segment is read: ``base64.urlsafe_b64decode`` alone skips a space, a newline or
     any other byte outside the alphabet and accepts a last digit with stray low bits, so one token would have many
     spellings, many digests, and a different answer from a reader that decodes strictly. The TypeScript twin's
-    ``strictB64url`` applies the same rule.
+    ``strictB64url`` applies the same rule. ``text`` is typed ``object`` because callers pass received JSON values
+    unread; anything but a ``str`` is a ``ValueError``.
     """
     if not isinstance(text, str) or not text.isascii() or "=" in text:
         raise ValueError("not unpadded ASCII base64url")
@@ -117,7 +118,9 @@ def public_jwk(jwk: Mapping[str, Any]) -> dict[str, bytes]:
         if not n or not e or n[0] == 0 or e[0] == 0:
             raise ValueError("an RSA n or e is not the minimum number of octets")
         return {"n": n, "e": e}
-    size = CURVE_BYTES.get((kty, jwk.get("crv")))
+    crv = jwk.get("crv")
+    # A received kty or crv may be any JSON value; only a string names a curve (a list would not even hash).
+    size = CURVE_BYTES.get((kty, crv)) if isinstance(kty, str) and isinstance(crv, str) else None
     if size is None:
         raise ValueError("jwk_unsupported")
     out = {m: unb64url(jwk.get(m)) for m in (("x", "y") if kty == "EC" else ("x",))}

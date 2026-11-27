@@ -46,3 +46,20 @@ for (const [name, edit] of Object.entries(EDITS)) {
 }
 
 test("an unknown curve has no thumbprint", () => assert.throws(() => jwkThumbprint({ ...OKP, crv: "X25519" })));
+
+// A key's name members in another JSON type or as a prototype member name: String(["Ed25519"]) is "Ed25519", and
+// THUMB["constructor"] is Object, so each was a second spelling of the key or a TypeError. Both are jwk_unsupported.
+const NAME_EDITS: Record<string, (s: string) => unknown> = {
+  "in-a-list": (s) => [s],
+  "not-a-string": (s) => s.length,
+  "prototype-name": () => "constructor",
+};
+for (const member of ["kty", "crv"]) {
+  for (const [name, edit] of Object.entries(NAME_EDITS)) {
+    test(`publicJwk and jwkThumbprint refuse a ${member} with ${name} as jwk_unsupported`, () => {
+      const jwk = { ...OKP, [member]: edit((OKP as Record<string, string>)[member]) };
+      assert.throws(() => publicJwk(jwk), /^Error: jwk_unsupported$/);
+      assert.throws(() => jwkThumbprint(jwk), /^Error: jwk_unsupported$/);
+    });
+  }
+}

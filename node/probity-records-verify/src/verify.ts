@@ -926,7 +926,8 @@ export function publicJwk(jwk: J): Record<string, Buffer> {
     if (!n.length || !e.length || n[0] === 0 || e[0] === 0) throw new Error("an RSA n or e is not the minimum number of octets");
     return { n, e };
   }
-  const size = CURVE_BYTES[`${String(jwk.kty)} ${String(jwk.crv)}`];
+  // Only a string names a curve: String(["P-256"]) is "P-256", so a list would read as a second spelling of the key.
+  const size = typeof jwk.kty === "string" && typeof jwk.crv === "string" ? CURVE_BYTES[`${jwk.kty} ${jwk.crv}`] : undefined;
   if (size === undefined || (jwk.kty !== "EC" && jwk.kty !== "OKP")) throw new Error("jwk_unsupported");
   const out: Record<string, Buffer> = {};
   for (const m of jwk.kty === "EC" ? ["x", "y"] : ["x"]) out[m] = strictB64url(jwk[m]);
@@ -936,7 +937,8 @@ export function publicJwk(jwk: J): Record<string, Buffer> {
 
 /** RFC 7638 thumbprint of a key publicJwk reads; a thumbprint names one key, so it exists only for its one spelling. */
 export function jwkThumbprint(jwk: J): string {
-  const m = THUMB[String(jwk.kty)];
+  // Own members only: THUMB["constructor"] is Object, which has no .some and would raise instead of refuse.
+  const m = typeof jwk.kty === "string" && Object.hasOwn(THUMB, jwk.kty) ? THUMB[jwk.kty] : undefined;
   if (!m || m.some((k) => !(k in jwk))) throw new Error("jwk_unsupported");
   publicJwk(jwk);
   const obj: J = {}; for (const k of m) obj[k] = jwk[k];
