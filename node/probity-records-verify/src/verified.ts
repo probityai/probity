@@ -421,17 +421,23 @@ function possession(tokens: Token[], request: RequestFacts | null, at: string): 
   if (!isObj(cnf) || bound.some((t) => canonical(t.claims.cnf) !== canonical(cnf))) {
     refuse("possession_not_the_grant_key");
   }
-  const facts = request ?? { method: "", url: "", content: null, dpop: null, clientCertificate: null };
+  const facts = request ?? { method: "", url: "", content: null, dpop: null, clientCertificate: null, headers: [] };
   const presented = [...bound].sort((a, b) => ["agent", "user", "sponsor"].indexOf(a.role) - ["agent", "user", "sponsor"].indexOf(b.role))[0];
+  const [proof, reason] = checkPossession(cnf, facts, at, presented.raw);
+  return proof ?? refuse(reason);
+}
+
+/** possession.check_possession: the proof of the key cnf names, by the method cnf names, or null and the refusal. A
+ * jkt needs a DPoP proof and ignores any client certificate; an x5t#S256 needs the certificate and ignores any DPoP. */
+export function checkPossession(cnf: J, facts: RequestFacts, at: string, accessToken: string | null): [PossessionProof | null, string] {
   const problem = cnfProblem(cnf);
-  if (problem) refuse(problem);
+  if (problem) return [null, problem];
   if ("jkt" in cnf) {
-    if (facts.dpop === null) return refuse("dpop_proof_missing");
-    const [proof, reason] = checkDpop(facts.dpop, facts.method, facts.url, at, cnf.jkt, presented.raw, facts.content ?? Buffer.alloc(0));
-    return proof ?? refuse(reason);
+    if (facts.dpop === null) return [null, "dpop_proof_missing"];
+    return checkDpop(facts.dpop, facts.method, facts.url, at, cnf.jkt, accessToken, facts.content ?? Buffer.alloc(0));
   }
   const reason = checkClientCertificate(facts.clientCertificate, cnf["x5t#S256"], at);
-  return reason === "ok" ? { method: "mtls", x5t: cnf["x5t#S256"] } : refuse(reason);
+  return reason === "ok" ? [{ method: "mtls", x5t: cnf["x5t#S256"] }, "ok"] : [null, reason];
 }
 
 // --- the stamp: probity_records.stamp -------------------------------------------------------------------------------

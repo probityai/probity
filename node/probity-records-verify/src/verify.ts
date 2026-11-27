@@ -1072,7 +1072,8 @@ export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<
 // The proof an allow rested on (possession.possession_record): it must name the key the leaf grant's cnf confirms.
 const POSSESSION_MEMBERS: Record<string, string[]> = { dpop: ["iat", "jkt", "jti", "method"], mtls: ["method", "x5t#S256"] };
 const MAX_JTI_BYTES = 128, DEFAULT_SKEW = 120, REPLAY_GRACE = 5;
-function possessionRecordProblem(record: J, cnf: J): string | null {
+/** possession.possession_record_problem. */
+export function possessionRecordProblem(record: J, cnf: J): string | null {
   if (!isObj(record) || typeof record.method !== "string" || !Object.hasOwn(POSSESSION_MEMBERS, record.method)) return "possession_record_malformed";
   const want = POSSESSION_MEMBERS[record.method], keys = Object.keys(record).sort();
   if (keys.length !== want.length || keys.some((k, i) => k !== want[i])) return "possession_record_malformed";
@@ -1084,7 +1085,8 @@ function possessionRecordProblem(record: J, cnf: J): string | null {
 }
 
 // A DPoP proof spent by two permits inside its lifetime (possession.duplicate_proofs): a replay.
-function duplicateProofs(bodies: [number, J][], skew: number): string[] {
+/** possession.duplicate_proofs, each finding spelled line_<n>:<code>. */
+export function duplicateProofs(bodies: [number, J][], skew: number = DEFAULT_SKEW): string[] {
   const found: string[] = [], first = new Map<string, [number, number, J]>();
   for (const [n, body] of bodies) {
     const pred = body.predicate;

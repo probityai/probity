@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **One list of private JWK members, and a differential that reaches every refusal code.** Every key reader refuses
+  the members of `identity.PRIVATE_JWK_MEMBERS` (`d`, `p`, `q`, `dp`, `dq`, `qi`, `oth`, `k`, `priv`); the naming
+  registry, the principal reader and the DPoP header reader used to pass a key carrying `oth`. The key-bound tokens of
+  one request must carry the same `cnf` as RFC 8785 bytes in both readers (Python took `true` for `1`, TypeScript
+  never equated equal nested values), and `possession_record_problem` refuses a list or object `method` instead of
+  raising. The differential in `tests/parity_r6c` now signs edited tokens and DPoP proofs again and judges
+  `check_possession`, `possession_record_problem` and `duplicate_proofs` directly, so each of the 55 registered codes
+  of `verified_identities` and `possession` is reached in both languages, and a code no case reaches fails the run.
+
 - **A public key has one spelling.** `identity.public_jwk` reads a JWK's `x`, `y`, `n` and `e` only in their canonical
   base64url, an EC coordinate only at the full size of its curve (RFC 7518 section 6.2.1.2), an Ed25519 `x` only at
   32 bytes, and RSA `n` and `e` only without a leading zero octet (RFC 7518 section 2). `jwk_thumbprint` exists only
