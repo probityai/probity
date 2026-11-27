@@ -381,8 +381,9 @@ def _vote_signers(pred: dict[str, Any]) -> set[str]:
     """The approving voters of the quorum an allow's authority carries (a deputy votes on behalf of its delegator).
     Called only once that quorum held, and a quorum with an invalid vote does not hold, so each was counted."""
     quorum = (pred.get("authority") or {}).get("quorum") or (pred.get("authority") or {})
+    votes = quorum.get("votes")
     return {str(v.get("body", {}).get("onBehalfOf", v.get("body", {}).get("approver")))
-            for v in quorum.get("votes") or []
+            for v in (votes if isinstance(votes, list) else [])  # the votes are a list; any other value holds none
             if isinstance(v, dict) and v.get("body", {}).get("decision") == "approve"}
 
 

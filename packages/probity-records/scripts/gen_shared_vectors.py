@@ -286,8 +286,8 @@ def deputy_vote(delegation: dict, request: str = QREQ, **members: object) -> dic
     return {**vote_, "delegation": delegation}
 
 
-def quorum_raw_case(directory: Path, votes: list, *, proposer: object = "dave", request: str = QREQ,
-                    policy: dict | None = None) -> Journal:
+def quorum_raw_case(directory: Path, votes: object, *, proposer: object = "dave", request: str = QREQ,
+                    policy: object = None) -> Journal:
     """A quorum allow whose evidence is written member by member, never through the counting reader."""
     evidence = {"historyDigest": "ab" * 32, "kind": "quorum", "policy": POLICY if policy is None else policy,
                 "policyDigest": policy_digest(POLICY), "proposer": proposer, "requestHash": request, "votes": votes}
@@ -338,6 +338,16 @@ def quorum_typed_rows() -> list[tuple[str, str, object]]:
                                    proposer=[], request=unnamed)),
         ("QV20", "a deputy named erin votes for bob with every member a string: the control for QV8 and QV13 to QV16",
          lambda d: quorum_raw_case(d, [deputy_vote(raw_deputy()), alice])),
+        ("QV21", "the evidence's policy is the pinned policy's id as a text, not the policy",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy="pay")),
+        ("QV22", "the evidence's policy is a list holding the pinned policy",
+         lambda d: quorum_raw_case(d, [vote("carol", "finance"), alice], policy=[POLICY])),
+        ("QV23", "the evidence's votes are a number",
+         lambda d: quorum_raw_case(d, 7)),
+        ("QV24", "the evidence's votes are an object holding the two votes",
+         lambda d: quorum_raw_case(d, {"0": vote("carol", "finance"), "1": alice})),
+        ("QV25", "the evidence's votes are an empty text",
+         lambda d: quorum_raw_case(d, "")),
     ]
 
 

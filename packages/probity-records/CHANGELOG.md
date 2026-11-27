@@ -25,7 +25,9 @@
   an approver, a policy and a proposer named `constructor` in every object, and took a proposer `[]` as present,
   while the Python reader raised on a `role` that was a list and on a vote with no `decision`. A vote whose
   `decision` is neither `"approve"` nor `"reject"` is now `vote_shape` in both readers, and a delegation whose `roles`
-  is one text no longer delegates every role that text contains. `vectors/shared/quorum.json` adds QV6 to QV20.
+  is one text no longer delegates every role that text contains. Evidence whose `policy` is not an object names no
+  pinned policy, and evidence whose `votes` are not a list is `quorum_vote_invalid:vote_shape`; the Python reader
+  raised on both. `vectors/shared/quorum.json` adds QV6 to QV25.
 
 - **One reading of a request target, of base64 and of a token segment, in both languages.** A DPoP `htu` and a stamp
   `@target-uri` are read by `possession.http_uri_parts` (TypeScript `httpUriParts`): text outside the RFC 3986 URI

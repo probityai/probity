@@ -3,7 +3,7 @@
 ``String(["carol"])`` is ``"carol"`` and ``str(["carol"])`` is ``"['carol']"``; every JavaScript object has a member
 named ``constructor``; ``"finance-and-more".includes("finance")`` is true and so is ``"finance" in "finance-and-more"``;
 ``[]`` is true in JavaScript and false in Python. A reader that turns such a member into text, looks it up among
-inherited members, or tests it for truth counts a vote the other reader ignores. Rows QV6 to QV20 of
+inherited members, or tests it for truth counts a vote the other reader ignores. Rows QV6 to QV25 of
 ``vectors/shared/quorum.json`` (``scripts/gen_shared_vectors.py`` signs each value exactly as written) hold both
 readers to one answer: this file pins the answer of each row and runs the Python reader on it, and
 ``node/probity-records-verify/test/shared.test.ts`` holds the TypeScript reader to the same report.
@@ -37,6 +37,11 @@ EXPECTED: dict[str, str | None] = {
     "QV18": "quorum_vote_invalid:vote_shape",  # decision is a list
     "QV19": "quorum_proposer_unbound",  # proposer is an empty list
     "QV20": None,  # the control: every member a string
+    "QV21": "quorum_policy_not_pinned",  # policy is a text
+    "QV22": "quorum_policy_not_pinned",  # policy is a list
+    "QV23": "quorum_vote_invalid:vote_shape",  # votes are a number
+    "QV24": "quorum_vote_invalid:vote_shape",  # votes are an object
+    "QV25": "quorum_vote_invalid:vote_shape",  # votes are an empty text
 }
 
 

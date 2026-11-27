@@ -317,7 +317,9 @@ def _verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[s
                      at: str, key_revoked: Callable[[str, str], bool] | None = None) -> str:
     """Offline: ``ok`` or the reason the recorded quorum does not hold. The policy is the one the
     auditor pinned under its id, compared by digest, never the copy inside the record."""
-    policy = evidence.get("policy") or {}
+    policy = evidence.get("policy")
+    if not isinstance(policy, Mapping):  # a text, a number or a list names no policy
+        policy = {}
     policy_id = policy.get("policyId")
     trusted = pinned.get(policy_id) if isinstance(policy_id, str) else None  # only a string names a policy
     if trusted is None:
@@ -329,7 +331,12 @@ def _verify_evidence(evidence: Mapping[str, Any], pinned: Mapping[str, Mapping[s
     proposer = evidence.get("proposer")
     if trusted.get("proposerBound") and not (isinstance(proposer, str) and proposer):
         return "quorum_proposer_unbound"  # only a non-empty string names a proposer; [] is none, in either language
-    result = count(trusted, request, evidence.get("votes") or [], at, key_revoked, proposer)
+    votes = evidence.get("votes")
+    if votes is None:
+        votes = []
+    elif not isinstance(votes, list):  # the votes are a list; any other value is one vote of no shape
+        return "quorum_vote_invalid:vote_shape"
+    result = count(trusted, request, votes, at, key_revoked, proposer)
     if result.ignored:
         return f"quorum_vote_invalid:{result.ignored[0]}"
     if result.status == APPROVED:

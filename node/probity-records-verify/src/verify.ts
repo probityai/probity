@@ -723,13 +723,16 @@ export function countVotes(policy: J, request: string, votes: J[], at: string, p
 }
 
 function verifyQuorumEvidence(ev: J, pinned: Record<string, J>, request: string, at: string): string {
-  const policy = ev.policy ?? {}, trusted = ownText(pinned, policy.policyId);  // only a string names a policy
+  // A policy is an object and only a string names one; a text, a number or a list names none.
+  const policy = isObj(ev.policy) ? ev.policy : {}, trusted = ownText(pinned, policy.policyId);
   if (trusted === undefined) return "quorum_policy_not_pinned";
   if (digestOf(trusted) !== ev.policyDigest || digestOf(policy) !== digestOf(trusted)) return "quorum_policy_differs_from_pinned";
   if (ev.requestHash !== request) return "quorum_for_another_request";
   // Only a non-empty string names a proposer: [] and {} are true here and false in Python.
   if (trusted.proposerBound && !(typeof ev.proposer === "string" && ev.proposer)) return "quorum_proposer_unbound";
-  const r = countVotes(trusted, request, ev.votes ?? [], at, ev.proposer);
+  const votes = ev.votes ?? [];
+  if (!Array.isArray(votes)) return "quorum_vote_invalid:vote_shape";  // the votes are a list; any other value is one vote of no shape
+  const r = countVotes(trusted, request, votes, at, ev.proposer);
   if (r.ignored.length) return `quorum_vote_invalid:${r.ignored[0]}`;
   if (r.status === "approved") return "ok";
   return r.status === "refused" ? "quorum_refused" : "quorum_pending";
@@ -1250,7 +1253,7 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
 function voteSigners(pred: J): Set<string> {
   const names = new Set<string>();
   const a = pred.authority ?? {}, q = a.quorum ?? a;
-  for (const v of q.votes ?? []) if (isObj(v) && v.body?.decision === "approve") names.add(String(v.body?.onBehalfOf ?? v.body?.approver));
+  for (const v of Array.isArray(q.votes) ? q.votes : []) if (isObj(v) && v.body?.decision === "approve") names.add(String(v.body?.onBehalfOf ?? v.body?.approver));
   return names;
 }
 
