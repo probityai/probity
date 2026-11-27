@@ -10,8 +10,7 @@ import pytest
 from probity_observer.crypto import VerificationError
 
 from probity_pydantic_recovery.common import MAX_FILE
-from recovery_host import MAX_POLICY_FILE
-from recovery_host import gate, reader_closure, select_policy
+from recovery_host import MAX_POLICY_FILE, gate, reader_closure, select_policy
 
 
 def installation(root: Path) -> Path:
