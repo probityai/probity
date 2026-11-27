@@ -21,7 +21,6 @@ which the journal's checkpoint and every permit carry and an auditor compares wi
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import urllib.request
@@ -165,7 +164,7 @@ class VaultTransitKey(_PinnedKey):
         entry = info["keys"].get(str(self.version))
         if not isinstance(entry, Mapping) or "public_key" not in entry:
             raise SigningError(f"Vault transit key {self.name!r} has no version {self.version}")
-        self._public = _raw_public(base64.b64decode(entry["public_key"]))
+        self._public = _raw_public(unb64(entry["public_key"]))
 
     def _call(self, method: str, path: str, body: Mapping[str, Any] | None = None) -> dict[str, Any]:
         token = self.token or os.environ.get("VAULT_TOKEN")
@@ -198,7 +197,7 @@ class VaultTransitKey(_PinnedKey):
                 parts = text.split(":")
                 named = parts[1] if len(parts) > 2 and parts[0] == "vault" else "no version"
                 raise SigningError(f"Vault signed with another key version: {named!r}")
-            return base64.b64decode(text[len(prefix):], validate=True)
+            return unb64(text[len(prefix):])
 
         return self._checked(data, read)
 

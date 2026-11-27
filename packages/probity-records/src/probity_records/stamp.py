@@ -51,7 +51,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 from .canonical_identity import CanonicalIdentity, IdentityStringError
 from .clock import NS_PER_S
-from .core import admitted_loads, canonical, sha256_hex
+from .core import admitted_loads, canonical, sha256_hex, unb64
 from .digests import is_digest, stamp_digest
 from .possession import http_uri_parts, uri_authority
 from .signing import verify_delegation
@@ -379,7 +379,7 @@ def window_certificate(headers: Headers) -> dict[str, Any]:
     if len(values) > 1:
         raise StampRefused("stamp_window_malformed", "the window field is given more than once")
     try:
-        raw = base64.b64decode(values[0], validate=True)
+        raw = unb64(values[0])
         certificate = admitted_loads(raw)  # the one strict reader: deep nesting or a lone surrogate is refused
         if not isinstance(certificate, dict) or canonical(certificate) != raw:
             raise ValueError("not canonical")

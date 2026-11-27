@@ -27,11 +27,12 @@ root. Vectors: vectors/shared/receipt-map.json (membership, both kinds of non-me
 from __future__ import annotations
 
 import base64
-import binascii
 import bisect
 import hashlib
 from dataclasses import dataclass
 from typing import Any
+
+from .core import unb64
 
 DEPTH = 256
 EMPTY = bytes(32)
@@ -215,10 +216,10 @@ class Proof:
     def from_doc(cls, doc: Any) -> Proof:
         try:
             key = bytes.fromhex(doc["key"])
-            siblings = tuple(EMPTY if s is None else base64.b64decode(s, validate=True) for s in doc["siblings"])
+            siblings = tuple(EMPTY if s is None else unb64(s) for s in doc["siblings"])
             t = doc["terminal"]
             terminal = None if t is None else Entry(bytes.fromhex(t["key"]), t["index"], bytes.fromhex(t["leafHash"]))
-        except (KeyError, TypeError, ValueError, binascii.Error) as exc:
+        except (KeyError, TypeError, ValueError) as exc:
             raise MapError(f"map proof malformed: {type(exc).__name__}") from exc
         if len(key) != 32 or any(len(s) != 32 for s in siblings) or len(siblings) > DEPTH:
             raise MapError("map proof malformed: lengths")

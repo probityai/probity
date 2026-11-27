@@ -43,8 +43,6 @@ Refusal codes, in the order the checks run: ``bundle_malformed``, ``bundle_check
 
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
 import json
 from collections.abc import Callable, Mapping
@@ -55,7 +53,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from . import witness
-from .core import JsonRefused, admitted_loads, pae
+from .core import JsonRefused, admitted_loads, pae, unb64
 from .receipt_map import MapError, Proof, check_key, map_key
 
 BUNDLE_FORMAT = "probity-record-bundle/v1"
@@ -91,9 +89,9 @@ def _unb64(text: Any) -> bytes:
     if not isinstance(text, str):
         raise BundleRefused("bundle_malformed", "expected base64 text")
     try:
-        return base64.b64decode(text, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise BundleRefused("bundle_malformed", "not base64") from exc
+        return unb64(text)
+    except ValueError as exc:
+        raise BundleRefused("bundle_malformed", "not canonical base64") from exc
 
 
 def _hashes(items: Any) -> list[bytes]:
@@ -149,13 +147,13 @@ def read_evaluator(raw: bytes, key: SourceKey) -> RecordFacts:
             raise ValueError("exactly one signature is required")
         if signatures[0].get("keyid") not in (None, "", key.key_id):
             raise ValueError("the signature names another key than the bundle's source key")
-        payload = base64.b64decode(envelope["payload"], validate=True)
+        payload = unb64(envelope["payload"])
         Ed25519PublicKey.from_public_bytes(key.public_raw).verify(
-            base64.b64decode(signatures[0]["sig"], validate=True), pae(PAYLOAD_TYPE, payload))
+            unb64(signatures[0]["sig"]), pae(PAYLOAD_TYPE, payload))
         body = admitted_loads(payload)
     except InvalidSignature as exc:
         raise ValueError("the record's signature does not verify under its source key") from exc
-    except (KeyError, TypeError, binascii.Error) as exc:
+    except (KeyError, TypeError) as exc:
         raise ValueError(f"the envelope is malformed: {type(exc).__name__}") from exc
     if not isinstance(body, dict) or body.get("_type") != STATEMENT_TYPE or body.get("predicateType") != \
             EVALUATOR_PREDICATE:

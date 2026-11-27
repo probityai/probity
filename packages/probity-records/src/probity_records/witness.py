@@ -22,7 +22,6 @@ filippo.io/torchwood, an independent implementation on Go's crypto/mldsa.
 from __future__ import annotations
 
 import base64
-import binascii
 import hashlib
 import os
 import re
@@ -47,7 +46,7 @@ from cryptography.hazmat.primitives.asymmetric.mldsa import (
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .clock import NS_PER_S, Clock
-from .core import is_utf8_text
+from .core import is_utf8_text, unb64
 
 SIG_ED25519 = 0x01
 SIG_COSIGNATURE_V1 = 0x04
@@ -180,12 +179,9 @@ def verify_inclusion(index: int, size: int, leaf: bytes, proof: Sequence[bytes],
 # ---- signed notes ---------------------------------------------------------------------------------
 def b64decode_canonical(text: str) -> bytes:
     try:
-        raw = base64.b64decode(text, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise NoteError(f"not base64: {text!r}") from exc
-    if base64.b64encode(raw).decode() != text:
-        raise NoteError(f"non-canonical base64: {text!r}")
-    return raw
+        return unb64(text)
+    except ValueError as exc:
+        raise NoteError(f"not canonical base64: {text!r}") from exc
 
 
 def parse_decimal(text: str, what: str) -> int:
@@ -576,7 +572,7 @@ class Witness:
             for f in self.state_dir.glob("*.state"):
                 size, root_b64 = f.read_text().split()
                 origin = bytes.fromhex(f.stem).decode()
-                self._latest[origin] = (int(size), base64.b64decode(root_b64))
+                self._latest[origin] = (int(size), unb64(root_b64))
 
     @property
     def vkey(self) -> VerifierKey:

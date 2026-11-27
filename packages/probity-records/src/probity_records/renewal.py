@@ -32,7 +32,6 @@ two window codes), a record no pinned key signed (``renewal_signature_unverified
 from __future__ import annotations
 
 import base64
-import binascii
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -43,6 +42,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .core import canonical, key_id, sha256_hex
+from .core import unb64 as core_unb64
 
 CERTIFICATE_TYPE = "instance-certificate/v1"
 REQUEST_TYPE = "instance-renewal/v1"
@@ -99,12 +99,9 @@ def unb64(text: Any) -> bytes:
     if not isinstance(text, str):
         raise RenewalError("renewal_base64_invalid", "expected base64 text")
     try:
-        raw = base64.b64decode(text, validate=True)
-    except (binascii.Error, ValueError):
+        return core_unb64(text)
+    except ValueError:
         raise RenewalError("renewal_base64_invalid", "not canonical base64") from None
-    if b64(raw) != text:
-        raise RenewalError("renewal_base64_invalid", "not canonical base64")
-    return raw
 
 
 def raw_public(public: Ed25519PublicKey) -> bytes:

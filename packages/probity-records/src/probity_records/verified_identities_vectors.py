@@ -33,8 +33,9 @@ from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.x509.oid import NameOID
 
 from .canonical_identity import CanonicalIdentity, Ref
+from .core import unb64
 from .digests import act_chain_digest
-from .identity import b64url, jwk_thumbprint
+from .identity import b64url, jwk_thumbprint, unb64url
 from .possession import (
     CertificateProof,
     DpopProof,
@@ -255,7 +256,7 @@ def _proof(access: str, *, key: Ed25519PrivateKey = HOLDER_KEY, url: str = URL, 
            iat: int = NOW) -> str:
     """A DPoP proof, re-signed with the claims segment shaped as in ``_segment``."""
     head, body, _ = sign_dpop(key, "POST", url, iat=iat, jti=jti, access_token=access, content=BODY).split(".")
-    claims = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
+    claims = json.loads(unb64url(body))
     shaped = _segment(claims, sort_keys=False)
     return f"{head}.{shaped}.{b64url(key.sign(f'{head}.{shaped}'.encode('ascii')))}"
 
@@ -436,14 +437,14 @@ def _cases() -> list[tuple[str, str, dict[str, Any]]]:
 
 def _swap_claims(jws: str, **claims: Any) -> str:
     head, body, sig = jws.split(".")
-    doc = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
+    doc = json.loads(unb64url(body))
     doc.update(claims)
     return f"{head}.{_segment(doc)}.{sig}"
 
 
 def _alg_none(jws: str) -> str:
     head, body, _ = jws.split(".")
-    doc = json.loads(base64.urlsafe_b64decode(head + "=" * (-len(head) % 4)))
+    doc = json.loads(unb64url(head))
     return f"{b64url(json.dumps({**doc, 'alg': 'none'}, separators=(',', ':')).encode())}.{body}.AA"
 
 
@@ -452,8 +453,8 @@ def judge(case: dict[str, Any]) -> dict[str, Any]:
     raw = case["request"]
     facts = None if raw is None else RequestFacts(
         method=raw["method"], url=raw["url"],
-        content=None if raw["contentB64"] is None else base64.b64decode(raw["contentB64"]), dpop=raw["dpop"],
-        client_certificate=None if raw["clientCertificateB64"] is None else base64.b64decode(raw["clientCertificateB64"]),
+        content=None if raw["contentB64"] is None else unb64(raw["contentB64"]), dpop=raw["dpop"],
+        client_certificate=None if raw["clientCertificateB64"] is None else unb64(raw["clientCertificateB64"]),
         headers=tuple((name, value) for name, value in raw["headers"]))
     transport = None if case["transport"] is None else CanonicalIdentity.parse(case["transport"])
     try:

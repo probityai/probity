@@ -11,7 +11,6 @@ rewritten journal.
 
 from __future__ import annotations
 
-import base64
 import fcntl
 import hashlib
 import json
@@ -740,7 +739,7 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
         failures.append("key_custody_checkpoint_missing")
         return
     try:
-        provenance = admitted_loads(base64.b64decode(checkpoint_env["payload"]))["predicate"].get("keyProvenance") or {}
+        provenance = admitted_loads(unb64(checkpoint_env["payload"]))["predicate"].get("keyProvenance") or {}
     except (KeyError, TypeError, ValueError):
         return  # the checkpoint check reports the malformed envelope
     roots = {delegations[k].root_key_id if k in delegations else k for k in signer_ids}

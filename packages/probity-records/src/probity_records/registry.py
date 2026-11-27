@@ -33,8 +33,6 @@ presentation) are not here. Every refusal is a ``RegistryError`` whose ``code`` 
 
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
 import json
 import re
@@ -53,7 +51,8 @@ from cryptography.x509.verification import PolicyBuilder, Store, VerificationErr
 
 from . import witness
 from .core import TOKEN_MAX_DEPTH, JsonRefused, admitted_loads, sha256_hex
-from .identity import has_private_member, jwk_thumbprint, public_jwk
+from .identity import b64url, has_private_member, jwk_thumbprint, public_jwk
+from .identity import unb64url as identity_unb64url
 
 #: The algorithm each pinned key type admits; the header's ``alg`` must be this one.
 ALG_OF_KEY: Final = {("OKP", "Ed25519"): "EdDSA", ("EC", "P-256"): "ES256", ("RSA", None): "RS256"}
@@ -109,22 +108,12 @@ class RegistryError(ValueError):
 # --- compact JWS under pinned keys ------------------------------------------------------------------------------
 
 
-def b64url(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
-
-
 def unb64url(text: str) -> bytes:
     """The bytes of one unpadded base64url segment; only the canonical spelling of its bytes is read."""
-    if not isinstance(text, str) or not text.isascii() or "=" in text:
-        raise RegistryError("jws_malformed", "a segment is not unpadded base64url")
     try:
-        data = base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
-    except (ValueError, binascii.Error) as exc:
-        raise RegistryError("jws_malformed", "a segment is not base64url") from exc
-    # Many strings decode to one value; a token's digest names it, so only one spelling of each segment is read.
-    if b64url(data) != text:
-        raise RegistryError("jws_malformed", "a segment is not the canonical base64url of its bytes")
-    return data
+        return identity_unb64url(text)
+    except ValueError as exc:
+        raise RegistryError("jws_malformed", f"a segment is not canonical unpadded base64url: {exc}") from exc
 
 
 #: The deepest nesting, in containers, a registry document may have.

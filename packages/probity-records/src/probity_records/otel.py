@@ -39,7 +39,7 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
 
 from .clock import Clock
-from .core import Signer, admitted_loads, canonical, key_id, load_public, sha256_hex
+from .core import Signer, admitted_loads, canonical, key_id, load_public, sha256_hex, unb64
 from .journal import _whole_lines
 
 INTEGRITY_PREFIX = "audit.integrity."
@@ -132,7 +132,7 @@ def _from_otlp(value: Mapping[str, Any]) -> Any:
     if "doubleValue" in value:
         return float(value["doubleValue"])
     if "bytesValue" in value:
-        return base64.b64decode(value["bytesValue"])
+        return unb64(value["bytesValue"])
     if "arrayValue" in value:
         return [_from_otlp(item) for item in value["arrayValue"].get("values", [])]
     if "kvlistValue" in value:
@@ -391,7 +391,7 @@ def export_journal(stream: AuditStream, journal_path: os.PathLike[str] | str, *,
         if not body.strip():
             continue
         envelope = admitted_loads(body)
-        statement = admitted_loads(base64.b64decode(envelope["payload"]))
+        statement = admitted_loads(unb64(envelope["payload"]))
         attrs = tool_call_attributes(body, statement, actor_id=actor_id)
         pred = statement.get("predicate", {})
         redact = {name: pred[key] for key, name in (("context", "probity.context"),)
@@ -456,7 +456,7 @@ def verify_stream(requests: Iterable[Mapping[str, Any]], certificates: Iterable[
             report.refuse(where, "certificate_mismatch")
             continue
         try:
-            key.verify(base64.b64decode(str(attrs.get("audit.integrity.value", "")), validate=True),
+            key.verify(unb64(str(attrs.get("audit.integrity.value", ""))),
                        signing_payload(record))
         except (InvalidSignature, ValueError):
             report.refuse(where, "integrity_mismatch")
@@ -522,7 +522,7 @@ def _check_witness(stream: str, where: str, attrs: Mapping[str, Any], heads: Map
         report.refuse(where, "witness_key_unpinned")
         return
     try:
-        key.verify(base64.b64decode(str(attrs.get("probity.witness.signature", "")), validate=True),
+        key.verify(unb64(str(attrs.get("probity.witness.signature", ""))),
                    witness_body(stream, int(size), str(head)))  # type: ignore[arg-type]
     except (InvalidSignature, ValueError, TypeError):
         report.refuse(where, "witness_signature_invalid")

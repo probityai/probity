@@ -12,7 +12,6 @@ between two sealed exports.
 
 from __future__ import annotations
 
-import base64
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
@@ -27,6 +26,7 @@ from .core import (
     sha256_hex,
     sign_envelope,
     statement,
+    unb64,
 )
 from .identifiers import identifier, same_identifier
 
@@ -140,7 +140,7 @@ def compare_seals(older: Mapping[str, Any], newer: Mapping[str, Any]) -> dict[st
     """Ids added, removed or changed between two sealed exports (envelopes already verified)."""
 
     def table(env: Mapping[str, Any]) -> dict[str, str]:
-        census_ = admitted_loads(base64.b64decode(env["payload"]))["predicate"]["census"]
+        census_ = admitted_loads(unb64(env["payload"]))["predicate"]["census"]
         return {d["id"]: d["sha256"] for d in census_["recordDigests"] if d["id"] is not None}
 
     a, b = table(older), table(newer)
