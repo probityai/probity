@@ -195,7 +195,7 @@ paths = ["packages/agent-evidence-observer/**"]
 tier = "fast"
 
 [jobs.records-verify-tests]
-paths = ["node/probity-records-verify/**", "packages/probity-records/src/**", "packages/probity-records/vectors/**", "packages/probity-records/scripts/gen_shared_vectors.py", "packages/agent-evidence-verify/vectors-web-bot-auth/**", "packages/agent-evidence-verify/src/agent_evidence_verify/adapters/web_bot_auth.py"]
+paths = ["node/probity-records-verify/**", "packages/probity-records/src/**", "packages/probity-records/tests/parity_r6c/**", "packages/probity-records/uv.lock", "packages/probity-records/vectors/**", "packages/probity-records/scripts/gen_shared_vectors.py", "packages/agent-evidence-verify/vectors-web-bot-auth/**", "packages/agent-evidence-verify/src/agent_evidence_verify/adapters/web_bot_auth.py"]
 tier = "fast"
 
 [jobs.observer-witness]
