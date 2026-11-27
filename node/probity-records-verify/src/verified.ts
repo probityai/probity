@@ -6,7 +6,7 @@
 import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
 import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
-import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parseReceived, strictB64url, ts } from "./verify.ts";
+import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parseReceived, publicJwk, strictB64url, ts } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -77,7 +77,8 @@ export interface TrustBundle { environment: string; tenant: string; audience: st
 
 const isStampKey = (jwk: J): boolean => jwk.kty === "OKP" && jwk.crv === "Ed25519" && typeof jwk.x === "string";
 const stampKeyId = (raw: Buffer): string => sha256Hex(raw);
-const rawOf = (jwk: J): Buffer => Buffer.from(String(jwk.x), "base64url");
+// Only for a key the bundle admitted (a canonical 32-byte x, publicJwk); strict anyway, as identity.unb64url is.
+const rawOf = (jwk: J): Buffer => strictB64url(String(jwk.x));
 const distinctNames = (v: J): boolean => Array.isArray(v) && v.length > 0 && v.every((t) => typeof t === "string" && t !== "") && new Set(v).size === v.length;
 
 export function parseBundle(doc: J): TrustBundle {
@@ -104,7 +105,10 @@ function parseAnchors(entries: J): Anchor[] {
     if (!sameKeys(a, ANCHOR_MEMBERS)) bad("an anchor has exactly its seven members");
     const jwk = a.jwk;
     if (!isObj(jwk) || Object.keys(jwk).some((k) => PRIVATE_JWK.includes(k))) bad("an anchor key is a public JWK");
-    if (!isStampKey(jwk) || rawOf(jwk).length !== 32) bad("an anchor key is an Ed25519 OKP key");
+    if (!isStampKey(jwk)) bad("an anchor key is an Ed25519 OKP key");
+    let x = Buffer.alloc(0);
+    try { x = rawOf(jwk); } catch { bad("an anchor key's x is 32 base64url bytes"); }
+    if (x.length !== 32) bad("an anchor key's x is 32 base64url bytes");
     if (a.thumbprint !== jwkThumbprint(jwk)) bad("an anchor's thumbprint is the RFC 7638 thumbprint of its key");
     if (typeof a.role !== "string" || a.role === "" || !/^[\x00-\x7f]*$/.test(a.role)) bad("an anchor's role is a non-empty ASCII name");
     if (!ANCHOR_STATUSES.includes(a.status)) bad("an anchor's status is active, retired or revoked");
@@ -134,12 +138,7 @@ function parseIssuer(url: string, entry: J): PinnedKey[] {
     if (!isObj(jwk) || Object.keys(jwk).some((k) => PRIVATE_JWK.includes(k))) bad("a key is a public JWK");
     let thumb = "";
     try { thumb = jwkThumbprint(jwk); } catch { bad("a key has no RFC 7638 thumbprint"); }
-    if (jwk.kty === "RSA") {
-      let n = Buffer.alloc(0);
-      try { n = strictB64url(String(jwk.n)); } catch { bad("a key has no RFC 7638 thumbprint"); }
-      let start = 0; while (start < n.length && n[start] === 0) start++;
-      if ((n.length - start) * 8 < MIN_RSA_BITS) bad(`an RSA key shorter than ${MIN_RSA_BITS} bits`);
-    }
+    if (jwk.kty === "RSA" && publicJwk(jwk).n.length * 8 < MIN_RSA_BITS) bad(`an RSA key shorter than ${MIN_RSA_BITS} bits`);
     if (byThumb.has(thumb)) bad("a key is listed twice");
     byThumb.set(thumb, jwk);
   }
@@ -183,6 +182,7 @@ function stampKey(bundle: TrustBundle, keyid: string): PinnedKey {
 function publicKey(jwk: J): KeyObject {
   const members = jwk.kty === "RSA" ? ["kty", "n", "e"] : jwk.kty === "EC" ? ["kty", "crv", "x", "y"] : ["kty", "crv", "x"];
   const key: J = {}; for (const m of members) key[m] = jwk[m];
+  publicJwk(key);  // identity.public_jwk: Node's own JWK import would read a second spelling of the same key
   return createPublicKey({ key, format: "jwk" });
 }
 

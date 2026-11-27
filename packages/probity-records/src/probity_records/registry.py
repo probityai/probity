@@ -53,7 +53,7 @@ from cryptography.x509.verification import PolicyBuilder, Store, VerificationErr
 
 from . import witness
 from .core import TOKEN_MAX_DEPTH, JsonRefused, admitted_loads, sha256_hex
-from .identity import jwk_thumbprint
+from .identity import jwk_thumbprint, public_jwk
 
 #: The algorithm each pinned key type admits; the header's ``alg`` must be this one.
 ALG_OF_KEY: Final = {("OKP", "Ed25519"): "EdDSA", ("EC", "P-256"): "ES256", ("RSA", None): "RS256"}
@@ -203,18 +203,18 @@ def verify_signature(alg: str, jwk: Mapping[str, Any], signing_input: bytes, sig
     if _alg_of(jwk) != alg:
         return False
     try:
+        raw = public_jwk(jwk)  # one spelling per key: canonical members, full-size coordinates, minimal RSA octets
         if alg == "EdDSA":
-            Ed25519PublicKey.from_public_bytes(unb64url(jwk["x"])).verify(signature, signing_input)
+            Ed25519PublicKey.from_public_bytes(raw["x"]).verify(signature, signing_input)
         elif alg == "ES256":
             if len(signature) != 64 or high_s(alg, signature):
                 return False
-            point = ec.EllipticCurvePublicNumbers(int.from_bytes(unb64url(jwk["x"]), "big"),
-                                                  int.from_bytes(unb64url(jwk["y"]), "big"), ec.SECP256R1())
+            point = ec.EllipticCurvePublicNumbers(int.from_bytes(raw["x"], "big"), int.from_bytes(raw["y"], "big"),
+                                                  ec.SECP256R1())  # fmt: skip
             der = encode_dss_signature(int.from_bytes(signature[:32], "big"), int.from_bytes(signature[32:], "big"))
             point.public_key().verify(der, signing_input, ec.ECDSA(hashes.SHA256()))
         else:
-            numbers = rsa.RSAPublicNumbers(int.from_bytes(unb64url(jwk["e"]), "big"),
-                                           int.from_bytes(unb64url(jwk["n"]), "big"))
+            numbers = rsa.RSAPublicNumbers(int.from_bytes(raw["e"], "big"), int.from_bytes(raw["n"], "big"))
             if numbers.n.bit_length() < 2048:
                 return False
             numbers.public_key().verify(signature, signing_input, padding.PKCS1v15(), hashes.SHA256())

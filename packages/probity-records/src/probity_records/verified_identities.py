@@ -43,7 +43,7 @@ from .clock import from_datetime
 from .core import TOKEN_MAX_DEPTH, admitted_loads
 from .digests import IdentityDigestError, act_chain_digest
 from .grants import ts
-from .identity import _verify_jws, jwk_thumbprint, unb64url
+from .identity import _verify_jws, jwk_thumbprint, public_jwk, unb64url
 from .possession import CertificateProof, DpopProof, check_possession
 from .stamp import (
     StampRefused,
@@ -179,8 +179,8 @@ def _issuer(url: Any, entry: Any) -> PinnedIssuer:
         if not isinstance(jwk, Mapping) or set(jwk) & PRIVATE_JWK_MEMBERS:
             raise _refuse("trust_bundle_malformed", f"issuer {url}: a key is a public JWK")
         try:
-            thumbprint = jwk_thumbprint(jwk)
-            short_rsa = jwk["kty"] == "RSA" and len(unb64url(str(jwk["n"])).lstrip(b"\0")) * 8 < MIN_RSA_BITS
+            thumbprint = jwk_thumbprint(jwk)  # only for one canonical public key: identity.public_jwk
+            short_rsa = jwk["kty"] == "RSA" and len(public_jwk(jwk)["n"]) * 8 < MIN_RSA_BITS
         except (ValueError, binascii.Error) as exc:
             raise _refuse("trust_bundle_malformed", f"issuer {url}: a key has no RFC 7638 thumbprint") from exc
         if short_rsa:

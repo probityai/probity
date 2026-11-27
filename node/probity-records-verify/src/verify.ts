@@ -911,9 +911,34 @@ export function strictB64url(text: string): Buffer {
   return out;
 }
 
+// The coordinate or key bytes of each curve these readers verify (RFC 7518 section 6.2.1.2, RFC 8037 section 2).
+const CURVE_BYTES: Record<string, number> = { "EC P-256": 32, "OKP Ed25519": 32 };
+
+/**
+ * probity_records.identity.public_jwk: the key bytes of a public JWK these readers verify; throws unless every key
+ * member has one spelling. Each member is read with strictB64url, an EC coordinate is the full size of its curve, an
+ * Ed25519 x is 32 bytes, and RSA n and e carry no leading zero octet (RFC 7518 section 2, Base64urlUInt). Without it
+ * one key has several spellings and several RFC 7638 thumbprints.
+ */
+export function publicJwk(jwk: J): Record<string, Buffer> {
+  if (jwk.kty === "RSA") {
+    const n = strictB64url(jwk.n), e = strictB64url(jwk.e);
+    if (!n.length || !e.length || n[0] === 0 || e[0] === 0) throw new Error("an RSA n or e is not the minimum number of octets");
+    return { n, e };
+  }
+  const size = CURVE_BYTES[`${String(jwk.kty)} ${String(jwk.crv)}`];
+  if (size === undefined || (jwk.kty !== "EC" && jwk.kty !== "OKP")) throw new Error("jwk_unsupported");
+  const out: Record<string, Buffer> = {};
+  for (const m of jwk.kty === "EC" ? ["x", "y"] : ["x"]) out[m] = strictB64url(jwk[m]);
+  if (Object.values(out).some((v) => v.length !== size)) throw new Error("a key coordinate is not the full size of its curve");
+  return out;
+}
+
+/** RFC 7638 thumbprint of a key publicJwk reads; a thumbprint names one key, so it exists only for its one spelling. */
 export function jwkThumbprint(jwk: J): string {
   const m = THUMB[String(jwk.kty)];
   if (!m || m.some((k) => !(k in jwk))) throw new Error("jwk_unsupported");
+  publicJwk(jwk);
   const obj: J = {}; for (const k of m) obj[k] = jwk[k];
   return createHash("sha256").update(JSON.stringify(obj)).digest("base64url");
 }

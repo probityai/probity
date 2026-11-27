@@ -98,11 +98,42 @@ def unb64url(text: str) -> bytes:
     return data
 
 
+# The coordinate or key bytes of each curve these readers verify (RFC 7518 section 6.2.1.2, RFC 8037 section 2).
+CURVE_BYTES = {("EC", "P-256"): 32, ("OKP", "Ed25519"): 32}
+
+
+def public_jwk(jwk: Mapping[str, Any]) -> dict[str, bytes]:
+    """The key bytes of a public JWK these readers verify; ``ValueError`` unless every key member has one spelling.
+
+    Each of ``x``, ``y``, ``n`` and ``e`` is read with ``unb64url``, so only its canonical base64url counts. An EC
+    coordinate is the full size of its curve (RFC 7518 section 6.2.1.2: "MUST be the full size of a coordinate"), an
+    Ed25519 ``x`` is 32 bytes, and RSA ``n`` and ``e`` use the minimum number of octets (RFC 7518 section 2,
+    Base64urlUInt: no leading zero octet). Without this one key has several spellings, several RFC 7638
+    thumbprints, and a pin or a duplicate check keyed on the thumbprint can be stepped around.
+    """
+    kty = jwk.get("kty")
+    if kty == "RSA":
+        n, e = unb64url(jwk.get("n")), unb64url(jwk.get("e"))
+        if not n or not e or n[0] == 0 or e[0] == 0:
+            raise ValueError("an RSA n or e is not the minimum number of octets")
+        return {"n": n, "e": e}
+    size = CURVE_BYTES.get((kty, jwk.get("crv")))
+    if size is None:
+        raise ValueError("jwk_unsupported")
+    out = {m: unb64url(jwk.get(m)) for m in (("x", "y") if kty == "EC" else ("x",))}
+    if any(len(v) != size for v in out.values()):
+        raise ValueError("a key coordinate is not the full size of its curve")
+    return out
+
+
 def jwk_thumbprint(jwk: Mapping[str, Any]) -> str:
-    """RFC 7638 SHA-256 thumbprint, base64url without padding."""
+    """RFC 7638 SHA-256 thumbprint, base64url without padding, of a key ``public_jwk`` reads; else ``ValueError``.
+
+    A thumbprint names one key, so it exists only for the one spelling of that key."""
     members = THUMBPRINT_MEMBERS.get(str(jwk.get("kty")))
     if members is None or any(m not in jwk for m in members):
         raise ValueError("jwk_unsupported")
+    public_jwk(jwk)
     data = json.dumps({m: jwk[m] for m in members}, sort_keys=True, separators=(",", ":")).encode()
     return b64url(hashlib.sha256(data).digest())
 
@@ -328,19 +359,19 @@ def act_grade(block: Mapping[str, Any]) -> str:
 
 def _verify_jws(alg: str, jwk: Mapping[str, Any], signing_input: bytes, sig: bytes) -> bool:
     try:
-        if alg == "EdDSA" and jwk.get("kty") == "OKP" and jwk.get("crv") == "Ed25519":
-            Ed25519PublicKey.from_public_bytes(unb64url(jwk["x"])).verify(sig, signing_input)
-        elif alg == "ES256" and jwk.get("kty") == "EC" and jwk.get("crv") == "P-256":
-            key = ec.EllipticCurvePublicNumbers(int.from_bytes(unb64url(jwk["x"]), "big"),
-                                                int.from_bytes(unb64url(jwk["y"]), "big"), ec.SECP256R1()).public_key()
+        raw = public_jwk(jwk)
+        if alg == "EdDSA" and jwk.get("kty") == "OKP":
+            Ed25519PublicKey.from_public_bytes(raw["x"]).verify(sig, signing_input)
+        elif alg == "ES256" and jwk.get("kty") == "EC":
+            point = ec.EllipticCurvePublicNumbers(int.from_bytes(raw["x"], "big"), int.from_bytes(raw["y"], "big"),
+                                                  ec.SECP256R1()).public_key()  # fmt: skip
             if len(sig) != 64:
                 return False
             der = encode_dss_signature(int.from_bytes(sig[:32], "big"), int.from_bytes(sig[32:], "big"))
-            key.verify(der, signing_input, ec.ECDSA(hashes.SHA256()))
+            point.verify(der, signing_input, ec.ECDSA(hashes.SHA256()))
         elif alg == "RS256" and jwk.get("kty") == "RSA":
-            key = rsa.RSAPublicNumbers(int.from_bytes(unb64url(jwk["e"]), "big"),
-                                       int.from_bytes(unb64url(jwk["n"]), "big")).public_key()
-            key.verify(sig, signing_input, padding.PKCS1v15(), hashes.SHA256())
+            rsa_key = rsa.RSAPublicNumbers(int.from_bytes(raw["e"], "big"), int.from_bytes(raw["n"], "big")).public_key()
+            rsa_key.verify(sig, signing_input, padding.PKCS1v15(), hashes.SHA256())
         else:
             return False
     except (InvalidSignature, ValueError, KeyError, TypeError):

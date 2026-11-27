@@ -1,7 +1,7 @@
 """Differential cases for the Python and TypeScript verified-identities readers.
 
 Every shared vector row is copied with one token segment or one DPoP segment replaced by hostile bytes or a hostile
-spelling, and judged by probity_records.verified_identities_vectors.judge. The TypeScript twin judges the same rows
+spelling, or with one bundle key member respelled (key_spellings.py), and judged by probity_records.verified_identities_vectors.judge. The TypeScript twin judges the same rows
 (judge_ts.ts); compare.py prints every row where the two disagree. A raise is recorded as RAISED:<type>.
 Usage: gen_cases.py <shared verified_identities.json> <out cases.json>
 """
@@ -12,9 +12,13 @@ import base64
 import copy
 import json
 import sys
+from pathlib import Path
 from typing import Any
 
 from probity_records.verified_identities_vectors import judge
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: the shared key respellings
+from key_spellings import key_edits
 
 
 def b64u(raw: bytes) -> str:
@@ -85,8 +89,10 @@ def verdict(row: dict[str, Any]) -> Any:
 
 
 def main() -> None:
-    rows = json.load(open(sys.argv[1]))
+    with open(sys.argv[1]) as f:
+        rows = json.load(f)
     cases: list[dict[str, Any]] = []
+    skipped: list[str] = []  # a segment a byte edit cannot decode; counted and printed, never dropped silently
     for row in rows:
         cases.append({"case": f"{row['id']}/unchanged", "row": row})
         for role, token in row["tokens"].items():
@@ -99,7 +105,8 @@ def main() -> None:
                         parts = token.split(".")
                         try:
                             parts[seg_i] = mutate(parts[seg_i], kind, name)
-                        except Exception:  # noqa: BLE001
+                        except ValueError:  # binascii.Error: the vector's own segment is not base64url
+                            skipped.append(f"{row['id']}/token/{role}/{seg_i}/{name}")
                             continue
                         r["tokens"][role] = ".".join(parts)
                         cases.append({"case": f"{row['id']}/token/{role}/{seg_i}/{name}", "row": r})
@@ -112,14 +119,19 @@ def main() -> None:
                         parts = dpop.split(".")
                         try:
                             parts[seg_i] = mutate(parts[seg_i], kind, name)
-                        except Exception:  # noqa: BLE001
+                        except ValueError:  # binascii.Error: the vector's own segment is not base64url
+                            skipped.append(f"{row['id']}/dpop/{seg_i}/{name}")
                             continue
                         r["request"]["dpop"] = ".".join(parts)
                         cases.append({"case": f"{row['id']}/dpop/{seg_i}/{name}", "row": r})
+        cases.extend({"case": name, "row": r} for name, r in key_edits(row))  # one bundle key respelled
     for c in cases:
         c["python"] = verdict(c["row"])
-    json.dump(cases, open(sys.argv[2], "w"), ensure_ascii=True)
-    print(f"PARITY_CASES {len(cases)}")
+    with open(sys.argv[2], "w") as f:
+        json.dump(cases, f, ensure_ascii=True)
+    print(f"PARITY_CASES {len(cases)} PARITY_SKIPPED {len(skipped)}")
+    for case in skipped:
+        print(f"  SKIPPED {case}")
 
 
 if __name__ == "__main__":

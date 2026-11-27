@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **A public key has one spelling.** `identity.public_jwk` reads a JWK's `x`, `y`, `n` and `e` only in their canonical
+  base64url, an EC coordinate only at the full size of its curve (RFC 7518 section 6.2.1.2), an Ed25519 `x` only at
+  32 bytes, and RSA `n` and `e` only without a leading zero octet (RFC 7518 section 2). `jwk_thumbprint` exists only
+  for such a key, and the JWS checks (`identity`, `registry.verify_signature`) read keys through it. Before, a short
+  EC coordinate verified as the same point under a second thumbprint, a trust bundle could pin a respelled key that
+  the TypeScript reader then decoded leniently, and a respelled stamp key made `TrustBundle.stamp_key` raise. The
+  TypeScript twin's `publicJwk` applies the same rule, and the differential in `tests/parity_r6c` now respells every
+  bundle key of every shared row.
 - **Every document a stranger can hand the package is read by one strict reader, `core.admitted_loads`.** A repeated
   member, invalid UTF-8, a lone surrogate (raw or escaped), NaN, a number no double holds, nesting past the reader's
   depth (128 containers; 32 for a token segment or registry document, `core.TOKEN_MAX_DEPTH`) and, where a caller sets
