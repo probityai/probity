@@ -137,6 +137,9 @@ class Parser {
     const raw = this.s.slice(this.i, end);
     this.i = end + 1;
     if (!B64.test(raw) || raw.length % 4 === 1) throw this.fail("bad base64");
+    // RFC 8941 section 4.2.7: a parser accepts a byte sequence with or without "=" padding and with nonzero stray bits,
+    // and the Python reader (agent_evidence_verify.structured_fields) does the same, so this one read keeps the format's
+    // own rule and not core.unb64's canonical one. The lint test lists this line by file.
     return Buffer.from(raw.replace(/=+$/, ""), "base64");
   }
 

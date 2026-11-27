@@ -614,8 +614,8 @@ export function proofDocument(proof: PossessionProof | null): J {
 export function judgeVerified(v: J): J {
   const r = v.request;
   const facts: RequestFacts | null = r === null ? null : {
-    method: r.method, url: r.url, content: r.contentB64 === null ? null : Buffer.from(r.contentB64, "base64"),
-    dpop: r.dpop, clientCertificate: r.clientCertificateB64 === null ? null : Buffer.from(r.clientCertificateB64, "base64"),
+    method: r.method, url: r.url, content: r.contentB64 === null ? null : unb64(r.contentB64),
+    dpop: r.dpop, clientCertificate: r.clientCertificateB64 === null ? null : unb64(r.clientCertificateB64),
     headers: r.headers,
   };
   const transport = v.transport === null ? null : CanonicalIdentity.parse(v.transport);

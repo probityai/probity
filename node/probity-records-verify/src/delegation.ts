@@ -7,7 +7,7 @@
 // certificate throws an Error whose message is the code.
 
 import type { KeyObject } from "node:crypto";
-import { canonicalBytes, edOk, isFloat, keyId, rawKey, ts } from "./verify.ts";
+import { canonicalBytes, edOk, isFloat, keyId, rawKey, ts, unb64 } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -42,13 +42,6 @@ export interface Delegation {
 }
 
 const isObj = (v: J): boolean => v !== null && typeof v === "object" && !Array.isArray(v);
-
-function unb64(text: J): Buffer {
-  if (typeof text !== "string") throw new Error("expected base64 text");
-  const data = Buffer.from(text, "base64");
-  if (data.toString("base64") !== text) throw new Error("expected canonical base64");
-  return data;
-}
 
 /** The refusal code for a scope a root may not certify, or null (signing.scope_problem). */
 export function scopeProblem(hierarchy: J, custody: J, tenant: J, windowS: J, holder: J = null): string | null {

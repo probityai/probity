@@ -72,6 +72,22 @@ NOT_A_CERT = b"\x30\x03\x02\x01\x00"
 HOLDER_CERT = _cert(datetime(2026, 11, 1, tzinfo=UTC), 60, seed=4)  # the DPoP holder key's own certificate
 
 
+_B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+
+def _padbits(raw: bytes) -> str:
+    """Standard base64 of ``raw`` with its last digit carrying nonzero unused low bits (RFC 4648 section 3.5): the same
+    bytes in a second spelling. ``raw`` is grown with zero bytes until its length needs padding, so the spelling exists."""
+    while len(raw) % 3 == 0:
+        raw += b"\x00"
+    text = base64.b64encode(raw).decode()
+    i = len(text) - (len(text) - len(text.rstrip("="))) - 1
+    other = _B64[_B64.index(text[i]) | 1]
+    out = text[:i] + other + text[i + 1:]
+    assert out != text and base64.b64decode(out, validate=True) == raw
+    return out
+
+
 def _set(**members: Any) -> Callable[[dict[str, Any]], None]:
     def edit(doc: dict[str, Any]) -> None:
         for name, value in members.items():
@@ -194,6 +210,11 @@ DPOP_HEADER_EDITS: dict[str, Callable[[dict[str, Any]], None]] = {
     "x5c-holder-newline": _set(x5c=[base64.b64encode(HOLDER_CERT).decode()[:40] + "\n"
                                     + base64.b64encode(HOLDER_CERT).decode()[40:]]),
     "x5c-holder-urlsafe": _set(x5c=[base64.urlsafe_b64encode(HOLDER_CERT).decode()]),
+    # nonzero padding bits in the last digit: the same bytes in a second spelling, refused by both readers
+    "x5c-holder-padbits": _set(x5c=[_padbits(HOLDER_CERT)]),
+    "x5c-holder-padbits-plus-one": _set(x5c=[_padbits(HOLDER_CERT + b"\x00")]),
+    "x5c-other-padbits": _set(x5c=[_padbits(NOT_A_CERT)]),
+    "x5c-second-entry-padbits": _set(x5c=[base64.b64encode(HOLDER_CERT).decode(), _padbits(NOT_A_CERT)]),
 }
 
 

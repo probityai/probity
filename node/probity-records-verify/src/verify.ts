@@ -185,7 +185,7 @@ export function rawKey(raw: Buffer): KeyObject {
   return createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: raw.toString("base64url") }, format: "jwk" });
 }
 export function keyId(key: KeyObject): string {
-  return sha256Hex(Buffer.from(String((key.export({ format: "jwk" }) as J).x), "base64url"));
+  return sha256Hex(strictB64url(String((key.export({ format: "jwk" }) as J).x)));
 }
 export function edOk(key: KeyObject, data: Buffer, sig: Buffer): boolean {
   try { return edVerify(null, data, key, sig); } catch { return false; }
@@ -745,8 +745,9 @@ export function cnfProblem(cnf: J): string | null {
   if (!isObj(cnf) || Object.keys(cnf).length !== 1) return "cnf_invalid";
   const [[method, value]] = Object.entries(cnf) as [string, J][];
   if (!CNF_METHODS.includes(method) || typeof value !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(value)) return "cnf_invalid";
-  const raw = Buffer.from(value, "base64url");
-  return raw.length === 32 && raw.toString("base64url") === value ? null : "cnf_invalid";
+  let raw: Buffer;
+  try { raw = strictB64url(value); } catch { return "cnf_invalid"; }
+  return raw.length === 32 ? null : "cnf_invalid";
 }
 
 // A standing grant (grants.py): "sponsor" {issuer, subject} and "reviewBy" together, notBefore < reviewBy <= expiresAt.

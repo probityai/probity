@@ -10,7 +10,7 @@
 // An identity provider's token-signing key is kind "idp-key", named by its RFC 7638 thumbprint, never kind "key".
 
 import { identifier, sameIdentifier } from "./identifiers.ts";
-import { canonicalBytes, edOk, rawKey, sha256Hex, ts } from "./verify.ts";
+import { canonicalBytes, edOk, rawKey, sha256Hex, ts, unb64 } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -165,10 +165,9 @@ function checkTime(value: J, what: string): string {
 
 /** The 32 raw bytes of a padded canonical base64 Ed25519 key, or a shape refusal. */
 function rawKeyBytes(value: J, what: string): Buffer {
-  if (typeof value !== "string") throw shape(`${what}_not_base64`);
-  const raw = Buffer.from(value, "base64");
+  let raw: Buffer;
+  try { raw = unb64(value); } catch { throw shape(`${what}_not_base64`); }
   if (raw.length !== 32) throw shape(`${what}_not_an_ed25519_key`);
-  if (raw.toString("base64") !== value) throw shape(`${what}_not_canonical_base64`);
   return raw;
 }
 
@@ -214,9 +213,8 @@ function checkBody(body: J): void {
 
 function signatureHolds(issuerKey: Buffer, sig: J, body: J): boolean {
   try {
-    if (typeof sig !== "string") return false;
-    const raw = Buffer.from(sig, "base64");
-    if (raw.length !== 64 || raw.toString("base64") !== sig) return false;
+    const raw = unb64(sig);
+    if (raw.length !== 64) return false;
     return edOk(rawKey(issuerKey), Buffer.concat([REVOCATION_DOMAIN, canonicalBytes(body)]), raw);
   } catch {
     return false;
@@ -249,7 +247,7 @@ export function applyRevocationList(state: RevocationState, signed: J): Revocati
   const roots = new Set(state.roots);
   for (const e of delta.values()) {
     if (e.kind !== "key" || !state.roots.has(e.id) || !("successor" in e)) continue;
-    const successor = sha256Hex(Buffer.from(e.successor, "base64"));
+    const successor = sha256Hex(unb64(e.successor));
     if (!held.has(`key\u0000${successor}`)) roots.add(successor);
   }
   for (const e of delta.values()) if (e.kind === "key") roots.delete(e.id);

@@ -119,8 +119,6 @@ def _raw_key(value: Any, what: str) -> bytes:
         raise _shape(f"{what}_not_base64") from None
     if len(raw) != 32:
         raise _shape(f"{what}_not_an_ed25519_key")
-    if _b64(raw) != value:
-        raise _shape(f"{what}_not_canonical_base64")
     return raw
 
 
