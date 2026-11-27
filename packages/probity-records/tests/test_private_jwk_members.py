@@ -30,19 +30,26 @@ from probity_records.verified_identities import TrustBundle, VerifiedIdentitiesR
 PACKAGE = Path(__file__).resolve().parents[1]
 SRC = PACKAGE / "src" / "probity_records"
 TS_SRC = PACKAGE.parents[1] / "node" / "probity-records-verify" / "src"
-MEMBERS = sorted(identity.PRIVATE_JWK_MEMBERS)
+MEMBERS = ["d", "dp", "dq", "k", "oth", "p", "priv", "q", "qi"]
+
+
+def _members() -> frozenset[str]:
+    """Read through the module, so code without the shared set fails on an assertion that names it, not a load error."""
+    found = getattr(identity, "PRIVATE_JWK_MEMBERS", None)
+    assert isinstance(found, frozenset), "identity has no PRIVATE_JWK_MEMBERS: each reader keeps its own list"
+    return found
 
 
 def test_the_set_is_every_private_member_of_the_jwk_registries() -> None:
     """RFC 7518 sections 6.2.2, 6.3.2 and 6.4.1, RFC 8037 section 2, and the AKP key type's priv."""
-    assert identity.PRIVATE_JWK_MEMBERS == {"d", "p", "q", "dp", "dq", "qi", "oth", "k", "priv"}
+    assert _members() == set(MEMBERS)
 
 
 def test_the_typescript_list_is_the_same_set() -> None:
     text = (TS_SRC / "verify.ts").read_text()
     found = re.findall(r"export const PRIVATE_JWK_MEMBERS: readonly string\[\] = \[([^\]]*)\];", text)
     assert len(found) == 1, "verify.ts defines PRIVATE_JWK_MEMBERS exactly once"
-    assert set(re.findall(r'"([a-z]+)"', found[0])) == identity.PRIVATE_JWK_MEMBERS
+    assert set(re.findall(r'"([a-z]+)"', found[0])) == _members()
 
 
 def _python_lists() -> list[str]:
@@ -52,7 +59,7 @@ def _python_lists() -> list[str]:
         for node in ast.walk(ast.parse(path.read_text())):
             if isinstance(node, ast.Set | ast.List | ast.Tuple):
                 names = {e.value for e in node.elts if isinstance(e, ast.Constant) and isinstance(e.value, str)}
-                if len(names & identity.PRIVATE_JWK_MEMBERS - {"d"}) >= 2:
+                if len(names & _members() - {"d"}) >= 2:
                     hits.append(f"{path.name}:{node.lineno}")
     return hits
 
@@ -74,7 +81,7 @@ def test_no_typescript_reader_keeps_its_own_list() -> None:
         for n, line in enumerate(path.read_text().splitlines(), 1):
             for literal in re.findall(r"\[([^\[\]]*)\]", line):
                 names = set(re.findall(r'"([a-z]+)"', literal))
-                if len(names & identity.PRIVATE_JWK_MEMBERS - {"d"}) >= 2:
+                if len(names & _members() - {"d"}) >= 2:
                     hits.append(f"{path.name}:{n}")
     assert len(hits) == 1 and hits[0].startswith("verify.ts:"), hits
 
