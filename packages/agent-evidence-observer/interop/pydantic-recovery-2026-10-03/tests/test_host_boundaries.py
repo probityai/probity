@@ -10,6 +10,7 @@ import pytest
 from probity_observer.crypto import VerificationError
 
 from probity_pydantic_recovery.common import MAX_FILE
+from recovery_host import MAX_POLICY_FILE
 from recovery_host import gate, reader_closure, select_policy
 
 
@@ -72,15 +73,15 @@ def test_complete_traversal_enforces_every_population_budget(tmp_path: Path, mon
         reader_closure(executable)
 
 
-@pytest.mark.parametrize("boundary", ["pins", "policy", "config"])
-def test_host_selection_json_and_config_are_bounded_before_launch(tmp_path: Path, boundary: str) -> None:
+@pytest.mark.parametrize("boundary,limit,reason", [("pins", MAX_FILE, "^file-bound"), ("policy", MAX_POLICY_FILE, "^policy-file-bound"), ("config", MAX_FILE, "^file-bound")])
+def test_host_selection_json_and_config_are_bounded_before_launch(tmp_path: Path, boundary: str, limit: int, reason: str) -> None:
     executable = installation(tmp_path / "venv")
     selected = tmp_path / "selected.json"
     if boundary == "config":
         selected = executable.parent.parent / "pyvenv.cfg"
     with selected.open("wb") as stream:
-        stream.truncate(MAX_FILE + 1)
-    with pytest.raises(VerificationError, match="file-bound"):
+        stream.truncate(limit + 1)
+    with pytest.raises(VerificationError, match=reason):
         bounded_call(boundary, selected, executable, tmp_path / "output")
     assert not (tmp_path / "output").exists()
 
