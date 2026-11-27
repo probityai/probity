@@ -970,11 +970,11 @@ def approver_rows() -> list[tuple[str, str, object]]:
          lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("lead", "ops"))])),
         ("MA9", "one listed approver's credential is refreshed between the allow and the intent: the same parties",
          lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", refreshed(named("ops", "lead"), 1))])),
-        ("MA10", "the intent's approver is two strings, issuer then subject, of the allow's one approver: malformed, "
-                 "and not the parties of its permit",
+        ("MA10", ("the intent's approver is two strings, issuer then subject, of the allow's one approver: malformed, "
+                  "and not the parties of its permit"),
          lambda d: identity_case(d, [one_counted(named("ops")), identity_call("intent", spelled(False))])),
-        ("MA11", "the intent's approver is the same two strings, subject then issuer: malformed, and not the parties "
-                 "of its permit",
+        ("MA11", ("the intent's approver is the same two strings, subject then issuer: malformed, and not the parties "
+                  "of its permit"),
          lambda d: identity_case(d, [one_counted(named("ops")), identity_call("intent", spelled(True))])),
     ]
 

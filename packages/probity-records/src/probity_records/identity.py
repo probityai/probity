@@ -382,9 +382,9 @@ def _verify_jws(alg: str, jwk: Mapping[str, Any], signing_input: bytes, sig: byt
             der = encode_dss_signature(int.from_bytes(sig[:32], "big"), int.from_bytes(sig[32:], "big"))
             key.verify(der, signing_input, ec.ECDSA(hashes.SHA256()))
         elif alg == "RS256" and jwk.get("kty") == "RSA":
-            key = rsa.RSAPublicNumbers(int.from_bytes(unb64url(jwk["e"]), "big"),
-                                       int.from_bytes(unb64url(jwk["n"]), "big")).public_key()
-            key.verify(sig, signing_input, padding.PKCS1v15(), hashes.SHA256())
+            rsa_key = rsa.RSAPublicNumbers(int.from_bytes(unb64url(jwk["e"]), "big"),
+                                           int.from_bytes(unb64url(jwk["n"]), "big")).public_key()
+            rsa_key.verify(sig, signing_input, padding.PKCS1v15(), hashes.SHA256())
         else:
             return False
     except (InvalidSignature, ValueError, KeyError, TypeError):
