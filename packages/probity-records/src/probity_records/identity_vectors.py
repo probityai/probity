@@ -247,6 +247,10 @@ def _many_approver_vectors() -> list[dict[str, Any]]:
                 v["approvers"] = ["bob@example.com", "carol@example.com"]
         return fn
 
+    def deny_names_both(v: dict[str, Any]) -> None:
+        _approvers(v, "bob", "carol")
+        v["counted"] = []
+
     return [
         _mut("ID41", "two approvers, both counted signers of the approval, named as a list: strict",
              lambda v: _approvers(v, "bob", "carol")),
@@ -267,8 +271,7 @@ def _many_approver_vectors() -> list[dict[str, Any]]:
         _mut("ID52", "a deny resting on two people's bindings names one of them: a deny counts nobody, strict",
              lambda v: (v.__setitem__("approvers", ["bob@example.com", "carol@example.com"]),
                         v.__setitem__("counted", []))),
-        _mut("ID53", "a deny resting on two people's bindings names both as a list: strict",
-             lambda v: (_approvers(v, "bob", "carol"), v.__setitem__("counted", []))),
+        _mut("ID53", "a deny resting on two people's bindings names both as a list: strict", deny_names_both),
         _auto("ID54", "autonomous deny resting on two people's bindings names one of them: autonomous",
               lambda v: (autonomous("bob")(v), v.__setitem__("counted", []))),
         _mut("ID55", "the approver list written in the other order: the verdict is the same, strict",
