@@ -14,10 +14,23 @@ from joint_common import CASES, NONCLAIMS, PROFILE, child_environment, expected_
 from probity_observer.crypto import VerificationError
 
 
+# Population bounds of the host's walk over the selected reader environment.
+# They exist so that an altered or hostile installation cannot make the host
+# enumerate and hash without end; they are not a size budget for the reader.
+# They are set from the measured closure of the locked reader install, with
+# about twice its size as headroom. Measured 26 Nov 2026 on a CPython 3.13
+# `python -m venv` plus `pip install --require-hashes` of
+# joint-recovery-2026-10-02/requirements-reader.lock (the same steps CI runs):
+# 17,002 files, 20,425 entries, 180 MB. The observer's dependency on
+# probity-records brings agent-evidence-vectors (about 12,000 files, almost all
+# its corpora/ data) and cel-expr-python (about 1,600 files) into that closure;
+# before it the same lock gave 2,967 files, which is what the old bounds of
+# 4,096 files and 8,192 entries were sized against.
+# tests/test_closure_bounds.py holds these bounds above the measured closure.
 MAX_INSTALL_FILE = 64 * 1024 * 1024
 MAX_INSTALL_BYTES = 512 * 1024 * 1024
-MAX_INSTALL_FILES = 4096
-MAX_INSTALL_ENTRIES = 8192
+MAX_INSTALL_FILES = 32768
+MAX_INSTALL_ENTRIES = 65536
 MAX_INSTALL_DEPTH = 32
 
 

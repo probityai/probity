@@ -21,10 +21,22 @@ from probity_pydantic_recovery.common import (
     write,
 )
 
+# Population bounds of the host's walk over the selected reader environment.
+# They exist so that an altered or hostile installation cannot make the host
+# enumerate and hash without end; they are not a size budget for the reader.
+# They are set from the measured closure of the locked reader install, with
+# about twice its size as headroom. Measured 26 Nov 2026 on a CPython 3.13
+# `python -m venv` plus `pip install --require-hashes` of
+# requirements-reader.lock (the same steps CI runs): 15,197 files, 18,452
+# entries, 127 MB. The observer's dependency on probity-records brings
+# agent-evidence-vectors (about 12,000 files, almost all its corpora/ data) and
+# cel-expr-python (about 1,600 files) into that closure; the old bounds of 4,096
+# files and 8,192 entries were sized against the closure before it.
+# tests/test_closure_bounds.py holds these bounds above the measured closure.
 MAX_INSTALL_FILE = 64 * 1024 * 1024
 MAX_INSTALL_BYTES = 512 * 1024 * 1024
-MAX_INSTALL_FILES = 4096
-MAX_INSTALL_ENTRIES = 8192
+MAX_INSTALL_FILES = 32768
+MAX_INSTALL_ENTRIES = 65536
 MAX_INSTALL_DEPTH = 32
 
 
