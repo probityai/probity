@@ -33,8 +33,6 @@ import hashlib
 from dataclasses import dataclass
 from typing import Any
 
-from .core import is_utf8_text
-
 DEPTH = 256
 EMPTY = bytes(32)
 STAGES = ("accept", "execute", "settle", "final")
@@ -54,7 +52,12 @@ def _u16(data: bytes) -> bytes:
 
 def check_key(permit_id: Any, stage: Any) -> tuple[str, str]:
     """A (permit id, stage) the map accepts: a non-empty permit id of at most 256 bytes, one of the four stages."""
-    if not is_utf8_text(permit_id) or not 0 < len(permit_id.encode()) <= MAX_PERMIT_BYTES:
+    # This module loads by file path for the vector generator, so it imports nothing from the package.
+    try:
+        size = len(permit_id.encode()) if isinstance(permit_id, str) else 0
+    except UnicodeEncodeError:  # a lone surrogate has no UTF-8 spelling
+        size = 0
+    if not 0 < size <= MAX_PERMIT_BYTES:
         raise MapError("a permit id is a non-empty UTF-8 string of at most 256 bytes")
     if any(ord(ch) < 0x20 for ch in permit_id):
         raise MapError("a permit id may hold no control character")

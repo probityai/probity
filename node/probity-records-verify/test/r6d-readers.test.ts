@@ -22,7 +22,9 @@ for (const index of [0, 1, 2]) {
       const parts = row.tokens.user.split(".");
       parts[index] = edit(parts[index]);
       row.tokens.user = parts.join(".");
-      assert.deepEqual(judgeVerified(row), { refused: "token_malformed" });
+      // 86 digits are a 64-byte signature; one more is the canonical spelling of a 65-byte one, which does not verify.
+      const expected = index === 2 && name === "one character too many" ? "token_signature_unverified" : "token_malformed";
+      assert.deepEqual(judgeVerified(row), { refused: expected });
     });
   }
 }

@@ -99,7 +99,11 @@ def _token_with(index: int, edit: Any) -> tuple[dict[str, Any], str, dict[str, A
 @pytest.mark.parametrize("edit", [lambda s: s[:4] + " " + s[4:], lambda s: s + "A", lambda s: s + "=", lambda s: s[:3] + "\n" + s[3:]])
 def test_a_token_segment_that_is_not_canonical_base64url_is_token_malformed(index: int, edit: Any) -> None:
     principal, token, jwks = _token_with(index, edit)
-    assert verify_token(principal, token, jwks) == "token_malformed"
+    if index == 2 and edit("") == "A":
+        # 86 digits are 64 bytes; one more is the canonical spelling of a 65-byte signature, which does not verify.
+        assert verify_token(principal, token, jwks) == "token_signature_unverified"
+    else:
+        assert verify_token(principal, token, jwks) == "token_malformed"
 
 
 @pytest.mark.parametrize("text", ["a b", "aaaaa", "aa==", "aé", "aa\n", "-_-", "Zh"])
