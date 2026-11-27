@@ -5622,5 +5622,325 @@
       }
     },
     "op": "lint"
+  },
+  {
+    "description": "the 0.12.0 example schema, whose principals.approver rule declares no members, no longer lints",
+    "expected": {
+      "problems": [
+        "approver_list_undeclared:principals.approver"
+      ]
+    },
+    "id": "L7",
+    "input": {
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      }
+    },
+    "op": "lint"
+  },
+  {
+    "description": "a record sealed under the 0.12.0 example schema is refused until its approver rule declares members",
+    "expected": {
+      "refused": "schema_refused"
+    },
+    "id": "S18",
+    "input": {
+      "keys": {
+        "approver": "6c2210d0bd21a245be7c598770e9ab6d571e17a4d20210ae50f567d959e6120e",
+        "user": "d8de16ea368e2439320864eefd1b6f0dc23bbc089198b99a9efa7a43f4cb69e0"
+      },
+      "leaf": "4f51855bba6e41641170c3bfcf2b3b79",
+      "nonces": {
+        "agent/payload": "02276f0be4106c57dae87730",
+        "agent/pseudonym": "3c0f040b13303517ec8576d0",
+        "approver/payload": "b74817ab03a893cc345a3f45",
+        "approver/pseudonym": "12c5de27248f2e1cdbb12b09",
+        "session/payload": "b23ad31043089a10dec0a6f4",
+        "session/pseudonym": "99aa1ca7d1813d2919e1907b",
+        "sponsor/payload": "106b5bdc441a793e2bb16d45",
+        "sponsor/pseudonym": "dfe165612cfbd6d508952663",
+        "user/payload": "097464c836609e37d61710e9",
+        "user/pseudonym": "520720529fac33e6e17ba344"
+      },
+      "record": {
+        "approver": "carol@example.com",
+        "intent": {
+          "args": {
+            "amount": 10,
+            "to": "bob"
+          },
+          "tool": "pay"
+        },
+        "previous_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "principals": {
+          "approver": {
+            "issuer": "https://idp.example",
+            "subject": "carol"
+          },
+          "user": {
+            "issuer": "https://idp.example",
+            "subject": "alice"
+          }
+        },
+        "reasons": [
+          "within limit"
+        ],
+        "record_kind": "decision",
+        "sequence": 3,
+        "session_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "verdict": "allow"
+      },
+      "schema": {
+        "fixed": {},
+        "name": "example-decision@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "sequence",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "previous_record_sha256",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "verdict",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": true,
+            "path": "session_sha256",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": true,
+            "digestOfPersonal": false,
+            "path": "intent",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "reasons",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "approver",
+            "personal": true,
+            "subject": "approver"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "approver"
+          }
+        ],
+        "structural": [
+          "previous_record_sha256"
+        ]
+      },
+      "subjectRole": "user",
+      "subjectValue": {
+        "name": "act.1",
+        "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    "op": "seal"
+  },
+  {
+    "description": "a principals.approver rule under another subject's key would seal the list under that one key",
+    "expected": {
+      "problems": [
+        "approver_list_undeclared:principals.approver"
+      ]
+    },
+    "id": "L8",
+    "input": {
+      "schema": {
+        "fixed": {},
+        "name": "bad@2",
+        "rules": [
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.user",
+            "personal": true,
+            "subject": "user"
+          },
+          {
+            "class": "pseudonym",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals.approver",
+            "personal": true,
+            "subject": "user"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "lint"
+  },
+  {
+    "description": "a rule on the whole principals block would seal an approver list under one key",
+    "expected": {
+      "problems": [
+        "approver_list_undeclared:principals"
+      ]
+    },
+    "id": "L9",
+    "input": {
+      "schema": {
+        "fixed": {},
+        "name": "bad@2",
+        "rules": [
+          {
+            "class": "kept",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "record_kind",
+            "personal": false,
+            "subject": null
+          },
+          {
+            "class": "payload",
+            "commit": false,
+            "digestOfPersonal": false,
+            "path": "principals",
+            "personal": true,
+            "subject": "user"
+          }
+        ],
+        "structural": []
+      }
+    },
+    "op": "lint"
   }
 ]

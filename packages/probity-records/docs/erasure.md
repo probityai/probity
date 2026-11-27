@@ -26,9 +26,11 @@ Every non-kept field names the role whose key covers it: `user`, `agent`, `spons
 
 A subject key is one person's: destroying it erases that person and nobody else. A schema says which approver fields
 list several people (an approval several people gave): the rule carries `members` (JSON `"members": true`, written
-only when set). `lint_schema` requires the flag on `principals.approver`, which the identity profile defines as one
-principal or a list of several (`approver_list_undeclared:<path>`), and refuses it on a kept rule or a rule for another
-role (`members_outside_approver:<path>`). The value's JSON type never decides how many people it names: a list under an
+only when set). The identity profile defines `principals.approver` as one principal or a list of several, so
+`lint_schema` refuses every rule that could seal that list under one key (`approver_list_undeclared:<path>`): a
+non-kept rule on `principals.approver` that is not for the approver role with the flag, and a non-kept rule on the
+whole `principals` block. It refuses the flag on a kept rule or a rule for another role
+(`members_outside_approver:<path>`). The value's JSON type never decides how many people it names: a list under an
 approver rule without the flag is one approver's own value (the roles they voted in, say) and seals whole under the
 `approver` key.
 

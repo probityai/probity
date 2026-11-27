@@ -192,7 +192,8 @@ def _rule_json(r: Rule) -> dict[str, Any]:
 
 
 #: The field the identity profile defines as one principal or a list of several: its rule must say so.
-APPROVER_PRINCIPALS: Final = "principals.approver"
+PRINCIPALS: Final = "principals"
+APPROVER_PRINCIPALS: Final = f"{PRINCIPALS}.approver"
 
 
 def lint_schema(schema: Schema) -> list[str]:
@@ -225,7 +226,10 @@ def lint_schema(schema: Schema) -> list[str]:
                 problems.append(f"no_subject_role:{r.path}")
             if r.cls == PSEUDONYM and r.commit:
                 problems.append(f"pseudonym_with_commitment:{r.path}")
-            if r.path == APPROVER_PRINCIPALS and r.subject == LIST_ROLE and not r.members:
+            # The identity profile's approver may be a list of several people. Every rule that seals it must split it
+            # per member: one for the approver role with the flag, never one under another subject's key and never a
+            # rule on the whole principals block, which would carry the list under one key.
+            if (r.path == APPROVER_PRINCIPALS and not (r.subject == LIST_ROLE and r.members)) or r.path == PRINCIPALS:
                 problems.append(f"approver_list_undeclared:{r.path}")
         if r.members and (r.cls == KEPT or r.subject != LIST_ROLE):
             problems.append(f"members_outside_approver:{r.path}")
@@ -387,6 +391,18 @@ def _one_person_per_key(roles: Mapping[str, str], keys: Mapping[str, bytes], sub
             raise EnvelopeError("field_names_several_subjects", f"{other} and {subject} have one key")
 
 
+def _key_bytes(keys: Mapping[str, Any]) -> dict[str, bytes]:
+    """The subject keys as bytes: any bytes-like value (bytes, bytearray, memoryview) is its bytes, so one key compares
+    equal to itself in every spelling; anything else is refused ``subject_key_not_bytes``."""
+    out: dict[str, bytes] = {}
+    for subject, key in keys.items():
+        try:
+            out[subject] = bytes(memoryview(key))
+        except TypeError:
+            raise EnvelopeError("subject_key_not_bytes", f"the {subject} key is a {type(key).__name__}") from None
+    return out
+
+
 def seal(
     schema: Schema,
     record: Mapping[str, Any],
@@ -406,6 +422,7 @@ def seal(
     problems = lint_schema(schema)
     if problems:
         raise EnvelopeError("schema_refused", "; ".join(problems))
+    keys = _key_bytes(keys)
     leaf = os.urandom(LEAF_BYTES) if leaf is None else leaf
     if len(leaf) != LEAF_BYTES:
         raise EnvelopeError("leaf_id_length")

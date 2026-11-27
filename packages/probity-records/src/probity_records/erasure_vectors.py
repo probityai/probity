@@ -322,6 +322,21 @@ def _member_vectors(add: Any) -> None:
                                   Rule("note", PAYLOAD, "user", members=True)))  # fmt: skip
     add("L6", "an approver principals rule must declare members, and only an approver rule may", "lint",
         {"schema": undeclared.to_json()})
+    # The example schema as 0.12.0 released it: its approver rules declare no members. This release refuses it.
+    released = Schema(SCHEMA.name, tuple(Rule(r.path, r.cls, r.subject, personal=r.personal,
+                                              digest_of_personal=r.digest_of_personal, commit=r.commit)
+                                         for r in SCHEMA.rules), SCHEMA.structural)  # fmt: skip
+    add("L7", "the 0.12.0 example schema, whose principals.approver rule declares no members, no longer lints", "lint",
+        {"schema": released.to_json()})
+    add("S18", "a record sealed under the 0.12.0 example schema is refused until its approver rule declares members",
+        "seal", _seal_input(released, record(), KEYS, "user"))
+    other = Schema("bad@2", (Rule("principals.user", PSEUDONYM, "user", personal=True),
+                             Rule("principals.approver", PSEUDONYM, "user", personal=True)))  # fmt: skip
+    add("L8", "a principals.approver rule under another subject's key would seal the list under that one key", "lint",
+        {"schema": other.to_json()})
+    whole = Schema("bad@2", (Rule("record_kind", KEPT), Rule("principals", PAYLOAD, "user", personal=True)))
+    add("L9", "a rule on the whole principals block would seal an approver list under one key", "lint",
+        {"schema": whole.to_json()})
 
 
 def check(rows: list[dict[str, Any]]) -> list[str]:
