@@ -40,7 +40,7 @@ from typing import Any, Final
 
 from .canonical_identity import PROFILES, CanonicalIdentity, IdentityStringError, Ref
 from .clock import from_datetime
-from .core import TOKEN_MAX_DEPTH, admitted_loads, canonical
+from .core import TOKEN_MAX_DEPTH, admitted_loads, value_key
 from .digests import IdentityDigestError, act_chain_digest
 from .grants import ts
 from .identity import (
@@ -344,9 +344,9 @@ def _possession(tokens: list[_Token], request: RequestFacts | None,
     if not bound:
         return None
     cnf = bound[0].claims["cnf"]
-    # Equal as RFC 8785 bytes, as in the TypeScript twin: Python's == would take true for 1 and compare nested
-    # values that the twin's member-by-member check never equates.
-    if any(canonical(t.claims["cnf"]) != canonical(cnf) for t in bound) or not isinstance(cnf, Mapping):
+    # Equal as RFC 8785 bytes (value_key), as in the TypeScript twin: Python's == would take true for 1, and canonical
+    # would raise on a received integer beyond 2**53 (1e16 and 10000000000000000 are one number to both readers).
+    if any(value_key(t.claims["cnf"]) != value_key(cnf) for t in bound) or not isinstance(cnf, Mapping):
         raise _refuse("possession_not_the_grant_key", "the presented tokens are bound to different keys")
     facts = request or RequestFacts(method="", url="")
     # the DPoP proof's ath binds one token: the agent's when it is key-bound, else the user's, else the sponsor's
