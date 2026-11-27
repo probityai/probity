@@ -6,7 +6,7 @@
 import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
 import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
-import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parsePy, ts } from "./verify.ts";
+import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parseReceived, ts } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -41,35 +41,31 @@ const sha256Hex = (data: Buffer | string): string => createHash("sha256").update
 const isInt = (holder: J, key: string): boolean => typeof holder[key] === "number" && Number.isInteger(holder[key]) && !isFloat(holder, key, holder[key]);
 const utf8Len = (s: string): number => Buffer.byteLength(s, "utf8");
 
-// --- strict JSON segments: a repeated member is refused, as Python's object_pairs_hook refuses it ----------------
+// --- strict JSON segments: read like probity_records.core.admitted_loads with TOKEN_MAX_DEPTH ------------------
 
 class Duplicate extends Error {}
 
-function noDuplicates(text: string): void {
-  const stack: { obj: boolean; keys: Set<string>; expectKey: boolean }[] = [];
+/** The deepest nesting, in containers, a token segment may have (core.TOKEN_MAX_DEPTH). */
+const TOKEN_MAX_DEPTH = 32;
+const STRICT_UTF8 = new TextDecoder("utf-8", { fatal: true });
+
+/** Refuse nesting deeper than TOKEN_MAX_DEPTH before the parse can recurse; brackets inside strings do not count. */
+function refuseDeep(text: string): void {
+  let depth = 0, inString = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
-    if (ch === '"') {
-      let j = i + 1;
-      while (j < text.length && text[j] !== '"') j += text[j] === "\\" ? 2 : 1;
-      const top = stack[stack.length - 1];
-      if (top?.obj && top.expectKey) {
-        const key = JSON.parse(text.slice(i, j + 1)) as string;
-        if (top.keys.has(key)) throw new Duplicate("duplicate");
-        top.keys.add(key);
-        top.expectKey = false;
-      }
-      i = j;
-    } else if (ch === "{" || ch === "[") stack.push({ obj: ch === "{", keys: new Set(), expectKey: ch === "{" });
-    else if (ch === "}" || ch === "]") stack.pop();
-    else if (ch === ",") { const top = stack[stack.length - 1]; if (top?.obj) top.expectKey = true; }
+    if (inString) { if (ch === "\\") i += 1; else if (ch === '"') inString = false; }
+    else if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") { depth += 1; if (depth > TOKEN_MAX_DEPTH) throw new Error("jcs_refused:TooDeep"); }
+    else if (ch === "}" || ch === "]") depth -= 1;
   }
 }
 
 function segmentJson(segment: string): J {
-  const text = Buffer.from(segment, "base64url").toString("utf8");
-  noDuplicates(text);
-  return parsePy(text);
+  const raw = Buffer.from(segment, "base64url");
+  refuseDeep(STRICT_UTF8.decode(raw));  // invalid UTF-8 throws here, as the Python reader refuses it
+  try { return parseReceived(raw); }    // jcs-admit: a repeated member, a lone surrogate, NaN
+  catch (e) { throw (e as Error).message === "jcs_refused:DuplicateMember" ? new Duplicate("duplicate") : e; }
 }
 
 // --- the trust bundle -------------------------------------------------------------------------------------------
