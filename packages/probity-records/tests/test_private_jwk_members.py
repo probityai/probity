@@ -281,6 +281,12 @@ def _select(member: str) -> None:
     assert caught.value.code == "jws_key_invalid"
 
 
+def _raw(member: str) -> None:
+    # The exception class is named when the check runs, not when the table is built: on code before the class
+    # existed the module still collects, and each check fails on its own.
+    _raises(identity.PrivateKeyMaterial, verified_identities._raw)(member)
+
+
 READERS: dict[str, Any] = {
     "identity.check_principal": _principal,
     "identity._verify_jws": _refuses_signature(lambda jwk, sig: identity._verify_jws("EdDSA", jwk, b"data", sig)),
@@ -295,7 +301,7 @@ READERS: dict[str, Any] = {
     "trust_bundle._public": _raises(AnchorRefused, trust_bundle._public),
     "trust_bundle.parse_anchor": _anchor,
     "verified_identities._issuer": _bundle,
-    "verified_identities._raw": _raises(identity.PrivateKeyMaterial, verified_identities._raw),
+    "verified_identities._raw": _raw,
 }
 
 

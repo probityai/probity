@@ -20,8 +20,8 @@ from probity_records import registry
 PACKAGE = Path(__file__).resolve().parents[1]
 PARITY = PACKAGE / "tests" / "parity_r6c"
 sys.path.insert(0, str(PARITY))
-from gen_cases import verdict  # noqa: E402
-from signed_edits import HOLDER_CERT, _proof_parts, _proof_signer, sign_proof  # noqa: E402
+from gen_cases import verdict
+from signed_edits import HOLDER_CERT, _proof_parts, _proof_signer, sign_proof
 
 ISSUER = "https://passport.example.com"
 CLOCK = 1_800_000_000
