@@ -6,7 +6,7 @@
 import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
 import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
-import { IdentityDigestError, actChainDigest, cnfProblem, hasPrivateMember, isFloat, jwkThumbprint, parseReceived, publicJwk, strictB64url, ts } from "./verify.ts";
+import { IdentityDigestError, actChainDigest, canonical, cnfProblem, hasPrivateMember, isFloat, jwkThumbprint, parseReceived, publicJwk, strictB64url, ts } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -417,8 +417,8 @@ function possession(tokens: Token[], request: RequestFacts | null, at: string): 
   const bound = tokens.filter((t) => "cnf" in t.claims);
   if (!bound.length) return null;
   const cnf = bound[0].claims.cnf;
-  const same = (a: J, b: J): boolean => isObj(a) && isObj(b) && sameKeys(a, Object.keys(b)) && Object.keys(b).every((k) => a[k] === b[k]);
-  if (!isObj(cnf) || bound.some((t) => !same(t.claims.cnf, cnf))) {
+  // Equal as RFC 8785 bytes, as in Python: a member-by-member === never equates two equal nested values.
+  if (!isObj(cnf) || bound.some((t) => canonical(t.claims.cnf) !== canonical(cnf))) {
     refuse("possession_not_the_grant_key");
   }
   const facts = request ?? { method: "", url: "", content: null, dpop: null, clientCertificate: null };

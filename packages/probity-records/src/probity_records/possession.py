@@ -409,7 +409,8 @@ _RECORD_MEMBERS = {"dpop": {"iat", "jkt", "jti", "method"}, "mtls": {"method", "
 
 def possession_record_problem(record: Any, cnf: Any) -> str | None:
     """None when ``record`` is a well-formed possession record for the key the grant's ``cnf`` confirms."""
-    if not isinstance(record, dict) or record.get("method") not in _RECORD_MEMBERS:
+    if not isinstance(record, dict) or not isinstance(record.get("method"), str) \
+            or record["method"] not in _RECORD_MEMBERS:  # a list or object method is unhashable: refuse, never raise
         return "possession_record_malformed"
     method = record["method"]
     if set(record) != _RECORD_MEMBERS[method]:
