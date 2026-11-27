@@ -55,13 +55,23 @@ def _refuse_inexact_ints(value: Any, depth: int = 0) -> None:
             _refuse_inexact_ints(item, depth + 1)
 
 
-def _jcs(raw: bytes) -> bytes:
-    """jcs-admit over ``raw``; a refusal is ``ValueError("jcs_refused:<native variant>")``, the code
-    the TypeScript twin reports for the same input."""
+class JsonRefused(ValueError):
+    """jcs-admit refused the bytes: ``str`` is ``jcs_refused:<native variant>``, the code the TypeScript twin reports
+    for the same input, and ``variant`` is the variant alone (``TooDeep``, ``StringNotScalar``, ``DuplicateMember``,
+    ``Syntax``, ``NonFiniteNumber`` and the rest), so a caller maps it to its own registered refusal code."""
+
+    def __init__(self, variant: str) -> None:
+        super().__init__(f"jcs_refused:{variant}")
+        self.variant = variant
+
+
+def _jcs(raw: bytes, *, max_depth: int = jcs_admit.DEFAULT_MAX_DEPTH,
+         max_bytes: int | None = jcs_admit.DEFAULT_MAX_BYTES) -> bytes:  # fmt: skip
+    """jcs-admit over ``raw``; a refusal is ``JsonRefused``."""
     try:
-        return jcs_admit.admit(raw)
+        return jcs_admit.admit_with(raw, max_depth=max_depth, max_bytes=max_bytes)
     except jcs_admit.JcsError as exc:
-        raise ValueError(f"jcs_refused:{exc.variant}") from exc
+        raise JsonRefused(exc.variant) from exc
 
 
 def canonical(value: Any) -> bytes:
@@ -75,15 +85,18 @@ def canonical(value: Any) -> bytes:
     return _jcs(raw.encode("ascii"))
 
 
-def admitted_loads(raw: bytes | str) -> Any:
-    """Parse RECEIVED bytes after jcs-admit has read them raw.
+def admitted_loads(raw: bytes | str, *, max_depth: int = jcs_admit.DEFAULT_MAX_DEPTH,
+                   max_bytes: int | None = jcs_admit.DEFAULT_MAX_BYTES) -> Any:  # fmt: skip
+    """Parse RECEIVED bytes after jcs-admit has read them raw: the package's one reader of untrusted JSON.
 
-    A duplicate member, invalid UTF-8 and a lone surrogate (raw or escaped) are refused before
-    ``json.loads`` can keep the last duplicate or decode the bytes into something other than what
-    was signed. The TypeScript twin's ``parseReceived`` does the same.
+    A duplicate member, invalid UTF-8, a lone surrogate (raw or escaped), NaN, a number no double holds and nesting
+    deeper than ``max_depth`` containers are refused, as ``JsonRefused``, before ``json.loads`` can keep the last
+    duplicate, recurse past the interpreter's limit or decode the bytes into something other than what was signed.
+    A value this returns therefore encodes as UTF-8 and re-serializes without error. ``max_bytes`` None removes the
+    size cap for a caller that bounds its input itself. The TypeScript twin's ``parseReceived`` does the same.
     """
     data = raw.encode("utf-8", "surrogatepass") if isinstance(raw, str) else bytes(raw)
-    _jcs(data)
+    _jcs(data, max_depth=max_depth, max_bytes=max_bytes)
     return json.loads(data)
 
 

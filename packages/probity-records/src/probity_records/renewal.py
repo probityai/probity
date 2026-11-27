@@ -120,6 +120,15 @@ def sign(signer: SignerLike, domain: bytes, body: Mapping[str, Any]) -> dict[str
     return {"body": dict(body), "sig": b64(signer.sign(domain + canonical(dict(body))))}
 
 
+def _signed_bytes(domain: bytes, body: Mapping[str, Any]) -> bytes:
+    """``domain`` and the JCS bytes of a received body; a body JCS cannot print (a lone surrogate, a float NaN, an
+    integer past 2**53, a non-string member name, nesting past 256) is ``renewal_record_malformed``, never a raise."""
+    try:
+        return domain + canonical(body)
+    except (TypeError, ValueError) as exc:
+        raise RenewalError("renewal_record_malformed", f"the body has no JCS form: {exc}") from exc
+
+
 def _parts(signed: Any) -> tuple[dict[str, Any], bytes]:
     if (
         not isinstance(signed, Mapping)
@@ -134,7 +143,7 @@ def open_signed(signed: Any, domain: bytes, public: Ed25519PublicKey) -> dict[st
     """The body when ``public`` signed it under ``domain``; ``renewal_signature_unverified`` otherwise."""
     body, sig = _parts(signed)
     try:
-        public.verify(sig, domain + canonical(body))
+        public.verify(sig, _signed_bytes(domain, body))
     except InvalidSignature:
         raise RenewalError("renewal_signature_unverified") from None
     return body
@@ -247,7 +256,7 @@ def open_certificate(signed: Any, roots: Sequence[Ed25519PublicKey]) -> Certific
     body, sig = _parts(signed)
     for root in roots:
         try:
-            root.verify(sig, CERTIFICATE_DOMAIN + canonical(body))
+            root.verify(sig, _signed_bytes(CERTIFICATE_DOMAIN, body))
         except InvalidSignature:
             continue
         cert = check_certificate_body(body)
@@ -321,7 +330,7 @@ def open_request(
     """
     body, sig = _parts(signed)
     shaped = check_request_body(body)
-    message = REQUEST_DOMAIN + canonical(body)
+    message = _signed_bytes(REQUEST_DOMAIN, body)
     for key in keys:
         try:
             key.verify(sig, message)
@@ -373,7 +382,7 @@ def open_grant(signed: Any, roots: Sequence[Ed25519PublicKey]) -> dict[str, Any]
     body, sig = _parts(signed)
     for root in roots:
         try:
-            root.verify(sig, GRANT_DOMAIN + canonical(body))
+            root.verify(sig, _signed_bytes(GRANT_DOMAIN, body))
         except InvalidSignature:
             continue
         check_grant_body(body)

@@ -26,7 +26,7 @@ from typing import Any, Final
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from . import witness as w
-from .core import admitted_loads, key_id, open_envelope
+from .core import JsonRefused, admitted_loads, key_id, open_envelope
 from .grants import ts
 from .identity import jwk_thumbprint, unb64url
 from .revocation import RevocationState
@@ -131,36 +131,10 @@ def parse_anchors(entries: Any) -> tuple[Anchor, ...]:
 # --- RFC 9162 inclusion -------------------------------------------------------------------------------------------
 
 
-def inclusion_proof(index: int, hashes: Sequence[bytes]) -> list[bytes]:
-    """The RFC 9162 section 2.1.3.1 audit path of leaf ``index`` in the tree over leaf ``hashes``."""
-    if not 0 <= index < len(hashes):
-        raise ValueError("inclusion_index_out_of_range")
-    if len(hashes) == 1:
-        return []
-    k = w._split(len(hashes))
-    if index < k:
-        return [*inclusion_proof(index, hashes[:k]), w.root(hashes[k:])]
-    return [*inclusion_proof(index - k, hashes[k:]), w.root(hashes[:k])]
-
-
-def verify_inclusion(index: int, size: int, leaf: bytes, proof: Sequence[bytes], head: bytes) -> bool:
-    """RFC 9162 section 2.1.3.2: whether ``leaf`` (a leaf hash) sits at ``index`` of the tree of ``size`` whose root
-    is ``head``."""
-    if not 0 <= index < size:
-        return False
-    fn, sn, r = index, size - 1, leaf
-    for p in proof:
-        if sn == 0:
-            return False
-        if fn & 1 or fn == sn:
-            r = w.node_hash(p, r)
-            if not fn & 1:
-                while fn and not fn & 1:
-                    fn, sn = fn >> 1, sn >> 1
-        else:
-            r = w.node_hash(r, p)
-        fn, sn = fn >> 1, sn >> 1
-    return sn == 0 and r == head
+# One implementation of each: ``witness.inclusion_proof`` builds an audit path and ``witness.verify_inclusion`` checks
+# one, refusing an index or size that is not an int (a float or a bool in a received document is not a position).
+inclusion_proof = w.inclusion_proof
+verify_inclusion = w.verify_inclusion
 
 
 # --- the signing time a witness quorum gives ----------------------------------------------------------------------
@@ -230,7 +204,11 @@ def verify_anchored(envelope: Any, bundle: Any, *, revocations: RevocationState 
     anchor = next(a for a in anchors if a.key_id == signer)
     if anchor.status == "revoked":
         raise AnchorRefused("key_revoked", f"anchor {anchor.thumbprint} is revoked in the bundle")
-    statement = admitted_loads(payload)
+    try:
+        statement = admitted_loads(payload)
+    except JsonRefused as exc:
+        raise AnchorRefused("anchor_statement_malformed", f"the signed payload is not admissible JSON: {exc.variant}") \
+            from exc
     if not isinstance(statement, Mapping) or statement.get("predicateType") not in anchor.predicate_types:
         raise AnchorRefused("anchor_predicate_not_authorized", f"anchor {anchor.role} may not sign this type")
     revoked_at = None

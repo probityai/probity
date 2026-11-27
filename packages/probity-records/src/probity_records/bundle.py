@@ -55,7 +55,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from . import witness
-from .core import pae
+from .core import JsonRefused, admitted_loads, pae
 from .receipt_map import MapError, Proof, check_key, map_key
 
 BUNDLE_FORMAT = "probity-record-bundle/v1"
@@ -133,14 +133,15 @@ class RecordFacts:
 
 
 #: A reader verifies one record's bytes under its source key and returns the facts its leaf must state; it raises
-#: ValueError with the reason when the record is not admissible.
+#: ValueError with the reason when the record is not admissible. It parses the bytes with ``core.admitted_loads``, the
+#: package's one reader of untrusted JSON, so hostile bytes are refused rather than raised.
 Reader = Callable[[bytes, SourceKey], RecordFacts]
 
 
 def read_evaluator(raw: bytes, key: SourceKey) -> RecordFacts:
     """A control-decision DSSE envelope signed by ``key``: the payload is the record, its SHA-256 its identity."""
     try:
-        envelope = json.loads(raw)
+        envelope = admitted_loads(raw)
         if not isinstance(envelope, dict) or envelope.get("payloadType") != PAYLOAD_TYPE:
             raise ValueError("not a DSSE in-toto envelope")
         signatures = envelope["signatures"]
@@ -151,7 +152,7 @@ def read_evaluator(raw: bytes, key: SourceKey) -> RecordFacts:
         payload = base64.b64decode(envelope["payload"], validate=True)
         Ed25519PublicKey.from_public_bytes(key.public_raw).verify(
             base64.b64decode(signatures[0]["sig"], validate=True), pae(PAYLOAD_TYPE, payload))
-        body = json.loads(payload)
+        body = admitted_loads(payload)
     except InvalidSignature as exc:
         raise ValueError("the record's signature does not verify under its source key") from exc
     except (KeyError, TypeError, binascii.Error) as exc:
@@ -295,9 +296,9 @@ def _record(doc: Any, leaf: bytes, readers: Mapping[str, Reader]) -> tuple[dict[
     if not isinstance(key.source_id, str) or len(key.public_raw) != 32:
         raise BundleRefused("bundle_malformed", "a record source is a string id and a 32-byte Ed25519 key")
     try:
-        entry = json.loads(leaf)
-    except ValueError as exc:
-        raise BundleRefused("bundle_leaf_malformed", "the leaf bytes are not JSON") from exc
+        entry = admitted_loads(leaf)
+    except JsonRefused as exc:
+        raise BundleRefused("bundle_leaf_malformed", f"the leaf bytes are not admissible JSON: {exc.variant}") from exc
     if not isinstance(entry, dict) or entry.get("format") != LEAF_FORMAT or canonical(entry) != leaf:
         raise BundleRefused("bundle_leaf_malformed", "not a canonical record leaf")
     reader = readers.get(key.kind) if isinstance(key.kind, str) else None
@@ -310,7 +311,12 @@ def _record(doc: Any, leaf: bytes, readers: Mapping[str, Reader]) -> tuple[dict[
     admitted = entry.get("admittedAtMs")
     if type(admitted) is not int or not 0 <= admitted <= MAX_INT:
         raise BundleRefused("bundle_leaf_malformed", "admittedAtMs is an integer")
-    if leaf_entry(key, facts, admitted) != entry:
+    # Bytes, never values: Python holds True == 1 == 1.0, so a value compare would grade a leaf the log never writes.
+    try:
+        stated = canonical(leaf_entry(key, facts, admitted))
+    except (TypeError, ValueError) as exc:  # a caller's reader returned facts that are not JSON text
+        raise BundleRefused("bundle_record_invalid", f"the record's facts do not encode: {type(exc).__name__}") from exc
+    if stated != leaf:
         raise BundleRefused("bundle_record_mismatch", "the record does not state its leaf")
     return entry, key.key_id
 
@@ -327,12 +333,14 @@ def _map_status(cp: witness.Checkpoint, doc: Any, entry: dict[str, Any], index: 
         raise BundleRefused("bundle_malformed", "map is {commitment, proof}")
     commitment_index, commitment = _included(cp, doc["commitment"], "map commitment leaf")
     try:
-        c = json.loads(commitment)
+        c = admitted_loads(commitment)
         root = bytes.fromhex(c["root"])
         proof = Proof.from_doc(doc["proof"])
     except (ValueError, KeyError, TypeError, MapError) as exc:
         raise BundleRefused("bundle_map_invalid", f"the map commitment or proof is malformed: {exc}") from exc
-    if c.get("format") != COMMITMENT_FORMAT or canonical(c) != commitment or c.get("coversSize") != commitment_index:
+    covers = c.get("coversSize")
+    if c.get("format") != COMMITMENT_FORMAT or canonical(c) != commitment or type(covers) is not int \
+            or covers != commitment_index:
         raise BundleRefused("bundle_map_invalid", "not a canonical map commitment leaf for its own position")
     if c.get("tenant") != entry["tenant"] or not index < commitment_index:
         raise BundleRefused("bundle_map_invalid", "the commitment does not cover this record")

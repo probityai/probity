@@ -81,6 +81,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_signing_time_unbound"
   },
   {
+   "code": "anchor_statement_malformed",
+   "check": "key.anchor",
+   "meaning": "the payload an anchor signed is not admissible JSON (repeated member, lone surrogate, NaN, nesting too deep)",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/anchor_statement_malformed"
+  },
+  {
    "code": "anchor_unknown",
    "check": "key.anchor",
    "meaning": "no signing anchor the pinned trust bundle lists signed the statement",

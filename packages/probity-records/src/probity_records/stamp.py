@@ -35,9 +35,7 @@ verifier received. The format and its reasons are in ``docs/verified-identities.
 from __future__ import annotations
 
 import base64
-import binascii
 import hashlib
-import json
 import secrets
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -54,7 +52,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 from .canonical_identity import CanonicalIdentity, IdentityStringError
 from .clock import NS_PER_S
-from .core import canonical, sha256_hex
+from .core import admitted_loads, canonical, sha256_hex
 from .digests import is_digest, stamp_digest
 from .signing import verify_delegation
 
@@ -388,10 +386,10 @@ def window_certificate(headers: Headers) -> dict[str, Any]:
         raise StampRefused("stamp_window_malformed", "the window field is given more than once")
     try:
         raw = base64.b64decode(values[0], validate=True)
-        certificate = json.loads(raw)
+        certificate = admitted_loads(raw)  # the one strict reader: deep nesting or a lone surrogate is refused
         if not isinstance(certificate, dict) or canonical(certificate) != raw:
             raise ValueError("not canonical")
-    except (binascii.Error, ValueError) as exc:
+    except ValueError as exc:  # binascii.Error, JsonRefused and a value JCS cannot print are all ValueError
         raise StampRefused("stamp_window_malformed", "the window field is base64 of a canonical certificate") from exc
     return certificate
 

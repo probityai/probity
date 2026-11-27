@@ -37,6 +37,7 @@ Each listed anchor key is tried against the envelope; its unsigned `keyid` is ne
 |---|---|
 | no anchor key verifies the signature | `anchor_unknown` |
 | the anchor's status is `revoked` | `key_revoked` |
+| the signed payload is not admissible JSON (a repeated member, a lone surrogate, NaN, nesting past 128) | `anchor_statement_malformed` |
 | the statement's `predicateType` is not one the anchor may sign | `anchor_predicate_not_authorized` |
 | the anchor is `retired`, has a `notAfter`, or its key is on the signed revocation list, and no witnessed tree head bounds the signing time | `anchor_signing_time_unbound` |
 | the witnessed bound is before `notBefore` or after `notAfter` | `anchor_signed_outside_window` |
