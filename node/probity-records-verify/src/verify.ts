@@ -899,6 +899,18 @@ const SOURCES = ["jwt-access-token", "id-token", "jwt-assertion", "id-jag"];
 const AUTH = ["none", "client_secret_post", "client_secret_basic", "client_secret_jwt", "private_key_jwt", "tls_client_auth", "self_signed_tls_client_auth"];
 const THUMB: Record<string, string[]> = { RSA: ["e", "kty", "n"], EC: ["crv", "kty", "x", "y"], OKP: ["crv", "kty", "x"] };
 
+/**
+ * The bytes of one unpadded base64url segment, read only in its canonical spelling; throws otherwise. This is
+ * probity_records.identity.unb64url: Node's own `Buffer.from(text, "base64url")` skips a space or a newline and drops
+ * a stray last character, so one token would have many spellings and the two readers would answer differently.
+ */
+export function strictB64url(text: string): Buffer {
+  if (typeof text !== "string" || !/^[A-Za-z0-9_-]*$/.test(text) || text.length % 4 === 1) throw new Error("not base64url");
+  const out = Buffer.from(text, "base64url");
+  if (out.toString("base64url") !== text) throw new Error("non-canonical base64url");
+  return out;
+}
+
 export function jwkThumbprint(jwk: J): string {
   const m = THUMB[String(jwk.kty)];
   if (!m || m.some((k) => !(k in jwk))) throw new Error("jwk_unsupported");

@@ -9,7 +9,7 @@ import { lstatSync, readFileSync } from "node:fs";
 import { isIP } from "node:net";
 import { join } from "node:path";
 import { type BareItem, type InnerList, type Member, Decimal, SFError, Token, parseDictionary, reserialize, serializeInnerList, serializeItem, serializeMember } from "./sf.ts";
-import { isFloat, parseReceived } from "./verify.ts";
+import { isFloat, parseReceived, strictB64url } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -226,13 +226,6 @@ function readRequest(raw: Buffer): Request {
 /** RFC 7638 thumbprint of an OKP key (RFC 8037 Appendix A.3), base64url without padding. */
 export function jwkThumbprint(key: J): string {
   return createHash("sha256").update(JSON.stringify({ crv: key.crv, kty: key.kty, x: key.x })).digest("base64url");
-}
-
-function strictB64url(text: string): Buffer {
-  if (!/^[A-Za-z0-9_-]*$/.test(text) || text.length % 4 === 1) throw new Error("not base64url");
-  const out = Buffer.from(text, "base64url");
-  if (out.toString("base64url") !== text) throw new Error("non-canonical base64url");
-  return out;
 }
 
 function readDirectory(raw: Buffer): Map<string, J> {

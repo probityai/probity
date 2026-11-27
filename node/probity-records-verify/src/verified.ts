@@ -6,7 +6,7 @@
 import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
 import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
-import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parseReceived, ts } from "./verify.ts";
+import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parseReceived, strictB64url, ts } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -62,7 +62,7 @@ function refuseDeep(text: string): void {
 }
 
 function segmentJson(segment: string): J {
-  const raw = Buffer.from(segment, "base64url");
+  const raw = strictB64url(segment);  // identity.unb64url: only the canonical spelling is read
   refuseDeep(STRICT_UTF8.decode(raw));  // invalid UTF-8 throws here, as the Python reader refuses it
   try { return parseReceived(raw); }    // jcs-admit: a repeated member, a lone surrogate, NaN
   catch (e) { throw (e as Error).message === "jcs_refused:DuplicateMember" ? new Duplicate("duplicate") : e; }
@@ -135,7 +135,8 @@ function parseIssuer(url: string, entry: J): PinnedKey[] {
     let thumb = "";
     try { thumb = jwkThumbprint(jwk); } catch { bad("a key has no RFC 7638 thumbprint"); }
     if (jwk.kty === "RSA") {
-      const n = Buffer.from(String(jwk.n), "base64url");
+      let n = Buffer.alloc(0);
+      try { n = strictB64url(String(jwk.n)); } catch { bad("a key has no RFC 7638 thumbprint"); }
       let start = 0; while (start < n.length && n[start] === 0) start++;
       if ((n.length - start) * 8 < MIN_RSA_BITS) bad(`an RSA key shorter than ${MIN_RSA_BITS} bits`);
     }
@@ -219,7 +220,9 @@ function verifyToken(role: string, token: J, bundle: TrustBundle, when: number):
   let typ: J = "typ" in header ? header.typ : null;
   if (typeof typ === "string") { typ = typ.toLowerCase(); if (typ.startsWith("application/")) typ = typ.slice(12); }
   if (!ROLE_TYPES[role].includes(typ)) refuse("token_type_mismatch");
-  if (!verifyJws(String(header.alg), key.jwk, Buffer.from(`${parts[0]}.${parts[1]}`, "ascii"), Buffer.from(parts[2], "base64url"))) {
+  let signature: Buffer;
+  try { signature = strictB64url(parts[2]); } catch { return refuse("token_malformed", "the signature is not base64url"); }
+  if (!verifyJws(String(header.alg), key.jwk, Buffer.from(`${parts[0]}.${parts[1]}`, "ascii"), signature)) {
     refuse("token_signature_unverified");
   }
   const client = role !== "sponsor" ? claims.client_id : ("azp" in claims ? claims.azp : claims.client_id);
@@ -323,8 +326,6 @@ export function normalizeHtu(url: string): string {
 function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | null, string | null] {
   let h: J;
   try {
-    const raw = Buffer.from(segment, "base64url");
-    if (b64u(raw) !== segment) return ["", null, "dpop_malformed"];
     h = segmentJson(segment);
   } catch (e) { return ["", null, e instanceof Duplicate ? "dpop_duplicate_member" : "dpop_malformed"]; }
   if (!isObj(h)) return ["", null, "dpop_malformed"];
@@ -339,8 +340,8 @@ function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | 
   if (!sameKeys(jwk, DPOP_JWK[alg]) || jwk.kty !== kty || jwk.crv !== crv) return ["", null, "dpop_jwk_invalid"];
   let key: KeyObject;
   try {
-    const x = Buffer.from(String(jwk.x), "base64url");
-    if (x.length !== 32 || (alg === "ES256" && Buffer.from(String(jwk.y), "base64url").length !== 32)) throw new Error("length");
+    const x = strictB64url(String(jwk.x));
+    if (x.length !== 32 || (alg === "ES256" && strictB64url(String(jwk.y)).length !== 32)) throw new Error("length");
     key = publicKey(jwk);
   } catch { return ["", null, "dpop_jwk_invalid"]; }
   if ("x5c" in h) {
@@ -367,7 +368,7 @@ function dpopClaims(p: J, method: string, url: string, now: number, skew: number
   catch { return "dpop_htu_mismatch"; }
   if (accessToken === null) { if ("ath" in p) return "dpop_ath_unexpected"; }
   else if (!("ath" in p)) return "dpop_ath_missing";
-  else if (typeof p.ath !== "string" || !eq(p.ath, b64u(createHash("sha256").update(accessToken, "ascii").digest()))) return "dpop_ath_mismatch";
+  else if (!/^[\x00-\x7f]*$/.test(accessToken) || typeof p.ath !== "string" || !eq(p.ath, b64u(createHash("sha256").update(accessToken, "ascii").digest()))) return "dpop_ath_mismatch";  // a token that is not ASCII is none a proof can have hashed
   if (!isInt(p, "iat")) return "dpop_malformed";
   if (p.iat < now - skew) return "dpop_iat_stale";
   if (p.iat > now + skew) return "dpop_iat_future";
@@ -380,20 +381,20 @@ function dpopClaims(p: J, method: string, url: string, now: number, skew: number
 
 /** possession.check_dpop: the verified proof and "ok", or null and the refusal code. */
 export function checkDpop(proof: J, method: string, url: string, at: string, expectedJkt: string, accessToken: string | null, content: Buffer): [DpopProof | null, string] {
-  if (typeof proof !== "string") return [null, "dpop_malformed"];
+  if (typeof proof !== "string" || !/^[\x00-\x7f]*$/.test(proof)) return [null, "dpop_malformed"];  // a header is ASCII
   if (proof.length > MAX_PROOF_BYTES) return [null, "dpop_too_large"];
   const parts = proof.split(".");
   if (parts.length !== 3 || parts.some((p) => p === "")) return [null, "dpop_malformed"];
   const [alg, key, problem] = dpopHeader(parts[0], expectedJkt);
   if (problem) return [null, problem];
-  const sig = Buffer.from(parts[2], "base64url");
+  let sig: Buffer;
+  try { sig = strictB64url(parts[2]); } catch { return [null, "dpop_malformed"]; }
   const data = Buffer.from(`${parts[0]}.${parts[1]}`, "ascii");
   const ok = alg === "EdDSA" ? cryptoVerify(null, data, key!, sig)
     : sig.length === 64 && cryptoVerify("sha256", data, { key: key!, dsaEncoding: "ieee-p1363" }, sig);
   if (!ok) return [null, "dpop_signature_unverified"];
   let claims: J;
   try {
-    if (b64u(Buffer.from(parts[1], "base64url")) !== parts[1]) return [null, "dpop_malformed"];
     claims = segmentJson(parts[1]);
   } catch (e) { return [null, e instanceof Duplicate ? "dpop_duplicate_member" : "dpop_malformed"]; }
   const refused = dpopClaims(claims, method, url, Math.floor(ts(at) / 1e6), DEFAULT_SKEW, accessToken, content);
