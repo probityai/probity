@@ -16,6 +16,7 @@ import { createHash, createPublicKey, verify as edVerify, type KeyObject } from 
 import { celEnv, isCelError, parse as celParse, plan as celPlan } from "@bufbuild/cel";
 import { admit, JcsError } from "jcs-admit";
 import { canonicalIdentifier, identifier, sameIdentifier } from "./identifiers.ts";
+import { applyRevocationList, newRevocationState, revokedAt, type RevocationState } from "./revocation.ts";
 
 export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } from "./identity.ts";
 
@@ -1040,7 +1041,10 @@ export function strictShortfall(block: J, approvers: Set<string> | null, counted
 
 // ---------- journal ----------
 
-export interface TrustDoc { grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; possessionSkewSeconds?: number; agentSponsors?: Record<string, [string, string][]>; standingGrants?: J[][] }
+/** The signed revocation lists an auditor pinned and the root keys that may sign them (Trust.revocations,
+ *  RevocationState.from_lists). */
+export interface RevocationsDoc { rootKeyIds: string[]; lists: J[] }
+export interface TrustDoc { revocations?: RevocationsDoc; grantRootKeyIds?: string[]; quorumPolicies?: Record<string, J>; identityIssuers?: Record<string, string[]>; identityProfile?: string; possessionSkewSeconds?: number; agentSponsors?: Record<string, [string, string][]>; standingGrants?: J[][] }
 
 // The proof an allow rested on (possession.possession_record): it must name the key the leaf grant's cnf confirms.
 const POSSESSION_MEMBERS: Record<string, string[]> = { dpop: ["iat", "jkt", "jti", "method"], mtls: ["method", "x5t#S256"] };
@@ -1416,33 +1420,132 @@ export function judgeUncertainEffect(record: J): { decision: string; reason: str
 
 // ---------- M-of-N recount of embedded human approvals ----------
 
+/** quorum.validate_policy: the policy_problem code of a policy that is not well formed, thrown. */
 function validatePolicy(policy: J): void {
-  const approvers = policy.approvers, m = policy.threshold;
-  if (!isObj(approvers) || !Object.keys(approvers).length) throw new Error("quorum_policy_without_approvers");
-  if (!Number.isInteger(m) || m < 1 || m > Object.keys(approvers).length) throw new Error("quorum_threshold_out_of_range");
-  if (new Set(Object.values(approvers).map(String)).size !== Object.keys(approvers).length) throw new Error("quorum_approvers_share_a_key");
-  if (typeof (policy.proposerBound ?? false) !== "boolean") throw new Error("quorum_proposer_bound_shape");
-  const roles = policy.roles ?? {};
-  if (!isObj(roles)) throw new Error("quorum_roles_shape");
-  let total = 0;
-  for (const [role, spec] of Object.entries<J>(roles)) {
-    const members = spec?.members, k = spec?.min;
-    if (!Array.isArray(members) || !members.length || !members.every((x: J) => x in approvers) || !Number.isInteger(k) || k < 1 || k > members.length)
-      throw new Error(`quorum_role_invalid:${role}`);
-    total += k;
-  }
-  if (total > Object.keys(approvers).length) throw new Error("quorum_roles_unsatisfiable");
+  const found = quorumPolicyProblem(policy);
+  if (found !== null) throw new Error(found);
 }
 
-function countBindings(policy: J, bindings: J[]): { counted: Set<string>; problems: string[] } {
+// An ID token or access token is the credential its principal names (identity.verify_token): the token digest, the
+// JWKS snapshot digest, the key in that snapshot, the header kid and typ, the JWS signature, every stated claim, and
+// with `at` an nbf no later than the record's time.
+const TYP_SOURCES: Record<string, string> = { "oauth-id-jag+jwt": "id-jag", "at+jwt": "jwt-access-token" };
+const unb64url = (text: string): Buffer => Buffer.from(text, "base64url");
+const isoSeconds = (seconds: J): string => {
+  const n = Math.trunc(Number(seconds));
+  if (!Number.isFinite(n)) throw new Error("token_claim_time_invalid");
+  return new Date(n * 1000).toISOString().replace(".000Z", "Z");
+};
+function verifyJws(alg: string, jwk: J, signingInput: Buffer, sig: Buffer): boolean {
+  try {
+    if (alg === "EdDSA" && jwk.kty === "OKP" && jwk.crv === "Ed25519")
+      return edVerify(null, signingInput, createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: jwk.x }, format: "jwk" }), sig);
+    if (alg === "ES256" && jwk.kty === "EC" && jwk.crv === "P-256") {
+      if (sig.length !== 64) return false;
+      const key = createPublicKey({ key: { kty: "EC", crv: "P-256", x: jwk.x, y: jwk.y }, format: "jwk" });
+      return edVerify("sha256", signingInput, { key, dsaEncoding: "ieee-p1363" }, sig);
+    }
+    if (alg === "RS256" && jwk.kty === "RSA")
+      return edVerify("sha256", signingInput, createPublicKey({ key: { kty: "RSA", n: jwk.n, e: jwk.e }, format: "jwk" }), sig);
+  } catch { return false; }
+  return false;
+}
+function verifyPrincipalToken(p: J, token: string, jwks: J, at: string | null): string | null {
+  if (sha256Hex(Buffer.from(token, "ascii")) !== p.tokenDigest) return "token_digest_mismatch";
+  if (sha256Hex(canonicalBytes(jwks)) !== p.jwksDigest) return "jwks_digest_mismatch";
+  if (!(Array.isArray(jwks.keys) ? jwks.keys : []).some((k: J) => pyEq(p.key ?? {}, k))) return "key_not_in_jwks";
+  const parts = token.split(".");
+  let header: J, claims: J;
+  try {
+    if (parts.length !== 3) throw new Error("token_malformed");
+    header = JSON.parse(unb64url(parts[0]).toString("utf8"));
+    claims = JSON.parse(unb64url(parts[1]).toString("utf8"));
+  } catch { return "token_malformed"; }
+  if (!pyEq(header.kid, p.kid)) return "token_kid_mismatch";
+  if (p.source === "id-jag" && header.typ !== "oauth-id-jag+jwt") return "token_typ_not_id_jag";
+  const named = TYP_SOURCES[String(header.typ ?? "").toLowerCase().replace(/^application\//, "")];
+  if (named !== undefined && named !== p.source) return `token_type_mismatch:${named}`;
+  if (!verifyJws(String(header.alg), p.key, Buffer.from(`${parts[0]}.${parts[1]}`), unb64url(parts[2]))) return "token_signature_unverified";
+  const aud = claims.aud;
+  // an ID token names its client in azp (OpenID Connect Core 1.0, section 2); an access token in client_id
+  const client = truthy(claims.client_id) ? claims.client_id : (p.source === "id-token" ? claims.azp : null);
+  const expected: [string, J][] = [["issuer", claims.iss], ["subject", claims.sub], ["clientId", client],
+    ["audience", Array.isArray(aud) ? aud : [aud]], ["issuedAt", isoSeconds(claims.iat ?? 0)], ["expiresAt", isoSeconds(claims.exp ?? 0)]];
+  for (const [member, value] of expected) if (!pyEq(p[member], value)) return `token_claim_mismatch:${member}`;
+  if (!pyEq(claims.act, p.act)) return "token_claim_mismatch:act";
+  if (!pyEq(claims.cnf, p.cnf)) return "token_claim_mismatch:cnf";
+  if (at !== null && Object.hasOwn(claims, "nbf")) {
+    if (typeof claims.nbf !== "number" || !Number.isInteger(claims.nbf)) return "token_malformed";
+    if (claims.nbf * 1e6 > ts(at)) return "token_not_yet_valid"; // ts: microseconds
+  }
+  return null;
+}
+
+// An approval made by an OpenID Connect sign-in (oidc_approval.verify_oidc_approval): the pinned approver signed in
+// with an ID token, under a pinned provider key, for exactly this approval body, after the body was issued.
+const OIDC_SKEW_SECONDS = 60;
+export const oidcPrincipalId = (issuer: string, subject: string): string => sha256Hex(canonicalBytes({ issuer, subject }));
+function verifyOidcApproval(embedded: J, pinned: J, pins: Record<string, string[]>): string | null {
+  const record = truthy(embedded?.record) ? embedded.record : {};
+  const approval = truthy(record.approval) ? record.approval : {};
+  const principal = embedded.approvalPrincipal, token = embedded.approvalToken, jwks = embedded.approvalJwks;
+  if (!isObj(principal) || typeof token !== "string" || !isObj(jwks)) return "approval_oidc_evidence_missing";
+  if (!isObj(pinned) || !pyEq(principal.issuer ?? null, pinned.issuer ?? null) || !pyEq(principal.subject ?? null, pinned.subject ?? null))
+    return "approval_principal_not_pinned";
+  if (principal.source !== "id-token") return "approval_principal_not_an_id_token";
+  const at = String(record.decisionTime ?? "None");
+  const problem = checkPrincipal(principal, at, pins) ?? verifyPrincipalToken(principal, token, jwks, at);
+  if (problem !== null) return problem;
+  if (approval.keyId !== oidcPrincipalId(String(pinned.issuer), String(pinned.subject))) return "approval_key_id_is_not_the_principal";
+  const claims = JSON.parse(unb64url(token.split(".")[1]).toString("utf8"));
+  if (claims.nonce !== sha256Hex(canonicalBytes(approval))) return "approval_nonce_mismatch";
+  let issued: number, expires: number;
+  try { issued = ts(req(approval, "issuedAt")) / 1e6; expires = ts(req(approval, "expiresAt")) / 1e6; } // ts: microseconds
+  catch { return "approval_auth_not_fresh"; }
+  const auth = claims.auth_time;
+  if (typeof auth !== "number" || !(issued - OIDC_SKEW_SECONDS <= auth && auth <= expires)) return "approval_auth_not_fresh";
+  return null;
+}
+
+const revocationStates = new WeakMap<RevocationsDoc, RevocationState>();
+/** Trust.key_revoked for the approval count: false for every key when the auditor pinned no revocation lists. */
+function approverKeyRevoked(trust: TrustDoc): ((kid: string, at: string) => boolean) | undefined {
+  const doc = trust.revocations;
+  if (doc === undefined) return undefined;
+  let state = revocationStates.get(doc);
+  if (state === undefined) {
+    // RevocationState.from_lists: the whole chain from seq 1, in seq order
+    const seqOf = (signed: J): number => (Number.isInteger(signed?.body?.seq) ? signed.body.seq : 0);
+    state = [...doc.lists].sort((a: J, b: J) => seqOf(a) - seqOf(b))
+      .reduce((st: RevocationState, signed: J) => applyRevocationList(st, signed), newRevocationState(doc.rootKeyIds));
+    revocationStates.set(doc, state);
+  }
+  const held = state;
+  return (kid, at) => revokedAt(held, "key", kid, at);
+}
+
+/** What countBindings checks beyond the policy (quorum.count_bindings): the key revocations the auditor pinned, and
+ *  the identity providers' keys an OpenID Connect approver may sign in under (issuer to RFC 7638 thumbprints). */
+export interface BindingTrust { keyRevoked?: (kid: string, at: string) => boolean; oidcPins?: Record<string, string[]> }
+
+export function countBindings(policy: J, bindings: J[], at = "", trust: BindingTrust = {}): { counted: Set<string>; problems: string[] } {
   validatePolicy(policy);
   const counted = new Set<string>(), problems: string[] = [];
   bindings.forEach((embedded, n) => {
     const approval = embedded?.record?.approval ?? {}, who = String(approval.approver ?? "");
     const raw = policy.approvers[who];
     if (raw === undefined) { problems.push(`binding_${n}:approver_not_in_policy`); return; }
+    if (isObj(raw) || (isObj(embedded) && Object.hasOwn(embedded, "approvalToken"))) {
+      const problem = verifyOidcApproval(embedded, raw, trust.oidcPins ?? {});
+      if (problem !== null) { problems.push(`binding_${n}:${problem}`); return; }
+      if (counted.has(who)) { problems.push(`binding_${n}:duplicate_approver`); return; }
+      counted.add(who);
+      return;
+    }
     if (!sigOk(raw, APPROVAL_DOMAIN, approval, embedded.approvalSig)) { problems.push(`binding_${n}:approval_signature_unverified`); return; }
-    if (approval.keyId !== keyId(rawKey(unb64(raw)))) { problems.push(`binding_${n}:approval_key_id_is_not_the_pinned_key`); return; }
+    const kid = keyId(rawKey(unb64(raw)));
+    if (approval.keyId !== kid) { problems.push(`binding_${n}:approval_key_id_is_not_the_pinned_key`); return; }
+    if (trust.keyRevoked?.(kid, at)) { problems.push(`binding_${n}:approver_key_revoked`); return; }
     if (counted.has(who)) { problems.push(`binding_${n}:duplicate_approver`); return; }
     counted.add(who);
   });
@@ -1485,7 +1588,8 @@ function checkApproval(pred: J, problems: string[], where: string, trust: TrustD
   const policy = (trust.quorumPolicies ?? {})[String(pred.approvalPolicyId)];
   if (policy === undefined) { problems.push(`${where}:approval_policy_not_pinned`); return [null, null]; }
   if (!pyEq(pred.threshold, policy.threshold)) problems.push(`${where}:threshold_not_pinned:${pyRepr(pred.threshold, isFloat(pred, "threshold", pred.threshold))}:${pyRepr(policy.threshold, isFloat(policy, "threshold", policy.threshold))}`);
-  const { counted: signed, problems: sigProblems } = countBindings(policy, bindings);
+  const { counted: signed, problems: sigProblems } = countBindings(policy, bindings, String(pred.at ?? "None"), {
+    keyRevoked: approverKeyRevoked(trust), oidcPins: trust.identityIssuers ?? {} });
   problems.push(...sigProblems.map((p) => `${where}:${p}`));
   const counted = [...signed].filter((a) => readerAllowed.has(a));
   if (counted.length < policy.threshold) problems.push(`${where}:approvals_below_threshold:${counted.length}:${policy.threshold}`);
