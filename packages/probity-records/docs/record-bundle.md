@@ -32,7 +32,15 @@ grading, the inclusion and map proofs and the claims check are the same code for
 
 The leaf is the canonical JSON of `probity-decision-log-leaf/v2`: `format`, `tenant`, `source`, `kind`, `sequence`,
 `previous`, `record` (the SHA-256 of the payload), `receipt` (`{issuer, permit, stage}` or null) and `admittedAtMs`.
-The verifier rebuilds it from the verified record and refuses one that differs (`bundle_record_mismatch`).
+The verifier rebuilds it from the verified record and refuses one that differs (`bundle_record_mismatch`). The
+comparison is over canonical bytes, so a leaf that spells `sequence` as `true` or `1.0` is not the leaf the log wrote
+for sequence 1, and the map commitment's `coversSize` must be an integer, not a boolean.
+
+Every JSON document in a bundle (the DSSE envelope, the signed payload, the leaf, the map commitment) is read by
+`probity_records.core.admitted_loads` before it is used. A repeated member, invalid UTF-8, a lone surrogate, NaN, a
+number no double holds or nesting past 128 containers refuses the bundle with the code of the document that carries it
+(`bundle_leaf_malformed` for the leaf, `bundle_record_invalid` for the envelope or payload, `bundle_map_invalid` for the
+commitment); the verifier never raises on bytes it was handed.
 
 ## Grades
 

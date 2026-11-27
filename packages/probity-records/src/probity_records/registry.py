@@ -24,6 +24,8 @@ A verifier needs four things from a registry and no network to read them:
 4. **Passports.** ``verify_presentation`` checks one SD-JWT presentation with key binding: the issuer's key from the
    pins, the holder's key from the issuer-signed ``cnf`` (R-B: a passport without proof of possession names an agent
    and proves nobody is it), and every disclosure against the digests the issuer signed.
+   The key binding JWT follows the issuer JWT's rules: it names no key and demands no extension (``crit`` is
+   ``passport_kb_critical``).
 
 Issuing, serving and appending (the validator, the naming log's writer, the key-document fetch, passport issue and
 presentation) are not here. Every refusal is a ``RegistryError`` whose ``code`` is a registered ``registry.*`` code.

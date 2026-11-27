@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased
+
+- **Every document a stranger can hand the package is read by one strict reader, `core.admitted_loads`.** A repeated
+  member, invalid UTF-8, a lone surrogate (raw or escaped), NaN, a number no double holds, nesting past the reader's
+  depth (128 containers; 32 for a token segment or registry document, `core.TOKEN_MAX_DEPTH`) and, where a caller sets
+  one, more than a byte bound are refused as `core.JsonRefused` (a `ValueError`; its `variant` names the cause). Before,
+  these inputs went to `json.loads`: deep nesting raised `RecursionError` out of a verifier, a repeated member kept
+  the last value, and a lone surrogate reached a canonicalizer and raised. The readers now behind it: the record
+  bundle (envelope, payload, leaf, map commitment), the stamp window field, renewal requests, the anchored statement
+  of a trust bundle, registry documents and tokens, identity-provider token segments (`verified_identities`,
+  `identity.verify_token`), DPoP header and claims, OIDC approval claims, the call arguments of an exception or a
+  grant allow, exports and seals, the journal verifier's key certificates and checkpoint provenance, the journal's
+  own lines, sealed plaintext and the Vault answer. Each answers with its own registered refusal and never raises.
+- **New refusal codes:** `anchor_statement_malformed` (the signed payload under a trust anchor is not admissible JSON),
+  `jws_signature_not_low_s` and `passport_kb_critical` (see below). `identity.verify_token` now also answers
+  `token_critical_unsupported` for a token header that demands an extension through `crit`, and `token_malformed` for a
+  header or claim set that is not a JSON object. A hostile `argsB64` in an exception or grant allow is
+  `authority_args_are_not_the_call_arguments`.
+- **An ES256 token is read only in its low-S form (`s <= n/2`) by the registry verifier** (`jws_signature_not_low_s`):
+  ECDSA `(r, s)` and `(r, n - s)` both verify, so one signed statement had two token texts and two digests. An ES256
+  issuer of registry tokens must normalize `s` (`s = n - s` when `s > n/2`) before encoding. The single-use key of a
+  validation is `Validation.spend_key`, `(issuer, jti)`, so the statement is spent once whatever its spelling.
+  Third-party identity-provider tokens (`identity.verify_token`, `verified_identities`) are not held to low-S: about
+  half of the ES256 tokens those providers issue are high-S, and their single-use keys are the `jti`, not the text.
+- **A key binding JWT that demands an extension through `crit` is refused** (`passport_kb_critical`); the issuer JWT
+  already was.
+- **A record bundle's leaf is compared as canonical bytes, not as values.** A leaf spelling `"sequence":true` or `1.0`
+  for sequence 1 compared equal before and is now `bundle_record_mismatch`; the map commitment's `coversSize` must be
+  an integer.
+- **`exports.parse_export` takes `max_bytes` (default `MAX_EXPORT_BYTES`, 128 MiB) and reads through the strict
+  reader**: a repeated member is `jcs_refused:DuplicateMember`, no longer `export_has_duplicate_keys`. The
+  `verify-export` and `compare-seals` commands report an unreadable seal as a failure (exit 1) instead of a traceback.
+- **The TypeScript verifier reads token and DPoP segments the same way** (32 containers deep, strict UTF-8, no lone
+  surrogate), so a segment the Python verifier refuses is refused there with the same code.
+
 ## 0.12.0 (2026-11-26)
 
 - **The C2SP note verifier agrees with the reference on three cases; two of them refuse input it accepted before.**
