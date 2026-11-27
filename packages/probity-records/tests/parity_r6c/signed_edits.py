@@ -117,6 +117,10 @@ PAIR_EDITS: dict[str, tuple[Any, Any]] = {  # (user cnf, agent cnf): both tokens
     "pair-true-one": ({"jkt": True}, {"jkt": 1}),
     "pair-member-order": ({"jkt": DIGEST, "x5t#S256": DIGEST}, {"x5t#S256": DIGEST, "jkt": DIGEST}),
     "pair-null-null": (None, None),
+    # JSON numbers written two ways: one value as RFC 8785 bytes, and a cnf value that is not a string in both readers
+    "pair-negative-zero": ({"jkt": -0.0}, {"jkt": 0}),
+    "pair-one-point-zero": ({"jkt": 1.0}, {"jkt": 1}),
+    "pair-exponent": ({"jkt": 1e16}, {"jkt": 10**16}),
 }
 
 
@@ -146,6 +150,20 @@ DPOP_CLAIM_EDITS: dict[str, Callable[[dict[str, Any]], None]] = {
     "htm-get": _set(htm="GET"), "htm-lower": _set(htm="post"), "htm-int": _set(htm=1),
     "htu-other": _set(htu=v.PAYOUT), "htu-query": _set(htu=v.URL + "?a=1"), "htu-int": _set(htu=5),
     "htu-port": _set(htu="https://billing.example.com:443/mcp/refund"), "htu-relative": _set(htu="/mcp/refund"),
+    # text Python's urlsplit strips or deletes, and other spellings outside the RFC 3986 grammar: one answer each
+    "htu-leading-space": _set(htu=" " + v.URL), "htu-leading-nul": _set(htu="\x00" + v.URL),
+    "htu-tab-in-path": _set(htu=v.URL[:-3] + "\t" + v.URL[-3:]), "htu-trailing-newline": _set(htu=v.URL + "\n"),
+    "htu-trailing-cr": _set(htu=v.URL + "\r"), "htu-trailing-space": _set(htu=v.URL + " "),
+    "htu-backslash": _set(htu=v.URL.replace("/mcp/", "\\mcp/")), "htu-non-ascii-path": _set(htu=v.URL + "\u00e9"),
+    "htu-userinfo": _set(htu=v.URL.replace("https://", "https://u:p@")),
+    "htu-empty-port": _set(htu=v.URL.replace(".com/", ".com:/")),
+    "htu-port-zeros": _set(htu=v.URL.replace(".com/", ".com:0443/")),
+    "htu-port-big": _set(htu=v.URL.replace(".com/", ".com:99999/")),
+    "htu-upper-host": _set(htu=v.URL.replace("billing.example.com", "BILLING.Example.COM")),
+    "htu-upper-scheme": _set(htu=v.URL.replace("https://", "HTTPS://")),
+    "htu-fragment": _set(htu=v.URL + "#frag"), "htu-percent": _set(htu=v.URL + "%41"),
+    "htu-bad-percent": _set(htu=v.URL + "%4"), "htu-ip-literal": _set(htu="https://[::1]/mcp/refund"),
+    "htu-bad-literal": _set(htu="https://[zz]/mcp/refund"), "htu-two-colons": _set(htu=v.URL.replace(".com/", ".com:1:2/")),
     "ath-drop": _set(ath=_DROP), "ath-other": _set(ath=_ath("another token")), "ath-int": _set(ath=5),
     "iat-stale": _set(iat=v.NOW - 121), "iat-edge-old": _set(iat=v.NOW - 120), "iat-future": _set(iat=v.NOW + 121),
     "iat-edge-new": _set(iat=v.NOW + 120), "iat-string": _set(iat=str(v.NOW)), "iat-bool": _set(iat=True),
@@ -170,6 +188,12 @@ DPOP_HEADER_EDITS: dict[str, Callable[[dict[str, Any]], None]] = {
     "x5c-other-key": _set(x5c=[base64.b64encode(v.certificate()).decode()]),
     "x5c-holder": _set(x5c=[base64.b64encode(HOLDER_CERT).decode()]),
     "x5c-two": _set(x5c=[base64.b64encode(HOLDER_CERT).decode()] * 2),
+    # the holder's own certificate in other base64 spellings: core.unb64 reads the canonical one only, in both
+    "x5c-holder-unpadded": _set(x5c=[base64.b64encode(HOLDER_CERT).decode().rstrip("=")]),
+    "x5c-holder-extra-padding": _set(x5c=[base64.b64encode(HOLDER_CERT).decode() + "=="]),
+    "x5c-holder-newline": _set(x5c=[base64.b64encode(HOLDER_CERT).decode()[:40] + "\n"
+                                    + base64.b64encode(HOLDER_CERT).decode()[40:]]),
+    "x5c-holder-urlsafe": _set(x5c=[base64.urlsafe_b64encode(HOLDER_CERT).decode()]),
 }
 
 
