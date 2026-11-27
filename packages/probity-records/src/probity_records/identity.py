@@ -55,8 +55,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Final
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
@@ -64,7 +65,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 
-from .core import canonical, sha256_hex
+from .core import admitted_loads, canonical, sha256_hex
 from .grants import ts
 
 ROLES = ("user", "agent", "sponsor", "approver")
@@ -392,10 +393,44 @@ def _verify_jws(alg: str, jwk: Mapping[str, Any], signing_input: bytes, sig: byt
     return True
 
 
-def _iso(seconds: Any) -> str:
+def _iso(seconds: int) -> str:
     from datetime import UTC, datetime
 
-    return datetime.fromtimestamp(int(seconds), UTC).isoformat().replace("+00:00", "Z")
+    return datetime.fromtimestamp(seconds, UTC).isoformat().replace("+00:00", "Z")
+
+
+_B64URL_SEGMENT: Final = re.compile(r"[A-Za-z0-9_-]*")
+#: The whole seconds of years 1 to 9999, the range both readers print a time claim in the same way.
+_CLAIM_TIME_RANGE: Final = (-62135596800, 253402300799)
+
+
+def token_segments(token: str) -> tuple[dict[str, Any], dict[str, Any], bytes] | None:
+    """A compact JWS read strictly: its header, its claims and its signature bytes, or None when it is not one.
+
+    Three segments of the base64url alphabet without padding; the header and the claims each one JSON object that
+    jcs-admit admits (no duplicate member, no ``NaN`` or ``Infinity``, valid UTF-8, no lone surrogate), parsed with
+    integers and floats kept apart. The TypeScript twin's ``tokenSegments`` reads a token by the same rules, so a token a
+    provider signed is one value to both readers."""
+    parts = token.split(".")
+    if len(parts) != 3 or not all(_B64URL_SEGMENT.fullmatch(s) and len(s) % 4 != 1 for s in parts):
+        return None
+    try:
+        header, claims = admitted_loads(unb64url(parts[0])), admitted_loads(unb64url(parts[1]))
+    except ValueError:
+        return None
+    if not isinstance(header, dict) or not isinstance(claims, dict):
+        return None
+    return header, claims, unb64url(parts[2])
+
+
+def _claim_time(claims: Mapping[str, Any], name: str) -> str | None:
+    """A token time claim (``iat``, ``exp``) as its principal field prints it, ``1970-01-01T00:00:00Z`` when absent;
+    None when it is not an integer number of seconds (a float, ``1.0`` included, a string, a boolean, null) within
+    years 1 to 9999."""
+    value = claims.get(name, 0)
+    if isinstance(value, bool) or not isinstance(value, int) or not _CLAIM_TIME_RANGE[0] <= value <= _CLAIM_TIME_RANGE[1]:
+        return None
+    return _iso(value)
 
 
 def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: str | None = None) -> str | None:
@@ -409,11 +444,11 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
         return "jwks_digest_mismatch"
     if dict(p.get("key", {})) not in [dict(k) for k in jwks.get("keys", [])]:
         return "key_not_in_jwks"
-    try:
-        head_b64, body_b64, sig_b64 = token.split(".")
-        header, claims = json.loads(unb64url(head_b64)), json.loads(unb64url(body_b64))
-    except (ValueError, TypeError):
+    segments = token_segments(token)
+    if segments is None:
         return "token_malformed"
+    header, claims, signature = segments
+    head_b64, body_b64, _ = token.split(".")
     if header.get("kid") != p.get("kid"):
         return "token_kid_mismatch"
     if p.get("source") == "id-jag" and header.get("typ") != "oauth-id-jag+jwt":
@@ -421,14 +456,16 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
     named = TYP_SOURCES.get(str(header.get("typ", "")).lower().removeprefix("application/"))
     if named is not None and named != p.get("source"):
         return f"token_type_mismatch:{named}"
-    if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), unb64url(sig_b64)):
+    if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), signature):
         return "token_signature_unverified"
     aud = claims.get("aud")
     # An ID token names its client in ``azp`` (OpenID Connect Core 1.0, section 2); an access token in ``client_id``.
     client = claims.get("client_id") or (claims.get("azp") if p.get("source") == "id-token" else None)
+    issued, expires = _claim_time(claims, "iat"), _claim_time(claims, "exp")
+    if issued is None or expires is None:
+        return "token_malformed"
     expected = {"issuer": claims.get("iss"), "subject": claims.get("sub"), "clientId": client,
-                "audience": aud if isinstance(aud, list) else [aud], "issuedAt": _iso(claims.get("iat", 0)),
-                "expiresAt": _iso(claims.get("exp", 0))}
+                "audience": aud if isinstance(aud, list) else [aud], "issuedAt": issued, "expiresAt": expires}
     for member, value in expected.items():
         if p.get(member) != value:
             return f"token_claim_mismatch:{member}"

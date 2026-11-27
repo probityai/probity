@@ -24,7 +24,14 @@ from typing import Any
 
 from .authority import GRANT_ALLOW, Trust, check_authority
 from .clock import Clock, from_datetime, to_datetime
-from .core import admitted_loads, load_public, open_envelope, sign_envelope, statement
+from .core import (
+    admitted_loads,
+    load_public,
+    open_envelope,
+    sign_envelope,
+    statement,
+    value_key,
+)
 from .governance import GOVERNANCE_STEP, check_step
 from .grants import body_problem, chain_digests, grant_digest, spend_of
 from .identifiers import identifier, same_identifier
@@ -537,18 +544,25 @@ def _retry_problem(pred: dict[str, Any], since_allow: list[str], last_effect: st
     return "not_run_retry_but_an_effect_may_have_happened"
 
 
-def _party(p: Any) -> Any:
-    return (p.get("issuer"), p.get("subject")) if isinstance(p, dict) else p
+def _party(p: Any) -> bytes:
+    """One party's key: a principal (any object) is its issuer and subject, as an object, so a refreshed credential is
+    the same party and a list of two strings that spell the pair is not (a member that is not an object never prints
+    as an object). The key is ``value_key``: one JSON value, one key, whatever its member order or number spelling."""
+    if isinstance(p, dict):
+        return value_key({"issuer": p.get("issuer"), "subject": p.get("subject")})
+    return value_key(p)
 
 
-def _parties(block: Any) -> dict[str, Any] | None:
+def _parties(block: Any) -> dict[str, bytes | tuple[bytes, ...]] | None:
     """Who a principals block names, role by role (issuer and subject). A credential may be refreshed between a
-    permit's records; the parties may not change. An approver list is the set of its members' (issuer, subject), in
-    no order: the verdict never depends on the order the writer listed them in."""
+    permit's records; the parties may not change. An approver list is the multiset of its members' parties, in no
+    order: sorted by key, so the verdict never depends on the order the writer listed them in, and two lists are the
+    same parties exactly when each member has one equal member in the other (the TypeScript twin reads the same
+    keys)."""
     if not isinstance(block, dict):
         return None
-    return {role: sorted((_party(m) for m in p), key=lambda x: json.dumps(x, sort_keys=True))
-            if isinstance(p, list) else _party(p) for role, p in block.items()}
+    return {role: tuple(sorted(_party(m) for m in p)) if isinstance(p, list) else _party(p)
+            for role, p in block.items()}
 
 
 def _cross_checks(bodies: list[tuple[int, dict[str, Any]]], skew: int) -> list[str]:

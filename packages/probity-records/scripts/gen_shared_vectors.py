@@ -952,6 +952,14 @@ def approver_rows() -> list[tuple[str, str, object]]:
         out["approver"] = pair[::-1] if reverse else pair
         return out
 
+    def issuers(block: dict, first: object, second: object) -> dict:
+        """The block with its listed approvers' issuers replaced, the member that sorts first by subject given
+        ``first``: one JSON number written two ways is one party in both readers, whichever member it is on."""
+        out = copy.deepcopy(block)
+        for member in out["approver"]:
+            member["issuer"] = first if member["subject"] == min(WHO["ops"], WHO["lead"]) else second
+        return out
+
     return [
         ("MA1", "a 2-of-2 approval and the allow names both approvers as a list: identity holds, strict",
          lambda d: identity_case(d, [two("ops", "lead")])),
@@ -976,6 +984,20 @@ def approver_rows() -> list[tuple[str, str, object]]:
         ("MA11", ("the intent's approver is the same two strings, subject then issuer: malformed, and not the parties "
                   "of its permit"),
          lambda d: identity_case(d, [one_counted(named("ops")), identity_call("intent", spelled(True))])),
+        ("MA12", ("the allow's approvers carry the issuer 1.0 on the member that sorts first, the intent's 1: an issuer "
+                  "that is not a string is refused, and one number is the same parties"),
+         lambda d: identity_case(d, [identity_call("authorize", issuers(named("ops", "lead"), 1.0, 1), decision="allow",
+                                                   reason="bound", threshold=2, approval_policy="refunds2of2",
+                                                   approval_bindings=[binding(OPS, WHO["ops"]),
+                                                                      binding(LEAD, WHO["lead"])]),
+                                     identity_call("intent", issuers(named("ops", "lead"), 1, 1))])),
+        ("MA13", ("the allow's issuer 1e16 against the intent's 10000000000000000: one number, the same parties"),
+         lambda d: identity_case(d, [identity_call("authorize", issuers(named("ops", "lead"), 1e16, 10**16),
+                                                   decision="allow", reason="bound", threshold=2,
+                                                   approval_policy="refunds2of2",
+                                                   approval_bindings=[binding(OPS, WHO["ops"]),
+                                                                      binding(LEAD, WHO["lead"])]),
+                                     identity_call("intent", issuers(named("ops", "lead"), 10**16, 10**16))])),
     ]
 
 

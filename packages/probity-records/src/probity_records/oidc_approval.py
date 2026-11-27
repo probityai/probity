@@ -29,13 +29,12 @@ The quorum policy pins such an approver as ``{"issuer", "subject"}``, and the ap
 from __future__ import annotations
 
 import base64
-import json
 from collections.abc import Iterable, Mapping
 from typing import Any
 
 from .core import canonical, sha256_hex
 from .grants import ts
-from .identity import check_principal, unb64url, verify_token
+from .identity import check_principal, token_segments, verify_token
 
 SKEW_SECONDS = 60
 
@@ -79,7 +78,10 @@ def verify_oidc_approval(embedded: Mapping[str, Any], pinned: Any, pins: Mapping
         return problem
     if approval.get("keyId") != principal_id(str(pinned["issuer"]), str(pinned["subject"])):
         return "approval_key_id_is_not_the_principal"
-    claims = json.loads(unb64url(token.split(".")[1]))
+    segments = token_segments(token)
+    if segments is None:  # verify_token read it; kept so the claims are never read by another parser
+        return "token_malformed"
+    claims = segments[1]
     if claims.get("nonce") != approval_nonce(approval):
         return "approval_nonce_mismatch"
     auth_time = claims.get("auth_time")

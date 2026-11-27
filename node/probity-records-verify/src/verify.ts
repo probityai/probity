@@ -16,7 +16,7 @@ import { createHash, createPublicKey, verify as edVerify, type KeyObject } from 
 import { celEnv, isCelError, parse as celParse, plan as celPlan } from "@bufbuild/cel";
 import { admit, JcsError } from "jcs-admit";
 import { canonicalIdentifier, identifier, sameIdentifier } from "./identifiers.ts";
-import { applyRevocationList, newRevocationState, revokedAt, type RevocationState } from "./revocation.ts";
+import { applyRevocationList, newRevocationState, revoked, revokedAt, type RevocationState } from "./revocation.ts";
 
 export { CanonicalIdentity, Evidence, IdentityStringError, Ref, judgeIdentity } from "./identity.ts";
 
@@ -66,6 +66,15 @@ function refuseUnprintable(v: J, holder: J, key: string, depth: number): void {
 /** The RFC 8785 bytes of a parsed JSON value, through jcs-admit; refused when there are none. */
 export function canonicalBytes(v: J): Buffer {
   refuseUnprintable(v, null, "", 0);
+  const text = JSON.stringify(v);
+  if (text === undefined) throw new Error("jcs_not_json");
+  try { return Buffer.from(admit(Buffer.from(text, "utf8"))); } catch (e) { throw jcsRefusal(e); }
+}
+
+/** The RFC 8785 bytes of a parsed JSON value as a key that sorts and compares it (probity_records.core.value_key):
+ *  one JSON value, one key, whatever its member order or number spelling (a number is its IEEE double, as jcs-admit
+ *  reads it). It does not refuse an integer beyond the exact range: received bytes were admitted. */
+export function valueKey(v: J): Buffer {
   const text = JSON.stringify(v);
   if (text === undefined) throw new Error("jcs_not_json");
   try { return Buffer.from(admit(Buffer.from(text, "utf8"))); } catch (e) { throw jcsRefusal(e); }
@@ -823,7 +832,9 @@ function quorumWidening(ch: J, p: J): string | null {
   return null;
 }
 
-function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, string] {
+/** What the auditor's revocation lists say about a grant chain (grants.verify_chain's revoked_grants and key_revoked). */
+export interface ChainRevocations { keyRevoked?: (kid: string, at: string) => boolean; grantRevoked?: (digest: string) => boolean }
+function verifyChain(chain: J[], roots: Set<string>, at: string, revocations: ChainRevocations = {}): [J | null, string] {
   if (!chain.length) return [null, "grant_chain_empty"];
   let when: number;
   try { when = ts(at); } catch { return [null, "grant_use_time_invalid"]; }
@@ -845,6 +856,8 @@ function verifyChain(chain: J[], roots: Set<string>, at: string): [J | null, str
     issuers.push(issuer); digests.push(digestOf(body)); prev = body;
   }
   for (let depth = 0; depth < issuers.length; depth++) {
+    if (revocations.keyRevoked?.(issuers[depth], at)) return [null, `grant_issuer_key_revoked:${depth}`];
+    if (revocations.grantRevoked?.(digests[depth])) return [null, `grant_revoked:${depth}`];
     const body = chain[depth].body;
     if (!(ts(body.notBefore) <= when && when <= ts(body.expiresAt))) return [null, `grant_outside_window:${depth}`];
     if ("reviewBy" in body && when >= ts(body.reviewBy)) return [null, `grant_review_overdue:${depth}`];
@@ -881,8 +894,9 @@ function checkCall(leaf: J, tool: string, args: J, ctx: J): string {
   return (spec.approval ?? "none") === "required" ? "approval_required" : "ok";
 }
 
-export function verifyGrantAllow(chain: J[], tool: string, args: J, at: string, roots: Set<string>, ctx: J = {}): J {
-  const [leaf, reason] = verifyChain(chain, roots, at);
+export function verifyGrantAllow(chain: J[], tool: string, args: J, at: string, roots: Set<string>, ctx: J = {},
+                                 revocations: ChainRevocations = {}): J {
+  const [leaf, reason] = verifyChain(chain, roots, at, revocations);
   if (leaf === null) return { decision: "deny", reason, grantDigest: null };
   const v = checkCall(leaf, tool, args, ctx ?? {});
   return { decision: v === "ok" ? "allow" : v === "approval_required" ? "needs_approval" : "deny", reason: v, grantDigest: digestOf(leaf) };
@@ -1095,7 +1109,7 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
   const raw = Buffer.from(ev.argsB64 ?? "", "base64");
   if (sha256Hex(raw) !== pred.argsSha256) problems.push(`${where}:authority_args_are_not_the_call_arguments`);
   const args = raw.length ? parseReceived(raw) : null;
-  const v = verifyGrantAllow(ev.chain ?? [], String(pred.tool), args, at, new Set(trust.grantRootKeyIds ?? []), ev.ctx ?? {});
+  const v = verifyGrantAllow(ev.chain ?? [], String(pred.tool), args, at, new Set(trust.grantRootKeyIds ?? []), ev.ctx ?? {}, chainRevocations(trust));
   if (v.decision === "needs_approval" && isObj(ev.quorum)) {
     const o = quorumOutcome(ev.quorum, ev.chain[ev.chain.length - 1].body.tools[String(pred.tool)].quorum);
     if (o !== "ok") problems.push(`${where}:grant_approval_failed:${o}`);
@@ -1133,24 +1147,11 @@ const TRANSITION_STATUSES = ["proposed", "accepted"];
 /** The reason a record the reader cannot read is denied with (records.BINDING_MALFORMED). */
 export const BINDING_MALFORMED = "approval_binding_malformed";
 
-/** A principal's party, Python's tuple (issuer, subject) in journal._parties: a value of its own kind, so it never
- * equals a list of two strings that spell the same pair (pyEq compares a Party only with a Party). */
-class Party {
-  readonly issuer: J;
-  readonly subject: J;
-  constructor(issuer: J, subject: J) {
-    this.issuer = issuer;
-    this.subject = subject;
-  }
-}
-
 /** Python's `==` on parsed JSON: 1 == 1.0 == True, dicts by members, lists by position. */
 function pyEq(a: J, b: J): boolean {
   if (a === undefined) a = null;
   if (b === undefined) b = null;
   const num = (x: J): J => (typeof x === "boolean" ? Number(x) : x);
-  if (a instanceof Party || b instanceof Party)
-    return a instanceof Party && b instanceof Party && pyEq(a.issuer, b.issuer) && pyEq(a.subject, b.subject);
   if (Array.isArray(a) || Array.isArray(b))
     return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x: J, i: number) => pyEq(x, b[i]));
   if (isObj(a) || isObj(b)) {
@@ -1431,11 +1432,26 @@ function validatePolicy(policy: J): void {
 // with `at` an nbf no later than the record's time.
 const TYP_SOURCES: Record<string, string> = { "oauth-id-jag+jwt": "id-jag", "at+jwt": "jwt-access-token" };
 const unb64url = (text: string): Buffer => Buffer.from(text, "base64url");
-const isoSeconds = (seconds: J): string => {
-  const n = Math.trunc(Number(seconds));
-  if (!Number.isFinite(n)) throw new Error("token_claim_time_invalid");
-  return new Date(n * 1000).toISOString().replace(".000Z", "Z");
-};
+const B64URL_SEGMENT = /^[A-Za-z0-9_-]*$/;
+// the whole seconds of years 1 to 9999, the range both readers print a time claim in the same way
+const CLAIM_TIME_MIN = -62135596800, CLAIM_TIME_MAX = 253402300799;
+/** A compact JWS read strictly (identity.token_segments): its header, claims and signature bytes, or null. Three
+ *  base64url segments without padding; header and claims each one JSON object jcs-admit admits (no duplicate member,
+ *  no NaN or Infinity, valid UTF-8, no lone surrogate), parsed with integers and floats kept apart (parseReceived). */
+function tokenSegments(token: string): [J, J, Buffer] | null {
+  const parts = token.split(".");
+  if (parts.length !== 3 || !parts.every((s) => B64URL_SEGMENT.test(s) && s.length % 4 !== 1)) return null;
+  let header: J, claims: J;
+  try { header = parseReceived(unb64url(parts[0])); claims = parseReceived(unb64url(parts[1])); } catch { return null; }
+  return isObj(header) && isObj(claims) ? [header, claims, unb64url(parts[2])] : null;
+}
+/** A token time claim (identity._claim_time) as its principal field prints it, the epoch when absent; null when it is
+ *  not an integer number of seconds (a float, 1.0 included, a string, a boolean, null) within years 1 to 9999. */
+function claimTime(claims: J, name: string): string | null {
+  const v = Object.hasOwn(claims, name) ? claims[name] : 0;
+  if (typeof v !== "number" || !Number.isInteger(v) || isFloat(claims, name, v) || v < CLAIM_TIME_MIN || v > CLAIM_TIME_MAX) return null;
+  return new Date(v * 1000).toISOString().replace(".000Z", "Z");
+}
 function verifyJws(alg: string, jwk: J, signingInput: Buffer, sig: Buffer): boolean {
   try {
     if (alg === "EdDSA" && jwk.kty === "OKP" && jwk.crv === "Ed25519")
@@ -1454,28 +1470,26 @@ function verifyPrincipalToken(p: J, token: string, jwks: J, at: string | null): 
   if (sha256Hex(Buffer.from(token, "ascii")) !== p.tokenDigest) return "token_digest_mismatch";
   if (sha256Hex(canonicalBytes(jwks)) !== p.jwksDigest) return "jwks_digest_mismatch";
   if (!(Array.isArray(jwks.keys) ? jwks.keys : []).some((k: J) => pyEq(p.key ?? {}, k))) return "key_not_in_jwks";
-  const parts = token.split(".");
-  let header: J, claims: J;
-  try {
-    if (parts.length !== 3) throw new Error("token_malformed");
-    header = JSON.parse(unb64url(parts[0]).toString("utf8"));
-    claims = JSON.parse(unb64url(parts[1]).toString("utf8"));
-  } catch { return "token_malformed"; }
+  const segments = tokenSegments(token);
+  if (segments === null) return "token_malformed";
+  const [header, claims, signature] = segments, parts = token.split(".");
   if (!pyEq(header.kid, p.kid)) return "token_kid_mismatch";
   if (p.source === "id-jag" && header.typ !== "oauth-id-jag+jwt") return "token_typ_not_id_jag";
   const named = TYP_SOURCES[String(header.typ ?? "").toLowerCase().replace(/^application\//, "")];
   if (named !== undefined && named !== p.source) return `token_type_mismatch:${named}`;
-  if (!verifyJws(String(header.alg), p.key, Buffer.from(`${parts[0]}.${parts[1]}`), unb64url(parts[2]))) return "token_signature_unverified";
+  if (!verifyJws(String(header.alg), p.key, Buffer.from(`${parts[0]}.${parts[1]}`), signature)) return "token_signature_unverified";
   const aud = claims.aud;
   // an ID token names its client in azp (OpenID Connect Core 1.0, section 2); an access token in client_id
   const client = truthy(claims.client_id) ? claims.client_id : (p.source === "id-token" ? claims.azp : null);
+  const issued = claimTime(claims, "iat"), expires = claimTime(claims, "exp");
+  if (issued === null || expires === null) return "token_malformed";
   const expected: [string, J][] = [["issuer", claims.iss], ["subject", claims.sub], ["clientId", client],
-    ["audience", Array.isArray(aud) ? aud : [aud]], ["issuedAt", isoSeconds(claims.iat ?? 0)], ["expiresAt", isoSeconds(claims.exp ?? 0)]];
+    ["audience", Array.isArray(aud) ? aud : [aud]], ["issuedAt", issued], ["expiresAt", expires]];
   for (const [member, value] of expected) if (!pyEq(p[member], value)) return `token_claim_mismatch:${member}`;
   if (!pyEq(claims.act, p.act)) return "token_claim_mismatch:act";
   if (!pyEq(claims.cnf, p.cnf)) return "token_claim_mismatch:cnf";
   if (at !== null && Object.hasOwn(claims, "nbf")) {
-    if (typeof claims.nbf !== "number" || !Number.isInteger(claims.nbf)) return "token_malformed";
+    if (typeof claims.nbf !== "number" || !Number.isInteger(claims.nbf) || isFloat(claims, "nbf", claims.nbf)) return "token_malformed";
     if (claims.nbf * 1e6 > ts(at)) return "token_not_yet_valid"; // ts: microseconds
   }
   return null;
@@ -1497,7 +1511,9 @@ function verifyOidcApproval(embedded: J, pinned: J, pins: Record<string, string[
   const problem = checkPrincipal(principal, at, pins) ?? verifyPrincipalToken(principal, token, jwks, at);
   if (problem !== null) return problem;
   if (approval.keyId !== oidcPrincipalId(String(pinned.issuer), String(pinned.subject))) return "approval_key_id_is_not_the_principal";
-  const claims = JSON.parse(unb64url(token.split(".")[1]).toString("utf8"));
+  const segments = tokenSegments(token);
+  if (segments === null) return "token_malformed"; // verifyPrincipalToken read it; the claims are never read by another parser
+  const claims = segments[1];
   if (claims.nonce !== sha256Hex(canonicalBytes(approval))) return "approval_nonce_mismatch";
   let issued: number, expires: number;
   try { issued = ts(req(approval, "issuedAt")) / 1e6; expires = ts(req(approval, "expiresAt")) / 1e6; } // ts: microseconds
@@ -1508,10 +1524,10 @@ function verifyOidcApproval(embedded: J, pinned: J, pins: Record<string, string[
 }
 
 const revocationStates = new WeakMap<RevocationsDoc, RevocationState>();
-/** Trust.key_revoked for the approval count: false for every key when the auditor pinned no revocation lists. */
-function approverKeyRevoked(trust: TrustDoc): ((kid: string, at: string) => boolean) | undefined {
-  const doc = trust.revocations;
-  if (doc === undefined) return undefined;
+/** The list in force from the auditor's pinned revocation lists (Trust.revocations), or null when none are pinned. */
+function revocationState(trust: TrustDoc | null): RevocationState | null {
+  const doc = trust?.revocations;
+  if (doc === undefined) return null;
   let state = revocationStates.get(doc);
   if (state === undefined) {
     // RevocationState.from_lists: the whole chain from seq 1, in seq order
@@ -1520,8 +1536,32 @@ function approverKeyRevoked(trust: TrustDoc): ((kid: string, at: string) => bool
       .reduce((st: RevocationState, signed: J) => applyRevocationList(st, signed), newRevocationState(doc.rootKeyIds));
     revocationStates.set(doc, state);
   }
-  const held = state;
-  return (kid, at) => revokedAt(held, "key", kid, at);
+  return state;
+}
+/** Trust.revoked_at(kind, id, at): false for every subject when the auditor pinned no revocation lists. */
+const revokedFor = (trust: TrustDoc | null, kind: string, id: string, at: string): boolean => {
+  const state = revocationState(trust);
+  return state !== null && revokedAt(state, kind, id, at);
+};
+/** Trust.key_revoked for the approval count and the grant chain; undefined when no lists are pinned. */
+function approverKeyRevoked(trust: TrustDoc): ((kid: string, at: string) => boolean) | undefined {
+  return revocationState(trust) === null ? undefined : (kid, at) => revokedFor(trust, "key", kid, at);
+}
+function chainRevocations(trust: TrustDoc): ChainRevocations {
+  const state = revocationState(trust);
+  if (state === null) return {};
+  return { keyRevoked: (kid, at) => revokedAt(state, "key", kid, at), grantRevoked: (digest) => revoked(state, "grant", digest) };
+}
+/** journal._revocation_problems: the agent (its client id), the sponsor when the block names one, and an autonomous
+ *  block's standing grant, each revoked at or before the record's time. */
+function revocationProblems(block: J, grade: string, at: string, trust: TrustDoc): string[] {
+  if (revocationState(trust) === null) return [];
+  const problems: string[] = [];
+  if (revokedFor(trust, "agent", String(block.agent.clientId), at)) problems.push("principals_agent_revoked");
+  if (Object.hasOwn(block, "sponsor") && revokedFor(trust, "sponsor", sponsorId(block.sponsor.issuer, block.sponsor.subject), at))
+    problems.push("principals_sponsor_revoked");
+  if (grade === "autonomous" && revokedFor(trust, "grant", String(block.standingGrant), at)) problems.push("principals_standing_grant_revoked");
+  return problems;
 }
 
 /** What countBindings checks beyond the policy (quorum.count_bindings): the key revocations the auditor pinned, and
@@ -1636,9 +1676,16 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
                    counted: Map<string, Approvers>): [J | null, string[]] {
   const where = `line_${i}`, problems: string[] = [];
   let body: J;
-  try { const [payload] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); body = parseReceived(payload); }
+  let signerId: string;
+  try { const [payload, signer] = openEnvelope(parseReceived(Buffer.from(line, "utf8")), keys); signerId = signer; body = parseReceived(payload); }
   catch (e) { return [null, [`${where}:${(e as Error).message}`]]; }
   const pred = body.predicate ?? {};
+  if (trust !== null) {
+    // journal._check_revocations: the record's signer key and its permit, each revoked at or before the record's time
+    const at = String(pred.at ?? "None");
+    if (revokedFor(trust, "key", signerId, at)) problems.push(`${where}:signer_key_revoked`);
+    if (truthy(pred.permitId) && revokedFor(trust, "permit", String(pred.permitId), at)) problems.push(`${where}:permit_revoked`);
+  }
   if (pred.seq !== i) problems.push(`${where}:seq_mismatch:${pred.seq ?? "None"}:${i}`);
   if (pred.prev !== prev) problems.push(`${where}:chain_broken`);
   // The approvals are judged first, because an approver principal may name only an approver this record counts; their
@@ -1673,6 +1720,7 @@ function checkLine(i: number, line: string, keys: KeyObject[], prev: string, tru
       const [found, grade] = checkPrincipals(block, String(pred.at), trust.identityIssuers ?? {}, nameable, { sponsors, standingGrants: grants }, tally);
       problems.push(...found.map((p) => `${where}:${p}`));
       if (grade === "autonomous") problems.push(...standingProblems(pred, block).map((p) => `${where}:${p}`));
+      if (grade !== null) problems.push(...revocationProblems(block, grade, String(pred.at), trust).map((p) => `${where}:${p}`));
       if (grade !== null && trust.identityProfile === "strict" && grade !== "strict" && grade !== "autonomous")
         problems.push(`${where}:principals_below_strict:${strictShortfall(block, nameable, tally)}`);
     }
@@ -1696,17 +1744,18 @@ function spendOf(budget: J, args: J): number {
   return typeof v === "number" ? v : Infinity;
 }
 
-// Who a principals block names, role by role (journal._parties): issuer and subject, so a refreshed credential is the
-// same party; an approver list is the set of its members' pairs, in no order.
-const party = (p: J): J => isObj(p) ? new Party(p.issuer ?? null, p.subject ?? null) : p;
-const sortKey = (x: J): string => JSON.stringify(x instanceof Party ? [x.issuer, x.subject] : x);
-function parties(block: J): J {
+// Who a principals block names, role by role (journal._parties): each party's valueKey, a principal (any object) as
+// its issuer and subject in an object (a refreshed credential is the same party; a list of two strings spelling the pair
+// is not, since a member that is not an object never prints as one); an approver list is the multiset of its members'
+// keys, sorted. The result is one string, so two blocks name the same parties exactly when the strings are equal.
+const partyKey = (p: J): string => valueKey(isObj(p) ? { issuer: p.issuer ?? null, subject: p.subject ?? null } : p ?? null).toString("hex");
+function parties(block: J): string | null {
   if (!isObj(block)) return null;
-  const out: Record<string, J> = {};
-  for (const [role, p] of Object.entries(block)) {
-    out[role] = Array.isArray(p) ? p.map(party).map((x) => [sortKey(x), x] as const).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, x]) => x) : party(p);
-  }
-  return out;
+  const roles = Object.keys(block).sort(byCodePoint).map((role) => {
+    const p = block[role];
+    return [role, Array.isArray(p) ? { list: p.map(partyKey).sort() } : partyKey(p)];
+  });
+  return JSON.stringify(roles);
 }
 
 function crossChecks(bodies: [number, J][], skew: number): string[] {
@@ -1741,7 +1790,7 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
     const pred = body.predicate, pid = pred.permitId ?? null, phase = pred.phase;
     const later = phase === "intent" || phase === "effect" || (phase === "authorize" && pred.decision === "allow");
     // a credential may be refreshed between a permit's records; the parties they name may not change
-    if (later && partiesOf.has(pid) && pred.principals !== undefined && pred.principals !== null && !pyEq(parties(pred.principals), partiesOf.get(pid)))
+    if (later && partiesOf.has(pid) && pred.principals !== undefined && pred.principals !== null && parties(pred.principals) !== partiesOf.get(pid))
       problems.push(`line_${i}:principals_differ_from_permit:${phase}`);
     if (phase === "authorize" && pred.decision === "allow") {
       if (!partiesOf.has(pid)) partiesOf.set(pid, parties(pred.principals));

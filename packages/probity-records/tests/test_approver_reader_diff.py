@@ -2,7 +2,8 @@
 
 Each journal is an allow alone, or an allow followed by an intent on the same permit. The approver value of each
 record is drawn from one generated set of shapes (one principal, a list of two in either order, a refreshed
-credential, two strings that spell a principal in either order, one string, a list of one, null, absent): every
+credential, two strings that spell a principal in either order, one string, a list of one, null, absent, one number
+written two ways, a boolean against a number, subjects outside ASCII, one member twice): every
 shape stands alone as an allow, and every allow shape is paired with every intent shape. Each journal is read by
 the strict and by the basic auditor.
 
@@ -44,10 +45,26 @@ def _member(who: str, *, refreshed: bool = False) -> dict[str, Any]:
     return member
 
 
+def _numbered(first: Any, second: Any) -> list[dict[str, Any]]:
+    """Both approvers, the issuer of the member whose subject sorts first ``first`` and of the other ``second``: one
+    JSON number written two ways (``1.0`` and ``1``, ``1e16`` and ``10000000000000000``) is one party to both
+    readers, whichever member carries it and however the readers order the list."""
+    first_who = min(("ops", "lead"), key=lambda w: g.WHO[w])
+    return [{**_member(w), "issuer": first if w == first_who else second} for w in ("ops", "lead")]
+
+
 def shapes() -> dict[str, Any]:
     """Every approver value the readers must agree on."""
     iss = FULL["approver"]["issuer"]
     return {
+        "iss:1.0-first": _numbered(1.0, 1),
+        "iss:1": _numbered(1, 1),
+        "iss:1e16-first": _numbered(1e16, 10**16),
+        "iss:10**16": _numbered(10**16, 10**16),
+        "iss:true-first": _numbered(True, 1),
+        "unicode": [{**_member("ops"), "subject": "\u00e9"}, {**_member("lead"), "subject": "z"}],
+        "unicode-changed": [{**_member("ops"), "subject": "\u00ea"}, {**_member("lead"), "subject": "z"}],
+        "ops,ops": [_member("ops"), _member("ops")],
         "ops": _member("ops"),
         "ops-refreshed": _member("ops", refreshed=True),
         "ops,lead": [_member("ops"), _member("lead")],
@@ -78,7 +95,7 @@ def _allow(approver: Any) -> dict[str, Any]:
                            approval_policy="refunds1of2", approval_bindings=[g.binding(g.OPS, g.WHO["ops"])])
 
 
-ALLOW_SHAPES = ("ops", "ops,lead", "lead,ops", "strings:iss,sub")
+ALLOW_SHAPES = ("ops", "ops,lead", "lead,ops", "strings:iss,sub", "iss:1.0-first", "iss:1e16-first", "unicode")
 
 
 def journals() -> dict[str, list[dict[str, Any]]]:
