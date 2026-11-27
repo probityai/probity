@@ -14,12 +14,11 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import json
 from collections.abc import Mapping
 from typing import Any
 
 from . import constraints, quorum
-from .core import canonical, sha256_hex
+from .core import admitted_loads, canonical, sha256_hex
 from .grants import ts
 from .identifiers import identifier
 
@@ -84,10 +83,16 @@ def verify_exception_evidence(pred: Mapping[str, Any], evidence: Mapping[str, An
     digest = exception_digest(body)
     if digest != evidence.get("exceptionDigest") or digest != pred.get("exceptionDigest"):
         problems.append("exception_digest_differs_from_record")
-    raw = base64.b64decode(evidence.get("argsB64", ""))
-    if hashlib.sha256(raw).hexdigest() != pred.get("argsSha256"):
+    try:
+        raw = base64.b64decode(evidence.get("argsB64", ""))
+        args = admitted_loads(raw) if raw else None
+    except (ValueError, TypeError):  # bytes the strict reader refuses are not arguments a call carried
+        raw, args = b"", None
         problems.append("authority_args_are_not_the_call_arguments")
-    verdict = check_exception_call(body, str(pred.get("tool")), json.loads(raw) if raw else None, at)
+    if hashlib.sha256(raw).hexdigest() != pred.get("argsSha256") \
+            and "authority_args_are_not_the_call_arguments" not in problems:
+        problems.append("authority_args_are_not_the_call_arguments")
+    verdict = check_exception_call(body, str(pred.get("tool")), args, at)
     if verdict != "ok":
         problems.append(verdict)
     q = evidence.get("quorum") or {}

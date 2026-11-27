@@ -35,13 +35,13 @@ from __future__ import annotations
 
 import base64
 import binascii
-import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Final
 
 from .canonical_identity import PROFILES, CanonicalIdentity, IdentityStringError, Ref
 from .clock import from_datetime
+from .core import TOKEN_MAX_DEPTH, admitted_loads
 from .digests import IdentityDigestError, act_chain_digest
 from .grants import ts
 from .identity import _verify_jws, jwk_thumbprint, unb64url
@@ -246,16 +246,8 @@ class VerifiedRequest:
 
 
 def _segment(text: str) -> dict[str, Any]:
-    def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
-        out: dict[str, Any] = {}
-        for key, value in items:
-            if key in out:
-                raise ValueError("duplicate member")
-            out[key] = value
-        return out
-
     try:
-        value = json.loads(base64.urlsafe_b64decode(text + "=" * (-len(text) % 4)), object_pairs_hook=pairs)
+        value = admitted_loads(base64.urlsafe_b64decode(text + "=" * (-len(text) % 4)), max_depth=TOKEN_MAX_DEPTH)
     except (ValueError, binascii.Error) as exc:
         raise _refuse("token_malformed", "a segment is not base64url JSON") from exc
     if not isinstance(value, dict):

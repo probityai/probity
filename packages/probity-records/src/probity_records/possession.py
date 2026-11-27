@@ -46,7 +46,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from .core import Signer
+from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads
 from .grants import ts
 from .identity import b64url, jwk_thumbprint, unb64url
 
@@ -127,20 +127,18 @@ class DpopProof:
     replay_exp: int
 
 
-def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for k, v in pairs:
-        if k in out:
-            raise ValueError("duplicate")
-        out[k] = v
-    return out
-
-
 def _segment_json(segment: str) -> Any:
+    """One DPoP segment as JSON, read by the package's strict reader; ``JsonRefused`` otherwise."""
     raw = unb64url(segment)
     if b64url(raw) != segment:
         raise ValueError("not canonical base64url")
-    return json.loads(raw, object_pairs_hook=_no_duplicates)
+    return admitted_loads(raw, max_depth=TOKEN_MAX_DEPTH)
+
+
+def _segment_refusal(exc: ValueError) -> str:
+    """The registered code for a segment that did not read: a repeated member, or anything else malformed."""
+    duplicate = isinstance(exc, JsonRefused) and exc.variant == "DuplicateMember"
+    return "dpop_duplicate_member" if duplicate else "dpop_malformed"
 
 
 def normalize_htu(url: str) -> str:
@@ -216,7 +214,7 @@ def _header(segment: str, expected_jkt: str) -> tuple[str, Any, str | None]:
     try:
         h = _segment_json(segment)
     except ValueError as exc:
-        return "", None, "dpop_duplicate_member" if str(exc) == "duplicate" else "dpop_malformed"
+        return "", None, _segment_refusal(exc)
     if not isinstance(h, dict):
         return "", None, "dpop_malformed"
     if set(h) - _HEADER_MEMBERS:
@@ -305,7 +303,7 @@ def check_dpop(proof: str, method: str, url: str, at: str, *, expected_jkt: str,
     try:
         claims = _segment_json(body)
     except ValueError as exc:
-        return None, "dpop_duplicate_member" if str(exc) == "duplicate" else "dpop_malformed"
+        return None, _segment_refusal(exc)
     now = int(ts(at).timestamp())
     problem = _claims_problem(claims, method, url, now, skew, access_token, content, require_content_binding)
     if problem:

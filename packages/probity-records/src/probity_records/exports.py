@@ -13,14 +13,14 @@ between two sealed exports.
 from __future__ import annotations
 
 import base64
-import json
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Final
 
 from .core import (
     Signer,
+    admitted_loads,
     canonical,
     load_public,
     open_envelope,
@@ -48,16 +48,18 @@ class FieldMap:
     modified_at: str = "lastUpdatedDate"
 
 
-def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    keys = [k for k, _ in pairs]
-    if len(keys) != len(set(keys)):
-        raise ValueError("export_has_duplicate_keys")
-    return dict(pairs)
+#: The largest export ``parse_export`` reads: 128 MiB. A caller that knows its exports are larger names its own bound.
+MAX_EXPORT_BYTES: Final = 128 * 1024 * 1024
 
 
-def parse_export(data: bytes) -> list[Any]:
-    """The records of an export: a top-level list, or the list under a common envelope key."""
-    doc = json.loads(data.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
+def parse_export(data: bytes, *, max_bytes: int = MAX_EXPORT_BYTES) -> list[Any]:
+    """The records of an export: a top-level list, or the list under a common envelope key.
+
+    The bytes are read by ``core.admitted_loads``: a repeated member, invalid UTF-8, a lone surrogate, NaN, a number
+    no double holds, nesting past 128 containers or more than ``max_bytes`` bytes is ``ValueError``
+    (``jcs_refused:<variant>``), never a recursion error or a value other than the one signed.
+    """
+    doc = admitted_loads(data, max_bytes=max_bytes)
     if isinstance(doc, list):
         return doc
     if isinstance(doc, dict):
@@ -114,7 +116,7 @@ def verify_export_seal(envelope: Mapping[str, Any], data: bytes, public_pems: It
     failures: list[str] = []
     try:
         payload, _ = open_envelope(dict(envelope), [load_public(p) for p in public_pems])
-        body = json.loads(payload)
+        body = admitted_loads(payload)
     except (ValueError, TypeError) as exc:
         return {"verdict": "FAIL", "failures": [f"seal:{exc}"], "census": None}
     pred = body.get("predicate", {})
@@ -138,7 +140,7 @@ def compare_seals(older: Mapping[str, Any], newer: Mapping[str, Any]) -> dict[st
     """Ids added, removed or changed between two sealed exports (envelopes already verified)."""
 
     def table(env: Mapping[str, Any]) -> dict[str, str]:
-        census_ = json.loads(base64.b64decode(env["payload"]))["predicate"]["census"]
+        census_ = admitted_loads(base64.b64decode(env["payload"]))["predicate"]["census"]
         return {d["id"]: d["sha256"] for d in census_["recordDigests"] if d["id"] is not None}
 
     a, b = table(older), table(newer)

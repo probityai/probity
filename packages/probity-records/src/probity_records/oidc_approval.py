@@ -29,11 +29,10 @@ The quorum policy pins such an approver as ``{"issuer", "subject"}``, and the ap
 from __future__ import annotations
 
 import base64
-import json
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from .core import canonical, sha256_hex
+from .core import TOKEN_MAX_DEPTH, admitted_loads, canonical, sha256_hex
 from .grants import ts
 from .identity import check_principal, unb64url, verify_token
 
@@ -79,7 +78,12 @@ def verify_oidc_approval(embedded: Mapping[str, Any], pinned: Any, pins: Mapping
         return problem
     if approval.get("keyId") != principal_id(str(pinned["issuer"]), str(pinned["subject"])):
         return "approval_key_id_is_not_the_principal"
-    claims = json.loads(unb64url(token.split(".")[1]))
+    try:
+        claims = admitted_loads(unb64url(token.split(".")[1]), max_depth=TOKEN_MAX_DEPTH)
+    except ValueError:
+        return "token_malformed"
+    if not isinstance(claims, dict):
+        return "token_malformed"
     if claims.get("nonce") != approval_nonce(approval):
         return "approval_nonce_mismatch"
     auth_time = claims.get("auth_time")

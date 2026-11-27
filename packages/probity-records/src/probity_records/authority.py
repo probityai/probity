@@ -60,10 +60,19 @@ class Trust:
 
 
 def _args(evidence: Mapping[str, Any], pred: Mapping[str, Any], problems: list[str], where: str) -> Any:
-    raw = base64.b64decode(evidence.get("argsB64", ""))
+    try:
+        raw = base64.b64decode(evidence.get("argsB64", ""))
+    except (ValueError, TypeError):
+        problems.append(f"{where}:authority_args_are_not_the_call_arguments")
+        return None
     if hashlib.sha256(raw).hexdigest() != pred.get("argsSha256"):
         problems.append(f"{where}:authority_args_are_not_the_call_arguments")
-    return admitted_loads(raw) if raw else None
+    try:
+        return admitted_loads(raw) if raw else None
+    except ValueError:  # arguments the strict reader refuses are not arguments a call carried
+        if f"{where}:authority_args_are_not_the_call_arguments" not in problems:
+            problems.append(f"{where}:authority_args_are_not_the_call_arguments")
+        return None
 
 
 def _check_grant(pred: Mapping[str, Any], evidence: Mapping[str, Any], trust: Trust, at: str,

@@ -65,7 +65,7 @@ def _line_hash(line: bytes) -> str:
 
 
 def _payload(envelope: Mapping[str, Any]) -> dict[str, Any]:
-    return json.loads(base64.b64decode(envelope["payload"]))
+    return admitted_loads(base64.b64decode(envelope["payload"]))
 
 
 def _whole_lines(path: Path) -> tuple[list[bytes], int]:
@@ -155,7 +155,7 @@ class Journal:
                     self._offset += len(line)
                     body = line.rstrip(b"\n")
                     if body.strip():
-                        predicate = _payload(json.loads(body))["predicate"]
+                        predicate = _payload(admitted_loads(body))["predicate"]
                         self._seq = int(predicate["seq"])
                         self._head = _line_hash(body)
                         at = _at_ns(predicate.get("at"))
@@ -237,7 +237,7 @@ class Journal:
 
     def statements(self) -> list[dict[str, Any]]:
         """The statements of every whole line; a torn tail from a writer killed mid-append is not one."""
-        return [_payload(json.loads(line)) for line in _whole_lines(self.path)[0] if line.strip()]
+        return [_payload(admitted_loads(line)) for line in _whole_lines(self.path)[0] if line.strip()]
 
     def checkpoint(self) -> dict[str, Any]:
         """A signed statement of the line count and head, for an outsider to pin."""
@@ -264,7 +264,7 @@ def _delegations(directory: Path, roots: list[Any], failures: list[str]) -> dict
         if not line.strip():
             continue
         try:
-            d = verify_delegation(json.loads(line), roots)
+            d = verify_delegation(admitted_loads(line), roots)
         except (ValueError, TypeError) as exc:
             failures.append(f"keys_line_{n}:session_key_delegation_invalid:{exc}")
             continue
@@ -706,7 +706,7 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
         failures.append("key_custody_checkpoint_missing")
         return
     try:
-        provenance = json.loads(base64.b64decode(checkpoint_env["payload"]))["predicate"].get("keyProvenance") or {}
+        provenance = admitted_loads(base64.b64decode(checkpoint_env["payload"]))["predicate"].get("keyProvenance") or {}
     except (KeyError, TypeError, ValueError):
         return  # the checkpoint check reports the malformed envelope
     roots = {delegations[k].root_key_id if k in delegations else k for k in signer_ids}

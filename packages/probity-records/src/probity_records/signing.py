@@ -41,7 +41,7 @@ from cryptography.hazmat.primitives.serialization import (
     load_der_public_key,
 )
 
-from .core import _b64, _unb64, canonical, key_id, load_public
+from .core import _b64, _unb64, admitted_loads, canonical, key_id, load_public
 from .grants import ts as _instant
 
 DELEGATION_DOMAIN = b"probity-key-delegation-v2\x00"
@@ -179,7 +179,7 @@ class VaultTransitKey(_PinnedKey):
         req = urllib.request.Request(f"{self.address.rstrip('/')}/v1/{self.mount}/{path}", data=data,
                                      headers=headers, method=method)
         with self.opener(req, timeout=self.timeout) as resp:
-            answer: dict[str, Any] = json.loads(resp.read())
+            answer: dict[str, Any] = admitted_loads(resp.read())
         return answer
 
     @property

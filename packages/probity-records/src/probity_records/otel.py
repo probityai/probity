@@ -39,7 +39,7 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
 
 from .clock import Clock
-from .core import Signer, canonical, key_id, load_public, sha256_hex
+from .core import Signer, admitted_loads, canonical, key_id, load_public, sha256_hex
 from .journal import _whole_lines
 
 INTEGRITY_PREFIX = "audit.integrity."
@@ -390,8 +390,8 @@ def export_journal(stream: AuditStream, journal_path: os.PathLike[str] | str, *,
     for body in _whole_lines(Path(journal_path))[0]:  # a torn tail from a writer killed mid-append is not a line
         if not body.strip():
             continue
-        envelope = json.loads(body)
-        statement = json.loads(base64.b64decode(envelope["payload"]))
+        envelope = admitted_loads(body)
+        statement = admitted_loads(base64.b64decode(envelope["payload"]))
         attrs = tool_call_attributes(body, statement, actor_id=actor_id)
         pred = statement.get("predicate", {})
         redact = {name: pred[key] for key, name in (("context", "probity.context"),)
