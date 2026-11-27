@@ -26,10 +26,12 @@ from .authority import GRANT_ALLOW, Trust, check_authority
 from .clock import Clock, from_datetime, to_datetime
 from .core import (
     admitted_loads,
+    call_args_of,
     load_public,
     open_envelope,
     sign_envelope,
     statement,
+    unb64,
     value_key,
 )
 from .governance import GOVERNANCE_STEP, check_step
@@ -72,7 +74,7 @@ def _line_hash(line: bytes) -> str:
 
 
 def _payload(envelope: Mapping[str, Any]) -> dict[str, Any]:
-    return admitted_loads(base64.b64decode(envelope["payload"]))
+    return admitted_loads(unb64(envelope["payload"]))
 
 
 def _whole_lines(path: Path) -> tuple[list[bytes], int]:
@@ -320,7 +322,7 @@ def _check_approval(pred: dict[str, Any], problems: list[str], where: str, trust
         return None, None
     reader_allowed: set[str] = set()
     for n, embedded in enumerate(bindings):
-        payload = base64.b64decode(embedded["payloadB64"])
+        payload = unb64(embedded["payloadB64"])  # core.unb64, as the TypeScript reader reads it
         if hashlib.sha256(payload).hexdigest() != pred.get("argsSha256"):
             problems.append(f"{where}:binding_{n}:approval_payload_is_not_the_call_arguments")
         verdict = judge_approval_binding(embedded["record"], payload)
@@ -575,7 +577,7 @@ def _grant_charges(pred: dict[str, Any]) -> list[tuple[str, dict[str, Any] | Non
     if not isinstance(evidence, Mapping) or evidence.get("kind") != "grant":
         return []
     try:
-        args = admitted_loads(base64.b64decode(evidence.get("argsB64", ""))) if evidence.get("argsB64") else None
+        args = call_args_of(evidence)[1]
         return [(grant_digest(g["body"]), g["body"].get("budget"), args) for g in evidence.get("chain", [])
                 if body_problem(g["body"]) is None]
     except (ValueError, KeyError, TypeError):

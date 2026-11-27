@@ -18,7 +18,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from . import constraints, quorum
-from .core import admitted_loads, canonical, sha256_hex
+from .core import call_args_of, canonical, sha256_hex
 from .grants import ts
 from .identifiers import identifier
 
@@ -84,9 +84,8 @@ def verify_exception_evidence(pred: Mapping[str, Any], evidence: Mapping[str, An
     if digest != evidence.get("exceptionDigest") or digest != pred.get("exceptionDigest"):
         problems.append("exception_digest_differs_from_record")
     try:
-        raw = base64.b64decode(evidence.get("argsB64", ""))
-        args = admitted_loads(raw) if raw else None
-    except (ValueError, TypeError):  # bytes the strict reader refuses are not arguments a call carried
+        raw, args = call_args_of(evidence)
+    except ValueError:  # bytes the strict reader refuses are not arguments a call carried
         raw, args = b"", None
         problems.append("authority_args_are_not_the_call_arguments")
     if hashlib.sha256(raw).hexdigest() != pred.get("argsSha256") \

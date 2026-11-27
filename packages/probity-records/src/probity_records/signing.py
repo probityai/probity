@@ -41,7 +41,7 @@ from cryptography.hazmat.primitives.serialization import (
     load_der_public_key,
 )
 
-from .core import _b64, _unb64, admitted_loads, canonical, key_id, load_public
+from .core import _b64, admitted_loads, canonical, key_id, load_public, unb64
 from .grants import ts as _instant
 
 DELEGATION_DOMAIN = b"probity-key-delegation-v2\x00"
@@ -420,7 +420,7 @@ def _body_problem(body: Mapping[str, Any]) -> str | None:
     if not isinstance(body["rootProvenance"], Mapping):
         return "delegation_root_provenance_invalid"
     try:
-        _raw_public(_unb64(body["sessionKey"]))
+        _raw_public(unb64(body["sessionKey"]))
     except (ValueError, SigningError):
         return "delegation_session_key_invalid"
     if not isinstance(body["rootKeyId"], str):
@@ -444,7 +444,7 @@ def verify_delegation(certificate: Any, roots: list[Ed25519PublicKey]) -> Delega
     if problem is not None:
         raise ValueError(problem)
     try:
-        sig = _unb64(certificate["sig"])
+        sig = unb64(certificate["sig"])
     except ValueError:
         raise ValueError("delegation_shape") from None
     message = DELEGATION_DOMAIN + canonical(body)
@@ -455,7 +455,7 @@ def verify_delegation(certificate: Any, roots: list[Ed25519PublicKey]) -> Delega
             continue
         if key_id(root) != body["rootKeyId"]:
             raise ValueError("delegation_root_key_id_mismatch")
-        session = _raw_public(_unb64(body["sessionKey"]))
+        session = _raw_public(unb64(body["sessionKey"]))
         scope = DelegationScope(body["hierarchy"], body["custody"], body["tenant"], body["windowS"])
         return Delegation(session, key_id(session), body["rootKeyId"], scope, body["notBefore"], body["notAfter"])
     raise ValueError("delegation_unverified")

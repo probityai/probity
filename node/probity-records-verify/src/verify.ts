@@ -162,11 +162,21 @@ export function isFloat(holder: J, key: string | number, value: J): boolean {
   return typeof value === "number" && (!Number.isInteger(value) || (holder !== null && typeof holder === "object" && (FLOAT_KEYS.get(holder)?.has(String(key)) ?? false)));
 }
 
-function unb64(text: J): Buffer {
+/** probity_records.core.unb64: padded standard base64 read only in its canonical spelling; throws otherwise. */
+export function unb64(text: J): Buffer {
   if (typeof text !== "string") throw new Error("expected base64 text");
   const data = Buffer.from(text, "base64");
   if (data.toString("base64") !== text) throw new Error("expected canonical base64");
   return data;
+}
+
+/** probity_records.core.call_args_of: the bytes and parsed value of the call arguments an authority block carries
+ *  as argsB64. An absent member or "" is a call with no arguments; otherwise canonical base64 (unb64) and admitted
+ *  JSON (parseReceived) only, and anything else throws. */
+export function callArgsOf(ev: J): [Buffer, J] {
+  if (!isObj(ev) || !Object.hasOwn(ev, "argsB64")) return [Buffer.alloc(0), null];
+  const raw = unb64(ev.argsB64);
+  return [raw, raw.length ? parseReceived(raw) : null];
 }
 
 // ---------- keys and signatures ----------
@@ -719,7 +729,12 @@ export function quorumPolicyProblem(policy: J): string | null {
 export const PRIVATE_JWK_MEMBERS: readonly string[] = ["d", "p", "q", "dp", "dq", "qi", "oth", "k", "priv"];
 /** True when the JWK object carries any member of PRIVATE_JWK_MEMBERS as its own member. */
 export function hasPrivateMember(jwk: J): boolean {
-  return Object.keys(jwk).some((k) => PRIVATE_JWK_MEMBERS.includes(k));
+  return isObj(jwk) && Object.keys(jwk).some((k) => PRIVATE_JWK_MEMBERS.includes(k));
+}
+/** identity.refuse_private: throws for a JWK that carries private key material. publicJwk and jwkThumbprint call it
+ *  first, and every reader reads key bytes only through them, so no reader can admit such a key. */
+export function refusePrivate(jwk: J): void {
+  if (hasPrivateMember(jwk)) throw new Error("a JWK carries private key material");
 }
 
 // RFC 7800 confirmation: exactly one method, jkt (RFC 9449) or x5t#S256 (RFC 8705), a SHA-256 thumbprint in
@@ -948,6 +963,7 @@ const CURVE_BYTES: Record<string, number> = { "EC P-256": 32, "OKP Ed25519": 32 
  * one key has several spellings and several RFC 7638 thumbprints.
  */
 export function publicJwk(jwk: J): Record<string, Buffer> {
+  refusePrivate(jwk);
   if (jwk.kty === "RSA") {
     const n = strictB64url(jwk.n), e = strictB64url(jwk.e);
     if (!n.length || !e.length || n[0] === 0 || e[0] === 0) throw new Error("an RSA n or e is not the minimum number of octets");
@@ -964,6 +980,7 @@ export function publicJwk(jwk: J): Record<string, Buffer> {
 
 /** RFC 7638 thumbprint of a key publicJwk reads; a thumbprint names one key, so it exists only for its one spelling. */
 export function jwkThumbprint(jwk: J): string {
+  refusePrivate(jwk);
   // Own members only: THUMB["constructor"] is Object, which has no .some and would raise instead of refuse.
   const m = typeof jwk.kty === "string" && Object.hasOwn(THUMB, jwk.kty) ? THUMB[jwk.kty] : undefined;
   if (!m || m.some((k) => !(k in jwk))) throw new Error("jwk_unsupported");
@@ -1163,9 +1180,12 @@ function checkAuthority(pred: J, trust: TrustDoc | null, problems: string[], whe
     return verifyQuorumEvidence(q, pinned, requestHash(String(pred.tool), String(pred.argsSha256), String(pred.permitId), q.proposer, q.historyDigest), at);
   };
   if (reason === "quorum") { const o = quorumOutcome(ev); if (o !== "ok") problems.push(`${where}:${o}`); return true; }
-  const raw = Buffer.from(ev.argsB64 ?? "", "base64");
-  if (sha256Hex(raw) !== pred.argsSha256) problems.push(`${where}:authority_args_are_not_the_call_arguments`);
-  const args = raw.length ? parseReceived(raw) : null;
+  let args: J = null;
+  try {
+    const [raw, parsed] = callArgsOf(ev);
+    args = parsed;
+    if (sha256Hex(raw) !== pred.argsSha256) problems.push(`${where}:authority_args_are_not_the_call_arguments`);
+  } catch { problems.push(`${where}:authority_args_are_not_the_call_arguments`); }
   const v = verifyGrantAllow(ev.chain ?? [], String(pred.tool), args, at, new Set(trust.grantRootKeyIds ?? []), ev.ctx ?? {}, chainRevocations(trust));
   if (v.decision === "needs_approval" && isObj(ev.quorum)) {
     const o = quorumOutcome(ev.quorum, ev.chain[ev.chain.length - 1].body.tools[String(pred.tool)].quorum);
@@ -1488,19 +1508,44 @@ function validatePolicy(policy: J): void {
 // JWKS snapshot digest, the key in that snapshot, the header kid and typ, the JWS signature, every stated claim, and
 // with `at` an nbf no later than the record's time.
 const TYP_SOURCES: Record<string, string> = { "oauth-id-jag+jwt": "id-jag", "at+jwt": "jwt-access-token" };
-const unb64url = (text: string): Buffer => Buffer.from(text, "base64url");
 const B64URL_SEGMENT = /^[A-Za-z0-9_-]*$/;
 // the whole seconds of years 1 to 9999, the range both readers print a time claim in the same way
 const CLAIM_TIME_MIN = -62135596800, CLAIM_TIME_MAX = 253402300799;
 /** A compact JWS read strictly (identity.token_segments): its header, claims and signature bytes, or null. Three
  *  base64url segments without padding; header and claims each one JSON object jcs-admit admits (no duplicate member,
  *  no NaN or Infinity, valid UTF-8, no lone surrogate), parsed with integers and floats kept apart (parseReceived). */
+/** The deepest nesting, in containers, a token segment may have (core.TOKEN_MAX_DEPTH). */
+const TOKEN_MAX_DEPTH = 32;
+const STRICT_UTF8 = new TextDecoder("utf-8", { fatal: true });
+
+/** Refuse nesting deeper than TOKEN_MAX_DEPTH before the parse can recurse; brackets inside strings do not count. */
+export function refuseDeep(text: string): void {
+  let depth = 0, inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) { if (ch === "\\") i += 1; else if (ch === '"') inString = false; }
+    else if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") { depth += 1; if (depth > TOKEN_MAX_DEPTH) throw new Error("jcs_refused:TooDeep"); }
+    else if (ch === "}" || ch === "]") depth -= 1;
+  }
+}
+
+/** One base64url token segment as JSON, read like probity_records.core.admitted_loads with TOKEN_MAX_DEPTH: the
+ *  canonical base64url spelling only (identity.unb64url), valid UTF-8, no nesting deeper than TOKEN_MAX_DEPTH, and
+ *  what jcs-admit admits. Every token reader in this package reads its header and claims through this. */
+export function tokenSegmentJson(segment: string): J {
+  const raw = strictB64url(segment);
+  refuseDeep(STRICT_UTF8.decode(raw));
+  return parseReceived(raw);
+}
 function tokenSegments(token: string): [J, J, Buffer] | null {
   const parts = token.split(".");
   if (parts.length !== 3 || !parts.every((s) => B64URL_SEGMENT.test(s) && s.length % 4 !== 1)) return null;
   let header: J, claims: J;
-  try { header = parseReceived(unb64url(parts[0])); claims = parseReceived(unb64url(parts[1])); } catch { return null; }
-  return isObj(header) && isObj(claims) ? [header, claims, unb64url(parts[2])] : null;
+  let signature: Buffer;
+  try { header = tokenSegmentJson(parts[0]); claims = tokenSegmentJson(parts[1]); signature = strictB64url(parts[2]); }
+  catch { return null; }
+  return isObj(header) && isObj(claims) ? [header, claims, signature] : null;
 }
 /** A token time claim (identity._claim_time) as its principal field prints it, the epoch when absent; null when it is
  *  not an integer number of seconds (a float, 1.0 included, a string, a boolean, null) within years 1 to 9999. */
@@ -1511,6 +1556,7 @@ function claimTime(claims: J, name: string): string | null {
 }
 function verifyJws(alg: string, jwk: J, signingInput: Buffer, sig: Buffer): boolean {
   try {
+    publicJwk(jwk);  // identity._verify_jws reads the key through public_jwk: one spelling, nothing private
     if (alg === "EdDSA" && jwk.kty === "OKP" && jwk.crv === "Ed25519")
       return edVerify(null, signingInput, createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: jwk.x }, format: "jwk" }), sig);
     if (alg === "ES256" && jwk.kty === "EC" && jwk.crv === "P-256") {
@@ -1530,6 +1576,8 @@ function verifyPrincipalToken(p: J, token: string, jwks: J, at: string | null): 
   const segments = tokenSegments(token);
   if (segments === null) return "token_malformed";
   const [header, claims, signature] = segments, parts = token.split(".");
+  // RFC 7515 section 4.1.11: a verifier that implements no extension refuses one that is demanded (identity.verify_token)
+  if (Object.hasOwn(header, "crit")) return "token_critical_unsupported";
   if (!pyEq(header.kid, p.kid)) return "token_kid_mismatch";
   if (p.source === "id-jag" && header.typ !== "oauth-id-jag+jwt") return "token_typ_not_id_jag";
   const named = TYP_SOURCES[String(header.typ ?? "").toLowerCase().replace(/^application\//, "")];
@@ -1843,7 +1891,7 @@ function crossChecks(bodies: [number, J][], skew: number): string[] {
     if (!isObj(ev) || ev.kind !== "grant") continue;
     let charges: [string, J, J][];
     try {
-      const args = ev.argsB64 ? parseReceived(Buffer.from(ev.argsB64, "base64")) : null;
+      const args = callArgsOf(ev)[1];
       // A malformed body is skipped: its allow is refused already (grant_deny), and its budget has no members to count.
       charges = (ev.chain ?? []).filter((g: J) => isObj(g) && isObj(g.body) && bodyProblem(g.body) === null)
         .map((g: J) => [digestOf(g.body), g.body.budget, args]);

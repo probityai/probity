@@ -234,7 +234,11 @@ def _b64(data: bytes) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
-def _unb64(text: Any) -> bytes:
+def unb64(text: Any) -> bytes:
+    """The bytes of padded standard base64 text, read only in its canonical spelling: ``ValueError`` for anything
+    else (a value that is not a string, a missing or extra ``=``, a byte outside the alphabet, stray low bits in the
+    last digit). Every reader of received base64 goes through this one rule, as the TypeScript twin's ``unb64`` does,
+    so a text one reader decodes the other never refuses."""
     if not isinstance(text, str):
         raise ValueError("expected base64 text")
     try:
@@ -244,6 +248,18 @@ def _unb64(text: Any) -> bytes:
     if _b64(data) != text:
         raise ValueError("expected canonical base64")
     return data
+
+
+def call_args_of(evidence: Any) -> tuple[bytes, Any]:
+    """The bytes and the parsed value of the call arguments an authority block carries as ``argsB64``.
+
+    An absent member or ``""`` is a call with no arguments, ``(b"", None)``. Otherwise the member is read with
+    ``unb64`` (canonical base64 only) and the bytes with ``admitted_loads``, so ``ValueError`` covers every value that
+    is not the arguments a call carried. The TypeScript twin ``callArgsOf`` reads by the same rules."""
+    if not isinstance(evidence, dict) or "argsB64" not in evidence:
+        return b"", None
+    raw = unb64(evidence["argsB64"])
+    return raw, (admitted_loads(raw) if raw else None)
 
 
 def sign_envelope(signer: Any, payload: bytes, payload_type: str = IN_TOTO_PAYLOAD_TYPE) -> dict[str, Any]:
@@ -264,7 +280,7 @@ def open_envelope(envelope: Any, keys: list[Ed25519PublicKey],
     kind = envelope["payloadType"]
     if not is_utf8_text(kind):
         raise ValueError("envelope_shape")
-    payload = _unb64(envelope["payload"])
+    payload = unb64(envelope["payload"])
     entries = envelope["signatures"]
     if not isinstance(entries, list) or not entries:
         raise ValueError("envelope_shape")
@@ -272,7 +288,7 @@ def open_envelope(envelope: Any, keys: list[Ed25519PublicKey],
     for key in keys:
         for entry in entries:
             try:
-                key.verify(_unb64(entry.get("sig") if isinstance(entry, dict) else None), pre)
+                key.verify(unb64(entry.get("sig") if isinstance(entry, dict) else None), pre)
             except (InvalidSignature, ValueError):
                 continue
             if kind != payload_type:
@@ -306,7 +322,7 @@ def verify_approval(signed: Any, approver_pems: dict[str, bytes]) -> dict[str, A
     if pem is None:
         return None
     try:
-        load_public(pem).verify(_unb64(signed.get("sig")), APPROVAL_DOMAIN + canonical(body))
+        load_public(pem).verify(unb64(signed.get("sig")), APPROVAL_DOMAIN + canonical(body))
     except (InvalidSignature, ValueError):
         return None
     return body
@@ -346,7 +362,7 @@ def verify_permit(permit: Any, authority_pem: bytes) -> dict[str, Any] | None:
     message = PERMIT_DOMAIN + canonical(permit["claims"])
     for key in keys:
         try:
-            key.verify(_unb64(permit.get("sig")), message)
+            key.verify(unb64(permit.get("sig")), message)
         except (InvalidSignature, ValueError):
             continue
         return permit["claims"]

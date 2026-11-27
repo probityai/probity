@@ -6,7 +6,7 @@
 import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
 import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
-import { IdentityDigestError, actChainDigest, canonical, cnfProblem, hasPrivateMember, isFloat, jwkThumbprint, parseReceived, publicJwk, strictB64url, ts } from "./verify.ts";
+import { IdentityDigestError, actChainDigest, canonical, cnfProblem, hasPrivateMember, isFloat, jwkThumbprint, parseReceived, publicJwk, strictB64url, tokenSegmentJson, ts, unb64 } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -44,26 +44,8 @@ const utf8Len = (s: string): number => Buffer.byteLength(s, "utf8");
 
 class Duplicate extends Error {}
 
-/** The deepest nesting, in containers, a token segment may have (core.TOKEN_MAX_DEPTH). */
-const TOKEN_MAX_DEPTH = 32;
-const STRICT_UTF8 = new TextDecoder("utf-8", { fatal: true });
-
-/** Refuse nesting deeper than TOKEN_MAX_DEPTH before the parse can recurse; brackets inside strings do not count. */
-function refuseDeep(text: string): void {
-  let depth = 0, inString = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inString) { if (ch === "\\") i += 1; else if (ch === '"') inString = false; }
-    else if (ch === '"') inString = true;
-    else if (ch === "{" || ch === "[") { depth += 1; if (depth > TOKEN_MAX_DEPTH) throw new Error("jcs_refused:TooDeep"); }
-    else if (ch === "}" || ch === "]") depth -= 1;
-  }
-}
-
 function segmentJson(segment: string): J {
-  const raw = strictB64url(segment);  // identity.unb64url: only the canonical spelling is read
-  refuseDeep(STRICT_UTF8.decode(raw));  // invalid UTF-8 throws here, as the Python reader refuses it
-  try { return parseReceived(raw); }    // jcs-admit: a repeated member, a lone surrogate, NaN
+  try { return tokenSegmentJson(segment); }  // one reader with verify.ts's tokenSegments (core.TOKEN_MAX_DEPTH)
   catch (e) { throw (e as Error).message === "jcs_refused:DuplicateMember" ? new Duplicate("duplicate") : e; }
 }
 
@@ -181,7 +163,7 @@ function stampKey(bundle: TrustBundle, keyid: string): PinnedKey {
 function publicKey(jwk: J): KeyObject {
   const members = jwk.kty === "RSA" ? ["kty", "n", "e"] : jwk.kty === "EC" ? ["kty", "crv", "x", "y"] : ["kty", "crv", "x"];
   const key: J = {}; for (const m of members) key[m] = jwk[m];
-  publicJwk(key);  // identity.public_jwk: Node's own JWK import would read a second spelling of the same key
+  publicJwk(jwk);  // identity.public_jwk: one spelling only (Node's own import reads others), nothing private
   return createPublicKey({ key, format: "jwk" });
 }
 
@@ -365,8 +347,7 @@ function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | 
     if (!Array.isArray(x5c) || x5c.length !== 1 || typeof x5c[0] !== "string") return ["", null, "dpop_x5c_invalid"];
     let presented: J;
     try {
-      if (!/^[A-Za-z0-9+/]*={0,2}$/.test(x5c[0])) throw new Error("base64");
-      presented = new X509Certificate(Buffer.from(x5c[0], "base64")).publicKey.export({ format: "jwk" });
+      presented = new X509Certificate(unb64(x5c[0])).publicKey.export({ format: "jwk" });  // core.unb64: canonical only
     } catch { return ["", null, "dpop_x5c_invalid"]; }
     const members = presented.kty === "OKP" && presented.crv === "Ed25519" ? DPOP_JWK.EdDSA
       : presented.kty === "EC" && presented.crv === "P-256" ? DPOP_JWK.ES256 : null;

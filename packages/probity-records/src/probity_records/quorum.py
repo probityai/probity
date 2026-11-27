@@ -40,7 +40,7 @@ from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 
-from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
+from .core import Signer, _b64, canonical, key_id, load_public, sha256_hex, unb64
 from .grants import ts
 from .identifiers import identifier
 
@@ -199,7 +199,7 @@ def _deputy_problem(vote: Mapping[str, Any], policy: Mapping[str, Any], at: str)
     if raw is None or dbody.get("delegator") != who:
         return "deputy_for_unknown_approver", None
     try:
-        load_public(_unb64(raw)).verify(_unb64(delegation.get("sig")), DEPUTY_DOMAIN + canonical(dbody))
+        load_public(unb64(raw)).verify(unb64(delegation.get("sig")), DEPUTY_DOMAIN + canonical(dbody))
     except (InvalidSignature, ValueError, TypeError):
         return "deputy_delegation_unverified", None
     if dbody.get("policyId") != policy["policyId"] or dbody.get("deputy") != body.get("approver"):
@@ -234,8 +234,8 @@ def _vote_problem(vote: Any, policy: Mapping[str, Any], request: str, at: str,
     if proposer is not None and proposer in (counted_as, str(body.get("approver"))):
         return "vote_by_proposer"
     try:
-        key = load_public(_unb64(raw))
-        key.verify(_unb64(vote.get("sig")), VOTE_DOMAIN + canonical(body))
+        key = load_public(unb64(raw))
+        key.verify(unb64(vote.get("sig")), VOTE_DOMAIN + canonical(body))
     except (InvalidSignature, ValueError, TypeError):
         return "vote_signature_unverified"
     if body.get("policyId") != policy["policyId"]:
@@ -380,8 +380,8 @@ def count_bindings(policy: Mapping[str, Any], bindings: Iterable[Mapping[str, An
             counted.add(who)
             continue
         try:
-            key = load_public(_unb64(raw))
-            key.verify(_unb64(embedded.get("approvalSig")), APPROVAL_DOMAIN + canonical(approval))
+            key = load_public(unb64(raw))
+            key.verify(unb64(embedded.get("approvalSig")), APPROVAL_DOMAIN + canonical(approval))
         except (InvalidSignature, ValueError, TypeError):
             problems.append(f"binding_{n}:approval_signature_unverified")
             continue

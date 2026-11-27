@@ -59,7 +59,7 @@ from typing import Any
 from cryptography.exceptions import InvalidSignature
 
 from . import celexpr, constraints
-from .core import Signer, _b64, _unb64, canonical, key_id, load_public, sha256_hex
+from .core import Signer, _b64, canonical, key_id, load_public, sha256_hex, unb64
 from .identifiers import identifier
 
 GRANT_DOMAIN = b"probity-grant-v1\x00"
@@ -175,7 +175,7 @@ def _validate_tools(tools: Any) -> None:
 def _issuer_key_ok(text: Any) -> bool:
     """``issuerKey`` is the canonical base64 of a 32-byte raw Ed25519 public key (the one the signature names)."""
     try:
-        raw = _unb64(text)
+        raw = unb64(text)
         load_public(raw)
     except (ValueError, TypeError):
         return False
@@ -365,7 +365,7 @@ def _budget_narrowing(child: Any, parent: Any) -> str | None:
 
 def _verify_sig(signed: Mapping[str, Any], raw_key_b64: str) -> bool:
     try:
-        load_public(_unb64(raw_key_b64)).verify(_unb64(signed.get("sig")), GRANT_DOMAIN + canonical(signed["body"]))
+        load_public(unb64(raw_key_b64)).verify(unb64(signed.get("sig")), GRANT_DOMAIN + canonical(signed["body"]))
     except (InvalidSignature, ValueError, TypeError):
         return False
     return True
@@ -398,7 +398,7 @@ def _structure(chain: list[Mapping[str, Any]], root_key_ids: frozenset[str]) -> 
             break
         try:
             validate_body(body)
-            issuer_id = key_id(load_public(_unb64(body["issuerKey"])))
+            issuer_id = key_id(load_public(unb64(body["issuerKey"])))
         except (ValueError, KeyError, TypeError) as exc:
             result = f"grant_invalid:{depth}:{exc}"
             break

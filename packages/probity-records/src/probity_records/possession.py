@@ -23,7 +23,6 @@ its thumbprint matches), and both ES256 and EdDSA (Ed25519) are accepted.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 import re
@@ -45,7 +44,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads, same_text
+from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads, same_text, unb64
 from .grants import ts
 from .identity import b64url, has_private_member, jwk_thumbprint, unb64url
 from .identity import public_jwk as jwk_bytes
@@ -227,7 +226,7 @@ def _x5c_problem(x5c: Any, jwk: Mapping[str, Any]) -> str | None:
     if not isinstance(x5c, list) or len(x5c) != 1 or not isinstance(x5c[0], str):
         return "dpop_x5c_invalid"
     try:
-        cert = x509.load_der_x509_certificate(base64.b64decode(x5c[0], validate=True))
+        cert = x509.load_der_x509_certificate(unb64(x5c[0]))  # core.unb64: the canonical spelling only
         presented = public_jwk(cert.public_key())
     except (ValueError, TypeError, UnsupportedAlgorithm):
         return "dpop_x5c_invalid"
