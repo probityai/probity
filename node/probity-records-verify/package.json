@@ -27,7 +27,8 @@
   "scripts": {
     "test": "node --test test/*.test.ts",
     "build": "node scripts/build.mjs",
-    "prepack": "node scripts/build.mjs"
+    "prepack": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
     "@bufbuild/cel": "0.6.0",
@@ -38,5 +39,9 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "typescript": "5.9.3"
   }
 }

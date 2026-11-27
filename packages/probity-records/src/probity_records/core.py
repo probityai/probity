@@ -75,6 +75,18 @@ def canonical(value: Any) -> bytes:
     return _jcs(raw.encode("ascii"))
 
 
+def value_key(value: Any) -> bytes:
+    """The RFC 8785 bytes of a parsed JSON value, as a key that sorts and compares it.
+
+    Two values have one key exactly when they are one JSON value: object members in any order are one object, and a
+    number is its IEEE double, so ``1.0`` and ``1``, and ``1e16`` and ``10000000000000000``, are one number, as
+    JavaScript's parse reads them (the TypeScript twin's ``valueKey`` gives the same bytes). Unlike ``canonical`` it
+    does not refuse an integer beyond the exact range: received bytes were admitted, and jcs-admit reads every number
+    as a double. ``true`` is never ``1``.
+    """
+    return _jcs(json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode("ascii"))
+
+
 def admitted_loads(raw: bytes | str) -> Any:
     """Parse RECEIVED bytes after jcs-admit has read them raw.
 
