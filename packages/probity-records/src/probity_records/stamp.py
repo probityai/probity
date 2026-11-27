@@ -41,7 +41,6 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Final
-from urllib.parse import urlsplit
 
 from agent_evidence_verify import structured_fields as sf  # type: ignore[import-untyped]
 from cryptography.exceptions import InvalidSignature
@@ -54,6 +53,7 @@ from .canonical_identity import CanonicalIdentity, IdentityStringError
 from .clock import NS_PER_S
 from .core import admitted_loads, canonical, sha256_hex
 from .digests import is_digest, stamp_digest
+from .possession import http_uri_parts, uri_authority
 from .signing import verify_delegation
 
 #: The four request fields of a stamp (lower case: field names compare case-insensitively).
@@ -74,7 +74,6 @@ PRINCIPALS_MEMBERS: Final = ("id", "client", "principals")
 #: The longest lifetime a stamp may carry; a stamp names one request, so it is never a standing credential.
 MAX_TTL_SECONDS: Final = 300
 MAX_NONCE_BYTES: Final = 128
-_DEFAULT_PORTS: Final = {"http": 80, "https": 443}
 
 
 class StampRefused(ValueError):
@@ -203,15 +202,10 @@ def content_digest(body: bytes | None) -> str:
 
 def authority(target_uri: str) -> str:
     """The RFC 9421 ``@authority`` of a target URI: the host in lower case, the port only when it is not the default."""
-    parts = urlsplit(target_uri)
-    if parts.scheme not in _DEFAULT_PORTS or not parts.hostname or parts.username is not None or parts.fragment:
-        raise ValueError(f"a stamped target is an absolute http(s) URI with a host and no userinfo or fragment: "
-                         f"{target_uri[:120]!r}")  # fmt: skip
-    host = parts.hostname.lower()
-    if ":" in host:
-        host = f"[{host}]"
-    port = parts.port
-    return host if port is None or port == _DEFAULT_PORTS[parts.scheme] else f"{host}:{port}"
+    scheme, host, port, _, rest = http_uri_parts(target_uri)  # one reader of a target URI, with the TypeScript twin
+    if "#" in rest:
+        raise ValueError(f"a stamped target carries no fragment: {target_uri[:120]!r}")
+    return uri_authority(scheme, host, port)
 
 
 def _params_member(created: int, expires: int, nonce: str, keyid: str) -> sf.InnerList:

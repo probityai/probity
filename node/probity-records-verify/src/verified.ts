@@ -287,38 +287,46 @@ function eq(a: string, b: string): boolean {
 // with (unreserved, reserved, and "%" followed by two hex digits); a space, a control byte, a tab or line break, a
 // non-ASCII character or a backslash makes the text something other than the request URI (RFC 9449 section 4.3).
 const URI_TEXT = /^(?:[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*$/;
-// scheme "://" authority path, then a query or fragment the comparison ignores (RFC 3986 section 3).
-const HTU_PARTS = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)(?:[?#][\s\S]*)?$/;
+// scheme "://" authority path, then a query or fragment (RFC 3986 section 3).
+const HTU_PARTS = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)([?#][\s\S]*)?$/;
 const IP_LITERAL = /^\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?$/;
 const REG_NAME = /^[A-Za-z0-9\-._~!$&'()*+,;=%]+$/;
 const PORT = /^[0-9]+$/;
+const URI_DEFAULT_PORTS: Record<string, number> = { http: 80, https: 443 };
 
-/** possession.normalize_htu: scheme and host lower case, default port dropped, no query or fragment, an empty path as
- *  "/"; throws for anything that is not an absolute http or https URI in the RFC 3986 alphabet, for userinfo (RFC 9110
- *  section 4.2.4), for an empty, non-numeric or out-of-range port and for an empty host. */
-export function normalizeHtu(url: string): string {
-  if (typeof url !== "string" || !URI_TEXT.test(url)) throw new Error("htu_not_a_uri");
+/** possession.http_uri_parts: [scheme, host, port, path, rest] of an absolute http or https URI written in the RFC
+ *  3986 alphabet, the one reader of a request target here (a DPoP htu, a stamp's @target-uri). Scheme and host lower
+ *  case, a bracketed IP literal keeps its brackets; userinfo, an empty host and an empty, non-numeric or out-of-range
+ *  port throw, as does any character outside the alphabet. */
+export function httpUriParts(url: string): [string, string, number | null, string, string] {
+  if (typeof url !== "string" || !URI_TEXT.test(url)) throw new Error("uri_not_in_the_uri_alphabet");
   const parts = HTU_PARTS.exec(url);
-  if (parts === null) throw new Error("htu_not_absolute");
-  const scheme = parts[1].toLowerCase(), authority = parts[2], path = parts[3];
-  if ((scheme !== "https" && scheme !== "http") || authority.includes("@")) throw new Error("htu_not_absolute");
+  if (parts === null) throw new Error("uri_not_absolute");
+  const scheme = parts[1].toLowerCase(), authority = parts[2], path = parts[3], rest = parts[4] ?? "";
+  if (!Object.hasOwn(URI_DEFAULT_PORTS, scheme) || authority.includes("@")) throw new Error("uri_not_absolute");
   let host: string, portText: string | null;
   const literal = IP_LITERAL.exec(authority);
   if (literal !== null) { host = `[${literal[1].toLowerCase()}]`; portText = literal[2] ?? null; }
-  else if (authority.includes("[") || authority.includes("]")) throw new Error("htu_not_absolute");
+  else if (authority.includes("[") || authority.includes("]")) throw new Error("uri_not_absolute");
   else {
     const colon = authority.indexOf(":");
     host = (colon < 0 ? authority : authority.slice(0, colon)).toLowerCase();
     portText = colon < 0 ? null : authority.slice(colon + 1);
-    if (!REG_NAME.test(host)) throw new Error("htu_not_absolute");
+    if (!REG_NAME.test(host)) throw new Error("uri_not_absolute");
   }
-  let port: number | null = null;
-  if (portText !== null) {
-    if (!PORT.test(portText) || parseInt(portText, 10) > 65535) throw new Error("htu_port_invalid");
-    port = parseInt(portText, 10);
-  }
-  const plain = port === null || (scheme === "https" && port === 443) || (scheme === "http" && port === 80);
-  return `${scheme}://${host}${plain ? "" : `:${port}`}${path || "/"}`;
+  if (portText === null) return [scheme, host, null, path, rest];
+  if (!PORT.test(portText) || parseInt(portText, 10) > 65535) throw new Error("uri_port_invalid");
+  return [scheme, host, parseInt(portText, 10), path, rest];
+}
+/** possession.uri_authority: the host, with the port only when it is not the scheme's default. */
+function uriAuthority(scheme: string, host: string, port: number | null): string {
+  return port === null || port === URI_DEFAULT_PORTS[scheme] ? host : `${host}:${port}`;
+}
+/** possession.normalize_htu: scheme and host lower case, default port dropped, no query or fragment, an empty path as
+ *  "/"; throws as httpUriParts does. */
+export function normalizeHtu(url: string): string {
+  const [scheme, host, port, path] = httpUriParts(url);
+  return `${scheme}://${uriAuthority(scheme, host, port)}${path || "/"}`;
 }
 
 function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | null, string | null] {
@@ -446,7 +454,6 @@ class StampRefused extends VerifiedIdentitiesRefused {}
 const stampRefuse = (code: string, detail = ""): never => { throw new StampRefused(code, detail); };
 const isString = (v: unknown): v is string => typeof v === "string";
 const isInteger = (v: unknown): v is number => typeof v === "number";
-const DEFAULT_PORTS: Record<string, string> = { "http:": "80", "https:": "443" };
 
 function dictionary(value: string): Map<string, Member> {
   try { return parseDictionary(value); } catch (e) { if (e instanceof SFError) return stampRefuse("stamp_malformed"); throw e; }
@@ -483,9 +490,9 @@ function stampParams(member: Member | undefined): { created: number; expires: nu
 
 /** stamp.authority: the host in lower case, the port only when it is not the scheme's default. */
 function authority(target: string): string {
-  const u = new URL(target);
-  if (!(u.protocol in DEFAULT_PORTS) || u.username !== "" || u.password !== "" || u.hash !== "") throw new TypeError("a stamped target is an absolute http(s) URI");
-  return u.port === "" || u.port === DEFAULT_PORTS[u.protocol] ? u.hostname.toLowerCase() : `${u.hostname.toLowerCase()}:${u.port}`;
+  const [scheme, host, port, , rest] = httpUriParts(target);  // one reader of a target URI, with the Python twin
+  if (rest.includes("#")) throw new TypeError("a stamped target carries no fragment");
+  return uriAuthority(scheme, host, port);
 }
 
 function signatureBase(method: string, target: string, digestValue: string, principalsValue: string, inner: InnerList): Buffer {

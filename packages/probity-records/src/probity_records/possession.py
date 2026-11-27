@@ -28,7 +28,7 @@ import json
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
@@ -142,47 +142,59 @@ def _segment_refusal(exc: ValueError) -> str:
 #: text something other than the request URI it is compared with (RFC 9449 section 4.3). Python's ``urlsplit`` strips
 #: leading spaces and C0 controls and deletes tabs and line breaks, so the reader refuses them before it splits.
 _URI_TEXT = re.compile(r"(?:[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*")
-#: scheme "://" authority path, then a query or fragment the comparison ignores (RFC 3986 section 3).
-_HTU_PARTS = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*)://([^/?#]*)([^?#]*)(?:[?#].*)?", re.DOTALL)
+#: scheme "://" authority path, then a query or fragment (RFC 3986 section 3).
+_HTU_PARTS = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*)://([^/?#]*)([^?#]*)([?#].*)?", re.DOTALL)
 _IP_LITERAL = re.compile(r"\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?")
 _REG_NAME = re.compile(r"[A-Za-z0-9\-._~!$&'()*+,;=%]+")
 _PORT = re.compile(r"[0-9]+")
+#: The default port of each scheme an http target URI may carry.
+DEFAULT_PORTS: Final = {"http": 80, "https": 443}
 
 
-def normalize_htu(url: str) -> str:
-    """RFC 9449 section 4.3 target URI: scheme and host lower case, default port dropped, no query or fragment,
-    an empty path as ``/``. The path is otherwise compared exactly.
+def http_uri_parts(url: object) -> tuple[str, str, int | None, str, str]:
+    """(scheme, host, port, path, rest) of an absolute http or https URI; ``rest`` is its query and fragment text.
 
-    ``ValueError`` for anything that is not an absolute http or https URI written in the RFC 3986 alphabet: a
-    character outside it, userinfo (RFC 9110 section 4.2.4 forbids it in an http URI), an empty or non-numeric port or
-    one above 65535, an empty host. The TypeScript twin ``normalizeHtu`` applies the same rules in the same order, so
-    one text has one answer in both readers."""
+    The one reader of a request target in this package (a DPoP ``htu`` and a stamp's ``@target-uri``), with the
+    TypeScript twin ``httpUriParts``: the text is read only when it is written in the RFC 3986 alphabet, so a space, a
+    control byte, a tab or line break, a non-ASCII character or a backslash is ``ValueError`` (Python's ``urlsplit``
+    strips or deletes some of them and WHATWG URL parsing rewrites others, so two readers would see two URIs). Scheme
+    and host come back in lower case, a bracketed IP literal keeps its brackets, and userinfo (RFC 9110 section 4.2.4),
+    an empty host, and an empty, non-numeric or out-of-range port are ``ValueError``."""
     if not isinstance(url, str) or not _URI_TEXT.fullmatch(url):
-        raise ValueError("htu_not_a_uri")
+        raise ValueError("uri_not_in_the_uri_alphabet")
     parts = _HTU_PARTS.fullmatch(url)
     if parts is None:
-        raise ValueError("htu_not_absolute")
-    scheme, authority, path = parts[1].lower(), parts[2], parts[3]
-    if scheme not in ("https", "http") or "@" in authority:
-        raise ValueError("htu_not_absolute")
+        raise ValueError("uri_not_absolute")
+    scheme, authority, path, rest = parts[1].lower(), parts[2], parts[3], parts[4] or ""
+    if scheme not in DEFAULT_PORTS or "@" in authority:
+        raise ValueError("uri_not_absolute")
     literal = _IP_LITERAL.fullmatch(authority)
     if literal is not None:
         host, port_text = f"[{literal[1].lower()}]", literal[2]
     elif "[" in authority or "]" in authority:
-        raise ValueError("htu_not_absolute")
+        raise ValueError("uri_not_absolute")
     else:
-        name, colon, rest = authority.partition(":")
-        host, port_text = name.lower(), (rest if colon else None)
+        name, colon, after = authority.partition(":")
+        host, port_text = name.lower(), (after if colon else None)
         if not _REG_NAME.fullmatch(host):
-            raise ValueError("htu_not_absolute")
-    port = None
-    if port_text is not None:
-        if not _PORT.fullmatch(port_text) or int(port_text) > 65535:
-            raise ValueError("htu_port_invalid")
-        port = int(port_text)
-    if port is None or (scheme, port) in (("https", 443), ("http", 80)):
-        return f"{scheme}://{host}{path or '/'}"
-    return f"{scheme}://{host}:{port}{path or '/'}"
+            raise ValueError("uri_not_absolute")
+    if port_text is None:
+        return scheme, host, None, path, rest
+    if not _PORT.fullmatch(port_text) or int(port_text) > 65535:
+        raise ValueError("uri_port_invalid")
+    return scheme, host, int(port_text), path, rest
+
+
+def uri_authority(scheme: str, host: str, port: int | None) -> str:
+    """The host, with the port only when it is not the scheme's default (RFC 9421 ``@authority``, RFC 9449 htu)."""
+    return host if port is None or port == DEFAULT_PORTS[scheme] else f"{host}:{port}"
+
+
+def normalize_htu(url: str) -> str:
+    """RFC 9449 section 4.3 target URI: scheme and host lower case, default port dropped, no query or fragment,
+    an empty path as ``/``. The path is otherwise compared exactly; ``ValueError`` as ``http_uri_parts`` refuses."""
+    scheme, host, port, path, _ = http_uri_parts(url)
+    return f"{scheme}://{uri_authority(scheme, host, port)}{path or '/'}"
 
 
 class _JwkRefused(ValueError):
