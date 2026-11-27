@@ -6,7 +6,7 @@
 import { createHash, createPublicKey, timingSafeEqual, verify as cryptoVerify, X509Certificate, type KeyObject } from "node:crypto";
 import { CanonicalIdentity, IdentityStringError, Ref } from "./identity.ts";
 import { type InnerList, type Item, type Member, SFError, parseDictionary, serializeInnerList } from "./sf.ts";
-import { IdentityDigestError, actChainDigest, cnfProblem, isFloat, jwkThumbprint, parseReceived, publicJwk, strictB64url, ts } from "./verify.ts";
+import { IdentityDigestError, actChainDigest, cnfProblem, hasPrivateMember, isFloat, jwkThumbprint, parseReceived, publicJwk, strictB64url, ts } from "./verify.ts";
 
 type J = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -23,7 +23,6 @@ const KEY_REFERENCES = ["jku", "jwk", "x5u", "x5c"];
 const BUNDLE_MEMBERS = ["anchors", "audience", "environment", "issuers", "profile", "tenant", "version"];
 const ANCHOR_MEMBERS = ["jwk", "notAfter", "notBefore", "predicateTypes", "role", "status", "thumbprint"];
 const ANCHOR_STATUSES = ["active", "retired", "revoked"];
-const PRIVATE_JWK = ["d", "p", "q", "dp", "dq", "qi", "k", "oth"];
 const MIN_RSA_BITS = 2048;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
@@ -104,7 +103,7 @@ function parseAnchors(entries: J): Anchor[] {
   return (entries as J[]).map((a) => {
     if (!sameKeys(a, ANCHOR_MEMBERS)) bad("an anchor has exactly its seven members");
     const jwk = a.jwk;
-    if (!isObj(jwk) || Object.keys(jwk).some((k) => PRIVATE_JWK.includes(k))) bad("an anchor key is a public JWK");
+    if (!isObj(jwk) || hasPrivateMember(jwk)) bad("an anchor key is a public JWK");
     if (!isStampKey(jwk)) bad("an anchor key is an Ed25519 OKP key");
     let x = Buffer.alloc(0);
     try { x = rawOf(jwk); } catch { bad("an anchor key's x is 32 base64url bytes"); }
@@ -135,7 +134,7 @@ function parseIssuer(url: string, entry: J): PinnedKey[] {
   if (!Array.isArray(entry.keys) || !entry.keys.length || !Array.isArray(entry.pins) || !entry.pins.length) bad("keys and pins are non-empty lists");
   const byThumb = new Map<string, J>();
   for (const jwk of entry.keys) {
-    if (!isObj(jwk) || Object.keys(jwk).some((k) => PRIVATE_JWK.includes(k))) bad("a key is a public JWK");
+    if (!isObj(jwk) || hasPrivateMember(jwk)) bad("a key is a public JWK");
     let thumb = "";
     try { thumb = jwkThumbprint(jwk); } catch { bad("a key has no RFC 7638 thumbprint"); }
     if (jwk.kty === "RSA" && publicJwk(jwk).n.length * 8 < MIN_RSA_BITS) bad(`an RSA key shorter than ${MIN_RSA_BITS} bits`);
@@ -335,7 +334,7 @@ function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | 
   if (alg !== "ES256" && alg !== "EdDSA") return ["", null, "dpop_alg_not_allowed"];
   const jwk = h.jwk;
   if (!isObj(jwk)) return ["", null, "dpop_jwk_invalid"];
-  if (["d", "p", "q", "dp", "dq", "qi", "k"].some((m) => m in jwk)) return ["", null, "dpop_jwk_private"];
+  if (hasPrivateMember(jwk)) return ["", null, "dpop_jwk_private"];
   const [kty, crv] = DPOP_CURVE[alg];
   if (!sameKeys(jwk, DPOP_JWK[alg]) || jwk.kty !== kty || jwk.crv !== crv) return ["", null, "dpop_jwk_invalid"];
   let key: KeyObject;

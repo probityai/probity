@@ -700,6 +700,15 @@ export function quorumPolicyProblem(policy: J): string | null {
 
 // ---------- grants ----------
 
+/** identity.PRIVATE_JWK_MEMBERS: every JWK member that carries private key material, the IANA "JSON Web Key
+ * Parameters" members of information class Private (RFC 7518 sections 6.2.2, 6.3.2 with oth, 6.4.1; RFC 8037; the AKP
+ * key type's priv). Every reader that refuses private material reads this one list through hasPrivateMember. */
+export const PRIVATE_JWK_MEMBERS: readonly string[] = ["d", "p", "q", "dp", "dq", "qi", "oth", "k", "priv"];
+/** True when the JWK object carries any member of PRIVATE_JWK_MEMBERS as its own member. */
+export function hasPrivateMember(jwk: J): boolean {
+  return Object.keys(jwk).some((k) => PRIVATE_JWK_MEMBERS.includes(k));
+}
+
 // RFC 7800 confirmation: exactly one method, jkt (RFC 9449) or x5t#S256 (RFC 8705), a SHA-256 thumbprint in
 // canonical base64url. A grant without one is a bearer token and is refused, as by the Python verifier.
 const CNF_METHODS = ["jkt", "x5t#S256"];
@@ -953,7 +962,7 @@ function principalShape(p: J): string | null {
   if (!Array.isArray(p.audience) || !p.audience.length || new Set(p.audience.map(String)).size !== p.audience.length) return "principal_malformed";
   if (!SOURCES.includes(p.source) || !AUTH.includes(p.authMethod)) return "principal_malformed";
   if (["tokenDigest", "jwksDigest"].some((m) => typeof p[m] !== "string" || !/^[0-9a-f]{64}$/.test(p[m]))) return "principal_malformed";
-  if (!isObj(p.key) || ["d", "p", "q", "dp", "dq", "qi", "k"].some((k) => k in p.key)) return "principal_key_invalid";
+  if (!isObj(p.key) || hasPrivateMember(p.key)) return "principal_key_invalid";
   if ("cnf" in p && cnfProblem(p.cnf)) return "principal_cnf_invalid";
   return null;
 }

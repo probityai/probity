@@ -28,12 +28,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from . import witness as w
 from .core import JsonRefused, admitted_loads, key_id, open_envelope
 from .grants import ts
-from .identity import jwk_thumbprint, unb64url
+from .identity import PRIVATE_JWK_MEMBERS, jwk_thumbprint, unb64url
 from .revocation import RevocationState
 
 ANCHOR_MEMBERS: Final = frozenset({"jwk", "thumbprint", "role", "status", "notBefore", "notAfter", "predicateTypes"})
 ANCHOR_STATUSES: Final = ("active", "retired", "revoked")
-PRIVATE_JWK_MEMBERS: Final = frozenset({"d", "p", "q", "dp", "dq", "qi", "k", "oth"})
 
 
 class AnchorRefused(ValueError):

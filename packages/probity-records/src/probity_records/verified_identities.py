@@ -43,7 +43,13 @@ from .clock import from_datetime
 from .core import TOKEN_MAX_DEPTH, admitted_loads
 from .digests import IdentityDigestError, act_chain_digest
 from .grants import ts
-from .identity import _verify_jws, jwk_thumbprint, public_jwk, unb64url
+from .identity import (
+    PRIVATE_JWK_MEMBERS,
+    _verify_jws,
+    jwk_thumbprint,
+    public_jwk,
+    unb64url,
+)
 from .possession import CertificateProof, DpopProof, check_possession
 from .stamp import (
     StampRefused,
@@ -67,7 +73,6 @@ ROLE_TYPES: Final = {"user": ("at+jwt", "oauth-id-jag+jwt"), "agent": ("at+jwt",
 KEY_REFERENCES: Final = ("jku", "jwk", "x5u", "x5c")
 BUNDLE_MEMBERS: Final = frozenset({"version", "environment", "tenant", "audience", "profile", "issuers", "anchors"})
 MIN_RSA_BITS: Final = 2048
-PRIVATE_JWK_MEMBERS: Final = frozenset({"d", "p", "q", "dp", "dq", "qi", "k", "oth"})
 
 
 class VerifiedIdentitiesRefused(ValueError):

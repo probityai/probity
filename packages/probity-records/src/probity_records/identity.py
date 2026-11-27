@@ -47,7 +47,7 @@ import base64
 import hashlib
 import json
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Final
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
@@ -57,6 +57,13 @@ from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 
 from .core import TOKEN_MAX_DEPTH, admitted_loads, canonical, sha256_hex
 from .grants import ts
+
+#: Every JWK member that carries private key material: the members of the IANA "JSON Web Key Parameters" registry whose
+#: information class is Private. RFC 7518 section 6.2.2 (EC ``d``), section 6.3.2 (RSA ``d``, ``p``, ``q``, ``dp``,
+#: ``dq``, ``qi`` and ``oth``, the other primes of a multi-prime key), section 6.4.1 (``k``), RFC 8037 section 2 (OKP
+#: ``d``) and the AKP key type's ``priv``. Every reader that refuses private material reads this one set, and the
+#: TypeScript twin is ``PRIVATE_JWK_MEMBERS`` in verify.ts; tests/test_private_jwk_members.py holds them equal.
+PRIVATE_JWK_MEMBERS: Final = frozenset({"d", "p", "q", "dp", "dq", "qi", "oth", "k", "priv"})
 
 ROLES = ("user", "agent", "sponsor", "approver")
 #: The members of an autonomous block beside its roles.
@@ -164,7 +171,7 @@ def _shape(p: Any) -> str | None:
     for m in ("tokenDigest", "jwksDigest"):
         if not isinstance(p[m], str) or len(p[m]) != 64 or any(c not in "0123456789abcdef" for c in p[m]):
             return "principal_malformed"
-    if not isinstance(p["key"], dict) or any(k in p["key"] for k in ("d", "p", "q", "dp", "dq", "qi", "k")):
+    if not isinstance(p["key"], dict) or set(p["key"]) & PRIVATE_JWK_MEMBERS:
         return "principal_key_invalid"
     if "cnf" in p:
         from .possession import cnf_problem

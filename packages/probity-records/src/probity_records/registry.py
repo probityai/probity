@@ -53,7 +53,7 @@ from cryptography.x509.verification import PolicyBuilder, Store, VerificationErr
 
 from . import witness
 from .core import TOKEN_MAX_DEPTH, JsonRefused, admitted_loads, sha256_hex
-from .identity import jwk_thumbprint, public_jwk
+from .identity import PRIVATE_JWK_MEMBERS, jwk_thumbprint, public_jwk
 
 #: The algorithm each pinned key type admits; the header's ``alg`` must be this one.
 ALG_OF_KEY: Final = {("OKP", "Ed25519"): "EdDSA", ("EC", "P-256"): "ES256", ("RSA", None): "RS256"}
@@ -76,7 +76,6 @@ USES: Final = ("receipt", "passport-issuer", "discovery")
 VALIDATION_REUSE_S: Final = 10 * 86400
 MAX_KEY_DOCUMENT_BYTES: Final = 64 << 10
 TENANT_DECLARED: Final = "tenant-declared counterparty"
-_PRIVATE_MEMBERS: Final = {"d", "p", "q", "dp", "dq", "qi", "k"}
 
 LEAF_FORMAT: Final = "probity-naming-log-leaf/v1"
 HEAD_FORMAT: Final = "probity-naming-log-head/v1"
@@ -367,7 +366,7 @@ def published_key(entry: Any) -> DomainKey:
     kid, use, jwk = entry["kid"], entry["use"], entry["jwk"]
     if not isinstance(kid, str) or not kid or use not in USES or not isinstance(jwk, Mapping):
         raise RegistryError("domain_key_malformed", f"kid {kid!r} use {use!r}")
-    if _PRIVATE_MEMBERS & set(jwk):
+    if PRIVATE_JWK_MEMBERS & set(jwk):
         raise RegistryError("domain_key_private_material", kid)
     if _alg_of(jwk) is None:
         raise RegistryError("domain_key_unsupported", f"{kid}: {jwk.get('kty')!r} {jwk.get('crv')!r}")

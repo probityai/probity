@@ -47,7 +47,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads, same_text
 from .grants import ts
-from .identity import b64url, jwk_thumbprint, unb64url
+from .identity import PRIVATE_JWK_MEMBERS, b64url, jwk_thumbprint, unb64url
 
 CNF_METHODS = ("jkt", "x5t#S256")
 DPOP_TYP = "dpop+jwt"
@@ -160,7 +160,7 @@ def _load_jwk(alg: str, jwk: Any) -> Any:
     """The public key of a JWK of exactly the shape ``alg`` takes, or ``_JwkRefused`` naming the defect."""
     if not isinstance(jwk, dict):
         raise _JwkRefused("dpop_jwk_invalid")
-    if any(m in jwk for m in ("d", "p", "q", "dp", "dq", "qi", "k")):
+    if set(jwk) & PRIVATE_JWK_MEMBERS:
         raise _JwkRefused("dpop_jwk_private")
     kty, crv = _JWK_CURVE[alg]
     if set(jwk) != set(_JWK_MEMBERS[alg]) or jwk.get("kty") != kty or jwk.get("crv") != crv:
