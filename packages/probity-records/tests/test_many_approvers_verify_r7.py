@@ -251,9 +251,8 @@ COUNT_FIXTURE = FIXTURE.with_name("many-approvers-r7-count.json")
 
 def _raw_token(claims_text: str) -> str:
     """An ID token whose claims segment is ``claims_text`` exactly, signed by the pinned provider key."""
-    from probity_records.identity import b64url
-
     import test_oidc_approval as o
+    from probity_records.identity import b64url
 
     head = b64url(json.dumps({"alg": "EdDSA", "kid": "idp-1", "typ": "JWT"}, separators=(",", ":")).encode())
     body = b64url(claims_text.encode())
@@ -261,11 +260,10 @@ def _raw_token(claims_text: str) -> str:
 
 
 def _oidc_with(claims_text: str, principal_claims: dict[str, Any]) -> dict[str, Any]:
+    import test_oidc_approval as o
     from probity_records import build_approval_binding
     from probity_records.identity_vectors import _principal
     from probity_records.oidc_approval import embed_oidc_approval
-
-    import test_oidc_approval as o
 
     token = _raw_token(claims_text)
     principal = _principal(token, o.JWK, o.JWKS, "id-token", {**principal_claims, "client_id": o.CLIENT})
@@ -299,7 +297,7 @@ def count_result(case: dict[str, Any]) -> Any:
     policy = {"policyId": "acme-wires", "threshold": 1, "approvers": {"dave": o.POLICY["approvers"]["dave"]}}
     try:
         counted, problems = count_bindings(policy, case["bindings"], o.DECIDED, oidc_pins=o.PINS)
-    except Exception as exc:  # a verifier that raises on a signed input is the finding
+    except Exception as exc:  # noqa: BLE001 - a verifier that raises on a signed input is the finding
         return {"raises": type(exc).__name__}
     return [sorted(counted), problems]
 
