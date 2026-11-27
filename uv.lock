@@ -71,7 +71,7 @@ wheels = [
 
 [[package]]
 name = "agent-evidence-a2a"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "packages/agent-evidence-a2a" }
 dependencies = [
     { name = "joserfc" },

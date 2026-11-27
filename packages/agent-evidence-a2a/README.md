@@ -29,7 +29,7 @@ agent-evidence-a2a ssrf --judge yourpkg.webhooks:refuses
 
 ## Status
 
-Version 0.1.0, alpha. The verifier, the 57 `a2a-jcs-v01` vectors, the 43-card corpus and the 42-URL webhook corpus are complete. The packaged verifier rejects all 28 attack cards and accepts all 11 controls; 4 probes wait on the spec text of [A2A#2122](https://github.com/a2aproject/A2A/issues/2122) and are never scored. The reference judge refuses all 30 unsafe webhook URLs and none of the 6 safe ones.
+Version 0.2.0, alpha. The verifier, the 57 `a2a-jcs-v01` vectors, the 43-card corpus and the 42-URL webhook corpus are complete. The packaged verifier rejects all 28 attack cards and accepts all 11 controls; 4 probes wait on the spec text of [A2A#2122](https://github.com/a2aproject/A2A/issues/2122) and are never scored. The reference judge refuses all 30 unsafe webhook URLs and none of the 6 safe ones.
 
 ## What is in the package
 
