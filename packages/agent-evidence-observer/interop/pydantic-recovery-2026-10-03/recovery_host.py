@@ -39,6 +39,29 @@ MAX_INSTALL_FILES = 32768
 MAX_INSTALL_ENTRIES = 65536
 MAX_INSTALL_DEPTH = 32
 
+# The host policy file lists every file of the reader closure, so it scales with
+# the install. Measured 26 Nov 2026 on the same install: 15,175 files, 3.52 MB of
+# canonical JSON. 8 MiB is about 2.4 times that. The packaged reader's own file
+# bound (probity_pydantic_recovery.common.MAX_FILE, 2 MiB) is for packet files
+# and stays, so the reader wheel is unchanged.
+MAX_POLICY_FILE = 8 * 1024 * 1024
+
+
+def read_policy(path: Path) -> bytes:
+    """Read the host policy file under its own size bound."""
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError as error:
+        raise VerificationError("missing-or-linked-file") from error
+    try:
+        require(stat.S_ISREG(os.fstat(descriptor).st_mode), "nonregular-file")
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            raw = handle.read(MAX_POLICY_FILE + 1)
+    finally:
+        os.close(descriptor)
+    require(len(raw) <= MAX_POLICY_FILE, "policy-file-bound")
+    return raw
+
 
 def select_file(path: Path) -> dict[str, Any]:
     """Hash only a bounded opened regular file, including selected symlink targets."""
@@ -154,7 +177,7 @@ def gate(packet: Path, pins: Path, policy_file: Path, policy_sha256: str, execut
 
     ``withheld`` names the record of members a retained packet omits by digest.
     """
-    policy_raw = read(policy_file)
+    policy_raw = read_policy(policy_file)
     require(sha(policy_raw) == policy_sha256, "host-policy-digest")
     policy = strict_loads(policy_raw)
     require(policy == select_policy(pins, executable), "host-reader-selection")
