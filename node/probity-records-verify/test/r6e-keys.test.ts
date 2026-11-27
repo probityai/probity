@@ -6,7 +6,16 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { judgeVerified } from "../src/verified.ts";
-import { jwkThumbprint, publicJwk } from "../src/verify.ts";
+import * as verify from "../src/verify.ts";
+
+// Read through the module so code without publicJwk fails on an assertion that names it, not on a load error.
+// Called outside assert.throws, which would otherwise catch this assertion as the expected throw.
+const requirePublicJwk = (): ((j: unknown) => unknown) => {
+  const reader = (verify as Record<string, unknown>).publicJwk;
+  assert.equal(typeof reader, "function", "verify.ts has no publicJwk: no reader holds a key to one spelling");
+  return reader as (j: unknown) => unknown;
+};
+const jwkThumbprint = (jwk: unknown): unknown => (verify as unknown as { jwkThumbprint: (j: unknown) => unknown }).jwkThumbprint(jwk);
 
 const dir = new URL("../../../packages/probity-records/vectors/shared/", import.meta.url);
 const rows = JSON.parse(readFileSync(new URL("verified_identities.json", dir), "utf8"));
@@ -27,6 +36,7 @@ const OKP = { crv: "Ed25519", kty: "OKP", x: "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83
 
 for (const [name, edit] of Object.entries(EDITS)) {
   test(`publicJwk and jwkThumbprint refuse an Ed25519 x with ${name}`, () => {
+    const publicJwk = requirePublicJwk();
     const jwk = { ...OKP, x: edit(OKP.x) };
     assert.throws(() => publicJwk(jwk));
     assert.throws(() => jwkThumbprint(jwk));
@@ -57,6 +67,7 @@ const NAME_EDITS: Record<string, (s: string) => unknown> = {
 for (const member of ["kty", "crv"]) {
   for (const [name, edit] of Object.entries(NAME_EDITS)) {
     test(`publicJwk and jwkThumbprint refuse a ${member} with ${name} as jwk_unsupported`, () => {
+      const publicJwk = requirePublicJwk();
       const jwk = { ...OKP, [member]: edit((OKP as Record<string, string>)[member]) };
       assert.throws(() => publicJwk(jwk), /^Error: jwk_unsupported$/);
       assert.throws(() => jwkThumbprint(jwk), /^Error: jwk_unsupported$/);
