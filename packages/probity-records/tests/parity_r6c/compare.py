@@ -3,8 +3,10 @@ import json
 import sys
 from collections import Counter
 
-cases = json.load(open(sys.argv[1]))
-ts = json.load(open(sys.argv[2]))
+with open(sys.argv[1]) as f:
+    cases = json.load(f)
+with open(sys.argv[2]) as f:
+    ts = json.load(f)
 diff, raised_py, raised_ts = [], [], []
 for c in cases:
     p, t = c["python"], ts.get(c["case"])

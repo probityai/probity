@@ -17,7 +17,11 @@ from probity_records import witness as w
 from probity_records.core import is_utf8_text, open_envelope, same_text
 from probity_records.identity import b64url, unb64url, verify_token
 from probity_records.identity_vectors import base
-from probity_records.possession import CONTENT_DIGEST_CLAIM, check_dpop, possession_record_problem
+from probity_records.possession import (
+    CONTENT_DIGEST_CLAIM,
+    check_dpop,
+    possession_record_problem,
+)
 from probity_records.receipt_map import MapError, check_key
 
 TEXTS = ["é", "\ud800", "ÿ", "\U0001f600", "x\x00y"]

@@ -19,7 +19,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from probity_records import registry, renewal, stamp
 from probity_records import witness as w
-from probity_records.bundle import PAYLOAD_TYPE, BundleRefused, canonical, leaf_entry, read_evaluator, verify_bundle
+from probity_records.bundle import (
+    PAYLOAD_TYPE,
+    BundleRefused,
+    canonical,
+    leaf_entry,
+    read_evaluator,
+    verify_bundle,
+)
 from probity_records.core import JsonRefused, admitted_loads, pae
 from probity_records.identity import verify_token
 from probity_records.identity_vectors import base
