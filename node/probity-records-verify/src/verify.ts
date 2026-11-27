@@ -1129,11 +1129,24 @@ const TRANSITION_STATUSES = ["proposed", "accepted"];
 /** The reason a record the reader cannot read is denied with (records.BINDING_MALFORMED). */
 export const BINDING_MALFORMED = "approval_binding_malformed";
 
+/** A principal's party, Python's tuple (issuer, subject) in journal._parties: a value of its own kind, so it never
+ * equals a list of two strings that spell the same pair (pyEq compares a Party only with a Party). */
+class Party {
+  readonly issuer: J;
+  readonly subject: J;
+  constructor(issuer: J, subject: J) {
+    this.issuer = issuer;
+    this.subject = subject;
+  }
+}
+
 /** Python's `==` on parsed JSON: 1 == 1.0 == True, dicts by members, lists by position. */
 function pyEq(a: J, b: J): boolean {
   if (a === undefined) a = null;
   if (b === undefined) b = null;
   const num = (x: J): J => (typeof x === "boolean" ? Number(x) : x);
+  if (a instanceof Party || b instanceof Party)
+    return a instanceof Party && b instanceof Party && pyEq(a.issuer, b.issuer) && pyEq(a.subject, b.subject);
   if (Array.isArray(a) || Array.isArray(b))
     return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x: J, i: number) => pyEq(x, b[i]));
   if (isObj(a) || isObj(b)) {
@@ -1581,12 +1594,13 @@ function spendOf(budget: J, args: J): number {
 
 // Who a principals block names, role by role (journal._parties): issuer and subject, so a refreshed credential is the
 // same party; an approver list is the set of its members' pairs, in no order.
-const party = (p: J): J => isObj(p) ? [p.issuer ?? null, p.subject ?? null] : p;
+const party = (p: J): J => isObj(p) ? new Party(p.issuer ?? null, p.subject ?? null) : p;
+const sortKey = (x: J): string => JSON.stringify(x instanceof Party ? [x.issuer, x.subject] : x);
 function parties(block: J): J {
   if (!isObj(block)) return null;
   const out: Record<string, J> = {};
   for (const [role, p] of Object.entries(block)) {
-    out[role] = Array.isArray(p) ? p.map(party).map((x) => [JSON.stringify(x), x] as const).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, x]) => x) : party(p);
+    out[role] = Array.isArray(p) ? p.map(party).map((x) => [sortKey(x), x] as const).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, x]) => x) : party(p);
   }
   return out;
 }

@@ -940,6 +940,18 @@ def approver_rows() -> list[tuple[str, str, object]]:
                              approval_bindings=[binding(OPS, WHO["ops"]),
                                                 binding(LEAD, WHO["lead"], consumed=("appr-1",))])  # fmt: skip
 
+    def one_counted(block: dict) -> dict:
+        return identity_call("authorize", block, decision="allow", reason="bound", threshold=1,
+                             approval_policy="refunds1of2", approval_bindings=[binding(OPS, WHO["ops"])])
+
+    def spelled(reverse: bool) -> dict:
+        """The block whose approver is two strings that spell the single approver's issuer and subject: no
+        principal, so not the parties of any permit."""
+        out = named("ops")
+        pair = [out["approver"]["issuer"], WHO["ops"]]
+        out["approver"] = pair[::-1] if reverse else pair
+        return out
+
     return [
         ("MA1", "a 2-of-2 approval and the allow names both approvers as a list: identity holds, strict",
          lambda d: identity_case(d, [two("ops", "lead")])),
@@ -958,6 +970,12 @@ def approver_rows() -> list[tuple[str, str, object]]:
          lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", named("lead", "ops"))])),
         ("MA9", "one listed approver's credential is refreshed between the allow and the intent: the same parties",
          lambda d: identity_case(d, [two("ops", "lead"), identity_call("intent", refreshed(named("ops", "lead"), 1))])),
+        ("MA10", "the intent's approver is two strings, issuer then subject, of the allow's one approver: malformed, "
+                 "and not the parties of its permit",
+         lambda d: identity_case(d, [one_counted(named("ops")), identity_call("intent", spelled(False))])),
+        ("MA11", "the intent's approver is the same two strings, subject then issuer: malformed, and not the parties "
+                 "of its permit",
+         lambda d: identity_case(d, [one_counted(named("ops")), identity_call("intent", spelled(True))])),
     ]
 
 
