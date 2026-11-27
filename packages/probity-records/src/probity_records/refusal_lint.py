@@ -143,6 +143,10 @@ class _Scan:
         elif isinstance(node, ast.Call) and _name(node.func) in ("frozenset", "set", "tuple", "list"):
             for arg in node.args:
                 self.strings(arg, shaped_only=shaped_only)
+        elif isinstance(node, ast.Call) and not shaped_only:
+            # where only a code goes, a string a call returns (``body.strip()``, ``str(exc)``) is a code nobody can
+            # check: a remote party's text, or an exception's message, would become the refusal code
+            self.findings.append(Finding(self.path, node.lineno, ast.unparse(node), "refusal code composed at run time"))
 
     def located(self, node: ast.AST) -> None:
         """A problem string ``<where>:<code>[:<detail>]``: the code is the segment after the first ``:``."""
@@ -331,8 +335,12 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
             elif (called in ("append", "extend", "add") and isinstance(node.func, ast.Attribute)
                   and cfg.has(cfg.located_lists, scan.path, _name(node.func.value)) and node.args):
                 scan.located(node.args[0])
-            elif cfg.has(cfg.raisers, scan.path, called) and node.args:
-                scan.strings(node.args[0], shaped_only=False)  # the code; a second argument is the detail
+            elif (raised := cfg.positions(cfg.raisers, scan.path, called)) is not None and node.args:
+                # ``Error@1`` names the argument that holds the code (``WitnessRefused(409, "code:...")``); a bare
+                # name means the first argument, and a second argument is the detail
+                for index in raised if len(raised) < 64 else (0,):
+                    if index < len(node.args):
+                        scan.strings(node.args[index], shaped_only=False)
             for keyword in node.keywords:
                 if keyword.arg in cfg.keywords:
                     scan.strings(keyword.value, shaped_only=False)
@@ -364,14 +372,16 @@ def _visit(scan: _Scan, tree: ast.Module) -> None:
 #: Where this package's own checks put refusal codes.
 PACKAGE_CONFIG = Config(
     raisers=frozenset({"RevocationError", "IdentityStringError", "IdentityDigestError@0", "_JwkRefused",
-                       "grants.py::ValueError"}),
-    exempt_functions=frozenset({"act_grade", "possession_grade", "strict_shortfall"}),  # grades, never refusals
+                       "grants.py::ValueError", "NoteError", "WitnessRefused@1"}),
+    refusal_calls=frozenset({"witness.py::_refuse@1"}),  # the witness server's coded answers
+    exempt_functions=frozenset({"act_grade", "possession_grade", "strict_shortfall", "_state"}),  # grades and a
+    # state-file path, never refusals
     located_lists=frozenset({"problems", "found", "ignored", "failures"}),
     assigned=frozenset({"result", "problem", "verdict", "outcome"}))
-#: The modules whose refusals the registry holds: identity, possession, authority, approval, revocation, journal.
+#: The modules whose refusals the registry holds: identity, possession, authority, approval, revocation, journal, witness.
 PACKAGE_MODULES = ("authority", "canonical_identity", "celexpr", "constraints", "digests", "governance", "grants",
                    "identity", "journal", "oidc_approval", "possession", "quorum", "revocation", "stamp",
-                   "verified_identities", "walk")
+                   "verified_identities", "walk", "witness")
 #: Every other module of the package, with the reason it holds no identity or authority refusal. A module named in
 #: neither tuple fails ``test_every_module_is_linted_or_excluded_with_a_reason``, so a new check cannot escape the lint
 #: by being added under a new name.
@@ -399,7 +409,6 @@ NOT_LINTED = {
     "verified_identities_vectors": "generates vectors from the checks",
     "signing": "signing backends; a session-key delegation refusal reaches a record only as the detail of "
                "session_key_delegation_invalid",
-    "witness": "the witness note format, a log check outside identity and authority",
 }
 
 

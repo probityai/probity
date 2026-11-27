@@ -333,6 +333,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_count_mismatch"
   },
   {
+   "code": "checkpoint_extensions_unsigned",
+   "check": "witness.checkpoint",
+   "meaning": "the checkpoint carries extension lines that no verified log signature covers",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_extensions_unsigned"
+  },
+  {
    "code": "checkpoint_head_mismatch",
    "check": "journal.verify",
    "meaning": "the checkpoint's head is not the digest of the journal's last record",
@@ -343,6 +349,24 @@
    "check": "journal.verify",
    "meaning": "the checkpoint envelope does not open under a trusted key or is malformed",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_invalid"
+  },
+  {
+   "code": "checkpoint_log_signature_missing",
+   "check": "witness.checkpoint",
+   "meaning": "no signature from a policy log for the checkpoint's origin verifies",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_log_signature_missing"
+  },
+  {
+   "code": "checkpoint_malformed",
+   "check": "witness.checkpoint",
+   "meaning": "the checkpoint text is not origin, size, root and non-empty extension lines ending in a newline",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_malformed"
+  },
+  {
+   "code": "checkpoint_root_length",
+   "check": "witness.checkpoint",
+   "meaning": "the checkpoint root is not 32 bytes",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/checkpoint_root_length"
   },
   {
    "code": "child_adds_argument",
@@ -559,6 +583,18 @@
    "check": "marker.record",
    "meaning": "the record names a contract this verifier does not judge",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/contract_id_unknown"
+  },
+  {
+   "code": "cosignature_input_range",
+   "check": "witness.cosignature",
+   "meaning": "a cosigned subtree has a name, origin, bound, timestamp or hash out of range",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/cosignature_input_range"
+  },
+  {
+   "code": "cosignature_timestamp_range",
+   "check": "witness.cosignature",
+   "meaning": "a cosignature timestamp is outside 0 to 2^63-1",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/cosignature_timestamp_range"
   },
   {
    "code": "credential_names_only_user",
@@ -1257,6 +1293,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/executor_refused"
   },
   {
+   "code": "feed_not_published",
+   "check": "witness.protocol",
+   "meaning": "the feed did not publish because the witness quorum was not met",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/feed_not_published"
+  },
+  {
    "code": "grant_approval_failed",
    "check": "authority.record",
    "meaning": "the approval the grant requires does not hold",
@@ -1941,6 +1983,78 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/not_run_retry_but_an_effect_may_have_happened"
   },
   {
+   "code": "note_base64_invalid",
+   "check": "witness.note",
+   "meaning": "a base64 field does not decode",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_base64_invalid"
+  },
+  {
+   "code": "note_base64_noncanonical",
+   "check": "witness.note",
+   "meaning": "a base64 field is not in canonical padded form",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_base64_noncanonical"
+  },
+  {
+   "code": "note_control_character",
+   "check": "witness.note",
+   "meaning": "the note holds a control character other than newline",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_control_character"
+  },
+  {
+   "code": "note_decimal_invalid",
+   "check": "witness.note",
+   "meaning": "a decimal field is not ASCII digits without leading zeros below 2^63",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_decimal_invalid"
+  },
+  {
+   "code": "note_malformed",
+   "check": "witness.note",
+   "meaning": "the note is not UTF-8 text, a blank line, then signature lines",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_malformed"
+  },
+  {
+   "code": "note_name_invalid",
+   "check": "witness.note",
+   "meaning": "a key, cosigner or origin name is empty, longer than 255 bytes, or holds a space, plus or control character",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_name_invalid"
+  },
+  {
+   "code": "note_signature_count",
+   "check": "witness.note",
+   "meaning": "the note has no signature lines or more than 64",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_signature_count"
+  },
+  {
+   "code": "note_signature_duplicate",
+   "check": "witness.note",
+   "meaning": "two signature lines share a key name and key id",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_signature_duplicate"
+  },
+  {
+   "code": "note_signature_invalid",
+   "check": "witness.note",
+   "meaning": "a signature from a known key does not verify",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_signature_invalid"
+  },
+  {
+   "code": "note_signature_length",
+   "check": "witness.note",
+   "meaning": "a signature has the wrong length or framing for its key type",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_signature_length"
+  },
+  {
+   "code": "note_signature_line_malformed",
+   "check": "witness.note",
+   "meaning": "a signature line is not an em dash, a name and a base64 blob",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_signature_line_malformed"
+  },
+  {
+   "code": "note_unverified",
+   "check": "witness.note",
+   "meaning": "no signature line comes from a known key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/note_unverified"
+  },
+  {
    "code": "open_intent_no_effect_record",
    "check": "journal.verify",
    "meaning": "an intent stays open with no effect record",
@@ -2127,6 +2241,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_beyond_ceiling"
   },
   {
+   "code": "policy_control_character",
+   "check": "witness.policy",
+   "meaning": "the policy holds an octet other than tab, newline, printable ASCII or 0x80 to 0xFF",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_control_character"
+  },
+  {
    "code": "policy_fail_open_refused",
    "check": "mesh.route",
    "meaning": "a caller declares a fail-open fallback in a run that fails closed",
@@ -2137,6 +2257,54 @@
    "check": "mesh.route",
    "meaning": "a fallback would open edges the policy in force does not hold",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_fallback_opens_edges"
+  },
+  {
+   "code": "policy_group_members",
+   "check": "witness.policy",
+   "meaning": "a group names a repeated or not yet defined member",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_group_members"
+  },
+  {
+   "code": "policy_group_threshold",
+   "check": "witness.policy",
+   "meaning": "a group threshold is outside 1 to the member count",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_group_threshold"
+  },
+  {
+   "code": "policy_key_repeated",
+   "check": "witness.policy",
+   "meaning": "the policy names one public key twice",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_key_repeated"
+  },
+  {
+   "code": "policy_key_type",
+   "check": "witness.policy",
+   "meaning": "a log or witness line names a key of a type its role cannot use",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_key_type"
+  },
+  {
+   "code": "policy_line_malformed",
+   "check": "witness.policy",
+   "meaning": "a policy line is not a log, witness, group or quorum line of the right shape",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_line_malformed"
+  },
+  {
+   "code": "policy_name_reserved",
+   "check": "witness.policy",
+   "meaning": "a witness or group name is none or already defined",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_name_reserved"
+  },
+  {
+   "code": "policy_quorum_count",
+   "check": "witness.policy",
+   "meaning": "the policy does not have exactly one quorum line",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_quorum_count"
+  },
+  {
+   "code": "policy_quorum_undefined",
+   "check": "witness.policy",
+   "meaning": "the quorum names no earlier-defined witness or group",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/policy_quorum_undefined"
   },
   {
    "code": "possession_not_the_grant_key",
@@ -2467,6 +2635,18 @@
    "check": "identity.principals",
    "meaning": "the record's time is at or after the standing grant's review date",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/principals_standing_grant_unreviewed"
+  },
+  {
+   "code": "proof_inclusion_invalid",
+   "check": "witness.proof",
+   "meaning": "the inclusion proof does not lead from the leaf to the checkpoint root",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/proof_inclusion_invalid"
+  },
+  {
+   "code": "proof_malformed",
+   "check": "witness.proof",
+   "meaning": "the tlog-proof is not the header, optional extra, index, proof lines, a blank line and a checkpoint",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/proof_malformed"
   },
   {
    "code": "purpose_out_of_scope",
@@ -3063,6 +3243,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/subject_replaced"
   },
   {
+   "code": "subtree_invalid",
+   "check": "witness.cosignature",
+   "meaning": "the interval is not a subtree of the tree",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/subtree_invalid"
+  },
+  {
    "code": "threshold_not_pinned",
    "check": "journal.verify",
    "meaning": "a recorded quorum threshold differs from the pinned threshold",
@@ -3171,6 +3357,42 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/unknown_critical_attribute_ignored"
   },
   {
+   "code": "vkey_curve_unsupported",
+   "check": "witness.vkey",
+   "meaning": "the key's curve or size is not one its signature type allows",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vkey_curve_unsupported"
+  },
+  {
+   "code": "vkey_id_mismatch",
+   "check": "witness.vkey",
+   "meaning": "the vkey's key id is not the one its name, type and key define",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vkey_id_mismatch"
+  },
+  {
+   "code": "vkey_key_length",
+   "check": "witness.vkey",
+   "meaning": "the public key is not the exact encoding its signature type carries",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vkey_key_length"
+  },
+  {
+   "code": "vkey_malformed",
+   "check": "witness.vkey",
+   "meaning": "the vkey is not name, key id and base64 key separated by plus signs",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vkey_malformed"
+  },
+  {
+   "code": "vkey_type_mismatch",
+   "check": "witness.vkey",
+   "meaning": "the key object is not the algorithm the signature type takes",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vkey_type_mismatch"
+  },
+  {
+   "code": "vkey_type_unknown",
+   "check": "witness.vkey",
+   "meaning": "the vkey's signature type is not one the C2SP signed-note registry assigns",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vkey_type_unknown"
+  },
+  {
    "code": "vote_by_proposer",
    "check": "approval.quorum",
    "meaning": "the proposer votes on their own request",
@@ -3235,6 +3457,150 @@
    "check": "approval.quorum",
    "meaning": "a vote's time is not a valid instant",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/vote_time_invalid"
+  },
+  {
+   "code": "witness_beyond_journal",
+   "check": "witness.protocol",
+   "meaning": "a witness holds a tree size past the journal's",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_beyond_journal"
+  },
+  {
+   "code": "witness_checkpoint_not_cosigned",
+   "check": "witness.protocol",
+   "meaning": "a sign-subtree checkpoint does not carry exactly one valid signature from this witness",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_checkpoint_not_cosigned"
+  },
+  {
+   "code": "witness_consistency_invalid",
+   "check": "witness.protocol",
+   "meaning": "the consistency proof from the latest cosigned size does not verify",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_consistency_invalid"
+  },
+  {
+   "code": "witness_empty_root_required",
+   "check": "witness.protocol",
+   "meaning": "a size-zero checkpoint does not carry the empty-tree root",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_empty_root_required"
+  },
+  {
+   "code": "witness_lag_exceeded",
+   "check": "witness.protocol",
+   "meaning": "the journal has run further past its last witnessed size than the lag gate allows",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_lag_exceeded"
+  },
+  {
+   "code": "witness_log_signature_invalid",
+   "check": "witness.protocol",
+   "meaning": "a signature from a trusted log key does not verify",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_log_signature_invalid"
+  },
+  {
+   "code": "witness_log_signature_missing",
+   "check": "witness.protocol",
+   "meaning": "no signature from a trusted log key",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_log_signature_missing"
+  },
+  {
+   "code": "witness_not_found",
+   "check": "witness.protocol",
+   "meaning": "no such endpoint, or no checkpoint cosigned for that origin",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_not_found"
+  },
+  {
+   "code": "witness_old_size_beyond",
+   "check": "witness.protocol",
+   "meaning": "the old size is larger than the checkpoint size",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_old_size_beyond"
+  },
+  {
+   "code": "witness_old_size_mismatch",
+   "check": "witness.protocol",
+   "meaning": "the old size is not the latest cosigned size",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_old_size_mismatch"
+  },
+  {
+   "code": "witness_origin_unknown",
+   "check": "witness.protocol",
+   "meaning": "the witness trusts no log for the checkpoint's origin",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_origin_unknown"
+  },
+  {
+   "code": "witness_proof_lines_excess",
+   "check": "witness.protocol",
+   "meaning": "the request carries more than 63 proof lines",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_proof_lines_excess"
+  },
+  {
+   "code": "witness_quorum_not_met",
+   "check": "witness.checkpoint",
+   "meaning": "the counted cosignatures do not satisfy the policy quorum",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_quorum_not_met"
+  },
+  {
+   "code": "witness_remote_refused",
+   "check": "witness.protocol",
+   "meaning": "a remote witness answered with an HTTP error; its status and body are the detail",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_remote_refused"
+  },
+  {
+   "code": "witness_request_malformed",
+   "check": "witness.protocol",
+   "meaning": "the request body is not the shape the endpoint takes",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_request_malformed"
+  },
+  {
+   "code": "witness_request_not_utf8",
+   "check": "witness.protocol",
+   "meaning": "the request body is not UTF-8",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_request_not_utf8"
+  },
+  {
+   "code": "witness_request_too_large",
+   "check": "witness.protocol",
+   "meaning": "the request body is larger than the witness accepts",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_request_too_large"
+  },
+  {
+   "code": "witness_response_malformed",
+   "check": "witness.protocol",
+   "meaning": "a remote witness answered with bytes that are not a UTF-8 response",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_response_malformed"
+  },
+  {
+   "code": "witness_size_unstable",
+   "check": "witness.protocol",
+   "meaning": "a witness kept moving its size while the feed retried",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_size_unstable"
+  },
+  {
+   "code": "witness_state_unreadable",
+   "check": "witness.protocol",
+   "meaning": "the witness's state directory holds a file it cannot read as its latest cosigned checkpoint, so it refuses to cosign",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_state_unreadable"
+  },
+  {
+   "code": "witness_state_unwritable",
+   "check": "witness.protocol",
+   "meaning": "the witness could not persist the new checkpoint, so it does not cosign it",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_state_unwritable"
+  },
+  {
+   "code": "witness_subtree_invalid",
+   "check": "witness.protocol",
+   "meaning": "the requested interval is not a non-empty subtree inside the checkpoint",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_subtree_invalid"
+  },
+  {
+   "code": "witness_subtree_proof_invalid",
+   "check": "witness.protocol",
+   "meaning": "the subtree consistency proof does not verify",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_subtree_proof_invalid"
+  },
+  {
+   "code": "witness_subtree_unsupported",
+   "check": "witness.protocol",
+   "meaning": "the witness holds no ML-DSA-44 key to sign subtrees with",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/witness_subtree_unsupported"
   },
   {
    "code": "witnessed_checkpoint_beyond_journal",

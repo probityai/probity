@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.13.0 (2026-11-26)
+
+- **Witness soundness fixes, each pinned by `tests/test_witness_soundness_review.py` and
+  `tests/test_witness_repair_attacks.py`.** A policy refuses a name listed in two groups (`policy_group_members`); an
+  ML-DSA-44 line dated 0 is a subtree cosignature and is never made or counted as a checkpoint cosignature, so
+  `sign_checkpoint(..., pq=...)` now needs a `timestamp`; a size-0 tree and an empty subtree carry only the empty-tree
+  hash; the witness persists one fsynced `<hex SHA-256 of origin>.checkpoint` per log under a directory lock, reads a
+  0.12.0 `.state` file as its floor, and refuses to start on state it cannot read (`witness_state_unreadable`) or to
+  cosign what it cannot persist (`witness_state_unwritable`); the monitor copy holds only lines the witness verified or
+  made; `sign-subtree` answers 400 for more than one signature and signs with the key that cosigned; the feed keeps
+  one verified line per asked witness and treats any transport fault as that witness's error; unknown keys of any name
+  length are ignored; the client refuses a non-UTF-8 reply (`witness_response_malformed`); the server checks
+  `Content-Length`; the refusal lint reads the argument a raiser names and refuses a code composed at run time.
+
+- **`probity_records.witness` is now the whole C2SP witness surface, and every refusal carries a registered code.**
+  New cases, each pinned by `tests/test_witness_c2sp_surface.py` and the published examples in
+  `vectors/shared/c2sp-conformance.json` (the c2sp.org/signed-note example, golang.org/x/mod sumdb notes, a Sigstore
+  Rekor checkpoint, a Pixel transparency log checkpoint, a Static CT checkpoint, and the torchwood subtree table):
+  - signature type 0x02, ECDSA on P-256, P-384 or P-521 over SHA-256 with the SPKI-hash key id (`VerifierKey.ecdsa`,
+    `ecdsa_signature`), as Rekor and transparency-dev/witness sign;
+  - signature type 0x05, the RFC 6962 `TreeHeadSignature` of c2sp.org/static-ct-api, ECDSA P-256 or RSA
+    (`VerifierKey.rfc6962`, `rfc6962_signature`, `rfc6962_timestamp`); such a checkpoint carries no extension lines;
+  - one constructor per type, `VerifierKey.ed25519`, `.cosignature_v1`, `.mldsa44`, `.ecdsa`, `.rfc6962`, and
+    `VerifierKey.public_key()`; `parse_vkey` refuses a non-canonical DER key;
+  - checkpoint extension lines (`Checkpoint.extensions`), kept by `parse_checkpoint`; `verify_note` refuses a
+    checkpoint whose extension lines no verified 0x01 or 0x02 log line signs (`checkpoint_extensions_unsigned`);
+  - `log_signature(text, name, signer)`, `sign_checkpoint(cp, signer, *, name=None, pq=None, timestamp=0)` taking an
+    Ed25519 private key or any `SigningKey`, and `is_empty_root`;
+  - ML-DSA-44 subtree cosignatures (`subtree_message(cosigner, timestamp, origin, start, end, hash)`, `cosign_subtree`,
+    `verify_subtree_cosignature`), subtree hashes and subtree consistency proofs (`valid_subtree`, `subtree_hash`,
+    `subtree_consistency_proof`, `verify_subtree_consistency`), and RFC 9162 inclusion proofs (`inclusion_proof`,
+    `verify_inclusion`);
+  - c2sp.org/tlog-proof (`TlogProof`, `parse_tlog_proof`, `verify_tlog_proof`);
+  - `open_note`, the generic signed-note verifier: unknown keys ignored, a failing known key rejects;
+  - `parse_policy` keeps the optional log and witness URLs (`Policy.log_urls`, `Policy.witness_urls`) and reads octets;
+  - `Witness` holds ML-DSA-44 and Ed25519 keys (`key`, `more_keys`) and cosigns with each, answers `sign-subtree`, and
+    keeps the latest cosigned checkpoint for the monitor endpoint `GET <hex SHA-256 of origin>/checkpoint`;
+    `serve_witness` serves all three; clients `sign_subtree` and `fetch_checkpoint`;
+  - `NoteError.code` and `WitnessRefused.code` return a code from `refusal_codes.json` (57 new codes); the text after
+    the first `:` is detail. The refusal lint now covers the witness module.
+  Minor, not patch: `subtree_message` takes the subtree start, `sign_checkpoint` takes keyword arguments after the
+  signer, the 0.12 message texts are replaced by codes, and `Witness.add_checkpoint` returns one line per key.
+
 ## 0.12.0 (2026-11-26)
 
 - **The C2SP note verifier agrees with the reference on three cases; two of them refuse input it accepted before.**
