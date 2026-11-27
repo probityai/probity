@@ -305,6 +305,16 @@ def constraint_rows() -> list[tuple[str, str, object]]:
             ["http://[2001:4860:4860::8888]/", "http://[::1]/", "http://[fe80::1]/", "http://[2001:db8::1]/",
              "http://[::ffff:10.0.0.1]/", "http://[::ffff:8.8.8.8]/", "http://8.8.8.8/", "http://224.0.0.1/",
              "http://100.64.0.1/", "http://192.0.0.9/", "http://198.18.0.1/", "http://localhost/"]),
+        row("CV12", "not_one_of [1]: true is never 1, and 1.0 is 1", {"type": "not_one_of", "values": [1]},
+            [True, False, 1, 1.0, 0]),
+        row("CV13", "not_one_of [true]: 1 is never true", {"type": "not_one_of", "values": [True]}, [1, True, 0, 1.0]),
+        row("CV14", "subset [1, 0]: a list of true or false is outside it, 1.0 is inside",
+            {"type": "subset", "values": [1, 0]}, [[True], [False], [1], [1.0, 0], [], [1, True]]),
+        row("CV15", "contains [1]: a list holding true does not hold 1, 1.0 does",
+            {"type": "contains", "values": [1]}, [[True], [1.0], [1, True], [0]]),
+        row("CV16", "not_one_of an object: member order and number spelling do not matter, true is never 1",
+            {"type": "not_one_of", "values": [{"a": 1, "b": True}]},
+            [{"b": True, "a": 1}, {"a": 1.0, "b": True}, {"a": True, "b": True}, {"a": 1, "b": 1}]),
     ]
 
 

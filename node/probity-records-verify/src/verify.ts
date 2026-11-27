@@ -92,17 +92,20 @@ function admitGate(raw: Uint8Array): void {
 
 export const sha256Hex = (data: string | Buffer): string => createHash("sha256").update(data).digest("hex");
 const digestOf = (v: J): string => sha256Hex(canonicalBytes(v));
-// Equality for constraint checks: the Python twin compares with ==, which never refuses, so this is a
-// structural comparison (sorted keys, JSON.stringify leaves), not canonical bytes.
-function structural(v: J): string {
-  if (Array.isArray(v)) return "[" + v.map(structural).join(",") + "]";
-  if (v !== null && typeof v === "object") {
-    const keys = Object.keys(v).sort();
-    return "{" + keys.map((k) => JSON.stringify(k) + ":" + structural(v[k])).join(",") + "}";
-  }
-  return String(JSON.stringify(v));
+/** Whether two parsed JSON values are one JSON value, by `valueKey` (probity_records.constraints.same reads the same
+ *  bytes): object members in any order are one object, `3` and `3.0` are one number, and `true` is never `1` where
+ *  Python's `==` calls them equal. A value jcs-admit refuses (a lone surrogate) equals nothing. */
+function same(a: J, b: J): boolean {
+  try { return valueKey(a).equals(valueKey(b)); } catch { return false; }
 }
-const same = (a: J, b: J): boolean => structural(a) === structural(b);
+/** Whether jcs-admit reads `v`: a deny list never admits a value it cannot compare. */
+function readable(v: J): boolean {
+  try { valueKey(v); return true; } catch { return false; }
+}
+/** Whether every value of `inner` is a value of `outer`, by value key (constraints._contained). */
+function contained(inner: J[], outer: J[]): boolean {
+  return inner.every(readable) && outer.every(readable) && inner.every((x: J) => outer.some((y: J) => same(x, y)));
+}
 const isObj = (v: J): boolean => v !== null && typeof v === "object" && !Array.isArray(v);
 /** Whether `o` holds `k` itself: an inherited name (constructor, toString, __proto__) is never a member. */
 const own = (o: J, k: string): boolean => isObj(o) && Object.hasOwn(o, k);
@@ -485,7 +488,7 @@ const CHECKS: Record<string, (c: J, v: J, vf: boolean) => boolean> = {
   wildcard: () => true,
   exact: (c, v, vf) => same(v, c.value) && typeof v === typeof c.value && vf === isFloat(c, "value", c.value),
   one_of: (c, v, vf) => c.values.some((x: J, i: number) => same(v, x) && typeof v === typeof x && vf === isFloat(c.values, i, x)),
-  not_one_of: (c, v) => !c.values.some((x: J) => same(v, x)),
+  not_one_of: (c, v) => readable(v) && !c.values.some((x: J) => same(v, x)),
   range: (c, v) => num(v) && (!("min" in c) || v >= c.min) && (!("max" in c) || v <= c.max),
   pattern: (c, v) => typeof v === "string" && fnmatch(v, c.pattern),
   regex: (c, v) => typeof v === "string" && new RegExp("^(?:" + c.regex + ")$").test(v),
@@ -578,8 +581,8 @@ function sameTypeNarrows(ch: J, p: J): boolean {
       return (ch.schemes ?? ["https"]).every((s: string) => (p.schemes ?? ["https"]).includes(s))
         && (!("hosts" in p) || ("hosts" in ch && hostsNarrow(ch.hosts, p.hosts)))
         && ((ch.denyPrivate ?? true) || !(p.denyPrivate ?? true));
-    case "shlex": case "subset": { const k = p.type === "shlex" ? "allow" : "values"; return ch[k].every((x: J) => p[k].some((y: J) => same(x, y))); }
-    case "contains": case "not_one_of": return p.values.every((x: J) => ch.values.some((y: J) => same(x, y)));
+    case "shlex": case "subset": { const k = p.type === "shlex" ? "allow" : "values"; return contained(ch[k], p[k]); }
+    case "contains": case "not_one_of": return contained(p.values, ch.values);
     default: return same(ch, p);
   }
 }

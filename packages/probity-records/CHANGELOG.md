@@ -27,6 +27,12 @@
   then seals byte for byte as 0.12.0 sealed it. `erasure.seal` reads every subject key as bytes: a `bytearray` or a
   `memoryview` is its bytes (one key under two members is refused in any spelling), and a key that is not bytes-like
   is refused `subject_key_not_bytes` instead of raising `TypeError`.
+- **Behaviour change: constraint values are compared by one key in both readers (`core.value_key`).** Python compared
+  with `==` and `repr` and the TypeScript twin with a text form, so `true` and `1` were equal in one and different in the
+  other. A `not_one_of` list, a `subset` or `contains` list, `exact` and `one_of`, and the narrowing proof for each now
+  read two values as one when their RFC 8785 bytes are equal: `true` is never `1` (a `not_one_of [1]` now admits `true`,
+  where it denied it), `3` and `3.0` are one number, and object member order is free. A value jcs-admit refuses equals
+  nothing, so a `not_one_of` constraint denies it. New shared vectors: CV12 to CV16.
 - **Behaviour change: an ID or access token is read by one strict rule in both readers.** `identity.verify_token`
   (and the OpenID Connect approval count) reads a token's header and claims with `identity.token_segments`: three
   base64url segments without padding, each of header and claims one JSON object that jcs-admit admits. A token with
