@@ -10,6 +10,10 @@ Three classes, each found by reading the two readers side by side and none reach
   over, and JavaScript rounds an integer past 2**53;
 - a reader that answers in a different order (the stamp's key is looked up before or after its other fields are read).
 
+The last class also holds for a grant's URL constraints (``constraints.check`` against the twin's ``check``): Python
+splits a URL with ``urlsplit`` and the twin with WHATWG ``new URL``, and the two read a backslash, a missing slash, an
+empty userinfo, a port past 65535, an ideographic full stop and an upper-case ``LOCALHOST.`` differently.
+
 ``walk`` replaces every member of a trust bundle, and of a token's and a DPoP proof's header and claims signed again,
 with a value of another JSON type. Neither reader may raise and both must answer alike. The same walk, for raises
 only, runs over a record bundle (``verify_bundle``), which has no TypeScript twin.
@@ -30,7 +34,7 @@ from typing import Any
 import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
-from probity_records import identity
+from probity_records import constraints, identity
 from probity_records import verified_identities_vectors as v
 from probity_records.bundle import BundleRefused, verify_bundle
 from probity_records.grants import ts
@@ -327,3 +331,66 @@ def test_a_record_bundle_member_of_another_json_type_is_refused_and_never_raises
             raised.append(f"{name}: {type(exc).__name__}: {str(exc)[:60]}")
     assert count > 100
     assert not raised, f"{len(raised)} of {count} raised:\n" + "\n".join(raised[:15])
+
+
+# --- a grant's URL constraints: constraints.check against the twin's check ------------------------------------------
+
+URL_PATTERN = {"type": "url_pattern", "schemes": ["https"], "hosts": ["api.example.com", "*.example.com"], "pathPrefix": "/v1"}
+URL_SAFE = {"type": "url_safe"}
+URLS: dict[str, str] = {
+    "control-allowed": "https://api.example.com/v1/x",
+    "control-dot-segments": "https://api.example.com/v1/../admin",
+    "control-loopback": "https://127.1/v1/x",
+    "encoded-dot-segments": "https://api.example.com/v1/%2e%2e/admin",
+    "backslash-before-userinfo": "https://api.example.com\\@evil.example/v1/x",
+    "backslashes-for-slashes": "https:\\\\api.example.com/v1/x",
+    "one-slash": "https:/api.example.com/v1/x",
+    "no-slash": "https:api.example.com/v1/x",
+    "backslash-dot-segments": "https://api.example.com/v1\\..\\admin",
+    "encoded-slash-in-host": "https://api.example.com%2f.evil.example/v1/x",
+    "ideographic-full-stop": "https://api\u3002example\u3002com/v1/x",
+    "port-past-65535": "https://api.example.com:99999/v1/x",
+    "empty-userinfo": "https://@api.example.com/v1/x",
+    "empty-user-and-password": "https://:@api.example.com/v1/x",
+    "upper-case-localhost-dot": "https://LOCALHOST./v1/x",
+}
+_TWIN_CHECK = """
+import(process.argv[1]).then((m) => {
+  const { urls, constraints } = JSON.parse(require("node:fs").readFileSync(process.argv[2], "utf8"));
+  const out = {};
+  for (const [name, url] of Object.entries(urls)) {
+    out[name] = constraints.map((c) => { try { return m.check(c, url); } catch (e) { return "RAISED:" + e.constructor.name; } });
+  }
+  process.stdout.write(JSON.stringify(out));
+});
+"""
+
+
+@pytest.fixture(scope="module")
+def url_verdicts(tmp_path_factory: pytest.TempPathFactory) -> dict[str, tuple[list[Any], list[Any]]]:
+    """Each URL's ([url_pattern, url_safe] by Python, the same by the TypeScript twin)."""
+    asked = tmp_path_factory.mktemp("r9b-urls") / "urls.json"
+    asked.write_text(json.dumps({"urls": URLS, "constraints": [URL_PATTERN, URL_SAFE]}))
+    twin_source = PACKAGE.parents[1] / "node" / "probity-records-verify" / "src" / "verify.ts"
+    done = subprocess.run(["node", "-e", _TWIN_CHECK, str(twin_source), str(asked)], capture_output=True, text=True, check=False)
+    assert done.returncode == 0, f"the TypeScript twin did not run: {done.stderr[-800:]}"
+    twin = json.loads(done.stdout)
+    mine: dict[str, list[Any]] = {}
+    for name, url in URLS.items():
+        answers: list[Any] = []
+        for constraint in (URL_PATTERN, URL_SAFE):
+            try:
+                answers.append(constraints.check(constraint, url))
+            except Exception as exc:  # noqa: BLE001 - a raise is itself the finding
+                answers.append(f"RAISED:{type(exc).__name__}")
+        mine[name] = answers
+    return {name: (mine[name], twin[name]) for name in URLS}
+
+
+@pytest.mark.parametrize("name", sorted(URLS))
+def test_both_readers_judge_a_url_constraint_alike(url_verdicts: dict[str, tuple[list[Any], list[Any]]], name: str) -> None:
+    """A grant that allows a URL in one reader and not in the other has two verdicts; [url_pattern, url_safe] each."""
+    py, twin = url_verdicts[name]
+    assert py == twin, f"{URLS[name]!r}: python={py} typescript={twin}"
+    if name == "control-allowed":
+        assert py == [True, True]
