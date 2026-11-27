@@ -644,3 +644,73 @@ def test_every_registered_registry_code_is_reached_by_this_file() -> None:
     assert held
     assert {c for c in held if f'"{c}"' not in here and f'raises("{c}")' not in here and c not in here} == set()
     assert {c for c in held if f'"{c}"' not in source} == set()
+
+
+# --- one spelling, one reader, one rule for both JWTs of a presentation -----------------------------------------
+
+
+def ec_jwk(key: ec.EllipticCurvePrivateKey) -> dict[str, str]:
+    numbers = key.public_key().public_numbers()
+    return {"kty": "EC", "crv": "P-256", "x": b64(numbers.x.to_bytes(32, "big")), "y": b64(numbers.y.to_bytes(32, "big"))}
+
+
+def sign_es256(header: dict[str, Any], claims: dict[str, Any], key: ec.EllipticCurvePrivateKey, *, high: bool) -> str:
+    """An ES256 token in the low-S or the high-S spelling of one signature."""
+    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+
+    head, body = segment(header), segment(claims)
+    r, s = decode_dss_signature(key.sign(f"{head}.{body}".encode(), ec.ECDSA(hashes.SHA256())))
+    low = min(s, registry.P256_ORDER - s)
+    s = registry.P256_ORDER - low if high else low
+    return f"{head}.{body}.{b64(r.to_bytes(32, 'big') + s.to_bytes(32, 'big'))}"
+
+
+def test_an_es256_token_is_read_only_in_its_low_s_spelling() -> None:
+    key = ec.generate_private_key(ec.SECP256R1())
+    pins = {ISSUER: registry.PinnedKeys.of(ISSUER, {"keys": [{**ec_jwk(key), "kid": "k1"}]})}
+    head = {"alg": "ES256", "kid": "k1", "typ": "t+jwt"}
+    low, high = (sign_es256(head, claims_of(), key, high=h) for h in (False, True))
+    assert registry.verify_jws(low, pins, typ=("t+jwt",)).claims["iss"] == ISSUER
+    with raises("jws_signature_not_low_s"):
+        registry.verify_jws(high, pins, typ=("t+jwt",))
+    # The rule lives in verify_signature itself, so no caller of it reads the second spelling either.
+    signature = registry.unb64url(high.split(".")[2])
+    assert registry.high_s("ES256", signature) and not registry.high_s("EdDSA", signature)
+    assert not registry.verify_signature("ES256", ec_jwk(key), ".".join(high.split(".")[:2]).encode(), signature)
+
+
+def test_a_validation_is_spent_by_its_statement_not_its_text() -> None:
+    key = Ed25519PrivateKey.generate()
+    got = check(validation(key, jti="j-42"), key)
+    assert got.spend_key == (ISSUER, "j-42")
+
+
+def test_a_key_binding_jwt_that_demands_an_extension_is_refused() -> None:
+    p = Passport()
+    with raises("passport_kb_critical"):
+        p.verify(p.present(header={"alg": "EdDSA", "kid": "holder", "typ": registry.KB_TYP, "crit": ["x"]}))
+
+
+def test_a_key_binding_jwt_is_read_only_in_its_low_s_spelling() -> None:
+    holder = ec.generate_private_key(ec.SECP256R1())
+    p = Passport()
+    jwt = p.jwt(cnf={"jwk": ec_jwk(holder)})
+    prefix = f"{jwt}~{p.disclosures['name']}~"
+    claims = {"aud": "rp", "nonce": "n1", "iat": CLOCK, "sd_hash": b64(hashlib.sha256(prefix.encode()).digest())}
+    head = {"alg": "ES256", "typ": registry.KB_TYP}
+    assert p.verify(prefix + sign_es256(head, claims, holder, high=False)).nonce == "n1"
+    with raises("jws_signature_not_low_s"):
+        p.verify(prefix + sign_es256(head, claims, holder, high=True))
+
+
+@pytest.mark.parametrize("raw", [b'{"a":"\\ud800"}', b'{"a":"\\udc00x"}', b'{"a":1e400}', b'{"a":Infinity}'])
+def test_a_lone_surrogate_or_a_number_no_double_holds_is_refused(raw: bytes) -> None:
+    with raises("jws_malformed"):
+        registry.strict_json(raw)
+
+
+def test_a_registry_document_nests_at_most_max_json_depth_containers() -> None:
+    deepest = registry.MAX_JSON_DEPTH
+    assert registry.strict_json(b"[" * deepest + b"]" * deepest) == registry.strict_json(b"[" * deepest + b"]" * deepest)
+    with raises("jws_malformed"):
+        registry.strict_json(b"[" * (deepest + 1) + b"]" * (deepest + 1))

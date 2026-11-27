@@ -2085,6 +2085,12 @@
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_malformed"
   },
   {
+   "code": "jws_signature_not_low_s",
+   "check": "registry.jws",
+   "meaning": "an ES256 signature is in its high-S spelling (s > n/2), the second spelling of one signature, which is never read",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/jws_signature_not_low_s"
+  },
+  {
    "code": "jws_signature_unverified",
    "check": "registry.jws",
    "meaning": "the signature does not verify under the pinned key and its own algorithm",
@@ -2371,6 +2377,12 @@
    "check": "registry.passport",
    "meaning": "the passport cnf is not a single supported public key",
    "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_holder_invalid"
+  },
+  {
+   "code": "passport_kb_critical",
+   "check": "registry.passport",
+   "meaning": "the key binding JWT demands an extension through crit, which the verifier does not understand",
+   "uri": "https://probityai.github.io/agent-evidence-vectors/refusal-code/v1/passport_kb_critical"
   },
   {
    "code": "passport_kb_malformed",

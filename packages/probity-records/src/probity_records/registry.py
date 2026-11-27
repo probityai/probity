@@ -6,6 +6,13 @@ A verifier needs four things from a registry and no network to read them:
    the presented data. A header that names or carries a key (``jku``, ``jwk``, ``x5u``, ``x5c``) or demands an
    extension (``crit``) is refused; ``kid`` only selects among the keys already pinned for the token's issuer; ``alg``
    is checked against the pinned key's own type, so an ``alg: none`` or an HMAC over a public key is refused.
+   Every token has one spelling. ``unb64url`` reads only the canonical base64url of each segment, EdDSA refuses a
+   non-canonical S, RS256 is deterministic, and an ES256 signature is read only in its low-S form (s <= n/2): ECDSA
+   (r, s) and (r, n - s) both verify, so without that rule one signed statement has two token texts and two digests.
+   An ES256 issuer normalizes s before encoding (``s = n - s`` when ``s > n/2``); a high-S signature is refused as
+   ``jws_signature_not_low_s``. A token's digest is therefore a stable name for it, and the single-use key of a
+   validation is still its statement, ``(issuer, jti)`` (``Validation.spend_key``), never its text, so a signature
+   scheme added later that is malleable in some other way cannot make one validation spendable twice.
 2. **Domain control.** ``check_validation`` reads a domain-control validation a pinned validator signed for exactly one
    (domain, tenant, canonical id) inside its reuse window. ``pin_key_document`` pins the key document a domain serves
    at ``/.well-known/agent-keys.json``: the chain the connection presented must verify to roots the verifier holds for
@@ -43,11 +50,13 @@ from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 from cryptography.x509.verification import PolicyBuilder, Store, VerificationError
 
 from . import witness
-from .core import sha256_hex
+from .core import JsonRefused, admitted_loads, sha256_hex
 from .identity import jwk_thumbprint
 
 #: The algorithm each pinned key type admits; the header's ``alg`` must be this one.
 ALG_OF_KEY: Final = {("OKP", "Ed25519"): "EdDSA", ("EC", "P-256"): "ES256", ("RSA", None): "RS256"}
+#: The order of the P-256 group: an ES256 ``s`` above half of it is the second spelling of a signature.
+P256_ORDER: Final = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
 MAX_TOKEN_BYTES: Final = 64 << 10
 #: Header members that point at a key; a verifier that follows one lets the token choose its own key.
 KEY_REFERENCES: Final = ("jku", "jwk", "x5u", "x5c")
@@ -111,52 +120,27 @@ def unb64url(text: str) -> bytes:
         data = base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
     except (ValueError, binascii.Error) as exc:
         raise RegistryError("jws_malformed", "a segment is not base64url") from exc
-    # Many strings decode to one value; single-use checks key on a token's text, so only one spelling is read.
+    # Many strings decode to one value; a token's digest names it, so only one spelling of each segment is read.
     if b64url(data) != text:
         raise RegistryError("jws_malformed", "a segment is not the canonical base64url of its bytes")
     return data
 
 
-def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for name, value in pairs:
-        if name in out:
-            raise RegistryError("jws_duplicate_member", name)
-        out[name] = value
-    return out
-
-
-def _bad_constant(name: str) -> Any:
-    raise RegistryError("jws_malformed", f"{name} is not JSON")
-
-
-MAX_JSON_DEPTH = 32
-
-
-def _depth(value: Any) -> int:
-    """Nesting depth of a parsed document, counted without recursion."""
-    deepest, stack = 0, [(value, 1)]
-    while stack:
-        item, level = stack.pop()
-        if isinstance(item, (dict, list)):
-            deepest = max(deepest, level)
-            stack.extend((child, level + 1) for child in (item.values() if isinstance(item, dict) else item))
-    return deepest
+#: The deepest nesting, in containers, a registry document may have.
+MAX_JSON_DEPTH: Final = 32
 
 
 def strict_json(data: bytes) -> Any:
-    """JSON with repeated members, NaN and Infinity refused: two readers of one document must see one value."""
+    """A registry document read by the package's one reader of untrusted JSON (``core.admitted_loads``): a repeated
+    member is ``jws_duplicate_member``; invalid UTF-8, a lone surrogate, NaN, a number no double holds or nesting past
+    ``MAX_JSON_DEPTH`` is ``jws_malformed``. Two readers of one document see one value, and every string of the value
+    encodes as UTF-8, so a leaf re-serialized from it never raises."""
     try:
-        parsed = json.loads(data.decode("utf-8"), object_pairs_hook=_no_duplicates, parse_constant=_bad_constant)
-        if _depth(parsed) > MAX_JSON_DEPTH:
-            raise RegistryError("jws_malformed", "JSON nested too deep")
-        return parsed
-    except RegistryError:
-        raise
-    except RecursionError as exc:
-        raise RegistryError("jws_malformed", "JSON nested too deep") from exc
-    except ValueError as exc:  # not UTF-8, not JSON, or an integer longer than the interpreter converts
-        raise RegistryError("jws_malformed", "not UTF-8 JSON") from exc
+        return admitted_loads(data, max_depth=MAX_JSON_DEPTH)
+    except JsonRefused as exc:
+        if exc.variant == "DuplicateMember":
+            raise RegistryError("jws_duplicate_member", "a member is repeated") from exc
+        raise RegistryError("jws_malformed", f"not admissible UTF-8 JSON: {exc.variant}") from exc
 
 
 def _alg_of(jwk: Mapping[str, Any]) -> str | None:
@@ -201,15 +185,26 @@ class PinnedKeys:
         return matches[0]
 
 
+def high_s(alg: Any, signature: bytes) -> bool:
+    """Whether ``signature`` is an ES256 signature in its high-S spelling, the one of the two this module never reads."""
+    return alg == "ES256" and len(signature) == 64 and int.from_bytes(signature[32:], "big") > P256_ORDER // 2
+
+
+def _one_spelling(alg: Any, signature: bytes) -> None:
+    if high_s(alg, signature):
+        raise RegistryError("jws_signature_not_low_s", "an ES256 signature is read only with s <= n/2")
+
+
 def verify_signature(alg: str, jwk: Mapping[str, Any], signing_input: bytes, signature: bytes) -> bool:
-    """True when ``signature`` verifies under the pinned ``jwk`` by ``alg``, the one algorithm that key type admits."""
+    """True when ``signature`` verifies under the pinned ``jwk`` by ``alg``, the one algorithm that key type admits,
+    in its one spelling (an ES256 signature with s <= n/2)."""
     if _alg_of(jwk) != alg:
         return False
     try:
         if alg == "EdDSA":
             Ed25519PublicKey.from_public_bytes(unb64url(jwk["x"])).verify(signature, signing_input)
         elif alg == "ES256":
-            if len(signature) != 64:
+            if len(signature) != 64 or high_s(alg, signature):
                 return False
             point = ec.EllipticCurvePublicNumbers(int.from_bytes(unb64url(jwk["x"]), "big"),
                                                   int.from_bytes(unb64url(jwk["y"]), "big"), ec.SECP256R1())
@@ -270,7 +265,9 @@ def verify_jws(token: str, pins: Mapping[str, PinnedKeys], *, typ: tuple[str | N
         raise RegistryError("jws_issuer_untrusted", repr(iss))
     key = pin.select(header.get("kid"))
     signing_input = f"{head}.{body}".encode("ascii")
-    if not verify_signature(str(header.get("alg")), key, signing_input, unb64url(sig)):
+    signature = unb64url(sig)
+    _one_spelling(header.get("alg"), signature)
+    if not verify_signature(str(header.get("alg")), key, signing_input, signature):
         raise RegistryError("jws_signature_unverified", f"issuer {iss}")
     return Verified(header, claims, key, signing_input)
 
@@ -323,7 +320,12 @@ class Validation:
     issued_at: int
     expires_at: int
     jti: str
-    digest: str  # SHA-256 of the token: what a naming leaf records and what is spent once
+    digest: str  # SHA-256 of the token, its one spelling: what a naming leaf records
+
+    @property
+    def spend_key(self) -> tuple[str, str]:
+        """What a validator's single-use store spends: the statement (issuer, jti), never the token's text."""
+        return self.issuer, self.jti
 
 
 def check_validation(token: str, pins: Mapping[str, PinnedKeys], *, domain: str, tenant: str, subject: str,
@@ -697,7 +699,11 @@ def _key_binding(kb: str, holder: Mapping[str, Any], *, audience: str, prefix: s
         raise RegistryError("passport_kb_malformed", "a key binding JWT has typ kb+jwt")
     if set(header) & set(KEY_REFERENCES):
         raise RegistryError("passport_kb_names_a_key", "the holder key comes from cnf, never from the key binding")
-    if not verify_signature(str(header.get("alg")), holder, f"{head}.{body}".encode("ascii"), unb64url(sig)):
+    if "crit" in header:  # RFC 7515 section 4.1.11: no extension is understood, so none may be demanded
+        raise RegistryError("passport_kb_critical", "the key binding JWT demands an extension through crit")
+    signature = unb64url(sig)
+    _one_spelling(header.get("alg"), signature)
+    if not verify_signature(str(header.get("alg")), holder, f"{head}.{body}".encode("ascii"), signature):
         raise RegistryError("passport_possession_unproven", "the key binding JWT is not signed by the cnf key")
     claims = _object(body, "the key binding claims")
     if claims.get("aud") != audience:
