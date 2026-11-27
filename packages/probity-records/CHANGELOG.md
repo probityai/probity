@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **One reading of a request target, of base64 and of a token segment, in both languages.** A DPoP `htu` and a stamp
+  `@target-uri` are read by `possession.http_uri_parts` (TypeScript `httpUriParts`): text outside the RFC 3986 URI
+  alphabet (a space, a control byte, a tab or line break, a backslash, a non-ASCII character), userinfo, an empty
+  host and an empty, non-numeric or out-of-range port are refused before any parse. Before, `urlsplit` stripped a
+  leading space or deleted a tab that WHATWG URL parsing kept or rewrote, so the two readers compared different
+  targets. A DPoP `x5c` certificate, approval payloads, envelope payloads and an authority block's `argsB64`
+  (`core.call_args_of`, TypeScript `callArgsOf`) are read as canonical padded base64 only (`core.unb64`), so missing
+  or extra padding, a line break or the URL-safe alphabet is refused in both. The TypeScript principal token reader
+  reads its header and claims through one strict reader (canonical base64url, `TOKEN_MAX_DEPTH`, jcs-admit), refuses
+  a `crit` header as `token_critical_unsupported`, and reads its key through `publicJwk`. Every key reader refuses
+  private key material through one guard (`identity.refuse_private`, TypeScript `refusePrivate`) inside
+  `public_jwk` and `jwk_thumbprint`, and a test finds every reader rather than listing them; a passport holder key or
+  a pinned JWKS carrying private material is now refused.
+
 - **One list of private JWK members, and a differential that reaches every refusal code.** Every key reader refuses
   the members of `identity.PRIVATE_JWK_MEMBERS` (`d`, `p`, `q`, `dp`, `dq`, `qi`, `oth`, `k`, `priv`); the naming
   registry, the principal reader and the DPoP header reader used to pass a key carrying `oth`. The key-bound tokens of
