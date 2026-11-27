@@ -26,10 +26,10 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlsplit
 
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
@@ -47,7 +47,8 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads, same_text
 from .grants import ts
-from .identity import PRIVATE_JWK_MEMBERS, b64url, jwk_thumbprint, unb64url
+from .identity import b64url, has_private_member, jwk_thumbprint, unb64url
+from .identity import public_jwk as jwk_bytes
 
 CNF_METHODS = ("jkt", "x5t#S256")
 DPOP_TYP = "dpop+jwt"
@@ -137,19 +138,52 @@ def _segment_refusal(exc: ValueError) -> str:
     return "dpop_duplicate_member" if duplicate else "dpop_malformed"
 
 
+#: RFC 3986 section 2: the only characters a URI is written with (unreserved, reserved, and ``%`` followed by two hex
+#: digits). Anything else (a space, a control byte, a tab or line break, a non-ASCII character, a backslash) makes the
+#: text something other than the request URI it is compared with (RFC 9449 section 4.3). Python's ``urlsplit`` strips
+#: leading spaces and C0 controls and deletes tabs and line breaks, so the reader refuses them before it splits.
+_URI_TEXT = re.compile(r"(?:[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*")
+#: scheme "://" authority path, then a query or fragment the comparison ignores (RFC 3986 section 3).
+_HTU_PARTS = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*)://([^/?#]*)([^?#]*)(?:[?#].*)?", re.DOTALL)
+_IP_LITERAL = re.compile(r"\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?")
+_REG_NAME = re.compile(r"[A-Za-z0-9\-._~!$&'()*+,;=%]+")
+_PORT = re.compile(r"[0-9]+")
+
+
 def normalize_htu(url: str) -> str:
     """RFC 9449 section 4.3 target URI: scheme and host lower case, default port dropped, no query or fragment,
-    an empty path as ``/``. The path is otherwise compared exactly."""
-    parts = urlsplit(url)
-    scheme, host = parts.scheme.lower(), (parts.hostname or "").lower()
-    if scheme not in ("https", "http") or not host:
+    an empty path as ``/``. The path is otherwise compared exactly.
+
+    ``ValueError`` for anything that is not an absolute http or https URI written in the RFC 3986 alphabet: a
+    character outside it, userinfo (RFC 9110 section 4.2.4 forbids it in an http URI), an empty or non-numeric port or
+    one above 65535, an empty host. The TypeScript twin ``normalizeHtu`` applies the same rules in the same order, so
+    one text has one answer in both readers."""
+    if not isinstance(url, str) or not _URI_TEXT.fullmatch(url):
+        raise ValueError("htu_not_a_uri")
+    parts = _HTU_PARTS.fullmatch(url)
+    if parts is None:
         raise ValueError("htu_not_absolute")
-    port = parts.port
-    if port is None or (scheme, port) in (("https", 443), ("http", 80)):
-        authority = host
+    scheme, authority, path = parts[1].lower(), parts[2], parts[3]
+    if scheme not in ("https", "http") or "@" in authority:
+        raise ValueError("htu_not_absolute")
+    literal = _IP_LITERAL.fullmatch(authority)
+    if literal is not None:
+        host, port_text = f"[{literal[1].lower()}]", literal[2]
+    elif "[" in authority or "]" in authority:
+        raise ValueError("htu_not_absolute")
     else:
-        authority = f"{host}:{port}"
-    return f"{scheme}://{authority}{parts.path or '/'}"
+        name, colon, rest = authority.partition(":")
+        host, port_text = name.lower(), (rest if colon else None)
+        if not _REG_NAME.fullmatch(host):
+            raise ValueError("htu_not_absolute")
+    port = None
+    if port_text is not None:
+        if not _PORT.fullmatch(port_text) or int(port_text) > 65535:
+            raise ValueError("htu_port_invalid")
+        port = int(port_text)
+    if port is None or (scheme, port) in (("https", 443), ("http", 80)):
+        return f"{scheme}://{host}{path or '/'}"
+    return f"{scheme}://{host}:{port}{path or '/'}"
 
 
 class _JwkRefused(ValueError):
@@ -160,21 +194,16 @@ def _load_jwk(alg: str, jwk: Any) -> Any:
     """The public key of a JWK of exactly the shape ``alg`` takes, or ``_JwkRefused`` naming the defect."""
     if not isinstance(jwk, dict):
         raise _JwkRefused("dpop_jwk_invalid")
-    if set(jwk) & PRIVATE_JWK_MEMBERS:
+    if has_private_member(jwk):
         raise _JwkRefused("dpop_jwk_private")
     kty, crv = _JWK_CURVE[alg]
     if set(jwk) != set(_JWK_MEMBERS[alg]) or jwk.get("kty") != kty or jwk.get("crv") != crv:
         raise _JwkRefused("dpop_jwk_invalid")
     try:
-        x = unb64url(jwk["x"])
+        raw = jwk_bytes(jwk)  # identity.public_jwk: canonical members, full-size coordinates, nothing private
         if alg == "EdDSA":
-            if len(x) != 32:
-                raise ValueError
-            return Ed25519PublicKey.from_public_bytes(x)
-        y = unb64url(jwk["y"])
-        if len(x) != 32 or len(y) != 32:
-            raise ValueError
-        return ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), b"\x04" + x + y)
+            return Ed25519PublicKey.from_public_bytes(raw["x"])
+        return ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), b"\x04" + raw["x"] + raw["y"])
     except (ValueError, TypeError, KeyError) as exc:
         raise _JwkRefused("dpop_jwk_invalid") from exc
 

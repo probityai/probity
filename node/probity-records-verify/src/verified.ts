@@ -301,25 +301,42 @@ function eq(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-/** possession.normalize_htu, with Python's urlsplit split rules. */
+// possession.normalize_htu, the same rules in the same order. RFC 3986 section 2: the only characters a URI is written
+// with (unreserved, reserved, and "%" followed by two hex digits); a space, a control byte, a tab or line break, a
+// non-ASCII character or a backslash makes the text something other than the request URI (RFC 9449 section 4.3).
+const URI_TEXT = /^(?:[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*$/;
+// scheme "://" authority path, then a query or fragment the comparison ignores (RFC 3986 section 3).
+const HTU_PARTS = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)(?:[?#][\s\S]*)?$/;
+const IP_LITERAL = /^\[([0-9A-Fa-f:.]+)\](?::([0-9]*))?$/;
+const REG_NAME = /^[A-Za-z0-9\-._~!$&'()*+,;=%]+$/;
+const PORT = /^[0-9]+$/;
+
+/** possession.normalize_htu: scheme and host lower case, default port dropped, no query or fragment, an empty path as
+ *  "/"; throws for anything that is not an absolute http or https URI in the RFC 3986 alphabet, for userinfo (RFC 9110
+ *  section 4.2.4), for an empty, non-numeric or out-of-range port and for an empty host. */
 export function normalizeHtu(url: string): string {
-  const m = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)/.exec(url);
-  const scheme = m ? m[1].toLowerCase() : "";
-  let netloc = m ? m[2] : "";
-  netloc = netloc.slice(netloc.lastIndexOf("@") + 1);
-  let host = netloc, portText = "";
-  const bracket = /^\[([^\]]*)\](?::(.*))?$/.exec(netloc);
-  if (bracket) { host = bracket[1]; portText = bracket[2] ?? ""; }
-  else if (netloc.includes(":")) { host = netloc.slice(0, netloc.indexOf(":")); portText = netloc.slice(netloc.indexOf(":") + 1); }
-  host = host.toLowerCase();
-  if ((scheme !== "https" && scheme !== "http") || !host) throw new Error("htu_not_absolute");
-  let port: number | null = null;
-  if (portText !== "") {
-    if (!/^\d+$/.test(portText) || +portText > 65535) throw new Error("port");
-    port = +portText;
+  if (typeof url !== "string" || !URI_TEXT.test(url)) throw new Error("htu_not_a_uri");
+  const parts = HTU_PARTS.exec(url);
+  if (parts === null) throw new Error("htu_not_absolute");
+  const scheme = parts[1].toLowerCase(), authority = parts[2], path = parts[3];
+  if ((scheme !== "https" && scheme !== "http") || authority.includes("@")) throw new Error("htu_not_absolute");
+  let host: string, portText: string | null;
+  const literal = IP_LITERAL.exec(authority);
+  if (literal !== null) { host = `[${literal[1].toLowerCase()}]`; portText = literal[2] ?? null; }
+  else if (authority.includes("[") || authority.includes("]")) throw new Error("htu_not_absolute");
+  else {
+    const colon = authority.indexOf(":");
+    host = (colon < 0 ? authority : authority.slice(0, colon)).toLowerCase();
+    portText = colon < 0 ? null : authority.slice(colon + 1);
+    if (!REG_NAME.test(host)) throw new Error("htu_not_absolute");
   }
-  const authority = port === null || (scheme === "https" && port === 443) || (scheme === "http" && port === 80) ? host : `${host}:${port}`;
-  return `${scheme}://${authority}${m![3] || "/"}`;
+  let port: number | null = null;
+  if (portText !== null) {
+    if (!PORT.test(portText) || parseInt(portText, 10) > 65535) throw new Error("htu_port_invalid");
+    port = parseInt(portText, 10);
+  }
+  const plain = port === null || (scheme === "https" && port === 443) || (scheme === "http" && port === 80);
+  return `${scheme}://${host}${plain ? "" : `:${port}`}${path || "/"}`;
 }
 
 function dpopHeader(segment: string, expectedJkt: string): [string, KeyObject | null, string | null] {
