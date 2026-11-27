@@ -50,7 +50,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 from cryptography.x509.verification import PolicyBuilder, Store, VerificationError
 
 from . import witness
-from .core import JsonRefused, admitted_loads, sha256_hex
+from .core import TOKEN_MAX_DEPTH, JsonRefused, admitted_loads, sha256_hex
 from .identity import jwk_thumbprint
 
 #: The algorithm each pinned key type admits; the header's ``alg`` must be this one.
@@ -127,7 +127,7 @@ def unb64url(text: str) -> bytes:
 
 
 #: The deepest nesting, in containers, a registry document may have.
-MAX_JSON_DEPTH: Final = 32
+MAX_JSON_DEPTH: Final = TOKEN_MAX_DEPTH
 
 
 def strict_json(data: bytes) -> Any:

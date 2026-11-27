@@ -55,7 +55,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 
-from .core import canonical, sha256_hex
+from .core import TOKEN_MAX_DEPTH, admitted_loads, canonical, sha256_hex
 from .grants import ts
 
 ROLES = ("user", "agent", "sponsor", "approver")
@@ -355,9 +355,14 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
         return "key_not_in_jwks"
     try:
         head_b64, body_b64, sig_b64 = token.split(".")
-        header, claims = json.loads(unb64url(head_b64)), json.loads(unb64url(body_b64))
+        header = admitted_loads(unb64url(head_b64), max_depth=TOKEN_MAX_DEPTH)
+        claims = admitted_loads(unb64url(body_b64), max_depth=TOKEN_MAX_DEPTH)
     except (ValueError, TypeError):
         return "token_malformed"
+    if not isinstance(header, dict) or not isinstance(claims, dict):
+        return "token_malformed"
+    if "crit" in header:  # RFC 7515 section 4.1.11: a verifier that implements no extension refuses one that is demanded
+        return "token_critical_unsupported"
     if header.get("kid") != p.get("kid"):
         return "token_kid_mismatch"
     if p.get("source") == "id-jag" and header.get("typ") != "oauth-id-jag+jwt":

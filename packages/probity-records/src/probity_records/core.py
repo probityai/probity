@@ -11,7 +11,7 @@ import binascii
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 import jcs_admit
 from cryptography.exceptions import InvalidSignature
@@ -53,6 +53,12 @@ def _refuse_inexact_ints(value: Any, depth: int = 0) -> None:
     elif isinstance(value, (list, tuple)):
         for item in value:
             _refuse_inexact_ints(item, depth + 1)
+
+
+#: The deepest nesting, in containers, a token segment or a registry document may have; a JWT header and claim set
+#: are flat objects with a few nested claims, so this is generous and a hostile document cannot reach the recursion
+#: limit of any reader.
+TOKEN_MAX_DEPTH: Final = 32
 
 
 class JsonRefused(ValueError):
