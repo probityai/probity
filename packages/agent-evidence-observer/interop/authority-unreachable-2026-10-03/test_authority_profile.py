@@ -16,7 +16,7 @@ from probity_observer.crypto import (
     SigningKey,
     VerificationError,
 )
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 
 from authority_checks import (
     AUTHORITY_DOMAIN,

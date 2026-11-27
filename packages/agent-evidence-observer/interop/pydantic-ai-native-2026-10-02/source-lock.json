@@ -13,7 +13,7 @@
     "pydantic_ai/models/function.py": "9c67b35563c7ccdaba7fe2384af7ae51c83b68c2bd047a5f7fa9a913aaa31dbd"
   },
   "requirementsSha256": "8a19e395efe6c809866c73e26936a3fc9709d3b54c25d9588db92b58428c72ff",
-  "readerRequirementsSha256": "925de15f50bc980fa4e19a484c136f46cd5ccbe1cb197e5aa25cadc6c426a8fb",
+  "readerRequirementsSha256": "61bdcf2f8b5a65277b83363ccc690d9adcc2fa6bd930e10f8deeecec6248ccbc",
   "nativeSerialization": "ModelMessagesTypeAdapter.dump_json original bytes retained unchanged",
   "dependencySelection": "exact versions and SHA-256 hashes in requirements locks; local Observer/adapter wheels installed --no-deps",
   "scope": "same-operator deterministic native framework reference, no inference, task-quality benchmark, outside custody or adoption"

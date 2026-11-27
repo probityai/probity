@@ -2,6 +2,8 @@
 
 Runs the offline reader over ``retained/fresh-run`` with the retained pins and the
 withheld-source record, then requires the report to equal the retained run report.
+The installed reader bytes are selected by ``installed-source-pins.json``, not by the retained plan, because the
+plan records the bytes the run used and the readers have since moved to the retained grant verifier.
 """
 from __future__ import annotations
 
@@ -18,12 +20,13 @@ from crash_common import load  # noqa: E402
 from crash_reader import verify_saved  # noqa: E402
 
 RETAINED = HERE / "retained"
+INSTALLED = HERE / "installed-source-pins.json"
 
 
 def main() -> int:
     """Exit zero only when the reader's report equals the retained run report."""
     packet = RETAINED / "fresh-run"
-    report = verify_saved(packet, load(packet, "consumer-pins.json"), withheld_sources(RETAINED / "WITHHELD-SOURCES.json"))
+    report = verify_saved(packet, load(packet, "consumer-pins.json"), withheld_sources(RETAINED / "WITHHELD-SOURCES.json"), json.loads(INSTALLED.read_bytes()))
     if report != json.loads((RETAINED / "fresh-report.json").read_bytes()):
         print("retained crash-window report differs from the retained run report", file=sys.stderr)
         return 1

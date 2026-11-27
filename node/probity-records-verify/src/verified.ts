@@ -20,7 +20,9 @@ const TOKEN_ROLES = ["user", "agent", "sponsor"] as const;
 const PIN_ROLES = [...TOKEN_ROLES, "stamp"];
 const ROLE_TYPES: Record<string, (string | null)[]> = { user: ["at+jwt", "oauth-id-jag+jwt"], agent: ["at+jwt"], sponsor: [null, "jwt"] };
 const KEY_REFERENCES = ["jku", "jwk", "x5u", "x5c"];
-const BUNDLE_MEMBERS = ["audience", "environment", "issuers", "profile", "tenant", "version"];
+const BUNDLE_MEMBERS = ["anchors", "audience", "environment", "issuers", "profile", "tenant", "version"];
+const ANCHOR_MEMBERS = ["jwk", "notAfter", "notBefore", "predicateTypes", "role", "status", "thumbprint"];
+const ANCHOR_STATUSES = ["active", "retired", "revoked"];
 const PRIVATE_JWK = ["d", "p", "q", "dp", "dq", "qi", "k", "oth"];
 const MIN_RSA_BITS = 2048;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
@@ -73,7 +75,9 @@ function segmentJson(segment: string): J {
 // --- the trust bundle -------------------------------------------------------------------------------------------
 
 interface PinnedKey { jwk: J; thumbprint: string; roles: Set<string>; tenants: Set<string> }
-export interface TrustBundle { environment: string; tenant: string; audience: string; profile: string; issuers: Map<string, PinnedKey[]> }
+/** A signing anchor (probity_records.trust_bundle): shape only here; verifying a statement under one is Python's. */
+export interface Anchor { jwk: J; thumbprint: string; role: string; status: string; notBefore: string; notAfter: string | null; predicateTypes: string[] }
+export interface TrustBundle { environment: string; tenant: string; audience: string; profile: string; issuers: Map<string, PinnedKey[]>; anchors: Anchor[] }
 
 const isStampKey = (jwk: J): boolean => jwk.kty === "OKP" && jwk.crv === "Ed25519" && typeof jwk.x === "string";
 const stampKeyId = (raw: Buffer): string => sha256Hex(raw);
@@ -82,15 +86,46 @@ const distinctNames = (v: J): boolean => Array.isArray(v) && v.length > 0 && v.e
 
 export function parseBundle(doc: J): TrustBundle {
   const bad = (detail: string): never => refuse("trust_bundle_malformed", detail);
-  if (!sameKeys(doc, BUNDLE_MEMBERS)) bad("a bundle has exactly its six members");
-  if (doc.version !== 1) bad("version is 1");
+  if (!sameKeys(doc, BUNDLE_MEMBERS)) bad("a bundle has exactly its seven members");
+  if (doc.version !== 2) bad("version is 2");
   try { new Ref("service", doc.environment, "bundle", "probe"); } catch { bad("environment is an identity environment"); }
   for (const name of ["tenant", "audience"]) if (typeof doc[name] !== "string" || doc[name] === "") bad(`${name} is a non-empty string`);
   if (doc.profile !== "basic" && doc.profile !== "strict") bad("profile is basic or strict");
-  if (!isObj(doc.issuers) || Object.keys(doc.issuers).length === 0) bad("issuers is a non-empty object");
+  if (!isObj(doc.issuers)) bad("issuers is an object");
+  const anchors = parseAnchors(doc.anchors);
+  if (Object.keys(doc.issuers).length === 0 && anchors.length === 0) bad("a bundle pins at least one issuer or one anchor");
   const issuers = new Map<string, PinnedKey[]>();
   for (const [url, entry] of Object.entries(doc.issuers as Record<string, J>)) issuers.set(url, parseIssuer(url, entry));
-  return { environment: doc.environment, tenant: doc.tenant, audience: doc.audience, profile: doc.profile, issuers };
+  return { environment: doc.environment, tenant: doc.tenant, audience: doc.audience, profile: doc.profile, issuers, anchors };
+}
+
+function parseAnchors(entries: J): Anchor[] {
+  const bad = (detail: string): never => refuse("trust_bundle_malformed", detail);
+  if (!Array.isArray(entries)) bad("anchors is a list");
+  const seen = new Set<string>();
+  const time = (v: J, what: string): string => { try { ts(v); } catch { bad(`anchor ${what} is an RFC 3339 time with an offset`); } return v; };
+  return (entries as J[]).map((a) => {
+    if (!sameKeys(a, ANCHOR_MEMBERS)) bad("an anchor has exactly its seven members");
+    const jwk = a.jwk;
+    if (!isObj(jwk) || Object.keys(jwk).some((k) => PRIVATE_JWK.includes(k))) bad("an anchor key is a public JWK");
+    if (!isStampKey(jwk) || rawOf(jwk).length !== 32) bad("an anchor key is an Ed25519 OKP key");
+    if (a.thumbprint !== jwkThumbprint(jwk)) bad("an anchor's thumbprint is the RFC 7638 thumbprint of its key");
+    if (typeof a.role !== "string" || a.role === "" || !/^[\x00-\x7f]*$/.test(a.role)) bad("an anchor's role is a non-empty ASCII name");
+    if (!ANCHOR_STATUSES.includes(a.status)) bad("an anchor's status is active, retired or revoked");
+    const notBefore = time(a.notBefore, "notBefore");
+    const notAfter = a.notAfter === null ? null : time(a.notAfter, "notAfter");
+    if (notAfter === null && a.status !== "active") bad("a retired or revoked anchor names the end of its window (notAfter)");
+    if (notAfter !== null && !(ts(notBefore) < ts(notAfter))) bad("an anchor's notAfter is after its notBefore");
+    const types = a.predicateTypes;
+    if (!Array.isArray(types) || !types.length || new Set(types).size !== types.length
+        || !types.every((t: J) => typeof t === "string" && t.startsWith("https://") && /^[\x00-\x7f]*$/.test(t) && !t.includes(" "))) {
+      bad("predicateTypes is a non-empty list of distinct https URIs");
+    }
+    const raw = rawOf(jwk).toString("hex");
+    if (seen.has(raw)) bad("an anchor key is listed twice");
+    seen.add(raw);
+    return { jwk, thumbprint: a.thumbprint, role: a.role, status: a.status, notBefore, notAfter, predicateTypes: types };
+  });
 }
 
 function parseIssuer(url: string, entry: J): PinnedKey[] {

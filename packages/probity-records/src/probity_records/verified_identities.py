@@ -54,8 +54,9 @@ from .stamp import (
     stamp_key_id,
     verify_stamp,
 )
+from .trust_bundle import Anchor, AnchorRefused, parse_anchors
 
-VERSION: Final = 1
+VERSION: Final = 2
 #: The roles a request credential may sign for, and the stamp a gateway signs.
 TOKEN_ROLES: Final = ("user", "agent", "sponsor")
 PIN_ROLES: Final = (*TOKEN_ROLES, "stamp")
@@ -65,7 +66,7 @@ PIN_ROLES: Final = (*TOKEN_ROLES, "stamp")
 ROLE_TYPES: Final = {"user": ("at+jwt", "oauth-id-jag+jwt"), "agent": ("at+jwt",), "sponsor": (None, "jwt")}
 #: Header members that point at a key; a verifier that follows one lets the token choose its own key.
 KEY_REFERENCES: Final = ("jku", "jwk", "x5u", "x5c")
-BUNDLE_MEMBERS: Final = frozenset({"version", "environment", "tenant", "audience", "profile", "issuers"})
+BUNDLE_MEMBERS: Final = frozenset({"version", "environment", "tenant", "audience", "profile", "issuers", "anchors"})
 MIN_RSA_BITS: Final = 2048
 PRIVATE_JWK_MEMBERS: Final = frozenset({"d", "p", "q", "dp", "dq", "qi", "k", "oth"})
 
@@ -101,14 +102,16 @@ class PinnedIssuer:
 
 @dataclass(frozen=True)
 class TrustBundle:
-    """What a service pins: its environment, tenant and audience, the profile it requires, and each issuer's keys
-    with the roles and tenants each key may sign for. Made only by ``TrustBundle.parse``."""
+    """What a service pins: its environment, tenant and audience, the profile it requires, each issuer's keys with
+    the roles and tenants each key may sign for, and the anchors that sign evidence (``trust_bundle``). Made only by
+    ``TrustBundle.parse``."""
 
     environment: str
     tenant: str
     audience: str
     profile: str
     issuers: Mapping[str, PinnedIssuer] = field(repr=False)
+    anchors: tuple[Anchor, ...] = field(default=(), repr=False)
 
     @classmethod
     def parse(cls, doc: Any) -> TrustBundle:
@@ -116,7 +119,7 @@ class TrustBundle:
         if not isinstance(doc, Mapping) or set(doc) != BUNDLE_MEMBERS:
             raise _refuse("trust_bundle_malformed", "a bundle has exactly " + ", ".join(sorted(BUNDLE_MEMBERS)))
         if doc["version"] != VERSION or isinstance(doc["version"], bool):
-            raise _refuse("trust_bundle_malformed", "version is 1")
+            raise _refuse("trust_bundle_malformed", "version is 2")
         try:
             Ref(type="service", environment=doc["environment"], domain="bundle", subject="probe")
         except IdentityStringError as exc:
@@ -127,10 +130,16 @@ class TrustBundle:
         if doc["profile"] not in PROFILES:
             raise _refuse("trust_bundle_malformed", "profile is basic or strict")
         issuers = doc["issuers"]
-        if not isinstance(issuers, Mapping) or not issuers:
-            raise _refuse("trust_bundle_malformed", "issuers is a non-empty object")
+        if not isinstance(issuers, Mapping):
+            raise _refuse("trust_bundle_malformed", "issuers is an object")
+        try:
+            anchors = parse_anchors(doc["anchors"])
+        except AnchorRefused as exc:
+            raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
+        if not issuers and not anchors:
+            raise _refuse("trust_bundle_malformed", "a bundle pins at least one issuer or one anchor")
         parsed = {str(url): _issuer(url, entry) for url, entry in issuers.items()}
-        return cls(doc["environment"], doc["tenant"], doc["audience"], doc["profile"], parsed)
+        return cls(doc["environment"], doc["tenant"], doc["audience"], doc["profile"], parsed, anchors)
 
     def key(self, issuer: str, role: str, kid: Any) -> PinnedKey:
         """The one pinned key of ``issuer`` the header's ``kid`` selects, when it may sign for ``role`` here."""
@@ -379,7 +388,7 @@ def _identity_from_tokens(found: Mapping[str, _Token], bundle: TrustBundle) -> C
     try:
         act = act_chain_digest(user.claims["act"]) if "act" in user.claims else None
     except IdentityDigestError as exc:
-        raise _refuse(exc.code, str(exc)) from exc
+        raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
     return CanonicalIdentity(kind="agent", user=user_ref,
                              chain=(*reversed(parents), Ref("agent", env, agent.issuer, agent.subject)),
                              sponsors=_sponsors(sponsor, env), act=act)  # fmt: skip
@@ -391,7 +400,7 @@ def _stamp(bundle: TrustBundle, request: RequestFacts, at: str) -> VerifiedStamp
         return verify_stamp(request.headers, method=request.method, target_uri=request.url, body=request.content,
                             public_raw=_raw(key.jwk), now=from_datetime(ts(at)))  # fmt: skip
     except StampRefused as exc:
-        raise _refuse(exc.code, str(exc)) from exc
+        raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
 
 
 def _environment(identity: CanonicalIdentity, bundle: TrustBundle) -> None:
@@ -419,7 +428,7 @@ def verify_request(tokens: Mapping[str, str], bundle: TrustBundle | Mapping[str,
     try:
         stamped = None if request is None or stamp_fields(request.headers) is None else request
     except StampRefused as exc:
-        raise _refuse(exc.code, str(exc)) from exc
+        raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
     if not tokens and stamped is None:
         raise _refuse("principal_credential_missing", "the request presents no credential")
     try:
@@ -438,13 +447,13 @@ def verify_request(tokens: Mapping[str, str], bundle: TrustBundle | Mapping[str,
         try:
             identity = _identity_from_tokens(found, trust)
         except IdentityStringError as exc:
-            raise _refuse(exc.code, str(exc)) from exc
+            raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
         proof = _possession([found[r] for r in TOKEN_ROLES if r in found], request, at)
     _environment(identity, trust)
     try:
         identity.check(trust.profile)
     except IdentityStringError as exc:
-        raise _refuse(exc.code, str(exc)) from exc
+        raise _refuse(exc.code, str(exc).removeprefix(exc.code + ": ")) from exc
     identities = [identity]
     if transport is not None:
         _environment(transport, trust)

@@ -36,6 +36,11 @@ from .signing import Delegation, verify_delegation
 
 GENESIS = "0" * 64
 CHECKPOINT_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-checkpoint")
+#: A producer's signed statement that ``dropped`` records it made never reached the journal, after line ``afterSeq``.
+GAP_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-gap")
+#: A writer's signed statement that it removed a torn last line (``bytes`` long, ``tornSha256``) after ``afterSeq``.
+TORN_TAIL_TYPE = identifier("agent-evidence-vectors/predicate/v1/tool-call-journal-torn-tail")
+JOURNAL_SUBJECT = "tool-call-journal"
 JOURNAL_FILE = "journal.jsonl"
 #: Root-signed certificates for the session keys that signed lines of the journal (``signing.delegate``).
 KEYS_FILE = "keys.jsonl"
@@ -94,8 +99,10 @@ class Journal:
     whose bytes an earlier fsync already covered does not fsync again.
     """
 
-    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock) -> None:
+    def __init__(self, directory: str | os.PathLike[str], signer: Any, *, clock: Clock, run: str | None = None) -> None:
         self.directory = Path(directory)
+        self.run = run
+        self._torn: bytes | None = None
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / JOURNAL_FILE
         self.signer = signer
@@ -137,12 +144,14 @@ class Journal:
         size = self.path.stat().st_size if self.path.exists() else 0
         if size < self._offset:  # the file was replaced or truncated under us: rescan from the start
             self._offset, self._seq, self._head, self._last_at = 0, 0, GENESIS, 0
+        self._torn = None
         if size > self._offset:
             with self.path.open("rb") as fh:
                 fh.seek(self._offset)
                 for line in fh:
                     if not line.endswith(b"\n"):
-                        break  # a torn tail from a crashed writer is not a line
+                        self._torn = line  # a torn tail from a crashed writer is not a line; append removes it
+                        break
                     self._offset += len(line)
                     body = line.rstrip(b"\n")
                     if body.strip():
@@ -177,13 +186,11 @@ class Journal:
         with lock.open("a") as guard:
             fcntl.flock(guard, fcntl.LOCK_EX)
             seq, head = self._refresh()
-            body = statement(subject_name, subject_digest, predicate_type,
-                             {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
-            envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
-            line = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
             try:
-                _cut_torn_tail(fd, self._offset)  # the refresh above stopped at the last whole line
+                if self._torn is not None:
+                    seq, head = self._remove_torn_tail(fd, seq)
+                envelope, line = self._line(predicate_type, subject_name, subject_digest, predicate, seq, head)
                 os.write(fd, line)
                 self._offset += len(line)
                 self._seq, self._head = seq + 1, _line_hash(line.rstrip(b"\n"))
@@ -194,6 +201,40 @@ class Journal:
                 os.close(fd)
         return envelope
 
+    def _line(self, predicate_type: str, subject_name: str, subject_digest: str, predicate: Mapping[str, Any],
+              seq: int, head: str) -> tuple[dict[str, Any], bytes]:
+        body = statement(subject_name, subject_digest, predicate_type,
+                         {**dict(predicate), "at": self._stamp(), "prev": head, "seq": seq + 1})
+        envelope = sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
+        return envelope, json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+
+    def _remove_torn_tail(self, fd: int, seq: int) -> tuple[int, str]:
+        """Cut the torn bytes a crashed writer left and append the signed line that says so, durable before the
+        caller's line: a torn tail leaves the file only with a statement of its length and digest."""
+        torn = self._torn or b""
+        os.ftruncate(fd, self._offset)
+        os.fsync(fd)
+        _, line = self._line(TORN_TAIL_TYPE, JOURNAL_SUBJECT, hashlib.sha256(torn).hexdigest(),
+                             {"afterSeq": seq, "bytes": len(torn), "tornSha256": hashlib.sha256(torn).hexdigest()},
+                             seq, self._head)
+        os.write(fd, line)
+        os.fsync(fd)
+        self._offset += len(line)
+        self._synced = max(self._synced, self._offset)
+        self._seq, self._head, self._torn = seq + 1, _line_hash(line.rstrip(b"\n")), None
+        return self._seq, self._head
+
+    def gap(self, *, dropped: int, after_seq: int, reason: str) -> dict[str, Any]:
+        """Append the signed statement that ``dropped`` records the producer made never reached the journal, lost
+        after line ``after_seq``. The producer states the loss it knows of; the journal never infers one."""
+        seq, _ = self._refresh()
+        if (isinstance(dropped, bool) or not isinstance(dropped, int) or dropped < 1
+                or isinstance(after_seq, bool) or not isinstance(after_seq, int) or not 0 <= after_seq <= seq
+                or not isinstance(reason, str) or not reason):  # fmt: skip
+            raise ValueError("journal_gap_invalid: dropped >= 1, 0 <= afterSeq <= the last line, a reason")
+        return self.append(GAP_TYPE, JOURNAL_SUBJECT, hashlib.sha256(reason.encode()).hexdigest(),
+                           {"afterSeq": after_seq, "dropped": dropped, "reason": reason})
+
     def statements(self) -> list[dict[str, Any]]:
         """The statements of every whole line; a torn tail from a writer killed mid-append is not one."""
         return [_payload(json.loads(line)) for line in _whole_lines(self.path)[0] if line.strip()]
@@ -201,9 +242,11 @@ class Journal:
     def checkpoint(self) -> dict[str, Any]:
         """A signed statement of the line count and head, for an outsider to pin."""
         seq, head = self._refresh()
-        body = statement("tool-call-journal", head, CHECKPOINT_TYPE,
-                         {"at": self._stamp(), "count": seq, "head": head,
-                          "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))})
+        predicate = {"at": self._stamp(), "count": seq, "head": head,
+                     "keyProvenance": dict(getattr(self.signer, "provenance", {"backend": "unstated"}))}
+        if self.run is not None:
+            predicate["run"] = self.run
+        body = statement(JOURNAL_SUBJECT, head, CHECKPOINT_TYPE, predicate)
         return sign_envelope(self.signer, json.dumps(body, sort_keys=True, separators=(",", ":")).encode())
 
 
@@ -464,11 +507,46 @@ def _check_line(i: int, line: str, keys: list[Any], prev: str, trust: Trust | No
         problems.extend(approval_problems)
         if pred.get("phase") == "effect":
             _check_effect(pred, problems, where)
+    elif same_identifier(body.get("predicateType"), GAP_TYPE) or same_identifier(body.get("predicateType"),
+                                                                                  TORN_TAIL_TYPE):
+        problems.extend(f"{where}:{p}" for p in _loss_problems(body, i))
     elif same_identifier(body.get("predicateType"), GOVERNANCE_STEP):
         policies = trust.quorum_policies if trust else None
         revoked = trust.key_revoked if trust else None
         problems.extend(f"{where}:{p}" for p in check_step(pred, policies, str(pred.get("at")), revoked))
     return body, problems
+
+
+def _count(value: Any, low: int) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= low
+
+
+def _loss_problems(body: Mapping[str, Any], line: int) -> list[str]:
+    """A gap or torn-tail line holds exactly its members: a count of at least one and a position before itself."""
+    pred = body.get("predicate", {})
+    if same_identifier(body.get("predicateType"), GAP_TYPE):
+        members, code = {"afterSeq", "dropped", "reason", "at", "prev", "seq"}, "journal_gap_invalid"
+        shape = _count(pred.get("dropped"), 1) and isinstance(pred.get("reason"), str) and bool(pred.get("reason"))
+    else:
+        members, code = {"afterSeq", "bytes", "tornSha256", "at", "prev", "seq"}, "journal_torn_tail_invalid"
+        digest = pred.get("tornSha256")
+        shape = (_count(pred.get("bytes"), 1) and isinstance(digest, str) and len(digest) == 64
+                 and all(c in "0123456789abcdef" for c in digest))  # fmt: skip
+    if set(pred) != members or not shape or not _count(pred.get("afterSeq"), 0) or pred["afterSeq"] >= line:
+        return [code]
+    return []
+
+
+def _loss_report(bodies: list[tuple[int, dict[str, Any]]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """The gap and torn-tail lines of a journal, in order, for the report."""
+    gaps, torn = [], []
+    for i, body in bodies:
+        pred = body.get("predicate", {})
+        if same_identifier(body.get("predicateType"), GAP_TYPE) and not _loss_problems(body, i):
+            gaps.append({"afterSeq": pred["afterSeq"], "dropped": pred["dropped"], "line": i, "reason": pred["reason"]})
+        elif same_identifier(body.get("predicateType"), TORN_TAIL_TYPE) and not _loss_problems(body, i):
+            torn.append({"afterSeq": pred["afterSeq"], "bytes": pred["bytes"], "line": i})
+    return gaps, torn
 
 
 def _grant_charges(pred: dict[str, Any]) -> list[tuple[str, dict[str, Any] | None, Any]]:
@@ -641,7 +719,8 @@ def _check_custody(checkpoint_env: Mapping[str, Any] | None, signer_ids: set[str
 
 def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
                    checkpoint_env: Mapping[str, Any] | None = None,
-                   trust: Trust | None = None, witnessed_checkpoint: str | None = None) -> dict[str, Any]:
+                   trust: Trust | None = None, witnessed_checkpoint: str | None = None,
+                   run: str | None = None) -> dict[str, Any]:
     """Verify a journal offline: every signature, the chain, the checkpoint, and both published
     readers re-run on every embedded record. Reports the denominator (``verified`` of ``records``).
 
@@ -651,9 +730,10 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
     have cosigned ``witnessed_checkpoint`` (``witness_policy``): a journal the customer's witness did
     not cosign then fails, offline, whatever else holds.
 
-    A record is a whole line, up to its newline, as the writer and the witness tree count it. Bytes after the
-    last newline are an append a writer killed mid-write never finished: not a record, and reported as
-    ``tornTailBytes`` (the writer's next append cuts them).
+    Loss is reported, never inferred: ``dropped`` sums the signed gap lines, ``gaps`` and ``tornTails`` list them.
+    A record is a whole line, up to its newline, as the writer and the witness tree count it. Bytes after the last
+    newline are an append a writer killed mid-write never finished: not a record, reported as ``tornTail`` and
+    ``tornTailBytes``, and they keep the verdict from ``PASS``. ``run`` pins the run the checkpoint must name.
     """
     roots = _keys(public_pems)
     p = Path(path)
@@ -700,6 +780,8 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
                 checkpoint = "mismatch"
             else:
                 checkpoint = "matches"
+            if run is not None and cp.get("run") != run:
+                failures.append(f"checkpoint_run_mismatch:{cp.get('run')}:{run}")
         except (ValueError, KeyError, TypeError) as exc:
             failures.append(f"checkpoint_invalid:{exc}")
             checkpoint = "invalid"
@@ -708,8 +790,12 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         witnessed = _check_witnessed(witnessed_checkpoint, lines, trust, failures)
     if trust is not None and trust.key_custody:
         _check_custody(checkpoint_env, signer_ids, delegations, trust, failures)
+    gaps, torn_lines = _loss_report(bodies)
+    torn_tail = {"afterSeq": len(lines), "bytes": torn} if torn else None
     if failures:
         verdict = "FAIL"
+    elif torn_tail is not None:
+        verdict = "NOT_ESTABLISHED"  # a writer died mid-line: what it was writing is not in the journal
     elif witnessed is not None and witnessed["status"] != "verified":
         verdict = "NOT_ESTABLISHED"  # the tail past the witnessed size rests on the authority alone
     elif checkpoint != "matches":
@@ -718,4 +804,5 @@ def verify_journal(path: str | os.PathLike[str], public_pems: Iterable[bytes],
         verdict = "PASS"
     return {"verdict": verdict, "records": len(lines), "verified": verified, "failures": failures,
             "checkpoint": checkpoint, "witnessed": witnessed, "outcomes": outcomes, "policyAllows": policy_allows,
+            "dropped": sum(g["dropped"] for g in gaps), "gaps": gaps, "tornTails": torn_lines, "tornTail": torn_tail,
             "tornTailBytes": torn, "statements": [body for _, body in bodies]}

@@ -20,12 +20,8 @@ from typing import Any, NoReturn
 
 from .attribution import ArtifactPin, verify_consumption
 from .crypto import VerificationError, canonical, digest, strict_loads
-from .grant_records import (
-    ActionRequest,
-    GrantPolicy,
-    verify_authorized_packet,
-    verify_grant,
-)
+from . import exact_grant
+from .exact_grant import ActionRequest, GrantPolicy
 from .ledger import verify_ledger_head, verify_ledger_receipts
 
 LOGGER = logging.getLogger(__name__)
@@ -460,7 +456,7 @@ class _Context:
     admission_policy: dict[str, Any]
     key_pins: dict[str, str]
     now: datetime
-    grant: dict[str, Any]
+    grant: Any
     packet: dict[str, Any]
     workspace: dict[str, bytes]
 
@@ -542,11 +538,11 @@ def _context_keys(
         _refuse("replay issuer observer and witness keys must differ")
 
 
-def _authorization(context: _Context, policy: ReplayPolicy) -> None:
+def _authorization(context: _Context, policy: ReplayPolicy, grant_verifier: Any) -> None:
     """Execute the native issuer, exact-request, signature, and time checks."""
     if context.request.request_id != policy.action_id:
         _refuse("replay request differs from the selected action")
-    verify_grant(context.grant, context.request, context.grant_policy, now=context.now)
+    grant_verifier.verify_grant(context.grant, context.request, context.grant_policy, now=context.now)
 
 
 def _native_policy(
@@ -566,7 +562,7 @@ def _native_policy(
 
 
 def _observation(
-    context: _Context, policy: ReplayPolicy, inputs: Mapping[str, bytes]
+    context: _Context, policy: ReplayPolicy, inputs: Mapping[str, bytes], grant_verifier: Any
 ) -> None:
     """Replay native history, target bytes, authorization binding, and retained head."""
     with TemporaryDirectory(prefix="probity-replay-") as directory:
@@ -580,7 +576,7 @@ def _observation(
         history, ledger = root / "history.jsonl", root / "ledger.jsonl"
         history.write_bytes(inputs["history"])
         ledger.write_bytes(inputs["ledger"])
-        result = verify_authorized_packet(
+        result = grant_verifier.verify_authorized_packet(
             context.grant,
             context.request,
             context.grant_policy,
@@ -621,7 +617,9 @@ def _run(operation: Callable[[], None]) -> tuple[ReplayOutcome, str]:
     return ReplayOutcome.PASS, "native checks passed"
 
 
-def replay_checks(inputs: Mapping[str, bytes], policy: ReplayPolicy) -> dict[str, Any]:
+def replay_checks(
+    inputs: Mapping[str, bytes], policy: ReplayPolicy, grant_verifier: Any = exact_grant
+) -> dict[str, Any]:
     """Execute actual bounded checks on consumer-pinned declared inputs.
 
     Parameters
@@ -630,6 +628,9 @@ def replay_checks(inputs: Mapping[str, bytes], policy: ReplayPolicy) -> dict[str
         Complete declared context, retained as exact immutable native bytes.
     policy : ReplayPolicy
         Consumer-acquired policy, artifact provenance, and checker pin.
+    grant_verifier : object, optional
+        Object whose ``verify_grant`` and ``verify_authorized_packet`` read the authorization: the one grant model by
+        default, ``probity_observer.retained_grants`` for a run signed before it.
 
     Returns
     -------
@@ -659,8 +660,8 @@ def replay_checks(inputs: Mapping[str, bytes], policy: ReplayPolicy) -> dict[str
         role: (ReplayOutcome.PASS, "declared context checked")
         for role in policy.expected_roles
     }
-    outcomes["authorization"] = _run(lambda: _authorization(context, policy))
-    outcomes["observation"] = _run(lambda: _observation(context, policy, snapshot))
+    outcomes["authorization"] = _run(lambda: _authorization(context, policy, grant_verifier))
+    outcomes["observation"] = _run(lambda: _observation(context, policy, snapshot, grant_verifier))
     return _report(
         policy, outcomes, ReplayOutcome.PASS, "declared replay context checked"
     )
@@ -728,7 +729,10 @@ def consumption_checks(
 
 
 def replay_consumption(
-    record: dict[str, Any], inputs: Mapping[str, bytes], policy: ReplayPolicy
+    record: dict[str, Any],
+    inputs: Mapping[str, bytes],
+    policy: ReplayPolicy,
+    grant_verifier: Any = exact_grant,
 ) -> dict[str, Any]:
     """Verify signed bindings, then freshly replay the declared native checkers.
 
@@ -752,7 +756,7 @@ def replay_consumption(
         pinned_signer=policy.pinned_signer,
     )
     reported = _reported(record, policy)
-    actual = replay_checks(snapshot, policy)
+    actual = replay_checks(snapshot, policy, grant_verifier)
     mismatches = [
         item["role"]
         for item in actual["checks"]

@@ -14,7 +14,8 @@ from typing import Any
 
 from .aae_enforce import DIGEST, canonical_bytes, enforce_check, native_digest
 from .crypto import VerificationError, digest
-from .grant_records import ActionRequest, GrantPolicy
+from . import exact_grant
+from .exact_grant import ActionRequest, GrantPolicy
 from .ticket_state import verify_ticket_result
 
 DECISION_DOMAIN = "probity-aae-http-ticket-decision-v0"
@@ -60,10 +61,11 @@ def verify_aae_ticket_result(mandate: Any, transaction: Any, record: Any,
                             receipt: Mapping[str, Any], readback: Mapping[str, Any],
                             request: ActionRequest, policy: GrantPolicy,
                             service_key: str, grant: Mapping[str, Any], *,
-                            now: datetime, pinned_mandate_digest: str) -> dict[str, Any]:
+                            now: datetime, pinned_mandate_digest: str,
+                            grant_verifier: Any = exact_grant) -> dict[str, Any]:
     """Require native decision join before admitting signed completion/read-back."""
     commitment = ticket_decision_digest(mandate, transaction, record, request, pinned_mandate_digest)
     result = verify_ticket_result(receipt, readback, request, policy, service_key, grant,
-                                  now=now, decision_digest=commitment)
+                                  now=now, decision_digest=commitment, grant_verifier=grant_verifier)
     return {**result, "kernelVerdict": "PERMIT", "issuerAuthentication": "not-established",
             "decisionDigest": commitment, "linkage": "verified", "execution": "recorded-native-ticket-update"}

@@ -32,7 +32,8 @@ from joint_common import (
     withheld_sources,
 )
 from probity_observer.crypto import VerificationError, canonical, strict_loads
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer import retained_grants
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     checked_record,
     load_ticket_capture,
@@ -240,7 +241,7 @@ def worker_http(case: dict[str, Any], value: dict[str, Any]) -> None:
 def authenticate_dispatch(case: dict[str, Any], item: dict[str, Any], response: Any, readback: dict[str, Any]) -> None:
     """Verify signed completed receipts or exact pending replay refusals."""
     if item["post"]["status"] == 200:
-        verify_ticket_result(response, readback, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["clockTime"]))
+        verify_ticket_result(response, readback, ActionRequest(**case["request"]), GrantPolicy(**case["policy"]), case["serviceKey"], case["grant"], now=datetime.fromisoformat(case["clockTime"]), grant_verifier=retained_grants)
         return
     same(item["post"]["status"], 409, "dispatch-refusal-status")
     require(case["id"].startswith("pending-"), "dispatch-unplanned-refusal")

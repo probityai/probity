@@ -18,7 +18,7 @@ from lg_reader import (
     task_identity,
 )
 from probity_observer.crypto import canonical, digest
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import DOMAIN, parse_time
 
 PROFILE = "probity-langgraph-durable-restart-v0"

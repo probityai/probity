@@ -13,7 +13,7 @@ from typing import Any
 
 from .aae_enforce import DIGEST, canonical_bytes, enforce_check, native_digest
 from .crypto import VerificationError, digest, verify_signature
-from .grant_records import ActionRequest
+from .exact_grant import ActionRequest
 from .verify import verify_packet
 
 DOMAIN = "probity-aae-local-effect-link-v0"

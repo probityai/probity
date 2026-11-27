@@ -12,7 +12,8 @@ from typing import Any
 from uuid import UUID
 
 from probity_observer.crypto import VerificationError, digest
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer import retained_grants
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     DOMAIN,
     checked_record,
@@ -430,8 +431,7 @@ def check_http(
         GrantPolicy(**entry["policy"]),
         entry["serviceKey"],
         entry["grant"],
-        now=reference.replace(microsecond=0),
-    )
+        now=reference.replace(microsecond=0), grant_verifier=retained_grants)
     if entry["id"] == "unhandled-after":
         same(
             call["error"],

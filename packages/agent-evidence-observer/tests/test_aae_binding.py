@@ -13,7 +13,7 @@ from fixture_records import load, materialize, pinned_keys
 from probity_observer.aae_binding import local_transaction, verify_effect_link
 from probity_observer.aae_enforce import enforce_check, native_digest
 from probity_observer.crypto import SigningKey, VerificationError
-from probity_observer.grant_records import ActionRequest
+from probity_observer.exact_grant import ActionRequest
 
 CONTENT = b"one local reference effect\n"
 

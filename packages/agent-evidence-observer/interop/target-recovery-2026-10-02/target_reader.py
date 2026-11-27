@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from probity_observer.crypto import VerificationError, canonical, strict_loads
-from probity_observer.grant_records import ActionRequest, GrantPolicy, verify_grant
+from probity_observer import retained_grants
+from probity_observer.retained_grants import ActionRequest, GrantPolicy, verify_grant
 from probity_observer.ticket_state import (
     checked_record,
     load_ticket_capture,
@@ -108,7 +109,7 @@ def check_completed(root: Path, attempt: dict, case: dict, http: list[dict], now
         require(max(e['startedNs'] for e in intervals) < min(e['endedNs'] for e in intervals), 'concurrent-overlap')
     for exchange in posts:
         if exchange['status'] == 200:
-            verify_ticket_result(exchange['value'], attempt['final'], ActionRequest(**case['request']), GrantPolicy(**case['policy']), case['serviceKey'], case['grant'], now=now)
+            verify_ticket_result(exchange['value'], attempt['final'], ActionRequest(**case['request']), GrantPolicy(**case['policy']), case['serviceKey'], case['grant'], now=now, grant_verifier=retained_grants)
         else:
             require(case['id'] == 'concurrent-intent' and exchange['status'] == 409 and exact(exchange['value'], {'status': 'refused', 'reason': 'ticket request, authority, state or framing differs'}), 'concurrent-refusal')
     require(exact(http[-1]['value'], attempt['final']) and http[-1]['status'] == 200, 'final-http-readback')
