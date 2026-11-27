@@ -83,7 +83,19 @@ def b64url(data: bytes) -> str:
 
 
 def unb64url(text: str) -> bytes:
-    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+    """The bytes of one unpadded base64url segment; ``ValueError`` unless ``text`` is its canonical spelling.
+
+    Only the canonical text of each segment is read: ``base64.urlsafe_b64decode`` alone skips a space, a newline or
+    any other byte outside the alphabet and accepts a last digit with stray low bits, so one token would have many
+    spellings, many digests, and a different answer from a reader that decodes strictly. The TypeScript twin's
+    ``strictB64url`` applies the same rule.
+    """
+    if not isinstance(text, str) or not text.isascii() or "=" in text:
+        raise ValueError("not unpadded ASCII base64url")
+    data = base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))  # binascii.Error is a ValueError
+    if b64url(data) != text:
+        raise ValueError("not the canonical base64url of its bytes")
+    return data
 
 
 def jwk_thumbprint(jwk: Mapping[str, Any]) -> str:
@@ -347,6 +359,8 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
     that key is in the JWKS snapshot whose digest ``p`` carries, its ``typ`` names no other credential
     type than ``p``'s ``source``, and every stated claim matches. With ``at`` (the record's time), a token
     whose ``nbf`` is after ``at`` is refused as not yet valid."""
+    if not isinstance(token, str) or not token.isascii():  # received text: refused before it is hashed or read
+        return "token_malformed"
     if sha256_hex(token.encode("ascii")) != p.get("tokenDigest"):
         return "token_digest_mismatch"
     if jwks_digest(jwks) != p.get("jwksDigest"):
@@ -357,6 +371,7 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
         head_b64, body_b64, sig_b64 = token.split(".")
         header = admitted_loads(unb64url(head_b64), max_depth=TOKEN_MAX_DEPTH)
         claims = admitted_loads(unb64url(body_b64), max_depth=TOKEN_MAX_DEPTH)
+        signature = unb64url(sig_b64)
     except (ValueError, TypeError):
         return "token_malformed"
     if not isinstance(header, dict) or not isinstance(claims, dict):
@@ -370,7 +385,7 @@ def verify_token(p: Mapping[str, Any], token: str, jwks: Mapping[str, Any], at: 
     named = TYP_SOURCES.get(str(header.get("typ", "")).lower().removeprefix("application/"))
     if named is not None and named != p.get("source"):
         return f"token_type_mismatch:{named}"
-    if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), unb64url(sig_b64)):
+    if not _verify_jws(str(header.get("alg")), p["key"], f"{head_b64}.{body_b64}".encode(), signature):
         return "token_signature_unverified"
     aud = claims.get("aud")
     # An ID token names its client in ``azp`` (OpenID Connect Core 1.0, section 2); an access token in ``client_id``.

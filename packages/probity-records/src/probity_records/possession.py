@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import hmac
 import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -46,7 +45,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads
+from .core import TOKEN_MAX_DEPTH, JsonRefused, Signer, admitted_loads, same_text
 from .grants import ts
 from .identity import b64url, jwk_thumbprint, unb64url
 
@@ -129,10 +128,7 @@ class DpopProof:
 
 def _segment_json(segment: str) -> Any:
     """One DPoP segment as JSON, read by the package's strict reader; ``JsonRefused`` otherwise."""
-    raw = unb64url(segment)
-    if b64url(raw) != segment:
-        raise ValueError("not canonical base64url")
-    return admitted_loads(raw, max_depth=TOKEN_MAX_DEPTH)
+    return admitted_loads(unb64url(segment), max_depth=TOKEN_MAX_DEPTH)  # unb64url reads only the canonical spelling
 
 
 def _segment_refusal(exc: ValueError) -> str:
@@ -232,9 +228,14 @@ def _header(segment: str, expected_jkt: str) -> tuple[str, Any, str | None]:
         problem = _x5c_problem(h["x5c"], h["jwk"])
         if problem:
             return "", None, problem
-    if not hmac.compare_digest(jwk_thumbprint(h["jwk"]), expected_jkt):
+    if not same_text(jwk_thumbprint(h["jwk"]), expected_jkt):
         return "", None, "dpop_key_not_confirmed"
     return alg, key, None
+
+
+def _jti_ok(jti: Any) -> bool:
+    """A non-empty string of at most ``MAX_JTI_BYTES`` UTF-8 bytes; a lone surrogate counts as its three bytes."""
+    return isinstance(jti, str) and bool(jti) and len(jti.encode("utf-8", "surrogatepass")) <= MAX_JTI_BYTES
 
 
 def _int_claim(value: Any) -> bool:
@@ -257,22 +258,21 @@ def _claims_problem(p: Any, method: str, url: str, now: int, skew: int, access_t
             return "dpop_ath_unexpected"
     elif "ath" not in p:
         return "dpop_ath_missing"
-    elif not isinstance(p["ath"], str) or not hmac.compare_digest(
-            p["ath"], b64url(hashlib.sha256(access_token.encode("ascii")).digest())):
-        return "dpop_ath_mismatch"
+    elif (not isinstance(access_token, str) or not access_token.isascii()
+          or not same_text(p["ath"], b64url(hashlib.sha256(access_token.encode("ascii")).digest()))):
+        return "dpop_ath_mismatch"  # a token that is not ASCII is none a proof can have hashed
     if not _int_claim(p.get("iat")):
         return "dpop_malformed"
     if p["iat"] < now - skew:
         return "dpop_iat_stale"
     if p["iat"] > now + skew:
         return "dpop_iat_future"
-    jti = p.get("jti")
-    if not isinstance(jti, str) or not jti or len(jti.encode("utf-8")) > MAX_JTI_BYTES:
+    if not _jti_ok(p.get("jti")):
         return "dpop_jti_invalid"
     digest = p.get(CONTENT_DIGEST_CLAIM)
     if digest is None:
         return "dpop_content_unbound" if require_content_binding else None
-    if not isinstance(digest, str) or not hmac.compare_digest(digest, b64url(hashlib.sha256(content).digest())):
+    if not same_text(digest, b64url(hashlib.sha256(content).digest())):
         return "dpop_content_mismatch"
     return None
 
@@ -285,8 +285,10 @@ def check_dpop(proof: str, method: str, url: str, at: str, *, expected_jkt: str,
     ``url`` is the verifier's own external URL for the request, never one built from the client's Host
     header. ``expected_jkt`` comes from issuer-signed content (the grant's ``cnf``, the token's ``cnf``),
     never from the proof. Returns the proof or the refusal code."""
-    if not isinstance(proof, str) or len(proof) > MAX_PROOF_BYTES:
-        return None, "dpop_too_large" if isinstance(proof, str) else "dpop_malformed"
+    if not isinstance(proof, str) or not proof.isascii():  # a request header is ASCII; the signing input is built from it
+        return None, "dpop_malformed"
+    if len(proof) > MAX_PROOF_BYTES:
+        return None, "dpop_too_large"
     parts = proof.split(".")
     if len(parts) != 3 or not all(parts):
         return None, "dpop_malformed"
@@ -343,7 +345,7 @@ def check_client_certificate(der: bytes | None, expected: str, at: str) -> str:
     within its validity period at ``at``."""
     if der is None:
         return "mtls_certificate_missing"
-    if not hmac.compare_digest(cnf_for_certificate(der)["x5t#S256"], expected):
+    if not same_text(cnf_for_certificate(der)["x5t#S256"], expected):
         return "mtls_certificate_not_confirmed"
     try:
         cert = x509.load_der_x509_certificate(der)
@@ -412,12 +414,11 @@ def possession_record_problem(record: Any, cnf: Any) -> str | None:
     method = record["method"]
     if set(record) != _RECORD_MEMBERS[method]:
         return "possession_record_malformed"
-    if method == "dpop" and (not _int_claim(record["iat"]) or not isinstance(record["jti"], str)
-                             or not record["jti"] or len(record["jti"].encode("utf-8")) > MAX_JTI_BYTES):
+    if method == "dpop" and (not _int_claim(record["iat"]) or not _jti_ok(record["jti"])):
         return "possession_record_malformed"
     member, value = ("jkt", record["jkt"]) if method == "dpop" else ("x5t#S256", record["x5t#S256"])
     if not isinstance(cnf, dict) or member not in cnf or not isinstance(value, str) \
-            or not hmac.compare_digest(value, str(cnf[member])):
+            or not same_text(value, cnf[member]):
         return "possession_not_the_grant_key"
     return None
 

@@ -308,7 +308,7 @@ def _params(member: Any) -> tuple[int, int, str, str]:
     for name in ("nonce", "keyid"):
         if not isinstance(p[name], str) or isinstance(p[name], sf.Token) or not p[name]:
             raise StampRefused("stamp_header_invalid", f"{name} is a non-empty String")
-    if len(p["nonce"].encode("ascii")) > MAX_NONCE_BYTES:
+    if not p["nonce"].isascii() or len(p["nonce"]) > MAX_NONCE_BYTES:
         raise StampRefused("stamp_header_invalid", f"nonce is at most {MAX_NONCE_BYTES} bytes")
     return p["created"], p["expires"], p["nonce"], p["keyid"]
 

@@ -51,7 +51,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from .core import admitted_loads, canonical
+from .core import admitted_loads, canonical, same_text
 
 FORMAT: Final = "probity-record-envelope/v2"
 KEPT: Final = "kept"
@@ -533,7 +533,7 @@ def verify_disclosure(erasure: Mapping[str, Any], disclosure: Mapping[str, Any])
         got = tag(bytes.fromhex(disclosure["fieldKey"]), disclosure["value"])
     except (KeyError, ValueError, TypeError):
         return False
-    return hmac.compare_digest(got, want)
+    return same_text(got, want)
 
 
 # ---- what a verifier prints -----------------------------------------------------------------------------------

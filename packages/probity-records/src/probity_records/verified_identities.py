@@ -33,7 +33,6 @@ strict profile refuses. The format of the bundle, every check in order and the r
 
 from __future__ import annotations
 
-import base64
 import binascii
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -247,7 +246,7 @@ class VerifiedRequest:
 
 def _segment(text: str) -> dict[str, Any]:
     try:
-        value = admitted_loads(base64.urlsafe_b64decode(text + "=" * (-len(text) % 4)), max_depth=TOKEN_MAX_DEPTH)
+        value = admitted_loads(unb64url(text), max_depth=TOKEN_MAX_DEPTH)
     except (ValueError, binascii.Error) as exc:
         raise _refuse("token_malformed", "a segment is not base64url JSON") from exc
     if not isinstance(value, dict):

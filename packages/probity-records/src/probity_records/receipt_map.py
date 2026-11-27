@@ -33,6 +33,8 @@ import hashlib
 from dataclasses import dataclass
 from typing import Any
 
+from .core import is_utf8_text
+
 DEPTH = 256
 EMPTY = bytes(32)
 STAGES = ("accept", "execute", "settle", "final")
@@ -52,8 +54,8 @@ def _u16(data: bytes) -> bytes:
 
 def check_key(permit_id: Any, stage: Any) -> tuple[str, str]:
     """A (permit id, stage) the map accepts: a non-empty permit id of at most 256 bytes, one of the four stages."""
-    if not isinstance(permit_id, str) or not 0 < len(permit_id.encode()) <= MAX_PERMIT_BYTES:
-        raise MapError("a permit id is a non-empty string of at most 256 bytes")
+    if not is_utf8_text(permit_id) or not 0 < len(permit_id.encode()) <= MAX_PERMIT_BYTES:
+        raise MapError("a permit id is a non-empty UTF-8 string of at most 256 bytes")
     if any(ord(ch) < 0x20 for ch in permit_id):
         raise MapError("a permit id may hold no control character")
     if stage not in STAGES:

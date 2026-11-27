@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import hmac
 import json
 from dataclasses import dataclass
 from typing import Any, Final
@@ -104,6 +105,32 @@ def admitted_loads(raw: bytes | str, *, max_depth: int = jcs_admit.DEFAULT_MAX_D
     data = raw.encode("utf-8", "surrogatepass") if isinstance(raw, str) else bytes(raw)
     _jcs(data, max_depth=max_depth, max_bytes=max_bytes)
     return json.loads(data)
+
+
+def is_utf8_text(text: Any) -> bool:
+    """True for a string that encodes as UTF-8, False for a lone surrogate or a value that is not a string.
+
+    ``str.encode()`` raises ``UnicodeEncodeError`` on a lone surrogate. Text a verifier receives as bytes or JSON
+    never holds one, but a ``str`` handed in directly can, so a verifier asks this before it encodes.
+    """
+    if not isinstance(text, str):
+        return False
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+def same_text(a: Any, b: Any) -> bool:
+    """Constant-time equality of two strings of any text; False when either is not a string.
+
+    ``hmac.compare_digest`` on two ``str`` raises ``TypeError`` for a character outside ASCII and for a value that is
+    not a string, and a received claim or digest can be either, so a verifier compares through this instead.
+    """
+    if not isinstance(a, str) or not isinstance(b, str):
+        return False
+    return hmac.compare_digest(a.encode("utf-8", "surrogatepass"), b.encode("utf-8", "surrogatepass"))
 
 
 def canonical_of_received(raw: bytes) -> bytes:
@@ -223,6 +250,8 @@ def open_envelope(envelope: Any, keys: list[Ed25519PublicKey],
     if not isinstance(envelope, dict) or not {"payload", "payloadType", "signatures"} <= envelope.keys():
         raise ValueError("envelope_shape")
     kind = envelope["payloadType"]
+    if not is_utf8_text(kind):
+        raise ValueError("envelope_shape")
     payload = _unb64(envelope["payload"])
     entries = envelope["signatures"]
     if not isinstance(entries, list) or not entries:

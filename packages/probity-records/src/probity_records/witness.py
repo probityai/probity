@@ -47,6 +47,7 @@ from cryptography.hazmat.primitives.asymmetric.mldsa import (
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from .clock import NS_PER_S, Clock
+from .core import is_utf8_text
 
 SIG_ED25519 = 0x01
 SIG_COSIGNATURE_V1 = 0x04
@@ -194,7 +195,7 @@ def parse_decimal(text: str, what: str) -> int:
 
 
 def valid_name(name: str) -> bool:
-    return (bool(name) and len(name.encode()) <= 255 and "+" not in name
+    return (is_utf8_text(name) and bool(name) and len(name.encode()) <= 255 and "+" not in name
             and not any(ch.isspace() or ord(ch) < 0x20 for ch in name))
 
 
@@ -280,6 +281,8 @@ class Note:
 
 
 def parse_note(note: str) -> Note:
+    if not is_utf8_text(note):
+        raise NoteError("a signed note is UTF-8 text")
     if any(ord(ch) < 0x20 and ch != "\n" for ch in note):
         raise NoteError("a signed note holds no control character but newline")
     split = note.rfind("\n\n")
@@ -314,6 +317,8 @@ class Checkpoint:
 
 
 def parse_checkpoint(text: str) -> Checkpoint:
+    if not is_utf8_text(text):
+        raise NoteError("a checkpoint is UTF-8 text")
     if not text.endswith("\n"):
         raise NoteError("checkpoint text ends in a newline")
     lines = text[:-1].split("\n")
@@ -422,7 +427,7 @@ _POLICY_BYTES = re.compile(rb"[\t\n\x20-\x7e\x80-\xff]*\Z")
 
 
 def parse_policy(text: str) -> Policy:
-    if not _POLICY_BYTES.match(text.encode()):
+    if not is_utf8_text(text) or not _POLICY_BYTES.match(text.encode()):
         raise NoteError("a policy holds no control character but tab and newline")
     policy, keys = Policy(), set()
 
