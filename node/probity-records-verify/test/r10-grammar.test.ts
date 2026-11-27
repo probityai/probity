@@ -26,7 +26,7 @@ test("the integer reader is the grammar", () => {
   // read as the readers read a claim: from JSON text, where 1.0 is a float spelling and 2**53 + 1 keeps its digits
   for (const value of [0, 1, -1, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER]) assert.equal(exactInt({ v: value }, "v"), true);
   for (const value of [2 ** 53, 2 ** 53 + 2, -(2 ** 53), 1.5, 1e300, true, false, null, "1", "", [1], { 0: 1 }, undefined]) assert.equal(exactInt({ v: value }, "v"), false);
-  for (const text of ["", "1".repeat(16), "\u0661", "\uff11", "+1", "-1", " 1", "1 ", "1_0", "1.0"]) assert.throws(() => decimal(text), { message: "not_decimal_digits" });
+  for (const text of ["", "1".repeat(16), "\u0661", "\uff11", "+1", "-1", " 1", "1 ", "1_0", "1.0"]) assert.throws(() => decimal(text), { message: "decimal takes 1 to 15 of the digits 0 to 9" });
   assert.equal(decimal("000000000000015"), 15);
   assert.equal(doc["decimal-digits"].pattern, "[0-9]{1,15}");
 });

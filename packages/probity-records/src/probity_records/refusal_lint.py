@@ -377,6 +377,7 @@ PACKAGE_MODULES = ("authority", "bundle", "canonical_identity", "celexpr", "cons
 #: neither tuple fails ``test_every_module_is_linted_or_excluded_with_a_reason``, so a new check cannot escape the lint
 #: by being added under a new name.
 NOT_LINTED = {
+    "certificate": "the DER outline of a certificate; its callers report dpop_x5c_invalid or mtls_certificate_invalid",
     "__init__": "re-exports only",
     "__main__": "the command line; it prints what the checks return",
     "canonical_identity_vectors": "generates vectors from the checks",

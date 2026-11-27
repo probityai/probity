@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- **One grammar per received text, in both languages.** `grammar/*.json` states what a timestamp, an integer claim, a
+  compact JWS member, a target URI, an X.509 certificate, a stamp field and the trust bundle are; both readers are
+  tested against those files and the differential in `tests/parity_r6c` is generated from them. A timestamp is
+  written in the digits 0 to 9 (Python's `\d` also read other scripts' digits) and is read for years 0001 to 9999
+  (the TypeScript reader refused every year before 100); its value is integer microseconds, a `bigint` in
+  TypeScript. An integer claim (`iat`, `exp`, `nbf`, a DPoP `iat`) beyond 2**53 - 1 is refused, and times are
+  compared as integers. A DPoP `x5c` and a client certificate are read from their DER bytes by one outline walk
+  (`certificate.py`, TypeScript `x509.ts`): PEM text, bytes after the certificate and a length that is not in its
+  shortest form are refused, where Node's parser accepted the first two. A port is leading zeros and at most five
+  digits. A header `alg` or `typ` that is not a string names nothing (TypeScript read a list holding `"EdDSA"` as
+  `"EdDSA"`). A stamp's byte sequence with one base64 digit left over is refused in both readers, its three
+  structured fields parse before its key is looked up, and a field value is trimmed of space and tab only.
+  `TrustBundle.parse` refuses a pin whose roles hold a list or an object instead of raising, and
+  `identity.token_segments` returns None for a signature in a second spelling instead of raising. A test counts
+  text coercion (`str()`, `String()`) and platform text functions in reader code: the request readers have none.
+
 - **One reading of a request target, of base64 and of a token segment, in both languages.** A DPoP `htu` and a stamp
   `@target-uri` are read by `possession.http_uri_parts` (TypeScript `httpUriParts`): text outside the RFC 3986 URI
   alphabet (a space, a control byte, a tab or line break, a backslash, a non-ASCII character), userinfo, an empty

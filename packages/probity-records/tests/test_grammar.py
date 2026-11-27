@@ -53,10 +53,10 @@ def test_the_integer_reader_is_the_grammar() -> None:
     assert (rule["bounds"]["min"], rule["bounds"]["max"]) == (-core.MAX_EXACT_INT, core.MAX_EXACT_INT)
     assert all(core.exact_int(value) for value in rule["accept"])
     assert not any(core.exact_int(value) for value in rule["refuse"])
-    assert grants._DECIMAL.pattern == doc["decimal-digits"]["pattern"]
+    assert core._DECIMAL.pattern == doc["decimal-digits"]["pattern"]
     for text in ("", "1" * 16, "\u0661", "\uff11", "+1", "-1", " 1", "1 ", "1_0", "1.0"):
-        with pytest.raises(ValueError, match="not_decimal_digits"):
-            grants.decimal(text)
+        with pytest.raises(ValueError, match="decimal takes 1 to 15"):
+            core.decimal(text)
 
 
 def test_the_target_uri_reader_is_the_grammar() -> None:

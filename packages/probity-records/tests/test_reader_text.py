@@ -28,7 +28,7 @@ PY_STRICT = ("certificate", "possession", "stamp", "trust_bundle", "verified_ide
 PY_NOT_READERS = ("__init__", "__main__", "canonical_identity_vectors", "clock_lint", "clock_tripwire",
                   "delegation_vectors", "digests_vectors", "erasure_vectors", "grant_body_vectors", "identity_vectors",
                   "refusal_codes", "refusal_lint", "verified_identities_vectors")  # fmt: skip
-#: Every other Python file, with the findings it has today. A count may fall; it may not rise. ``grants`` keeps one
+#: Every other Python file, with the findings it has today. A count may fall; it may not rise. ``core`` keeps one
 #: ``int``: ``decimal``, the one function that turns grammar-matched digits into a number. The older record readers
 #: (journal, quorum, authority, governance, oidc_approval, otel, exports) still turn received members into text; they
 #: have no generated differential yet and are tracked as their own item.
@@ -39,12 +39,12 @@ PY_PINNED: dict[str, dict[str, int]] = {
     'celexpr': {'int()': 2, 'str()': 1},
     'clock': {},
     'constraints': {'int()': 3, 'lower()': 3, 'platform parser': 1},
-    'core': {'str()': 2},
+    'core': {'int()': 1, 'str()': 2},
     'digests': {'int()': 1, 'str()': 1},
     'erasure': {'int()': 2, 'lower()': 2},
     'exports': {'str()': 4},
     'governance': {'str()': 2, 'strip()': 1},
-    'grants': {'int()': 2},
+    'grants': {'int()': 1},
     'identifiers': {},
     'identity': {'str()': 2},
     'journal': {'int()': 1, 'platform parser': 2, 'str()': 16, 'strip()': 4},

@@ -50,11 +50,12 @@ from .core import (
     Signer,
     admitted_loads,
     ascii_lower,
+    decimal,
     exact_int,
     same_text,
     unb64,
 )
-from .grants import decimal, micros
+from .grants import micros
 from .identity import b64url, has_private_member, jwk_thumbprint, unb64url
 from .identity import public_jwk as jwk_bytes
 

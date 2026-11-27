@@ -229,7 +229,7 @@ export const TIMESTAMP = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}
 export const MICROS = 1000000n;
 /** The number a run of the digits 0 to 9 writes (at most 15 of them, so the double is exact); grammar-matched text only. */
 export function decimal(text: string): number {
-  if (typeof text !== "string" || !/^[0-9]{1,15}$/.test(text)) throw new Error("not_decimal_digits");
+  if (typeof text !== "string" || !/^[0-9]{1,15}$/.test(text)) throw new Error("decimal takes 1 to 15 of the digits 0 to 9");
   let n = 0;
   for (let i = 0; i < text.length; i += 1) n = n * 10 + (text.charCodeAt(i) - 48);
   return n;

@@ -15,7 +15,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Final
 
-from .grants import decimal, micros_of
+from .core import decimal
+from .grants import micros_of
 
 
 class CertificateRefused(ValueError):

@@ -59,7 +59,16 @@ from typing import Any
 from cryptography.exceptions import InvalidSignature
 
 from . import celexpr, constraints
-from .core import Signer, _b64, canonical, key_id, load_public, sha256_hex, unb64
+from .core import (
+    Signer,
+    _b64,
+    canonical,
+    decimal,
+    key_id,
+    load_public,
+    sha256_hex,
+    unb64,
+)
 from .identifiers import identifier
 
 GRANT_DOMAIN = b"probity-grant-v1\x00"
@@ -72,19 +81,8 @@ APPROVAL_LEVELS = ("none", "required")
 #: pattern also matches the digits of every other script, and ``int`` reads them, so one instant would have many
 #: spellings. The offset group is optional here only so that its absence is named, never accepted.
 TIMESTAMP = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,6}))?(Z|[+-][0-9]{2}:[0-9]{2})?")
-_DECIMAL = re.compile(r"[0-9]{1,15}")
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MICROSECOND = timedelta(microseconds=1)
-
-
-def decimal(text: str) -> int:
-    """The number a run of the digits 0 to 9 writes (at most 15 of them); ``ValueError`` for any other text.
-
-    Every number a reader takes from received text comes through here, after the text matched its grammar: ``int`` alone
-    also reads other scripts' digits, a sign, spaces and underscores, and refuses a run of more than 4300 digits."""
-    if not isinstance(text, str) or not _DECIMAL.fullmatch(text):
-        raise ValueError("not_decimal_digits")
-    return int(text)
 
 
 def micros_of(moment: datetime) -> int:

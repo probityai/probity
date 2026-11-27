@@ -11,6 +11,7 @@ import binascii
 import hashlib
 import hmac
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Final
 
@@ -139,6 +140,19 @@ def exact_int(value: Any) -> bool:
     never a ``bool``, within 2**53 - 1 either side of zero. JavaScript reads 2**53 and 2**53 + 1 as one number, so a
     larger integer has two readings."""
     return isinstance(value, int) and not isinstance(value, bool) and -MAX_EXACT_INT <= value <= MAX_EXACT_INT
+
+
+_DECIMAL = re.compile(r"[0-9]{1,15}")
+
+
+def decimal(text: str) -> int:
+    """The number a run of the digits 0 to 9 writes (at most 15 of them); ``ValueError`` for any other text.
+
+    Every number a reader takes from received text comes through here, after the text matched its grammar: ``int`` alone
+    also reads other scripts' digits, a sign, spaces and underscores, and refuses a run of more than 4300 digits."""
+    if not isinstance(text, str) or not _DECIMAL.fullmatch(text):
+        raise ValueError("decimal takes 1 to 15 of the digits 0 to 9")
+    return int(text)
 
 
 def ascii_lower(text: str) -> str:
