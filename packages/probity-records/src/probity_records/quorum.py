@@ -191,9 +191,9 @@ def _deputy_problem(vote: Mapping[str, Any], policy: Mapping[str, Any], at: str)
     """(problem, deputy key) for a vote cast on behalf of an approver."""
     body = vote["body"]
     delegation = vote.get("delegation")
-    dbody = delegation.get("body") if isinstance(delegation, Mapping) else None
-    if not isinstance(dbody, dict):
+    if not isinstance(delegation, Mapping) or not isinstance(delegation.get("body"), dict):
         return "deputy_without_delegation", None
+    dbody = delegation["body"]
     who = str(body.get("onBehalfOf"))
     raw = policy["approvers"].get(who)
     if raw is None or dbody.get("delegator") != who:
