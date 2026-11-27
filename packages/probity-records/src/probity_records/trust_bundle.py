@@ -131,10 +131,8 @@ def parse_anchors(entries: Any) -> tuple[Anchor, ...]:
 # --- RFC 9162 inclusion -------------------------------------------------------------------------------------------
 
 
-# One implementation of each: ``witness.inclusion_proof`` builds an audit path and ``witness.verify_inclusion`` checks
-# one, refusing an index or size that is not an int (a float or a bool in a received document is not a position).
-inclusion_proof = w.inclusion_proof
-verify_inclusion = w.verify_inclusion
+# RFC 9162 inclusion is ``witness.inclusion_proof`` and ``witness.verify_inclusion``, the package's one implementation,
+# which refuses an index or size that is not an int (a float or a bool in a received document is not a position).
 
 
 # --- the signing time a witness quorum gives ----------------------------------------------------------------------
@@ -168,7 +166,7 @@ def witnessed_bound(envelope: Mapping[str, Any], witnessed: WitnessedTime) -> in
         return None
     cp = checked.checkpoint
     leaf = w.leaf_hash(envelope_leaf(envelope))
-    if not checked.cosigned_at or not verify_inclusion(witnessed.index, cp.size, leaf, witnessed.proof, cp.root):
+    if not checked.cosigned_at or not w.verify_inclusion(witnessed.index, cp.size, leaf, witnessed.proof, cp.root):
         return None
     return max(checked.cosigned_at.values())
 

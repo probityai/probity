@@ -18,9 +18,7 @@ from probity_records.revocation import RevocationState
 from probity_records.trust_bundle import (
     AnchorRefused,
     WitnessedTime,
-    inclusion_proof,
     verify_anchored,
-    verify_inclusion,
 )
 from probity_records.verified_identities import TrustBundle, VerifiedIdentitiesRefused
 from probity_records.verified_identities_vectors import bundle as v_bundle
@@ -79,7 +77,7 @@ def _witnessed(envelope: dict[str, Any], at: int, *, others: int = 3, index: int
     cosigned = w.Note(note.text, (*note.sigs, w.cosign(note.text, WITNESS, witness, at))).encode()
     wit_vkey = w.vkey(WITNESS, w.SIG_COSIGNATURE_V1, witness.public_key()).encode()
     policy = w.parse_policy(f"log {w.log_vkey(ORIGIN, log)}\nwitness w0 {wit_vkey}\nquorum {quorum}\n")
-    return WitnessedTime(note=cosigned, policy=policy, index=index, proof=tuple(inclusion_proof(index, hashes)))
+    return WitnessedTime(note=cosigned, policy=policy, index=index, proof=tuple(w.inclusion_proof(index, hashes)))
 
 
 # --- the format ---------------------------------------------------------------------------------------------------
@@ -282,13 +280,13 @@ def test_inclusion_proofs_hold_for_every_leaf_and_fail_when_bent() -> None:
         hashes = [w.leaf_hash(f"line-{i}".encode()) for i in range(size)]
         head = w.root(hashes)
         for index in range(size):
-            proof = inclusion_proof(index, hashes)
-            assert verify_inclusion(index, size, hashes[index], proof, head)
-            assert not verify_inclusion(index, size, w.leaf_hash(b"x"), proof, head)
+            proof = w.inclusion_proof(index, hashes)
+            assert w.verify_inclusion(index, size, hashes[index], proof, head)
+            assert not w.verify_inclusion(index, size, w.leaf_hash(b"x"), proof, head)
             if proof:
-                assert not verify_inclusion(index, size, hashes[index], [bytes(32), *proof[1:]], head)
+                assert not w.verify_inclusion(index, size, hashes[index], [bytes(32), *proof[1:]], head)
             if size > 1:
-                assert not verify_inclusion((index + 1) % size, size, hashes[index], proof, head)
+                assert not w.verify_inclusion((index + 1) % size, size, hashes[index], proof, head)
 
 
 def test_a_bundle_document_is_not_mutated_by_parsing() -> None:
