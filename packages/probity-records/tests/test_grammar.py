@@ -14,6 +14,7 @@ import pytest
 from agent_evidence_verify import structured_fields as sf
 from probity_records import (
     certificate,
+    constraints,
     core,
     grants,
     possession,
@@ -23,7 +24,7 @@ from probity_records import (
 )
 
 GRAMMAR = Path(__file__).resolve().parents[1] / "grammar"
-FILES = ("compact-jws", "integer", "stamp", "target-uri", "timestamp", "trust-bundle", "x509")
+FILES = ("compact-jws", "constraint-url", "integer", "stamp", "target-uri", "timestamp", "trust-bundle", "x509")
 
 
 def rules(name: str) -> dict[str, Any]:
@@ -74,6 +75,19 @@ def test_the_target_uri_reader_is_the_grammar() -> None:
         ch = chr(code)
         if ch != "%":
             assert bool(possession._URI_TEXT.fullmatch(ch)) == (ch in alphabet), hex(code)
+
+
+def test_the_constraint_url_reader_is_the_grammar() -> None:
+    """The patterns, the bounds and the cases; ``test_constraint_url.py`` runs the twin and the differential."""
+    doc = json.loads((GRAMMAR / "constraint-url.json").read_text())
+    patterns = {"uri-text": constraints.URI_TEXT, "url": constraints.URL, "authority": constraints.AUTHORITY,
+                "host-label": constraints.HOST_LABEL, "numeric-label": constraints.NUMERIC_LABEL,
+                "ipv4": constraints.IPV4, "path": constraints.PATH, "path-escape": constraints.PATH_ESCAPE}  # fmt: skip
+    assert {name: p.pattern for name, p in patterns.items()} == {n: r["pattern"] for n, r in doc["productions"].items()}
+    for url, *parts in doc["cases"]["accept"]:
+        assert constraints.url_parts(url) == tuple(parts), url
+    for url in doc["cases"]["refuse"]:
+        assert constraints.url_parts(url) is None, url
 
 
 def test_the_certificate_reader_is_the_grammar() -> None:

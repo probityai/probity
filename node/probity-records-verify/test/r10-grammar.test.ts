@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { parseDictionary, SFError } from "../src/sf.ts";
 import { PORT, httpUriParts } from "../src/verified.ts";
-import { TIMESTAMP, decimal, exactInt, ts } from "../src/verify.ts";
+import { TIMESTAMP, URL_GRAMMAR, URL_HOST_MAX, URL_PORT_MAX, decimal, exactInt, ts, urlParts } from "../src/verify.ts";
 import { GENERALIZED_TIME, SPKI_ED25519, SPKI_P256, UTC_TIME } from "../src/x509.ts";
 
 type J = any;  // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -44,6 +44,14 @@ test("the target URI reader is the grammar", () => {
     try { httpUriParts(`https://a.example/${ch}`); } catch { read = false; }
     assert.equal(read, alphabet.includes(ch), code.toString(16));
   }
+});
+
+test("the constraint URL reader is the grammar", () => {
+  const doc = JSON.parse(readFileSync(new URL("../../../packages/probity-records/grammar/constraint-url.json", import.meta.url), "utf8"));
+  assert.deepEqual({ ...URL_GRAMMAR }, Object.fromEntries(Object.entries(doc.productions).map(([n, r]: [string, J]) => [n, r.pattern])));
+  assert.deepEqual([URL_PORT_MAX, URL_HOST_MAX], [doc.productions.authority.bounds.portMax, doc.productions["host-label"].bounds.hostMax]);
+  for (const [url, ...parts] of doc.cases.accept) assert.deepEqual(urlParts(url), parts, url);
+  for (const url of doc.cases.refuse) assert.equal(urlParts(url), null, JSON.stringify(url));
 });
 
 test("the certificate reader is the grammar", () => {

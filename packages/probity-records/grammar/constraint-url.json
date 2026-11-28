@@ -1,0 +1,124 @@
+{
+  "text": "constraint-url",
+  "spec": "The URL a grant's url_pattern or url_safe constraint is asked about. A strict subset of an RFC 3986 absolute URI, read by one written grammar and never by a platform URL parser: Python's urlsplit and WHATWG URL parsing each repair text the other refuses (a backslash, one slash or none after the scheme, a non-ASCII full stop, a port past 65535, a trailing dot), so a grant judged by either would have two verdicts. The text is written in the RFC 3986 alphabet; scheme '://' authority path, then a query or fragment that no constraint reads. The authority is a host and an optional port, never userinfo. The host is a bracketed IPv6 literal, a dotted quad written canonically, or DNS labels of letters, digits and hyphens with no empty label (so no trailing dot); a host whose last label is a number is a dotted quad or is refused. The port is 1 to 65535 with no leading zero. The path has no empty segment except a trailing slash, no '.' or '..' segment, and no escape that decodes to a dot, a slash, a backslash or a percent sign, so the path a constraint checks is the path the server reads. Scheme and host are compared in ASCII lower case. Anything else is refused: the constraint is then not satisfied.",
+  "readers": {
+    "python": [
+      "constraints.url_parts"
+    ],
+    "typescript": [
+      "verify.ts urlParts"
+    ]
+  },
+  "productions": {
+    "uri-text": {
+      "pattern": "(?:[A-Za-z0-9\\-._~:/?#\\[\\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*"
+    },
+    "url": {
+      "pattern": "([A-Za-z][A-Za-z0-9+.\\-]*)://([^/?#]*)([^?#]*)(?:[?#].*)?"
+    },
+    "authority": {
+      "pattern": "(\\[[0-9A-Fa-f:.]+\\]|[A-Za-z0-9.\\-]+)(?::([1-9][0-9]{0,4}))?",
+      "bounds": {
+        "portMax": 65535
+      }
+    },
+    "host-label": {
+      "pattern": "[A-Za-z0-9\\-]{1,63}",
+      "bounds": {
+        "hostMax": 253
+      }
+    },
+    "numeric-label": {
+      "pattern": "[0-9]+|0[xX][0-9A-Fa-f]*"
+    },
+    "ipv4": {
+      "pattern": "(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])){3}"
+    },
+    "path": {
+      "pattern": "(?:/(?!\\.\\.?(?:/|$))[^/]+)*/?"
+    },
+    "path-escape": {
+      "pattern": "%(?:2[EeFf]|5[Cc]|25)"
+    }
+  },
+  "cases": {
+    "accept": [
+      ["https://api.example.com/v1/x", "https", "api.example.com", null, "/v1/x"],
+      ["HTTPS://API.Example.COM/v1/x", "https", "api.example.com", null, "/v1/x"],
+      ["https://api.example.com", "https", "api.example.com", null, "/"],
+      ["https://api.example.com/", "https", "api.example.com", null, "/"],
+      ["https://api.example.com/v1/", "https", "api.example.com", null, "/v1/"],
+      ["https://api.example.com/v1/x?q=/../admin#/../f", "https", "api.example.com", null, "/v1/x"],
+      ["https://api.example.com:1/v1", "https", "api.example.com", 1, "/v1"],
+      ["https://api.example.com:443/v1", "https", "api.example.com", 443, "/v1"],
+      ["https://api.example.com:65535/v1", "https", "api.example.com", 65535, "/v1"],
+      ["http://localhost/", "http", "localhost", null, "/"],
+      ["http://LOCALHOST/", "http", "localhost", null, "/"],
+      ["http://127.0.0.1/", "http", "127.0.0.1", null, "/"],
+      ["http://8.8.8.8:8080/", "http", "8.8.8.8", 8080, "/"],
+      ["http://255.255.255.255/", "http", "255.255.255.255", null, "/"],
+      ["http://[::1]/", "http", "::1", null, "/"],
+      ["http://[2001:DB8::1]:8443/", "http", "2001:db8::1", 8443, "/"],
+      ["http://[::ffff:8.8.8.8]/", "http", "::ffff:8.8.8.8", null, "/"],
+      ["https://123.example.com/v1/x..y/...", "https", "123.example.com", null, "/v1/x..y/..."],
+      ["https://xn--bcher-kva.example/v1/%41", "https", "xn--bcher-kva.example", null, "/v1/%41"],
+      ["ftp://a.example/", "ftp", "a.example", null, "/"]
+    ],
+    "refuse": [
+      "https:api.example.com/v1/x",
+      "https:/api.example.com/v1/x",
+      "https:///api.example.com/v1/x",
+      "https:\\\\api.example.com/v1/x",
+      "https://api.example.com\\@evil.example/v1/x",
+      "https://api.example.com/v1\\..\\admin",
+      "https://api\u3002example\u3002com/v1/x",
+      "https://api\uff0eexample.com/v1/x",
+      "https://api.example.com/v1/\u00e9",
+      "https://api.example.com/v1/x y",
+      " https://api.example.com/v1/x",
+      "https://api.example.com/v1/x\n",
+      "https://@api.example.com/v1/x",
+      "https://:@api.example.com/v1/x",
+      "https://u:p@api.example.com/v1/x",
+      "https://api.example.com:0/v1/x",
+      "https://api.example.com:0443/v1/x",
+      "https://api.example.com:65536/v1/x",
+      "https://api.example.com:99999/v1/x",
+      "https://api.example.com:/v1/x",
+      "https://api.example.com:+1/v1/x",
+      "https://LOCALHOST./v1/x",
+      "https://api.example.com./v1/x",
+      "https://.example.com/v1/x",
+      "https://a..example.com/v1/x",
+      "https://api%2eexample.com/v1/x",
+      "https://api.example.com%2f.evil.example/v1/x",
+      "https://a_b.example.com/v1/x",
+      "https://127.1/v1/x",
+      "https://0x7f.0.0.1/v1/x",
+      "https://0177.0.0.1/v1/x",
+      "https://2130706433/v1/x",
+      "https://0/v1/x",
+      "https://1.2.3.04/v1/x",
+      "https://256.1.1.1/v1/x",
+      "https://1.2.3.4.5/v1/x",
+      "https://example.123/v1/x",
+      "https://[1::2::3]/v1/x",
+      "https://[1.2.3.4]/v1/x",
+      "https://[]/v1/x",
+      "https://[::1%25eth0]/v1/x",
+      "https:///v1/x",
+      "https://api.example.com/v1/../admin",
+      "https://api.example.com/v1/./x",
+      "https://api.example.com/v1/..",
+      "https://api.example.com/v1//x",
+      "https://api.example.com//v1/x",
+      "https://api.example.com/v1/%2e%2e/admin",
+      "https://api.example.com/v1%2Fx",
+      "https://api.example.com/v1/%5c",
+      "https://api.example.com/v1/%252e",
+      "https://api.example.com/v1/%zz",
+      "//api.example.com/v1/x",
+      "1http://api.example.com/v1/x"
+    ]
+  }
+}

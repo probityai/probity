@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **A grant's URL constraints read the URL by one grammar, in both languages.** `url_pattern` and `url_safe` read
+  the URL by `grammar/constraint-url.json` (Python `constraints.url_parts`, TypeScript `urlParts`) instead of
+  `urlsplit` and WHATWG `new URL`, which each repaired text the other refused, so one grant had two verdicts. A URL
+  is now refused, in both readers, when it is not written in the RFC 3986 alphabet (a backslash, a space, a
+  non-ASCII full stop), has fewer than two slashes after the scheme, carries userinfo (an empty one too), a port of
+  0, past 65535 or with a leading zero, a host with an empty label (a trailing dot), a host ending in a number that
+  is not a canonical dotted quad (`127.1`, `0x7f.0.0.1`, `2130706433`), a path with a `.` or `..` segment or an
+  empty segment, or an escape that decodes to a dot, a slash, a backslash or a percent sign. Before, such a path
+  was resolved and then checked; it is now refused. Scheme, host and the grant's host patterns are compared in ASCII
+  lower case. No URL either reader allowed before is newly allowed. `tests/test_constraint_url.py` runs both readers
+  on 21,484 generated URLs and compares the parts and every verdict.
+
 - **One grammar per received text, in both languages.** `grammar/*.json` states what a timestamp, an integer claim, a
   compact JWS member, a target URI, an X.509 certificate, a stamp field and the trust bundle are; both readers are
   tested against those files and the differential in `tests/parity_r6c` is generated from them. A timestamp is

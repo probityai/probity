@@ -38,7 +38,7 @@ PY_PINNED: dict[str, dict[str, int]] = {
     'canonical_identity': {'int()': 1},
     'celexpr': {'int()': 2, 'str()': 1},
     'clock': {},
-    'constraints': {'int()': 3, 'lower()': 3, 'platform parser': 1},
+    'constraints': {},
     'core': {'int()': 1, 'str()': 2},
     'digests': {'int()': 1, 'str()': 1},
     'erasure': {'int()': 2, 'lower()': 2},
@@ -72,7 +72,7 @@ TS_PINNED: dict[str, dict[str, int]] = {
     'identity.ts': {'parseInt()': 1, 'toLowerCase()': 1},
     'revocation.ts': {'Date': 1},
     'sf.ts': {'Number()': 1, 'String()': 1},
-    'verify.ts': {'Date': 1, 'Number()': 3, 'String()': 36, 'toLowerCase()': 3, 'trim()': 1},
+    'verify.ts': {'Date': 1, 'Number()': 3, 'String()': 36, 'trim()': 1},
     'webbotauth.ts': {'Date': 3, 'Number()': 1, 'String()': 1, '\\d in a pattern': 6, 'parseInt()': 1, 'toLowerCase()': 11, 'trim()': 1},
 }
 

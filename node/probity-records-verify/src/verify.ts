@@ -393,14 +393,49 @@ function normpath(p: string): string {
   const lead = p.startsWith("//") && !p.startsWith("///") ? "//" : p.startsWith("/") ? "/" : "";
   return lead + out.join("/") || ".";
 }
-function urlParts(v: J): [string, string, string] | null {
-  if (typeof v !== "string" || /[\x00\r\n\t ]/.test(v)) return null;
-  let u: URL;
-  try { u = new URL(v); } catch { return null; }
-  if (u.username || u.password || !u.hostname) return null;
-  return [u.protocol.replace(/:$/, "").toLowerCase(), u.hostname.toLowerCase().replace(/^\[|\]$/g, ""), u.pathname || "/"];
+// grammar/constraint-url.json: the one reader of a URL a constraint is asked about, with the Python twin
+// constraints.url_parts. Each pattern is the grammar file's text, anchored; WHATWG URL parsing is never asked, since it
+// repairs text (a backslash, one slash after the scheme, a non-ASCII full stop, a trailing dot) that Python refuses.
+export const URL_GRAMMAR = {
+  "uri-text": "(?:[A-Za-z0-9\\-._~:/?#\\[\\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*",
+  url: "([A-Za-z][A-Za-z0-9+.\\-]*)://([^/?#]*)([^?#]*)(?:[?#].*)?",
+  authority: "(\\[[0-9A-Fa-f:.]+\\]|[A-Za-z0-9.\\-]+)(?::([1-9][0-9]{0,4}))?",
+  "host-label": "[A-Za-z0-9\\-]{1,63}",
+  "numeric-label": "[0-9]+|0[xX][0-9A-Fa-f]*",
+  ipv4: "(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])){3}",
+  path: "(?:/(?!\\.\\.?(?:/|$))[^/]+)*/?",
+  "path-escape": "%(?:2[EeFf]|5[Cc]|25)",
+} as const;
+const whole = (p: string): RegExp => new RegExp(`^(?:${p})$`);
+const URL_TEXT_RE = whole(URL_GRAMMAR["uri-text"]), URL_RE = whole(URL_GRAMMAR.url), AUTHORITY_RE = whole(URL_GRAMMAR.authority);
+const HOST_LABEL_RE = whole(URL_GRAMMAR["host-label"]), NUMERIC_LABEL_RE = whole(URL_GRAMMAR["numeric-label"]);
+const IPV4_RE = whole(URL_GRAMMAR.ipv4), PATH_RE = whole(URL_GRAMMAR.path), PATH_ESCAPE_RE = new RegExp(URL_GRAMMAR["path-escape"]);
+export const URL_PORT_MAX = 65535, URL_HOST_MAX = 253;
+/** constraints.url_parts: [scheme, host, port, path] of a URL the grammar accepts, else null. Scheme and host in ASCII
+ *  lower case, an IPv6 literal without its brackets, an empty path as "/". */
+export function urlParts(v: J): [string, string, number | null, string] | null {
+  if (typeof v !== "string" || !URL_TEXT_RE.test(v)) return null;
+  const url = URL_RE.exec(v);
+  if (url === null) return null;
+  const authority = AUTHORITY_RE.exec(url[2]), path = url[3] || "/";
+  if (authority === null || !PATH_RE.test(path) || PATH_ESCAPE_RE.test(path)) return null;
+  let host = asciiLower(authority[1]), port: number | null = null;
+  if (authority[2] !== undefined) {
+    port = decimal(authority[2]);
+    if (port > URL_PORT_MAX) return null;
+  }
+  if (host.startsWith("[")) {
+    host = host.slice(1, -1);
+    const ip = parseIp(host);
+    if (ip === null || ip.bits !== 128) return null;
+  } else {
+    const labels = host.split(".");
+    if (host.length > URL_HOST_MAX || !labels.every((label) => HOST_LABEL_RE.test(label))) return null;
+    if (NUMERIC_LABEL_RE.test(labels[labels.length - 1]) && !IPV4_RE.test(host)) return null;  // an IPv4 address, in its one spelling
+  }
+  return [asciiLower(url[1]), host, port, path];
 }
-const hostOk = (h: string, ps: string[]): boolean => ps.some((p) => fnmatch(h, p.toLowerCase()));
+const hostOk = (h: string, ps: string[]): boolean => ps.some((p) => fnmatch(h, asciiLower(p)));
 const starOnly = (p: string): boolean => !p.includes("[") && !p.includes("?");
 const hostsNarrow = (c: string[], p: string[]): boolean =>
   c.every((h) => p.includes(h) || (starOnly(h) && hostOk(h, p.filter(starOnly))));
@@ -543,9 +578,8 @@ const CHECKS: Record<string, (c: J, v: J, vf: boolean) => boolean> = {
   cidr: (c, v) => cidrOk(c.network, v),
   url_pattern: (c, v) => {
     const p = urlParts(v); if (!p) return false;
-    const norm = p[2] !== "/" ? normpath(p[2]) : "/";
     const prefix = (c.pathPrefix ?? "/").replace(/\/+$/, "");
-    return c.schemes.includes(p[0]) && hostOk(p[1], c.hosts) && (!prefix || norm === prefix || norm.startsWith(prefix + "/"));
+    return c.schemes.includes(p[0]) && hostOk(p[1], c.hosts) && (!prefix || p[3] === prefix || p[3].startsWith(prefix + "/"));
   },
   url_safe: (c, v) => {
     const p = urlParts(v); if (!p) return false;
